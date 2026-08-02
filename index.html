@@ -231,7 +231,7 @@
                     <input id="auth-otp-5" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,5)" onkeydown="authOtpKeydown(event,5)">
                   </div>
                   <div class="auth-error" id="auth-verify-error">That code doesn't match. Check it and try again.</div>
-                  <div class="auth-resend">Didn't get a code? <button type="button" onclick="authResendCode()">Resend code</button></div>
+                  <div class="auth-resend">Didn't get a code? <button id="auth-resend-btn" type="button" onclick="authResendCode()">Resend code</button><span id="auth-resend-countdown"></span></div>
 
                   <span class="auth-trust-label">Trust this device for</span>
                   <div class="auth-trust-options">
