@@ -20,8 +20,8 @@
         // via Postgres tables (see GAME_INVITES_TABLE below) for real
         // cross-device invite codes. Fill these in from your Supabase
         // project's Settings -> API page once deployed.
-        const SUPABASE_PROJECT_REF = 'YOUR_PROJECT_REF';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_PROJECT_REF = 'ljhitfxfnbvxovdkboyw';
+        const SUPABASE_ANON_KEY = 'sb_publishable_EXPx9UJ1VdFyGZniFIoJjw_lhVRGsj7';
         let _sbClient = null;
         // ---- Shared input validation helpers ----
         // Used across sign-in/sign-up, job applications, and opportunity
