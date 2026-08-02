@@ -2129,12 +2129,13 @@ function authStartResendCountdown(seconds){
   }, 1000);
 }
         function authResendCode(){
-          for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.value = ''; }
-          document.getElementById('auth-verify-error').classList.remove('show');
-          const first = document.getElementById('auth-otp-0');
-          if (first) first.focus();
-          authSendOtp();
-        }
+  for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.value = ''; }
+  document.getElementById('auth-verify-error').classList.remove('show');
+  const first = document.getElementById('auth-otp-0');
+  if (first) first.focus();
+  authStartResendCountdown(60);
+  authSendOtp();
+}
         function authSelectTrustDays(days){
           authSelectedTrustDays = days;
           const b30 = document.getElementById('auth-trust-30');
