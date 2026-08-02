@@ -2105,6 +2105,29 @@
             authOtpSendInFlight = false;
           }
         }
+let authResendTimer = null;
+function authStartResendCountdown(seconds){
+  const btn = document.getElementById('auth-resend-btn');
+  const label = document.getElementById('auth-resend-countdown');
+  if (authResendTimer) clearInterval(authResendTimer);
+  let remaining = seconds;
+  if (btn) btn.disabled = true;
+  const render = () => {
+    if (label) label.textContent = remaining > 0 ? ` (0:${String(remaining).padStart(2, '0')})` : '';
+  };
+  render();
+  authResendTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(authResendTimer);
+      authResendTimer = null;
+      if (btn) btn.disabled = false;
+      if (label) label.textContent = '';
+      return;
+    }
+    render();
+  }, 1000);
+}
         function authResendCode(){
           for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.value = ''; }
           document.getElementById('auth-verify-error').classList.remove('show');
