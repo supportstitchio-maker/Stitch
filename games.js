@@ -2096,7 +2096,9 @@
               options: { shouldCreateUser: authPendingFrom === 'signup' }
             });
             if (error) {
-              if (err) { err.textContent = error.message || 'Could not send the code -- try again.'; err.classList.add('show'); }
+              console.error('OTP send error:', error);
+              const msg = (error.message && error.message !== '{}') ? error.message : 'Could not send the code -- try again.';
+              if (err) { err.textContent = msg; err.classList.add('show'); }
             } else if (err) {
               err.classList.remove('show');
             }
