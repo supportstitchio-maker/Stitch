@@ -1450,6 +1450,7 @@
           #auth-gate .auth-back{display:none !important;}
           #auth-gate .auth-card{display:flex; flex-direction:row; align-items:stretch; border-radius:0; height:100%;}
           #auth-gate .auth-form-side{
+         #auth-gate .auth-form-side{
             flex:1 1 50%;
             min-width:0;
             order:1;
@@ -1457,7 +1458,13 @@
             flex-direction:column;
             justify-content:center;
             padding:72px 48px;
+            max-height:100%;
+            overflow-y:auto;
+            -webkit-overflow-scrolling:touch;
             transition:transform .5s cubic-bezier(.65,0,.35,1);
+          }
+          #auth-gate.auth-signup-mode .auth-form-side{
+            justify-content:flex-start;
           }
           #auth-gate .auth-promo-side{
             transition:transform .5s cubic-bezier(.65,0,.35,1);
