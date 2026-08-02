@@ -316,7 +316,7 @@
 
   <!-- Edit Profile: a hovering card over a dimmed backdrop, all fields on it -->
   <div id="editProfileModal" class="hidden absolute inset-0 z-40 flex items-start justify-center px-5" style="background:#ffffff;padding-top:calc(env(safe-area-inset-top, 12px) + 20px);padding-bottom:88px;overflow-y:auto;">
-    <div id="editProfileModalContent" class="rounded-3xl w-full p-6" style="max-width:26rem;box-shadow:0 10px 40px rgba(0,0,0,0.15);background-image:linear-gradient(135deg, rgba(30,144,255,0.07) 0%, rgba(65,105,225,0.07) 100%);background-color:#ffffff;pointer-events:auto;"></div>
+    <div id="editProfileModalContent" class="rounded-3xl w-full p-6"></div>
   </div>
 
   <!-- Fullscreen viewer for the current profile photo, opened by tapping the
