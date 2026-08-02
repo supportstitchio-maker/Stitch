@@ -140,7 +140,7 @@
                     </div>
                   </div>
                   <div class="auth-error" id="auth-login-error">Enter your email and password to continue.</div>
-                  <div class="auth-forgot"><a href="#" onclick="return false;">Forgot password?</a></div>
+                  <div class="auth-forgot"><a href="#" onclick="authShowForgotPassword(); return false;">Forgot password?</a></div>
                   <button class="auth-cta" type="submit">Log In</button>
                 </form>
 
@@ -245,6 +245,38 @@
                   Wrong email? <button type="button" onclick="authGoBack()">Go back</button>
                 </div>
               </div></div>
+                <!-- FORGOT PASSWORD PANEL -->
+<div class="auth-panel" id="auth-panel-forgot"><div>
+  <form onsubmit="authSubmitForgotPassword(event); return false;">
+    <div class="auth-info-banner">Enter your account email and we'll send you a link to reset your password.</div>
+    <div class="auth-field">
+      <label for="auth-fp-email">Email</label>
+      <input id="auth-fp-email" type="email" placeholder="login@abcd.com" autocomplete="email">
+    </div>
+    <div class="auth-error" id="auth-forgot-error">Enter a valid email address.</div>
+    <button class="auth-cta" type="submit" id="auth-forgot-submit-btn">Send reset link</button>
+  </form>
+  <div class="auth-switch" style="margin-top:16px;">
+    Remembered it? <button type="button" onclick="authGoBack()">Go back</button>
+  </div>
+</div></div>
+
+<!-- SET NEW PASSWORD PANEL (shown after clicking the reset link in email) -->
+<div class="auth-panel" id="auth-panel-newpass"><div>
+  <form onsubmit="authSubmitNewPassword(event); return false;">
+    <div class="auth-info-banner">Choose a new password for your account.</div>
+    <div class="auth-field">
+      <label for="auth-np-pass">New password</label>
+      <input id="auth-np-pass" type="password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="auth-field">
+      <label for="auth-np-cpass">Confirm new password</label>
+      <input id="auth-np-cpass" type="password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <div class="auth-error" id="auth-newpass-error">Passwords must match and be at least 6 characters.</div>
+    <button class="auth-cta" type="submit">Set new password</button>
+  </form>
+</div></div>
 
             </div>
           </div>
