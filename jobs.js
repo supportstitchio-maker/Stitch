@@ -1164,7 +1164,7 @@
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="bg-white rounded-3xl p-4 shadow-sm">
-                  <div class="text-2xl font-bold text-[${NAVY}]">${profileData.network}</div>
+                  <div class="text-2xl font-bold text-[${NAVY}]">${networkConnectionCount()}</div>
                   <div class="text-xs text-gray-500 mt-1">My Network</div>
                 </div>
                 <div class="bg-white rounded-3xl p-4 shadow-sm">

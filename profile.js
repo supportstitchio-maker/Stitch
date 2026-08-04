@@ -142,7 +142,7 @@
                   <div class="font-bold text-base mb-2">${escapeHtml(profileData.name)} <span class="font-normal text-gray-400">${profileData.pronouns}</span></div>
                   <div class="flex items-start gap-6">
                     <div class="text-center"><div class="text-base font-bold">${profileData.posts}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">Posts</div></div>
-                    <div class="text-center"><div class="text-base font-bold">${profileData.network}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">My Network</div></div>
+                    <button onclick="openOverlay('myContacts')" class="text-center"><div class="text-base font-bold">${networkConnectionCount()}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">My Network</div></button>
                   </div>
                 </div>
               </div>
@@ -336,7 +336,7 @@
               <div class="text-xs text-gray-500 mb-4">@${escapeHtml(profileData.username)}</div>
               <div class="flex items-center justify-center gap-6 mb-4">
                 <div class="text-center"><div class="text-base font-bold">${profileData.posts}</div><div class="text-[11px] text-gray-500">Posts</div></div>
-                <div class="text-center"><div class="text-base font-bold">${profileData.network}</div><div class="text-[11px] text-gray-500">My Network</div></div>
+                <button onclick="openOverlay('myContacts')" class="text-center"><div class="text-base font-bold">${networkConnectionCount()}</div><div class="text-[11px] text-gray-500">My Network</div></button>
               </div>
               ${profileData.bio ? `<div class="text-sm text-gray-600 mb-4">${escapeHtml(profileData.bio)}</div>` : ''}
               <div class="flex gap-2">
