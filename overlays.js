@@ -1,0 +1,1251 @@
+        // ---------------- OVERLAYS: Discover / Notifications ----------------
+        // Kinds that should respond to the phone/browser back button by
+        // closing the overlay, rather than leaving the page.
+        const overlayBackKinds = ['aiClass', 'gamification', 'classAnnouncements', 'classNotifications', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'newMessage', 'newCollaboration', 'studyTimetable', 'studyReminders', 'practiceTests', 'examTake', 'profileQR', 'postOpportunity', 'jobDetail', 'jobApply', 'classDetail', 'inviteStudents', 'newAnnouncement', 'newClasswork', 'scheduleLecture', 'courseDetail', 'courseItemDetail', 'newCourse', 'personProfile'];
+        let overlayHistoryPushed = false;
+
+        // Three-dot menu open state for the row-style headers.
+        let gamificationMenuOpen = false;
+        // Whether the gaming-avatar picker grid is open. Tapping the game
+        // profile avatar opens this picker directly (no intermediate
+        // "Upload photo / Choose gaming avatar" menu step).
+        // Overrides the game-profile picture shown on the Gamification
+        // screen only; independent of the main profileData.photo.
+        // null            -> no override, falls back to profileData.photo
+        // {type:'photo'}  -> a photo chosen specifically for the game profile
+        // {type:'icon'}   -> a chosen gaming avatar icon preset
+        // {type:'none'}   -> explicitly removed, always show the plain icon
+        let gameProfileAvatar = null;
+        // Whether the avatar-preset grid is showing inside the Game
+        // Profile card (toggled by tapping the avatar or its pencil icon).
+        let gamingAvatarPickerOpen = false;
+        // A stable per-device Game ID shown on the Game Profile card.
+        // Generated once and kept for the life of the session (matches
+        // the "487-825-435-7" style ID shown in the reference design).
+        function generateGameUniqueId(){
+          const seg = n => Math.floor(Math.random() * Math.pow(10, n)).toString().padStart(n, '0');
+          return `${seg(3)}-${seg(3)}-${seg(3)}-${seg(1)}`;
+        }
+        let gameUniqueId = generateGameUniqueId();
+        // Default gaming avatar art the user can pick from; these are the
+        // same illustrated character images used for the profile picture
+        // picker (see defaultAvatarImages above).
+        let aiClassMenuOpen = false;
+        let noticeBoardMenuOpen = false;
+        let joinClassMenuOpen = false;
+        let createClassMenuOpen = false;
+
+        function toggleGamificationMenu(){
+          gamificationMenuOpen = !gamificationMenuOpen;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        function openGameProfile(){
+          gamificationSubView = 'profile';
+          gamingAvatarPickerOpen = false;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        // Tapping the avatar (or its pencil) inside the Game Profile card
+        // reveals the avatar-preset grid in place, the same way the pencil
+        // works on the main Edit Profile form.
+        function toggleGamingAvatarPicker(){
+          gamingAvatarPickerOpen = !gamingAvatarPickerOpen;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        function editGameUsername(){
+          const next = (prompt('Game username:', profileData.username) || '').trim();
+          if (next) profileData.username = next;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        function copyGameUniqueId(){
+          const id = gameUniqueId;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(id).then(() => alert('ID copied: ' + id)).catch(() => alert(id));
+          } else {
+            alert(id);
+          }
+        }
+        function selectGamingAvatarPreset(src){
+          gameProfileAvatar = { type: 'photo', src };
+          gamingAvatarPickerOpen = false;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        function removeGamingAvatar(){
+          gameProfileAvatar = { type: 'none' };
+          gamingAvatarPickerOpen = false;
+          document.getElementById('overlay').innerHTML = gamificationHTML();
+        }
+        // Renders whatever should currently show inside the round avatar
+        // button on the Gamification screen (custom game photo, chosen
+        // icon preset, main profile photo, or the plain fallback icon).
+        function gamificationAvatarButtonHTML(){
+          if (gameProfileAvatar && gameProfileAvatar.type === 'photo') {
+            return `<img src="${gameProfileAvatar.src}" class="w-full h-full object-cover">`;
+          }
+          if (gameProfileAvatar && gameProfileAvatar.type === 'icon') {
+            return `<div class="w-full h-full flex items-center justify-center" style="background:${gameProfileAvatar.bg};color:${gameProfileAvatar.fg};">${Icon(gameProfileAvatar.icon,'w-4 h-4')}</div>`;
+          }
+          if (gameProfileAvatar && gameProfileAvatar.type === 'none') {
+            return `<div class="w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
+          }
+          if (profileData.photo) {
+            return `<img src="${profileData.photo}" class="w-full h-full object-cover">`;
+          }
+          return `<div class="w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
+        }
+        function gameProfileHTML(){
+          const canRemove = (gameProfileAvatar && (gameProfileAvatar.type === 'photo' || gameProfileAvatar.type === 'icon'))
+            || (!gameProfileAvatar && profileData.photo);
+          const badges = getBadges();
+          const earnedCount = badges.filter(b => b.earned).length;
+          return `
+            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
+              ${gamificationSubHeaderHTML('Game Profile')}
+              <div class="p-5 space-y-4">
+
+                <div class="bg-white rounded-3xl p-5 shadow-sm">
+                  <div class="flex flex-col items-center">
+                    <div class="relative">
+                      <button onclick="toggleGamingAvatarPicker()" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="border:2px solid rgba(10,37,64,0.12);">${gamificationAvatarButtonHTML()}</button>
+                    </div>
+
+                    ${gamingAvatarPickerOpen ? `
+                      <div class="w-full mt-3">
+                        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));justify-items:center;gap:0.4rem;">
+                          ${defaultAvatarImages.map(src => `
+                            <button onclick="event.stopPropagation(); selectGamingAvatarPreset('${src}')" class="rounded-full overflow-hidden flex-shrink-0 border border-gray-100" style="width:2.25rem;height:2.25rem;">
+                              <img src="${src}" class="w-full h-full object-cover">
+                            </button>
+                          `).join('')}
+                        </div>
+                        ${canRemove ? `<button onclick="event.stopPropagation(); removeGamingAvatar()" class="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 text-sm text-left rounded-xl" style="color:#dc2626;background:#fef2f2;">${Icon('trash','w-4 h-4')} Remove</button>` : ''}
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div class="mt-4 divide-y divide-gray-100">
+                    <div class="flex items-center justify-between py-3">
+                      <span class="font-bold text-base text-[${NAVY}] font-display">${escapeHtml(profileData.username)}</span>
+                      <button onclick="editGameUsername()" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${ROYAL};color:#fff;">${Icon('edit','w-3.5 h-3.5')}</button>
+                    </div>
+                    <div class="flex items-center justify-between py-3">
+                      <span class="text-sm text-gray-500">Unique ID: <span class="font-bold" style="color:#b45309;">${gameUniqueId}</span></span>
+                      <button onclick="copyGameUniqueId()" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${ROYAL};color:#fff;">${Icon('copy','w-3.5 h-3.5')}</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="text-base font-bold text-[${NAVY}] font-display">Achievements &amp; Badges</div>
+                    <div class="text-sm font-semibold text-gray-500">${earnedCount} / ${badges.length}</div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    ${badges.map(b => `
+                      <div class="bg-white rounded-3xl p-5 text-center shadow-sm ${b.earned ? '' : 'opacity-50'}">
+                        <div class="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center mb-2" style="background:${b.earned ? '#eff6ff' : '#f3f4f6'};color:${b.earned ? NAVY : '#9ca3af'};">${Icon(b.icon,'w-6 h-6')}</div>
+                        <div class="font-semibold text-sm mb-1">${escapeHtml(b.label)}</div>
+                        <div class="text-xs text-gray-500 leading-snug mb-2">${escapeHtml(b.desc)}</div>
+                        ${b.earned
+                          ? `<div class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-blue-600">${Icon('check','w-4 h-4')} Earned</div>`
+                          : `<div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">Locked</div>`}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+              </div>
+            </div>`;
+        }
+
+        // Condensed Game Profile for the desktop right panel while the
+        // Games window is open -- avatar, username, unique ID, points,
+        // and an earned/total badge count, mirroring how rightPanelProfileHTML
+        // condenses the full Profile page. "View full profile" hands off
+        // to the complete Game Profile screen for the badge grid itself.
+        function rightPanelGameProfileHTML(){
+          const badges = getBadges();
+          const earnedCount = badges.filter(b => b.earned).length;
+          return `
+            <div class="p-5 text-center border-b border-gray-100">
+              <button onclick="openGameProfile()" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-3" style="border:2px solid rgba(10,37,64,0.12);">${gamificationAvatarButtonHTML()}</button>
+              <div class="font-bold text-base mb-1">${escapeHtml(profileData.username)}</div>
+              <div class="text-xs text-gray-500 mb-4">Unique ID: <span class="font-bold" style="color:#b45309;">${gameUniqueId}</span></div>
+              <div class="flex items-center justify-center gap-6 mb-4">
+                <div class="text-center"><div class="text-base font-bold">${userPoints.toLocaleString()}</div><div class="text-[11px] text-gray-500">Points</div></div>
+                <div class="text-center"><div class="text-base font-bold">${earnedCount}/${badges.length}</div><div class="text-[11px] text-gray-500">Badges</div></div>
+              </div>
+              <button onclick="openGameProfile()" class="w-full bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">View full profile</button>
+            </div>
+            <div class="px-5 pt-4 pb-5">
+              <div class="font-semibold text-sm mb-3">Achievements &amp; Badges</div>
+              <div class="grid grid-cols-2 gap-3">
+                ${badges.map(b => `
+                  <div class="bg-gray-50 rounded-2xl p-3 text-center ${b.earned ? '' : 'opacity-50'}">
+                    <div class="w-9 h-9 mx-auto rounded-xl flex items-center justify-center mb-1.5" style="background:${b.earned ? '#eff6ff' : '#f3f4f6'};color:${b.earned ? NAVY : '#9ca3af'};">${Icon(b.icon,'w-4 h-4')}</div>
+                    <div class="font-semibold text-xs">${escapeHtml(b.label)}</div>
+                  </div>`).join('')}
+              </div>
+            </div>`;
+        }
+
+        function toggleAIClassMenu(){
+          aiClassMenuOpen = !aiClassMenuOpen;
+          document.getElementById('overlay').innerHTML = aiClassHTML();
+        }
+        function toggleNoticeBoardMenu(){
+          noticeBoardMenuOpen = !noticeBoardMenuOpen;
+          renderClassAnnouncementsTab();
+        }
+        function toggleJoinClassMenu(){
+          joinClassMenuOpen = !joinClassMenuOpen;
+          document.getElementById('overlay').innerHTML = joinClassroomHTML();
+        }
+        function toggleCreateClassMenu(){
+          createClassMenuOpen = !createClassMenuOpen;
+          document.getElementById('overlay').innerHTML = createClassroomHTML();
+        }
+
+        // Returns the height of whichever bottom nav bar is currently on
+        // screen (classroom sub-nav takes priority over the main nav),
+        // so overlays like the game window can leave room for it instead
+        // of covering it up.
+        function activeNavBarHeight(){
+          const classroomNav = document.getElementById('classroom-nav');
+          if (classroomNav && classroomNav.style.display !== 'none') return classroomNav.offsetHeight;
+          const bottomNav = document.getElementById('bottom-nav');
+          if (bottomNav && bottomNav.style.display !== 'none') return bottomNav.offsetHeight;
+          return 0;
+        }
+
+        const OVERLAY_TOP = '0';
+        const OVERLAY_TOP_50 = '0';
+
+        function openOverlay(kind){
+          currentOverlayKind = kind;
+          updateUtilityNavActive();
+          const ov = document.getElementById('overlay');
+          clearQuizBackground();
+          const studyFabWrap = document.getElementById('study-fab-wrap');
+          if (studyFabWrap) studyFabWrap.style.display = 'none';
+          // Overlays sit at the same flex level as the bottom nav bars
+          // (not stacked strictly above them), so without this the nav
+          // icons stay visible/bleeding through underneath overlays like
+          // Join Class or Create Class. Gamification is the one exception:
+          // it deliberately reserves a gap so the taskbar peeks through.
+          if (kind !== 'gamification') {
+            const bottomNavEl = document.getElementById('bottom-nav');
+            const classroomNavEl = document.getElementById('classroom-nav');
+            if (bottomNavEl) bottomNavEl.style.display = 'none';
+            if (classroomNavEl) classroomNavEl.style.display = 'none';
+          }
+          // If this overlay is already open and we're just re-rendering it
+          // (e.g. flipping a toggle in Settings), keep its scroll position
+          // instead of jumping back to the top of the list.
+          const prevOverlayScrollEl = ov.querySelector('.overflow-y-auto');
+          const prevOverlayScrollTop = prevOverlayScrollEl ? prevOverlayScrollEl.scrollTop : 0;
+          ov.classList.remove('hidden');
+
+          // On desktop, an open conversation keeps the chat list visible
+          // in a left column instead of covering it (see the
+          // .messaging-split CSS rules) -- so switching between chats
+          // there is an instant in-place swap, not a close-then-reopen.
+          const appShellEl = document.getElementById('app-shell');
+          if (appShellEl) {
+            if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); closeRightPanel(); }
+            else appShellEl.classList.remove('messaging-split');
+          }
+
+          // Every overlay window (including the messaging/conversation
+          // window) uses the same 30px (+safe-area) top offset as the
+          // rest of the app, and always stretches all the way down to the
+          // bottom of the screen. These must be set explicitly every time
+          // (not cleared to ''), otherwise the overlay's "bottom" offset
+          // gets un-declared and the box shrinks to fit its content
+          // instead of filling the screen, which is what made short
+          // conversations stop partway down and show the inbox behind them.
+          ov.style.top = OVERLAY_TOP;
+          ov.style.paddingTop = '';
+          ov.style.bottom = '0';
+
+          if (kind === 'profileMenu' || kind === 'profileAnalytics' || kind === 'call' || kind === 'incomingCall' || kind === 'profileQR' || kind === 'lectureCall') {
+            ov.style.top = '0';
+          }
+
+          if (kind === 'discover') { discoverSearchQuery = ''; discoverPeopleLoaded = false; ov.innerHTML = discoverHTML(); loadDiscoverPeople(); }
+          else if (kind === 'create') { selectedMediaHtml = null; selectedMediaType = null; selectedMediaFile = null; ov.innerHTML = createPostHTML(); }
+          else if (kind === 'aiClass') ov.innerHTML = aiClassHTML();
+          else if (kind === 'conversation') ov.innerHTML = conversationHTML();
+          else if (kind === 'call') ov.innerHTML = callHTML();
+          else if (kind === 'incomingCall') ov.innerHTML = incomingCallHTML();
+          else if (kind === 'joinClassroom') ov.innerHTML = joinClassroomHTML();
+          else if (kind === 'createClassroom') ov.innerHTML = createClassroomHTML();
+          else if (kind === 'classDetail') ov.innerHTML = classDetailHTML();
+          else if (kind === 'inviteStudents') ov.innerHTML = inviteStudentsHTML();
+          else if (kind === 'newAnnouncement') ov.innerHTML = newAnnouncementHTML();
+          else if (kind === 'scheduleLecture') ov.innerHTML = scheduleLectureHTML();
+          else if (kind === 'lectureCall') {
+            inLectureCall = true;
+            ov.innerHTML = lectureCallHTML();
+            if (rightPanelMode === 'notebook') renderRightPanelBody();
+            else if (window.innerWidth >= 1024) openRightPanel('notebook');
+          }
+          else if (kind === 'classworkCreateMenu') ov.innerHTML = classworkCreateMenuHTML();
+          else if (kind === 'newClasswork') ov.innerHTML = newClassworkHTML();
+          else if (kind === 'newQuiz') ov.innerHTML = newQuizHTML();
+          else if (kind === 'newPoll') ov.innerHTML = newPollHTML();
+          else if (kind === 'classworkDetail') ov.innerHTML = classworkDetailHTML();
+          else if (kind === 'classSettings') ov.innerHTML = classSettingsHTML();
+          else if (kind === 'studyTimetable') ov.innerHTML = studyTimetableHTML();
+          else if (kind === 'studyReminders') ov.innerHTML = studyRemindersHTML();
+          else if (kind === 'classAnnouncements') { renderClassAnnouncementsTab(); openRightPanel('pinned'); }
+          else if (kind === 'classNotifications') ov.innerHTML = classNotificationsHTML();
+          else if (kind === 'gamification') { gamificationSubView = 'home'; ov.innerHTML = gamificationHTML(); openRightPanel('gameprofile'); }
+          else if (kind === 'profileMenu') ov.innerHTML = profileMenuHTML();
+          else if (kind === 'profileQR') { ov.innerHTML = profileQRHTML(); initProfileQRCode(); }
+          else if (kind === 'newMessage') { newMessageSearchActive = false; newMessageSearchQuery = ''; ov.innerHTML = newMessageHTML(); }
+          else if (kind === 'myContacts') ov.innerHTML = myContactsHTML();
+          else if (kind === 'newCollaboration') ov.innerHTML = newCollaborationHTML();
+          else if (kind === 'profileAnalytics') ov.innerHTML = profileAnalyticsHTML();
+          else if (kind === 'careerAnalytics') ov.innerHTML = careerAnalyticsHTML();
+          else if (kind === 'notificationSettings') ov.innerHTML = notificationSettingsHTML();
+          else if (kind === 'savedItems') ov.innerHTML = savedItemsHTML();
+          else if (kind === 'blockedAccounts') ov.innerHTML = blockedAccountsHTML();
+          else if (kind === 'termsOfService') ov.innerHTML = termsOfServiceHTML();
+          else if (kind === 'privacyPolicy') ov.innerHTML = privacyPolicyHTML();
+          else if (kind === 'helpCenter') ov.innerHTML = helpCenterHTML();
+          else if (kind === 'contactUs') { resetContactFormDraft(); ov.innerHTML = contactUsHTML(); }
+          else if (kind === 'reportIssue') { resetReportIssueDraft(); ov.innerHTML = reportIssueHTML(); }
+          else if (kind === 'practiceTests') ov.innerHTML = practiceTestsHTML();
+          else if (kind === 'examTake') { ov.innerHTML = examTakeHTML(); setNotebookNavLabel('Annotate'); }
+          else if (kind === 'jobDetail') ov.innerHTML = jobDetailHTML();
+          else if (kind === 'jobApply') ov.innerHTML = jobApplyHTML();
+          else if (kind === 'postOpportunity') {
+            // The menu item that opens this is already hidden for non-admins;
+            // this check just makes sure the overlay can't be reached some
+            // other way (e.g. someone calling openOverlay() directly).
+            // Draft setup (fresh vs. prefilled for editing) is handled by
+            // openPostOpportunity/openEditOpportunity in jobs.js before this
+            // runs, so it isn't reset again here.
+            if (!isCurrentUserAdmin()) { closeOverlay(); return; }
+            ov.innerHTML = postOpportunityHTML();
+          }
+          else if (kind === 'courseDetail') ov.innerHTML = courseDetailHTML();
+          else if (kind === 'courseItemDetail') ov.innerHTML = courseItemDetailHTML();
+          else if (kind === 'newCourse') {
+            // Same defense-in-depth as postOpportunity: the "Create a
+            // Course" button is already hidden for non-admins, this just
+            // covers openOverlay('newCourse') being reached another way.
+            if (!isCurrentUserAdmin()) { closeOverlay(); return; }
+            ov.innerHTML = newCourseHTML();
+          }
+          else if (kind === 'courseTeachers') ov.innerHTML = courseTeachersHTML();
+          else if (kind === 'personProfile') ov.innerHTML = personProfileHTML();
+          else renderNotifTab();
+
+          if (prevOverlayScrollTop) {
+            const restoredOverlayScrollEl = ov.querySelector('.overflow-y-auto');
+            if (restoredOverlayScrollEl) restoredOverlayScrollEl.scrollTop = prevOverlayScrollTop;
+          }
+
+          // The game window shouldn't cover the taskbar below it; leave a
+          // gap the height of whichever nav bar is currently showing, and
+          // wire up its own scroll container so that taskbar still slides
+          // away as the user scrolls, matching every other window.
+          if (kind === 'gamification') {
+            const navH = activeNavBarHeight();
+            if (navH) ov.style.bottom = navH + 'px';
+            bottomNavOffset = 0;
+            bottomNavLastScroll = 0;
+            attachTaskbarScrollHandler(ov.querySelector('.overflow-y-auto'), ov);
+          }
+
+          if (overlayBackKinds.includes(kind) && !overlayHistoryPushed) {
+            history.pushState({ stitchOverlay: kind }, '');
+            overlayHistoryPushed = true;
+          }
+        }
+        function closeOverlay(fromPopState){
+          currentOverlayKind = null;
+          updateUtilityNavActive();
+          clearCallTimers();
+          stopCallLocalStream();
+          teardownCallSignaling();
+          clearLectureTimer();
+          stopLectureLocalStream();
+          clearStoryTimer();
+          const ov = document.getElementById('overlay');
+          if (ov) { ov.classList.add('hidden'); ov.innerHTML=''; ov.style.top = OVERLAY_TOP; ov.style.bottom = '0'; ov.style.paddingTop = ''; }
+          const appShellEl = document.getElementById('app-shell');
+          if (appShellEl) appShellEl.classList.remove('messaging-split');
+          clearQuizBackground();
+          stopQuizMusic();
+          resetBottomNav();
+          setNotebookNavLabel('Notebook');
+          // openOverlay hides both nav bars while any overlay is up; put
+          // back whichever one belongs on the current tab (Classroom uses
+          // its own sub-nav instead of the main one).
+          const isClassroomTab = currentTab === 2;
+          const bottomNavEl = document.getElementById('bottom-nav');
+          const classroomNavEl = document.getElementById('classroom-nav');
+          if (bottomNavEl) bottomNavEl.style.display = isClassroomTab ? 'none' : '';
+          if (classroomNavEl) classroomNavEl.style.display = isClassroomTab ? '' : 'none';
+          if (overlayHistoryPushed) {
+            overlayHistoryPushed = false;
+            if (!fromPopState) history.back();
+          }
+          // The Classroom screen underneath the overlay was rendered before
+          // any join/create action, so refresh it to reflect the latest
+          // myClasses state (pills vs. class cards + FAB). Closing out of
+          // Games/AI Class/Alerts (each of which sets its own panel mode)
+          // also brings the Notebook panel back as the Classroom default.
+          if (currentTab === 2) { renderStudy(); openRightPanel('notebook'); }
+          // Closing a conversation drops out of the desktop split view
+          // back to the plain inbox list, which gets its default Profile
+          // panel back (see applyDefaultRightPanel).
+          if (currentTab === 3) applyDefaultRightPanel(3);
+        }
+
+        // Let the phone/browser back button close these overlay windows
+        // instead of navigating away from the app.
+        window.addEventListener('popstate', function(){
+          const ov = document.getElementById('overlay');
+          if (ov && !ov.classList.contains('hidden')) {
+            closeOverlay(true);
+          }
+        });
+
+
+
+        function overlayHeader(title, extraTopPad, backAction){
+          const padStyle = ` style="padding-top:${extraTopPad || '50px'};"`;
+          return `
+            <div class="flex-shrink-0 w-full"${padStyle}>
+              <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4">
+                <button onclick="${backAction || 'closeOverlay()'}">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="font-semibold text-lg font-display grad-text">${title}</div>
+              </div>
+            </div>`;
+        }
+
+        // Plain header style matching the Classroom screen's "← Leave Classroom"
+        // treatment: a gray back link above a bold title, no colored bar.
+        function plainOverlayHeader(title){
+          return `
+            <div class="w-full px-5 pb-3" style="padding-top:20px;">
+              <button onclick="closeOverlay()" class="flex items-center gap-1.5 font-semibold text-sm mb-3 grad-text">
+                ${gradIcon(IconBold('back','w-5 h-5'))} Back
+              </button>
+              <h1 class="text-2xl font-bold font-display grad-text">${title}</h1>
+            </div>`;
+        }
+
+        // Shared helper for menuOverlayHeader dropdowns: closes the menu if
+        // the user scrolls the screen while it's open, same as tapping the
+        // backdrop would. Armed after a short delay so the scroll-position
+        // restore that happens right after render doesn't immediately
+        // trigger a close.
+        function attachMenuScrollCloser(scrollEl, menuOpen, toggleFnOrName){
+          if (!menuOpen || !scrollEl) return;
+          const anchor = scrollEl.scrollTop;
+          let armed = false;
+          setTimeout(() => { armed = true; }, 300);
+          const onScroll = () => {
+            if (armed && Math.abs(scrollEl.scrollTop - anchor) > 4) {
+              scrollEl.removeEventListener('scroll', onScroll);
+              if (typeof toggleFnOrName === 'function') toggleFnOrName();
+              else if (typeof toggleFnOrName === 'string') window[toggleFnOrName]();
+            }
+          };
+          scrollEl.addEventListener('scroll', onScroll, { passive: true });
+        }
+
+        // Row-style header: back arrow on the left, title centered, and a
+        // three-dot menu button on the right that opens a small dropdown.
+        function menuOverlayHeader(title, menuOpen, toggleFnName, dropdownHtml){
+          return `
+            <div class="w-full px-5 pb-3 relative" style="padding-top:20px;">
+              <div class="flex items-center justify-between">
+                <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${title}</h1>
+                <button onclick="${toggleFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashes','w-5 h-5'))}</button>
+              </div>
+              ${menuOpen ? `<div onclick="${toggleFnName}()" onwheel="${toggleFnName}()" ontouchmove="${toggleFnName}()" class="fixed inset-0 z-10"></div>${dropdownHtml || placeholderDropdownMenu()}` : ''}
+            </div>`;
+        }
+
+        // Same row layout as menuOverlayHeader (back arrow left, centered
+        // title) but with no three-dot menu button on the right at all,
+        // per request to remove the top-right menu tab on the Classroom
+        // detail screen. The empty spacer div keeps the title perfectly
+        // centered, matching the back button's width.
+        function classDetailHeaderHTML(title){
+          return `
+            <div class="w-full px-5 pb-3 relative" style="padding-top:20px;">
+              <div class="flex items-center justify-between">
+                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${title}</h1>
+                <button onclick="openOverlay('classNotifications')" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('bell','w-5 h-5'))}</button>
+              </div>
+            </div>`;
+        }
+
+        // Placeholder menu content: actions to be filled in later.
+        function placeholderDropdownMenu(){
+          return `
+            <div class="absolute w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;">
+              <div class="px-4 py-2.5 text-sm text-gray-400 menu-item-pill">More options coming soon</div>
+            </div>`;
+        }
+
+        // Real dropdown for the "..." menu on Join a Class: paste a code
+        // straight from the clipboard, or get quick help finding one.
+        function joinClassDropdownMenu(){
+          return `
+            <div class="absolute w-56 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;">
+              <button onclick="pasteJoinClassCode()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('clip','w-4 h-4')} Paste code from clipboard</button>
+              <button onclick="showJoinClassHelp()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('help','w-4 h-4')} How do I get a class code?</button>
+            </div>`;
+        }
+
+        // Real dropdown for the "..." menu on Create a Class: clear the
+        // form, or get quick help on what each field means.
+        function createClassDropdownMenu(){
+          return `
+            <div class="absolute w-56 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;">
+              <button onclick="resetCreateClassForm()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('trash','w-4 h-4')} Clear form</button>
+              <button onclick="showCreateClassHelp()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('help','w-4 h-4')} What do these fields mean?</button>
+            </div>`;
+        }
+
+        async function pasteJoinClassCode(){
+          toggleJoinClassMenu();
+          const input = document.getElementById('join-code-input');
+          try {
+            const text = await navigator.clipboard.readText();
+            if (input && text) input.value = text.trim().toUpperCase();
+            if (!text) alert('Your clipboard is empty. Copy a class code first, then try again.');
+          } catch (e) {
+            alert("Couldn't read your clipboard. You may need to allow clipboard access, or just type the code in manually.");
+          }
+        }
+
+        function showJoinClassHelp(){
+          toggleJoinClassMenu();
+          alert('Ask your teacher or a classmate already in the class for the class code. It\'s usually 6-8 letters or numbers, shown at the top of the class in their app.');
+        }
+
+        function resetCreateClassForm(){
+          toggleCreateClassMenu();
+          const ids = ['create-name-input','create-section-input','create-subject-input'];
+          ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        }
+
+        function showCreateClassHelp(){
+          toggleCreateClassMenu();
+          alert('Class Name: what students will see (required).\nSection: an optional label like "Section B" if you teach more than one group.\nSubject: an optional label like "Biology" to help students find the class.');
+        }
+
+        // ---------------- OVERLAY: Create Post (Instagram-style, via + in top bar) ----------------
+        let selectedMediaHtml = null;
+        let selectedMediaType = null;
+        // The raw File object behind selectedMediaHtml's preview. The
+        // preview itself is a local blob:/data: URL (see handleMediaSelect)
+        // which only exists in this browser -- submitPost hands this File
+        // to PostsAPI.create so it can be uploaded to shared Storage and
+        // swapped for a public URL other accounts can actually load.
+        let selectedMediaFile = null;
+
+        function createPostHTML(){
+          return `
+            ${overlayHeader('New post')}
+            <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
+              <button type="button" onclick="pickMedia('image/*,video/*')" id="media-preview" class="w-full h-48 bg-gray-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 mb-4">
+                ${Icon('upload','w-8 h-8')}
+                <div class="text-sm">(tap to upload a post)</div>
+              </button>
+              <input type="file" id="media-input" accept="image/*,video/*" class="hidden" onchange="handleMediaSelect(event)">
+              <textarea id="new-post-text" class="w-full h-24 p-4 border border-gray-200 rounded-2xl text-base" placeholder="Write a caption..."></textarea>
+            </div>
+            <div class="p-4 border-t flex-shrink-0">
+              <button onclick="submitPost()" class="w-full py-3 rounded-2xl font-semibold border" style="color:${NAVY};border-color:rgba(10,37,64,0.25);background-image:linear-gradient(135deg, rgba(10,37,64,0.18) 0%, rgba(65,105,225,0.18) 100%);background-color:#ffffff;">Post</button>
+            </div>`;
+        }
+
+        function pickMedia(accept){
+          const input = document.getElementById('media-input');
+          input.setAttribute('accept', accept);
+          input.click();
+        }
+
+        function handleMediaSelect(event){
+          const file = event.target.files[0];
+          if (!file) return;
+          selectedMediaFile = file;
+          const isVideo = file.type.startsWith('video/');
+          const reader = new FileReader();
+          reader.onload = function(e){
+            const url = e.target.result;
+            selectedMediaType = isVideo ? 'video' : 'image';
+            selectedMediaHtml = isVideo
+              ? `<video src="${url}" controls class="w-full h-auto rounded-2xl mb-4 bg-black"></video>`
+              : `<img src="${url}" class="w-full h-auto rounded-2xl mb-4">`;
+            const preview = document.getElementById('media-preview');
+            if (preview) {
+              preview.className = 'w-full rounded-2xl overflow-hidden mb-4';
+              preview.innerHTML = isVideo
+                ? `<video src="${url}" controls class="w-full h-auto max-h-64 bg-black" style="object-fit:contain;"></video>`
+                : `<img src="${url}" class="w-full h-auto max-h-64" style="object-fit:contain;">`;
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+
+        function submitPost(){
+          if (!requireCompleteProfile()) return;
+          if (!selectedMediaHtml) { alert('Add a photo or video: the feed only shows posts with pictures or videos'); return; }
+          const input = document.getElementById('new-post-text');
+          const text = input.value.trim();
+          PostsAPI.create({
+            meta: 'Kumasi · now',
+            tag: selectedMediaType === 'video' ? 'Video' : 'Photo', tagClass: 'bg-green-100 text-green-700',
+            body: text, mediaHtml: selectedMediaHtml,
+            // Passed through so PostsAPI.create can upload the real file to
+            // shared Storage -- see the note there for why the local
+            // preview URL above isn't enough on its own.
+            mediaFile: selectedMediaFile, mediaType: selectedMediaType,
+          }).then(() => {
+            profileData.posts += 1;
+            selectedMediaHtml = null;
+            selectedMediaType = null;
+            selectedMediaFile = null;
+            closeOverlay();
+            renderFeed();
+          });
+        }
+
+        // Discover shows real signed-up people, loaded from public_profiles
+        // (see syncPublicProfile in profile.js) -- starts empty until
+        // loadDiscoverPeople() finishes, rather than any made-up seed data.
+        let discoverPeople = [];
+        let discoverPeopleLoaded = false;
+        let discoverSearchQuery = '';
+
+        // Pulls every other account's public profile plus which of them
+        // this account has already sent a connection request to, so the
+        // list renders with the right button state (Connect / Request
+        // Sent) on first paint instead of flashing "Connect" for everyone
+        // and then correcting itself.
+        //
+        // discoverLoadError is set when the fetch itself fails (bad
+        // connection, RLS misconfigured, etc) so the empty state can say
+        // "couldn't load, try again" instead of the misleading "no one's
+        // signed up yet" -- and a hard timeout guarantees the spinner
+        // never sits there forever even if the request itself hangs.
+        let discoverLoadError = false;
+
+        async function loadDiscoverPeople(){
+          discoverLoadError = false;
+          const sb = getSupabaseClient();
+          if (!sb) { discoverPeopleLoaded = true; return; }
+          const withTimeout = (promise) => Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+          ]);
+          try {
+            // getUser() and the public_profiles fetch don't depend on each
+            // other -- run them in parallel instead of one after another
+            // so Discover shows up roughly twice as fast.
+            const [{ data: userRes }, { data, error }] = await withTimeout(Promise.all([
+              sb.auth.getUser(),
+              sb.from(PUBLIC_PROFILES_TABLE).select('*'),
+            ]));
+            const me = userRes && userRes.user;
+            if (error || !data) { discoverLoadError = true; discoverPeopleLoaded = true; renderDiscoverList(); return; }
+            let sentTo = new Set();
+            let connectedIds = new Set();
+            if (me) {
+              // Both directions: requests I sent (to know which are still
+              // pending -> "Request Sent") and requests sent to me (to
+              // catch connections I formed by accepting someone else's
+              // request, not just ones I initiated). Anyone with an
+              // 'accepted' row either way is a real connection now and
+              // shouldn't be offered again in Discover -- see
+              // removeFromDiscover, which does the same thing instantly
+              // right when an accept happens, without waiting for the
+              // next time Discover is opened.
+              const [{ data: fromRows }, { data: toRows }] = await withTimeout(Promise.all([
+                sb.from(CONNECTION_REQUESTS_TABLE).select('to_user, status').eq('from_user', me.id),
+                sb.from(CONNECTION_REQUESTS_TABLE).select('from_user, status').eq('to_user', me.id),
+              ]));
+              sentTo = new Set((fromRows || []).filter(r => r.status === 'pending').map(r => r.to_user));
+              connectedIds = new Set([
+                ...(fromRows || []).filter(r => r.status === 'accepted').map(r => r.to_user),
+                ...(toRows || []).filter(r => r.status === 'accepted').map(r => r.from_user),
+              ]);
+            }
+            discoverPeople = data
+              .filter(row => !me || row.user_id !== me.id)
+              .filter(row => !connectedIds.has(row.user_id))
+              .filter(row => (row.name || '').trim() || (row.username || '').trim())
+              .map(row => ({
+                id: row.user_id,
+                name: row.name || 'Stitch member',
+                username: row.username || '',
+                sub: row.bio || 'Stitch member',
+                icon: 'user',
+                avatarBg: 'bg-blue-50',
+                photo: row.photo || null,
+                requestSent: sentTo.has(row.user_id),
+              }));
+            discoverPeopleLoaded = true;
+            renderDiscoverList();
+          } catch (e) { discoverLoadError = true; discoverPeopleLoaded = true; renderDiscoverList(); }
+        }
+
+        // Called right when a connection is formed (either accepting an
+        // incoming request in acceptRequest, or noticing one of my own
+        // outgoing requests got accepted in loadMyAcceptedOutgoingRequests
+        // -- both in chat.js) so the person disappears from Discover
+        // immediately, instead of only after the next time Discover
+        // happens to be reloaded from Supabase (which also excludes them,
+        // via loadDiscoverPeople's connectedIds filter above -- this is
+        // just the instant, no-reload-needed version of the same thing).
+        function removeFromDiscover(userId){
+          if (!userId) return;
+          const idx = discoverPeople.findIndex(p => p.id === userId);
+          if (idx === -1) return;
+          discoverPeople.splice(idx, 1);
+          if (discoverPeopleLoaded) renderDiscoverList();
+        }
+
+        function renderDiscoverList(){
+          const list = document.getElementById('discover-people-list');
+          if (list) list.innerHTML = discoverPeopleHTML();
+        }
+
+        function retryLoadDiscoverPeople(){
+          discoverPeopleLoaded = false;
+          renderDiscoverList();
+          loadDiscoverPeople();
+        }
+
+        function discoverHTML(){
+          return `
+            ${overlayHeader('Discover', '20px')}
+            <div class="p-5 overflow-y-auto no-scrollbar flex-1">
+              <input id="discover-search-input" value="${discoverSearchQuery}" oninput="onDiscoverSearchInput(this.value)" placeholder="Search by name, school, field..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-5" autocomplete="off">
+              <div id="discover-people-list">${discoverPeopleHTML()}</div>
+            </div>`;
+        }
+
+        function discoverPeopleHTML(){
+          if (!discoverPeopleLoaded) {
+            return `<div class="text-center text-gray-400 text-sm py-10">Loading people...</div>`;
+          }
+          if (discoverLoadError) {
+            return `
+              <div class="text-center text-gray-400 text-sm py-10">
+                Couldn't load people right now.<br>Check your connection and try again.
+                <div class="mt-3"><button onclick="retryLoadDiscoverPeople()" class="text-xs font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};">Retry</button></div>
+              </div>`;
+          }
+          const q = discoverSearchQuery.trim().toLowerCase();
+          const filtered = q ? discoverPeople.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            p.sub.toLowerCase().includes(q) ||
+            (p.username || '').toLowerCase().includes(q.replace(/^@/, ''))
+          ) : discoverPeople;
+          if (!filtered.length && q) return `<div class="text-center text-gray-400 text-sm py-10">No one found for "${escapeHtml(discoverSearchQuery)}".</div>`;
+          if (!filtered.length) return `<div class="text-center text-gray-400 text-sm py-10">No one else has signed up yet -- once they do, they'll show up here.</div>`;
+          return filtered.map(p => personCard(p)).join('');
+        }
+
+        function onDiscoverSearchInput(val){
+          discoverSearchQuery = val;
+          const list = document.getElementById('discover-people-list');
+          if (list) list.innerHTML = discoverPeopleHTML();
+        }
+
+        function personCard(p){
+          const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon(p.icon || 'user','w-5 h-5');
+          let actionHTML;
+          if (p.connected) {
+            actionHTML = `<span class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-400">Connected</span>`;
+          } else if (p.requestSent) {
+            actionHTML = `<span class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-400">Request Sent</span>`;
+          } else {
+            actionHTML = `<button onclick="connectToDiscoverPerson('${p.id}')" class="text-xs font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};">Connect</button>`;
+          }
+          return `
+            <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
+              <button onclick="openPersonProfileFromDiscover('${p.id}')" class="w-11 h-11 ${p.avatarBg || 'bg-blue-50'} rounded-2xl flex items-center justify-center text-gray-600 overflow-hidden flex-shrink-0">${avatarInner}</button>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm truncate">${escapeHtml(p.name)}</div>
+                <div class="text-xs text-gray-500 truncate">${p.username ? `@${escapeHtml(p.username)} · ` : ''}${escapeHtml(p.sub)}</div>
+              </div>
+              ${actionHTML}
+            </div>`;
+        }
+
+        // Sends a connection request rather than connecting right away --
+        // it's real (a row in connection_requests, see the schema comment
+        // in profile.js), but it's pending until the other person accepts,
+        // which isn't wired up in the UI yet. The button just reflects
+        // that: "Request Sent", not "Connected", and nothing gets added to
+        // My Contacts / My Network until an accept flow exists to earn it.
+        // Shared helper: inserts a real connection_requests row from me to
+        // toUserId. Used by both Discover's "Connect" button
+        // (connectToDiscoverPerson below, which also has discoverPeople
+        // state of its own to flip) and the feed's "Connect" button that
+        // appears on a post from someone outside your network
+        // (connectWithPoster in feed.js) -- that one has no discoverPeople
+        // entry to update, just a post to mark as pending.
+        async function sendConnectionRequestTo(toUserId){
+          const sb = getSupabaseClient();
+          if (!sb) return false;
+          try {
+            const { data: userRes } = await sb.auth.getUser();
+            const me = userRes && userRes.user;
+            if (!me) return false;
+            const { error } = await sb.from(CONNECTION_REQUESTS_TABLE).insert({
+              id: 'req' + Date.now() + Math.random().toString(36).slice(2,6),
+              from_user: me.id,
+              to_user: toUserId,
+              status: 'pending',
+            });
+            return !error;
+          } catch (e) { return false; }
+        }
+
+        async function connectToDiscoverPerson(id){
+          const p = discoverPeople.find(x => x.id === id);
+          if (!p || p.connected || p.requestSent) return;
+          p.requestSent = true; // optimistic -- flip back if the insert fails
+          const list = document.getElementById('discover-people-list');
+          if (list) list.innerHTML = discoverPeopleHTML();
+          const ok = await sendConnectionRequestTo(id);
+          if (!ok) { p.requestSent = false; if (list) list.innerHTML = discoverPeopleHTML(); }
+        }
+
+        // ---------------- View someone's profile (tap any avatar) ----------------
+        // A lightweight, read-only profile card reachable by tapping
+        // *anyone's* avatar anywhere in the app -- inbox rows, a connect
+        // request card, the open-chat header, a message bubble, a post's
+        // avatar, or a Discover card. Shows their photo/name/bio plus
+        // whatever the relationship with them actually is right now, so
+        // tapping a stranger's picture is how you decide whether to
+        // connect, and tapping someone you already know gets you straight
+        // to messaging them. This is deliberately separate from
+        // convoProfileHTML ("Contact info" inside an already-open chat),
+        // which assumes you're already connected -- this one is for
+        // deciding whether to be.
+        let viewedProfile = null; // { id, name, username, photo, icon, avatarBg, bio, connected, requestSent, loaded }
+
+        // Opens instantly with whatever's already known locally (the name/
+        // photo straight off the avatar that was tapped, passed in as
+        // `fallback`) so there's no blank/loading flash, then quietly
+        // fills in their bio and the real connect/request-sent state from
+        // Supabase once that resolves. fallback: {name, photo, icon, avatarBg, username}.
+        async function openPersonProfile(userId, fallback){
+          if (!userId) return;
+          const myId = await getCurrentUserId();
+          if (myId && userId === myId) {
+            // Tapped your own avatar somewhere -- go to your actual
+            // profile, not a read-only card of yourself with a Connect
+            // button that would never make sense.
+            closeOverlay();
+            switchTab(4);
+            return;
+          }
+          viewedProfile = Object.assign({
+            id: userId, name: 'Stitch member', username: '', bio: '',
+            icon: 'user', avatarBg: 'bg-blue-50', photo: null,
+            connected: isUserInMyNetwork(userId), requestSent: false, loaded: false,
+          }, fallback || {});
+          openOverlay('personProfile');
+          loadPersonProfileDetails(userId);
+        }
+
+        // Convenience wrapper for anywhere that already has a convoId
+        // handy (inbox rows, chat header, message bubbles, request cards)
+        // -- reads straight from convoMeta instead of needing every call
+        // site to pass name/photo/icon by hand. No-ops for group chats
+        // (no single person to show) or convos with no linked backend user.
+        function openPersonProfileForConvo(convoId){
+          const meta = convoMeta[convoId];
+          if (!meta || !meta.otherUserId || meta.icon === 'users') return;
+          openPersonProfile(meta.otherUserId, { name: meta.name, photo: meta.photo, icon: meta.icon, avatarBg: meta.avatarBg });
+        }
+
+        // Same idea for a Discover card's avatar specifically (has richer
+        // fallback data -- username, bio -- already loaded).
+        function openPersonProfileFromDiscover(id){
+          const p = discoverPeople.find(x => x.id === id);
+          if (!p) { openPersonProfile(id); return; }
+          openPersonProfile(id, { name: p.name, username: p.username, photo: p.photo, icon: p.icon, avatarBg: p.avatarBg });
+        }
+
+        async function loadPersonProfileDetails(userId){
+          const sb = getSupabaseClient();
+          if (!sb) { if (viewedProfile && viewedProfile.id === userId) { viewedProfile.loaded = true; renderPersonProfile(); } return; }
+          try {
+            const { data: userRes } = await sb.auth.getUser();
+            const me = userRes && userRes.user;
+            const [{ data: row }, { data: fromRows }, { data: toRows }] = await Promise.all([
+              sb.from(PUBLIC_PROFILES_TABLE).select('*').eq('user_id', userId).maybeSingle(),
+              me ? sb.from(CONNECTION_REQUESTS_TABLE).select('to_user,status').eq('from_user', me.id).eq('to_user', userId) : Promise.resolve({ data: [] }),
+              me ? sb.from(CONNECTION_REQUESTS_TABLE).select('from_user,status').eq('to_user', me.id).eq('from_user', userId) : Promise.resolve({ data: [] }),
+            ]);
+            if (!viewedProfile || viewedProfile.id !== userId) return; // navigated away while this was loading
+            if (row) {
+              viewedProfile.name = row.name || row.username || viewedProfile.name;
+              viewedProfile.username = row.username || viewedProfile.username || '';
+              viewedProfile.bio = row.bio || '';
+              viewedProfile.photo = row.photo || viewedProfile.photo || null;
+            }
+            const acceptedEitherWay = [...(fromRows || []), ...(toRows || [])].some(r => r.status === 'accepted');
+            viewedProfile.connected = acceptedEitherWay || isUserInMyNetwork(userId);
+            viewedProfile.requestSent = (fromRows || []).some(r => r.status === 'pending');
+            viewedProfile.loaded = true;
+            renderPersonProfile();
+          } catch (e) {
+            if (viewedProfile && viewedProfile.id === userId) { viewedProfile.loaded = true; renderPersonProfile(); }
+          }
+        }
+
+        function renderPersonProfile(){
+          const ov = document.getElementById('overlay');
+          if (ov && currentOverlayKind === 'personProfile') ov.innerHTML = personProfileHTML();
+        }
+
+        async function connectWithViewedProfile(){
+          if (!viewedProfile || viewedProfile.connected || viewedProfile.requestSent) return;
+          const id = viewedProfile.id;
+          viewedProfile.requestSent = true; // optimistic -- flip back if the insert fails
+          renderPersonProfile();
+          const ok = await sendConnectionRequestTo(id);
+          if (!viewedProfile || viewedProfile.id !== id) return; // moved on already
+          if (!ok) { viewedProfile.requestSent = false; renderPersonProfile(); return; }
+          // Keep Discover's own copy of this person in sync too, so it
+          // doesn't still show "Connect" there after this.
+          const dp = discoverPeople.find(p => p.id === id);
+          if (dp) dp.requestSent = true;
+        }
+
+        // Already connected -- jump straight to the real conversation
+        // with them instead of a dead end. Falls back to just closing
+        // (no conversation locally yet -- it'll appear next time
+        // loadMyAcceptedOutgoingRequests/loadIncomingConnectionRequests
+        // runs) rather than creating a duplicate local-only thread.
+        function messageViewedProfile(){
+          if (!viewedProfile) return;
+          const id = viewedProfile.id;
+          const existing = convoArrays().flat().find(c => c.otherUserId === id);
+          closeOverlay();
+          if (existing) startNewMessageWith(existing.id);
+        }
+
+        function personProfileHTML(){
+          const p = viewedProfile || {};
+          const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon(p.icon || 'user','w-10 h-10');
+          let actionHTML;
+          if (p.connected) {
+            actionHTML = `<button onclick="messageViewedProfile()" class="w-full py-2.5 rounded-2xl font-semibold text-sm bg-gray-100" style="color:${NAVY};">Message</button>`;
+          } else if (p.requestSent) {
+            actionHTML = `<button disabled class="w-full py-2.5 rounded-2xl font-semibold text-sm bg-gray-100 text-gray-400">Request Sent</button>`;
+          } else {
+            actionHTML = `<button onclick="connectWithViewedProfile()" class="w-full py-2.5 rounded-2xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, rgba(65,105,225,0.9), ${NAVY});">Connect</button>`;
+          }
+          return `
+            ${overlayHeader('Profile', '20px')}
+            <div class="flex-1 overflow-y-auto p-5">
+              <div class="flex flex-col items-center text-center mb-6">
+                <div class="w-24 h-24 ${p.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 mb-3 overflow-hidden">${avatarInner}</div>
+                <div class="font-bold text-xl font-display text-[${NAVY}]">${escapeHtml(p.name || 'Stitch member')}</div>
+                ${p.username ? `<div class="text-sm text-gray-400 mt-0.5">@${escapeHtml(p.username)}</div>` : ''}
+              </div>
+              ${!p.loaded ? `<div class="text-center text-gray-400 text-xs mb-6">Loading profile...</div>` : (p.bio ? `<div class="text-sm text-gray-600 text-center mb-6">${escapeHtml(p.bio)}</div>` : '')}
+              <div class="max-w-xs mx-auto">${actionHTML}</div>
+            </div>`;
+        }
+
+        // ---------------- Generic long-press-to-select handling ----------------
+        // Used by Notice Board, Notifications, and Inbox: press and hold a
+        // row to select it, then tap the "..." menu to Pin / Mark as read /
+        // Block / Delete whatever is currently selected.
+        let pressTimer = null;
+        let longPressFired = false;
+        let pressStartX = 0;
+        let pressStartY = 0;
+
+        function startPress(fnName, id, evt){
+          longPressFired = false;
+          clearTimeout(pressTimer);
+          const pt = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+          pressStartX = pt ? pt.clientX : 0;
+          pressStartY = pt ? pt.clientY : 0;
+          pressTimer = setTimeout(function(){
+            longPressFired = true;
+            if (navigator.vibrate) navigator.vibrate(10);
+            window[fnName](id);
+          }, 550);
+        }
+        function endPress(){
+          clearTimeout(pressTimer);
+        }
+        // A finger resting for a long-press naturally drifts a few pixels;
+        // only cancel the hold if the touch actually moves away (scrolling),
+        // not on that small jitter, otherwise "select" almost never triggers.
+        function movePress(evt){
+          const pt = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+          if (!pt) return;
+          const dx = Math.abs(pt.clientX - pressStartX);
+          const dy = Math.abs(pt.clientY - pressStartY);
+          if (dx > 12 || dy > 12) endPress();
+        }
+        function handleRowTap(fnName, id){
+          if (longPressFired) { longPressFired = false; return; }
+          window[fnName](id);
+        }
+
+        // Shared dropdown content for the top-right "..." menu on Notice
+        // Board and Notifications: acts on whatever rows are selected.
+        function notifActionsDropdownHTML(handlerName){
+          return `
+            <div class="absolute bg-white rounded-2xl border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;width:13rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
+              <button onclick="${handlerName}('pin')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('pin','w-4 h-4')} Pin</button>
+              <button onclick="${handlerName}('read')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('check','w-4 h-4')} Mark as read</button>
+              <button onclick="${handlerName}('block')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('lock','w-4 h-4')} Block</button>
+              <div class="border-t border-gray-100 my-1"></div>
+              <button onclick="${handlerName}('delete')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete</button>
+            </div>`;
+        }
+
+        // ---------------- OVERLAY: Notifications ----------------
+        const notifData = [];
+
+        let notifSelected = new Set();
+        let notifMenuOpen = false;
+
+        function toggleNotifMenu(){
+          notifMenuOpen = !notifMenuOpen;
+          renderNotifTab();
+        }
+
+        function notifLongPressSelect(id){
+          notifSelected.add(id);
+          renderNotifTab();
+        }
+        function notifTap(id){
+          if (notifSelected.size){
+            if (notifSelected.has(id)) notifSelected.delete(id); else notifSelected.add(id);
+            renderNotifTab();
+          }
+        }
+        function notifCancelSelect(){
+          notifSelected.clear();
+          renderNotifTab();
+        }
+
+        function renderNotifTab(){
+          autoAcceptConnectionsIfPublic();
+          const ov = document.getElementById('overlay');
+          // Keep the list where the user had scrolled to; actions like
+          // accepting/declining a connection or marking things read
+          // shouldn't reset the view to the top.
+          const prevNotifScrollEl = ov.querySelector('.overflow-y-auto');
+          const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
+          ov.innerHTML = `
+            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
+              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction'))}
+              <div class="p-5">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+                  ${notifSelected.size ? `
+                    <div class="text-xs font-semibold text-[${NAVY}]">${notifSelected.size} selected</div>
+                    <button onclick="notifCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button>
+                  ` : `
+                    <div></div>
+                    <button onclick="markAllNotifsRead()" class="text-xs font-semibold text-amber-600">Mark all as read</button>
+                  `}
+                </div>
+                <div class="space-y-3">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
+              </div>
+            </div>`;
+          if (prevNotifScrollTop) {
+            const restoredNotifScrollEl = ov.querySelector('.overflow-y-auto');
+            if (restoredNotifScrollEl) restoredNotifScrollEl.scrollTop = prevNotifScrollTop;
+          }
+          attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), notifMenuOpen, 'toggleNotifMenu');
+        }
+
+        function notifCards(list, opts){
+          opts = opts || {};
+          const selectedSet = opts.selected || new Set();
+          const longPressFn = opts.longPressFn || 'notifLongPressSelect';
+          const tapFn = opts.tapFn || 'notifTap';
+          const selecting = selectedSet.size > 0;
+          return (list || notifData).map(n => {
+            const isSel = selectedSet.has(n.id);
+            return `
+            <div class="rounded-3xl p-4 flex items-start gap-3 ${isSel ? '' : (n.read ? 'bg-gray-50' : 'bg-amber-50')}"
+              style="${isSel ? `background:rgba(65,105,225,0.14);` : ''}"
+              onmousedown="startPress('${longPressFn}','${n.id}', event)" onmouseup="endPress()" onmouseleave="endPress()"
+              ontouchstart="startPress('${longPressFn}','${n.id}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
+              onclick="handleRowTap('${tapFn}','${n.id}')">
+              ${selecting ? `<div class="w-5 h-5 rounded-full border-2 ${isSel ? `bg-gradient-to-br from-[${ROYAL}] to-[${NAVY}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${isSel ? Icon('check','w-3.5 h-3.5 text-white') : ''}</div>` : ''}
+              <div class="w-10 h-10 ${n.iconBg} rounded-2xl flex items-center justify-center ${n.iconClass} flex-shrink-0">${Icon(n.icon,'w-5 h-5')}</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <div class="font-semibold text-sm ${n.read ? 'text-gray-500' : `text-[${NAVY}]`}">${escapeHtml(n.name)}</div>
+                  ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
+                </div>
+                <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} mt-0.5 leading-relaxed">${escapeHtml(n.message)}</div>
+                <div class="text-xs text-gray-400 mt-1">${n.time}</div>
+                ${n.type === 'connect_request' ? `
+                <div class="flex gap-2 mt-3">
+                  <button onclick="event.stopPropagation(); acceptConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-[${NAVY}]">Accept</button>
+                  <button onclick="event.stopPropagation(); declineConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Decline</button>
+                </div>` : ''}
+              </div>
+            </div>`;
+          }).join('');
+        }
+
+        function acceptConnection(id){
+          const n = notifData.find(x => x.id === id);
+          if (!n) return;
+          profileData.network += 1;
+          notifData.splice(notifData.indexOf(n), 1);
+          queueSaveUserState();
+          renderNotifTab();
+          if (currentTab === 4) renderProfile();
+        }
+
+        function declineConnection(id){
+          const n = notifData.find(x => x.id === id);
+          if (!n) return;
+          notifData.splice(notifData.indexOf(n), 1);
+          queueSaveUserState();
+          renderNotifTab();
+        }
+
+        // Applies pin / mark as read / block / delete to whichever notifData
+        // ids are currently selected, shared by Notice Board and Notifications.
+        function applyNotifAction(action, selectedSet, doneFn){
+          if (!selectedSet.size){
+            doneFn();
+            alert('Tap and hold a message to select it first.');
+            return;
+          }
+          const ids = Array.from(selectedSet);
+          if (action === 'delete'){
+            for (let i = notifData.length - 1; i >= 0; i--){
+              if (selectedSet.has(notifData[i].id)) notifData.splice(i, 1);
+            }
+          } else if (action === 'pin'){
+            ids.forEach(id => {
+              const n = notifData.find(x => x.id === id);
+              if (n) n.pinned = !n.pinned;
+            });
+            notifData.sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0));
+          } else if (action === 'read'){
+            ids.forEach(id => {
+              const n = notifData.find(x => x.id === id);
+              if (n) n.read = true;
+            });
+          } else if (action === 'block'){
+            const names = new Set(ids.map(id => { const n = notifData.find(x => x.id === id); return n && n.name; }));
+            names.forEach(name => { if (name) blockAccount(name); });
+            for (let i = notifData.length - 1; i >= 0; i--){
+              if (names.has(notifData[i].name)) notifData.splice(i, 1);
+            }
+          }
+          queueSaveUserState();
+          doneFn();
+        }
+
+        function handleNoticeAction(action){
+          noticeBoardMenuOpen = false;
+          applyNotifAction(action, noticeSelected, function(){
+            noticeSelected.clear();
+            renderClassAnnouncementsTab();
+            if (rightPanelMode === 'pinned') renderRightPanelBody();
+          });
+        }
+        function handleNotifAction(action){
+          notifMenuOpen = false;
+          applyNotifAction(action, notifSelected, function(){ notifSelected.clear(); renderNotifTab(); });
+        }
+
+        // ---------------- OVERLAY: Class Announcements ----------------
+        let noticeSelected = new Set();
+
+        function noticeLongPressSelect(id){
+          noticeSelected.add(id);
+          renderClassAnnouncementsTab();
+        }
+        function noticeTap(id){
+          if (noticeSelected.size){
+            if (noticeSelected.has(id)) noticeSelected.delete(id); else noticeSelected.add(id);
+            renderClassAnnouncementsTab();
+          }
+        }
+        function noticeCancelSelect(){
+          noticeSelected.clear();
+          renderClassAnnouncementsTab();
+        }
+
+        function renderClassAnnouncementsTab(){
+          const ov = document.getElementById('overlay');
+          const classroomNotifs = notifData.filter(n => n.source === 'classroom');
+          ov.innerHTML = `
+            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
+              ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction'))}
+              <div class="p-5">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+                  ${noticeSelected.size ? `
+                    <div class="text-xs font-semibold text-[${NAVY}]">${noticeSelected.size} selected</div>
+                    <button onclick="noticeCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button>
+                  ` : `
+                    <div></div>
+                    <button onclick="markAllNotifsRead()" class="text-xs font-semibold text-amber-600">Mark all as read</button>
+                  `}
+                </div>
+                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap' }) : '<div class="text-sm text-gray-400 text-center py-6">No class announcements yet.</div>'}</div>
+              </div>
+            </div>`;
+          attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), noticeBoardMenuOpen, 'toggleNoticeBoardMenu');
+        }
+
+        // Desktop right-panel view while Alerts is open: just the
+        // classroom announcements that have been pinned (tap-and-hold ->
+        // Pin from the Notice Board menu), same pin data as the full list.
+        function rightPanelPinnedHTML(){
+          const pinned = notifData.filter(n => n.source === 'classroom' && n.pinned);
+          if (!pinned.length) return `<div class="text-gray-400 text-sm text-center py-10 px-5">No pinned messages yet.</div>`;
+          return `<div class="p-5">${notifCards(pinned, { longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap' })}</div>`;
+        }
+
+        function markAllNotifsRead(){
+          notifData.forEach(n => { n.read = true; });
+          queueSaveUserState();
+          const badge = document.getElementById('notif-badge');
+          if (badge) badge.remove();
+          const sideBadge = document.getElementById('notif-badge-side');
+          if (sideBadge) sideBadge.remove();
+        }
+
+        // ---------------- OVERLAY: Gamification ----------------
+        // "This week's king of the Quiz" is derived live from whoever is
+        // actually #1 on `leaderboard` (updated in applyQuizRewards as
+        // real quizzes are played), instead of a fixed name/score that
+        // never moved even after you took the top spot.
+        function getQuizChampion(){
+          return leaderboard[0] || { name: '-', pts: 0 };
+        }
+
+        const subGames = [
+          { id:'wordHunt', icon:'search', title:'Word Hunt', tag:'Puzzle', img: GAME_IMG_wordHunt,
+            desc:"Tap the first and last letter of a hidden word to select it. Words can run across, down, or diagonally: find them all." },
+        ];
+
