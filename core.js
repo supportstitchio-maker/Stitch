@@ -1178,10 +1178,10 @@
        the safe-area inset), not a floating bubble -- a plain tap
        anywhere on it (other than the hang-up button) re-opens the call. -->
   <div id="call-minimized-banner" class="hidden" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top, 0px) + 10px);z-index:25;max-width:calc(42rem - 24px);margin:0 auto;">
-    <div onclick="resumeCall()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer" style="background:${NAVY};color:#fff;padding-left:10px;padding-right:10px;">
+    <div onclick="resumeCall()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer" style="background:rgba(10,37,64,0.42);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,0.16);color:#fff;padding-left:10px;padding-right:10px;">
       <span class="text-sm font-semibold flex-1 truncate">Call in progress</span>
       <span id="call-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">00:00</span>
-      <button onclick="event.stopPropagation();endCall()" title="End call" class="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+      <button onclick="event.stopPropagation();endCall()" title="End call" class="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center flex-shrink-0">
         ${Icon('phoneHangup','w-3.5 h-3.5')}
       </button>
     </div>
