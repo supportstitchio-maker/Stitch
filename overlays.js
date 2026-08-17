@@ -79,6 +79,20 @@
           modalBackStack.push(closeFn);
           history.pushState({ stitchModal: modalBackStack.length }, '');
         }
+        // Set right before we trigger our own history.back() call below, so
+        // the popstate event that call produces (async -- it doesn't fire
+        // until a moment later) can be told apart from a *real* press of
+        // the phone/browser back button. Without this: closing a modal that
+        // was itself opened on top of another already-open modal -- e.g.
+        // the Photo Crop screen opened from within Edit Profile -- would
+        // pop its own entry immediately, but then this function's own
+        // history.back() call would surface as a popstate event with the
+        // *next* modal down (Edit Profile) now sitting on top of the
+        // stack, so the popstate listener incorrectly treated it as a back
+        // press for THAT modal and closed it too, discarding the edit and
+        // dropping the person back on the profile page -- from a save
+        // action, not an actual back press.
+        let suppressNextPopstate = false;
         // Called from inside a modal's own close function -- whether
         // that's reached via its Cancel/X/backdrop tap, a Confirm action,
         // or the hardware back button -- so the history entry it pushed
@@ -88,7 +102,10 @@
         function popModalBackHandler(fromPopState){
           if (!modalBackStack.length) return;
           modalBackStack.pop();
-          if (!fromPopState) history.back();
+          if (!fromPopState) {
+            suppressNextPopstate = true;
+            history.back();
+          }
         }
 
         // ---- Paystack popup back-button handling ----
@@ -749,6 +766,12 @@
         // arrow does (return to a live call, decline a ring, leave a
         // lecture) instead of a flat close.
         window.addEventListener('popstate', function(){
+          // This popstate is just the async echo of a history.back() we
+          // triggered ourselves from popModalBackHandler (e.g. confirming
+          // the Photo Crop screen while Edit Profile sits underneath it) --
+          // already handled synchronously when it was triggered, so this
+          // event isn't a real back-button press and should do nothing.
+          if (suppressNextPopstate) { suppressNextPopstate = false; return; }
           if (modalBackStack.length) {
             const closeFn = modalBackStack[modalBackStack.length - 1];
             if (closeFn) closeFn(true);

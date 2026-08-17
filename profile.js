@@ -872,14 +872,18 @@
         // "Stitch" is the app/brand name and is reserved -- nobody may set
         // it as their username OR their full name (in any casing/spacing/
         // punctuation variant: "Stitch", "STITCH", "stitch_", "Stitch.",
-        // " stitch " all normalize to the same reserved word below).
-        // Reduces down to only letters/digits so a stray separator can't
-        // sneak the reserved word past the check.
+        // " stitch " all normalize to the same reserved word below), and
+        // not just as the *whole* field either -- "festus_stitch" or
+        // "Stitch Nkrumah" are blocked too, since either still presents
+        // the person as "Stitch" in a way that's easy to mistake for the
+        // app itself. Reduces down to only letters/digits first so a
+        // stray separator can't split the reserved word and sneak it past
+        // a plain .includes() check.
         function normalizeIdentityValue(value){
           return (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
         }
         function isReservedStitchIdentity(value){
-          return normalizeIdentityValue(value) === 'stitch';
+          return normalizeIdentityValue(value).includes('stitch');
         }
 
         function editProfileHTML(){
