@@ -1,4 +1,4 @@
-        const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
+const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
         let selectMode = false;
         let selectedConvos = new Set();
         let inboxMenuOpen = false;
@@ -1618,13 +1618,30 @@
         function handleIncomingMessageDelete(row){
           if (!row) return;
           const convoId = row.convo_id;
-          const msgs = conversationMessages[convoId];
-          if (!msgs) return;
-          const idx = msgs.findIndex(m => (row.local_id && m.localId === row.local_id) || (row.id != null && m.id === row.id));
-          if (idx === -1) return;
-          msgs.splice(idx, 1);
-          refreshConvoLogIfOpen(convoId);
-          queueSaveUserState();
+          if (convoId && conversationMessages[convoId]) {
+            const msgs = conversationMessages[convoId];
+            const idx = msgs.findIndex(m => (row.local_id && m.localId === row.local_id) || (row.id != null && m.id === row.id));
+            if (idx !== -1) {
+              msgs.splice(idx, 1);
+              refreshConvoLogIfOpen(convoId);
+              queueSaveUserState();
+              return;
+            }
+          }
+          // Realtime DELETE payloads only include the primary key unless the messages
+          // table has REPLICA IDENTITY FULL, so convo_id can be missing here -- fall
+          // back to searching every loaded conversation by message id.
+          if (row.id == null) return;
+          for (const cid in conversationMessages) {
+            const msgs = conversationMessages[cid];
+            const idx = msgs.findIndex(m => m.id === row.id);
+            if (idx !== -1) {
+              msgs.splice(idx, 1);
+              refreshConvoLogIfOpen(cid);
+              queueSaveUserState();
+              return;
+            }
+          }
         }
 
         function handleMessageReadUpdate(row){
@@ -2961,10 +2978,10 @@
         // ---- Media attachment rendering in bubbles ----
         function convoVoiceNoteHTML(voice, mine, m){
           const uid = 'voice-' + Math.random().toString(36).slice(2, 9);
-          const chipBg = mine ? 'rgba(255,255,255,0.16)' : 'rgba(65,105,225,0.10)';
-          const iconBg = mine ? 'rgba(255,255,255,0.25)' : 'rgba(65,105,225,0.16)';
-          const fg = mine ? '#ffffff' : NAVY;
-          const durationColor = mine ? 'rgba(255,255,255,0.85)' : NAVY;
+          const chipBg = '#ffffff';
+          const iconBg = '#e5e7eb';
+          const fg = NAVY;
+          const durationColor = '#6b7280';
           const onplay = (!mine && m && m.id != null) ? ` onplay="markVoiceMessageAsPlayed('${activeConvoId}','${m.id}')"` : '';
           // Explicit options button: native <audio> controls swallow long-press taps.
           const pressKey = (m && m.time != null) ? `${activeConvoId}|${m.time}` : '';
@@ -2972,7 +2989,7 @@
           return `
             <div class="flex items-center gap-2 rounded-2xl px-2.5 py-1.5" style="background:${chipBg};width:fit-content;max-width:230px;">
               <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:${iconBg};color:${fg};">${Icon('mic','w-3.5 h-3.5')}</div>
-              <audio id="${uid}" controls preload="none" src="${voice.src}"${onplay} style="height:32px;max-width:150px;flex:1;" onerror="document.getElementById('${uid}').outerHTML='<span class=&quot;text-xs italic ${mine ? 'text-white/80' : 'text-gray-400'}&quot;>Couldn\'t load voice note</span>'"></audio>
+              <audio id="${uid}" controls preload="none" src="${voice.src}"${onplay} style="height:32px;max-width:150px;flex:1;" onerror="document.getElementById('${uid}').outerHTML='<span class=&quot;text-xs italic text-gray-400&quot;>Couldn\'t load voice note</span>'"></audio>
               <span class="text-xs flex-shrink-0" style="color:${durationColor};">${formatCallTime(voice.duration)}</span>
               ${optionsBtn}
             </div>`;
