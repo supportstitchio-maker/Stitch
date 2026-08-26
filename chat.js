@@ -2855,8 +2855,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                    ${convoReadTicksHTML(m)}
                  </div>`
               : `<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div>`;
+            // Voice notes need an actual (not shrink-wrapped) width to expand into, or width:100% on the bubble has nothing to fill against.
+            const contentWidthStyle = m.voice ? 'width:75%;' : 'max-width:75%;';
             const content = `
-              <div class="flex flex-col ${mine ? 'items-end' : 'items-start'} gap-1" style="max-width:75%;">
+              <div class="flex flex-col ${mine ? 'items-end' : 'items-start'} gap-1" style="${contentWidthStyle}">
                 ${imagesHTML}
                 ${videosHTML}
                 ${voiceHTML}
@@ -2988,7 +2990,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const n = Math.abs(Math.sin(seed + i * 12.9898) * 43758.5453);
             const frac = n - Math.floor(n);
             const h = 5 + Math.round(frac * 13); // 5-18px tall
-            bars += `<div style="width:2.5px;height:${h}px;border-radius:2px;background:${barColor};flex-shrink:0;"></div>`;
+            // flex:1 (not a fixed px width) so the bars stretch to fill however much space the wave column ends up with
+            bars += `<div style="flex:1;min-width:1.5px;height:${h}px;border-radius:2px;background:${barColor};"></div>`;
           }
           return bars;
         }
@@ -3006,7 +3009,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
           const barCount = 24;
           const seed = voiceNoteSeed(voice.src || uid);
-          const waveWidth = barCount * 5; // 2.5px bar + 2.5px gap
           const bgBars = voiceWaveBarsHTML(seed, barCount, waveBg);
           const fgBars = voiceWaveBarsHTML(seed, barCount, waveFg);
 
@@ -3014,14 +3016,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const pressKey = (m && m.time != null) ? `${activeConvoId}|${m.time}` : '';
           const optionsBtn = pressKey ? `<button type="button" onclick="event.stopPropagation(); messageLongPress('${pressKey}')" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="color:${subColor};" aria-label="Message options">${Icon('dots','w-3.5 h-3.5')}</button>` : '';
 
+          // width:100% -- the note now fills the chat column (see contentWidthStyle in convoLogHTML) instead of
+          // shrink-wrapping to a fixed 240px, so a 3s clip and a 3min clip both use the same, non-crowded space.
           return `
-            <div class="flex items-center gap-2 rounded-2xl px-3 py-2" id="voicewrap-${uid}" style="background:${bubbleBg};width:fit-content;max-width:240px;">
+            <div class="flex items-center gap-2 rounded-2xl px-3 py-2" id="voicewrap-${uid}" style="background:${bubbleBg};width:100%;">
               <button type="button" onclick="event.stopPropagation(); toggleVoiceNotePlayback('${uid}')" id="playbtn-${uid}" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${playBtnBg};color:${playBtnColor};" aria-label="Play voice note">${Icon('play','w-3.5 h-3.5 ml-0.5')}</button>
-              <div class="relative flex-shrink-0" style="width:${waveWidth}px;height:20px;cursor:pointer;" onclick="event.stopPropagation(); seekVoiceNote(event, '${uid}')">
-                <div class="absolute inset-0 flex items-center gap-[2.5px]">${bgBars}</div>
-                <div id="wavefg-${uid}" class="absolute inset-0 flex items-center gap-[2.5px] overflow-hidden" style="width:0%;">
-                  <div class="flex items-center gap-[2.5px]" style="width:${waveWidth}px;">${fgBars}</div>
-                </div>
+              <div class="relative flex-1 min-w-0" style="height:20px;cursor:pointer;" onclick="event.stopPropagation(); seekVoiceNote(event, '${uid}')">
+                <div class="absolute inset-0 flex items-center gap-[2px]">${bgBars}</div>
+                <div id="wavefg-${uid}" class="absolute inset-0 flex items-center gap-[2px]" style="clip-path:inset(0 100% 0 0);">${fgBars}</div>
               </div>
               <span id="dur-${uid}" class="text-[11px] flex-shrink-0" style="color:${subColor};">${formatCallTime(voice.duration)}</span>
               <audio id="${uid}" class="convo-voice-audio" preload="none" src="${voice.src}" style="display:none;"
@@ -3059,7 +3061,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function onVoiceNoteEnded(uid){
           onVoiceNotePause(uid);
           const fg = document.getElementById('wavefg-' + uid);
-          if (fg) fg.style.width = '0%';
+          if (fg) fg.style.clipPath = 'inset(0 100% 0 0)';
           const audio = document.getElementById(uid);
           const durEl = document.getElementById('dur-' + uid);
           if (durEl) durEl.textContent = formatCallTime(audio && isFinite(audio.duration) ? audio.duration : 0);
@@ -3070,9 +3072,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!audio) return;
           const dur = (audio.duration && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : fallbackDuration;
           const fg = document.getElementById('wavefg-' + uid);
-          if (fg && dur > 0) fg.style.width = Math.min(100, (audio.currentTime / dur) * 100) + '%';
+          if (fg && dur > 0) {
+            const pct = Math.min(100, (audio.currentTime / dur) * 100);
+            fg.style.clipPath = `inset(0 ${100 - pct}% 0 0)`; // reveal the played bars from the left, whatever width the wave column happens to be
+          }
           const durEl = document.getElementById('dur-' + uid);
-          if (durEl) durEl.textContent = formatCallTime(Math.max(0, dur - audio.currentTime));
+          if (durEl) durEl.textContent = formatCallTime(Math.max(0, dur - audio.currentTime)); // formatCallTime floors internally, so this always reads whole seconds
         }
 
         function seekVoiceNote(evt, uid){
@@ -3614,6 +3619,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function formatCallTime(total){
+          total = Math.max(0, Math.floor(Number(total) || 0)); // whole seconds only -- fractional input (e.g. audio.currentTime) must never leak milliseconds into the label
           const m = Math.floor(total / 60).toString().padStart(2,'0');
           const s = (total % 60).toString().padStart(2,'0');
           return `${m}:${s}`;
