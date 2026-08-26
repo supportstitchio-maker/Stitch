@@ -1660,6 +1660,30 @@
               feedPosts.push({ ...row.data, id: row.data.id ?? id, mine: isMine, authorId: row.created_by, connected: isMine ? true : !!row.data.connected, photo: isMine ? row.data.photo : (photoById[row.created_by] || null) });
               knownIds.add(id);
             });
+            // Catch up on tags made while this device was offline/closed: the realtime handler below only fires
+            // for someone who was already connected at the exact moment they were tagged, so anything posted in
+            // between sessions would otherwise never surface. Every freshly-fetched row gets checked here too.
+            if (me && typeof addNotif === 'function') {
+              newRows.forEach(row => {
+                if (row.created_by === me.id) return;
+                const taggedUsers = Array.isArray(row.data && row.data.taggedUsers) ? row.data.taggedUsers : [];
+                if (!taggedUsers.some(t => t && String(t.id) === String(me.id))) return;
+                const name = row.data.name || 'Someone in your network';
+                addNotif({
+                  id: 'tag-' + row.id,
+                  type: 'tag',
+                  source: 'network',
+                  icon: 'users',
+                  iconBg: 'bg-blue-50',
+                  iconClass: 'text-blue-600',
+                  name,
+                  message: `${name} tagged you in a post`,
+                  otherUserId: row.created_by,
+                  postId: row.data.id,
+                  createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+                });
+              });
+            }
             feedPosts.sort((a, b) => Number(b.id) - Number(a.id));
             rankFeedPosts();
             return newRows.length > 0 || postsWereRemoved;
