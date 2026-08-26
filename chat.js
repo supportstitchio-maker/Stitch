@@ -2100,11 +2100,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div style="flex:1;"></div>
               <div class="flex-shrink-0 flex items-center justify-center" style="gap:64px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 32px);">
                 <button onclick="declineIncomingCall()" title="Decline" class="flex flex-col items-center gap-2">
-                  <div class="rounded-full flex items-center justify-center shadow-lg" style="width:56px;height:56px;background:#ef4444;">${Icon('phoneHangup','w-6 h-6 text-white')}</div>
+                  <div class="call-decline-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('phoneHangup','w-6 h-6 text-white')}</div>
                   <div class="text-xs text-gray-600">Decline</div>
                 </button>
                 <button onclick="acceptIncomingCall()" title="Accept" class="flex flex-col items-center gap-2">
-                  <div class="rounded-full flex items-center justify-center shadow-lg" style="width:56px;height:56px;background:#10b981;">${Icon(isVideo ? 'video' : 'phoneOutline','w-6 h-6 text-white')}</div>
+                  <div class="call-accept-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon(isVideo ? 'video' : 'phoneOutline','w-6 h-6 text-white')}</div>
                   <div class="text-xs text-gray-600">Accept</div>
                 </button>
               </div>
