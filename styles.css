@@ -892,6 +892,29 @@
         @media (max-width: 1023px) {
           #desktop-right-panel { display: none !important; }
         }
+        /* ---- Call action buttons (end / decline / accept) ----
+           Soft halo rings behind the icon, matching the classic
+           red "end call" / green "answer" glyph treatment. The
+           accept button also gets a gentle ringing pulse so it
+           reads as "incoming" while the screen is up. */
+        .call-end-icon-btn{
+          background:#ef4444;
+          box-shadow:0 0 0 6px rgba(239,68,68,0.16), 0 0 0 12px rgba(239,68,68,0.08);
+        }
+        .call-decline-icon-btn{
+          background:#ef4444;
+          box-shadow:0 0 0 8px rgba(239,68,68,0.16), 0 0 0 16px rgba(239,68,68,0.08);
+        }
+        .call-accept-icon-btn{
+          background:#10b981;
+          box-shadow:0 0 0 8px rgba(16,185,129,0.18), 0 0 0 16px rgba(16,185,129,0.09);
+          animation:callAcceptPulse 1.6s ease-out infinite;
+        }
+        @keyframes callAcceptPulse{
+          0%{ box-shadow:0 0 0 0 rgba(16,185,129,0.45), 0 0 0 8px rgba(16,185,129,0.18); }
+          70%{ box-shadow:0 0 0 14px rgba(16,185,129,0), 0 0 0 26px rgba(16,185,129,0); }
+          100%{ box-shadow:0 0 0 14px rgba(16,185,129,0), 0 0 0 26px rgba(16,185,129,0); }
+        }
         :root {
           --nav-width: 210px;
         }
