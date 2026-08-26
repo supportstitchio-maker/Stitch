@@ -2976,23 +2976,117 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Media attachment rendering in bubbles ----
+        function voiceNoteSeed(str){
+          let h = 0;
+          for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+          return h % 1000;
+        }
+
+        function voiceWaveBarsHTML(seed, count, barColor){
+          let bars = '';
+          for (let i = 0; i < count; i++){
+            const n = Math.abs(Math.sin(seed + i * 12.9898) * 43758.5453);
+            const frac = n - Math.floor(n);
+            const h = 5 + Math.round(frac * 13); // 5-18px tall
+            bars += `<div style="width:2.5px;height:${h}px;border-radius:2px;background:${barColor};flex-shrink:0;"></div>`;
+          }
+          return bars;
+        }
+
         function convoVoiceNoteHTML(voice, mine, m){
           const uid = 'voice-' + Math.random().toString(36).slice(2, 9);
-          const chipBg = '#ffffff';
-          const iconBg = '#e5e7eb';
-          const fg = NAVY;
-          const durationColor = '#6b7280';
-          const onplay = (!mine && m && m.id != null) ? ` onplay="markVoiceMessageAsPlayed('${activeConvoId}','${m.id}')"` : '';
-          // Explicit options button: native <audio> controls swallow long-press taps.
+          // Sent notes echo the outgoing text-bubble treatment; received notes stay light -- so the two are easy to tell apart at a glance.
+          const bubbleBg = mine ? 'linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35))' : '#f3f4f6';
+          const subColor = mine ? 'rgba(255,255,255,0.8)' : '#6b7280';
+          const waveBg = mine ? 'rgba(255,255,255,0.4)' : '#d1d5db';
+          const waveFg = mine ? '#ffffff' : NAVY;
+          const playBtnBg = mine ? 'rgba(255,255,255,0.22)' : '#ffffff';
+          const playBtnColor = mine ? '#ffffff' : NAVY;
+          const markPlayedCall = (!mine && m && m.id != null) ? `markVoiceMessageAsPlayed('${activeConvoId}','${m.id}');` : '';
+
+          const barCount = 24;
+          const seed = voiceNoteSeed(voice.src || uid);
+          const waveWidth = barCount * 5; // 2.5px bar + 2.5px gap
+          const bgBars = voiceWaveBarsHTML(seed, barCount, waveBg);
+          const fgBars = voiceWaveBarsHTML(seed, barCount, waveFg);
+
+          // Explicit options button: a custom player still needs its own long-press affordance.
           const pressKey = (m && m.time != null) ? `${activeConvoId}|${m.time}` : '';
-          const optionsBtn = pressKey ? `<button type="button" onclick="event.stopPropagation(); messageLongPress('${pressKey}')" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="color:${durationColor};" aria-label="Message options">${Icon('dots','w-3.5 h-3.5')}</button>` : '';
+          const optionsBtn = pressKey ? `<button type="button" onclick="event.stopPropagation(); messageLongPress('${pressKey}')" class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="color:${subColor};" aria-label="Message options">${Icon('dots','w-3.5 h-3.5')}</button>` : '';
+
           return `
-            <div class="flex items-center gap-2 rounded-2xl px-2.5 py-1.5" style="background:${chipBg};width:fit-content;max-width:230px;">
-              <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:${iconBg};color:${fg};">${Icon('mic','w-3.5 h-3.5')}</div>
-              <audio id="${uid}" controls preload="none" src="${voice.src}"${onplay} style="height:32px;max-width:150px;flex:1;" onerror="document.getElementById('${uid}').outerHTML='<span class=&quot;text-xs italic text-gray-400&quot;>Couldn\'t load voice note</span>'"></audio>
-              <span class="text-xs flex-shrink-0" style="color:${durationColor};">${formatCallTime(voice.duration)}</span>
+            <div class="flex items-center gap-2 rounded-2xl px-3 py-2" id="voicewrap-${uid}" style="background:${bubbleBg};width:fit-content;max-width:240px;">
+              <button type="button" onclick="event.stopPropagation(); toggleVoiceNotePlayback('${uid}')" id="playbtn-${uid}" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${playBtnBg};color:${playBtnColor};" aria-label="Play voice note">${Icon('play','w-3.5 h-3.5 ml-0.5')}</button>
+              <div class="relative flex-shrink-0" style="width:${waveWidth}px;height:20px;cursor:pointer;" onclick="event.stopPropagation(); seekVoiceNote(event, '${uid}')">
+                <div class="absolute inset-0 flex items-center gap-[2.5px]">${bgBars}</div>
+                <div id="wavefg-${uid}" class="absolute inset-0 flex items-center gap-[2.5px] overflow-hidden" style="width:0%;">
+                  <div class="flex items-center gap-[2.5px]" style="width:${waveWidth}px;">${fgBars}</div>
+                </div>
+              </div>
+              <span id="dur-${uid}" class="text-[11px] flex-shrink-0" style="color:${subColor};">${formatCallTime(voice.duration)}</span>
+              <audio id="${uid}" class="convo-voice-audio" preload="none" src="${voice.src}" style="display:none;"
+                onplay="onVoiceNotePlay('${uid}'); ${markPlayedCall}"
+                onpause="onVoiceNotePause('${uid}')"
+                onended="onVoiceNoteEnded('${uid}')"
+                ontimeupdate="onVoiceNoteTimeUpdate('${uid}', ${voice.duration || 0})"
+                onerror="voiceNoteLoadError('${uid}')"
+              ></audio>
               ${optionsBtn}
             </div>`;
+        }
+
+        function toggleVoiceNotePlayback(uid){
+          const audio = document.getElementById(uid);
+          if (!audio) return;
+          if (audio.paused){
+            document.querySelectorAll('audio.convo-voice-audio').forEach(a => { if (a.id !== uid && !a.paused) a.pause(); });
+            audio.play().catch(()=>{});
+          } else {
+            audio.pause();
+          }
+        }
+
+        function onVoiceNotePlay(uid){
+          const btn = document.getElementById('playbtn-' + uid);
+          if (btn) btn.innerHTML = Icon('pause', 'w-3.5 h-3.5');
+        }
+
+        function onVoiceNotePause(uid){
+          const btn = document.getElementById('playbtn-' + uid);
+          if (btn) btn.innerHTML = Icon('play', 'w-3.5 h-3.5 ml-0.5');
+        }
+
+        function onVoiceNoteEnded(uid){
+          onVoiceNotePause(uid);
+          const fg = document.getElementById('wavefg-' + uid);
+          if (fg) fg.style.width = '0%';
+          const audio = document.getElementById(uid);
+          const durEl = document.getElementById('dur-' + uid);
+          if (durEl) durEl.textContent = formatCallTime(audio && isFinite(audio.duration) ? audio.duration : 0);
+        }
+
+        function onVoiceNoteTimeUpdate(uid, fallbackDuration){
+          const audio = document.getElementById(uid);
+          if (!audio) return;
+          const dur = (audio.duration && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : fallbackDuration;
+          const fg = document.getElementById('wavefg-' + uid);
+          if (fg && dur > 0) fg.style.width = Math.min(100, (audio.currentTime / dur) * 100) + '%';
+          const durEl = document.getElementById('dur-' + uid);
+          if (durEl) durEl.textContent = formatCallTime(Math.max(0, dur - audio.currentTime));
+        }
+
+        function seekVoiceNote(evt, uid){
+          const audio = document.getElementById(uid);
+          if (!audio) return;
+          const rect = evt.currentTarget.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (evt.clientX - rect.left) / rect.width));
+          const dur = (audio.duration && isFinite(audio.duration)) ? audio.duration : 0;
+          if (dur > 0) audio.currentTime = ratio * dur;
+        }
+
+        function voiceNoteLoadError(uid){
+          const wrap = document.getElementById('voicewrap-' + uid);
+          if (wrap) wrap.innerHTML = '<span class="text-xs italic text-gray-400">Couldn\'t load voice note</span>';
         }
 
         function convoImageAttachmentsHTML(images){
