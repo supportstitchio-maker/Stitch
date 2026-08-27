@@ -1206,9 +1206,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             });
             connectionRequestsLoaded = true;
             renderInboxTab();
-            if (typeof appPrefs !== 'undefined' && appPrefs.accountPrivacy === 'Public' && typeof autoAcceptConnectionsIfPublic === 'function') {
-              autoAcceptConnectionsIfPublic();
-            }
+            // Accounts are always private now, so incoming connection
+            // requests always sit here until manually accepted (see
+            // acceptRequest) -- nothing is auto-accepted.
           } catch (e) { console.warn('Loading incoming connection requests failed:', e); }
         }
 
