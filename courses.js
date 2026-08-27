@@ -1,4 +1,4 @@
-        try {
+try {
           if (typeof mermaid !== 'undefined') {
             mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', fontFamily: 'inherit' });
           }
@@ -1052,11 +1052,25 @@
           });
         }
 
+        function attachmentSummaryText(attachments){
+          if (!Array.isArray(attachments) || !attachments.length) return '';
+          const imgs = attachments.filter(f => f && f.type && f.type.startsWith('image/'));
+          const others = attachments.filter(f => !imgs.includes(f));
+          const parts = [];
+          if (imgs.length) parts.push(`[sent ${imgs.length > 1 ? imgs.length + ' images' : 'an image'}${imgs[0] && imgs[0].name ? ` (${imgs.map(f => f.name).join(', ')})` : ''}]`);
+          if (others.length) parts.push(`[sent file(s): ${others.map(f => f.name).join(', ')}]`);
+          return parts.join(' ');
+        }
+
         function buildAIChatMemory(){
           const priorTurns = aiChatMessages.slice(0, -2);
           const recentTurns = priorTurns.slice(-12)
-            .filter(m => m.text)
-            .map(m => `${m.role === 'user' ? 'Student' : 'Stitch Bot'}: ${m.text}`)
+            .filter(m => m.text || (m.attachments && m.attachments.length))
+            .map(m => {
+              const attSummary = attachmentSummaryText(m.attachments);
+              const combined = [attSummary, m.text].filter(Boolean).join(' ');
+              return `${m.role === 'user' ? 'Student' : 'Stitch Bot'}: ${combined}`;
+            })
             .join('\n');
           const pastSessions = aiChatSessions
             .filter(s => s.summary && s.summary !== 'New chat')
@@ -1074,9 +1088,36 @@
           return IMAGE_REQUEST_RE.test(text || '');
         }
 
+        // Matches phrases like "the screenshot I sent", "that image", "the picture I uploaded", etc.,
+        // so we know the student is referring back to an image from earlier in the chat.
+        const PAST_IMAGE_REFERENCE_RE = /\b(screenshot|screen ?shot|the (image|picture|photo|pic)|that (image|picture|photo|pic)|(i|I) (sent|uploaded|attached|shared)|sent (you|earlier)|uploaded (it|that|earlier))\b/i;
+        function referencesPastImage(text){
+          return PAST_IMAGE_REFERENCE_RE.test(text || '');
+        }
+
+        // Looks back through the conversation (skipping the current turn's user message and
+        // "thinking" placeholder, which is why we start at length - 3) for the most recent
+        // message that had real image attachments still in memory this session, so the
+        // student can ask a follow-up about a screenshot without re-uploading it every time.
+        function findRecentImageAttachments(){
+          for (let i = aiChatMessages.length - 3; i >= 0; i--) {
+            const m = aiChatMessages[i];
+            if (m && m.role === 'user' && Array.isArray(m.attachments) && m.attachments.length) {
+              const imgs = m.attachments.filter(f => f && f.type && f.type.startsWith('image/') && (f instanceof Blob));
+              if (imgs.length) return imgs;
+            }
+          }
+          return [];
+        }
+
         async function getAIResponse(text, attachments, viaVoice){
           const docs = (attachments || []).filter(f => /\.(pdf|docx|pptx)$/i.test(f.name));
-          const images = (attachments || []).filter(f => !docs.includes(f) && f.type && f.type.startsWith('image/'));
+          let images = (attachments || []).filter(f => !docs.includes(f) && f.type && f.type.startsWith('image/'));
+          let usingPastImage = false;
+          if (!images.length && referencesPastImage(text)) {
+            const pastImages = findRecentImageAttachments();
+            if (pastImages.length) { images = pastImages; usingPastImage = true; }
+          }
           let ackLine = '';
           if (docs.length) {
             const names = docs.map(f => f.name).join(', ');
@@ -1120,7 +1161,8 @@
               (context ? '\n\nExcerpts from the student\'s uploaded resources:\n' + context : '\n\nThe student has not uploaded any resources yet.') +
               buildAIChatMemory();
             const imagePayload = await Promise.all(images.map(async f => ({ mediaType: f.type || 'image/jpeg', data: await fileToBase64(f) })));
-            const prompt = text || (images.length > 1 ? 'Take a look at these images and tell me what you notice, or help with what is shown.' : 'Take a look at this image and tell me what you notice, or help with what is shown.');
+            let prompt = text || (images.length > 1 ? 'Take a look at these images and tell me what you notice, or help with what is shown.' : 'Take a look at this image and tell me what you notice, or help with what is shown.');
+            if (usingPastImage) prompt += '\n\n(Re-attaching the image the student sent earlier in this chat so you can look at it again.)';
             const reply = await callClaude(system, prompt, 'chat', imagePayload);
             return { text: ackLine + (reply || fallbackAIResponse(text)) };
           } catch (err) {
@@ -6603,4 +6645,3 @@
           const end = new Date(start.getTime() + 60 * 60000);
           downloadICS(r.type + ': ' + r.title, start, end);
         }
-
