@@ -1,4 +1,4 @@
-        const PUBLIC_PROFILES_TABLE = 'public_profiles';
+const PUBLIC_PROFILES_TABLE = 'public_profiles';
         const CONNECTION_REQUESTS_TABLE = 'connection_requests';
 
         async function syncPublicProfile(){
@@ -737,7 +737,7 @@
 
             <div class="flex gap-3">
               <button onclick="discardEditProfileChanges()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border" style="color:#dc2626;border-color:rgba(220,38,38,0.25);background-image:linear-gradient(135deg, rgba(220,38,38,0.16) 0%, rgba(220,38,38,0.03) 100%);">Cancel</button>
-              <button onclick="saveEditProfile()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.12);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">Save Changes</button>
+              <button onclick="saveEditProfile()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">Save Changes</button>
             </div>`;
         }
 
@@ -1109,7 +1109,7 @@
           return `
             <div class="mb-5">
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${title}</div>
-              <div class="rounded-2xl border border-gray-100 divide-y px-4" style="background-image:linear-gradient(135deg, rgba(30,144,255,0.07) 0%, rgba(65,105,225,0.07) 100%);background-color:#ffffff;">${rowsHtml}</div>
+              <div class="rounded-2xl divide-y px-4" style="border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${rowsHtml}</div>
             </div>`;
         }
 
@@ -1135,29 +1135,6 @@
             </div>`;
         }
 
-        function settingsPrivacyRow(){
-          return `
-            <div class="py-3">
-              <div onclick="toggleAccountPrivacyMenu()" class="w-full flex items-center gap-3 cursor-pointer">
-                <div class="w-9 h-9 flex items-center justify-center text-[#1e90ff] flex-shrink-0">${Icon('lock','w-4 h-4')}</div>
-                <div class="flex-1 min-w-0">
-                  <div class="text-[15px] text-gray-900">Account privacy</div>
-                  <div class="text-xs text-gray-400 mt-0.5">${appPrefs.accountPrivacy}</div>
-                </div>
-                <div class="relative flex-shrink-0" style="color:${NAVY}">
-                  ${Icon('chevronDown','w-4 h-4')}
-                  ${accountPrivacyMenuOpen ? `
-                    <div onclick="event.stopPropagation(); toggleAccountPrivacyMenu()" style="position:fixed;inset:0;z-index:30;"></div>
-                    <div onclick="event.stopPropagation()" class="bg-white rounded-2xl border border-gray-100 py-2 text-left" style="position:absolute;right:0;top:100%;margin-top:0.5rem;width:9rem;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,.14);">
-                      <button onclick="setAccountPrivacy('Public')" class="w-full text-left px-4 py-2.5 text-sm ${appPrefs.accountPrivacy==='Public' ? `font-semibold text-[${NAVY}]` : 'text-gray-700'}">Public</button>
-                      <button onclick="setAccountPrivacy('Private')" class="w-full text-left px-4 py-2.5 text-sm ${appPrefs.accountPrivacy==='Private' ? `font-semibold text-[${NAVY}]` : 'text-gray-700'}">Private</button>
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            </div>`;
-        }
-
         // ---- Referrals screen ----
         function buildReferralInviteLink(code){
           return window.location.origin + window.location.pathname + '?ref=' + encodeURIComponent(code || referralCode || '');
@@ -1165,7 +1142,7 @@
 
         function referralStatCard(value, label){
           return `
-            <div class="flex-1 rounded-2xl py-4 text-center" style="background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
+            <div class="flex-1 rounded-2xl py-4 text-center" style="border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
               <div class="text-xl font-bold font-display" style="color:${NAVY};">${value}</div>
               <div class="text-[11px] text-gray-500 mt-0.5">${label}</div>
             </div>`;
@@ -1190,17 +1167,17 @@
                 </div>
 
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your referral code</div>
-                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:14px 16px;background:rgba(65,105,225,0.10); border:1px solid rgba(65,105,225,0.25);">
+                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:14px 16px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
                   <span class="flex-1 text-lg font-bold tracking-widest" style="color:${NAVY};">${escapeHtml(code)}</span>
-                  <button onclick="copyReferralCode()" class="flex-shrink-0 p-2 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
+                  <button onclick="copyReferralCode()" class="flex-shrink-0 p-2 rounded-full" style="color:${NAVY};border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${Icon('copy','w-4 h-4')}</button>
                 </div>
 
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your referral link</div>
-                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:12px 14px;background:rgba(65,105,225,0.10); border:1px solid rgba(65,105,225,0.25);">
+                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:12px 14px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
                   <span class="flex-1 text-sm font-semibold truncate" style="color:${NAVY};">${escapeHtml(link)}</span>
-                  <button onclick="copyReferralLink()" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
+                  <button onclick="copyReferralLink()" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${Icon('copy','w-4 h-4')}</button>
                 </div>
-                <button onclick="shareReferralLink()" class="w-full rounded-2xl font-bold text-center mb-5" style="padding-top:11px;padding-bottom:11px;background:rgba(65,105,225,0.12); color:${NAVY};">Share invite link</button>
+                <button onclick="shareReferralLink()" class="w-full rounded-2xl font-bold text-center mb-5" style="padding-top:11px;padding-bottom:11px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;color:${NAVY};">Share invite link</button>
 
                 <div class="text-xs text-gray-400 leading-relaxed">Share your code or link with a friend. When they register with it, you earn 1 point as a thank-you reward.</div>
               </div>
@@ -1392,23 +1369,19 @@
               ${overlayHeader('Settings and activity', '20px')}
               <div class="p-5">
               ${settingsSection('Your account', `
+                ${settingsRow('chart','Your activity', null, "openOverlayFrom('profileMenu','profileAnalytics')")}
                 ${settingsRow('bookmark','Saved', null, "openSavedItems('posts')")}
                 ${settingsRow('close','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
-                ${settingsPrivacyRow()}
+                ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}
-              ${settingsSection('Activity', `
-                ${settingsRow('chart','Your activity', null, "openOverlayFrom('profileMenu','profileAnalytics')")}
-              `)}
-              ${settingsSection('Referrals', `
-                ${settingsRow('gift','Referrals', referralProfileLoaded ? `${referralPoints} point${referralPoints===1?'':'s'} earned` : 'Invite friends, earn points', "openOverlayFrom('profileMenu','referrals')")}
-              `)}
+              <!-- Referrals hidden for now -- settingsSection('Referrals', ...) with
+                   settingsRow('gift','Referrals', ...) removed from the list below.
+                   referralsHTML()/loadReferralProfile() are left intact so this can
+                   be turned back on later by re-adding the section. -->
               ${settingsSection('Notification Preferences', `
                 ${settingsToggleRow('bell','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
                 ${settingsToggleRow('comment','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
                 ${settingsToggleRow('mail','Email notifications', 'Receive updates via email', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
-              `)}
-              ${settingsSection('Preferences', `
-                ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}
               ${settingsSection('Support', `
                 ${settingsRow('help','Help Center', 'FAQs and guides', "openOverlay('helpCenter')")}
@@ -1428,4 +1401,3 @@
               </div>
             </div>`;
         }
-
