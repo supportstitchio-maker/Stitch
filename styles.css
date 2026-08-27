@@ -16,6 +16,8 @@
         }
         .font-display { font-family: 'Colmeak', 'Montserrat', sans-serif; }
         .desktop-leave-classroom-label { display: none; }
+        .study-leave-classroom-label { font-weight: 800; }
+        .study-leave-classroom-icon path { stroke-width: 3.4; }
         .no-scrollbar::-webkit-scrollbar{display:none;}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
         .flip-card{background:linear-gradient(135deg,#e6ecf5,#ffffff);border:1px solid #dbe4f0;border-radius:1.5rem;padding:0;min-height:160px;cursor:pointer;margin-bottom:1rem;transition:transform .15s ease-in;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
@@ -674,6 +676,7 @@
           }
           .study-leave-classroom-label {
             font-size: 0.95rem !important;
+            font-weight: 800 !important;
           }
           .challenge-arena-actions {
             display: flex;
@@ -2123,7 +2126,7 @@
   #landing-page 
   .cta-banner{
     background:var(--brand-grad);
-    border-radius:36px;margin:0 16px;
+    border-radius:36px;
     padding:60px 32px;text-align:left;position:relative;overflow:hidden;
     color:#fff;
   }
@@ -2183,7 +2186,7 @@
   #landing-page .footer-brand-block p{font-size:0.88rem;line-height:1.65;color:rgba(255,255,255,0.85);max-width:320px;}
   #landing-page .footer-cols-row{display:flex;flex-direction:column;}
   #landing-page .footer-divider{height:1px;background:rgba(255,255,255,0.28);margin:28px 0;}
-  #landing-page .footer-col h4{font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;margin-bottom:18px;}
+  #landing-page .footer-col h4{font-size:0.74rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#fff;margin-bottom:18px;}
   #landing-page .footer-col a{
     display:flex;align-items:center;gap:8px;
     font-size:0.95rem;color:rgba(255,255,255,0.92);margin-bottom:16px;
