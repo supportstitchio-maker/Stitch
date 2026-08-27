@@ -2162,10 +2162,14 @@ let simpleGameState = null;
             })();
             resetCachedAuthUser();
             if (typeof careerStartProfile !== 'undefined') careerStartProfile = null;
-            closeOverlay();
+            // Show the login screen (full-screen, on top of everything) BEFORE
+            // closing the settings overlay -- otherwise closing the overlay
+            // briefly reveals the still-signed-in profile page underneath
+            // until the login screen fades in a moment later.
             authShowLogin();
             const gate = document.getElementById('auth-gate');
             if (gate) gate.classList.remove('auth-hidden');
+            closeOverlay();
           });
         }
         function authDeleteAccount(){
