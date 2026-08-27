@@ -1096,6 +1096,11 @@
           #app-splash .app-splash-logo{animation:splashLogoIn .01s linear forwards;}
         }
 
+        :root{
+          --a-dodger:#1e90ff;
+          --a-royal:#4169e1;
+          --a-navy:#0a2540;
+        }
         #auth-gate{
           --a-dodger:#1e90ff;
           --a-royal:#4169e1;
