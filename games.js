@@ -1,4 +1,4 @@
-        let simpleGameState = null;
+let simpleGameState = null;
         let matchingCardsWins = 0;
         let dotsBoxesWins = 0;
         let fourInARowWins = 0;
@@ -2451,10 +2451,12 @@
         function authShowTerms(){
           const m = document.getElementById('auth-terms-modal');
           if (m) { m.style.display = 'block'; m.classList.remove('hidden'); }
+          setStitchPageTitle('Terms of Service');
         }
         function authHideTerms(){
           const m = document.getElementById('auth-terms-modal');
           if (m) { m.style.display = 'none'; m.classList.add('hidden'); }
+          resetStitchPageTitle();
         }
         const FOOTER_INFO_CONTENT = {
           privacy: {
@@ -2514,10 +2516,12 @@
           if (bodyEl) bodyEl.innerHTML = entry.html;
           const m = document.getElementById('footer-info-modal');
           if (m) { m.style.display = 'block'; m.classList.remove('hidden'); m.scrollTop = 0; }
+          setStitchPageTitle(entry.title);
         }
         function closeFooterInfo(){
           const m = document.getElementById('footer-info-modal');
           if (m) { m.style.display = 'none'; m.classList.add('hidden'); }
+          resetStitchPageTitle();
         }
         async function authContinueWithGoogle(){
           const sb = getSupabaseClient();
