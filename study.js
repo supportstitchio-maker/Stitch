@@ -1,4 +1,4 @@
-        let studyFabMenuOpen = false;
+let studyFabMenuOpen = false;
 
         let studyFabScrollCleanup = null;
         // ---- Study floating-action-button (FAB) menu ----
@@ -54,7 +54,7 @@
             <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
               ${(classroomAreaTab === 'courses' || (classroomAreaTab === 'classes' && (studySub === 'resources' || studySub === 'exams'))) ? `
               <div class="flex items-center justify-between mb-4">
-                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-3.5 h-3.5 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Classroom</span></button>
+                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Classroom</span></button>
                 <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Classroom</h1>
               </div>` : `
               <div class="flex items-center gap-2 mb-4">
@@ -1105,4 +1105,3 @@
           cardFlipped = false;
           renderFlashModal();
         }
-
