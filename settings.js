@@ -73,7 +73,7 @@ let appPrefs = {
 
         function savedTabBtn(key, label){
           const active = savedTab === key;
-          return `<button onclick="setSavedTab('${key}')" class="flex-1 py-2.5 text-sm font-semibold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.55);` : 'background:#f3f4f6;'}">${label}</button>`;
+          return `<button onclick="setSavedTab('${key}')" class="flex-1 py-2.5 text-sm font-semibold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : 'background:#f3f4f6;'}">${label}</button>`;
         }
 
         function savedEmptyState(text){
