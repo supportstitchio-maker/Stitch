@@ -1,4 +1,4 @@
-        const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'createClassroom', 'classDetail', 'inviteStudents', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'referrals', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'jobApply', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'courseTeachers', 'newCourse', 'personProfile', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerMatching'];
+const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'createClassroom', 'classDetail', 'inviteStudents', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'referrals', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'jobApply', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'courseTeachers', 'newCourse', 'personProfile', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerMatching'];
         const overlayBackAction = {
           call: (fromPopState) => minimizeCall(fromPopState),
           addToCall: () => returnToCallScreen(),
@@ -269,6 +269,7 @@
         function openOverlay(kind){
           pauseAllOverlayMedia();
           currentOverlayKind = kind;
+          if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[kind]) setStitchPageTitle(STITCH_PAGE_TITLES[kind]);
           updateUtilityNavActive();
           if (typeof updateClassroomNav === 'function') updateClassroomNav();
           const ov = document.getElementById('overlay');
@@ -423,6 +424,7 @@
           }
           const wasConversation = currentOverlayKind === 'conversation';
           const wasAIClass = currentOverlayKind === 'aiClass';
+          if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[currentOverlayKind]) resetStitchPageTitle();
           pauseAllOverlayMedia();
           currentOverlayKind = null;
           overlayReturnTo = null;
@@ -2235,4 +2237,3 @@
           { id:'wordHunt', icon:'search', title:'Word Hunt', tag:'Puzzle', img: GAME_IMG_wordHunt,
             desc:"Tap the first and last letter of a hidden word to select it. Words can run across, down, or diagonally: find them all." },
         ];
-
