@@ -2045,7 +2045,6 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         }
 
         function renderNotifTab(){
-          autoAcceptConnectionsIfPublic();
           const ov = document.getElementById('overlay');
           const prevNotifScrollEl = ov.querySelector('.overflow-y-auto');
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
