@@ -1,39 +1,20 @@
-        let appPrefs = {
+let appPrefs = {
           theme: 'light',
+          // Accounts are always private: every connection request must be
+          // accepted manually (see acceptRequest in chat.js) before two users
+          // can message/connect. This is no longer user-configurable.
           accountPrivacy: 'Private',
           notifReminders: true,
           notifMessages: true,
           notifEmail: false
         };
 
-        let accountPrivacyMenuOpen = false;
-
-        // ---- Theme + account privacy toggles ----
+        // ---- Theme toggle ----
         function toggleTheme(){
           appPrefs.theme = appPrefs.theme === 'light' ? 'dark' : 'light';
           document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           openOverlay('profileMenu');
           queueSaveUserState();
-        }
-
-        function toggleAccountPrivacyMenu(){
-          accountPrivacyMenuOpen = !accountPrivacyMenuOpen;
-          openOverlay('profileMenu');
-          const ov = document.getElementById('overlay');
-          attachMenuScrollCloser(ov ? ov.querySelector('.overflow-y-auto') : null, accountPrivacyMenuOpen, 'toggleAccountPrivacyMenu');
-        }
-
-        function setAccountPrivacy(v){
-          appPrefs.accountPrivacy = v;
-          accountPrivacyMenuOpen = false;
-          openOverlay('profileMenu');
-          autoAcceptConnectionsIfPublic();
-          queueSaveUserState();
-        }
-
-        function autoAcceptConnectionsIfPublic(){
-          if (appPrefs.accountPrivacy !== 'Public') return;
-          requestConvos.map(c => c.id).forEach(id => acceptRequest(id));
         }
 
         // ---- Notification preferences screen ----
@@ -284,7 +265,7 @@
           return `
             <div class="mb-5">
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${escapeHtml(section.category)}</div>
-              <div class="rounded-2xl border border-gray-100 divide-y px-4" style="background-image:linear-gradient(135deg, rgba(30,144,255,0.07) 0%, rgba(65,105,225,0.07) 100%);background-color:#ffffff;">${section.items.map(helpFAQRow).join('')}</div>
+              <div class="rounded-2xl divide-y px-4" style="border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${section.items.map(helpFAQRow).join('')}</div>
             </div>`;
         }
         function helpCenterHTML(){
@@ -443,4 +424,3 @@
               <button onclick="submitIssueReport()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:50px;">Submit Report</button>
             </div>`;
         }
-
