@@ -2148,11 +2148,18 @@ let simpleGameState = null;
         }
 
         function authSignOut(){
-          openAppConfirmModal('Sign out of Stitch?', "You'll need to log back in to access your account.", 'Sign Out', async function(){
+          openAppConfirmModal('Sign out of Stitch?', "You'll need to log back in to access your account.", 'Sign Out', function(){
             overlayHistoryPushed = false;
-            if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
-            const sb = getSupabaseClient();
-            if (sb) { sb.auth.signOut().catch(() => {}); } 
+            // Persist any unsaved state and end the Supabase session in the
+            // background -- the person shouldn't have to wait on a network
+            // round-trip (which can take several seconds) before seeing the
+            // login screen. The save still runs, and still completes before
+            // signOut() clears the session, just without blocking the UI.
+            (async () => {
+              if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
+              const sb = getSupabaseClient();
+              if (sb) { sb.auth.signOut().catch(() => {}); }
+            })();
             resetCachedAuthUser();
             if (typeof careerStartProfile !== 'undefined') careerStartProfile = null;
             closeOverlay();
