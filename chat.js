@@ -543,7 +543,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const members = [myMember, ...contacts.map(c => ({ otherUserId: c.otherUserId || null, name: c.name, avatarBg: c.avatarBg, icon: c.icon, photo: c.photo || null, mine: false }))];
           const newConvo = { id, icon:'users', avatarBg:'bg-emerald-100', name: finalName, preview:'You created this collaboration', time: formatRequestTime(Date.now()), unread:false };
           collabConvos.unshift(newConvo);
-          convoMeta[id] = { icon:'users', avatarBg:'bg-emerald-100', name: finalName, preview:'You created this collaboration', members, createdBy: 'me' };
+          convoMeta[id] = { icon:'users', avatarBg:'bg-emerald-100', name: finalName, preview:'You created this collaboration', members, createdBy: 'me', membersCanAdd: false };
           conversationMessages[id] = [{ from:'them', text: `You created "${finalName}" with ${contacts.map(c => c.name).join(', ')}.`, time: Date.now() }];
           queueSaveUserState();
           inboxFilter = 'collaborations';
@@ -553,7 +553,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           openConversation(id);
           const createdRemotely = await collabCreateRemote(id, finalName, null, contacts);
           if (createdRemotely && convoMeta[id]) {
-            convoMeta[id].createdBy = _cachedAuthUser && _cachedAuthUser.id;
+            const myRealId = _cachedAuthUser && _cachedAuthUser.id;
+            convoMeta[id].createdBy = myRealId;
+            // The creator's own member row was seeded with otherUserId:null
+            // at creation time (see myMember above) -- backfill it with the
+            // real id now that we have one, so the "Creator" tag (which
+            // matches on otherUserId) shows up immediately instead of only
+            // after the next reload/loadMyCollaborations() refresh.
+            const mineEntry = (convoMeta[id].members || []).find(m => m.mine);
+            if (mineEntry && myRealId) mineEntry.otherUserId = myRealId;
+            queueSaveUserState();
           } else if (!createdRemotely && contacts.length) {
             pushInAppNotification('Collaboration not synced', `"${finalName}" was created on this device only -- the others won't see it until this syncs. Check your connection or Supabase setup.`);
           }
@@ -564,7 +573,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return !!userId && typeof _cachedAuthUser !== 'undefined' && !!_cachedAuthUser && _cachedAuthUser.id === userId;
         }
 
+        let collabMembersOverlayOpen = false;
         function openCollabMembers(){
+          collabMembersOverlayOpen = true;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = collabMembersHTML();
         }
@@ -574,6 +585,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const meta = convoMeta[id] || {};
           const members = meta.members || [];
           const iAmCreator = isMe(meta.createdBy) || meta.createdBy === 'me';
+          const canAddMembers = iAmCreator || !!meta.membersCanAdd;
           return `
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="px-5 pb-3 flex items-center gap-4">
@@ -582,17 +594,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>
             </div>
             <div class="flex-1 overflow-y-auto p-5">
+              ${canAddMembers ? `
               <button onclick="openAddCollabMembers()" class="w-full flex items-center gap-3 py-3 text-left mb-2">
                 <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.12);color:${ROYAL};">${Icon('plus','w-5 h-5')}</div>
                 <div class="text-[15px] font-semibold" style="color:${ROYAL};">Add members</div>
-              </button>
+              </button>` : ''}
+              ${iAmCreator ? `
+              <div class="rounded-2xl border border-gray-100 bg-white shadow-sm px-4 mb-4">
+                ${notificationSettingsRow('users','bg-emerald-50','text-emerald-600','Let members add people', meta.membersCanAdd ? 'Any member can add new people' : 'Only you can add new people', !!meta.membersCanAdd, 'toggleCollabMembersCanAdd()')}
+              </div>` : ''}
               <div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
                 ${members.map(m => `
                   <div class="flex items-center gap-3 py-3">
                     <div class="w-11 h-11 rounded-full ${m.avatarBg || 'bg-gray-100'} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(m,'w-5 h-5')}</div>
                     <div class="flex-1 min-w-0">
                       <div class="text-[15px] text-gray-900 truncate">${escapeHtml(m.name)}${m.mine ? ' (You)' : ''}</div>
-                      ${isMe(meta.createdBy) && m.otherUserId === meta.createdBy ? `<div class="text-xs text-gray-400 mt-0.5">Creator</div>` : ''}
+                      ${meta.createdBy && m.otherUserId === meta.createdBy ? `<div class="text-xs text-gray-400 mt-0.5">Creator</div>` : ''}
                     </div>
                     ${(!m.mine && (iAmCreator || meta.createdBy === undefined)) ? `
                       <button onclick="removeCollabMemberTap('${m.otherUserId || ''}','${escapeHtml(m.name).replace(/'/g,"\\'")}')" class="p-2 text-red-500 flex-shrink-0" title="Remove">${Icon('close','w-4 h-4')}</button>
@@ -605,6 +622,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let addCollabSelected = new Set();
 
         function openAddCollabMembers(){
+          collabMembersOverlayOpen = false;
           addCollabSelected = new Set();
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = addCollabMembersHTML();
@@ -674,6 +692,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             openCollabMembers();
             if (userId) collabRemoveMemberRemote(id, userId);
           });
+        }
+
+        async function toggleCollabMembersCanAdd(){
+          const id = activeConvoId;
+          const meta = convoMeta[id];
+          if (!id || !meta) return;
+          const next = !meta.membersCanAdd;
+          meta.membersCanAdd = next;
+          queueSaveUserState();
+          openCollabMembers();
+          const ok = await collabUpdateMembersCanAddRemote(id, next);
+          if (!ok) pushInAppNotification('Setting not synced', "This didn't save to the server -- try again once you're back online.");
         }
 
         function leaveCollaboration(){
@@ -1500,6 +1530,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } catch (e) {  }
         }
 
+        // Same as markConvoMessagesRead but for a group/collaboration
+        // conversation, where messages arrive from several different
+        // senders rather than one fixed otherUserId -- so this just marks
+        // everything addressed to me in this convo as read, regardless of
+        // who sent it.
+        async function markGroupConvoMessagesRead(convoId){
+          const sb = getSupabaseClient();
+          const myId = await getCurrentUserId();
+          if (!sb || !myId) return;
+          try {
+            await sb.from(MESSAGES_TABLE).update({ read: true })
+              .eq('convo_id', convoId)
+              .eq('recipient_id', myId)
+              .eq('read', false)
+              .is('voice_url', null);
+          } catch (e) {  }
+        }
+
         async function markVoiceMessageAsPlayed(convoId, messageId){
           if (!messageId) return;
           const msgs = conversationMessages[convoId];
@@ -1664,8 +1712,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const myId = await getCurrentUserId();
           if (!sb || !myId) return false;
           try {
-            const { error: cErr } = await sb.from(COLLABORATIONS_TABLE)
-              .insert({ id, name, photo: photo || null, created_by: myId });
+            let { error: cErr } = await sb.from(COLLABORATIONS_TABLE)
+              .insert({ id, name, photo: photo || null, created_by: myId, members_can_add: false });
+            if (cErr && missingColumnFromError(cErr) === 'members_can_add') {
+              ({ error: cErr } = await sb.from(COLLABORATIONS_TABLE)
+                .insert({ id, name, photo: photo || null, created_by: myId }));
+            }
             if (cErr) { console.warn('Collaboration did not sync to Supabase:', cErr); return false; }
             const rows = [{
               collab_id: id, user_id: myId,
@@ -1735,6 +1787,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } catch (e) { return false; }
         }
 
+        // "members_can_add" is a boolean column on the collaborations table
+        // (default false) controlling whether non-creator members are
+        // allowed to add new people. If that column hasn't been added to
+        // the deployed schema yet, this fails soft rather than breaking the
+        // toggle -- same missing-column tolerance pattern used for the
+        // messages table above.
+        async function collabUpdateMembersCanAddRemote(id, allowed){
+          const sb = getSupabaseClient();
+          if (!sb) return false;
+          try {
+            const { error } = await sb.from(COLLABORATIONS_TABLE).update({ members_can_add: allowed }).eq('id', id);
+            if (error) {
+              console.warn('Collaboration "members can add" setting did not sync -- add a `members_can_add boolean default false` column to the collaborations table to enable this:', error);
+              return false;
+            }
+            return true;
+          } catch (e) { return false; }
+        }
+
         async function loadMyCollaborations(){
           const sb = getSupabaseClient();
           if (!sb) return;
@@ -1744,8 +1815,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const { data: myRows, error: myErr } = await sb.from(COLLAB_MEMBERS_TABLE).select('collab_id').eq('user_id', myId);
             if (myErr || !myRows || !myRows.length) return;
             const ids = [...new Set(myRows.map(r => r.collab_id))];
-            const [{ data: collabs }, { data: allMembers }] = await Promise.all([
-              sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by').in('id', ids),
+            const [{ data: collabs, error: collabsErr }, { data: allMembers }] = await Promise.all([
+              (async () => {
+                let res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by,members_can_add').in('id', ids);
+                if (res.error && missingColumnFromError(res.error) === 'members_can_add') {
+                  res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by').in('id', ids);
+                }
+                return res;
+              })(),
               sb.from(COLLAB_MEMBERS_TABLE).select('collab_id,user_id,name,avatar_bg,icon,photo').in('collab_id', ids),
             ]);
             if (!collabs) return;
@@ -1760,7 +1837,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               const displayName = row.name || members.filter(m => !m.mine).map(m => m.name).slice(0, 3).join(', ') || 'Collaboration';
               convoMeta[id] = {
                 icon: 'users', avatarBg: (existing && existing.avatarBg) || 'bg-emerald-100', name: displayName, photo: row.photo || null,
-                preview: (existing && existing.preview) || 'Collaboration', members, createdBy: row.created_by,
+                preview: (existing && existing.preview) || 'Collaboration', members, createdBy: row.created_by, membersCanAdd: !!row.members_can_add,
               };
               if (!collabConvos.some(c => c.id === id)) {
                 collabConvos.unshift({ id, icon: 'users', avatarBg: 'bg-emerald-100', name: displayName, photo: row.photo || null, preview: 'You were added to this collaboration', time: formatRequestTime(Date.now()), unread: true, read: false });
@@ -1820,6 +1897,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: COLLABORATIONS_TABLE }, (payload) => {
               const collabId = payload && payload.old && payload.old.id;
               applyRemoteCollabRemoval(collabId, 'Collaboration deleted', name => `"${name}" was deleted.`);
+            })
+            // Keeps name/photo/creator/permission changes live for every
+            // member -- without this, someone else renaming the group,
+            // the creator toggling "let members add people", or (before
+            // the fix above) the creator tag itself would only ever show
+            // up after the next full reload.
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: COLLABORATIONS_TABLE }, (payload) => {
+              const row = payload && payload.new;
+              const meta = row && convoMeta[row.id];
+              if (!meta) return;
+              if (row.name) meta.name = row.name;
+              meta.photo = row.photo || null;
+              meta.createdBy = row.created_by;
+              meta.membersCanAdd = !!row.members_can_add;
+              const entry = collabConvos.find(c => c.id === row.id);
+              if (entry) { entry.name = meta.name; entry.photo = meta.photo; }
+              queueSaveUserState();
+              if (activeConvoId === row.id && collabMembersOverlayOpen) openCollabMembers();
+              if (currentTab === 3) renderInboxTab();
             })
             .subscribe();
         }
@@ -2188,14 +2284,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
 
           const meta = convoMeta[id];
-          if (meta && meta.otherUserId) {
+          const isGroupConvo = !!(meta && meta.icon === 'users');
+          if (meta && (meta.otherUserId || isGroupConvo)) {
+            // loadConversationHistory is keyed purely on convo_id, so it
+            // already works for group chats -- the bug was this call being
+            // gated on meta.otherUserId, which only 1:1 DMs have. Without
+            // it, a collaboration's local message list only ever grew from
+            // realtime pushes received while this device happened to be
+            // online, so anyone who wasn't already watching when a message
+            // was sent (or opening the chat for the first time, or on a new
+            // device) would never see the history that everyone else had.
             loadConversationHistory(id).then(() => {
-              markConvoMessagesRead(id, meta.otherUserId);
+              if (meta.otherUserId) markConvoMessagesRead(id, meta.otherUserId);
+              else if (isGroupConvo) markGroupConvoMessagesRead(id);
               if (activeConvoId !== id) return;
               const log = document.getElementById('convo-log');
               if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
             });
-            refreshConvoAvatarFromProfile(id);
+            if (meta.otherUserId) refreshConvoAvatarFromProfile(id);
             joinConvoTypingChannel(id);
           }
         }
@@ -2404,6 +2510,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function closeConvoProfile(){
+          collabMembersOverlayOpen = false;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = conversationHTML();
           requestAnimationFrame(() => {
@@ -3523,10 +3630,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 }
               }
             } else if (meta && meta.icon === 'users' && Array.isArray(meta.members) && (text || uploaded.length)) {
-              meta.members.forEach(m => {
-                if (m.mine || !m.otherUserId) return;
-                sendMessageRemote(convoIdAtSend, m.otherUserId, text, null, null, uploaded, message.localId);
-              });
+              const recipients = meta.members.filter(m => !m.mine && m.otherUserId);
+              const results = await Promise.all(recipients.map(m =>
+                sendMessageRemote(convoIdAtSend, m.otherUserId, text, null, null, uploaded, message.localId)
+              ));
+              const failedCount = results.filter(id => !id).length;
+              if (failedCount > 0) {
+                // Previously this failure was silent (just a console.warn
+                // inside sendMessageRemote), so a message could sit there
+                // looking "sent" locally while other members never
+                // actually received it, with nothing telling the sender
+                // that anything had gone wrong.
+                pushInAppNotification(
+                  'Message may not have sent',
+                  failedCount === recipients.length
+                    ? "This message didn't sync to anyone else in the collaboration. Check your connection and try again."
+                    : `This message didn't reach ${failedCount} of ${recipients.length} member${recipients.length === 1 ? '' : 's'}.`
+                );
+              }
             }
           })();
         }
