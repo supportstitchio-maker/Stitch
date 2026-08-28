@@ -267,6 +267,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         }
 
         function openOverlay(kind){
+          collabMembersOverlayOpen = false;
           pauseAllOverlayMedia();
           currentOverlayKind = kind;
           if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[kind]) setStitchPageTitle(STITCH_PAGE_TITLES[kind]);
