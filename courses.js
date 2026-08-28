@@ -620,10 +620,18 @@ try {
           });
           flushList();
 
+          // Tables get rendered into HTML and spliced back in via @@TABLE#@@
+          // *before* the math/mermaid/graph placeholders are resolved below,
+          // so a table cell containing "@@MATH17@@" only gets that token
+          // inserted into `html` once @@TABLE@@ itself is replaced. Doing the
+          // TABLE substitution first (so all nested placeholders actually
+          // land in `html`) and only then resolving MATH/MERMAID/GRAPH fixes
+          // tables that contain formulas showing raw "@@MATH17@@" text
+          // instead of the rendered value.
+          html = html.replace(/@@TABLE(\d+)@@/g, (_, i) => tableBlocks[Number(i)] || '');
           html = html.replace(/@@MATH(\d+)@@/g, (_, i) => mathBlocks[Number(i)] || '');
           html = html.replace(/@@MERMAID(\d+)@@/g, (_, i) => mermaidBlocks[Number(i)] || '');
           html = html.replace(/@@GRAPH(\d+)@@/g, (_, i) => graphBlocks[Number(i)] || '');
-          html = html.replace(/@@TABLE(\d+)@@/g, (_, i) => tableBlocks[Number(i)] || '');
           return html;
         }
 
