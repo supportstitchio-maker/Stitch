@@ -3183,24 +3183,44 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // blank tab and silently triggering the browser's own download UI.
         // Progress and the source host are shown directly in the chat
         // bubble instead.
+        // Whether the current browser can hand a file off to native apps
+        // (Word, Adobe Acrobat, Google Docs, whatever's installed) via the
+        // OS share sheet. This is the actual "open with" mechanism the web
+        // has -- there's no direct JS API to launch a specific app, but on
+        // mobile the share sheet surfaces exactly those apps as targets.
+        function canShareFiles(file){
+          return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+        }
+
+        async function convoOpenDocumentBlob(blob, name){
+          const file = new File([blob], name || 'document', { type: blob.type || 'application/octet-stream' });
+          if (canShareFiles(file)) {
+            try {
+              await navigator.share({ files: [file], title: name || 'Document' });
+              return;
+            } catch (err) {
+              if (err && err.name === 'AbortError') return; // user dismissed the sheet, not an error
+              // fall through to the tab-open fallback below
+            }
+          }
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, '_blank');
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        }
+
+        // First tap: fetch + save to disk (with progress). Any tap after
+        // that: hand the cached copy straight to the device's own apps --
+        // via the share sheet on mobile so it can be opened in Word, a PDF
+        // reader, etc. -- instead of running the whole fetch-and-save flow
+        // again.
         async function convoDownloadDocument(encodedUrl, encodedName){
           const url = decodeURIComponent(encodedUrl);
           const name = decodeURIComponent(encodedName || '');
           const current = convoDocDownloadState[url];
           if (current && current.status === 'downloading') return;
 
-          // Already fetched this session -- just re-open the cached copy,
-          // no network round-trip and no "downloading" state this time.
-          const cachedBlob = convoDocBlobCache[url];
-          if (cachedBlob) {
-            const blobUrl = URL.createObjectURL(cachedBlob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = name || 'download';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+          if (current && current.status === 'done' && convoDocBlobCache[url]) {
+            convoOpenDocumentBlob(convoDocBlobCache[url], name);
             return;
           }
 
