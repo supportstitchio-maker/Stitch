@@ -3100,18 +3100,125 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        // Per-URL download state so re-renders (new messages arriving, etc.)
+        // don't reset an in-progress download back to its idle icon.
+        let convoDocDownloadState = {};
+
+        function convoDocChipId(url){
+          let h = 0;
+          for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) | 0;
+          return 'convoDoc' + Math.abs(h);
+        }
+
+        function convoDocIconHTML(state){
+          if (state && state.status === 'downloading') {
+            const pct = Math.max(0, Math.min(100, Math.round((state.progress || 0) * 100)));
+            const deg = pct * 3.6;
+            return `
+              <div class="relative w-4 h-4 flex-shrink-0">
+                <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(${NAVY} ${deg}deg, rgba(10,37,64,0.15) ${deg}deg);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));"></div>
+              </div>`;
+          }
+          if (state && state.status === 'done') return `<span class="text-green-500">${Icon('checkSingle','w-4 h-4')}</span>`;
+          if (state && state.status === 'error') return Icon('close','w-4 h-4 text-red-400');
+          return Icon('file','w-4 h-4');
+        }
+
+        function convoDocCaptionText(url, state){
+          if (state && state.status === 'downloading') return 'Downloading…';
+          if (state && state.status === 'error') return 'Download failed, tap to retry';
+          if (state && state.status === 'done') {
+            try { return new URL(url).hostname; } catch (e) { return ''; }
+          }
+          return '';
+        }
+
+        function convoUpdateDocChipDOM(url){
+          const id = convoDocChipId(url);
+          const state = convoDocDownloadState[url] || { status: 'idle' };
+          const iconEl = document.getElementById(id + '-icon');
+          const capEl = document.getElementById(id + '-caption');
+          if (iconEl) iconEl.innerHTML = convoDocIconHTML(state);
+          if (capEl) capEl.textContent = convoDocCaptionText(url, state);
+        }
+
         function convoFileAttachmentsHTML(files, mine){
           if (!files || !files.length) return '';
           return `
             <div class="flex flex-col gap-1.5 mb-1.5">
               ${files.map(f => {
-                const chip = `
-                  <div class="flex items-center gap-2 ${mine ? 'bg-white/15' : 'bg-black/5'} rounded-xl px-2.5 py-1.5">
-                    ${Icon(convoFileIcon(f.type),'w-4 h-4')}<span class="text-xs truncate">${escapeHtml(f.name)}</span>
-                  </div>`;
-                return f.url ? `<a href="${f.url}" target="_blank" rel="noopener" download="${escapeHtml(f.name || '')}" class="no-underline">${chip}</a>` : chip;
+                if (!f.url) {
+                  return `
+                    <div class="flex items-center gap-2 ${mine ? 'bg-white/15' : 'bg-black/5'} rounded-xl px-2.5 py-1.5">
+                      ${Icon(convoFileIcon(f.type),'w-4 h-4')}<span class="text-xs truncate">${escapeHtml(f.name)}</span>
+                    </div>`;
+                }
+                const id = convoDocChipId(f.url);
+                const state = convoDocDownloadState[f.url] || { status: 'idle' };
+                return `
+                  <button type="button" id="${id}" onclick="convoDownloadDocument('${encodeURIComponent(f.url)}','${encodeURIComponent(f.name || '')}')" class="text-left w-full">
+                    <div class="flex items-center gap-2 ${mine ? 'bg-white/15' : 'bg-black/5'} rounded-xl px-2.5 py-1.5">
+                      <div id="${id}-icon" class="w-4 h-4 flex items-center justify-center flex-shrink-0">${convoDocIconHTML(state)}</div>
+                      <div class="min-w-0 flex-1">
+                        <span class="text-xs truncate block">${escapeHtml(f.name)}</span>
+                        <div id="${id}-caption" class="text-[10px] ${mine ? 'text-white/60' : 'text-gray-400'} mt-0.5 truncate">${convoDocCaptionText(f.url, state)}</div>
+                      </div>
+                    </div>
+                  </button>`;
               }).join('')}
             </div>`;
+        }
+
+        // Downloads the file in place (fetch + blob, saved via a throwaway
+        // <a download> click) instead of navigating to it in a new tab --
+        // which for non-previewable types like .docx was just opening a
+        // blank tab and silently triggering the browser's own download UI.
+        // Progress and the source host are shown directly in the chat
+        // bubble instead.
+        async function convoDownloadDocument(encodedUrl, encodedName){
+          const url = decodeURIComponent(encodedUrl);
+          const name = decodeURIComponent(encodedName || '');
+          const current = convoDocDownloadState[url];
+          if (current && current.status === 'downloading') return;
+          convoDocDownloadState[url] = { status: 'downloading', progress: 0 };
+          convoUpdateDocChipDOM(url);
+          try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Download failed (' + res.status + ')');
+            const total = Number(res.headers.get('content-length')) || 0;
+            let blob;
+            if (res.body && res.body.getReader) {
+              const reader = res.body.getReader();
+              const chunks = [];
+              let received = 0;
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                received += value.length;
+                if (total) {
+                  convoDocDownloadState[url].progress = received / total;
+                  convoUpdateDocChipDOM(url);
+                }
+              }
+              blob = new Blob(chunks);
+            } else {
+              blob = await res.blob();
+            }
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+            convoDocDownloadState[url] = { status: 'done', progress: 1 };
+          } catch (err) {
+            console.warn('Document download failed:', err);
+            convoDocDownloadState[url] = { status: 'error', progress: 0 };
+          }
+          convoUpdateDocChipDOM(url);
         }
 
         function convoVideoAttachmentsHTML(videos){
@@ -3205,7 +3312,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const inputEl = document.getElementById('convo-input');
           const text = inputEl ? inputEl.value.trim() : '';
           const attachmentsForUpload = pendingConvoAttachments;
-          const attachments = attachmentsForUpload.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl }));
+          // Keep `file` on the locally-echoed attachment (not just dataUrl) so
+          // non-image attachments -- videos in particular -- have something to
+          // render from (convoVideoAttachmentsHTML falls back to
+          // URL.createObjectURL(f.file)) before the upload finishes. Without
+          // this, a video attachment has no url and no file, fails the video
+          // filter in convoLogHTML, and silently renders as a generic file chip.
+          const attachments = attachmentsForUpload.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl, file: f.file }));
           if (!text && !attachments.length) return;
           if (!activeConvoId) return;
           convoStoppedTypingNow();
@@ -3229,6 +3342,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               uploaded = await uploadConvoAttachmentsToStorage(attachmentsForUpload, convoIdAtSend);
               if (attachmentsForUpload.length && !uploaded.length) {
                 flashConvoMicMessage('Attachment not sent (upload failed)');
+              } else if (uploaded.length) {
+                // Swap the local blob-only attachments for the real uploaded
+                // ones (which have a permanent `url`) so the bubble keeps
+                // rendering correctly after the object URL above is gone,
+                // and so a page reload (which only has DB data, no File
+                // objects) shows the same thing.
+                message.attachments = uploaded;
+                queueSaveUserState();
+                refreshConvoLogIfOpen(convoIdAtSend);
               }
             }
             if (meta && meta.otherUserId) {
