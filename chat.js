@@ -1,4 +1,4 @@
-const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
+\const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
         let selectMode = false;
         let selectedConvos = new Set();
         let inboxMenuOpen = false;
@@ -3192,20 +3192,53 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
         }
 
+        // Only hand off to the share sheet on phones/tablets. Desktop's
+        // Web Share implementation (where it exists at all) opens the OS
+        // "Share" charm, not an app-opener, so it's not useful here and was
+        // making the desktop tap look like it did nothing.
+        function isMobileDevice(){
+          if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') return navigator.userAgentData.mobile;
+          return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        }
+
+        // Browsers can only render a handful of types inline -- PDFs,
+        // images, plain text. Opening anything else (docx, pptx, xlsx...)
+        // as a blob in a new tab just dumps the file's raw bytes as
+        // garbled text, which is what was happening before.
+        function isBrowserPreviewableMime(type){
+          return !!type && (type === 'application/pdf' || type.indexOf('image/') === 0 || type.indexOf('text/') === 0);
+        }
+
         async function convoOpenDocumentBlob(blob, name){
-          const file = new File([blob], name || 'document', { type: blob.type || 'application/octet-stream' });
-          if (canShareFiles(file)) {
+          const type = blob.type || 'application/octet-stream';
+          const file = new File([blob], name || 'document', { type });
+          if (isMobileDevice() && canShareFiles(file)) {
             try {
               await navigator.share({ files: [file], title: name || 'Document' });
               return;
             } catch (err) {
               if (err && err.name === 'AbortError') return; // user dismissed the sheet, not an error
-              // fall through to the tab-open fallback below
+              // fall through to the fallback below
             }
           }
           const blobUrl = URL.createObjectURL(blob);
-          window.open(blobUrl, '_blank');
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+          if (isBrowserPreviewableMime(type)) {
+            window.open(blobUrl, '_blank');
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+          } else {
+            // Not something the browser can render -- and the only
+            // reliable "open" on desktop for a doc/pptx/xlsx is re-saving
+            // it and using the browser's own download notification to open
+            // it. Instant here since the blob is already cached, no
+            // network round-trip.
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+          }
         }
 
         // First tap: fetch + save to disk (with progress). Any tap after
