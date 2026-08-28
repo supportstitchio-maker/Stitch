@@ -2880,7 +2880,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function sendConvoVoiceNote(dataUrl, durationSecs, blob){
           if (!activeConvoId) return;
-          const message = { from: 'me', voice: { src: dataUrl, duration: durationSecs }, time: Date.now(), read: false };
+          const localId = 'lm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+          const message = { from: 'me', voice: { src: dataUrl, duration: durationSecs }, time: Date.now(), read: false, localId };
           conversationMessages[activeConvoId].push(message);
           const log = document.getElementById('convo-log');
           if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
@@ -2889,21 +2890,41 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           updateConvoPreview(convoIdAtSend, '🎤 Voice message');
 
           const meta = convoMeta[convoIdAtSend];
-          if (meta && meta.otherUserId && blob) {
-            uploadConvoVoiceToStorage(blob, convoIdAtSend).then(url => {
-              if (!url) {
-                console.warn('Voice note stayed local-only (upload failed) -- the other account will not receive it.');
-                flashConvoMicMessage('Voice note not sent (upload failed)');
-                return;
-              }
-              sendMessageRemote(convoIdAtSend, meta.otherUserId, '', url, durationSecs).then(id => {
-                if (id) {
-                  message.id = id;
-                  refreshConvoLogIfOpen(convoIdAtSend);
-                }
+          if (!blob) return;
+          const isGroupConvo = !!(meta && meta.icon === 'users' && Array.isArray(meta.members));
+          if (!meta || (!meta.otherUserId && !isGroupConvo)) return;
+
+          uploadConvoVoiceToStorage(blob, convoIdAtSend).then(url => {
+            if (!url) {
+              console.warn('Voice note stayed local-only (upload failed) -- other members will not receive it.');
+              flashConvoMicMessage('Voice note not sent (upload failed)');
+              return;
+            }
+            if (meta.otherUserId) {
+              sendMessageRemote(convoIdAtSend, meta.otherUserId, '', url, durationSecs, [], localId).then(id => {
+                if (id) { message.id = id; refreshConvoLogIfOpen(convoIdAtSend); }
               });
+              return;
+            }
+            // Group/collaboration voice notes need the same per-member
+            // fan-out as text messages -- previously this branch didn't
+            // exist at all, so a voice note in a collaboration only ever
+            // reached the sender's own device.
+            const recipients = meta.members.filter(m => !m.mine && m.otherUserId);
+            Promise.all(recipients.map(m => sendMessageRemote(convoIdAtSend, m.otherUserId, '', url, durationSecs, [], localId))).then(results => {
+              const firstId = results.find(id => id);
+              if (firstId) { message.id = firstId; refreshConvoLogIfOpen(convoIdAtSend); }
+              const failedCount = results.filter(id => !id).length;
+              if (failedCount > 0) {
+                pushInAppNotification(
+                  'Voice note may not have sent',
+                  failedCount === recipients.length
+                    ? "This voice note didn't sync to anyone else in the collaboration. Check your connection and try again."
+                    : `This voice note didn't reach ${failedCount} of ${recipients.length} member${recipients.length === 1 ? '' : 's'}.`
+                );
+              }
             });
-          }
+          });
         }
 
         // ---- Conversation log rendering (bubbles, timestamps) ----
@@ -3057,7 +3078,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const btn = evt.currentTarget;
           const rect = btn.getBoundingClientRect();
           const menuWidth = 190;
-          const menuHeightEstimate = canDeleteForEveryone ? 84 : 44;
+          const menuHeightEstimate = canDeleteForEveryone ? 100 : 60;
           const dropUp = (window.innerHeight - rect.bottom) < (menuHeightEstimate + 12);
           const top = dropUp ? (rect.top - menuHeightEstimate - 6) : (rect.bottom + 6);
           const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
@@ -3066,9 +3087,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           menu.id = 'desktop-message-menu';
           menu.innerHTML = `
             <div class="fixed inset-0" style="z-index:59;" onclick="closeMessageActionSheet()"></div>
-            <div class="fixed bg-white rounded-xl border border-gray-100 overflow-hidden" style="z-index:60;top:${Math.max(8, top)}px;left:${left}px;width:${menuWidth}px;box-shadow:0 10px 30px rgba(0,0,0,.16);" onclick="event.stopPropagation()">
-              <button onclick="deleteActionMessageForMe()" class="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-800 border-b border-gray-100" style="background:none;">Delete for me</button>
-              ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-4 py-2.5 text-sm font-medium text-red-500" style="background:none;">Delete for everyone</button>` : ''}
+            <div class="fixed bg-white rounded-2xl border border-gray-100 py-2 menu-dropdown-inset" style="z-index:60;top:${Math.max(8, top)}px;left:${left}px;width:${menuWidth}px;box-shadow:0 10px 30px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
+              <button onclick="deleteActionMessageForMe()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Delete for me</button>
+              ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-4 py-2.5 text-sm text-red-500 menu-item-pill">Delete for everyone</button>` : ''}
             </div>`;
           document.body.appendChild(menu);
         }
