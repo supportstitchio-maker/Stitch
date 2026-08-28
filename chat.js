@@ -3127,9 +3127,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoDocCaptionText(url, state){
           if (state && state.status === 'downloading') return 'Downloading…';
           if (state && state.status === 'error') return 'Download failed, tap to retry';
-          if (state && state.status === 'done') {
-            try { return new URL(url).hostname; } catch (e) { return ''; }
-          }
+          // 'done' intentionally has no caption -- previously showed the
+          // storage host (e.g. "xxxx.supabase.co"), which just exposed
+          // internal infra to the user for no benefit. Tapping the chip
+          // again still re-downloads the file (see convoDownloadDocument),
+          // it just no longer says so underneath.
           return '';
         }
 
