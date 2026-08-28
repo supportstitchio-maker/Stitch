@@ -312,6 +312,55 @@ try {
           if (strip) strip.innerHTML = aiAttachStripHTML();
         }
 
+        // Image/video attachments start out as blob: preview URLs (fast,
+        // local-only). Those blob URLs die the moment the tab/session ends,
+        // so if a message carrying one gets archived into aiChatSessions and
+        // persisted to the account, it comes back as a broken image next
+        // time the student logs in. To fix that, once a message with media
+        // is sent we upload the file to permanent storage in the background
+        // and swap the blob URL out for the permanent one before it ever
+        // gets saved.
+        const AI_CHAT_MEDIA_BUCKET = 'ai-chat-media';
+
+        async function uploadAIChatAttachmentToStorage(f){
+          const sb = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : null;
+          if (!sb) return null;
+          try {
+            const user = (typeof getCachedAuthUser === 'function') ? await getCachedAuthUser() : null;
+            if (!user) return null;
+            const dotIdx = f.name ? f.name.lastIndexOf('.') : -1;
+            const ext = dotIdx > -1 ? f.name.slice(dotIdx + 1) : ((f.type && f.type.split('/')[1]) || 'dat');
+            const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+            const { error } = await sb.storage.from(AI_CHAT_MEDIA_BUCKET).upload(path, f, { contentType: f.type || 'application/octet-stream' });
+            if (error) { console.warn('AI chat attachment upload failed:', error.message); return null; }
+            const { data } = sb.storage.from(AI_CHAT_MEDIA_BUCKET).getPublicUrl(path);
+            return (data && data.publicUrl) || null;
+          } catch (err) {
+            console.warn('AI chat attachment upload threw an error:', err);
+            return null;
+          }
+        }
+
+        function persistAIChatAttachments(attachments){
+          const mediaFiles = (attachments || []).filter(f => f && f.previewUrl);
+          if (!mediaFiles.length) return;
+          Promise.all(mediaFiles.map(f => uploadAIChatAttachmentToStorage(f).then(url => ({ f, url })))).then(results => {
+            let changed = false;
+            results.forEach(({ f, url }) => {
+              if (!url) return;
+              const oldBlobUrl = f.previewUrl;
+              f.previewUrl = url;
+              f.url = url;
+              if (typeof oldBlobUrl === 'string' && oldBlobUrl.indexOf('blob:') === 0) URL.revokeObjectURL(oldBlobUrl);
+              changed = true;
+            });
+            if (changed) {
+              refreshAIChatLog();
+              if (typeof queueSaveUserState === 'function') queueSaveUserState();
+            }
+          });
+        }
+
         function removeAIAttachment(i){
           const f = pendingAIAttachments[i];
           if (f && f.previewUrl) URL.revokeObjectURL(f.previewUrl);
@@ -1011,6 +1060,7 @@ try {
           if (typeof canSendAIPrompt === 'function' && !canSendAIPrompt()) {
             aiChatMessages.push({ role:'user', text, attachments, voice: !!viaVoice });
             aiChatMessages.push({ role:'bot', text: `You've used all your daily Stitch Bot credits for today. They reset tomorrow.`, promptLimit: true });
+            persistAIChatAttachments(attachments);
             pendingAIAttachments = [];
             if (inputEl) { inputEl.value = ''; }
             resetAIChatInputHeight();
@@ -1023,6 +1073,7 @@ try {
           }
           pendingAIAttachments = [];
           aiChatMessages.push({ role:'user', text, attachments, voice: !!viaVoice });
+          persistAIChatAttachments(attachments);
           const thinkingMsg = { role:'bot', text: '···' };
           aiChatMessages.push(thinkingMsg);
           if (inputEl) { inputEl.value = ''; }
