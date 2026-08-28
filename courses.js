@@ -516,7 +516,30 @@ try {
 
           const withBold = text.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
           const cleaned = withBold.replace(/\*\*/g, '');
-          const lines = cleaned.split(/\n/);
+
+          const tableBlocks = [];
+          const cleanedLines = cleaned.split(/\n/);
+          const linesWithTables = [];
+          for (let i = 0; i < cleanedLines.length; i++) {
+            const line = cleanedLines[i];
+            const next = cleanedLines[i + 1];
+            const looksLikeHeader = /\|/.test(line) && line.trim().length;
+            const looksLikeSeparator = next !== undefined && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(next);
+            if (looksLikeHeader && looksLikeSeparator) {
+              const tableRows = [line, next];
+              let j = i + 2;
+              while (j < cleanedLines.length && /\|/.test(cleanedLines[j]) && cleanedLines[j].trim().length) {
+                tableRows.push(cleanedLines[j]);
+                j++;
+              }
+              tableBlocks.push(renderMarkdownTableBlock(tableRows));
+              linesWithTables.push(`@@TABLE${tableBlocks.length - 1}@@`);
+              i = j - 1;
+            } else {
+              linesWithTables.push(line);
+            }
+          }
+          const lines = linesWithTables;
           let html = '';
           let listBuffer = [];
           let listType = null; 
@@ -551,7 +574,55 @@ try {
           html = html.replace(/@@MATH(\d+)@@/g, (_, i) => mathBlocks[Number(i)] || '');
           html = html.replace(/@@MERMAID(\d+)@@/g, (_, i) => mermaidBlocks[Number(i)] || '');
           html = html.replace(/@@GRAPH(\d+)@@/g, (_, i) => graphBlocks[Number(i)] || '');
+          html = html.replace(/@@TABLE(\d+)@@/g, (_, i) => tableBlocks[Number(i)] || '');
           return html;
+        }
+
+        // Parses one markdown table row ("| a | b |" or "a | b") into cells.
+        function parseMarkdownTableRow(row){
+          let r = row.trim();
+          if (r.startsWith('|')) r = r.slice(1);
+          if (r.endsWith('|')) r = r.slice(0, -1);
+          return r.split('|').map(c => c.trim());
+        }
+
+        // Renders a block of raw markdown table lines (header, separator,
+        // data rows...) as a real HTML table, styled to match the other
+        // AI-drawn tables (renderMatrixBlock) so it looks native to the app
+        // rather than like leftover pipe-and-dash syntax.
+        function renderMarkdownTableBlock(tableLines){
+          try {
+            const header = parseMarkdownTableRow(tableLines[0]);
+            const sepCells = parseMarkdownTableRow(tableLines[1]);
+            const aligns = sepCells.map(c => {
+              const left = c.startsWith(':'), right = c.endsWith(':');
+              if (left && right) return 'center';
+              if (right) return 'right';
+              if (left) return 'left';
+              return null;
+            });
+            const bodyRows = tableLines.slice(2).map(parseMarkdownTableRow).filter(cells => cells.some(c => c !== ''));
+            let table = '<table style="border-collapse:collapse;width:100%;font-size:12.5px;">';
+            table += '<tr>';
+            header.forEach((h, i) => {
+              const align = aligns[i] ? `text-align:${aligns[i]};` : '';
+              table += `<th style="border:1px solid rgba(10,37,64,0.12);background:rgba(10,37,64,0.03);padding:6px 8px;color:${NAVY};font-weight:600;white-space:nowrap;${align}">${h}</th>`;
+            });
+            table += '</tr>';
+            bodyRows.forEach(cells => {
+              table += '<tr>';
+              header.forEach((_, i) => {
+                const align = aligns[i] ? `text-align:${aligns[i]};` : '';
+                const val = cells[i] !== undefined ? cells[i] : '';
+                table += `<td style="border:1px solid rgba(10,37,64,0.12);padding:6px 8px;${align}">${val}</td>`;
+              });
+              table += '</tr>';
+            });
+            table += '</table>';
+            return `<div class="my-2 rounded-xl bg-white p-2 overflow-x-auto" style="border:1px solid rgba(10,37,64,0.06);">${table}</div>`;
+          } catch (err) {
+            return tableLines.map(l => escapeHtml(l)).join('<br>');
+          }
         }
 
         const GRAPH_COLORS = ['#1E90FF', '#E4572E', '#2EA043', '#8E44AD', '#F4A100'];
@@ -1149,6 +1220,7 @@ try {
               'Never use em dashes or double-hyphen dashes; use a comma, colon, semicolon, or a full stop instead. ' +
               'Use **double asterisks** around any word or phrase that should be bold (key terms, formulas, headings). ' +
               'When you are listing steps, options, or multiple items, format them as a numbered list (1. 2. 3.) or bullet list (- item) on their own lines instead of run-on prose. ' +
+              'For tabular data, such as a worked calculation with several rows/columns (X, Y, predicted values, residuals, etc.), a comparison, or any dataset with more than a couple of columns, use a standard markdown pipe table: a header row like "| X | Y | Residual |", then a separator row like "|---|---|---|", then one data row per line. It will render as a real table, so prefer it over cramming a grid into a bullet list or plain prose. ' +
               'For any actual math, equations, or fractions, write real LaTeX and it will be rendered properly: wrap a standalone equation on its own line in double dollar signs, e.g. $$x = \\frac{585}{-111}$$, and wrap a short expression sitting inline in a sentence in single dollar signs, e.g. "solve for $x$". Always use \\frac{a}{b} for fractions rather than writing a/b, and use this for every equation, not just the final answer. ' +
               'When a simple diagram would genuinely help (a flowchart, a timeline, a cycle, a small hierarchy or mind-map, a step-by-step process), you can draw one: write it as Mermaid syntax inside a fenced code block starting with ```mermaid and ending with ```, e.g. a flowchart starting "graph TD". Keep diagrams small and only reach for one when it actually clarifies something a sentence would not; do not force one into every reply. ' +
               'For math or science questions where an actual plot or figure would help (graphing a function, showing a geometric shape, plotting points, illustrating a triangle/circle/angle problem), draw one using a fenced ```graph code block containing ONLY valid JSON, nothing else, in this shape: {"title":"optional string","xRange":[xmin,xmax],"yRange":[ymin,ymax],"elements":[...]}. xRange/yRange are optional (auto-fit if omitted). Each item in "elements" is one of: {"type":"curve","points":[[x,y],...],"label":"optional"} for a function (compute enough sample points yourself, e.g. 20-40 across the domain, to make the curve look smooth), {"type":"line","from":[x,y],"to":[x,y],"dashed":true|false} for a segment, {"type":"circle","center":[x,y],"radius":r,"fill":true|false} for a circle, {"type":"polygon","points":[[x,y],...],"fill":true|false,"label":"optional"} for a triangle/rectangle/other polygon, {"type":"point","at":[x,y],"label":"optional"} for a labeled point. x and y are always drawn to the same scale (never stretched), so shapes come out looking geometrically correct, not distorted. Do the actual math yourself (computing the curve\'s y-values, a shape\'s vertex coordinates, etc.) before writing the block; only reach for this when a picture genuinely adds clarity over just explaining it, and never put prose inside the ```graph block itself. ' +
