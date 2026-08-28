@@ -882,7 +882,7 @@ try {
                 <div class="relative overflow-hidden flex-shrink-0" style="width:9.5rem;height:9.5rem;max-width:100%;border-radius:1rem;background:${NAVY};">
                   ${f.type && f.type.startsWith('video/')
                     ? `<video src="${f.previewUrl}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover block"></video>`
-                    : `<img src="${f.previewUrl}" alt="${escapeHtml(f.name)}" class="absolute inset-0 w-full h-full object-cover block" />`}
+                    : `<img src="${f.previewUrl}" alt="${escapeHtml(f.name)}" onclick="openConvoImageViewer('${encodeURIComponent(f.previewUrl)}')" class="absolute inset-0 w-full h-full object-cover block cursor-pointer" />`}
                 </div>`).join('')}
             </div>` : '';
           const files = fileAttachments.length ? `
