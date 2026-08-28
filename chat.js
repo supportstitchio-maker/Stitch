@@ -3104,6 +3104,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // don't reset an in-progress download back to its idle icon.
         let convoDocDownloadState = {};
 
+        // Once a document has actually been fetched, keep the Blob around
+        // in memory so tapping the chip again just opens/saves it straight
+        // away instead of hitting the network and re-running the whole
+        // download flow a second time.
+        let convoDocBlobCache = {};
+
         function convoDocChipId(url){
           let h = 0;
           for (let i = 0; i < url.length; i++) h = (h * 31 + url.charCodeAt(i)) | 0;
@@ -3182,6 +3188,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const name = decodeURIComponent(encodedName || '');
           const current = convoDocDownloadState[url];
           if (current && current.status === 'downloading') return;
+
+          // Already fetched this session -- just re-open the cached copy,
+          // no network round-trip and no "downloading" state this time.
+          const cachedBlob = convoDocBlobCache[url];
+          if (cachedBlob) {
+            const blobUrl = URL.createObjectURL(cachedBlob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+            return;
+          }
+
           convoDocDownloadState[url] = { status: 'downloading', progress: 0 };
           convoUpdateDocChipDOM(url);
           try {
@@ -3207,6 +3229,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             } else {
               blob = await res.blob();
             }
+            convoDocBlobCache[url] = blob;
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
