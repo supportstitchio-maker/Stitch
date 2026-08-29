@@ -74,6 +74,10 @@
           const v = String(str || '').trim();
           return /^https?:\/\//i.test(v) ? v : `https://${v}`;
         }
+        function openExternalUrl(url){
+          if (!url) return;
+          window.open(ensureUrlScheme(url), '_blank');
+        }
 
         const blueCardPalette = [
           ['#1e90ff', '#1671cc'], 
