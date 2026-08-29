@@ -3754,6 +3754,7 @@ try {
           lectureAttachments = [];
           pendingAutoOpenAttachmentId = null;
           liveLectureState = { classId, lectureId, connected: true, seconds: 0, muted: false, camOff: false, handRaised: false, view: 'grid', mediaError: null };
+          lectureMinimized = false;
           openOverlay('lectureCall');
           joinLectureSignaling(lectureId);
 
@@ -3775,6 +3776,8 @@ try {
             liveLectureState.seconds++;
             const timerEl = document.getElementById('lecture-call-timer');
             if (timerEl) timerEl.textContent = formatCallTime(liveLectureState.seconds);
+            const bannerTimerEl = document.getElementById('lecture-minimized-timer');
+            if (bannerTimerEl) bannerTimerEl.textContent = formatCallTime(liveLectureState.seconds);
           }, 1000);
         }
 
@@ -4065,7 +4068,59 @@ try {
           if (lecturePreview && lecturePreview.kind === 'pdf' && lecturePreview.status === 'ready') renderPreviewPdfPage();
         }
 
+        let lectureMinimized = false;
+
+        // Tapping "Back" during a live lecture used to call endLecture()
+        // outright -- one accidental tap on the way to checking chat or
+        // another tab would hang up (or, for a student, leave) the whole
+        // class. This mirrors how the normal 1:1/group call screen's back
+        // button works: it minimizes to a small persistent banner (stream
+        // and peer connections keep running) instead of ending anything.
+        // The lecture only actually ends when the red control-bar button
+        // is tapped.
+        function minimizeLecture(){
+          if (!liveLectureState.connected) { closeOverlay(); return; }
+          lectureMinimized = true;
+          currentOverlayKind = null;
+          updateUtilityNavActive();
+          if (typeof updateClassroomNav === 'function') updateClassroomNav();
+          const ov = document.getElementById('overlay');
+          if (ov) { ov.classList.add('hidden'); ov.innerHTML = ''; ov.style.top = OVERLAY_TOP; ov.style.bottom = '0'; ov.style.paddingTop = ''; }
+          const appShellEl = document.getElementById('app-shell');
+          if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
+          if (typeof resetBottomNav === 'function') resetBottomNav();
+          const isClassroomTab = currentTab === 2;
+          const bottomNavEl = document.getElementById('bottom-nav');
+          const classroomNavEl = document.getElementById('classroom-nav');
+          if (bottomNavEl) bottomNavEl.style.display = isClassroomTab ? 'none' : '';
+          if (classroomNavEl) classroomNavEl.style.display = isClassroomTab ? '' : 'none';
+          if (typeof overlayHistoryPushed !== 'undefined' && overlayHistoryPushed) {
+            overlayHistoryPushed = false;
+            history.back();
+          }
+          if (currentTab === 2) renderStudy();
+          const banner = document.getElementById('lecture-minimized-banner');
+          if (banner) { banner.classList.remove('hidden'); updateMinimizedLectureBanner(); }
+        }
+
+        function resumeLecture(){
+          if (!liveLectureState.connected) return;
+          lectureMinimized = false;
+          const banner = document.getElementById('lecture-minimized-banner');
+          if (banner) banner.classList.add('hidden');
+          openOverlay('lectureCall');
+          attachLectureMedia();
+        }
+
+        function updateMinimizedLectureBanner(){
+          const el = document.getElementById('lecture-minimized-timer');
+          if (el) el.textContent = formatCallTime(liveLectureState.seconds);
+        }
+
         function endLecture(remoteEnded){
+          lectureMinimized = false;
+          const banner = document.getElementById('lecture-minimized-banner');
+          if (banner) banner.classList.add('hidden');
           clearLectureTimer();
           stopLectureLocalStream();
           const cls = myClasses.find(c => c.id === liveLectureState.classId);
@@ -4785,7 +4840,7 @@ try {
               <input type="file" id="lecture-doc-input" accept=".pdf" class="hidden" onchange="handleLectureDocAttach(event)">
               <input type="file" id="lecture-media-input" accept="image/*,video/*" class="hidden" onchange="handleLectureMediaAttach(event)">
               <div class="flex items-center px-3 flex-shrink-0 mb-2 relative">
-                <button onclick="${(isWhiteboard && isTeacher) ? 'toggleLectureWhiteboard()' : 'endLecture()'}" title="Back" class="absolute left-3 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white text-gray-700 shadow-sm border border-gray-200">${Icon('back','w-4 h-4')}</button>
+                <button onclick="${(isWhiteboard && isTeacher) ? 'toggleLectureWhiteboard()' : 'minimizeLecture()'}" title="Back" class="absolute left-3 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white text-gray-700 shadow-sm border border-gray-200">${Icon('back','w-4 h-4')}</button>
                 <div class="flex-1 min-w-0 text-center px-2">
                   <div class="text-lg font-bold font-display truncate text-gray-800">${escapeHtml(headerLabel)}</div>
                   <div class="text-sm text-gray-500"><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
