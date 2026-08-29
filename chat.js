@@ -742,7 +742,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           queueSaveUserState();
           openCollabMembers();
           const ok = await collabUpdateMembersCanAddRemote(id, next);
-          if (!ok) pushInAppNotification('Setting not synced', "This didn't save to the server -- try again once you're back online.");
+          if (!ok.ok) {
+            pushInAppNotification(
+              'Setting not synced',
+              ok.reason === 'missing_column'
+                ? "Your database needs a small update before this setting can be saved -- ask whoever set up your Supabase project to add a `members_can_add` column to the collaborations table."
+                : "This didn't save to the server -- try again once you're back online."
+            );
+          }
         }
 
         function leaveCollaboration(){
@@ -1881,15 +1888,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // messages table above.
         async function collabUpdateMembersCanAddRemote(id, allowed){
           const sb = getSupabaseClient();
-          if (!sb) return false;
+          if (!sb) return { ok: false, reason: 'offline' };
           try {
             const { error } = await sb.from(COLLABORATIONS_TABLE).update({ members_can_add: allowed }).eq('id', id);
             if (error) {
+              const badCol = missingColumnFromError(error);
               console.warn('Collaboration "members can add" setting did not sync -- add a `members_can_add boolean default false` column to the collaborations table to enable this:', error);
-              return false;
+              return { ok: false, reason: badCol ? 'missing_column' : 'error' };
             }
-            return true;
-          } catch (e) { return false; }
+            return { ok: true };
+          } catch (e) { return { ok: false, reason: 'offline' }; }
         }
 
         async function loadMyCollaborations(){
