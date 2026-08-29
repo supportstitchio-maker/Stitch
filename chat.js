@@ -563,6 +563,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const mineEntry = (convoMeta[id].members || []).find(m => m.mine);
             if (mineEntry && myRealId) mineEntry.otherUserId = myRealId;
             queueSaveUserState();
+            // Push each invited person so they're notified even if their
+            // app is closed -- the realtime listener above covers them
+            // while they're online, this covers them while they're not.
+            const myName = myMember.name;
+            contacts.forEach(c => {
+              if (!c.otherUserId) return;
+              sendPushTo(c.otherUserId, {
+                title: 'Added to a group',
+                body: `${myName} added you to "${finalName}"`,
+                tag: 'collab-add-' + id,
+                data: { kind: 'collab_add', convoId: id },
+              });
+            });
           } else if (!createdRemotely && contacts.length) {
             pushInAppNotification('Collaboration not synced', `"${finalName}" was created on this device only -- the others won't see it until this syncs. Check your connection or Supabase setup.`);
           }
@@ -677,8 +690,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           meta.members = (meta.members || []).concat(newContacts.map(c => ({ otherUserId: c.otherUserId || null, name: c.name, avatarBg: c.avatarBg, icon: c.icon, photo: c.photo || null, mine: false })));
           queueSaveUserState();
           openCollabMembers();
+          const myName = (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
           collabAddMembersRemote(id, meta.name, newContacts).then(ok => {
-            if (!ok) pushInAppNotification('Members not synced', `The people you just added won't see "${meta.name}" until this syncs. Check your connection or Supabase setup.`);
+            if (!ok) { pushInAppNotification('Members not synced', `The people you just added won't see "${meta.name}" until this syncs. Check your connection or Supabase setup.`); return; }
+            // Let everyone already in the group know who just joined, and
+            // separately notify the new members themselves -- both as a
+            // push (in case their app is closed) and an in-app notification.
+            sendGroupSystemEvent(id, `${myName} added ${newContacts.map(c => c.name).join(', ')} to the group`, {
+              excludeUserIds: new Set(newContacts.map(c => c.otherUserId).filter(Boolean)),
+            });
+            newContacts.forEach(c => {
+              if (!c.otherUserId) return;
+              sendPushTo(c.otherUserId, {
+                title: 'Added to a group',
+                body: `${myName} added you to "${meta.name}"`,
+                tag: 'collab-add-' + id,
+                data: { kind: 'collab_add', convoId: id },
+              });
+            });
           });
         }
 
@@ -690,7 +719,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             meta.members = (meta.members || []).filter(m => m.otherUserId !== userId);
             queueSaveUserState();
             openCollabMembers();
-            if (userId) collabRemoveMemberRemote(id, userId);
+            if (userId) {
+              collabRemoveMemberRemote(id, userId);
+              const myName = (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
+              sendGroupSystemEvent(id, `${myName} removed ${name} from the group`);
+              sendPushTo(userId, {
+                title: 'Removed from a group',
+                body: `${myName} removed you from "${meta.name}"`,
+                tag: 'collab-remove-' + id,
+                data: { kind: 'collab_remove', convoId: id },
+              });
+            }
           });
         }
 
@@ -712,6 +751,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!id || !meta) return;
           openAppConfirmModal(`Leave "${meta.name}"?`, "You'll no longer see this collaboration's messages, but it stays visible to everyone else.", 'Leave', function(){
             const myId = typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser ? _cachedAuthUser.id : null;
+            const myName = (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
+            sendGroupSystemEvent(id, `${myName} left the group`);
             if (myId) collabRemoveMemberRemote(id, myId);
             performDeleteConvoChat(id);
           });
@@ -1398,6 +1439,32 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         const MESSAGES_TABLE = 'messages';
 
+        // A group-event notice ("X added Y", "X left the group", etc.) is
+        // sent through the same messages table as a normal chat message so
+        // it reaches every member's device (and reuses the existing
+        // push/notification pipeline below), but is marked with this
+        // prefix so it renders as a system line instead of a chat bubble
+        // and doesn't say "New message from...".
+        const SYS_MSG_PREFIX = '\u0000SYS\u0000';
+
+        // Notifies every other current member of a group (excluding
+        // whoever is in opts.excludeUserIds) that something changed --
+        // someone was added, removed, or left -- both as a system line in
+        // their copy of the conversation and as a normal notification/push
+        // for that conversation. Also logs the same line into the acting
+        // user's own conversation immediately.
+        function sendGroupSystemEvent(convoId, text, opts){
+          opts = opts || {};
+          const meta = convoMeta[convoId];
+          if (!meta || meta.icon !== 'users') return;
+          logCallEvent(convoId, text);
+          const exclude = opts.excludeUserIds || new Set();
+          (meta.members || []).forEach(m => {
+            if (!m.otherUserId || m.mine || exclude.has(m.otherUserId)) return;
+            sendMessageRemote(convoId, m.otherUserId, SYS_MSG_PREFIX + text, null, null, [], null);
+          });
+        }
+
         const CHAT_VOICE_BUCKET = 'chat-voice-notes';
 
         async function uploadConvoVoiceToStorage(blob, convoId){
@@ -1473,7 +1540,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               break;
             }
             if (error) { console.warn('Message did not sync to Supabase:', error); return null; }
-            sendPushTo(otherUserId, {
+            const isSysEvent = text && text.startsWith(SYS_MSG_PREFIX);
+            const meta = convoMeta[convoId];
+            sendPushTo(otherUserId, isSysEvent ? {
+              title: (meta && meta.name) || 'Group update',
+              body: text.slice(SYS_MSG_PREFIX.length),
+              tag: 'group-event-' + convoId,
+              data: { kind: 'group_event', convoId },
+            } : {
               title: (typeof profileData !== 'undefined' && profileData.name) || 'New message',
               body: text ? (text.length > 120 ? text.slice(0, 117) + '...' : text) : (attachments && attachments.length ? 'Sent a photo' : 'Sent a voice message'),
               tag: 'msg-' + convoId,
@@ -1503,16 +1577,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error || !data) return;
             conversationMessages[convoId] = data
               .filter(r => !deletedForMeMessageIds.has(r.id))
-              .map(r => ({
-                id: r.id,
-                localId: r.local_id || null,
-                from: r.sender_id === myId ? 'me' : 'them',
-                text: r.text,
-                voice: r.voice_url ? { src: r.voice_url, duration: r.voice_duration || 0 } : undefined,
-                attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
-                read: !!r.read,
-                time: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
-              }));
+              .map(r => {
+                const raw = r.text || '';
+                const isSys = raw.startsWith(SYS_MSG_PREFIX);
+                return {
+                  id: r.id,
+                  localId: r.local_id || null,
+                  from: isSys ? 'system' : (r.sender_id === myId ? 'me' : 'them'),
+                  text: isSys ? raw.slice(SYS_MSG_PREFIX.length) : raw,
+                  voice: r.voice_url ? { src: r.voice_url, duration: r.voice_duration || 0 } : undefined,
+                  attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
+                  read: !!r.read,
+                  time: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+                  _sys: isSys,
+                };
+              })
+              // A group system event ("X added Y", "X left the group"...)
+              // is fanned out as one row per other member so everyone's
+              // push/notification pipeline picks it up -- collapse those
+              // back into a single line here, rather than showing the same
+              // line once per member.
+              .filter((m, idx, arr) => !m._sys || !arr.slice(0, idx).some(prev => prev._sys && prev.text === m.text && Math.abs(prev.time - m.time) < 5000))
+              .map(({ _sys, ...rest }) => rest);
           } catch (e) {  }
         }
 
@@ -1888,10 +1974,37 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
               const collabId = payload && payload.new && payload.new.collab_id;
               const meta = collabId && convoMeta[collabId];
-              if (meta) pushInAppNotification('New collaboration', `You were added to "${meta.name}".`);
+              if (meta) {
+                pushInAppNotification('New collaboration', `You were added to "${meta.name}".`);
+                if (typeof addNotif === 'function') {
+                  addNotif({
+                    type: 'group',
+                    source: 'messages',
+                    icon: 'users',
+                    iconBg: 'bg-emerald-50',
+                    iconClass: 'text-emerald-600',
+                    name: meta.name,
+                    message: `You were added to "${meta.name}"`,
+                    convoId: collabId,
+                  });
+                }
+              }
             })
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: COLLAB_MEMBERS_TABLE, filter: `user_id=eq.${myId}` }, (payload) => {
               const collabId = payload && payload.old && payload.old.collab_id;
+              const meta = collabId && convoMeta[collabId];
+              const groupName = meta && meta.name;
+              if (groupName && typeof addNotif === 'function') {
+                addNotif({
+                  type: 'group',
+                  source: 'messages',
+                  icon: 'users',
+                  iconBg: 'bg-red-50',
+                  iconClass: 'text-red-500',
+                  name: groupName,
+                  message: `You were removed from "${groupName}"`,
+                });
+              }
               applyRemoteCollabRemoval(collabId, 'Removed from collaboration', name => `You were removed from "${name}".`);
             })
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: COLLABORATIONS_TABLE }, (payload) => {
@@ -1957,12 +2070,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             osc.stop(t0 + burstDuration + 0.03);
           });
         }
+        // Each ring "burst" tries the device's own ringtone first (native
+        // system sound, or the browser's Notification sound on the web
+        // app) and only falls back to the synthesized tone above when
+        // neither is available.
+        function playDeviceRingBurst(callerName){
+          if (typeof soundMuted !== 'undefined' && soundMuted) return;
+          if (typeof playDeviceNotificationSound === 'function') {
+            playDeviceNotificationSound(callerName || 'Incoming call', 'is calling you\u2026', { channelId: 'calls', tag: 'incoming-call' }).then(played => {
+              if (!played) playRingBurst();
+            });
+          } else {
+            playRingBurst();
+          }
+        }
         function startIncomingCallRingtone(){
           stopIncomingCallRingtone();
-          playRingBurst();
+          const callerName = (incomingCallInfo && incomingCallInfo.callerName) || 'Someone';
+          playDeviceRingBurst(callerName);
           if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
           ringIntervalId = setInterval(() => {
-            playRingBurst();
+            playDeviceRingBurst(callerName);
             if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
           }, 4000);
         }
@@ -2208,19 +2336,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const convoId = row.convo_id;
           if (!conversationMessages[convoId]) conversationMessages[convoId] = [];
           if (row.id != null && conversationMessages[convoId].some(m => m.id === row.id)) return;
-          const isVoice = !!row.voice_url;
-          const hasAttachments = Array.isArray(row.attachments) && row.attachments.length > 0;
+          const rawText = row.text || '';
+          const isSysEvent = rawText.startsWith(SYS_MSG_PREFIX);
+          const isVoice = !isSysEvent && !!row.voice_url;
+          const hasAttachments = !isSysEvent && Array.isArray(row.attachments) && row.attachments.length > 0;
           conversationMessages[convoId].push({
             id: row.id,
-            from: 'them',
-            text: row.text || '',
+            from: isSysEvent ? 'system' : 'them',
+            text: isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : rawText,
             voice: isVoice ? { src: row.voice_url, duration: row.voice_duration || 0 } : undefined,
             attachments: hasAttachments ? row.attachments : undefined,
             time: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
           });
           queueSaveUserState();
-          const previewText = isVoice ? '🎤 Voice message' : hasAttachments ? '📷 Photo' : (row.text || 'Attachment');
-          if (activeConvoId === convoId && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
+          const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? '📷 Photo' : (row.text || 'Attachment'));
+          if (!isSysEvent && activeConvoId === convoId && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
 
           const found = findConvoAndArray(convoId);
           let c = null;
@@ -2238,15 +2368,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else {
             if (typeof addNotif === 'function') {
               const meta = convoMeta[convoId] || {};
+              const isGroup = meta.icon === 'users';
               const senderName = meta.name || (c && c.name) || 'someone';
-              addNotif({
-                type: 'message',
+              addNotif(isSysEvent ? {
+                type: 'group',
                 source: 'messages',
-                icon: 'comment',
+                icon: 'users',
                 iconBg: 'bg-emerald-50',
                 iconClass: 'text-emerald-600',
                 name: senderName,
-                message: `New message from ${senderName}`,
+                message: previewText,
+                convoId,
+              } : {
+                type: 'message',
+                source: 'messages',
+                icon: isGroup ? 'users' : 'comment',
+                iconBg: 'bg-emerald-50',
+                iconClass: 'text-emerald-600',
+                name: senderName,
+                message: isGroup ? `New message in "${senderName}"` : `New message from ${senderName}`,
                 convoId,
                 otherUserId: meta.otherUserId || (c && c.otherUserId),
               });
