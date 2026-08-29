@@ -1799,9 +1799,22 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           }
           return notifChimeAudioCtx;
         }
-        function playNotifChime(){
+        function playNotifChime(title, body){
           if (navigator.vibrate) navigator.vibrate(150);
           if (typeof soundMuted !== 'undefined' && soundMuted) return;
+          // Prefer the device's own notification tone (set in the phone's
+          // system settings, or the browser's default) over a synthesized
+          // beep. Fall back to the old in-app chime only when neither is
+          // available (e.g. permission not granted yet).
+          if (typeof playDeviceNotificationSound === 'function') {
+            playDeviceNotificationSound(title || 'Stitch', body || '').then(played => {
+              if (!played) playSynthesizedNotifChime();
+            });
+            return;
+          }
+          playSynthesizedNotifChime();
+        }
+        function playSynthesizedNotifChime(){
           const ctx = getNotifChimeAudioCtx();
           if (!ctx) return;
           if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -1847,7 +1860,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             workId: opts.workId || null,
             route: opts.route || null,
           });
-          playNotifChime();
+          playNotifChime(opts.name || 'Stitch', opts.message || '');
           queueSaveUserState();
           refreshNotifBadge();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'notifications') renderNotifTab();
@@ -1865,7 +1878,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           if (!convoId) return;
           let changed = false;
           notifData.forEach(n => {
-            if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
+            if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
           });
           if (!changed) return;
           queueSaveUserState();
@@ -1983,7 +1996,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           }
           const n = notifData.find(x => x.id === id);
           if (!n) return;
-          if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info') && n.convoId) {
+          if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId) {
             n.read = true;
             queueSaveUserState();
             closeOverlay();
