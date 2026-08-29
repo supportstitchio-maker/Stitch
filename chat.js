@@ -3697,16 +3697,26 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             window.open(blobUrl, '_blank');
             setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
           } else {
-            // Not something the browser can render, and the share sheet
-            // isn't available or didn't succeed here. Forcing the exact
-            // same filename again with the `download` attribute (as the
-            // very first save does) is what made Chrome treat every
-            // reopen as "you've already downloaded this file, do it
-            // again?" -- a plain navigation to the blob avoids that
-            // duplicate-name check and lets the browser handle it on its
-            // own instead.
-            window.open(blobUrl, '_blank');
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            // Not something the browser can render. Navigating straight to
+            // a blob: URL of an unrecognized binary type (previous version
+            // of this code) does NOT reliably download it -- Chrome just
+            // displays the raw bytes as garbled text in the tab, which is
+            // worse than what this replaced. Forcing it through <a
+            // download> is the only thing that reliably makes the browser
+            // treat it as a file to save rather than content to display.
+            // The tradeoff: since the share sheet isn't available or
+            // didn't succeed here, and this uses the same filename as the
+            // original save, Chrome may show its own "you've already
+            // downloaded this file, do it again?" prompt -- a real
+            // browser safety dialog, not a bug, and tapping through it is
+            // safe.
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name || 'download';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
           }
         }
 
