@@ -431,11 +431,20 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           overlayReturnTo = null;
           updateUtilityNavActive();
           if (typeof updateClassroomNav === 'function') updateClassroomNav();
-          clearCallTimers();
-          stopCallLocalStream();
-          teardownCallSignaling();
-          clearLectureTimer();
-          stopLectureLocalStream();
+          // Guarded: closeOverlay() is the generic "close whatever's open"
+          // handler used by many unrelated screens' back buttons -- without
+          // these checks, closing some other overlay while a call/lecture
+          // is minimized (still running in the background) would silently
+          // kill it, even though the person never tapped "End".
+          if (typeof callMinimized === 'undefined' || !callMinimized) {
+            clearCallTimers();
+            stopCallLocalStream();
+            teardownCallSignaling();
+          }
+          if (typeof lectureMinimized === 'undefined' || !lectureMinimized) {
+            clearLectureTimer();
+            stopLectureLocalStream();
+          }
           clearStoryTimer();
           if (typeof stopChallengeScorePolling === 'function') stopChallengeScorePolling();
           const ov = document.getElementById('overlay');
