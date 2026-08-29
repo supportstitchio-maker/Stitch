@@ -1,4 +1,4 @@
-        const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships','Internships'],['courses','Courses'],['scholarships','Scholarships'],['others','Others']];
+const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships','Internships'],['courses','Courses'],['scholarships','Scholarships'],['others','Others']];
         let careerSearchActive = false;
         let careerSearchQuery = '';
 
@@ -2259,4 +2259,3 @@
               ` : ''}
             </div>`;
         }
-
