@@ -587,8 +587,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         let collabMembersOverlayOpen = false;
+        let collabProfileOverlayOpen = false;
         function openCollabMembers(){
           collabMembersOverlayOpen = true;
+          collabProfileOverlayOpen = false;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = collabMembersHTML();
         }
@@ -636,6 +638,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function openAddCollabMembers(){
           collabMembersOverlayOpen = false;
+          collabProfileOverlayOpen = false;
           addCollabSelected = new Set();
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = addCollabMembersHTML();
@@ -1466,9 +1469,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!meta || meta.icon !== 'users') return;
           logCallEvent(convoId, text);
           const exclude = opts.excludeUserIds || new Set();
+          const localId = 'sys_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
           (meta.members || []).forEach(m => {
             if (!m.otherUserId || m.mine || exclude.has(m.otherUserId)) return;
-            sendMessageRemote(convoId, m.otherUserId, SYS_MSG_PREFIX + text, null, null, [], null);
+            sendMessageRemote(convoId, m.otherUserId, SYS_MSG_PREFIX + text, null, null, [], localId);
           });
         }
 
@@ -1569,19 +1573,33 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!sb) return;
           try {
             const myId = await getCurrentUserId();
+            // A group message is stored as one row per recipient (so each
+            // person's own delivery/read state is independent) -- a plain
+            // "every row for this convo_id" query also pulls in every
+            // OTHER member's private copy of every message, which doesn't
+            // just duplicate what's shown, it inflates anything counted
+            // from it (the Media/Docs list, for instance). Restricting to
+            // rows we either sent or were the addressed recipient of fixes
+            // that; the dedup pass below then collapses the (still
+            // legitimate) multiple rows created by fanning our OWN
+            // messages out to several recipients back into one.
+            const cols = 'id,sender_id,text,voice_url,voice_duration,attachments,read,local_id,created_at';
             let data, error;
             ({ data, error } = await sb.from(MESSAGES_TABLE)
-              .select('id,sender_id,text,voice_url,voice_duration,attachments,read,local_id,created_at')
+              .select(cols)
               .eq('convo_id', convoId)
+              .or(`sender_id.eq.${myId},recipient_id.eq.${myId}`)
               .order('created_at', { ascending: true }));
             if (error && missingColumnFromError(error)) {
               console.warn('messages table is missing a selected column -- loading with select(*) instead. Run the migration comment above MESSAGES_TABLE to fix this permanently.');
               ({ data, error } = await sb.from(MESSAGES_TABLE)
                 .select('*')
                 .eq('convo_id', convoId)
+                .or(`sender_id.eq.${myId},recipient_id.eq.${myId}`)
                 .order('created_at', { ascending: true }));
             }
             if (error || !data) return;
+            const seenLocalIds = new Set();
             conversationMessages[convoId] = data
               .filter(r => !deletedForMeMessageIds.has(r.id))
               .map(r => {
@@ -1596,16 +1614,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
                   read: !!r.read,
                   time: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
-                  _sys: isSys,
+                  _mine: isSys || r.sender_id === myId,
                 };
               })
-              // A group system event ("X added Y", "X left the group"...)
-              // is fanned out as one row per other member so everyone's
-              // push/notification pipeline picks it up -- collapse those
-              // back into a single line here, rather than showing the same
-              // line once per member.
-              .filter((m, idx, arr) => !m._sys || !arr.slice(0, idx).some(prev => prev._sys && prev.text === m.text && Math.abs(prev.time - m.time) < 5000))
-              .map(({ _sys, ...rest }) => rest);
+              // My own message/attachment/system-event sent to a group is
+              // stored as one row per other member -- collapse those back
+              // into a single line here instead of showing (and counting)
+              // it once per member.
+              .filter((m, idx, arr) => {
+                if (!m._mine) return true;
+                if (m.localId) {
+                  if (seenLocalIds.has(m.localId)) return false;
+                  seenLocalIds.add(m.localId);
+                  return true;
+                }
+                return !arr.slice(0, idx).some(prev => prev._mine && !prev.localId && prev.text === m.text && Math.abs(prev.time - m.time) < 5000);
+              })
+              .map(({ _mine, ...rest }) => rest);
           } catch (e) {  }
         }
 
@@ -2037,6 +2062,44 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               queueSaveUserState();
               if (activeConvoId === row.id && collabMembersOverlayOpen) openCollabMembers();
               if (currentTab === 3) renderInboxTab();
+            })
+            // Unlike the two INSERT/DELETE listeners above (filtered to
+            // `user_id=eq.myId`, i.e. only fire for *my own* membership
+            // changing), these aren't filtered -- so every other member's
+            // add/remove/leave is picked up too, and reflected in this
+            // client's copy of meta.members immediately instead of only
+            // after the next loadMyCollaborations() / app reload.
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: COLLAB_MEMBERS_TABLE }, (payload) => {
+              const row = payload && payload.new;
+              if (!row || row.user_id === myId) return;
+              const meta = convoMeta[row.collab_id];
+              if (!meta || meta.icon !== 'users') return;
+              if ((meta.members || []).some(m => m.otherUserId === row.user_id)) return;
+              meta.members = (meta.members || []).concat([{
+                otherUserId: row.user_id, name: row.name, avatarBg: row.avatar_bg || 'bg-blue-100',
+                icon: row.icon || 'user', photo: row.photo || null, mine: false,
+              }]);
+              queueSaveUserState();
+              refreshConvoStatusLine(row.collab_id);
+              if (activeConvoId === row.collab_id) {
+                if (collabMembersOverlayOpen) openCollabMembers();
+                else if (collabProfileOverlayOpen) renderConvoProfile();
+              }
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: COLLAB_MEMBERS_TABLE }, (payload) => {
+              const row = payload && payload.old;
+              if (!row || row.user_id === myId) return;
+              const meta = convoMeta[row.collab_id];
+              if (!meta || meta.icon !== 'users') return;
+              const before = (meta.members || []).length;
+              meta.members = (meta.members || []).filter(m => m.otherUserId !== row.user_id);
+              if (meta.members.length === before) return;
+              queueSaveUserState();
+              refreshConvoStatusLine(row.collab_id);
+              if (activeConvoId === row.collab_id) {
+                if (collabMembersOverlayOpen) openCollabMembers();
+                else if (collabProfileOverlayOpen) renderConvoProfile();
+              }
             })
             .subscribe();
         }
@@ -2617,20 +2680,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>
             <div class="flex-1 overflow-y-auto p-5">
               ${section('Media', images, f => `
-                <div class="flex items-center gap-3 py-3">
+                <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
                   <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('camera','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate">${escapeHtml(f.name)}</div>
-                </div>`, `No photos or videos shared with ${escapeHtml(meta.name)} yet.`)}
+                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
+                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                </button>`, `No photos or videos shared with ${escapeHtml(meta.name)} yet.`)}
               ${section('Docs', docs, f => `
-                <div class="flex items-center gap-3 py-3">
+                <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
                   <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('file','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate">${escapeHtml(f.name)}</div>
-                </div>`, `No documents shared with ${escapeHtml(meta.name)} yet.`)}
+                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
+                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                </button>`, `No documents shared with ${escapeHtml(meta.name)} yet.`)}
               ${section('Links', links, u => `
-                <div class="flex items-center gap-3 py-3">
+                <button onclick="openExternalUrl('${escapeHtml(u).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
                   <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('link','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate">${u}</div>
-                </div>`, `No links shared with ${escapeHtml(meta.name)} yet.`)}
+                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${u}</div>
+                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                </button>`, `No links shared with ${escapeHtml(meta.name)} yet.`)}
             </div>`;
         }
 
@@ -2648,17 +2714,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function openConvoProfile(){
+          collabProfileOverlayOpen = true;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoProfileHTML();
         }
 
         function renderConvoProfile(){
+          collabProfileOverlayOpen = true;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoProfileHTML();
         }
 
         function closeConvoProfile(){
           collabMembersOverlayOpen = false;
+          collabProfileOverlayOpen = false;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = conversationHTML();
           requestAnimationFrame(() => {
