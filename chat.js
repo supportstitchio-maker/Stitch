@@ -3501,7 +3501,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // Per-URL download state so re-renders (new messages arriving, etc.)
         // don't reset an in-progress download back to its idle icon.
+        // Which documents have already been downloaded once, kept in
+        // localStorage (not just a page-lifetime variable) so reopening the
+        // chat later -- a fresh page load, or a fresh app session -- still
+        // remembers it and opens the file instead of walking through the
+        // whole "Downloading..." flow again as if it were new.
+        const CONVO_DOC_STATE_STORAGE_KEY = 'stitchConvoDocDownloadState';
         let convoDocDownloadState = {};
+        try {
+          const savedDocState = JSON.parse(localStorage.getItem(CONVO_DOC_STATE_STORAGE_KEY) || '{}');
+          Object.keys(savedDocState).forEach(url => {
+            if (savedDocState[url] && savedDocState[url].status === 'done') convoDocDownloadState[url] = { status: 'done', progress: 1 };
+          });
+        } catch (e) {  }
+        function persistConvoDocDownloadState(){
+          try {
+            const done = {};
+            Object.keys(convoDocDownloadState).forEach(url => {
+              if (convoDocDownloadState[url] && convoDocDownloadState[url].status === 'done') done[url] = { status: 'done' };
+            });
+            localStorage.setItem(CONVO_DOC_STATE_STORAGE_KEY, JSON.stringify(done));
+          } catch (e) {  }
+        }
 
         // Once a document has actually been fetched, keep the Blob around
         // in memory so tapping the chip again just opens/saves it straight
@@ -3516,7 +3537,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function convoDocIconHTML(state){
-          if (state && state.status === 'downloading') {
+          if (state && (state.status === 'downloading' || state.status === 'opening')) {
             const pct = Math.max(0, Math.min(100, Math.round((state.progress || 0) * 100)));
             const deg = pct * 3.6;
             return `
@@ -3531,12 +3552,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function convoDocCaptionText(url, state){
           if (state && state.status === 'downloading') return 'Downloading…';
-          if (state && state.status === 'error') return 'Download failed, tap to retry';
-          // 'done' intentionally has no caption -- previously showed the
-          // storage host (e.g. "xxxx.supabase.co"), which just exposed
-          // internal infra to the user for no benefit. Tapping the chip
-          // again still re-downloads the file (see convoDownloadDocument),
-          // it just no longer says so underneath.
+          if (state && state.status === 'opening') return 'Opening…';
+          if (state && state.status === 'error') return 'Failed, tap to retry';
+          // Already downloaded earlier -- tapping again opens it (see
+          // convoDownloadDocument) instead of saving another copy.
+          if (state && state.status === 'done') return 'Tap to open';
           return '';
         }
 
@@ -3641,18 +3661,42 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // First tap: fetch + save to disk (with progress). Any tap after
-        // that: hand the cached copy straight to the device's own apps --
+        // that -- this session or a later one, since the "done" status
+        // above is persisted -- hands the file straight to the device's
+        // own apps instead of running through the download flow again:
         // via the share sheet on mobile so it can be opened in Word, a PDF
-        // reader, etc. -- instead of running the whole fetch-and-save flow
-        // again.
+        // reader, etc, falling back to re-saving it only where the share
+        // sheet isn't available.
         async function convoDownloadDocument(encodedUrl, encodedName){
           const url = decodeURIComponent(encodedUrl);
           const name = decodeURIComponent(encodedName || '');
           const current = convoDocDownloadState[url];
-          if (current && current.status === 'downloading') return;
+          if (current && (current.status === 'downloading' || current.status === 'opening')) return;
 
-          if (current && current.status === 'done' && convoDocBlobCache[url]) {
-            convoOpenDocumentBlob(convoDocBlobCache[url], name);
+          if (current && current.status === 'done') {
+            if (convoDocBlobCache[url]) {
+              convoOpenDocumentBlob(convoDocBlobCache[url], name);
+              return;
+            }
+            // Downloaded in an earlier session -- the blob itself isn't
+            // kept in memory across a reload, but we remember that it WAS
+            // downloaded, so this fetches it once quietly and opens it
+            // rather than treating it as a brand new download.
+            convoDocDownloadState[url] = { status: 'opening', progress: 1 };
+            convoUpdateDocChipDOM(url);
+            try {
+              const res = await fetch(url);
+              if (!res.ok) throw new Error('Open failed (' + res.status + ')');
+              const blob = await res.blob();
+              convoDocBlobCache[url] = blob;
+              convoDocDownloadState[url] = { status: 'done', progress: 1 };
+              convoUpdateDocChipDOM(url);
+              convoOpenDocumentBlob(blob, name);
+            } catch (err) {
+              console.warn('Reopening a previously downloaded document failed:', err);
+              convoDocDownloadState[url] = { status: 'error', progress: 0 };
+              convoUpdateDocChipDOM(url);
+            }
             return;
           }
 
@@ -3691,6 +3735,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             a.remove();
             setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
             convoDocDownloadState[url] = { status: 'done', progress: 1 };
+            persistConvoDocDownloadState();
           } catch (err) {
             console.warn('Document download failed:', err);
             convoDocDownloadState[url] = { status: 'error', progress: 0 };
