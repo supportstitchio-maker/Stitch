@@ -222,6 +222,8 @@
           const myId = await getCurrentUserId();
           if (!myId) return;
 
+          await ensureNativeNotificationChannels();
+
           let permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
             permStatus = await PushNotifications.requestPermissions();
@@ -278,6 +280,60 @@
           } catch (e) {
             console.warn('Push notification did not send:', e);
           }
+        }
+
+        // ---- Playing sound through the device's own notification/ringtone,
+        // instead of an in-app synthesized tone ----
+        //
+        // On native (Capacitor) this schedules a LocalNotification, so the
+        // sound that plays is whatever the person picked as their phone's
+        // notification/ringtone in system settings -- not a fixed tone we
+        // ship. On the web app there's no way to trigger the OS ringtone
+        // directly, so the closest equivalent is the browser's own
+        // Notification API, which plays the browser/OS's configured
+        // notification sound rather than a tone we generate ourselves.
+        let _nativeChannelsReady = false;
+        async function ensureNativeNotificationChannels(){
+          if (_nativeChannelsReady) return;
+          _nativeChannelsReady = true;
+          try {
+            const LocalNotifications = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (!LocalNotifications || !LocalNotifications.createChannel) return;
+            await LocalNotifications.createChannel({ id: 'default', name: 'Notifications', importance: 4, sound: 'default', vibration: true });
+            await LocalNotifications.createChannel({ id: 'calls', name: 'Calls', importance: 5, sound: 'default', vibration: true });
+          } catch (e) {  }
+        }
+
+        async function playDeviceNotificationSound(title, body, opts){
+          opts = opts || {};
+          try {
+            if (isNativeApp()) {
+              const LocalNotifications = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+              if (!LocalNotifications) return false;
+              const perm = await LocalNotifications.checkPermissions();
+              if (perm.display !== 'granted') {
+                const req = await LocalNotifications.requestPermissions();
+                if (req.display !== 'granted') return false;
+              }
+              await LocalNotifications.schedule({
+                notifications: [{
+                  id: Math.floor(Math.random() * 2147483647),
+                  title: title || 'Stitch',
+                  body: body || '',
+                  sound: 'default',
+                  channelId: opts.channelId || 'default',
+                }],
+              });
+              return true;
+            }
+            if ('Notification' in window && Notification.permission === 'granted') {
+              // A real (non-synthesized) Notification plays the browser/
+              // OS's own notification sound.
+              new Notification(title || 'Stitch', { body: body || '', silent: false, tag: opts.tag, renotify: !!opts.tag });
+              return true;
+            }
+          } catch (e) {  }
+          return false;
         }
 
         async function sendEmailNotification({ subject, title, body, url } = {}){
