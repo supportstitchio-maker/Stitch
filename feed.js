@@ -2576,7 +2576,10 @@
 
         function feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, overlay){
           const nameCls = overlay ? 'font-semibold text-[13px] truncate text-white' : 'font-semibold text-[13px] truncate';
-          const timeCls = overlay ? 'text-[11px] text-white/80 truncate' : 'text-[11px] text-gray-500 truncate';
+          // FIX: "text-white/80" was never generated in the static styles.css (only text-white
+          // and text-white/60 exist there), so the class did nothing and "Now" rendered in the
+          // default dark text color instead of white. Using text-white/60, which does exist.
+          const timeCls = overlay ? 'text-[11px] text-white/60 truncate' : 'text-[11px] text-gray-500 truncate';
           const dotsCls = overlay ? 'w-7 h-7 flex items-center justify-center text-white flex-shrink-0' : 'w-7 h-7 flex items-center justify-center text-gray-400 flex-shrink-0';
           const connectCls = overlay
             ? 'text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0 bg-white/20 text-white border-white/60'
