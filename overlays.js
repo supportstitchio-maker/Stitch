@@ -2105,9 +2105,9 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { showDelete: false }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true })}
+              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction'), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true })}
               <div class="p-5">
-                <div class="space-y-2">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
+                <div class="notif-list">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
               </div>
             </div>`;
           if (prevNotifScrollTop) {
@@ -2292,11 +2292,6 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
               ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left' }), { hideBack: true, boldMenuIcon: true, titleLeft: true, titleSize: 'text-3xl', menuLeft: true })}
               <div class="p-5">
-                ${noticeSelected.size ? `
-                <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
-                    <div class="text-xs font-semibold text-[${NAVY}]">${noticeSelected.size} selected</div>
-                    <button onclick="noticeCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button>
-                </div>` : ''}
                 <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No class announcements yet.</div>'}</div>
               </div>
             </div>`;
