@@ -4133,7 +4133,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="convoDownloadDocument('${encodeURIComponent(s.url)}','${encodeURIComponent(s.name)}')" class="text-[13px] font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};">Download instead</button>
               </div>`;
           } else if (s.kind === 'docx') {
-            body = `<div class="flex-1 overflow-y-auto px-5 py-4 doc-viewer-content">${s.html}</div>`;
+            body = `<div class="flex-1 overflow-y-auto doc-viewer-scroll"><div class="doc-viewer-page doc-viewer-content">${s.html}</div></div>`;
           } else if (s.kind === 'text') {
             body = `<div class="flex-1 overflow-y-auto px-5 py-4"><pre class="text-[13px] whitespace-pre-wrap font-sans">${escapeHtml(s.text)}</pre></div>`;
           } else if (s.kind === 'pdf') {
