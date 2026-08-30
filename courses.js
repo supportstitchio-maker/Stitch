@@ -1346,6 +1346,14 @@ try {
         const COURSES_TABLE = 'courses';
 
         let allCourses = [];
+
+        // Courses that should actually be shown in a course list: hides archived
+        // (soft-deleted) courses from everyone except students who are already
+        // enrolled in them, so deleting a course never yanks it out from under
+        // someone who's part-way through it.
+        function visibleCourses(){
+          return allCourses.filter(c => !c.archived || enrolledCourseIds.includes(c.id));
+        }
         let enrolledCourseIds = [];
         let currentCourseId = null;
         let currentCourseItemId = null;
@@ -1457,7 +1465,7 @@ try {
                   ${Icon('plus','w-4 h-4')} Create a Course
                 </button>
               </div>` : ''}
-            ${allCourses.length ? allCourses.map(courseCardHTML).join('') : `
+            ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : `
               <div class="flex flex-col items-center text-center py-10">
                 <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('book','w-9 h-9')}</div>
                 <div class="font-bold text-gray-700 mb-1">No courses yet</div>
@@ -2591,19 +2599,35 @@ try {
           } catch (e) { return false; }
         }
 
+        // Soft-deletes a course: it disappears from the catalog for everyone who
+        // isn't enrolled, but students who already enrolled keep full access to it
+        // in their courses. Use this instead of a hard delete so enrolled learners
+        // never lose in-progress coursework.
+        function archiveCourse(courseId){
+          const c = allCourses.find(x => x.id === courseId);
+          if (!c) return;
+          c.archived = true;
+          postCourseInsertRemote(c);
+        }
+
         function deleteCourse(courseId){
           if (!isCurrentUserAdmin()) return;
           const c = allCourses.find(x => x.id === courseId);
           if (!c) return;
-          openAppConfirmModal(`Delete "${c.title}"?`, "This removes it for everyone and can't be undone.", 'Delete', function(){
-            const idx = allCourses.indexOf(c);
-            if (idx !== -1) allCourses.splice(idx, 1);
-            enrolledCourseIds = enrolledCourseIds.filter(id => id !== courseId);
-            deleteCourseRemote(courseId);
-            if (currentCourseId === courseId) closeOverlay();
-            renderStudy();
-            queueSaveUserState();
-          });
+          const hasEnrollees = Object.keys(courseEnrollments || {}).some(id => id === courseId) || enrolledCourseIds.includes(courseId);
+          openAppConfirmModal(
+            `Delete "${c.title}"?`,
+            hasEnrollees
+              ? "This removes it from the catalog so no one new can find or enroll in it. Anyone already enrolled keeps their access and progress."
+              : "This removes it for everyone and can't be undone.",
+            'Delete',
+            function(){
+              archiveCourse(courseId);
+              if (currentCourseId === courseId) closeOverlay();
+              renderStudy();
+              queueSaveUserState();
+            }
+          );
         }
 
         // ---- New course form markup ----
