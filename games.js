@@ -1964,6 +1964,7 @@ let simpleGameState = null;
             subscribeToConnectionUpdates(),
             subscribeToCoursesRealtime(),
             startCoursesPolling(),
+            startOpportunitiesPolling(),
             subscribeToClassesRealtime(),
             subscribeToCollabMembership(),
             subscribeToFeedActivity(),
