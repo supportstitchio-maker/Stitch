@@ -252,7 +252,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            const { data, error } = await sb.from(OPPORTUNITIES_TABLE).select('*');
+            const { data, error } = await withClockSkewRetry(sb, () => sb.from(OPPORTUNITIES_TABLE).select('*'));
             if (error) { console.warn('Loading opportunities from Supabase failed (see opportunities table SQL comment above):', error); return; }
             if (!data) return;
             const rows = data
