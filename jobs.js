@@ -265,7 +265,64 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               scholarships: rows.filter(j => j.type === 'Scholarship'),
               others: rows.filter(j => j.type === 'Other'),
             };
+            await autoDeleteExpiredOpportunities();
           } catch (e) { console.warn('Loading opportunities threw an error:', e); }
+        }
+
+        // ---- Auto-delete opportunities once their deadline has passed ----
+        // Courses are exempt: their "deadline" field is a start date, not a
+        // closing date, so they're left alone here.
+        function parsedOpportunityDeadline(job){
+          if (!job || job.type === 'Course') return null;
+          const raw = (job.deadline || '').trim();
+          if (!raw || /^no deadline given$/i.test(raw)) return null;
+          const dateStr = raw.replace(/^Deadline\s+/i, '').trim();
+          if (!dateStr) return null;
+          const parsed = Date.parse(dateStr);
+          return isNaN(parsed) ? null : new Date(parsed);
+        }
+
+        function isOpportunityDeadlinePassed(job){
+          const deadline = parsedOpportunityDeadline(job);
+          if (!deadline) return false;
+          // Keep the listing up through the end of its deadline day rather than
+          // dropping it the instant the date ticks over.
+          const endOfDeadlineDay = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate(), 23, 59, 59, 999);
+          return Date.now() > endOfDeadlineDay.getTime();
+        }
+
+        // Removes any opportunity/internship/scholarship/other listing whose
+        // deadline has passed, both locally and in Supabase, so admins never
+        // have to come back and delete expired listings by hand.
+        async function autoDeleteExpiredOpportunities(){
+          const expired = allJobs().filter(isOpportunityDeadlinePassed);
+          if (!expired.length) return false;
+          expired.forEach(job => {
+            const bucket = jobBucketFor(job);
+            const idx = bucket.indexOf(job);
+            if (idx !== -1) bucket.splice(idx, 1);
+            deleteOpportunityRemote(job.id);
+          });
+          return true;
+        }
+
+        let opportunitiesPollInterval = null;
+        function startOpportunitiesPolling(){
+          if (opportunitiesPollInterval) return;
+          opportunitiesPollInterval = setInterval(async () => {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            const before = JSON.stringify(allJobs().map(j => j.id));
+            await loadOpportunitiesRemote();
+            const after = JSON.stringify(allJobs().map(j => j.id));
+            if (before === after) return;
+            if (typeof currentTab !== 'undefined' && currentTab === 1) {
+              const content = document.getElementById('jobs-content');
+              if (content) content.innerHTML = jobsContent();
+              else if (typeof renderJobMarket === 'function') renderJobMarket();
+            }
+            if (activeJobId && !allJobs().some(j => j.id === activeJobId) && typeof closeOverlay === 'function') closeOverlay();
+          }, 60000);
         }
 
         // ---- Job/course listing data + application status helpers ----
@@ -293,7 +350,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function exploreCourseCards(){
           const linkedCourseIds = jobsData.courses.map(j => j.courseId).filter(Boolean);
-          const catalogOnly = allCourses.filter(c => !linkedCourseIds.includes(c.id)).map(courseAsExploreCard);
+          const catalogOnly = allCourses.filter(c => !linkedCourseIds.includes(c.id) && !c.archived).map(courseAsExploreCard);
           return [...jobsData.courses, ...catalogOnly];
         }
 
@@ -399,23 +456,26 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const job = findJob(id);
           if (!job) return;
           const isCourse = job.type === 'Course';
-          openAppConfirmModal(`Delete "${job.title}"?`, `This removes this ${isCourse ? 'course' : 'listing'} for everyone and can't be undone.`, 'Delete', function(){
-            const bucket = jobBucketFor(job);
-            const idx = bucket.indexOf(job);
-            if (idx !== -1) bucket.splice(idx, 1);
-            deleteOpportunityRemote(id);
-            if (isCourse && job.courseId) {
-              const c = allCourses.find(x => x.id === job.courseId);
-              if (c) {
-                const cIdx = allCourses.indexOf(c);
-                if (cIdx !== -1) allCourses.splice(cIdx, 1);
-                enrolledCourseIds = enrolledCourseIds.filter(cid => cid !== job.courseId);
-                deleteCourseRemote(job.courseId);
+          openAppConfirmModal(
+            `Delete "${job.title}"?`,
+            isCourse
+              ? "This removes the listing from Opportunities so no one new can find or enroll in it. Anyone already enrolled keeps their access and progress in their courses."
+              : "This removes this listing for everyone and can't be undone.",
+            'Delete',
+            function(){
+              const bucket = jobBucketFor(job);
+              const idx = bucket.indexOf(job);
+              if (idx !== -1) bucket.splice(idx, 1);
+              deleteOpportunityRemote(id);
+              if (isCourse && job.courseId) {
+                // Soft-delete the linked course instead of removing it outright,
+                // so students who already enrolled don't lose access.
+                archiveCourse(job.courseId);
               }
+              if (activeJobId === id) closeOverlay();
+              renderJobMarket();
             }
-            if (activeJobId === id) closeOverlay();
-            renderJobMarket();
-          });
+          );
         }
 
         function toggleSaveJob(id){
