@@ -269,11 +269,43 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           } catch (e) { console.warn('Loading opportunities threw an error:', e); }
         }
 
+        // ---- Consistent admin-picked date system ----
+        // Deadlines are chosen through a native <input type="date"> so every
+        // listing's deadlineDate is always a plain, unambiguous ISO string
+        // (YYYY-MM-DD) rather than free-typed text -- that's what makes
+        // auto-expiry below reliable across devices/browsers/locales.
+        function todayISODate(){
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, '0');
+          const d = String(now.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+
+        function formatISODateForDisplay(isoStr){
+          if (!isoStr) return '';
+          const [y, m, d] = isoStr.split('-').map(Number);
+          if (!y || !m || !d) return '';
+          const dt = new Date(y, m - 1, d);
+          if (isNaN(dt.getTime())) return '';
+          return dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        }
+
         // ---- Auto-delete opportunities once their deadline has passed ----
         // Courses are exempt: their "deadline" field is a start date, not a
         // closing date, so they're left alone here.
         function parsedOpportunityDeadline(job){
           if (!job || job.type === 'Course') return null;
+          // Prefer the admin-picked ISO date -- unambiguous and locale-proof.
+          if (job.deadlineDate) {
+            const [y, m, d] = job.deadlineDate.split('-').map(Number);
+            if (y && m && d) {
+              const dt = new Date(y, m - 1, d);
+              if (!isNaN(dt.getTime())) return dt;
+            }
+          }
+          // Fall back to parsing the legacy free-typed display string, for
+          // listings created before the date picker existed.
           const raw = (job.deadline || '').trim();
           if (!raw || /^no deadline given$/i.test(raw)) return null;
           const dateStr = raw.replace(/^Deadline\s+/i, '').trim();
@@ -1877,11 +1909,11 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         const oppTypes = ['Job','Internship','Part-time','Scholarship','Course','Other'];
         const oppModes = ['Online','On-site'];
-        let newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', duration:'', deadline:'', description:'', applyMethod:'email', email:'', website:'', priceType:'free', price:'', coverImage:'' };
+        let newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', duration:'', deadline:'', deadlineDate:'', description:'', applyMethod:'email', email:'', website:'', priceType:'free', price:'', coverImage:'' };
         let newOppEditingId = null;
 
         function resetNewOppDraft(){
-          newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', duration:'', deadline:'', description:'', applyMethod:'email', email:'', website:'', priceType:'free', price:'', coverImage:'' };
+          newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', duration:'', deadline:'', deadlineDate:'', description:'', applyMethod:'email', email:'', website:'', priceType:'free', price:'', coverImage:'' };
         }
 
         function handleOppCoverSelect(event){
@@ -1923,6 +1955,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             location: job.location || '',
             duration: job.duration || '',
             deadline: (job.type === 'Course' ? (job.deadline === 'Self-paced' ? '' : (job.deadline || '')) : (job.deadline || '').replace(/^Deadline /, '')),
+            deadlineDate: job.deadlineDate || '',
             description: job.description || '',
             applyMethod: job.applyMethod || (job.website ? 'website' : 'email'),
             email: job.email || '',
@@ -1964,108 +1997,145 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (ov) ov.innerHTML = postOpportunityHTML();
         }
 
+        // Guards against duplicate listings caused by mashing "Post
+        // Opportunity" multiple times before the first tap finishes (e.g.
+        // while waiting on the network sync). The flag is set synchronously
+        // the instant the function starts, before any awaited work, and the
+        // button itself is disabled/relabeled for the same reason -- either
+        // guard alone would close the race, but the two together are
+        // reliable even if a tap lands mid-render.
+        let oppSubmitInFlight = false;
+
         async function submitNewOpportunity(){
-          if (!isCurrentUserAdmin()) { openAppAlertModal('Only admins can post an opportunity.'); return; }
-          if (!requireCompleteProfile()) return;
-          const d = newOppDraft;
-          const isCourse = d.type === 'Course';
-          const applyMethod = isCourse ? 'email' : (d.applyMethod || 'email');
-          const applyViaWebsite = !isCourse && applyMethod === 'website';
-          if (!d.title.trim() || !d.description.trim()) {
-            openAppAlertModal('Please add at least a title and a description.');
-            return;
+          if (oppSubmitInFlight) return;
+          oppSubmitInFlight = true;
+          const submitBtn = document.getElementById('opp-submit-btn');
+          const submitBtnOriginalHTML = submitBtn ? submitBtn.innerHTML : '';
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.pointerEvents = 'none';
+            submitBtn.innerHTML = 'Posting…';
           }
-          if (!isCourse) {
-            if (applyViaWebsite && !d.website.trim()) {
-              openAppAlertModal('Please add the website link where applicants should apply.');
+          try {
+            if (!isCurrentUserAdmin()) { openAppAlertModal('Only admins can post an opportunity.'); return; }
+            if (!requireCompleteProfile()) return;
+            const d = newOppDraft;
+            const isCourse = d.type === 'Course';
+            const applyMethod = isCourse ? 'email' : (d.applyMethod || 'email');
+            const applyViaWebsite = !isCourse && applyMethod === 'website';
+            if (!d.title.trim() || !d.description.trim()) {
+              openAppAlertModal('Please add at least a title and a description.');
               return;
             }
-            if (!applyViaWebsite && !d.email.trim()) {
-              openAppAlertModal('Please add an email to receive applications.');
+            if (!isCourse) {
+              if (applyViaWebsite && !d.website.trim()) {
+                openAppAlertModal('Please add the website link where applicants should apply.');
+                return;
+              }
+              if (!applyViaWebsite && !d.email.trim()) {
+                openAppAlertModal('Please add an email to receive applications.');
+                return;
+              }
+              if (!d.deadlineDate) {
+                openAppAlertModal('Please choose a deadline date for this listing.');
+                return;
+              }
+            }
+            if (applyViaWebsite && d.website.trim() && !isValidUrl(d.website.trim())) {
+              openAppAlertModal('Please enter a valid website link (e.g. careers.yourorg.com/apply).');
               return;
             }
-          }
-          if (applyViaWebsite && d.website.trim() && !isValidUrl(d.website.trim())) {
-            openAppAlertModal('Please enter a valid website link (e.g. careers.yourorg.com/apply).');
-            return;
-          }
-          if (d.email.trim() && !isValidEmail(d.email.trim())) {
-            openAppAlertModal('Please enter a valid email address (e.g. you@example.com).');
-            return;
-          }
-          if (isCourse && d.priceType === 'paid' && !d.price.trim()) {
-            openAppAlertModal('Please add the enrollment fee amount, or switch this to a free course.');
-            return;
-          }
-          const iconByType = { Job:'briefcase', Internship:'graduate', 'Part-time':'briefcase', Scholarship:'graduate', Course:'chart', Other:'briefcase' };
-          const priceLabel = isCourse ? (d.priceType === 'paid' ? d.price.trim() : 'Free') : '';
-          const sub = isCourse
-            ? [d.org, d.duration].filter(Boolean).join(' · ')
-            : [d.org, d.mode === 'Online' ? (d.location || 'Online') : (d.location || 'On-site'), d.duration].filter(Boolean).join(' · ');
-          const fields = {
-            icon: iconByType[d.type] || 'briefcase',
-            title: d.title.trim(),
-            sub,
-            deadline: d.deadline.trim() ? (isCourse ? d.deadline.trim() : `Deadline ${d.deadline.trim()}`) : (isCourse ? 'Self-paced' : 'No deadline given'),
-            type: d.type,
-            mode: d.mode,
-            org: d.org.trim(),
-            location: d.location.trim(),
-            duration: d.duration.trim(),
-            applyMethod: applyMethod,
-            email: applyViaWebsite ? '' : d.email.trim(),
-            website: applyViaWebsite ? d.website.trim() : '',
-            description: d.description.trim(),
-            coverImage: d.coverImage || '',
-          };
-          if (isCourse) {
-            fields.priceType = d.priceType;
-            fields.price = priceLabel;
-          }
+            if (d.email.trim() && !isValidEmail(d.email.trim())) {
+              openAppAlertModal('Please enter a valid email address (e.g. you@example.com).');
+              return;
+            }
+            if (isCourse && d.priceType === 'paid' && !d.price.trim()) {
+              openAppAlertModal('Please add the enrollment fee amount, or switch this to a free course.');
+              return;
+            }
+            const iconByType = { Job:'briefcase', Internship:'graduate', 'Part-time':'briefcase', Scholarship:'graduate', Course:'chart', Other:'briefcase' };
+            const priceLabel = isCourse ? (d.priceType === 'paid' ? d.price.trim() : 'Free') : '';
+            const sub = isCourse
+              ? [d.org, d.duration].filter(Boolean).join(' · ')
+              : [d.org, d.mode === 'Online' ? (d.location || 'Online') : (d.location || 'On-site'), d.duration].filter(Boolean).join(' · ');
+            const fields = {
+              icon: iconByType[d.type] || 'briefcase',
+              title: d.title.trim(),
+              sub,
+              deadline: isCourse
+                ? (d.deadline.trim() || 'Self-paced')
+                : `Deadline ${formatISODateForDisplay(d.deadlineDate)}`,
+              deadlineDate: isCourse ? '' : d.deadlineDate,
+              type: d.type,
+              mode: d.mode,
+              org: d.org.trim(),
+              location: d.location.trim(),
+              duration: d.duration.trim(),
+              applyMethod: applyMethod,
+              email: applyViaWebsite ? '' : d.email.trim(),
+              website: applyViaWebsite ? d.website.trim() : '',
+              description: d.description.trim(),
+              coverImage: d.coverImage || '',
+            };
+            if (isCourse) {
+              fields.priceType = d.priceType;
+              fields.price = priceLabel;
+            }
 
-          if (newOppEditingId) {
-            const existing = findJob(newOppEditingId);
-            if (existing) {
-              const oldBucket = jobBucketFor(existing);
-              Object.assign(existing, fields);
-              const newBucket = jobBucketFor(existing);
-              if (newBucket !== oldBucket) {
-                const idx = oldBucket.indexOf(existing);
-                if (idx !== -1) oldBucket.splice(idx, 1);
-                newBucket.unshift(existing);
+            if (newOppEditingId) {
+              const existing = findJob(newOppEditingId);
+              if (existing) {
+                const oldBucket = jobBucketFor(existing);
+                Object.assign(existing, fields);
+                const newBucket = jobBucketFor(existing);
+                if (newBucket !== oldBucket) {
+                  const idx = oldBucket.indexOf(existing);
+                  if (idx !== -1) oldBucket.splice(idx, 1);
+                  newBucket.unshift(existing);
+                }
+                if (isCourse) {
+                  if (!existing.courseId) existing.courseId = createLinkedCourse(existing);
+                  else await syncLinkedCourseMeta(existing);
+                }
+                const synced = await postOpportunityInsertRemote(existing);
+                if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Check the console for details.");
+                newOppEditingId = null;
+                resetNewOppDraft();
+                closeOverlay();
+                jobsSub = isCourse ? 'courses' : (existing.type === 'Internship' ? 'internships' : existing.type === 'Scholarship' ? 'scholarships' : existing.type === 'Other' ? 'others' : 'opportunities');
+                renderJobMarket();
+                return;
               }
-              if (isCourse) {
-                if (!existing.courseId) existing.courseId = createLinkedCourse(existing);
-                else await syncLinkedCourseMeta(existing);
-              }
-              const synced = await postOpportunityInsertRemote(existing);
-              if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Check the console for details.");
               newOppEditingId = null;
-              resetNewOppDraft();
-              closeOverlay();
-              jobsSub = isCourse ? 'courses' : (existing.type === 'Internship' ? 'internships' : existing.type === 'Scholarship' ? 'scholarships' : existing.type === 'Other' ? 'others' : 'opportunities');
-              renderJobMarket();
-              return;
             }
-            newOppEditingId = null;
-          }
 
-          const job = Object.assign({ id: 'opp' + Date.now(), saved:false, applied:false, mine: true }, fields);
-          job.colorIndex = Math.floor(Math.random() * blueCardPalette.length);
-          job.motifIndex = Math.floor(Math.random() * classCardMotifs.length);
-          const bucket = isCourse ? jobsData.courses
-            : d.type === 'Internship' ? jobsData.internships
-            : d.type === 'Scholarship' ? jobsData.scholarships
-            : d.type === 'Other' ? jobsData.others
-            : jobsData.opportunities;
-          bucket.unshift(job);
-          if (isCourse) job.courseId = createLinkedCourse(job);
-          const synced = await postOpportunityInsertRemote(job);
-          if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Check the console for the Supabase error, or make sure the opportunities table + policies from the SQL comment above are set up.");
-          resetNewOppDraft();
-          closeOverlay();
-          jobsSub = isCourse ? 'courses' : (job.type === 'Internship' ? 'internships' : job.type === 'Scholarship' ? 'scholarships' : job.type === 'Other' ? 'others' : 'opportunities');
-          renderJobMarket();
+            const job = Object.assign({ id: 'opp' + Date.now(), saved:false, applied:false, mine: true }, fields);
+            job.colorIndex = Math.floor(Math.random() * blueCardPalette.length);
+            job.motifIndex = Math.floor(Math.random() * classCardMotifs.length);
+            const bucket = isCourse ? jobsData.courses
+              : d.type === 'Internship' ? jobsData.internships
+              : d.type === 'Scholarship' ? jobsData.scholarships
+              : d.type === 'Other' ? jobsData.others
+              : jobsData.opportunities;
+            bucket.unshift(job);
+            if (isCourse) job.courseId = createLinkedCourse(job);
+            const synced = await postOpportunityInsertRemote(job);
+            if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Check the console for the Supabase error, or make sure the opportunities table + policies from the SQL comment above are set up.");
+            resetNewOppDraft();
+            closeOverlay();
+            jobsSub = isCourse ? 'courses' : (job.type === 'Internship' ? 'internships' : job.type === 'Scholarship' ? 'scholarships' : job.type === 'Other' ? 'others' : 'opportunities');
+            renderJobMarket();
+          } finally {
+            oppSubmitInFlight = false;
+            const btnAfter = document.getElementById('opp-submit-btn');
+            if (btnAfter) {
+              btnAfter.disabled = false;
+              btnAfter.style.opacity = '';
+              btnAfter.style.pointerEvents = '';
+              btnAfter.innerHTML = submitBtnOriginalHTML;
+            }
+          }
         }
 
         function oppFieldRow(label, field, placeholder, type){
@@ -2120,7 +2190,14 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
               ${newOppDraft.type === 'Course' ? '' : oppFieldRow(newOppDraft.mode === 'Online' ? 'Platform / link' : 'Location', 'location', newOppDraft.mode === 'Online' ? 'e.g. Zoom, remote' : 'e.g. Accra, Ghana')}
               ${oppFieldRow('Duration', 'duration', newOppDraft.type === 'Course' ? 'e.g. 4 weeks' : 'e.g. 3 months, Full-time, One-time')}
-              ${oppFieldRow(newOppDraft.type === 'Course' ? 'Start date (optional)' : 'Deadline', 'deadline', newOppDraft.type === 'Course' ? 'e.g. Self-paced, or Starts Aug 10' : 'e.g. Aug 30, 2026')}
+              ${newOppDraft.type === 'Course'
+                ? oppFieldRow('Start date (optional)', 'deadline', 'e.g. Self-paced, or Starts Aug 10')
+                : `
+                <div class="mb-4">
+                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Deadline</label>
+                  <input type="date" value="${newOppDraft.deadlineDate}" min="${todayISODate()}" oninput="updateNewOppField('deadlineDate', this.value)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+                  <div class="text-xs text-gray-400 mt-1">This listing disappears automatically once this date passes, so every admin's posts stay consistent.</div>
+                </div>`}
 
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description &amp; requirements</label>
@@ -2152,7 +2229,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               `}
 
               <div class="text-center mt-2" style="padding-bottom:10px;">
-                <button onclick="submitNewOpportunity()" class="pill-cta inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.5rem 1.1rem;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
+                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.5rem 1.1rem;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
               </div>
             </div>`;
         }
