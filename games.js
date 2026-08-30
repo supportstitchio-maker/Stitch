@@ -1938,6 +1938,7 @@ let simpleGameState = null;
             loadCoursesRemote(),
             loadOpportunitiesRemote(),
             loadRemotePosts().then(() => loadPostInteractions()),
+            loadRemoteGlimpses(),
             subscribeToIncomingMessages(),
             subscribeToPresence(),
             startLastActiveHeartbeat(),
