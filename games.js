@@ -1933,11 +1933,22 @@ let simpleGameState = null;
 
           const essentialLoads = getCachedAuthUser().then(() => Promise.all([
             loadCurrentUserRole(),
-            ensureUserStateLoaded(true).then(() => loadCareerStartProfile()),
+            // ensureUserStateLoaded restores this device's saved feedPosts
+            // snapshot wholesale (including any ghost "mine" posts from a
+            // past failed insert), while loadRemotePosts cleans ghosts back
+            // out. Those two used to run in this same Promise.all with no
+            // ordering between them -- whichever settled second silently
+            // won, so a slow ensureUserStateLoaded could restore a ghost
+            // *after* loadRemotePosts had already cleaned it out. Chaining
+            // loadRemotePosts to start only once the state restore is done
+            // guarantees the cleanup always runs last.
+            ensureUserStateLoaded(true).then(() => Promise.all([
+              loadCareerStartProfile(),
+              loadRemotePosts().then(() => loadPostInteractions()),
+            ])),
             loadMyClasses(),
             loadCoursesRemote(),
             loadOpportunitiesRemote(),
-            loadRemotePosts().then(() => loadPostInteractions()),
             loadRemoteGlimpses(),
             subscribeToIncomingMessages(),
             subscribeToPresence(),
