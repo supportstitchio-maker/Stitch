@@ -549,7 +549,8 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const backFnName = opts.backFn || 'closeOverlay';
           const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
           const menuIcon = opts.boldMenuIcon ? IconBold('dashes','w-5 h-5') : Icon('dashes','w-5 h-5');
-          const menuBtn = `<button onclick="${toggleFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(menuIcon)}</button>`;
+          const menuBtnClass = `w-8 h-8 flex items-center justify-center flex-shrink-0${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
+          const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}">${gradIcon(menuIcon)}</button>`;
           const titleSize = opts.titleSize || 'text-base';
           const titleClass = opts.titleLeft
             ? `${titleSize} font-bold font-display grad-text truncate${opts.menuLeft ? ' text-right' : ''}`
@@ -2104,9 +2105,9 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { showDelete: false }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay' })}
+              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { showDelete: false }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true })}
               <div class="p-5">
-                <div class="space-y-4">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
+                <div class="space-y-2">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
               </div>
             </div>`;
           if (prevNotifScrollTop) {
@@ -2116,41 +2117,74 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), notifMenuOpen, 'toggleNotifMenu');
         }
 
+        let notifItemMenuOpenId = null;
+
+        function toggleNotifItemMenu(id, renderFnName, event){
+          if (event) event.stopPropagation();
+          notifItemMenuOpenId = (notifItemMenuOpenId === id) ? null : id;
+          const fn = window[renderFnName || 'renderNotifTab'];
+          if (typeof fn === 'function') fn();
+        }
+
+        function notifItemAction(id, action, renderFnName){
+          notifItemMenuOpenId = null;
+          applyNotifAction(action, new Set([id]), function(){
+            const fn = window[renderFnName || 'renderNotifTab'];
+            if (typeof fn === 'function') fn();
+          });
+        }
+
+        function notifItemMenuHTML(n, renderFn){
+          return `
+            <div onclick="event.stopPropagation(); toggleNotifItemMenu('${n.id}','${renderFn}')" class="fixed inset-0 z-20"></div>
+            <div onclick="event.stopPropagation()" class="notif-item-menu absolute right-0 top-9 bg-white rounded-2xl border border-gray-100 py-2 z-30" style="width:12rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
+              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','pin','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('pin','w-4 h-4')} Pin</button>
+              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','read','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('check','w-4 h-4')} Mark as read</button>
+              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','block','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('lock','w-4 h-4')} Block</button>
+              <div class="border-t border-gray-100 my-1"></div>
+              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','delete','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete</button>
+            </div>`;
+        }
+
         function notifCards(list, opts){
           opts = opts || {};
           const selectedSet = opts.selected || new Set();
           const longPressFn = opts.longPressFn || 'notifLongPressSelect';
           const tapFn = opts.tapFn || 'notifTap';
+          const renderFn = opts.renderFn || 'renderNotifTab';
           const selecting = selectedSet.size > 0;
           startNotifTimeTicker();
           return (list || notifData).map(n => {
             const isSel = selectedSet.has(n.id);
+            const itemMenuOpen = notifItemMenuOpenId === n.id;
             return `
             <div class="rounded-3xl p-4 flex items-start gap-3 ${isSel ? '' : (n.read ? 'bg-gray-50' : 'bg-amber-50')}"
               style="${isSel ? `background:rgba(65,105,225,0.14);` : ''}"
               onmousedown="startPress('${longPressFn}','${n.id}', event)" onmouseup="endPress()" onmouseleave="endPress()"
               ontouchstart="startPress('${longPressFn}','${n.id}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
               onclick="handleRowTap('${tapFn}','${n.id}')">
-              ${selecting ? `<div class="w-5 h-5 rounded-full border-2 ${isSel ? `bg-gradient-to-br from-[${ROYAL}] to-[${NAVY}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${isSel ? Icon('check','w-3.5 h-3.5 text-white') : ''}</div>` : ''}
-              <div class="w-10 h-10 ${n.iconBg} rounded-2xl flex items-center justify-center ${n.iconClass} flex-shrink-0">${Icon(n.icon,'w-5 h-5')}</div>
+              ${selecting
+                ? `<div class="w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0" style="${isSel ? `background:${ROYAL};border-color:${ROYAL};` : 'border-color:#d1d5db;'}">${isSel ? Icon('check','w-4 h-4 text-white') : ''}</div>`
+                : `<div class="w-10 h-10 ${n.iconBg} rounded-2xl flex items-center justify-center ${n.iconClass} flex-shrink-0">${Icon(n.icon,'w-5 h-5')}</div>`}
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
                   <div class="font-semibold text-sm ${n.read ? 'text-gray-500' : `text-[${NAVY}]`}">${escapeHtml(n.name)}</div>
                   ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
                 </div>
                 <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} mt-0.5 leading-relaxed">${escapeHtml(n.message)}</div>
-                ${selecting ? `<div class="text-xs text-gray-400 mt-1" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>` : ''}
                 ${n.type === 'connect_request' ? `
                 <div class="flex gap-2 mt-3">
                   <button onclick="event.stopPropagation(); acceptConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-[${NAVY}]">Accept</button>
                   <button onclick="event.stopPropagation(); declineConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Decline</button>
                 </div>` : ''}
               </div>
-              ${selecting ? '' : `
-              <div class="flex flex-col items-center gap-1 flex-shrink-0">
-                <button onclick="event.stopPropagation(); deleteNotif('${n.id}')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500" title="Delete">${Icon('trash','w-4 h-4')}</button>
+              <div class="flex flex-col items-center gap-1 flex-shrink-0 relative">
+                ${selecting ? '' : `
+                <button onclick="event.stopPropagation(); deleteNotif('${n.id}')" class="notif-action-mobile w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500" title="Delete">${Icon('trash','w-4 h-4')}</button>
+                <button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options">${Icon('dashes','w-4 h-4')}</button>`}
                 <div class="text-[10px] text-gray-400 whitespace-nowrap" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
-              </div>`}
+                ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}
+              </div>
             </div>`;
           }).join('');
         }
@@ -2263,7 +2297,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
                     <div class="text-xs font-semibold text-[${NAVY}]">${noticeSelected.size} selected</div>
                     <button onclick="noticeCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button>
                 </div>` : ''}
-                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap' }) : '<div class="text-sm text-gray-400 text-center py-6">No class announcements yet.</div>'}</div>
+                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No class announcements yet.</div>'}</div>
               </div>
             </div>`;
           attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), noticeBoardMenuOpen, 'toggleNoticeBoardMenu');
@@ -2272,7 +2306,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         function rightPanelPinnedHTML(){
           const pinned = notifData.filter(n => n.source === 'classroom' && n.pinned);
           if (!pinned.length) return `<div class="text-gray-400 text-sm text-center py-10 px-5">No pinned messages yet.</div>`;
-          return `<div class="p-5">${notifCards(pinned, { longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap' })}</div>`;
+          return `<div class="p-5">${notifCards(pinned, { longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderRightPanelBody' })}</div>`;
         }
 
         function markAllNotifsRead(){
