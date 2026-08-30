@@ -857,22 +857,22 @@
           return `
             <div class="skel-desktop-nav">
               <div class="dside-brand" style="cursor:default;">
-                <div class="skel-line skel-shimmer" style="width:110px;height:28px;background-color:rgba(255,255,255,0.35);"></div>
+                <div class="skel-line skel-shimmer" style="width:110px;height:28px;background-color:rgba(15,31,51,0.12);"></div>
               </div>
               ${items.map((label, i) => `
                 <div class="dnav-item" style="pointer-events:none;">
-                  <div class="dnav-icon skel-avatar skel-shimmer" style="border-radius:6px;background-color:rgba(255,255,255,0.3);"></div>
-                  <span class="dside-label skel-line skel-shimmer" style="width:${60 + i * 6}px;height:12px;background-color:rgba(255,255,255,0.3);"></span>
+                  <div class="dnav-icon skel-avatar skel-shimmer" style="border-radius:6px;background-color:rgba(15,31,51,0.10);"></div>
+                  <span class="dside-label skel-line skel-shimmer" style="width:${60 + i * 6}px;height:12px;background-color:rgba(15,31,51,0.10);"></span>
                 </div>`).join('')}
               <div style="flex:1;"></div>
               ${utilityItems.map(() => `
                 <div class="dnav-item" style="pointer-events:none;">
-                  <div class="dnav-icon skel-avatar skel-shimmer" style="border-radius:6px;background-color:rgba(255,255,255,0.3);"></div>
-                  <span class="dside-label skel-line skel-shimmer" style="width:64px;height:12px;background-color:rgba(255,255,255,0.3);"></span>
+                  <div class="dnav-icon skel-avatar skel-shimmer" style="border-radius:6px;background-color:rgba(15,31,51,0.10);"></div>
+                  <span class="dside-label skel-line skel-shimmer" style="width:64px;height:12px;background-color:rgba(15,31,51,0.10);"></span>
                 </div>`).join('')}
               <div class="dnav-item" style="pointer-events:none;">
-                <div class="skel-avatar skel-shimmer dnav-avatar" style="background-color:rgba(255,255,255,0.3);"></div>
-                <span class="dside-label skel-line skel-shimmer" style="width:56px;height:12px;background-color:rgba(255,255,255,0.3);"></span>
+                <div class="skel-avatar skel-shimmer dnav-avatar" style="background-color:rgba(15,31,51,0.10);"></div>
+                <span class="dside-label skel-line skel-shimmer" style="width:56px;height:12px;background-color:rgba(15,31,51,0.10);"></span>
               </div>
             </div>`;
         }
@@ -935,16 +935,16 @@
       <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:62px;width:auto;object-fit:contain;">
     </div>
     <div id="dnav-main-list">
-    <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${Icon('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
-    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${Icon('briefcase','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('book','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
-    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${Icon('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
+    <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
+    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${IconBold('briefcase','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${IconBold('book','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
+    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
-    <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${Icon('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
+    <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
     <div class="dside-divider"></div>
-    <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${Icon('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${Icon('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
+    <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
+    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dnav-4"><span id="dnav-4-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
     </div>
     <!-- Classroom sub-nav: only shown (in place of the main tabs above)
@@ -952,13 +952,13 @@
          reachable from the rail while this is showing -- clicking the
          Stitch logo (always visible above) is the way back to Home. -->
     <div id="dnav-classroom-list">
-    <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources">${Icon('folder','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
-    <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice">${Icon('edit','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
-    <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai">${Icon('bot','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
-    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif">${Icon('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
+    <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources">${IconBold('folder','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
+    <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice">${IconBold('edit','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
+    <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai">${IconBold('bot','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
+    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <div class="dside-divider"></div>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${Icon('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
+    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dcnav-profile"><span id="dcnav-profile-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
     </div>
   </div>
