@@ -1641,17 +1641,41 @@
           loadRemotePostsInFlight = loadRemotePostsImpl().finally(() => { loadRemotePostsInFlight = null; });
           return loadRemotePostsInFlight;
         }
+        // Collapses accidental duplicate rows in the shared posts table --
+        // e.g. a flaky-connection double-submit that got two separate
+        // inserts through before the postSubmitInFlight guard in
+        // submitPost() existed. Same author, same caption, same media,
+        // posted within a few minutes of each other: keep one, drop the
+        // rest. Reposts are left alone since two people can legitimately
+        // repost the same original within the same window.
+        function dedupeRemotePostRows(rows){
+          const seen = new Map();
+          const keep = [];
+          rows.forEach(row => {
+            const d = row.data || {};
+            if (d.isRepost) { keep.push(row); return; }
+            const mediaKey = Array.isArray(d.mediaPaths) ? d.mediaPaths.join(',') : (d.mediaPath || '');
+            const sig = [row.created_by, d.body || '', mediaKey].join('|');
+            const prior = seen.get(sig);
+            if (prior && Math.abs(new Date(prior.created_at).getTime() - new Date(row.created_at).getTime()) <= 5 * 60 * 1000) return;
+            seen.set(sig, row);
+            keep.push(row);
+          });
+          return keep;
+        }
+
         async function loadRemotePostsImpl(){
           const sb = getSupabaseClient();
           if (!sb) { remotePostsLoaded = true; return false; }
           try {
             const { data: userRes } = await sb.auth.getUser();
             const me = userRes && userRes.user;
-            const { data, error } = await sb.from(POSTS_TABLE)
+            const { data: rawData, error } = await sb.from(POSTS_TABLE)
               .select('id, data, created_by, created_at')
               .order('created_at', { ascending: false });
             remotePostsLoaded = true;
-            if (error || !data) return false;
+            if (error || !rawData) return false;
+            const data = dedupeRemotePostRows(rawData);
             const remoteIds = new Set(data.map(row => String(row.id)));
             const lengthBeforeFilter = feedPosts.length;
             feedPosts = feedPosts.filter(p => {
