@@ -147,6 +147,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               mediaType = firstTag[1].toLowerCase() === 'video' ? 'video' : 'photo';
               inner = firstTag[0];
             } else {
+              // Couldn't pull out the first tile's tag -- still a media post,
+              // so default to "photo" rather than silently dropping the badge.
+              mediaType = 'photo';
               inner = post.mediaHtml;
             }
           } else if (post.mediaHtml) {
@@ -161,8 +164,12 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           } else {
             inner = `<div class="w-full h-full bg-gray-100 flex items-center justify-center p-2"><div class="text-[9px] leading-tight text-gray-500 text-center overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">${post.body||''}</div></div>`;
           }
-          const typeBadge = mediaType ? `<div class="absolute bottom-1.5 right-1.5 text-white" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">${Icon(mediaType === 'video' ? 'videoClip' : 'photoFrame','w-4 h-4')}</div>` : '';
-          return `<div onclick="openPostFeedFrom('${source||'mine'}', ${post.id})" class="relative w-full aspect-square overflow-hidden bg-gray-100" style="border-radius:0;cursor:pointer;">${inner}${isMulti ? `<div class="absolute top-1.5 right-1.5 text-white" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">${Icon('copy','w-4 h-4')}</div>` : ''}${typeBadge}</div>`;
+          // Badge sits on a small dark pill (not just a drop-shadowed icon) so it
+          // reads clearly over bright/white photos too, and a title attribute
+          // spells it out for anyone hovering on desktop -- the goal is that an
+          // account owner can tell videos and photos apart at a glance.
+          const typeBadge = mediaType ? `<div class="absolute bottom-1.5 right-1.5 text-white flex items-center justify-center rounded-full" title="${mediaType === 'video' ? 'Video' : 'Photo'}" style="width:1.25rem;height:1.25rem;background:rgba(0,0,0,0.45);">${Icon(mediaType === 'video' ? 'videoClip' : 'photoFrame','w-3 h-3')}</div>` : '';
+          return `<div onclick="openPostFeedFrom('${source||'mine'}', ${post.id})" class="relative w-full aspect-square overflow-hidden bg-gray-100" style="border-radius:0;cursor:pointer;">${inner}${isMulti ? `<div class="absolute top-1.5 right-1.5 text-white" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));" title="Multiple items">${Icon('copy','w-4 h-4')}</div>` : ''}${typeBadge}</div>`;
         }
 
         function byNewestFirst(a, b){
