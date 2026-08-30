@@ -2259,6 +2259,20 @@
           .desktop-msg-menu-btn{display:flex;}
         }
 
+        /* Notifications list: on phones, each row shows a trash icon (with
+           the header's bulk "..." menu covering pin/read/block via
+           long-press-to-select). On desktop, per-row actions collapse into
+           a single "..." button with its own dropdown (pin/read/block/
+           delete), so the header's bulk menu button is redundant there. */
+        .notif-action-mobile{display:flex;}
+        .notif-action-desktop{display:none;}
+        .notif-header-menu-btn{display:flex;}
+        @media (min-width:1024px){
+          .notif-action-mobile{display:none;}
+          .notif-action-desktop{display:flex;}
+          .notif-header-menu-btn{display:none;}
+        }
+
         /* Small overlay action buttons on image/video attachments in chat
            (download, and expand-to-fullscreen for video). Positioned per
            button via inline top/right so multiple can sit side by side. */
