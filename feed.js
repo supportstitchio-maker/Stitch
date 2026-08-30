@@ -2582,8 +2582,15 @@
             ? 'text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0 bg-white/20 text-white border-white/60'
             : 'text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0';
           const connectStyle = overlay ? 'border:1.5px solid rgba(255,255,255,0.6);' : `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};`;
+          // FIX: the overlay header must be taken out of normal document flow so it floats
+          // on top of the video instead of sitting beside it. Previously this class list had
+          // BOTH "relative" and "absolute" — since .relative is defined after .absolute in the
+          // compiled Tailwind stylesheet, "position: relative" was winning, so the header stayed
+          // in-flow as a second flex child of .feed-media (display:flex). That split single-video
+          // posts into two columns: the video on the left, and the (mispositioned) name/avatar
+          // header floating alone on the right. Removing "relative" here lets "absolute" apply.
           const rowCls = overlay
-            ? 'px-4 py-2.5 flex gap-2.5 items-center relative absolute top-0 left-0 right-0 z-10'
+            ? 'px-4 py-2.5 flex gap-2.5 items-center absolute top-0 left-0 right-0 z-10'
             : 'px-4 py-2 flex gap-2.5 items-center relative';
           const rowStyle = overlay ? 'background:linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));' : '';
           return `
@@ -2611,7 +2618,12 @@
           const isStranger = !post.mine && !!post.authorId && !isUserInMyNetwork(post.authorId);
           const showConnect = isStranger && !post.connectRequestSent;
           const showRequestSent = isStranger && post.connectRequestSent;
-          const isVideoPost = !!post.mediaHtml && /feed-video-wrap/.test(post.mediaHtml) && !/post-media-carousel/.test(post.mediaHtml);
+          // NOTE: multi-media grids use the "post-media-grid" class (see postMediaGridHtml),
+          // not "post-media-carousel". This was checking for a class name that's never actually
+          // produced, so it never excluded anything. Harmless today (grid tiles don't use
+          // "feed-video-wrap" either, so isVideoPost still came out false for grids) — fixed
+          // for correctness/future-proofing in case the grid markup changes.
+          const isVideoPost = !!post.mediaHtml && /feed-video-wrap/.test(post.mediaHtml) && !/post-media-grid/.test(post.mediaHtml);
           return `
             <div class="bg-white overflow-hidden -mx-5 border-b border-gray-100" id="post-${post.id}">
               ${post.isRepost ? `
