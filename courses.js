@@ -3313,7 +3313,6 @@ try {
                   ${classDetailTabBtn('classwork','Classwork')}
                   ${classDetailTabBtn('people','People')}
                 </div>
-                ${(lectureMinimized && liveLectureState.connected && liveLectureState.classId === cls.id) ? lectureMinimizedBannerHTML() : ''}
                 ${classDetailTab === 'dashboard' && showAdminDashboard ? classDashboardTabHTML(cls) : ''}
                 ${classDetailTab === 'stream' ? classStreamTabHTML(cls) : ''}
                 ${classDetailTab === 'classwork' ? classClassworkTabHTML(cls) : ''}
@@ -3513,6 +3512,10 @@ try {
 
         function lectureCardHTML(l, isTeacher){
           const isLive = l.status === 'live';
+          // If you've already joined this lecture and stepped away (minimized,
+          // not ended), the button swaps from "Join" to "Return" so you can
+          // hop back into the call in progress instead of joining fresh.
+          const isMineMinimized = liveLectureState.connected && lectureMinimized && liveLectureState.lectureId === l.id;
           return `
             <div class="rounded-3xl p-4 mb-3 shadow-sm ${isLive ? 'text-white' : 'bg-white'}" style="${isLive ? 'background:linear-gradient(135deg,#2563eb,#1d4ed8);' : ''}">
               <div class="flex items-center gap-3">
@@ -3524,7 +3527,9 @@ try {
                 ${isLive
                   ? `<div class="flex items-center gap-2 flex-shrink-0">
                       <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full bg-white/15 text-white flex items-center justify-center flex-shrink-0">${Icon('link','w-4 h-4')}</button>
-                      <button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Join</button>
+                      ${isMineMinimized
+                        ? `<button onclick="resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Return</button>`
+                        : `<button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Join</button>`}
                     </div>`
                   : (isTeacher ? `<button onclick="startScheduledLectureNow('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Start now</button>` : '')}
               </div>
@@ -3797,8 +3802,6 @@ try {
             liveLectureState.seconds++;
             const timerEl = document.getElementById('lecture-call-timer');
             if (timerEl) timerEl.textContent = formatCallTime(liveLectureState.seconds);
-            const bannerTimerEl = document.getElementById('lecture-minimized-timer');
-            if (bannerTimerEl) bannerTimerEl.textContent = formatCallTime(liveLectureState.seconds);
           }, 1000);
         }
 
@@ -4094,13 +4097,13 @@ try {
         // Tapping "Back" during a live lecture used to call endLecture()
         // outright -- one accidental tap on the way to checking chat or
         // another tab would hang up (or, for a student, leave) the whole
-        // class. Instead, it minimizes back to that class's own detail
-        // screen (Stream/Classwork/People) with a persistent "Lecture in
-        // progress" pill pinned just below the tab row -- see
-        // lectureMinimizedBannerHTML below -- rather than floating over
-        // the rest of the app. Stream and peer connections keep running
-        // the whole time. The lecture only actually ends when the red
-        // control-bar button is tapped.
+        // class. Instead, it minimizes quietly back to that class's own
+        // detail screen (Stream/Classwork/People) -- no banner pinned in
+        // the UI -- and the live lecture card's Join button turns into a
+        // "Return" button (see lectureCardHTML) so you can hop back in.
+        // Stream and peer connections keep running the whole time. The
+        // lecture only actually ends when the red control-bar button is
+        // tapped.
         function minimizeLecture(){
           if (!liveLectureState.connected) { closeOverlay(); return; }
           lectureMinimized = true;
@@ -4115,23 +4118,6 @@ try {
           lectureMinimized = false;
           openOverlay('lectureCall');
           attachLectureMedia();
-        }
-
-        // Rendered inline inside classDetailHTML(), directly below the
-        // Stream/Classwork/People tabs, whenever the lecture for *this*
-        // class is connected but minimized. Deliberately not a
-        // fixed/floating banner -- it only shows up in the one place it's
-        // relevant (that class's own detail screen) and stays there,
-        // scrolling with the page, until the lecture ends.
-        function lectureMinimizedBannerHTML(){
-          return `
-            <div onclick="resumeLecture()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer mb-5" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 10px 26px rgba(65,105,225,0.35);border:1px solid rgba(255,255,255,0.22);color:#fff;padding-left:10px;padding-right:10px;">
-              <span class="text-sm font-semibold flex-1 truncate">Lecture in progress</span>
-              <span id="lecture-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">${formatCallTime(liveLectureState.seconds)}</span>
-              <button onclick="event.stopPropagation();endLecture()" title="End lecture" class="call-end-icon-btn w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                ${Icon('phoneHangup','w-3.5 h-3.5')}
-              </button>
-            </div>`;
         }
 
         function endLecture(remoteEnded){
