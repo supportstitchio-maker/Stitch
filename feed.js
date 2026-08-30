@@ -1626,7 +1626,22 @@
 
         let remotePostsLoaded = false;
 
-        async function loadRemotePosts(){
+        // Guards against loadRemotePosts() running twice at once (e.g. the
+        // boot sequence in authEnterApp() and the initial switchTab(0) both
+        // call it within moments of each other). Without this, two
+        // overlapping calls can each read feedPosts before either has
+        // finished merging its results, both decide the same row is "new",
+        // and both push it in -- showing every post twice until a refresh
+        // happens to run the merge just once. A second call while one is
+        // already in flight now just awaits that same in-progress result
+        // instead of starting its own redundant fetch+merge.
+        let loadRemotePostsInFlight = null;
+        function loadRemotePosts(){
+          if (loadRemotePostsInFlight) return loadRemotePostsInFlight;
+          loadRemotePostsInFlight = loadRemotePostsImpl().finally(() => { loadRemotePostsInFlight = null; });
+          return loadRemotePostsInFlight;
+        }
+        async function loadRemotePostsImpl(){
           const sb = getSupabaseClient();
           if (!sb) { remotePostsLoaded = true; return false; }
           try {
