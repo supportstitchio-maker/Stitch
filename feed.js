@@ -2569,10 +2569,49 @@
           return out;
         }
 
+        function gradientHeartIcon(cls){
+          const gid = 'heartGrad' + Math.random().toString(36).slice(2, 9);
+          return `<svg viewBox="0 0 24 24" class="${cls}"><defs><linearGradient id="${gid}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${NAVY}"/><stop offset="100%" stop-color="${ROYAL}"/></linearGradient></defs><path fill="url(#${gid})" d="M11.645 20.91l-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012a.752.752 0 01-.704 0z"/></svg>`;
+        }
+
+        function feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, overlay){
+          const nameCls = overlay ? 'font-semibold text-[13px] truncate text-white' : 'font-semibold text-[13px] truncate';
+          const timeCls = overlay ? 'text-[11px] text-white/80 truncate' : 'text-[11px] text-gray-500 truncate';
+          const dotsCls = overlay ? 'w-7 h-7 flex items-center justify-center text-white flex-shrink-0' : 'w-7 h-7 flex items-center justify-center text-gray-400 flex-shrink-0';
+          const connectCls = overlay
+            ? 'text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0 bg-white/20 text-white border-white/60'
+            : 'text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0';
+          const connectStyle = overlay ? 'border:1.5px solid rgba(255,255,255,0.6);' : `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};`;
+          const rowCls = overlay
+            ? 'px-4 py-2.5 flex gap-2.5 items-center relative absolute top-0 left-0 right-0 z-10'
+            : 'px-4 py-2 flex gap-2.5 items-center relative';
+          const rowStyle = overlay ? 'background:linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));' : '';
+          return `
+              <div id="post-header-${post.id}" class="${rowCls}" style="${rowStyle}">
+                <div class="w-7 h-7 rounded-full ${post.avatarBg} overflow-hidden flex items-center justify-center flex-shrink-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">${(post.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!post.mine && post.photo) ? `<img src="${post.photo}" class="w-full h-full object-cover">` : Icon(post.avatarIcon,'w-3.5 h-3.5 text-gray-600')}</div>
+                <div class="flex-1 min-w-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">
+                  <div class="flex items-center gap-1">
+                    <span class="${nameCls}">${escapeHtml(post.name)}</span>
+                    ${post.verified ? verifiedBadge() : ''}
+                  </div>
+                  <div class="${timeCls}">${isStranger ? 'Suggested for you' : formatPostTimeAgo(post)}</div>
+                </div>
+                ${showConnect ? `
+                  <button onclick="event.stopPropagation(); connectWithPoster(${post.id})" class="${connectCls}" style="${connectStyle}">Connect</button>
+                ` : ''}
+                ${showRequestSent ? `
+                  <button onclick="event.stopPropagation(); cancelConnectWithPoster(${post.id})" class="text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0 ${overlay ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}">Cancel Request</button>
+                ` : ''}
+                <button onclick="event.stopPropagation(); togglePostMenu(${post.id})" class="${dotsCls}">${IconBold('dots','w-4 h-4')}</button>
+                ${postMenuDropdownHtml(post)}
+              </div>`;
+        }
+
         function feedPost(post){
           const isStranger = !post.mine && !!post.authorId && !isUserInMyNetwork(post.authorId);
           const showConnect = isStranger && !post.connectRequestSent;
           const showRequestSent = isStranger && post.connectRequestSent;
+          const isVideoPost = !!post.mediaHtml && /feed-video-wrap/.test(post.mediaHtml) && !/post-media-carousel/.test(post.mediaHtml);
           return `
             <div class="bg-white overflow-hidden -mx-5 border-b border-gray-100" id="post-${post.id}">
               ${post.isRepost ? `
@@ -2580,30 +2619,13 @@
                   ${Icon('repost','w-3.5 h-3.5')}
                   <span>${post.mine ? 'You' : escapeHtml(post.name)} reposted</span>
                 </div>` : ''}
-              <div id="post-header-${post.id}" class="px-4 py-2 flex gap-2.5 items-center relative">
-                <div class="w-7 h-7 rounded-full ${post.avatarBg} overflow-hidden flex items-center justify-center flex-shrink-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">${(post.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!post.mine && post.photo) ? `<img src="${post.photo}" class="w-full h-full object-cover">` : Icon(post.avatarIcon,'w-3.5 h-3.5 text-gray-600')}</div>
-                <div class="flex-1 min-w-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">
-                  <div class="flex items-center gap-1">
-                    <span class="font-semibold text-[13px] truncate">${escapeHtml(post.name)}</span>
-                    ${post.verified ? verifiedBadge() : ''}
-                  </div>
-                  <div class="text-[11px] text-gray-500 truncate">${isStranger ? 'Suggested for you' : formatPostTimeAgo(post)}</div>
-                </div>
-                ${showConnect ? `
-                  <button onclick="connectWithPoster(${post.id})" class="text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};">Connect</button>
-                ` : ''}
-                ${showRequestSent ? `
-                  <button onclick="cancelConnectWithPoster(${post.id})" class="text-[11px] font-semibold px-3 py-1 rounded-full flex-shrink-0 bg-gray-100 text-gray-600">Cancel Request</button>
-                ` : ''}
-                <button onclick="togglePostMenu(${post.id})" class="w-7 h-7 flex items-center justify-center text-gray-400 flex-shrink-0">${IconBold('dots','w-4 h-4')}</button>
-                ${postMenuDropdownHtml(post)}
-              </div>
+              ${isVideoPost ? '' : feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, false)}
 
-              <div class="feed-media" onclick="handleFeedMediaTap(event, ${post.id})" style="cursor:pointer;">${post.mediaHtml || ''}</div>
+              <div class="feed-media relative" onclick="handleFeedMediaTap(event, ${post.id})" style="cursor:pointer;">${post.mediaHtml || ''}${isVideoPost ? feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, true) : ''}</div>
 
               <div class="flex items-center px-3 pt-1.5 text-gray-800">
                 <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : ''}">
-                  <span id="like-icon-${post.id}">${Icon(post.liked ? 'heart' : 'heartOutline','w-5 h-5')}</span>
+                  <span id="like-icon-${post.id}">${post.liked ? gradientHeartIcon('w-5 h-5') : Icon('heartOutline','w-5 h-5')}</span>
                   <span class="text-[12px] font-semibold" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
                 </button>
                 <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 ml-2 flex items-center gap-1">
@@ -2943,7 +2965,7 @@
         function toggleLike(id){
           PostsAPI.toggleLike(id).then(post => {
             if (!post) return;
-            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = Icon(post.liked ? 'heart' : 'heartOutline', 'w-6 h-6'); });
+            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = post.liked ? gradientHeartIcon('w-6 h-6') : Icon('heartOutline', 'w-6 h-6'); });
             forEachById('like-count-'+id, likeCountEl => { likeCountEl.textContent = post.likes.toLocaleString() + ' likes'; });
             forEachById('like-btn-'+id, btn => {
               const isReelDetail = btn.closest('#video-post-' + id) != null;
