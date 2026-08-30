@@ -1689,13 +1689,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               .select('convo_id')
               .eq('recipient_id', myId)
               .eq('read', false);
-            if (error || !data || !data.length) return;
-            const unreadConvoIds = new Set(data.map(r => r.convo_id));
+            if (error) return;
+            const unreadConvoIds = new Set((data || []).map(r => r.convo_id));
             let changed = false;
             convoArrays().flat().forEach(c => {
-              if (unreadConvoIds.has(c.id) && activeConvoId !== c.id && (!c.unread || c.read)) {
+              const shouldBeUnread = unreadConvoIds.has(c.id) && activeConvoId !== c.id;
+              if (shouldBeUnread && (!c.unread || c.read)) {
                 c.unread = true;
                 c.read = false;
+                changed = true;
+              } else if (!shouldBeUnread && c.unread) {
+                // The locally-restored snapshot can lag behind the server --
+                // e.g. the app closed before the "mark as read" save
+                // finished its 800ms debounce. Without this branch, a convo
+                // that's actually fully read on the server just kept showing
+                // as unread forever, since this function used to only ever
+                // add unread flags and never clear a stale one (and used to
+                // bail out entirely whenever there were zero unread
+                // messages, which is exactly when a stale flag most needed
+                // clearing).
+                c.unread = false;
+                c.read = true;
                 changed = true;
               }
             });
@@ -1705,6 +1719,58 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
             }
           } catch (e) { console.warn('Reconciling unread messages failed:', e); }
+        }
+
+        // Re-syncs the inbox order against what actually happened on the
+        // server while this device was signed out. Conversations normally
+        // bump themselves to the top the moment a message is sent/received
+        // (see handleIncomingMessage/updateConvoPreview), but that only
+        // works while this device is online and connected -- realtime
+        // subscriptions and the message poll both only start listening
+        // fresh from login, so a message that arrived while the app was
+        // closed never triggers that reorder. Without this, a chat could
+        // sit stale in the middle of the list even though it just got the
+        // newest message of anyone, until the person happened to open it.
+        async function reconcileConvoOrder(){
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          const myId = await getCurrentUserId();
+          if (!myId) return;
+          try {
+            const { data, error } = await sb.from(MESSAGES_TABLE)
+              .select('convo_id,text,voice_url,attachments,created_at')
+              .or(`sender_id.eq.${myId},recipient_id.eq.${myId}`)
+              .order('created_at', { ascending: false })
+              .limit(500);
+            if (error || !data || !data.length) return;
+            const latestByConvo = new Map();
+            data.forEach(row => {
+              if (!latestByConvo.has(row.convo_id)) latestByConvo.set(row.convo_id, row);
+            });
+            let changed = false;
+            latestByConvo.forEach((row, convoId) => {
+              const found = findConvoAndArray(convoId);
+              if (!found) return;
+              const c = found.arr[found.idx];
+              const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
+              if (!rowTime || rowTime <= (c._lastMsgAt || 0)) return;
+              const isSysEvent = (row.text || '').startsWith(SYS_MSG_PREFIX);
+              const previewText = isSysEvent ? row.text.slice(SYS_MSG_PREFIX.length)
+                : row.voice_url ? '🎤 Voice message'
+                : (Array.isArray(row.attachments) && row.attachments.length) ? '📷 Photo'
+                : (row.text || 'Attachment');
+              c.preview = previewText;
+              c.time = formatRequestTime(rowTime);
+              c._lastMsgAt = rowTime;
+              const [moved] = found.arr.splice(found.idx, 1);
+              found.arr.unshift(moved);
+              changed = true;
+            });
+            if (changed) {
+              queueSaveUserState();
+              if (typeof currentTab !== 'undefined' && currentTab === 3) renderInboxTab();
+            }
+          } catch (e) { console.warn('Reconciling conversation order failed:', e); }
         }
 
         let messagesChannel = null;
