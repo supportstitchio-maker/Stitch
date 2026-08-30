@@ -3686,7 +3686,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               return;
             } catch (err) {
               if (err && err.name === 'AbortError') return; // user dismissed the sheet, not an error
-              console.warn('Sharing the document failed, falling back to opening it directly:', err);
+              if (err && err.name === 'NotAllowedError') {
+                // Expected, not a bug: the share sheet requires being called
+                // within the window right after a user tap ("transient
+                // activation"). A slow network fetch in convoDownloadDocument
+                // above can eat that window before we get here, so the
+                // browser refuses the share call. Falling back to opening
+                // the file directly is the correct behavior, so this stays
+                // an info-level log instead of a warning.
+                console.info('Share sheet unavailable for this tap (activation window expired) -- opening the document directly instead.');
+              } else {
+                console.warn('Sharing the document failed, falling back to opening it directly:', err);
+              }
               // fall through to the fallback below
             }
           } else if (isMobileDevice()) {
