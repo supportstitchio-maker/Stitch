@@ -1025,20 +1025,12 @@
       </button>
     </div>
   </div>
-  <!-- Same idea as call-minimized-banner above, for a live classroom
-       lecture minimized via the lecture screen's back button (see
-       minimizeLecture/resumeLecture in courses.js). Kept separate from the
-       call banner since a lecture and a 1:1/group call are different
-       connections that could in principle both be minimized at once. -->
-  <div id="lecture-minimized-banner" class="hidden" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top, 0px) + 10px);z-index:25;max-width:calc(42rem - 24px);margin:0 auto;">
-    <div onclick="resumeLecture()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 10px 26px rgba(65,105,225,0.35);border:1px solid rgba(255,255,255,0.22);color:#fff;padding-left:10px;padding-right:10px;">
-      <span class="text-sm font-semibold flex-1 truncate">Lecture in progress</span>
-      <span id="lecture-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">00:00</span>
-      <button onclick="event.stopPropagation();endLecture()" title="End lecture" class="call-end-icon-btn w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-        ${Icon('phoneHangup','w-3.5 h-3.5')}
-      </button>
-    </div>
-  </div>
+  <!-- Note: a minimized live lecture is NOT shown as a global floating
+       banner like the 1:1/group call above. Instead it's rendered inline
+       inside classDetailHTML(), pinned just below the Stream/Classwork/
+       People tab row, for as long as the person is looking at that
+       class's detail screen (see lectureMinimizedBannerHTML in
+       courses.js) -- minimizing a lecture always returns to that screen. -->
   <!-- Plays a minimized call's remote audio so it's still audible while
        browsing elsewhere -- the call screen's own <video>/<audio>
        elements are destroyed the moment #overlay is cleared, so without
