@@ -1073,9 +1073,20 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             </div>`;
         }
 
+        // Guards against a single tap firing submitPost() more than once
+        // (e.g. a double-tap, or a tap plus an Enter-key submit landing in
+        // the same event tick on a slow device) from creating two separate
+        // rows in the shared posts table. Without this, a duplicate insert
+        // shows up as an extra post in the feed and in the author's post
+        // count everywhere except their own device -- their own client
+        // never re-fetches its own already-known "mine" post, so only
+        // other viewers (and a fresh reload) see the duplicate.
+        let postSubmitInFlight = false;
         function submitPost(){
+          if (postSubmitInFlight) return;
           if (!requireCompleteProfile()) return;
           if (!selectedMediaItems.length) { openAppAlertModal('Add a photo or video: the feed only shows posts with pictures or videos'); return; }
+          postSubmitInFlight = true;
           const input = document.getElementById('new-post-text');
           const text = (input ? input.value : composeCaptionDraft).trim();
           const finalTaggedUsers = composeTaggedUsers.filter(u => u.username && new RegExp('(^|\\s)@' + u.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=\\s|$)', 'i').test(text));
@@ -1091,6 +1102,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             taggedUsers: finalTaggedUsers,
             mediaFiles, mediaTypes,
           }).then(() => {
+            postSubmitInFlight = false;
             selectedMediaItems = [];
             selectedMediaHtml = null;
             selectedMediaType = null;
@@ -1103,6 +1115,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             renderFeed();
             if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
           }).catch(() => {
+            postSubmitInFlight = false;
             const ov2 = document.getElementById('overlay');
             if (ov2) ov2.innerHTML = createPostHTML(text);
             openAppAlertModal('Something went wrong posting. Please try again.');
