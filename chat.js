@@ -3783,16 +3783,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 }
                 const id = convoDocChipId(f.url);
                 const state = convoDocDownloadState[f.url] || { status: 'idle' };
+                // Main tap opens the file inside Stitch (openConvoDocViewer) instead of
+                // going straight to convoDownloadDocument -- see that function's comment
+                // for why the OS share sheet unreliably fails on slower connections. The
+                // small download icon alongside it still uses the old share/save flow for
+                // anyone who explicitly wants a copy on disk or in another app.
                 return `
-                  <button type="button" id="${id}" onclick="convoDownloadDocument('${encodeURIComponent(f.url)}','${encodeURIComponent(f.name || '')}')" class="text-left w-full">
-                    <div class="flex items-center gap-2 ${mine ? 'bg-white/15' : 'bg-black/5'} rounded-xl px-2.5 py-1.5">
+                  <div class="flex items-center gap-1 ${mine ? 'bg-white/15' : 'bg-black/5'} rounded-xl px-2.5 py-1.5">
+                    <button type="button" id="${id}" onclick="openConvoDocViewer('${encodeURIComponent(f.url)}','${encodeURIComponent(f.name || '')}')" class="flex items-center gap-2 text-left flex-1 min-w-0">
                       <div id="${id}-icon" class="w-4 h-4 flex items-center justify-center flex-shrink-0">${convoDocIconHTML(state)}</div>
                       <div class="min-w-0 flex-1">
                         <span class="text-xs truncate block">${escapeHtml(f.name)}</span>
                         <div id="${id}-caption" class="text-[10px] ${mine ? 'text-white/60' : 'text-gray-400'} mt-0.5 truncate">${convoDocCaptionText(f.url, state)}</div>
                       </div>
-                    </div>
-                  </button>`;
+                    </button>
+                    <button type="button" onclick="event.stopPropagation(); convoDownloadDocument('${encodeURIComponent(f.url)}','${encodeURIComponent(f.name || '')}')" class="w-6 h-6 flex items-center justify-center flex-shrink-0 ${mine ? 'text-white/70' : 'text-gray-400'}" aria-label="Download">${Icon('download','w-3.5 h-3.5')}</button>
+                  </div>`;
               }).join('')}
             </div>`;
         }
@@ -3993,6 +3999,157 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             convoDocDownloadState[url] = { status: 'error', progress: 0 };
           }
           convoUpdateDocChipDOM(url);
+        }
+
+        // ---- In-app document viewer (docx / pdf / txt / csv) ----
+        // Tapping a document chip previously always went through
+        // convoDownloadDocument() first, which tries navigator.share() and falls back
+        // to forcing a fresh save-to-disk when share isn't available or fails. On a
+        // slow connection the network fetch alone routinely outlasts the very short
+        // "was just tapped" window the browser requires for navigator.share() to work,
+        // so the share call fails with NotAllowedError almost every time (that's the
+        // "Share sheet unavailable... opening the document directly instead" log) --
+        // leaving the person with nothing but a repeated forced download and no way
+        // to actually read the file.
+        // For formats we can safely render ourselves -- docx via mammoth (already used
+        // in courses.js/study.js), pdf via pdf.js (already used the same way), plain
+        // text/csv -- open them right inside Stitch instead. This never touches
+        // navigator.share() or the OS download flow, so it isn't affected by
+        // activation timing or a missing native app; it just works. Formats we can't
+        // parse client-side (pptx, xlsx, zip, legacy .doc/.ppt, etc.) still fall back
+        // to the original download/share flow in convoDownloadDocument().
+        function convoDocViewerKind(name){
+          const ext = (name || '').split('.').pop().toLowerCase();
+          if (ext === 'docx') return 'docx';
+          if (ext === 'pdf') return 'pdf';
+          if (ext === 'txt' || ext === 'csv') return 'text';
+          return 'other';
+        }
+
+        let convoDocViewerState = null;
+
+        async function getConvoDocBlobForViewer(url){
+          if (convoDocBlobCache[url]) return convoDocBlobCache[url];
+          const dbBlob = await loadConvoDocBlobFromDB(url);
+          if (dbBlob) { convoDocBlobCache[url] = dbBlob; return dbBlob; }
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Could not load this file (' + res.status + ').');
+          const blob = await res.blob();
+          convoDocBlobCache[url] = blob;
+          saveConvoDocBlobToDB(url, blob);
+          convoDocDownloadState[url] = { status: 'done', progress: 1 };
+          persistConvoDocDownloadState();
+          convoUpdateDocChipDOM(url);
+          return blob;
+        }
+
+        async function openConvoDocViewer(encodedUrl, encodedName){
+          const url = decodeURIComponent(encodedUrl);
+          const name = decodeURIComponent(encodedName || '');
+          const kind = convoDocViewerKind(name);
+          if (kind === 'other') { convoDownloadDocument(encodedUrl, encodedName); return; }
+          convoDocViewerState = { url, name, kind, status: 'loading' };
+          renderConvoDocViewer();
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeConvoDocViewer(fromPopState));
+          try {
+            const blob = await getConvoDocBlobForViewer(url);
+            if (!convoDocViewerState || convoDocViewerState.url !== url) return;
+            if (kind === 'docx') {
+              const buf = await blob.arrayBuffer();
+              const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+              if (!convoDocViewerState || convoDocViewerState.url !== url) return;
+              convoDocViewerState.html = result.value || '<p>No readable content was found in this file.</p>';
+              convoDocViewerState.status = 'ready';
+              renderConvoDocViewer();
+            } else if (kind === 'text') {
+              const t = await blob.text();
+              if (!convoDocViewerState || convoDocViewerState.url !== url) return;
+              convoDocViewerState.text = t;
+              convoDocViewerState.status = 'ready';
+              renderConvoDocViewer();
+            } else if (kind === 'pdf') {
+              const buf = await blob.arrayBuffer();
+              const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+              if (!convoDocViewerState || convoDocViewerState.url !== url) return;
+              convoDocViewerState.pdfDoc = pdf;
+              convoDocViewerState.pdfTotal = pdf.numPages;
+              convoDocViewerState.status = 'ready';
+              renderConvoDocViewer();
+              renderConvoDocViewerPdfPages();
+            }
+          } catch (err) {
+            if (!convoDocViewerState || convoDocViewerState.url !== url) return;
+            convoDocViewerState.status = 'error';
+            convoDocViewerState.error = (err && err.message) ? err.message : 'Could not open this file.';
+            renderConvoDocViewer();
+          }
+        }
+
+        async function renderConvoDocViewerPdfPages(){
+          const s = convoDocViewerState;
+          if (!s || s.kind !== 'pdf' || !s.pdfDoc) return;
+          const container = document.getElementById('doc-viewer-pdf-pages');
+          if (!container) return;
+          const width = container.clientWidth || 320;
+          for (let i = 1; i <= s.pdfTotal; i++) {
+            if (!convoDocViewerState || convoDocViewerState.url !== s.url) return;
+            const page = await s.pdfDoc.getPage(i);
+            const unscaled = page.getViewport({ scale: 1 });
+            const scale = width / unscaled.width;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.className = 'rounded-lg shadow-sm';
+            container.appendChild(canvas);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          }
+        }
+
+        function renderConvoDocViewer(){
+          const existing = document.getElementById('convo-doc-viewer');
+          if (!convoDocViewerState) { if (existing) existing.remove(); return; }
+          const html = convoDocViewerHTML();
+          if (existing) existing.outerHTML = html;
+          else document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function closeConvoDocViewer(fromPopState){
+          convoDocViewerState = null;
+          const el = document.getElementById('convo-doc-viewer');
+          if (el) el.remove();
+          if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
+        }
+
+        function convoDocViewerHTML(){
+          const s = convoDocViewerState;
+          let body;
+          if (s.status === 'loading') {
+            body = `<div class="flex-1 flex items-center justify-center text-gray-400 text-sm">Opening document&hellip;</div>`;
+          } else if (s.status === 'error') {
+            body = `
+              <div class="flex-1 flex flex-col items-center justify-center gap-3 text-center px-8">
+                <div class="text-gray-500 text-sm">${escapeHtml(s.error || 'Could not open this file.')}</div>
+                <button onclick="convoDownloadDocument('${encodeURIComponent(s.url)}','${encodeURIComponent(s.name)}')" class="text-[13px] font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};">Download instead</button>
+              </div>`;
+          } else if (s.kind === 'docx') {
+            body = `<div class="flex-1 overflow-y-auto px-5 py-4 doc-viewer-content">${s.html}</div>`;
+          } else if (s.kind === 'text') {
+            body = `<div class="flex-1 overflow-y-auto px-5 py-4"><pre class="text-[13px] whitespace-pre-wrap font-sans">${escapeHtml(s.text)}</pre></div>`;
+          } else if (s.kind === 'pdf') {
+            body = `<div class="flex-1 overflow-y-auto px-3 py-4 flex flex-col items-center gap-3" id="doc-viewer-pdf-pages"></div>`;
+          } else {
+            body = `<div class="flex-1 flex items-center justify-center text-gray-400 text-sm">Preview not available.</div>`;
+          }
+          return `
+            <div id="convo-doc-viewer" class="fixed inset-0 bg-white flex flex-col" style="z-index:200;">
+              <div class="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                <button onclick="closeConvoDocViewer()" class="w-8 h-8 flex items-center justify-center flex-shrink-0 -ml-1">${Icon('back','w-5 h-5')}</button>
+                <span class="flex-1 min-w-0 font-semibold text-[14px] truncate">${escapeHtml(s.name)}</span>
+                <button onclick="convoDownloadDocument('${encodeURIComponent(s.url)}','${encodeURIComponent(s.name)}')" class="w-8 h-8 flex items-center justify-center flex-shrink-0 text-gray-500" aria-label="Download">${Icon('download','w-4 h-4')}</button>
+              </div>
+              ${body}
+            </div>`;
         }
 
         function convoVideoAttachmentsHTML(videos){
