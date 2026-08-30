@@ -2165,15 +2165,23 @@
             const { mediaFile, mediaType, mediaFiles, mediaTypes, ...rest } = data;
             const files = mediaFiles && mediaFiles.length ? mediaFiles : (mediaFile ? [mediaFile] : []);
             const types = mediaTypes && mediaTypes.length ? mediaTypes : (mediaType ? [mediaType] : []);
-            return (async () => {
-              const post = {
-                id: Date.now(),
-                avatarIcon: 'user', avatarBg: 'bg-blue-100', name: profileData.name, meta: 'now',
-                connected: true, verified: false, mine: true,
-                body: '', mediaHtml: null,
-                likes: 0, liked: false, reposts: 0, reposted: false, shares: 0, comments: 0, commentsList: [], saved: false, views: 0,
-                ...rest,
-              };
+            const post = {
+              id: Date.now(),
+              avatarIcon: 'user', avatarBg: 'bg-blue-100', name: profileData.name, meta: 'now',
+              connected: true, verified: false, mine: true,
+              body: '', mediaHtml: null,
+              likes: 0, liked: false, reposts: 0, reposted: false, shares: 0, comments: 0, commentsList: [], saved: false, views: 0,
+              ...rest,
+            };
+            // Show the post right away using the local preview (rest.mediaHtml
+            // was already built from the picked files) instead of blocking on
+            // the media upload + remote insert round trip first -- that used
+            // to be why a new post took a beat to show up in the feed and on
+            // the profile. The upload/insert now finish in the background and
+            // just refresh the card in place once they're done.
+            feedPosts.unshift(post);
+            queueSaveUserState();
+            const background = (async () => {
               if (files.length) {
                 const uploads = await Promise.all(files.map((f, i) => uploadPostMediaToStorage(f, post.id + '-' + i)));
                 const okItems = uploads
@@ -2181,12 +2189,12 @@
                   .filter(Boolean);
                 if (okItems.length) {
                   post.mediaPaths = okItems.map(it => it.path);
-                  post.mediaPath = post.mediaPaths[0]; 
+                  post.mediaPath = post.mediaPaths[0];
                   post.mediaHtml = postMediaHtmlFromUploaded(okItems);
+                  queueSaveUserState();
+                  refreshFeedPostCard(post.id);
                 }
               }
-              feedPosts.unshift(post);
-              queueSaveUserState();
               // postInsertRemote used to be fire-and-forget here: if the
               // insert failed silently (flaky network, an RLS hiccup),
               // submitPost() still reported success and the post stuck
@@ -2194,18 +2202,21 @@
               // "ghost" post nobody else could ever see, since the
               // "always keep my own posts" merge rule in
               // loadRemotePostsImpl never re-checked whether it had
-              // actually reached the server. Now a failed insert rolls
-              // the optimistic local post back out and rejects, so the
-              // caller's .catch() can tell the user to retry instead of
-              // quietly leaving a phantom post behind.
+              // actually reached the server. So a failed insert still rolls
+              // the optimistic local post back out here and lets the
+              // person know, instead of quietly leaving a phantom post
+              // behind.
               const inserted = await postInsertRemote(post);
               if (!inserted) {
                 feedPosts = feedPosts.filter(p => p.id !== post.id);
                 queueSaveUserState();
-                throw new Error('Post failed to save');
+                refreshFeedPostCard(post.id);
+                if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+                if (typeof openAppAlertModal === 'function') openAppAlertModal('Your post could not be saved and was removed. Please check your connection and try again.');
               }
-              return post;
             })();
+            background.catch(err => console.warn('Post background sync failed:', err));
+            return Promise.resolve(post);
           },
           remove(id){
             return mockRequest(() => {
