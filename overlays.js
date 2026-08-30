@@ -656,7 +656,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <div id="compose-tagged-chips" class="flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}">${composeTaggedChipsHTML()}</div>
             </div>
             <div id="create-post-footer" class="p-4 border-t flex-shrink-0">
-              <button onclick="submitPost()" class="w-full py-3 rounded-2xl font-semibold border" style="color:#ffffff;border-color:rgba(30,144,255,0.45);background-color:rgba(30,144,255,0.55);">Post</button>
+              <button onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Post</button>
             </div>`;
         }
 
@@ -989,7 +989,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             </div>
             <div id="tag-picker-list" class="px-5 pb-5 flex-1 overflow-y-auto no-scrollbar">${tagPickerListHTML()}</div>
             <div class="p-4 border-t flex-shrink-0">
-              <button onclick="closeTagPeoplePicker()" class="w-full py-3 rounded-2xl font-semibold border" style="color:#ffffff;border-color:rgba(30,144,255,0.45);background-color:rgba(30,144,255,0.55);">Done</button>
+              <button onclick="closeTagPeoplePicker()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Done</button>
             </div>`;
         }
 
