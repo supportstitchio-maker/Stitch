@@ -619,7 +619,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${notificationSettingsRow('users','bg-emerald-50','text-emerald-600','Let members add people', meta.membersCanAdd ? 'Any member can add new people' : 'Only you can add new people', !!meta.membersCanAdd, 'toggleCollabMembersCanAdd()')}
               </div>` : ''}
               <div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
-                ${members.map(m => `
+                ${orderedCollabMembers(members).map(m => `
                   <div class="flex items-center gap-3 py-3">
                     <div class="w-11 h-11 rounded-full ${m.avatarBg || 'bg-gray-100'} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(m,'w-5 h-5')}</div>
                     <div class="flex-1 min-w-0">
@@ -897,6 +897,40 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        // "General" should only count unread DMs -- collaborations get their
+        // own badge, so folding collabConvos into this too (as the old code
+        // did via unreadMessageCount()) double-counted the same unread
+        // collaboration message into both the General *and* Collaborations
+        // chips at once.
+        function generalUnreadCount(){
+          return primaryConvos.filter(c => c.unread && !c.read).length;
+        }
+
+        function inboxFilterBarRowHTML(){
+          return inboxFilters.map(([key,label,count]) => {
+            const effectiveCount = key === 'requests' ? requestConvos.length
+              : key === 'collaborations' ? collabConvos.filter(c => c.unread && !c.read).length
+              : key === 'general' ? generalUnreadCount()
+              : count;
+            return `
+              <button onclick="inboxFilterTab('${key}')" class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
+                ${label}${effectiveCount ? `<span class="w-4 h-4 rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center">${effectiveCount}</span>` : ''}
+              </button>
+            `;
+          }).join('');
+        }
+
+        // Tapping into a conversation (or any other action that flips a
+        // convo's read/unread flag) used to only refresh #inbox-list -- the
+        // filter chips above it kept showing the old unread counts until the
+        // whole inbox tab was re-rendered from scratch. Call this alongside
+        // any #inbox-list refresh so "General"/"Collaborations" badges stay
+        // in sync with what's actually unread.
+        function refreshInboxFilterBar(){
+          const row = document.getElementById('inbox-filterbar-row');
+          if (row) row.innerHTML = inboxFilterBarRowHTML();
+        }
+
         function renderInboxTab(){
           const prevInboxScreenEl = document.getElementById('screen');
           const prevInboxScrollTop = prevInboxScreenEl ? prevInboxScreenEl.scrollTop : 0;
@@ -919,15 +953,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               `}
             </div>
             <div id="inbox-filterbar" class="sticky z-10 bg-gray-50 px-5 pb-3 border-b border-gray-100">
-              <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                ${inboxFilters.map(([key,label,count]) => {
-                  const effectiveCount = key === 'requests' ? requestConvos.length : key === 'collaborations' ? collabConvos.filter(c=>c.unread).length : key === 'general' ? unreadMessageCount() : count;
-                  return `
-                  <button onclick="inboxFilterTab('${key}')" class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
-                    ${label}${effectiveCount ? `<span class="w-4 h-4 rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center">${effectiveCount}</span>` : ''}
-                  </button>
-                `;}).join('')}
-              </div>
+              <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="inbox-filterbar-row">${inboxFilterBarRowHTML()}</div>
             </div>
             <div class="divide-y" id="inbox-list">${inboxContent()}</div>`;
           stickBarsStack(['inbox-titlebar','inbox-searchbar','inbox-filterbar']);
@@ -2341,6 +2367,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const inboxList = document.getElementById('inbox-list');
           if (inboxList) inboxList.innerHTML = inboxContent();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
+          if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar();
         }
 
         function addMissedCallNotif(info){
@@ -2570,6 +2597,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const inboxList = document.getElementById('inbox-list');
           if (inboxList) inboxList.innerHTML = inboxContent();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
+          if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar();
         }
 
         let conversationMessages = {}; 
@@ -2596,6 +2624,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const inboxList = document.getElementById('inbox-list');
           if (inboxList) inboxList.innerHTML = inboxContent();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
+          if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar();
 
           const meta = convoMeta[id];
           const isGroupConvo = !!(meta && meta.icon === 'users');
@@ -2954,14 +2983,34 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function convoLastSeenText(meta){
-          if (meta.icon === 'users') {
-            const names = (meta.members || []).map(m => m.mine ? 'You' : m.name).filter(Boolean);
-            return names.length ? names.join(', ') : 'Group';
-          }
+          // Someone typing/recording is more useful than the static member
+          // list, so it takes priority even in a collaboration -- this used
+          // to be checked *after* the group-name early return below, which
+          // meant it never had a chance to show for collaborations at all.
           if (activeConvoId && recordingByConvo[activeConvoId]) return 'recording audio...';
           if (activeConvoId && typingByConvo[activeConvoId]) return 'typing...';
+          if (meta.icon === 'users') {
+            const names = orderedCollabMemberNames(meta.members);
+            return names.length ? names.join(', ') : 'Group';
+          }
           if (meta.otherUserId && isUserOnline(meta.otherUserId)) return 'Online';
           return formatLastActiveText(meta.lastActive);
+        }
+
+        // Puts "You" first, then everyone else in their existing order --
+        // used anywhere a collaboration's member names are listed out.
+        function orderedCollabMemberNames(members){
+          const list = (members || []).filter(Boolean);
+          const mine = list.filter(m => m.mine).map(() => 'You');
+          const others = list.filter(m => !m.mine).map(m => m.name).filter(Boolean);
+          return mine.concat(others);
+        }
+
+        function orderedCollabMembers(members){
+          const list = (members || []).filter(Boolean);
+          const mine = list.filter(m => m.mine);
+          const others = list.filter(m => !m.mine);
+          return mine.concat(others);
         }
 
         function formatLastActiveText(lastActive){
