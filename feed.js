@@ -323,10 +323,10 @@
                 <button onclick="${openMine}" class="text-xs font-semibold text-gray-800 truncate w-20 text-center">${escapeHtml(s.name)}</button>
               </div>`;
           }
-          const ringStyle = s.viewed ? 'background:#d1d5db;' : `background:linear-gradient(135deg, ${NAVY}, ${ROYAL});`;
+          const ringStyle = s.viewed ? 'padding:3.5px;background:#d1d5db;' : `padding:3.5px;background:linear-gradient(135deg, ${NAVY}, ${ROYAL});`;
           return `
             <button onclick="viewStory('${s.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 w-20">
-              <div class="w-20 h-20 rounded-full p-[3.5px]" style="${ringStyle}">
+              <div class="w-20 h-20 rounded-full" style="${ringStyle}">
                 <div class="w-full h-full rounded-full ${s.bg} flex items-center justify-center border-2 border-white overflow-hidden">${s.photo ? `<img src="${s.photo}" class="w-full h-full object-cover">` : silhouetteIcon(s.icon, 'w-9 h-9 ' + (s.iconClass||''))}</div>
               </div>
               <div class="text-xs font-semibold text-gray-800 truncate w-20 text-center">${escapeHtml(s.name)}</div>
@@ -2546,7 +2546,6 @@
 
               ${(post.body && post.body.trim()) || (post.isRepost && post.repostAuthorName && post.repostAuthorName !== post.name) ? `
               <div class="px-3.5 pt-1 text-[13px] leading-snug">
-                ${post.mediaHtml ? `<span class="inline-flex items-center justify-center rounded align-middle mr-1" style="width:1.15rem;height:1.15rem;padding:2px;background:rgba(30,144,255,0.12);color:${NAVY};" title="${postMediaKind(post) === 'video' ? 'Video' : 'Photo'}">${Icon(postMediaKind(post) === 'video' ? 'videoClip' : 'photoFrame','w-3 h-3')}</span>` : ''}
                 <span>${renderPostBodyHtml(post)}</span>
                 ${post.isRepost && post.repostAuthorName && post.repostAuthorName !== post.name ? `<div class="text-[11px] text-gray-400 mt-0.5">Originally posted by ${escapeHtml(post.repostAuthorName)}</div>` : ''}
               </div>
