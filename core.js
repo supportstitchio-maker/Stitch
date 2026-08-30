@@ -130,6 +130,37 @@
           }
           return _sbClient;
         }
+        // ---- Clock-skew resilience ----
+        // Supabase/PostgREST rejects a request with PGRST303 ("JWT issued
+        // at future") when the *device's* clock is ahead of real time, so
+        // the token's iat looks like it hasn't happened yet from the
+        // server's point of view. A session refresh won't fix a wrong
+        // device clock, but it does recover the (more common) case where
+        // the token was merely stale/cached from before the clock got
+        // corrected. If it still fails after a refresh, we tell the user
+        // plainly what to check instead of leaving them looking at a
+        // silent 401 in the console.
+        let _clockSkewWarned = false;
+        function isClockSkewError(error){
+          return !!(error && (error.code === 'PGRST303' || /JWT issued at future/i.test(error.message || '')));
+        }
+        async function withClockSkewRetry(sb, runQuery){
+          let result = await runQuery();
+          if (result && result.error && isClockSkewError(result.error)) {
+            try { await sb.auth.refreshSession(); } catch (e) {  }
+            result = await runQuery();
+            if (result && result.error && isClockSkewError(result.error) && !_clockSkewWarned) {
+              _clockSkewWarned = true;
+              if (typeof openAppAlertModal === 'function') {
+                openAppAlertModal("Your device's date & time looks incorrect, which is blocking sign-in with our server. Please turn on automatic date & time in your device settings, then reopen the app.");
+              } else {
+                console.warn("Requests are failing because this device's clock is set to the wrong time (enable automatic date & time).");
+              }
+            }
+          }
+          return result;
+        }
+
         let _cachedAuthUser = null;
         let _cachedAuthUserPromise = null;
         async function getCachedAuthUser(){
@@ -208,14 +239,20 @@
             });
           }
           const json = subscription.toJSON();
-          await sb.from('push_subscriptions').upsert({
+          const { error } = await withClockSkewRetry(sb, () => sb.from('push_subscriptions').upsert({
             user_id: myId,
             platform: 'web',
             endpoint: json.endpoint,
             p256dh: json.keys.p256dh,
             auth: json.keys.auth,
             fcm_token: null,
-          }, { onConflict: 'endpoint' });
+          }, { onConflict: 'endpoint' }));
+          if (error) {
+            // A 400 here almost always means the `endpoint` column in
+            // push_subscriptions isn't UNIQUE, so onConflict:'endpoint' has
+            // nothing to match against -- see supabase-fixes.sql.
+            console.warn('Saving push subscription failed (see supabase-fixes.sql):', error);
+          }
         }
 
         async function initNativePushNotifications(){
