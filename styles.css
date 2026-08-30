@@ -930,10 +930,10 @@
           width: var(--nav-width);
           padding: 20px 14px;
           gap: 0.35rem;
-          background: radial-gradient(120% 60% at 15% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 45%), linear-gradient(160deg, #38bdff 0%, #1e90ff 42%, #4169e1 100%);
+          background: #ffffff;
           border-right: none;
           border-bottom: none;
-          box-shadow: 6px 0 24px rgba(30,58,138,0.28);
+          box-shadow: 6px 0 24px rgba(255,255,255,0.55), 0 0 0 1px rgba(15,31,51,0.05);
           box-sizing: border-box;
           overflow-y: auto;
           overflow-x: hidden;
@@ -944,12 +944,12 @@
           display: flex; align-items: center; gap: 0.85rem;
           padding: 0.5rem 0.75rem; margin-bottom: 0.75rem;
           padding-bottom: 1.25rem;
-          border-bottom: 1px solid rgba(255,255,255,0.22);
+          border-bottom: 1px solid rgba(15,31,51,0.10);
           border-right: none;
           cursor: pointer;
         }
         .dside-brand img {
-          filter: brightness(0) invert(1);
+          filter: none;
         }
         .dside-brand-icon {
           width: 30px; height: 30px; object-fit: contain; flex-shrink: 0;
@@ -961,7 +961,7 @@
         .dside-divider {
           height: 1px;
           margin: 0.4rem 0.75rem 0.6rem;
-          background: rgba(255,255,255,0.22);
+          background: rgba(15,31,51,0.10);
           flex-shrink: 0;
         }
         .dnav-item {
@@ -969,7 +969,7 @@
           width: 100%; justify-content: flex-start; text-align: left;
           padding: 0.7rem 0.9rem; border-radius: 9999px;
           font-size: 0.95rem; font-weight: 500;
-          color: #ffffff; background: transparent;
+          color: #0f1f33; background: transparent;
           border: none;
           position: relative;
           transition: background-color .12s ease, color .12s ease;
@@ -995,12 +995,12 @@
           transition: background-color .15s ease;
         }
         @media (hover:hover){
-          .dnav-item:not(.dnav-active):hover::after { background: rgba(255,255,255,0.45); }
+          .dnav-item:not(.dnav-active):hover::after { background: rgba(30,144,255,0.35); }
         }
-        .dnav-item:not(.dnav-active):active::after { background: rgba(255,255,255,0.6); }
-        .dnav-item.dnav-active::after { background: rgba(255,255,255,0.65); }
+        .dnav-item:not(.dnav-active):active::after { background: rgba(30,144,255,0.5); }
+        .dnav-item.dnav-active::after { background: rgba(30,144,255,0.65); }
         .dnav-item.dnav-active {
-          color: #ffffff; background: transparent; font-weight: 700;
+          color: #1e90ff; background: transparent; font-weight: 700;
         }
         .dnav-item.dnav-pill { border-radius: 9999px; background: transparent; }
         .dnav-item.dnav-pill.dnav-active { background: transparent; }
