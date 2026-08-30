@@ -546,7 +546,8 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         function menuOverlayHeader(title, menuOpen, toggleFnName, dropdownHtml, opts){
           opts = opts || {};
-          const backBtn = opts.hideBack ? '' : `<button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
+          const backFnName = opts.backFn || 'closeOverlay';
+          const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
           const menuIcon = opts.boldMenuIcon ? IconBold('dashes','w-5 h-5') : Icon('dashes','w-5 h-5');
           const menuBtn = `<button onclick="${toggleFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(menuIcon)}</button>`;
           const titleSize = opts.titleSize || 'text-base';
@@ -2103,14 +2104,9 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { showDelete: false }))}
+              ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { showDelete: false }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay' })}
               <div class="p-5">
-                ${notifSelected.size ? `
-                <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
-                    <div class="text-xs font-semibold text-[${NAVY}]">${notifSelected.size} selected</div>
-                    <button onclick="notifCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button>
-                </div>` : ''}
-                <div class="space-y-3">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
+                <div class="space-y-4">${notifCards(null, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })}</div>
               </div>
             </div>`;
           if (prevNotifScrollTop) {
@@ -2143,14 +2139,18 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
                   ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
                 </div>
                 <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} mt-0.5 leading-relaxed">${escapeHtml(n.message)}</div>
-                <div class="text-xs text-gray-400 mt-1" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
+                ${selecting ? `<div class="text-xs text-gray-400 mt-1" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>` : ''}
                 ${n.type === 'connect_request' ? `
                 <div class="flex gap-2 mt-3">
                   <button onclick="event.stopPropagation(); acceptConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-[${NAVY}]">Accept</button>
                   <button onclick="event.stopPropagation(); declineConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Decline</button>
                 </div>` : ''}
               </div>
-              ${selecting ? '' : `<button onclick="event.stopPropagation(); deleteNotif('${n.id}')" class="w-8 h-8 flex items-center justify-center flex-shrink-0 text-gray-300 hover:text-red-500" title="Delete">${Icon('trash','w-4 h-4')}</button>`}
+              ${selecting ? '' : `
+              <div class="flex flex-col items-center gap-1 flex-shrink-0">
+                <button onclick="event.stopPropagation(); deleteNotif('${n.id}')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500" title="Delete">${Icon('trash','w-4 h-4')}</button>
+                <div class="text-[10px] text-gray-400 whitespace-nowrap" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
+              </div>`}
             </div>`;
           }).join('');
         }
