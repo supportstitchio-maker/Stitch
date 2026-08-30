@@ -2927,8 +2927,15 @@ try {
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            await sb.rpc('claim_class_invites');
-          } catch (e) {  }
+            const { error } = await sb.rpc('claim_class_invites');
+            if (error) {
+              // A 404/"function not found" here means the claim_class_invites()
+              // RPC hasn't been created in Supabase yet -- see the SQL in
+              // supabase-fixes.sql. Not fatal: invited students just won't be
+              // auto-added to the class until that function exists.
+              console.warn('claim_class_invites RPC failed (see supabase-fixes.sql):', error);
+            }
+          } catch (e) { console.warn('claim_class_invites RPC threw an error:', e); }
         }
 
         async function loadMyClasses(){
