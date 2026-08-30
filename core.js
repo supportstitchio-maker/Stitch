@@ -1635,7 +1635,7 @@
           }
           else if (n === 1) renderJobMarket();
           else if (n === 2) renderClassroomWithLoading();
-          else if (n === 3) { renderInboxTab(); loadIncomingConnectionRequests(); loadMyAcceptedIncomingRequests(); loadMyAcceptedOutgoingRequests(); if (typeof refreshNetworkCount === 'function') refreshNetworkCount(); if (typeof reconcileUnreadMessages === 'function') reconcileUnreadMessages(); if (typeof refreshAllContactPhotos === 'function') refreshAllContactPhotos(); }
+          else if (n === 3) { renderInboxTab(); loadIncomingConnectionRequests(); loadMyAcceptedIncomingRequests(); loadMyAcceptedOutgoingRequests(); if (typeof refreshNetworkCount === 'function') refreshNetworkCount(); if (typeof reconcileUnreadMessages === 'function') reconcileUnreadMessages(); if (typeof reconcileConvoOrder === 'function') reconcileConvoOrder(); if (typeof refreshAllContactPhotos === 'function') refreshAllContactPhotos(); }
           else {
             const profileScreenEl = document.getElementById('screen');
             if (cachedProfileScreenNode && profileScreenEl) {
