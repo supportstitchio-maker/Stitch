@@ -3307,12 +3307,13 @@ try {
                   ${Icon('trash','w-3.5 h-3.5')} Delete class
                 </button>` : ''}
                 ${cls.role === 'teacher' ? lectureActionPillsHTML() : ''}
-                <div class="flex gap-1 mb-5 bg-gray-100 rounded-2xl p-1">
+                <div class="flex gap-1 mb-3 bg-gray-100 rounded-2xl p-1">
                   ${showAdminDashboard ? classDetailTabBtn('dashboard','Dashboard') : ''}
                   ${classDetailTabBtn('stream','Stream')}
                   ${classDetailTabBtn('classwork','Classwork')}
                   ${classDetailTabBtn('people','People')}
                 </div>
+                ${(lectureMinimized && liveLectureState.connected && liveLectureState.classId === cls.id) ? lectureMinimizedBannerHTML() : ''}
                 ${classDetailTab === 'dashboard' && showAdminDashboard ? classDashboardTabHTML(cls) : ''}
                 ${classDetailTab === 'stream' ? classStreamTabHTML(cls) : ''}
                 ${classDetailTab === 'classwork' ? classClassworkTabHTML(cls) : ''}
@@ -3713,17 +3714,30 @@ try {
           const info = incomingLectureCallInfo || {};
           const lecture = info.lecture || {};
           return `
-            <div class="flex-1 flex flex-col text-white" style="padding-top:var(--top-safe-pad);background:linear-gradient(160deg, ${NAVY}, ${ROYAL});">
-              <div class="flex-1 flex flex-col items-center justify-center px-6">
-                <div class="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center mb-5" style="background:rgba(255,255,255,0.15);">
-                  ${info.callerPhoto ? `<img src="${escapeHtml(info.callerPhoto)}" class="w-full h-full object-cover">` : Icon('video','w-14 h-14')}
+            <div class="flex-1 flex flex-col bg-white text-gray-900" style="padding-top:var(--top-safe-pad);">
+              <div class="flex items-center justify-between px-5 flex-shrink-0">
+                <button onclick="declineIncomingLectureCall()" title="Back" class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700">${IconBold('back','w-5 h-5')}</button>
+                <div class="flex-1 min-w-0 text-center px-2">
+                  <div class="text-sm font-semibold text-gray-500 tracking-wide uppercase font-display">Incoming Lecture</div>
                 </div>
-                <div class="text-2xl font-bold font-display mb-1 text-center">${escapeHtml(info.className || 'Class Lecture')}</div>
-                <div class="text-sm text-white/70 text-center">${escapeHtml(info.callerName || 'Your teacher')} started "${escapeHtml(lecture.title || 'Live Lecture')}"</div>
+                <div class="w-11 h-11 flex-shrink-0"></div>
               </div>
-              <div class="flex-shrink-0 flex items-center justify-center" style="gap:20px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 10px);">
-                <button onclick="declineIncomingLectureCall()" title="Decline" class="rounded-full flex items-center justify-center shadow-lg" style="width:44px;height:44px;background:#ef4444;">${Icon('phoneHangup','w-5 h-5')}</button>
-                <button onclick="acceptIncomingLectureCall()" title="Join lecture" class="rounded-full flex items-center justify-center shadow-lg" style="width:44px;height:44px;background:#10b981;">${Icon('video','w-5 h-5')}</button>
+              <div style="flex:0 0 20%;"></div>
+              <div class="flex flex-col items-center px-6 text-center">
+                <div class="rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mb-4 shadow-lg" style="width:9rem;height:9rem;">${info.callerPhoto ? `<img src="${escapeHtml(info.callerPhoto)}" class="w-full h-full object-cover">` : Icon('video','w-14 h-14 text-gray-400')}</div>
+                <div class="text-2xl font-bold font-display mb-1">${escapeHtml(info.className || 'Class Lecture')}</div>
+                <div class="text-base text-gray-500">${escapeHtml(info.callerName || 'Your teacher')} started "${escapeHtml(lecture.title || 'Live Lecture')}"</div>
+              </div>
+              <div style="flex:1;"></div>
+              <div class="flex-shrink-0 flex items-center justify-center" style="gap:64px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 32px);">
+                <button onclick="declineIncomingLectureCall()" title="Decline" class="flex flex-col items-center gap-2">
+                  <div class="call-decline-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('phoneHangup','w-6 h-6 text-white')}</div>
+                  <div class="text-xs text-gray-600">Decline</div>
+                </button>
+                <button onclick="acceptIncomingLectureCall()" title="Join lecture" class="flex flex-col items-center gap-2">
+                  <div class="call-accept-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('video','w-6 h-6 text-white')}</div>
+                  <div class="text-xs text-gray-600">Join</div>
+                </button>
               </div>
             </div>`;
         }
@@ -4080,54 +4094,48 @@ try {
         // Tapping "Back" during a live lecture used to call endLecture()
         // outright -- one accidental tap on the way to checking chat or
         // another tab would hang up (or, for a student, leave) the whole
-        // class. This mirrors how the normal 1:1/group call screen's back
-        // button works: it minimizes to a small persistent banner (stream
-        // and peer connections keep running) instead of ending anything.
-        // The lecture only actually ends when the red control-bar button
-        // is tapped.
+        // class. Instead, it minimizes back to that class's own detail
+        // screen (Stream/Classwork/People) with a persistent "Lecture in
+        // progress" pill pinned just below the tab row -- see
+        // lectureMinimizedBannerHTML below -- rather than floating over
+        // the rest of the app. Stream and peer connections keep running
+        // the whole time. The lecture only actually ends when the red
+        // control-bar button is tapped.
         function minimizeLecture(){
           if (!liveLectureState.connected) { closeOverlay(); return; }
           lectureMinimized = true;
-          currentOverlayKind = null;
-          updateUtilityNavActive();
-          if (typeof updateClassroomNav === 'function') updateClassroomNav();
-          const ov = document.getElementById('overlay');
-          if (ov) { ov.classList.add('hidden'); ov.innerHTML = ''; ov.style.top = OVERLAY_TOP; ov.style.bottom = '0'; ov.style.paddingTop = ''; }
-          const appShellEl = document.getElementById('app-shell');
-          if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
-          if (typeof resetBottomNav === 'function') resetBottomNav();
-          const isClassroomTab = currentTab === 2;
-          const bottomNavEl = document.getElementById('bottom-nav');
-          const classroomNavEl = document.getElementById('classroom-nav');
-          if (bottomNavEl) bottomNavEl.style.display = isClassroomTab ? 'none' : '';
-          if (classroomNavEl) classroomNavEl.style.display = isClassroomTab ? '' : 'none';
-          if (typeof overlayHistoryPushed !== 'undefined' && overlayHistoryPushed) {
-            overlayHistoryPushed = false;
-            history.back();
-          }
-          if (currentTab === 2) renderStudy();
-          const banner = document.getElementById('lecture-minimized-banner');
-          if (banner) { banner.classList.remove('hidden'); updateMinimizedLectureBanner(); }
+          if (guestLectureMode) { closeOverlay(); return; }
+          currentClassId = liveLectureState.classId;
+          classDetailTab = 'stream';
+          openOverlay('classDetail');
         }
 
         function resumeLecture(){
           if (!liveLectureState.connected) return;
           lectureMinimized = false;
-          const banner = document.getElementById('lecture-minimized-banner');
-          if (banner) banner.classList.add('hidden');
           openOverlay('lectureCall');
           attachLectureMedia();
         }
 
-        function updateMinimizedLectureBanner(){
-          const el = document.getElementById('lecture-minimized-timer');
-          if (el) el.textContent = formatCallTime(liveLectureState.seconds);
+        // Rendered inline inside classDetailHTML(), directly below the
+        // Stream/Classwork/People tabs, whenever the lecture for *this*
+        // class is connected but minimized. Deliberately not a
+        // fixed/floating banner -- it only shows up in the one place it's
+        // relevant (that class's own detail screen) and stays there,
+        // scrolling with the page, until the lecture ends.
+        function lectureMinimizedBannerHTML(){
+          return `
+            <div onclick="resumeLecture()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer mb-5" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 10px 26px rgba(65,105,225,0.35);border:1px solid rgba(255,255,255,0.22);color:#fff;padding-left:10px;padding-right:10px;">
+              <span class="text-sm font-semibold flex-1 truncate">Lecture in progress</span>
+              <span id="lecture-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">${formatCallTime(liveLectureState.seconds)}</span>
+              <button onclick="event.stopPropagation();endLecture()" title="End lecture" class="call-end-icon-btn w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                ${Icon('phoneHangup','w-3.5 h-3.5')}
+              </button>
+            </div>`;
         }
 
         function endLecture(remoteEnded){
           lectureMinimized = false;
-          const banner = document.getElementById('lecture-minimized-banner');
-          if (banner) banner.classList.add('hidden');
           clearLectureTimer();
           stopLectureLocalStream();
           const cls = myClasses.find(c => c.id === liveLectureState.classId);
