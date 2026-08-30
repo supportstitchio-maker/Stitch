@@ -29,6 +29,15 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           bio: '',
           gender: '',
           photo: null,
+          // True once the person has explicitly removed their photo (see
+          // deleteProfilePicture below). Google sign-in used to re-fill an
+          // empty photo from the Google account picture on every login --
+          // harmless for a brand-new user, but it meant deliberately
+          // deleting your photo never stuck: it would just quietly "come
+          // back" the next time you logged in. This flag lets that
+          // auto-fill (see applyGoogleProfileInfo) tell "never set one"
+          // apart from "removed it on purpose".
+          photoCleared: false,
           link: '',
           links: []
         };
@@ -898,6 +907,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (!canvas) { closePhotoCropModal(); return; }
           const previewDataUrl = canvas.toDataURL('image/jpeg', 0.9);
           profileData.photo = previewDataUrl;
+          profileData.photoCleared = false;
           closePhotoCropModal();
           renderEditProfileForm();
           canvas.toBlob(blob => {
@@ -922,6 +932,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (!profileData.photo) return;
           openAppConfirmModal('Delete your profile picture?', '', 'Delete', function(){
             profileData.photo = null;
+            profileData.photoCleared = true;
             editProfilePendingPhotoDelete = true;
             renderEditProfileForm();
           });
@@ -935,6 +946,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function selectEditProfileAvatar(src){
           profileData.photo = src;
+          profileData.photoCleared = false;
           editProfilePendingPhotoDelete = false;
           editProfileAvatarPickerOpen = false;
           renderEditProfileForm();
