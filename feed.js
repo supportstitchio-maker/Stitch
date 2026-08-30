@@ -28,13 +28,13 @@
           }
           document.getElementById('screen').innerHTML = `
             <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
+              ${pullToRefreshIndicatorHTML()}
               <div class="-mx-5 mb-6 border-b border-gray-100">
                 <div class="flex gap-4 overflow-x-auto no-scrollbar px-5 pb-4" id="story-strip">
                   ${stories.map(storyBubble).join('')}
                 </div>
               </div>
 
-              ${pullToRefreshIndicatorHTML()}
               <div class="space-y-3" id="feed-list">
                 ${feedPosts.filter(p => p.mediaHtml).map(feedPost).join('')}
               </div>
@@ -144,7 +144,6 @@
           try {
             await loadRemotePosts();
             await loadPostInteractions();
-            await loadRemoteGlimpses();
           } catch (e) {  }
           homeFeedRefreshing = false;
           if (typeof currentTab === 'undefined' || currentTab !== 0) return;
@@ -2604,7 +2603,7 @@
 
               <div class="flex items-center px-3 pt-1.5 text-gray-800">
                 <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : ''}">
-                  <span id="like-icon-${post.id}">${Icon(post.liked ? 'thumbUp' : 'thumbUpOutline','w-5 h-5')}</span>
+                  <span id="like-icon-${post.id}">${Icon(post.liked ? 'heart' : 'heartOutline','w-5 h-5')}</span>
                   <span class="text-[12px] font-semibold" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
                 </button>
                 <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 ml-2 flex items-center gap-1">
@@ -2944,7 +2943,7 @@
         function toggleLike(id){
           PostsAPI.toggleLike(id).then(post => {
             if (!post) return;
-            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = Icon(post.liked ? 'thumbUp' : 'thumbUpOutline', 'w-6 h-6'); });
+            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = Icon(post.liked ? 'heart' : 'heartOutline', 'w-6 h-6'); });
             forEachById('like-count-'+id, likeCountEl => { likeCountEl.textContent = post.likes.toLocaleString() + ' likes'; });
             forEachById('like-btn-'+id, btn => {
               const isReelDetail = btn.closest('#video-post-' + id) != null;
