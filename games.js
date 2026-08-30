@@ -1903,7 +1903,7 @@ let simpleGameState = null;
                 }
               }
             }
-            if (!profileData.photo) {
+            if (!profileData.photo && !profileData.photoCleared) {
               const googlePhoto = meta.avatar_url || meta.picture;
               if (googlePhoto) profileData.photo = googlePhoto;
             }
@@ -1923,6 +1923,12 @@ let simpleGameState = null;
           if (gate) gate.classList.add('auth-hidden');
           showAppBootSkeleton();
           resetCachedAuthUser();
+          // Always land on Home after logging in. renderApp() below only
+          // builds/switches tabs on its very first call ever (see
+          // appShellMounted) -- on any later login (e.g. sign out, then log
+          // back in) it's a no-op, so without this the person would land on
+          // whatever tab was showing when they signed out instead of Home.
+          if (typeof currentTab !== 'undefined' && currentTab !== 0 && typeof switchTab === 'function') switchTab(0);
           // Fresh login/signup: the next time Classroom is opened this
           // session, show the spin-up animation once again.
           if (typeof classroomNeedsLoadingAnimation !== 'undefined') classroomNeedsLoadingAnimation = true;
@@ -1999,6 +2005,7 @@ let simpleGameState = null;
               refreshNetworkCount(),
               loadMyCollaborations(),
               reconcileUnreadMessages(),
+              (typeof reconcileConvoOrder === 'function' ? reconcileConvoOrder() : Promise.resolve()),
               (typeof redeemPendingReferralCode === 'function' ? redeemPendingReferralCode() : Promise.resolve())
                 .then(() => { if (typeof loadReferralProfile === 'function') return loadReferralProfile(); }),
             ]))
@@ -2197,6 +2204,13 @@ let simpleGameState = null;
             const gate = document.getElementById('auth-gate');
             if (gate) gate.classList.remove('auth-hidden');
             closeOverlay();
+            // Reset the tab underneath the (now-covering) login screen back
+            // to Home. The app shell is only ever built once, so without
+            // this the next login just reveals whatever tab was showing
+            // when the person signed out -- e.g. Settings lives on the
+            // Profile tab, so signing out from Settings and back in used to
+            // drop the person right back on Profile instead of the feed.
+            if (typeof switchTab === 'function') switchTab(0);
           });
         }
         function authDeleteAccount(){
