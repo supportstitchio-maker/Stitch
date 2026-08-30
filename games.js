@@ -1802,6 +1802,18 @@ let simpleGameState = null;
           if (landing) landing.classList.add('landing-hidden');
           if (mode === 'signup') authShowSignup(); else authShowLogin();
         }
+        // games.js is the last script tag to load, but the landing page's
+        // Sign In/Register buttons render (and become clickable) much
+        // earlier. On a slow connection a tap can land before this file has
+        // finished downloading, throwing "landingGoToAuth is not defined".
+        // The stub installed in index.html queues that tap; now that the
+        // real function exists, replay it immediately.
+        window.landingGoToAuth = landingGoToAuth;
+        if (window.__pendingLandingAuthMode) {
+          const pending = window.__pendingLandingAuthMode;
+          window.__pendingLandingAuthMode = null;
+          landingGoToAuth(pending);
+        }
 
         function authBackToLanding(){
           const landing = document.getElementById('landing-page');
