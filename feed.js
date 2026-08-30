@@ -1697,6 +1697,7 @@
               return remoteIds.has(String(p.id));
             });
             const postsWereRemoved = feedPosts.length !== lengthBeforeFilter;
+            if (postsWereRemoved && typeof queueSaveUserState === 'function') queueSaveUserState();
             const knownIds = new Set(feedPosts.map(p => String(p.id)));
             const newRows = data.filter(row => !knownIds.has(row.id) && !deletedPostIds.has(String(row.id)));
             const existingAuthorIds = feedPosts.filter(p => !p.mine && p.authorId).map(p => p.authorId);
