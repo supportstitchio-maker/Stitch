@@ -414,6 +414,18 @@
          and reveals the auth gate underneath, already in the right
          mode.
          ================================================================ -->
+    <script>
+      // Stub for landingGoToAuth: the real implementation lives in
+      // games.js, which is the last script tag on the page and can still
+      // be downloading when this landing markup is already visible and
+      // tappable (especially on a slow connection). If it's tapped before
+      // games.js is ready, queue the requested mode instead of throwing
+      // "landingGoToAuth is not defined" -- games.js replays it as soon as
+      // it loads.
+      window.landingGoToAuth = window.landingGoToAuth || function(mode){
+        window.__pendingLandingAuthMode = mode;
+      };
+    </script>
     <div id="landing-page">
 
   <div class="tint-band">
