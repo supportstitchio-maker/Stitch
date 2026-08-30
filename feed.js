@@ -1680,7 +1680,20 @@
             const lengthBeforeFilter = feedPosts.length;
             feedPosts = feedPosts.filter(p => {
               if (deletedPostIds.has(String(p.id))) return false;
-              if (p.mine || !p.authorId) return true; 
+              if (p.mine) {
+                if (remoteIds.has(String(p.id))) return true;
+                // A "mine" post is normally kept unconditionally so it
+                // doesn't flicker out of the feed while its own insert is
+                // still in flight. But a post older than a couple minutes
+                // that still isn't in the server's row set never actually
+                // made it there (see the postInsertRemote fix in
+                // PostsAPI.create) -- it's a ghost from an earlier failed
+                // attempt, sitting only in this device's saved state.
+                // Drop it now instead of restoring it forever.
+                const ageMs = Date.now() - Number(p.id || 0);
+                return ageMs < 2 * 60 * 1000;
+              }
+              if (!p.authorId) return true;
               return remoteIds.has(String(p.id));
             });
             const postsWereRemoved = feedPosts.length !== lengthBeforeFilter;
@@ -2173,7 +2186,23 @@
               }
               feedPosts.unshift(post);
               queueSaveUserState();
-              postInsertRemote(post); 
+              // postInsertRemote used to be fire-and-forget here: if the
+              // insert failed silently (flaky network, an RLS hiccup),
+              // submitPost() still reported success and the post stuck
+              // around forever in this device's own saved state -- a
+              // "ghost" post nobody else could ever see, since the
+              // "always keep my own posts" merge rule in
+              // loadRemotePostsImpl never re-checked whether it had
+              // actually reached the server. Now a failed insert rolls
+              // the optimistic local post back out and rejects, so the
+              // caller's .catch() can tell the user to retry instead of
+              // quietly leaving a phantom post behind.
+              const inserted = await postInsertRemote(post);
+              if (!inserted) {
+                feedPosts = feedPosts.filter(p => p.id !== post.id);
+                queueSaveUserState();
+                throw new Error('Post failed to save');
+              }
               return post;
             })();
           },
