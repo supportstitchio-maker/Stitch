@@ -1497,16 +1497,37 @@
         }
 
         // ---- Feed post video playback (mute/autoplay) ----
+        // Videos autoplay with sound on by default as they scroll into view (see
+        // setupFeedVideoAutoplay below) and pause once scrolled past -- tap the
+        // speaker to mute. Some browsers block autoplay-with-sound without a
+        // prior user gesture; attemptFeedVideoPlay() falls back to a muted
+        // autoplay in that case rather than not playing at all.
+        function attemptFeedVideoPlay(video, btn){
+          const playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {
+              if (!video.muted) {
+                video.muted = true;
+                const wrap = video.closest('.feed-video-wrap');
+                const muteBtn = wrap && wrap.querySelector('.feed-video-mutebtn');
+                if (muteBtn) muteBtn.innerHTML = Icon('volumeOff', 'w-4 h-4 text-white');
+                video.play().catch(() => {});
+              }
+            });
+          }
+          if (btn) btn.style.opacity = '0';
+        }
+
         function simplePostVideoHtml(url, errorTarget){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
           return `
             <div class="relative feed-video-wrap" id="${uid}">
-              <video src="${url}" playsinline webkit-playsinline muted preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-black block" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-black block" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
-              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volume','w-4 h-4 text-white')}</button>
             </div>`;
         }
 
@@ -1517,9 +1538,8 @@
           const btn = wrap.querySelector('.feed-video-playbtn');
           if (!video) return;
           if (video.paused) {
-            video.play().catch(() => {});
+            attemptFeedVideoPlay(video, btn);
             delete video.dataset.userPaused;
-            if (btn) btn.style.opacity = '0';
           } else {
             video.pause();
             video.dataset.userPaused = '1';
@@ -1541,8 +1561,7 @@
               const ratio = entry.intersectionRatio;
               if (ratio >= 0.6) {
                 if (video.paused && video.dataset.userPaused !== '1') {
-                  video.play().catch(() => {});
-                  if (btn) btn.style.opacity = '0';
+                  attemptFeedVideoPlay(video, btn);
                 }
               } else if (ratio <= 0.15) {
                 if (!video.paused) {
@@ -2805,7 +2824,7 @@
           const isVideo = !!media && media.type === 'video';
           const uid = 'vpd' + post.id;
           const captionHtml = renderPostBodyHtml(post);
-          const videoAttrs = 'playsinline webkit-playsinline muted disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" autoplay loop';
+          const videoAttrs = 'playsinline webkit-playsinline disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" loop onloadedmetadata="attemptFeedVideoPlay(this, this.closest(\'.feed-video-wrap\').querySelector(\'.feed-video-playbtn\'))"';
           return `
             <div class="relative w-full h-full bg-black overflow-hidden" id="video-post-${post.id}" ontouchstart="vpdTouchStart(event)" ontouchend="vpdTouchEnd(event, ${post.id})">
               <div class="absolute inset-0 feed-video-wrap" id="${uid}" ${isVideo ? `onclick="toggleFeedVideoPlay('${uid}')"` : ''}>
@@ -2814,7 +2833,7 @@
                 <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;opacity:0;">
                   <div class="flex items-center justify-center rounded-full" style="width:4rem;height:4rem;background:rgba(0,0,0,0.45);">${Icon('play','w-7 h-7 text-white')}</div>
                 </div>
-                <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:50px;right:14px;width:2.5rem;height:2.5rem;background:rgba(0,0,0,0.45);">${Icon('volumeOff','w-5 h-5 text-white')}</button>` : ''}
+                <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:50px;right:14px;width:2.5rem;height:2.5rem;background:rgba(0,0,0,0.45);">${Icon('volume','w-5 h-5 text-white')}</button>` : ''}
               </div>
 
               <button onclick="event.stopPropagation(); closeOverlay()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);">${IconBold('back','w-5 h-5 text-white')}</button>
