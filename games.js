@@ -1887,27 +1887,15 @@ let simpleGameState = null;
           authShowLogin();
         }
         async function applyGoogleProfileInfo(){
-          const sb = getSupabaseClient();
-          if (!sb || typeof profileData === 'undefined') return;
-          try {
-            const user = await getCachedAuthUser();
-            const meta = user && user.user_metadata;
-            if (!meta) return;
-            if (!(profileData.name || '').trim()) {
-              const googleName = meta.full_name || meta.name ||
-                [meta.given_name, meta.family_name].filter(Boolean).join(' ').trim();
-              if (googleName) {
-                profileData.name = googleName;
-                if (!(profileData.username || '').trim()) {
-                  profileData.username = googleName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || profileData.username;
-                }
-              }
-            }
-            if (!profileData.photo && !profileData.photoCleared) {
-              const googlePhoto = meta.avatar_url || meta.picture;
-              if (googlePhoto) profileData.photo = googlePhoto;
-            }
-          } catch (e) {  }
+          // Disabled on purpose: the name and profile photo shown in the
+          // app must only ever come from what the person explicitly sets
+          // in Edit Profile. This used to auto-fill (and could silently
+          // overwrite) the name/photo from the Google account's metadata
+          // on every login, which is what made the profile appear to
+          // "change on its own" over time. Left as a no-op (rather than
+          // deleted) so the .then(() => applyGoogleProfileInfo()) call
+          // in authEnterApp() keeps working without further edits.
+          return;
         }
 
         const BOOT_TIMED_OUT = Symbol('boot-timed-out');
