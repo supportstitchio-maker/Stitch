@@ -3483,6 +3483,7 @@ try {
             a.repostFeedId = null;
             document.getElementById('overlay').innerHTML = classDetailHTML();
             renderFeed();
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           } else {
             const post = PostsAPI.create({
               avatarIcon:'bell', avatarBg:'bg-blue-50', name:classTeacherDisplayName(cls),
@@ -3495,6 +3496,7 @@ try {
             post.then(p => { a.repostFeedId = p.id; });
             document.getElementById('overlay').innerHTML = classDetailHTML();
             renderFeed();
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           }
         }
 
