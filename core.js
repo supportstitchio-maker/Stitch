@@ -936,8 +936,8 @@
     </div>
     <div id="dnav-main-list">
     <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
-    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${IconBold('briefcase','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${IconBold('book','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
+    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${IconBold('compass','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${IconBold('graduationCap','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
