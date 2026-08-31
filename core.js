@@ -1532,6 +1532,19 @@
         let cachedHomeFeedNode = null;
         let cachedProfileScreenNode = null;
 
+        // Post actions (delete, save/unsave, repost/un-repost, create) can happen
+        // while the Home or Profile tab is cached-but-off-screen (see switchTab
+        // below) -- refreshFeedPostCard()/refreshProfilePostsUI() only touch the
+        // *live* DOM, so a cached, detached tab never sees the change and gets
+        // reattached stale the next time the person switches to it. Any action
+        // that changes what should appear in the feed or on the profile should
+        // call this so both tabs rebuild fresh next time they're shown, instead
+        // of requiring an extra tab switch to pick up the change.
+        function invalidateFeedAndProfileCaches(){
+          cachedHomeFeedNode = null;
+          cachedProfileScreenNode = null;
+        }
+
         // ---- Tab switching ----
         function switchTab(n) {
           autoSaveEditProfileDraft();
