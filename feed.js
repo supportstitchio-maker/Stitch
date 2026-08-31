@@ -1293,14 +1293,17 @@
             openGlimpseMediaCaptionScreen(file, 'image', previewUrl);
             return;
           }
-          // Videos always go through the crop screen first so the user picks which
-          // part of the clip (and how long a slice, up to GLIMPSE_MAX_SECONDS) gets posted.
+          // Videos go straight to the caption screen and post as-is (looping the
+          // first GLIMPSE_MAX_SECONDS if longer than that) -- no crop/trim step.
           const probe = document.createElement('video');
           probe.preload = 'metadata';
           probe.muted = true;
           probe.onloadedmetadata = function(){
             const duration = isFinite(probe.duration) ? probe.duration : null;
-            openGlimpseVideoTrimScreen(file, previewUrl, duration);
+            glimpseMediaDurationSec = duration;
+            glimpseMediaTrimStart = 0;
+            glimpseMediaTrimEnd = duration && duration > 0 ? Math.min(duration, GLIMPSE_MAX_SECONDS) : null;
+            openGlimpseMediaCaptionScreen(file, 'video', previewUrl);
           };
           probe.onerror = function(){
             // Metadata couldn't be read (e.g. unsupported format) - fall back to
@@ -1311,214 +1314,6 @@
             openGlimpseMediaCaptionScreen(file, 'video', previewUrl);
           };
           probe.src = previewUrl;
-        }
-
-        // ---- Glimpse video crop/trim screen ----
-        // WhatsApp-status-style trimmer: a filmstrip of real frame thumbnails with two
-        // drag handles the user slides to pick exactly which part of the video posts.
-        const GLIMPSE_TRIM_MIN_SECONDS = 1;
-        const GLIMPSE_TRIM_THUMB_COUNT = 10;
-
-        let glimpseTrimFile = null;
-        let glimpseTrimUrl = null;
-        let glimpseTrimDuration = 0;
-        let glimpseTrimStart = 0;   // selection start (sec)
-        let glimpseTrimEnd = 0;     // selection end (sec)
-        let glimpseTrimDragging = null; // 'left' | 'right' | null
-        let glimpseTrimThumbs = [];
-
-        function openGlimpseVideoTrimScreen(file, url, duration){
-          glimpseTrimFile = file;
-          glimpseTrimUrl = url;
-          glimpseTrimDuration = isFinite(duration) && duration > 0 ? duration : 0;
-          glimpseTrimStart = 0;
-          glimpseTrimEnd = glimpseTrimDuration > 0 ? Math.min(glimpseTrimDuration, GLIMPSE_MAX_SECONDS) : GLIMPSE_MAX_SECONDS;
-          glimpseTrimThumbs = [];
-          const ov = document.getElementById('overlay');
-          ov.classList.remove('hidden');
-          ov.style.top = '0';
-          ov.style.paddingTop = '';
-          ov.style.bottom = '0';
-          ov.innerHTML = glimpseVideoTrimHTML();
-          generateGlimpseTrimThumbnails(url, glimpseTrimDuration, GLIMPSE_TRIM_THUMB_COUNT, (thumbs) => {
-            glimpseTrimThumbs = thumbs;
-            const strip = document.getElementById('glimpse-trim-strip');
-            if (strip) strip.innerHTML = thumbs.map(src => `<img src="${src}" class="h-full flex-1 object-cover" draggable="false">`).join('');
-          });
-        }
-
-        // Grabs GLIMPSE_TRIM_THUMB_COUNT evenly-spaced frames from the video and
-        // returns them as small JPEG data URLs to lay out as the filmstrip.
-        function generateGlimpseTrimThumbnails(url, duration, count, callback){
-          if (!duration || duration <= 0) { callback([]); return; }
-          const probe = document.createElement('video');
-          probe.src = url;
-          probe.muted = true;
-          probe.playsInline = true;
-          probe.preload = 'auto';
-          const canvas = document.createElement('canvas');
-          canvas.width = 80; canvas.height = 80;
-          const ctx = canvas.getContext('2d');
-          const thumbs = [];
-          let i = 0;
-          function captureNext(){
-            if (i >= count) { callback(thumbs); return; }
-            const t = Math.min(duration - 0.05, (duration * (i + 0.5)) / count);
-            probe.currentTime = Math.max(0, t);
-          }
-          probe.addEventListener('seeked', function(){
-            try {
-              const vw = probe.videoWidth || canvas.width, vh = probe.videoHeight || canvas.height;
-              const scale = Math.max(canvas.width / vw, canvas.height / vh);
-              const sw = canvas.width / scale, sh = canvas.height / scale;
-              const sx = (vw - sw) / 2, sy = (vh - sh) / 2;
-              ctx.drawImage(probe, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-              thumbs.push(canvas.toDataURL('image/jpeg', 0.6));
-            } catch (e) {  }
-            i++;
-            captureNext();
-          });
-          probe.addEventListener('loadedmetadata', captureNext);
-          probe.addEventListener('error', function(){ callback(thumbs); });
-        }
-
-        function formatTrimTime(sec){
-          const s = Math.max(0, Math.round(sec || 0));
-          const m = Math.floor(s / 60);
-          const r = s % 60;
-          return `${m}:${r < 10 ? '0' : ''}${r}`;
-        }
-
-        function formatFileSize(bytes){
-          if (!bytes || !isFinite(bytes)) return '';
-          const mb = bytes / (1024 * 1024);
-          return mb >= 0.1 ? `${mb.toFixed(2)} MB` : `${Math.round(bytes / 1024)} KB`;
-        }
-
-        function glimpseVideoTrimHTML(){
-          const needsTrim = glimpseTrimDuration > (glimpseTrimEnd - glimpseTrimStart) + 0.05 || glimpseTrimDuration > GLIMPSE_MAX_SECONDS;
-          const leftPct = glimpseTrimDuration > 0 ? (glimpseTrimStart / glimpseTrimDuration) * 100 : 0;
-          const rightPct = glimpseTrimDuration > 0 ? 100 - (glimpseTrimEnd / glimpseTrimDuration) * 100 : 0;
-          const sizeLabel = glimpseTrimFile ? formatFileSize(glimpseTrimFile.size) : '';
-          return `
-            <div class="flex flex-col h-full bg-black text-white relative">
-              <div class="relative flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-                <button onclick="cancelGlimpseVideoTrim()" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,0.12);">${IconBold('close','w-5 h-5')}</button>
-                <div class="text-sm font-semibold">Choose part to post</div>
-                <button onclick="confirmGlimpseVideoTrim()" class="text-sm font-bold px-3 py-1.5 rounded-full" style="background:#22c55e;color:#ffffff;">Next</button>
-              </div>
-
-              <div class="px-4 pt-3 flex-shrink-0">
-                <div id="glimpse-trim-track" class="relative select-none" style="height:60px;touch-action:none;">
-                  <div id="glimpse-trim-strip" class="absolute inset-0 flex rounded-lg overflow-hidden bg-gray-800">
-                    ${glimpseTrimThumbs.length ? glimpseTrimThumbs.map(src => `<img src="${src}" class="h-full flex-1 object-cover" draggable="false">`).join('') : `<div class="w-full h-full flex items-center justify-center text-[10px] text-gray-400">Loading preview…</div>`}
-                  </div>
-                  <div id="glimpse-trim-dim-left" class="absolute top-0 bottom-0 left-0 rounded-l-lg" style="width:${leftPct}%;background:rgba(0,0,0,0.65);"></div>
-                  <div id="glimpse-trim-dim-right" class="absolute top-0 bottom-0 right-0 rounded-r-lg" style="width:${rightPct}%;background:rgba(0,0,0,0.65);"></div>
-                  <div id="glimpse-trim-box" class="absolute top-0 bottom-0 border-2 border-white pointer-events-none" style="left:${leftPct}%;right:${rightPct}%;"></div>
-                  <div id="glimpse-trim-handle-left" onpointerdown="glimpseTrimHandleDown(event,'left')" class="absolute top-0 bottom-0 flex items-center justify-center cursor-ew-resize" style="left:${leftPct}%;width:22px;margin-left:-11px;touch-action:none;">
-                    <div class="w-3 h-3 rounded-full bg-white shadow" style="box-shadow:0 1px 4px rgba(0,0,0,0.5);"></div>
-                  </div>
-                  <div id="glimpse-trim-handle-right" onpointerdown="glimpseTrimHandleDown(event,'right')" class="absolute top-0 bottom-0 flex items-center justify-center cursor-ew-resize" style="left:${100 - rightPct}%;width:22px;margin-left:-11px;touch-action:none;">
-                    <div class="w-3 h-3 rounded-full bg-white shadow" style="box-shadow:0 1px 4px rgba(0,0,0,0.5);"></div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 mt-2.5 text-xs text-gray-300">
-                  ${Icon('video','w-3.5 h-3.5')}
-                  <span id="glimpse-trim-duration-label">${formatTrimTime(glimpseTrimEnd - glimpseTrimStart)}</span>
-                  ${sizeLabel ? `<span>&bull;</span><span>${sizeLabel}</span>` : ''}
-                </div>
-                ${needsTrim ? `<div class="text-[11px] text-gray-400 mt-1">Drag the handles to choose which part of the video to post (up to ${formatTrimTime(GLIMPSE_MAX_SECONDS)}).</div>` : ''}
-              </div>
-
-              <div class="flex-1 relative flex items-center justify-center overflow-hidden mt-2">
-                <video id="glimpse-trim-video" src="${glimpseTrimUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop ${glimpseVideoAttrs(glimpseTrimStart, glimpseTrimEnd)}></video>
-              </div>
-              <div class="flex-shrink-0" style="padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 12px);"></div>
-            </div>`;
-        }
-
-        function glimpseTrimHandleDown(e, which){
-          e.preventDefault();
-          glimpseTrimDragging = which;
-          document.addEventListener('pointermove', glimpseTrimHandleMove);
-          document.addEventListener('pointerup', glimpseTrimHandleUp);
-        }
-
-        function glimpseTrimHandleMove(e){
-          if (!glimpseTrimDragging) return;
-          const track = document.getElementById('glimpse-trim-track');
-          if (!track || glimpseTrimDuration <= 0) return;
-          const rect = track.getBoundingClientRect();
-          let frac = (e.clientX - rect.left) / rect.width;
-          frac = Math.min(1, Math.max(0, frac));
-          const t = frac * glimpseTrimDuration;
-          const minLen = Math.min(GLIMPSE_TRIM_MIN_SECONDS, glimpseTrimDuration);
-          const maxLen = Math.min(GLIMPSE_MAX_SECONDS, glimpseTrimDuration);
-          if (glimpseTrimDragging === 'left') {
-            let newStart = Math.min(t, glimpseTrimEnd - minLen);
-            newStart = Math.max(0, newStart);
-            if (glimpseTrimEnd - newStart > maxLen) glimpseTrimEnd = Math.min(glimpseTrimDuration, newStart + maxLen);
-            glimpseTrimStart = newStart;
-          } else {
-            let newEnd = Math.max(t, glimpseTrimStart + minLen);
-            newEnd = Math.min(glimpseTrimDuration, newEnd);
-            if (newEnd - glimpseTrimStart > maxLen) glimpseTrimStart = Math.max(0, newEnd - maxLen);
-            glimpseTrimEnd = newEnd;
-          }
-          updateGlimpseTrimUI(glimpseTrimDragging === 'left' ? glimpseTrimStart : Math.max(0, glimpseTrimEnd - 0.05));
-        }
-
-        function glimpseTrimHandleUp(){
-          glimpseTrimDragging = null;
-          document.removeEventListener('pointermove', glimpseTrimHandleMove);
-          document.removeEventListener('pointerup', glimpseTrimHandleUp);
-        }
-
-        function updateGlimpseTrimUI(previewTime){
-          const leftPct = glimpseTrimDuration > 0 ? (glimpseTrimStart / glimpseTrimDuration) * 100 : 0;
-          const rightPct = glimpseTrimDuration > 0 ? 100 - (glimpseTrimEnd / glimpseTrimDuration) * 100 : 0;
-          const dimLeft = document.getElementById('glimpse-trim-dim-left');
-          const dimRight = document.getElementById('glimpse-trim-dim-right');
-          const box = document.getElementById('glimpse-trim-box');
-          const handleLeft = document.getElementById('glimpse-trim-handle-left');
-          const handleRight = document.getElementById('glimpse-trim-handle-right');
-          const durationLabel = document.getElementById('glimpse-trim-duration-label');
-          if (dimLeft) dimLeft.style.width = leftPct + '%';
-          if (dimRight) dimRight.style.width = rightPct + '%';
-          if (box) { box.style.left = leftPct + '%'; box.style.right = rightPct + '%'; }
-          if (handleLeft) handleLeft.style.left = leftPct + '%';
-          if (handleRight) handleRight.style.left = (100 - rightPct) + '%';
-          if (durationLabel) durationLabel.textContent = formatTrimTime(glimpseTrimEnd - glimpseTrimStart);
-          const video = document.getElementById('glimpse-trim-video');
-          if (video) {
-            if (previewTime != null) video.currentTime = previewTime;
-            video.setAttribute('ontimeupdate', `if(this.currentTime>=${glimpseTrimEnd}||this.currentTime<${glimpseTrimStart}){this.currentTime=${glimpseTrimStart};}`);
-          }
-        }
-
-        function confirmGlimpseVideoTrim(){
-          if (!glimpseTrimFile) return;
-          glimpseMediaDurationSec = glimpseTrimDuration;
-          glimpseMediaTrimStart = glimpseTrimStart;
-          glimpseMediaTrimEnd = glimpseTrimEnd;
-          const file = glimpseTrimFile;
-          const url = glimpseTrimUrl;
-          glimpseTrimFile = null;
-          glimpseTrimUrl = null;
-          openGlimpseMediaCaptionScreen(file, 'video', url);
-        }
-
-        function cancelGlimpseVideoTrim(){
-          glimpseTrimHandleUp();
-          if (glimpseTrimUrl) URL.revokeObjectURL(glimpseTrimUrl);
-          glimpseTrimFile = null;
-          glimpseTrimUrl = null;
-          glimpseTrimDuration = 0;
-          glimpseTrimStart = 0;
-          glimpseTrimEnd = 0;
-          glimpseTrimThumbs = [];
-          openMyGlimpses();
         }
 
         let glimpseMediaPreviewUrl = null;
