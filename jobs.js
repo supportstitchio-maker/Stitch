@@ -291,6 +291,44 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
         }
 
+        // Fallback parser for free-typed deadline strings from before the
+        // date picker existed (or admin edits typed by hand). Handles
+        // ordinal suffixes ("30th", "1st", "22nd", "23rd") and both
+        // "30 August 2026" / "August 30, 2026" word orders, which
+        // Date.parse() doesn't reliably understand -- an unparseable
+        // string used to mean the listing's deadline silently never
+        // "passed" and it stuck around forever.
+        const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        function parseFreeTypedDeadline(dateStr){
+          const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)\b/gi, '$1').trim();
+          // "30 August 2026" / "30 August, 2026"
+          let m = cleaned.match(/^(\d{1,2})\s+([A-Za-z]+)\.?,?\s+(\d{4})$/);
+          if (m) {
+            const day = Number(m[1]);
+            const monthIdx = MONTH_NAMES.indexOf(m[2].toLowerCase());
+            const year = Number(m[3]);
+            if (monthIdx !== -1 && day >= 1 && day <= 31) {
+              const dt = new Date(year, monthIdx, day);
+              if (!isNaN(dt.getTime())) return dt;
+            }
+          }
+          // "August 30, 2026" / "August 30 2026"
+          m = cleaned.match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/);
+          if (m) {
+            const monthIdx = MONTH_NAMES.indexOf(m[1].toLowerCase());
+            const day = Number(m[2]);
+            const year = Number(m[3]);
+            if (monthIdx !== -1 && day >= 1 && day <= 31) {
+              const dt = new Date(year, monthIdx, day);
+              if (!isNaN(dt.getTime())) return dt;
+            }
+          }
+          // Last resort: let the browser have a go (covers ISO-ish and
+          // other formats it already understands fine).
+          const parsed = Date.parse(cleaned);
+          return isNaN(parsed) ? null : new Date(parsed);
+        }
+
         // ---- Auto-delete opportunities once their deadline has passed ----
         // Courses are exempt: their "deadline" field is a start date, not a
         // closing date, so they're left alone here.
@@ -310,8 +348,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!raw || /^no deadline given$/i.test(raw)) return null;
           const dateStr = raw.replace(/^Deadline\s+/i, '').trim();
           if (!dateStr) return null;
-          const parsed = Date.parse(dateStr);
-          return isNaN(parsed) ? null : new Date(parsed);
+          return parseFreeTypedDeadline(dateStr);
         }
 
         function isOpportunityDeadlinePassed(job){
@@ -358,8 +395,16 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         // ---- Job/course listing data + application status helpers ----
+        // Defensive, synchronous safety net: allJobs()/allExploreCards()
+        // are what every screen actually renders from, so filtering
+        // expired opportunities out right here guarantees a passed
+        // deadline can never show up -- even for the moment between the
+        // deadline ticking over and the next background
+        // autoDeleteExpiredOpportunities() pass (or an admin-typed legacy
+        // deadline string that only the fallback parser can read).
         function allJobs(){
-          return [...jobsData.opportunities, ...jobsData.internships, ...jobsData.courses, ...jobsData.scholarships, ...jobsData.others];
+          return [...jobsData.opportunities, ...jobsData.internships, ...jobsData.courses, ...jobsData.scholarships, ...jobsData.others]
+            .filter(j => !isOpportunityDeadlinePassed(j));
         }
 
         function courseAsExploreCard(course){
@@ -387,7 +432,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function allExploreCards(){
-          return [...jobsData.opportunities, ...jobsData.internships, ...exploreCourseCards(), ...jobsData.scholarships, ...jobsData.others];
+          return [...jobsData.opportunities, ...jobsData.internships, ...exploreCourseCards(), ...jobsData.scholarships, ...jobsData.others]
+            .filter(j => !isOpportunityDeadlinePassed(j));
         }
 
         let jobApplications = {}; 
@@ -537,17 +583,19 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               ? cards.map(jobCard).join('')
               : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">Nothing posted yet.</div>`;
           }
-          if (jobsSub === 'opportunities') return jobsData.opportunities.map(jobCard).join('');
-          if (jobsSub === 'internships') return jobsData.internships.map(jobCard).join('');
+          if (jobsSub === 'opportunities') return jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
+          if (jobsSub === 'internships') return jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
           if (jobsSub === 'courses') return exploreCourseCards().map(jobCard).join('');
           if (jobsSub === 'scholarships') {
-            return jobsData.scholarships.length
-              ? jobsData.scholarships.map(jobCard).join('')
+            const scholarships = jobsData.scholarships.filter(j => !isOpportunityDeadlinePassed(j));
+            return scholarships.length
+              ? scholarships.map(jobCard).join('')
               : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No scholarships posted yet.</div>`;
           }
           if (jobsSub === 'others') {
-            return jobsData.others.length
-              ? jobsData.others.map(jobCard).join('')
+            const others = jobsData.others.filter(j => !isOpportunityDeadlinePassed(j));
+            return others.length
+              ? others.map(jobCard).join('')
               : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">Nothing else posted yet.</div>`;
           }
           if (jobsSub === 'saved') {
