@@ -3803,7 +3803,13 @@ try {
           lectureFloatingComments = [];
           lectureAttachments = [];
           pendingAutoOpenAttachmentId = null;
-          liveLectureState = { classId, lectureId, connected: true, seconds: 0, muted: false, camOff: false, handRaised: false, view: 'grid', mediaError: null };
+          // Students join muted by default and can unmute themselves if
+          // they want to talk or make a contribution; the teacher (the
+          // one running the lecture) joins unmuted since they're the one
+          // presenting.
+          const cls = myClasses.find(c => c.id === classId);
+          const joiningAsTeacher = !!(cls && cls.role === 'teacher');
+          liveLectureState = { classId, lectureId, connected: true, seconds: 0, muted: !joiningAsTeacher, camOff: false, handRaised: false, view: 'grid', mediaError: null };
           lectureMinimized = false;
           openOverlay('lectureCall');
           joinLectureSignaling(lectureId);
