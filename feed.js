@@ -2442,6 +2442,8 @@
                 : `p-1 ml-auto -mr-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-800'}`;
             });
             if (typeof renderSavedItemsOverlay === 'function') renderSavedItemsOverlay();
+            if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           });
         }
 
@@ -2512,6 +2514,7 @@
             openPostMenuId = null;
             refreshFeedPostCard(id);
             if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           });
         }
 
@@ -2815,15 +2818,6 @@
               </div>
 
               <button onclick="event.stopPropagation(); closeOverlay()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);">${IconBold('back','w-5 h-5 text-white')}</button>
-
-              <div class="absolute z-20" style="left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom, 12px) + 20px);">
-                <div class="flex items-center gap-2 ${captionHtml ? 'mb-1.5' : ''} cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">
-                  <div class="w-8 h-8 rounded-full ${post.avatarBg} overflow-hidden flex items-center justify-center flex-shrink-0" style="background:rgba(120,120,120,0.45);">${(post.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!post.mine && post.photo) ? `<img src="${post.photo}" class="w-full h-full object-cover">` : Icon(post.avatarIcon,'w-4 h-4 text-white')}</div>
-                  <span class="text-white font-semibold text-sm rounded-full" style="background:rgba(120,120,120,0.45);padding:2px 10px;">${escapeHtml(post.name)}</span>
-                  ${post.verified ? verifiedBadge() : ''}
-                </div>
-                ${captionHtml ? `<div class="text-white text-[13px] leading-snug rounded-2xl" style="background:rgba(120,120,120,0.45);padding:6px 10px;display:inline-block;">${captionHtml}</div>` : ''}
-              </div>
             </div>`;
         }
 
@@ -3034,6 +3028,8 @@
             });
             forEachById('repost-inline-count-'+id, inline => { inline.textContent = formatCount(post.reposts); });
             if (currentTab === 0) renderFeed();
+            if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           });
         }
 
