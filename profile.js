@@ -168,7 +168,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           // reads clearly over bright/white photos too, and a title attribute
           // spells it out for anyone hovering on desktop -- the goal is that an
           // account owner can tell videos and photos apart at a glance.
-          const typeBadge = mediaType ? `<div class="absolute bottom-1.5 right-1.5 text-white flex items-center justify-center rounded-full" title="${mediaType === 'video' ? 'Video' : 'Photo'}" style="width:1.25rem;height:1.25rem;background:rgba(0,0,0,0.45);">${Icon(mediaType === 'video' ? 'videoClip' : 'photoFrame','w-3 h-3')}</div>` : '';
+          const typeBadge = mediaType ? `<div class="absolute bottom-1.5 right-1.5 text-white flex items-center justify-center" title="${mediaType === 'video' ? 'Video' : 'Photo'}" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">${Icon(mediaType === 'video' ? 'play' : 'photoFrame','w-4 h-4')}</div>` : '';
           return `<div onclick="openPostFeedFrom('${source||'mine'}', ${post.id})" class="relative w-full aspect-square overflow-hidden bg-gray-100" style="border-radius:0;cursor:pointer;">${inner}${isMulti ? `<div class="absolute top-1.5 right-1.5 text-white" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));" title="Multiple items">${Icon('copy','w-4 h-4')}</div>` : ''}${typeBadge}</div>`;
         }
 
