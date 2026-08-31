@@ -1126,8 +1126,26 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             composeCaptionDraft = '';
             tagPickerSearchQuery = '';
             closeOverlay();
-            renderFeed();
-            if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+            // Posting can happen from the Home tab, the Profile tab (its
+            // own "+" button), or the desktop side nav on any tab, so
+            // currentTab isn't necessarily Home here. renderFeed() always
+            // rewrites #screen unconditionally -- calling it while the
+            // Profile tab is showing would blow away the profile screen
+            // instead of the feed, and would also wipe out
+            // #profile-tab-content before refreshProfilePostsUI() below
+            // gets a chance to update it, which is why a new post used to
+            // fail to show up immediately in the feed and on the profile
+            // page. Only touch whichever screen is actually on-screen,
+            // and drop the cached snapshots of the other tabs so they
+            // rebuild fresh (instead of restoring stale cached markup)
+            // the next time the person switches to them.
+            if (typeof cachedHomeFeedNode !== 'undefined') cachedHomeFeedNode = null;
+            if (typeof cachedProfileScreenNode !== 'undefined') cachedProfileScreenNode = null;
+            if (currentTab === 0) {
+              renderFeed();
+            } else if (currentTab === 4) {
+              if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+            }
           }).catch(() => {
             postSubmitInFlight = false;
             const ov2 = document.getElementById('overlay');
