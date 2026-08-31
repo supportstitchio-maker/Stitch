@@ -1633,7 +1633,7 @@
               if (currentTab === 0 && (postsChanged || glimpsesChanged) && typeof patchFeedInPlace === 'function') patchFeedInPlace();
             });
           }
-          else if (n === 1) renderJobMarket();
+          else if (n === 1) { renderJobMarket(); if (typeof loadOpportunitiesRemote === 'function') loadOpportunitiesRemote().then(() => { if (currentTab === 1) { const content = document.getElementById('jobs-content'); if (content) content.innerHTML = jobsContent(); } }); }
           else if (n === 2) renderClassroomWithLoading();
           else if (n === 3) { renderInboxTab(); loadIncomingConnectionRequests(); loadMyAcceptedIncomingRequests(); loadMyAcceptedOutgoingRequests(); if (typeof refreshNetworkCount === 'function') refreshNetworkCount(); if (typeof reconcileUnreadMessages === 'function') reconcileUnreadMessages(); if (typeof reconcileConvoOrder === 'function') reconcileConvoOrder(); if (typeof refreshAllContactPhotos === 'function') refreshAllContactPhotos(); }
           else {
