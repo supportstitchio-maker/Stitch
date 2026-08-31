@@ -738,7 +738,7 @@
                 ${item.mediaUrl ? `
                   <div class="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
                     ${item.mediaType === 'video'
-                      ? `<video src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs()}></video>`
+                      ? `<video src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs(item.trimStart, item.trimEnd)}></video>`
                       : `<img src="${item.mediaUrl}" class="max-w-full max-h-full object-contain">`}
                   </div>
                   ${item.caption ? `
@@ -1013,7 +1013,7 @@
         function myGlimpseRow(g){
           return `
             <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-50 relative" id="glimpse-row-${g.id}">
-              <div class="rounded-full flex items-center justify-center text-white overflow-hidden flex-shrink-0" style="width:3.5rem;height:3.5rem;${g.bgStyle}">${g.mediaType === 'image' ? `<img src="${g.mediaUrl}" class="w-full h-full object-cover">` : g.mediaType === 'video' ? `<video src="${g.mediaUrl}" class="w-full h-full object-cover" muted ${glimpseVideoAttrs()}></video>` : silhouetteIcon(g.icon,'w-6 h-6')}</div>
+              <div class="rounded-full flex items-center justify-center text-white overflow-hidden flex-shrink-0" style="width:3.5rem;height:3.5rem;${g.bgStyle}">${g.mediaType === 'image' ? `<img src="${g.mediaUrl}" class="w-full h-full object-cover">` : g.mediaType === 'video' ? `<video src="${g.mediaUrl}" class="w-full h-full object-cover" muted ${glimpseVideoAttrs(g.trimStart, g.trimEnd)}></video>` : silhouetteIcon(g.icon,'w-6 h-6')}</div>
               <button onclick="viewMyGlimpse(${g.id})" class="flex-1 min-w-0 text-left">
                 <div class="text-[15px] font-semibold text-gray-800">${g.timeLabel}</div>
               </button>
@@ -1107,7 +1107,7 @@
               <div class="absolute inset-0 flex items-center justify-center ${g.mediaUrl ? 'bg-black' : ''} pointer-events-none">
                 ${g.mediaUrl ? `
                   ${g.mediaType === 'video'
-                    ? `<video src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs()}></video>`
+                    ? `<video src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs(g.trimStart, g.trimEnd)}></video>`
                     : `<img src="${g.mediaUrl}" class="max-w-full max-h-full object-contain">`}
                 ` : `
                   <div class="px-8 text-center">
@@ -1270,8 +1270,14 @@
 
         const GLIMPSE_MAX_SECONDS = 60;
 
-        function glimpseVideoAttrs(){
-          return `ontimeupdate="if(this.currentTime>=${GLIMPSE_MAX_SECONDS}){this.currentTime=0;}"`;
+        // glimpseVideoAttrs(startSec, endSec) builds the ontimeupdate/onloadedmetadata
+        // attributes that keep a <video> looping over just the trimmed window a user
+        // selected in the crop screen. When no window is given it falls back to the
+        // old behaviour of looping the first GLIMPSE_MAX_SECONDS of the clip.
+        function glimpseVideoAttrs(startSec, endSec){
+          const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
+          const e = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
+          return `onloadedmetadata="if(this.currentTime<${s}){this.currentTime=${s};}" ontimeupdate="if(this.currentTime>=${e}||this.currentTime<${s}){this.currentTime=${s};}"`;
         }
 
         function handleGlimpseMediaSelected(e){
@@ -1282,30 +1288,143 @@
           const previewUrl = URL.createObjectURL(file);
           if (!isVideo) {
             glimpseMediaDurationSec = null;
+            glimpseMediaTrimStart = 0;
+            glimpseMediaTrimEnd = null;
             openGlimpseMediaCaptionScreen(file, 'image', previewUrl);
             return;
           }
-          openGlimpseMediaCaptionScreen(file, 'video', previewUrl);
-          const probeUrl = URL.createObjectURL(file);
+          // Videos always go through the crop screen first so the user picks which
+          // part of the clip (and how long a slice, up to GLIMPSE_MAX_SECONDS) gets posted.
           const probe = document.createElement('video');
           probe.preload = 'metadata';
           probe.muted = true;
           probe.onloadedmetadata = function(){
-            URL.revokeObjectURL(probeUrl);
-            if (glimpseMediaFile !== file) return;
-            glimpseMediaDurationSec = isFinite(probe.duration) ? probe.duration : null;
-            const el = document.getElementById('glimpse-media-caption-input');
-            if (el) refreshGlimpseMediaCaptionScreen();
+            const duration = isFinite(probe.duration) ? probe.duration : null;
+            openGlimpseVideoTrimScreen(file, previewUrl, duration);
           };
-          probe.onerror = function(){ URL.revokeObjectURL(probeUrl); };
-          probe.src = probeUrl;
+          probe.onerror = function(){
+            // Metadata couldn't be read (e.g. unsupported format) - fall back to
+            // posting the whole clip rather than blocking the user.
+            glimpseMediaDurationSec = null;
+            glimpseMediaTrimStart = 0;
+            glimpseMediaTrimEnd = null;
+            openGlimpseMediaCaptionScreen(file, 'video', previewUrl);
+          };
+          probe.src = previewUrl;
+        }
+
+        // ---- Glimpse video crop/trim screen ----
+        // Lets the user pick which part of a video to post before the caption step.
+        let glimpseTrimFile = null;
+        let glimpseTrimUrl = null;
+        let glimpseTrimDuration = 0;
+        let glimpseTrimWindowLen = 0;   // length (sec) of the slice that will be posted
+        let glimpseTrimStart = 0;       // start offset (sec) of the selected slice
+
+        function openGlimpseVideoTrimScreen(file, url, duration){
+          glimpseTrimFile = file;
+          glimpseTrimUrl = url;
+          glimpseTrimDuration = isFinite(duration) && duration > 0 ? duration : 0;
+          glimpseTrimWindowLen = glimpseTrimDuration > 0 ? Math.min(glimpseTrimDuration, GLIMPSE_MAX_SECONDS) : GLIMPSE_MAX_SECONDS;
+          glimpseTrimStart = 0;
+          const ov = document.getElementById('overlay');
+          ov.classList.remove('hidden');
+          ov.style.top = '0';
+          ov.style.paddingTop = '';
+          ov.style.bottom = '0';
+          ov.innerHTML = glimpseVideoTrimHTML();
+        }
+
+        function glimpseTrimMaxStart(){
+          return Math.max(0, glimpseTrimDuration - glimpseTrimWindowLen);
+        }
+
+        function formatTrimTime(sec){
+          const s = Math.max(0, Math.round(sec || 0));
+          const m = Math.floor(s / 60);
+          const r = s % 60;
+          return `${m}:${r < 10 ? '0' : ''}${r}`;
+        }
+
+        function glimpseVideoTrimHTML(){
+          const maxStart = glimpseTrimMaxStart();
+          const trimEnd = glimpseTrimStart + glimpseTrimWindowLen;
+          const needsTrim = glimpseTrimDuration > glimpseTrimWindowLen + 0.05;
+          return `
+            <div class="flex flex-col h-full bg-black text-white relative">
+              <div class="relative flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
+                <button onclick="cancelGlimpseVideoTrim()" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(255,255,255,0.12);">${IconBold('close','w-5 h-5')}</button>
+                <div class="text-sm font-semibold">Choose part to post</div>
+                <button onclick="confirmGlimpseVideoTrim()" class="text-sm font-bold px-3 py-1.5 rounded-full" style="background:#22c55e;color:#ffffff;">Next</button>
+              </div>
+              <div class="flex-1 relative flex items-center justify-center overflow-hidden">
+                <video id="glimpse-trim-video" src="${glimpseTrimUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop ${glimpseVideoAttrs(glimpseTrimStart, trimEnd)}></video>
+              </div>
+              <div class="relative px-5 flex-shrink-0" style="padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 20px);">
+                ${needsTrim ? `
+                  <div class="flex items-center justify-between text-xs text-gray-300 mb-2">
+                    <span>${formatTrimTime(glimpseTrimStart)}</span>
+                    <span>Clip length: ${formatTrimTime(glimpseTrimWindowLen)}</span>
+                    <span>${formatTrimTime(trimEnd)} / ${formatTrimTime(glimpseTrimDuration)}</span>
+                  </div>
+                  <input id="glimpse-trim-slider" type="range" min="0" max="${maxStart}" step="0.1" value="${glimpseTrimStart}"
+                    oninput="handleGlimpseTrimSliderInput(this.value)" class="w-full" style="accent-color:#22c55e;">
+                  <div class="text-center text-[11px] text-gray-400 mt-2">Drag to pick which ${formatTrimTime(glimpseTrimWindowLen)} of the video to post</div>
+                ` : `
+                  <div class="text-center text-xs text-gray-400">This clip is short enough to post in full.</div>
+                `}
+              </div>
+            </div>`;
+        }
+
+        function handleGlimpseTrimSliderInput(value){
+          const maxStart = glimpseTrimMaxStart();
+          let start = Number(value);
+          if (!isFinite(start)) start = 0;
+          start = Math.min(Math.max(start, 0), maxStart);
+          glimpseTrimStart = start;
+          const video = document.getElementById('glimpse-trim-video');
+          if (video) {
+            video.currentTime = start;
+            video.setAttribute('ontimeupdate', `if(this.currentTime>=${start + glimpseTrimWindowLen}||this.currentTime<${start}){this.currentTime=${start};}`);
+          }
+          const ov = document.getElementById('overlay');
+          const timeLabels = ov ? ov.querySelectorAll('.flex.items-center.justify-between.text-xs span') : null;
+          if (timeLabels && timeLabels.length === 3) {
+            timeLabels[0].textContent = formatTrimTime(start);
+            timeLabels[2].textContent = `${formatTrimTime(start + glimpseTrimWindowLen)} / ${formatTrimTime(glimpseTrimDuration)}`;
+          }
+        }
+
+        function confirmGlimpseVideoTrim(){
+          if (!glimpseTrimFile) return;
+          glimpseMediaDurationSec = glimpseTrimDuration;
+          glimpseMediaTrimStart = glimpseTrimStart;
+          glimpseMediaTrimEnd = glimpseTrimStart + glimpseTrimWindowLen;
+          const file = glimpseTrimFile;
+          const url = glimpseTrimUrl;
+          glimpseTrimFile = null;
+          glimpseTrimUrl = null;
+          openGlimpseMediaCaptionScreen(file, 'video', url);
+        }
+
+        function cancelGlimpseVideoTrim(){
+          if (glimpseTrimUrl) URL.revokeObjectURL(glimpseTrimUrl);
+          glimpseTrimFile = null;
+          glimpseTrimUrl = null;
+          glimpseTrimDuration = 0;
+          glimpseTrimWindowLen = 0;
+          glimpseTrimStart = 0;
+          openMyGlimpses();
         }
 
         let glimpseMediaPreviewUrl = null;
         let glimpseMediaPreviewType = null; 
         let glimpseMediaCaptionText = '';
         let glimpseMediaFile = null;
-        let glimpseMediaDurationSec = null; 
+        let glimpseMediaDurationSec = null;
+        let glimpseMediaTrimStart = 0;   // selected slice start (sec) for the video being composed
+        let glimpseMediaTrimEnd = null;  // selected slice end (sec) for the video being composed
 
         function openGlimpseMediaCaptionScreen(file, type, url){
           glimpseMediaFile = file;
@@ -1344,11 +1463,11 @@
             <div class="flex flex-col h-full bg-black text-white relative">
               <div class="absolute inset-0 overflow-hidden">
                 ${glimpseMediaPreviewType === 'video'
-                  ? `<video src="${glimpseMediaPreviewUrl}" class="absolute inset-0 w-full h-full object-cover" style="filter:blur(35px) brightness(0.65) saturate(1.3);transform:scale(1.2);" autoplay playsinline muted loop ${glimpseVideoAttrs()}></video>`
+                  ? `<video src="${glimpseMediaPreviewUrl}" class="absolute inset-0 w-full h-full object-cover" style="filter:blur(35px) brightness(0.65) saturate(1.3);transform:scale(1.2);" autoplay playsinline muted loop ${glimpseVideoAttrs(glimpseMediaTrimStart, glimpseMediaTrimEnd)}></video>`
                   : `<img src="${glimpseMediaPreviewUrl}" class="absolute inset-0 w-full h-full object-cover" style="filter:blur(35px) brightness(0.65) saturate(1.3);transform:scale(1.2);">`}
                 <div class="absolute inset-0 flex items-center justify-center">
                   ${glimpseMediaPreviewType === 'video'
-                    ? `<video src="${glimpseMediaPreviewUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs()}></video>`
+                    ? `<video src="${glimpseMediaPreviewUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs(glimpseMediaTrimStart, glimpseMediaTrimEnd)}></video>`
                     : `<img src="${glimpseMediaPreviewUrl}" class="max-w-full max-h-full object-contain">`}
                 </div>
               </div>
@@ -1387,6 +1506,8 @@
             mediaUrl: glimpseMediaPreviewUrl,
             mediaType: glimpseMediaPreviewType,
             mediaFile: glimpseMediaFile,
+            trimStart: glimpseMediaPreviewType === 'video' ? glimpseMediaTrimStart : undefined,
+            trimEnd: glimpseMediaPreviewType === 'video' ? glimpseMediaTrimEnd : undefined,
           });
           resetGlimpseMediaCaptionState();
           openMyGlimpses();
@@ -1403,6 +1524,8 @@
           glimpseMediaCaptionText = '';
           glimpseMediaFile = null;
           glimpseMediaDurationSec = null;
+          glimpseMediaTrimStart = 0;
+          glimpseMediaTrimEnd = null;
         }
 
         // ---- Feed post video playback (mute/autoplay) ----
