@@ -2677,11 +2677,11 @@
               </div>
               ` : ''}
 
-              <button onclick="openComments(${post.id})" class="px-3.5 pt-1 block text-[12px] text-gray-400" id="comment-count-${post.id}">
+              <button onclick="openComments(${post.id})" class="px-3.5 pt-1 ${(post.views || 0) > 0 ? '' : 'pb-3'} block text-[12px] text-gray-400" id="comment-count-${post.id}">
                 ${post.comments > 0 ? `View all ${post.comments} comments` : 'Add a comment...'}
               </button>
 
-              <div class="px-3.5 pt-1 pb-3 text-[10px] text-gray-400" id="share-count-${post.id}">${(post.views || 0) > 0 ? `${formatCount(post.views)} views &middot; ` : ''}${formatPostTimeAgo(post)}</div>
+              ${(post.views || 0) > 0 ? `<div class="px-3.5 pt-1 pb-3 text-[10px] text-gray-400" id="share-count-${post.id}">${formatCount(post.views)} views</div>` : ''}
             </div>`;
         }
 
