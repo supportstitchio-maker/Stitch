@@ -1139,8 +1139,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             // and drop the cached snapshots of the other tabs so they
             // rebuild fresh (instead of restoring stale cached markup)
             // the next time the person switches to them.
-            if (typeof cachedHomeFeedNode !== 'undefined') cachedHomeFeedNode = null;
-            if (typeof cachedProfileScreenNode !== 'undefined') cachedProfileScreenNode = null;
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
             if (currentTab === 0) {
               renderFeed();
             } else if (currentTab === 4) {
