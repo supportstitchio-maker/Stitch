@@ -3231,7 +3231,7 @@
           const count = shareSelected.size;
           if (!count) return '';
           return `
-            <div style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;">
+            <div style="position:fixed;right:1.25rem;bottom:50px;z-index:50;">
               <button onclick="sendPostToSelectedContacts(${postId})" title="Send" class="flex items-center justify-center text-white rounded-full shadow-lg" style="position:relative;width:56px;height:56px;background:linear-gradient(135deg,${ROYAL},${NAVY});">
                 ${Icon('send','w-5 h-5')}
                 <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-4px;right:-4px;width:18px;height:18px;color:${ROYAL};box-shadow:0 0 0 2px ${ROYAL};">${count}</span>
@@ -3422,7 +3422,7 @@
           const count = shareGlimpseSelected.size;
           if (!count) return '';
           return `
-            <div style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;">
+            <div style="position:fixed;right:1.25rem;bottom:50px;z-index:50;">
               <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="flex items-center justify-center text-white rounded-full shadow-lg" style="position:relative;width:56px;height:56px;background:linear-gradient(135deg,${ROYAL},${NAVY});">
                 ${Icon('send','w-5 h-5')}
                 <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-4px;right:-4px;width:18px;height:18px;color:${ROYAL};box-shadow:0 0 0 2px ${ROYAL};">${count}</span>
