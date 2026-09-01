@@ -945,7 +945,6 @@
     <div class="dside-divider"></div>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
     <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
-    <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dnav-4"><span id="dnav-4-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
     </div>
     <!-- Classroom sub-nav: only shown (in place of the main tabs above)
          while Classroom is the active tab. The rest of the app isn't
@@ -959,7 +958,6 @@
     <div style="flex:1;"></div>
     <div class="dside-divider"></div>
     <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
-    <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dcnav-profile"><span id="dcnav-profile-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
     </div>
   </div>
   <!-- Desktop-only right panel: Telegram-style info column pinned to the
@@ -1199,33 +1197,6 @@
     </div>
   </div>
 
-  <!-- Career Space's own bottom-right floating pill: opens a short
-       "Don't know where to start?" intake form (desired role, experience
-       level, resume/CV -- see openCareerStartForm/careerStartFormHTML in
-       jobs.js) for students who land on the job/opportunity list without a
-       clear idea of what to look for. Hidden on every tab except Career
-       Space (see switchTab in core.js). Keeps
-       reappearing on every visit until the student actually submits the
-       form with a resume/CV attached (see submitCareerStartForm in
-       jobs.js, which is the only place that calls
-       markCareerStartPillDismissed) -- merely opening and closing the form
-       doesn't dismiss it, since they still haven't gotten what the pill is
-       nudging them toward. -->
-  <div id="career-start-pill" onclick="handleCareerStartPillClick()" role="button" tabindex="0" aria-label="Don't know where to start? Send your CV or resume">
-    ${Icon('bot','w-4 h-4')}
-    <span id="career-start-pill-text">
-      <span class="career-start-pill-line">Don't know where to Start?</span>
-      <span class="career-start-pill-line">Send Your CV/Resume</span>
-    </span>
-    <!-- Desktop-only collapse toggle (see .career-pill-collapse-btn in
-         styles.css, hidden below 1024px) -- lets the pill be shrunk down
-         to just its round icon instead of permanently occupying space
-         with its full text label on a wide screen, and expanded again
-         with a second tap. event.stopPropagation() keeps this tap from
-         also bubbling up to the div's own onclick (which would otherwise
-         immediately reopen the form the same instant it collapses). -->
-    <button type="button" class="career-pill-collapse-btn" onclick="event.stopPropagation();toggleCareerStartPillCollapsed()" aria-label="Collapse">${IconBold('back','w-3 h-3')}</button>
-  </div>
 </div>`;
             const appEl = document.getElementById('app');
             const bootSkeleton = document.getElementById('app-boot-skeleton');
@@ -1619,11 +1590,6 @@
           if (bottomNav) bottomNav.style.display = isClassroom ? 'none' : '';
           if (bottomNav) bottomNav.classList.add('nav-bare');
           if (classroomNav) classroomNav.style.display = 'none';
-          const careerStartPill = document.getElementById('career-start-pill');
-          if (careerStartPill) {
-            careerStartPill.classList.toggle('visible', isJobs && !isCareerStartPillDismissed());
-            if (isJobs) careerStartPill.classList.toggle('collapsed', isCareerStartPillCollapsed());
-          }
 
           const screenEl = document.getElementById('screen');
           if (screenEl) {
