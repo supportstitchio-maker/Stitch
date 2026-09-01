@@ -2495,7 +2495,7 @@
               const isReelDetail = btn.closest('#video-post-' + id) != null;
               btn.className = isReelDetail
                 ? `flex flex-col items-center ${post.saved ? `text-[${ROYAL}]` : 'text-white'}`
-                : `p-1 ml-auto -mr-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-800'}`;
+                : `p-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}`;
             });
             if (typeof renderSavedItemsOverlay === 'function') renderSavedItemsOverlay();
             if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
@@ -2728,27 +2728,30 @@
 
               <div class="feed-media relative" onclick="handleFeedMediaTap(event, ${post.id})" style="cursor:pointer;">${post.mediaHtml || ''}${isVideoPost ? feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, true) : ''}</div>
 
-              <div class="flex items-center px-3 pt-1.5 text-gray-800">
-                <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : ''}">
-                  <span id="like-icon-${post.id}">${post.liked ? gradientHeartIcon('w-5 h-5') : Icon('heartOutline','w-5 h-5')}</span>
-                  <span class="text-[12px] font-semibold" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
+              <div class="flex items-center justify-between px-3.5 pt-1.5 text-gray-800">
+                <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 text-gray-500">
+                  ${Icon('comment','w-[18px] h-[18px]')}
+                  <span class="text-[12px]" id="comment-inline-count-${post.id}">${formatCount(post.comments)}</span>
                 </button>
-                <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 ml-2 flex items-center gap-1">
-                  ${Icon('comment','w-5 h-5')}
-                  <span class="text-[12px] font-semibold" id="comment-inline-count-${post.id}">${formatCount(post.comments)}</span>
+                <button onclick="toggleRepost(${post.id})" id="repost-btn-${post.id}" class="p-1 flex items-center gap-1 ${post.reposted ? 'text-emerald-600' : 'text-gray-500'}">
+                  ${Icon('repost','w-[18px] h-[18px]')}
+                  <span class="text-[12px]" id="repost-inline-count-${post.id}">${formatCount(post.reposts)}</span>
                 </button>
-                <button onclick="toggleRepost(${post.id})" id="repost-btn-${post.id}" class="p-1 ml-2 flex items-center gap-1 ${post.reposted ? 'text-emerald-600' : ''}">
-                  ${Icon('repost','w-4 h-4')}
-                  <span class="text-[12px] font-semibold" id="repost-inline-count-${post.id}">${formatCount(post.reposts)}</span>
+                <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}">
+                  <span id="like-icon-${post.id}">${post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline','w-[18px] h-[18px]')}</span>
+                  <span class="text-[12px]" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
                 </button>
-                <button onclick="openShare(${post.id})" id="share-btn-${post.id}" class="p-1 ml-2 flex items-center gap-1">
-                  ${Icon('send','w-5 h-5')}
-                  <span class="text-[12px] font-semibold" id="share-inline-count-${post.id}">${formatCount(post.shares)}</span>
+                <div class="p-1 flex items-center gap-1 text-gray-500" id="views-inline-${post.id}">
+                  ${Icon('chart','w-[18px] h-[18px]')}
+                  <span class="text-[12px]" id="view-inline-count-${post.id}">${formatCount(post.views || 0)}</span>
+                </div>
+                <button onclick="toggleSavePost(${post.id})" id="save-btn-${post.id}" class="p-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}">${Icon('bookmark','w-[18px] h-[18px]')}</button>
+                <button onclick="openShare(${post.id})" id="share-btn-${post.id}" class="p-1 -mr-1 text-gray-500">
+                  ${Icon('send','w-[18px] h-[18px]')}
                 </button>
-                <button onclick="toggleSavePost(${post.id})" id="save-btn-${post.id}" class="p-1 ml-auto -mr-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-800'}">${Icon('bookmark','w-5 h-5')}</button>
               </div>
 
-              <div class="px-3.5 pt-1 text-[13px] font-semibold" id="like-count-${post.id}">${post.likes.toLocaleString()} likes</div>
+              <div class="px-3.5 pt-1.5 text-[13px] font-semibold" id="like-count-${post.id}">${post.likes.toLocaleString()} likes</div>
 
               ${(post.body && post.body.trim()) || (post.isRepost && post.repostAuthorName && post.repostAuthorName !== post.name) ? `
               <div class="px-3.5 pt-1 text-[13px] leading-snug">
@@ -2757,11 +2760,9 @@
               </div>
               ` : ''}
 
-              <button onclick="openComments(${post.id})" class="px-3.5 pt-1 ${(post.views || 0) > 0 ? '' : 'pb-3'} block text-[12px] text-gray-400" id="comment-count-${post.id}">
+              <button onclick="openComments(${post.id})" class="px-3.5 pt-1 pb-3 block text-[12px] text-gray-400" id="comment-count-${post.id}">
                 ${post.comments > 0 ? `View all ${post.comments} comments` : 'Add a comment...'}
               </button>
-
-              ${(post.views || 0) > 0 ? `<div class="px-3.5 pt-1 pb-3 text-[10px] text-gray-400" id="share-count-${post.id}">${formatCount(post.views)} views</div>` : ''}
             </div>`;
         }
 
@@ -3067,7 +3068,7 @@
               const isReelDetail = btn.closest('#video-post-' + id) != null;
               btn.className = isReelDetail
                 ? `flex flex-col items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-white'}`
-                : `p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : ''}`;
+                : `p-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}`;
             });
             forEachById('like-inline-count-'+id, inline => { inline.textContent = formatCount(post.likes); });
           });
@@ -3080,7 +3081,7 @@
               const isReelDetail = btn.closest('#video-post-' + id) != null;
               btn.className = isReelDetail
                 ? `flex flex-col items-center gap-1 ${post.reposted ? 'text-emerald-600' : 'text-white'}`
-                : `p-1 ml-2 flex items-center gap-1 ${post.reposted ? 'text-emerald-600' : ''}`;
+                : `p-1 flex items-center gap-1 ${post.reposted ? 'text-emerald-600' : 'text-gray-500'}`;
             });
             forEachById('repost-inline-count-'+id, inline => { inline.textContent = formatCount(post.reposts); });
             if (currentTab === 0) renderFeed();
