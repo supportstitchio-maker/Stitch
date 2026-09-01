@@ -5611,7 +5611,7 @@ try {
               <button onclick="document.getElementById('announcement-attach-input').click()" class="flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
               <div id="announcement-attach-strip" class="mt-3">${announcementAttachStripHTML()}</div>
             </div>
-            <button onclick="submitNewAnnouncement()" ${canPost ? '' : 'disabled'} id="announcement-create-btn" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg ${canPost ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;${canPost ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Create</button>`;
+            <button onclick="submitNewAnnouncement()" ${canPost ? '' : 'disabled'} id="announcement-create-btn" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg ${canPost ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;${canPost ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Create</button>`;
         }
 
         function submitNewAnnouncement(){
@@ -5690,7 +5690,7 @@ try {
               <button onclick="document.getElementById('classwork-attach-input').click()" class="flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
               <div id="classwork-attach-strip" class="mt-3">${classworkAttachStripHTML()}</div>
             </div>
-            <button onclick="submitNewClasswork()" id="classwork-create-btn" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-gray-400 bg-gray-100" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;">Create</button>`;
+            <button onclick="submitNewClasswork()" id="classwork-create-btn" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-gray-400 bg-gray-100" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;">Create</button>`;
         }
 
         function handleClassworkAttachFile(event){
@@ -5833,7 +5833,7 @@ try {
               <div id="quiz-questions-container">${quizQuestionBlockHTML(0)}</div>
               <button onclick="addQuizQuestionBlock()" class="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add question</button>
             </div>
-            <button onclick="submitNewQuiz()" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-white" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>`;
+            <button onclick="submitNewQuiz()" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-white" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>`;
         }
 
         function submitNewQuiz(){
@@ -5914,7 +5914,7 @@ try {
               <div id="poll-options-container">${pollOptionRowHTML(0)}${pollOptionRowHTML(1)}</div>
               <button onclick="addPollOptionRow()" class="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add option</button>
             </div>
-            <button onclick="submitNewPoll()" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-white" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>`;
+            <button onclick="submitNewPoll()" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg text-white" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>`;
         }
 
         function submitNewPoll(){
