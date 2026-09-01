@@ -1202,10 +1202,29 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         let discoverLoadError = false;
 
-        async function loadDiscoverPeople(){
+        async function loadDiscoverPeople(retryCount){
           discoverLoadError = false;
           const sb = getSupabaseClient();
-          if (!sb) { discoverPeopleLoaded = true; return; }
+          if (!sb) {
+            // The Supabase client can still be spinning up the moment
+            // Discover first opens (or briefly during a connectivity
+            // blip). That used to mark the list as "loaded" with zero
+            // people right away, which is what made the "No one else has
+            // signed up yet" empty-state flash even though nobody had
+            // actually been checked yet. Keep discoverPeopleLoaded false
+            // (so the screen keeps showing "Loading people...") and retry
+            // for a few seconds before finally surfacing the real
+            // "couldn't load" retry state.
+            const attempt = retryCount || 0;
+            if (attempt < 12) {
+              setTimeout(() => loadDiscoverPeople(attempt + 1), 400);
+              return;
+            }
+            discoverLoadError = true;
+            discoverPeopleLoaded = true;
+            renderDiscoverList();
+            return;
+          }
           const withTimeout = (promise) => Promise.race([
             promise,
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
