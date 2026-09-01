@@ -485,7 +485,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>
             </div>
             ${count ? `
-              <button onclick="proceedToNewCollabName()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
+              <button onclick="proceedToNewCollabName()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
                 Next
               </button>
             ` : ''}`;
@@ -525,7 +525,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   </div>`).join('')}
               </div>
             </div>
-            <button onclick="createNewCollaboration()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
+            <button onclick="createNewCollaboration()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
               Create
             </button>`;
         }
@@ -678,7 +678,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>
             </div>
             ${count ? `
-              <button onclick="confirmAddCollabMembers()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
+              <button onclick="confirmAddCollabMembers()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
                 Add
               </button>
             ` : ''}`;
