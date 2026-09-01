@@ -471,72 +471,92 @@
 
         function applyUserState(d, localChangedDuringLoad){
           if (!d) return;
-          if (d.profileData && typeof d.profileData === 'object' && typeof profileData !== 'undefined') {
+          // Every field below now falls back to a fresh default when it's
+          // missing from `d` (instead of silently leaving whatever the
+          // previous account left behind untouched). Without this, logging
+          // out and into a different account on the same device -- or into
+          // a brand-new account that has never saved a user_state row yet,
+          // so `d` arrives as `{}` -- left the prior account's feed, chats,
+          // profile, notes, etc. still sitting in memory and visible to the
+          // new account. Each field is still driven by `d` when present; only
+          // the "nothing there" case changed.
+          if (typeof profileData !== 'undefined') {
             if (localChangedDuringLoad) {
-            } else {
+              // A local edit raced the load; don't clobber it either way.
+            } else if (d.profileData && typeof d.profileData === 'object') {
               Object.assign(profileData, d.profileData);
+            } else if (typeof resetProfileDataToDefault === 'function') {
+              resetProfileDataToDefault();
             }
           }
-          if (typeof d.userPoints === 'number') userPoints = d.userPoints;
-          if (typeof d.userCoins === 'number') userCoins = d.userCoins;
-          if (typeof d.userStreak === 'number') userStreak = d.userStreak;
-          if (typeof d.quizzesWon === 'number') quizzesWon = d.quizzesWon;
-          if (typeof d.quizWasPerfect === 'boolean') quizWasPerfect = d.quizWasPerfect;
-          if (typeof d.matchingCardsWins === 'number') matchingCardsWins = d.matchingCardsWins;
-          if (typeof d.dotsBoxesWins === 'number') dotsBoxesWins = d.dotsBoxesWins;
-          if (typeof d.fourInARowWins === 'number') fourInARowWins = d.fourInARowWins;
-          if (typeof d.wordHuntWins === 'number') wordHuntWins = d.wordHuntWins;
-          if (typeof d.lastDailyQuizDate === 'string') lastDailyQuizDate = d.lastDailyQuizDate;
-          if (typeof d.aiPromptCount === 'number' && typeof aiPromptCount !== 'undefined') aiPromptCount = d.aiPromptCount;
-          if (typeof d.aiPromptDate === 'string' && typeof aiPromptDate !== 'undefined') aiPromptDate = d.aiPromptDate;
-          if (d.monthlyContentUsage && typeof d.monthlyContentUsage === 'object' && typeof monthlyContentUsage !== 'undefined') monthlyContentUsage = Object.assign({ questions: 0, flashcards: 0 }, d.monthlyContentUsage);
-          if (typeof d.monthlyContentUsageMonth === 'string' && typeof monthlyContentUsageMonth !== 'undefined') monthlyContentUsageMonth = d.monthlyContentUsageMonth;
-          if (Array.isArray(d.notebookNotes)) notebookNotes = d.notebookNotes;
-          if (Array.isArray(d.jobPlanNotes)) jobPlanNotes = d.jobPlanNotes;
-          if (Array.isArray(d.mockTestScoreHistory) && typeof mockTestScoreHistory !== 'undefined') mockTestScoreHistory = d.mockTestScoreHistory;
+          userPoints = (typeof d.userPoints === 'number') ? d.userPoints : 0;
+          userCoins = (typeof d.userCoins === 'number') ? d.userCoins : 500;
+          userStreak = (typeof d.userStreak === 'number') ? d.userStreak : 7;
+          quizzesWon = (typeof d.quizzesWon === 'number') ? d.quizzesWon : 0;
+          quizWasPerfect = (typeof d.quizWasPerfect === 'boolean') ? d.quizWasPerfect : false;
+          matchingCardsWins = (typeof d.matchingCardsWins === 'number') ? d.matchingCardsWins : 0;
+          dotsBoxesWins = (typeof d.dotsBoxesWins === 'number') ? d.dotsBoxesWins : 0;
+          fourInARowWins = (typeof d.fourInARowWins === 'number') ? d.fourInARowWins : 0;
+          wordHuntWins = (typeof d.wordHuntWins === 'number') ? d.wordHuntWins : 0;
+          lastDailyQuizDate = (typeof d.lastDailyQuizDate === 'string') ? d.lastDailyQuizDate : null;
+          if (typeof aiPromptCount !== 'undefined') aiPromptCount = (typeof d.aiPromptCount === 'number') ? d.aiPromptCount : 0;
+          if (typeof aiPromptDate !== 'undefined') aiPromptDate = (typeof d.aiPromptDate === 'string') ? d.aiPromptDate : null;
+          if (typeof monthlyContentUsage !== 'undefined') monthlyContentUsage = (d.monthlyContentUsage && typeof d.monthlyContentUsage === 'object') ? Object.assign({ questions: 0, flashcards: 0 }, d.monthlyContentUsage) : { questions: 0, flashcards: 0 };
+          if (typeof monthlyContentUsageMonth !== 'undefined') monthlyContentUsageMonth = (typeof d.monthlyContentUsageMonth === 'string') ? d.monthlyContentUsageMonth : null;
+          notebookNotes = Array.isArray(d.notebookNotes) ? d.notebookNotes : [];
+          jobPlanNotes = Array.isArray(d.jobPlanNotes) ? d.jobPlanNotes : [];
+          if (typeof mockTestScoreHistory !== 'undefined') mockTestScoreHistory = Array.isArray(d.mockTestScoreHistory) ? d.mockTestScoreHistory : [];
           enrolledCourseIds = Array.isArray(d.enrolledCourseIds) ? d.enrolledCourseIds : [];
           if (typeof jobApplications !== 'undefined') jobApplications = (d.jobApplications && typeof d.jobApplications === 'object') ? d.jobApplications : {};
-          if (typeof careerStartProfile !== 'undefined' && d.careerStartProfile !== undefined) careerStartProfile = d.careerStartProfile;
-          if (d.courseQuizAnswers && typeof d.courseQuizAnswers === 'object') courseQuizAnswers = d.courseQuizAnswers;
-          if (d.courseQuizSubmitted && typeof d.courseQuizSubmitted === 'object') courseQuizSubmitted = d.courseQuizSubmitted;
-          if (d.courseItemCompletions && typeof d.courseItemCompletions === 'object' && typeof courseItemCompletions !== 'undefined') courseItemCompletions = d.courseItemCompletions;
+          if (typeof careerStartProfile !== 'undefined') careerStartProfile = (d.careerStartProfile !== undefined) ? d.careerStartProfile : null;
+          courseQuizAnswers = (d.courseQuizAnswers && typeof d.courseQuizAnswers === 'object') ? d.courseQuizAnswers : {};
+          courseQuizSubmitted = (d.courseQuizSubmitted && typeof d.courseQuizSubmitted === 'object') ? d.courseQuizSubmitted : {};
+          if (typeof courseItemCompletions !== 'undefined') courseItemCompletions = (d.courseItemCompletions && typeof d.courseItemCompletions === 'object') ? d.courseItemCompletions : {};
           courseEnrollments = (d.courseEnrollments && typeof d.courseEnrollments === 'object') ? d.courseEnrollments : {};
-          if (Array.isArray(d.classSchedule)) classSchedule = d.classSchedule;
-          if (Array.isArray(d.studyReminders)) studyReminders = d.studyReminders;
-          if (Array.isArray(d.uploadedResources)) {
-            const localList = (typeof uploadedResources !== 'undefined' && Array.isArray(uploadedResources)) ? uploadedResources : [];
-            const remoteIds = new Set(d.uploadedResources.map(r => r.id));
-            const localOnly = localList.filter(r => !remoteIds.has(r.id));
-            uploadedResources = d.uploadedResources.concat(localOnly);
-          } else if (typeof uploadedResources === 'undefined' || !Array.isArray(uploadedResources)) {
-            uploadedResources = [];
-          }
+          classSchedule = Array.isArray(d.classSchedule) ? d.classSchedule : [];
+          studyReminders = Array.isArray(d.studyReminders) ? d.studyReminders : [];
+          // uploadedResources intentionally has no "local-only" carry-over
+          // here any more -- that used to keep files picked (but not yet
+          // finished uploading) during the load around after a reset, but
+          // it's also exactly the mechanism that let a previous account's
+          // resources survive into a new one when the new account had none
+          // saved yet. A resource still mid-upload finishes registering
+          // itself once its own upload promise resolves, so nothing is
+          // actually lost by resetting here.
+          uploadedResources = Array.isArray(d.uploadedResources) ? d.uploadedResources : [];
           if (typeof reregisterUploadedResources === 'function') reregisterUploadedResources();
-          if (Array.isArray(d.myGlimpses)) myGlimpses = d.myGlimpses;
+          myGlimpses = Array.isArray(d.myGlimpses) ? d.myGlimpses : [];
           if (typeof syncMyGlimpsesViewedFromStorage === 'function') syncMyGlimpsesViewedFromStorage();
           if (typeof refreshStoryStrip === 'function') refreshStoryStrip();
-          if (Array.isArray(d.blockedAccounts)) blockedAccounts = d.blockedAccounts;
-          if (Array.isArray(d.quizFriends)) quizFriends = d.quizFriends;
-          if (Array.isArray(d.feedPosts) && typeof feedPosts !== 'undefined') feedPosts = d.feedPosts;
-          if (Array.isArray(d.reportedPosts) && typeof reportedPosts !== 'undefined') reportedPosts = new Set(d.reportedPosts);
-          if (Array.isArray(d.deletedPostIds) && typeof deletedPostIds !== 'undefined') deletedPostIds = new Set(d.deletedPostIds);
-          if (Array.isArray(d.notifications) && typeof notifData !== 'undefined') { notifData.length = 0; notifData.push(...d.notifications); }
-          if (Array.isArray(d.primaryConvos) && typeof primaryConvos !== 'undefined') { primaryConvos.length = 0; primaryConvos.push(...d.primaryConvos); }
-          if (Array.isArray(d.requestConvos) && typeof requestConvos !== 'undefined') { requestConvos.length = 0; requestConvos.push(...d.requestConvos); }
-          if (Array.isArray(d.collabConvos) && typeof collabConvos !== 'undefined') { collabConvos.length = 0; collabConvos.push(...d.collabConvos); }
-          if (d.convoMeta && typeof d.convoMeta === 'object' && typeof convoMeta !== 'undefined') Object.assign(convoMeta, d.convoMeta);
-          if (Array.isArray(d.favoriteConvos) && typeof favoriteConvos !== 'undefined') favoriteConvos = new Set(d.favoriteConvos);
-          if (Array.isArray(d.mutedConvoNotifs) && typeof mutedConvoNotifs !== 'undefined') mutedConvoNotifs = new Set(d.mutedConvoNotifs);
-          if (Array.isArray(d.reportedConvos) && typeof reportedConvos !== 'undefined') reportedConvos = new Set(d.reportedConvos);
-          if (Array.isArray(d.deletedForMeMessageIds) && typeof deletedForMeMessageIds !== 'undefined') deletedForMeMessageIds = new Set(d.deletedForMeMessageIds);
-          if (Array.isArray(d.discoverConnectedIds) && typeof discoverPeople !== 'undefined') {
-            const connectedIds = new Set(d.discoverConnectedIds);
-            discoverPeople.forEach(p => { if (connectedIds.has(p.id)) p.connected = true; });
+          blockedAccounts = Array.isArray(d.blockedAccounts) ? d.blockedAccounts : [];
+          quizFriends = Array.isArray(d.quizFriends) ? d.quizFriends : [];
+          if (typeof feedPosts !== 'undefined') feedPosts = Array.isArray(d.feedPosts) ? d.feedPosts : [];
+          if (typeof reportedPosts !== 'undefined') reportedPosts = new Set(Array.isArray(d.reportedPosts) ? d.reportedPosts : []);
+          if (typeof deletedPostIds !== 'undefined') deletedPostIds = new Set(Array.isArray(d.deletedPostIds) ? d.deletedPostIds : []);
+          if (typeof notifData !== 'undefined') { notifData.length = 0; if (Array.isArray(d.notifications)) notifData.push(...d.notifications); }
+          if (typeof primaryConvos !== 'undefined') { primaryConvos.length = 0; if (Array.isArray(d.primaryConvos)) primaryConvos.push(...d.primaryConvos); }
+          if (typeof requestConvos !== 'undefined') { requestConvos.length = 0; if (Array.isArray(d.requestConvos)) requestConvos.push(...d.requestConvos); }
+          if (typeof collabConvos !== 'undefined') { collabConvos.length = 0; if (Array.isArray(d.collabConvos)) collabConvos.push(...d.collabConvos); }
+          if (typeof convoMeta !== 'undefined') {
+            Object.keys(convoMeta).forEach(k => delete convoMeta[k]);
+            if (d.convoMeta && typeof d.convoMeta === 'object') Object.assign(convoMeta, d.convoMeta);
           }
-          if (d.conversationMessages && typeof d.conversationMessages === 'object') conversationMessages = d.conversationMessages;
-          if (Array.isArray(d.aiChatSessions) && typeof aiChatSessions !== 'undefined') aiChatSessions = d.aiChatSessions;
-          if (typeof d.aiChatSessionIdCounter === 'number' && typeof aiChatSessionIdCounter !== 'undefined') aiChatSessionIdCounter = d.aiChatSessionIdCounter;
-          if (d.appPrefs && typeof d.appPrefs === 'object') appPrefs = Object.assign({}, appPrefs, d.appPrefs);
+          if (typeof favoriteConvos !== 'undefined') favoriteConvos = new Set(Array.isArray(d.favoriteConvos) ? d.favoriteConvos : []);
+          if (typeof mutedConvoNotifs !== 'undefined') mutedConvoNotifs = new Set(Array.isArray(d.mutedConvoNotifs) ? d.mutedConvoNotifs : []);
+          if (typeof reportedConvos !== 'undefined') reportedConvos = new Set(Array.isArray(d.reportedConvos) ? d.reportedConvos : []);
+          if (typeof deletedForMeMessageIds !== 'undefined') deletedForMeMessageIds = new Set(Array.isArray(d.deletedForMeMessageIds) ? d.deletedForMeMessageIds : []);
+          if (typeof discoverPeople !== 'undefined') {
+            // Reset every person's connected flag before re-applying this
+            // account's connections, so a person the *previous* account had
+            // connected with doesn't still show as connected here.
+            const connectedIds = new Set(Array.isArray(d.discoverConnectedIds) ? d.discoverConnectedIds : []);
+            discoverPeople.forEach(p => { p.connected = connectedIds.has(p.id); });
+          }
+          conversationMessages = (d.conversationMessages && typeof d.conversationMessages === 'object') ? d.conversationMessages : {};
+          if (typeof aiChatSessions !== 'undefined') aiChatSessions = Array.isArray(d.aiChatSessions) ? d.aiChatSessions : [];
+          if (typeof aiChatSessionIdCounter !== 'undefined') aiChatSessionIdCounter = (typeof d.aiChatSessionIdCounter === 'number') ? d.aiChatSessionIdCounter : 0;
+          appPrefs = (d.appPrefs && typeof d.appPrefs === 'object') ? Object.assign({ theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false }, d.appPrefs) : { theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false };
+          if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           const me = (typeof leaderboard !== 'undefined' && leaderboard) ? leaderboard.find(p => p.me) : null;
           if (me) me.pts = userPoints;
           if (typeof leaderboard !== 'undefined' && leaderboard) leaderboard.sort((a, b) => b.pts - a.pts);
