@@ -400,6 +400,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           }
           else if (kind === 'courseTeachers') ov.innerHTML = courseTeachersHTML();
           else if (kind === 'personProfile') ov.innerHTML = personProfileHTML();
+          else if (kind === 'messageRequestCompose') { ov.innerHTML = messageRequestComposeHTML(); const cInp = document.getElementById('message-request-compose-input'); if (cInp) setTimeout(() => cInp.focus(), 60); }
           else if (kind === 'postFeed') { ov.innerHTML = postFeedHTML(); scrollToPostFeedStart(); const pfl = document.getElementById('post-feed-list'); if (pfl && typeof setupFeedVideoAutoplay === 'function') setupFeedVideoAutoplay(pfl); }
           else if (kind === 'personNetwork') ov.innerHTML = personNetworkHTML();
           else renderNotifTab();
@@ -1701,12 +1702,51 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           if (dp) dp.requestSent = false;
         }
 
-        async function messageAndConnectViewedProfile(){
+        // ---- Message request compose (replaces the old prompt()-based
+        //      flow) -- tapping "Message" on someone you're not connected
+        //      with yet opens a small chat-style compose screen instead of
+        //      a native browser prompt, so the person can type (and see)
+        //      the note that goes out with their connect request. ----
+        let messageRequestComposeDraft = '';
+        function messageAndConnectViewedProfile(){
           if (!viewedProfile || viewedProfile.connected || viewedProfile.requestSent) return;
-          const note = prompt(`Send ${viewedProfile.name || 'them'} a message along with your connect request:`);
-          if (note === null) return; 
+          messageRequestComposeDraft = '';
+          openOverlayFrom('personProfile', 'messageRequestCompose');
+        }
+
+        function messageRequestComposeHTML(){
+          const p = viewedProfile || {};
+          const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon(p.icon || 'user','w-5 h-5');
+          return `
+            <div class="px-5 pb-3 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
+              <button onclick="overlayGoBack()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              <div class="w-10 h-10 ${p.avatarBg || 'bg-blue-50'} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInner}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(p.name || 'Stitch member')}</div>
+                <div class="text-xs text-gray-400 truncate">New message request</div>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-5 py-5 flex flex-col items-center justify-center text-center gap-2">
+              <div class="w-16 h-16 ${p.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 overflow-hidden">${avatarInner}</div>
+              <div class="font-semibold text-sm text-gray-900 mt-1">${escapeHtml(p.name || 'Stitch member')}</div>
+              <div class="text-xs text-gray-400 max-w-[240px]">You're not connected yet. Send a message along with your connect request to say hello.</div>
+            </div>
+            <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:20px;">
+              <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
+                <textarea id="message-request-compose-input" placeholder="Write a message..." rows="1" enterkeyhint="send" oninput="autoGrowConvoInput(this); messageRequestComposeDraft = this.value;" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); submitMessageRequestCompose(); }" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center" style="max-height:120px;overflow-y:auto;">${escapeHtml(messageRequestComposeDraft)}</textarea>
+                <button onclick="submitMessageRequestCompose()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+              </div>
+            </div>`;
+        }
+
+        async function submitMessageRequestCompose(){
+          if (!viewedProfile || viewedProfile.connected || viewedProfile.requestSent) { overlayGoBack(); return; }
+          const inputEl = document.getElementById('message-request-compose-input');
+          const note = (inputEl ? inputEl.value : messageRequestComposeDraft || '').trim();
           const id = viewedProfile.id;
-          viewedProfile.requestSent = true; 
+          messageRequestComposeDraft = '';
+          viewedProfile.requestSent = true;
+          overlayGoBack();
           renderPersonProfile();
           const ok = await sendConnectionRequestTo(id, note);
           if (!viewedProfile || viewedProfile.id !== id) return; 
