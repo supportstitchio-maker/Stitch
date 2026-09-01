@@ -42,6 +42,23 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           links: []
         };
 
+        // Restores profileData to the same shape as its initial value above,
+        // in place (same object reference, so anything that captured the
+        // reference stays in sync). Used when logging into an account that
+        // has no saved profile data yet, so the previous account's name,
+        // photo, bio, etc. don't linger on screen.
+        function resetProfileDataToDefault(){
+          profileData.name = '';
+          profileData.username = '';
+          profileData.pronouns = '';
+          profileData.bio = '';
+          profileData.gender = '';
+          profileData.photo = null;
+          profileData.photoCleared = false;
+          profileData.link = '';
+          profileData.links = [];
+        }
+
         // ---- Profile screen render ----
         function hasCompleteProfile(){
           return !!((profileData.name || '').trim() && (profileData.username || '').trim());
