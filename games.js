@@ -2469,7 +2469,8 @@ let simpleGameState = null;
           document.getElementById('auth-panel-newpass').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Set a new password';
           document.getElementById('authHeadSub').textContent = 'Almost done';
-          document.getElementById('authBackBtn').style.display = 'none';
+          document.getElementById('authBackBtn').style.display = 'flex';
+          document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           const gate = document.getElementById('auth-gate');
           if (gate) gate.classList.remove('auth-hidden');
@@ -2624,8 +2625,23 @@ let simpleGameState = null;
           el.addEventListener('animationend', () => el.remove(), { once: true });
           setTimeout(() => { if (el.parentNode) el.remove(); }, 600);
         }
+        // Password-reset links land the person straight on the "Set a new
+        // password" screen -- the splash's welcome animation doesn't belong
+        // there, so it's skipped (removed instantly, no transition) rather
+        // than just shortened like a normal deep link.
+        function isPasswordRecoveryLink(){
+          const hash = window.location.hash || '';
+          const search = window.location.search || '';
+          const params = new URLSearchParams(search);
+          return /type=recovery/.test(hash) || params.get('type') === 'recovery' || (params.has('code') && /type=recovery/.test(search));
+        }
         const openedViaLink = !!(window.location.search || window.location.hash);
-        setTimeout(dismissSplash, openedViaLink ? 1000 : 5550);
+        if (isPasswordRecoveryLink()) {
+          const splashEl = document.getElementById('app-splash');
+          if (splashEl) splashEl.remove();
+        } else {
+          setTimeout(dismissSplash, openedViaLink ? 1000 : 5550);
+        }
 
         window.onload = async function(){
           const isRecoveryHash = /type=recovery/.test(window.location.hash || '');
