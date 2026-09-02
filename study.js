@@ -402,10 +402,11 @@ let studyFabMenuOpen = false;
               body: JSON.stringify(body)
             });
             if (res.status === 401) throw new Error('Your session expired, please log in again.');
-            if (!res.ok) throw new Error('AI request failed (' + res.status + ')');
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            return data.text || '';
+            let data;
+            try { data = await res.json(); } catch { data = null; }
+            if (!res.ok) throw new Error((data && data.error) || ('AI request failed (' + res.status + ')'));
+            if (data && data.error) throw new Error(data.error);
+            return (data && data.text) || '';
           } catch (err) {
             if (err instanceof TypeError && /fetch/i.test(err.message)) {
               err = new Error('Could not reach the AI service: check your connection, or the ai-proxy Edge Function/CORS setup, and try again.');
@@ -430,10 +431,11 @@ let studyFabMenuOpen = false;
               body: JSON.stringify({ userPrompt: prompt, task: 'image' })
             });
             if (res.status === 401) throw new Error('Your session expired, please log in again.');
-            if (!res.ok) throw new Error('Image generation failed (' + res.status + ')');
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            if (!data.image) throw new Error('Image generation returned nothing.');
+            let data;
+            try { data = await res.json(); } catch { data = null; }
+            if (!res.ok) throw new Error((data && data.error) || ('Image generation failed (' + res.status + ')'));
+            if (data && data.error) throw new Error(data.error);
+            if (!data || !data.image) throw new Error('Image generation returned nothing.');
             return { image: data.image, mediaType: data.mediaType || 'image/png' };
           } catch (err) {
             if (err instanceof TypeError && /fetch/i.test(err.message)) {
