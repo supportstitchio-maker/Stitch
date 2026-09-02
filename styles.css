@@ -2243,3 +2243,15 @@
   word-break:break-word;overflow-wrap:break-word;vertical-align:top;
 }
 .doc-viewer-content a{color:#4169e1;text-decoration:underline;}
+
+/* Fix: these Tailwind arbitrary-value classes are used in feed.js / chat.js / courses.js /
+   overlays.js but were missing from this compiled stylesheet, causing the elements using them
+   (reaction icons, avatar name truncation, glimpse CTA width, connect-request note width) to
+   render with no size / no truncation. Added by hand since this project uses a precompiled
+   Tailwind file rather than the CDN JIT compiler. */
+.w-\[18px\]{width:18px}
+.h-\[18px\]{height:18px}
+.max-w-\[120px\]{max-width:120px}
+.max-w-\[130px\]{max-width:130px}
+.max-w-\[240px\]{max-width:240px}
+.min-w-\[200px\]{min-width:200px}
