@@ -1852,6 +1852,16 @@
           return affinity;
         }
 
+        // rankFeedPosts() re-runs every time the Home tab is revisited (see
+        // loadRemotePostsImpl/loadPostInteractions below), not just when a
+        // post is actually new. It used to roll a fresh Math.random() jitter
+        // per post on every single call, which reshuffled the *entire* feed
+        // order each time -- so simply switching away and back to the Home
+        // tab (or anything else that triggers a re-rank) could reorder posts
+        // that hadn't changed at all, reading as the feed "rebuilding" itself.
+        // Each post now gets one random jitter value the first time it's
+        // ranked, cached on the post object, so its position only moves when
+        // something about it (likes/comments/affinity/etc.) actually changes.
         function rankFeedPosts(){
           if (!feedPosts.length) return;
           const affinity = buildAuthorAffinity();
@@ -1864,7 +1874,8 @@
             if (post.authorId && affinity[post.authorId]) score += affinity[post.authorId] * 2;
             if (!post.mine && post.authorId && typeof isUserInMyNetwork === 'function' && isUserInMyNetwork(post.authorId)) score += 6;
             if (post.mine) score += 100;
-            score += Math.random() * 4; 
+            if (typeof post._rankJitter !== 'number') post._rankJitter = Math.random() * 4;
+            score += post._rankJitter;
             return { post, score };
           });
           scored.sort((a, b) => b.score - a.score);
