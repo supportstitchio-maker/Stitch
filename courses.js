@@ -3357,26 +3357,6 @@ try {
               ${statCard('doc','Classwork', String(totalClasswork), 'bg-amber-100', "classDetailSwitchTab('classwork')")}
               ${statCard('comment','Announcements', String(totalAnnouncements), 'bg-rose-100', "classDetailSwitchTab('stream')")}
               ${statCard('personPlus','Co-teachers', String(totalCoTeachers), 'bg-purple-100', "classDetailSwitchTab('people')")}
-            </div>
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Quick actions</div>
-            <div class="flex flex-col gap-2.5 mb-5">
-              <button onclick="openNewAnnouncementOverlay()" class="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-sm text-left">
-                <span class="w-9 h-9 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon('comment','w-5 h-5')}</span>
-                <span class="font-semibold text-sm text-gray-800">New announcement</span>
-              </button>
-              <button onclick="openClassworkCreateMenu()" class="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-sm text-left">
-                <span class="w-9 h-9 flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('doc','w-5 h-5')}</span>
-                <span class="font-semibold text-sm text-gray-800">Create classwork</span>
-              </button>
-              <button onclick="openInviteStudentsOverlay()" class="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-sm text-left">
-                <span class="w-9 h-9 flex items-center justify-center text-emerald-600 flex-shrink-0">${Icon('personPlus','w-5 h-5')}</span>
-                <span class="font-semibold text-sm text-gray-800">Invite students</span>
-              </button>
-              ${cls.code ? `
-              <button onclick="copyClassCode('${cls.code}')" class="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-sm text-left">
-                <span class="w-9 h-9 flex items-center justify-center text-purple-600 flex-shrink-0">${Icon('copy','w-5 h-5')}</span>
-                <span class="font-semibold text-sm text-gray-800">Copy class code</span>
-              </button>` : ''}
             </div>`;
         }
 
@@ -3422,9 +3402,12 @@ try {
                     <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
                     <div class="text-xs text-gray-400" data-announcement-time="${a.id}">${formatClassStreamTime(a)}</div>
                   </div>
-                  <button onclick="toggleAnnouncementRepost('${a.id}')" id="announcement-repost-${a.id}" class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full flex-shrink-0 font-semibold text-xs ${a.reposted ? 'text-white' : 'border border-gray-200 text-gray-500'}" style="${a.reposted ? `background:${NAVY};` : ''}">
-                    ${Icon('repost','w-3.5 h-3.5')} ${a.reposted ? 'Reposted' : 'Repost'}
-                  </button>
+                  <div class="ml-auto flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <button onclick="repostAnnouncement('${a.id}')" id="announcement-repost-${a.id}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full flex-shrink-0 font-semibold text-xs ${(a.repostCount > 0) ? 'text-white' : 'border border-gray-200 text-gray-500'}" style="${(a.repostCount > 0) ? `background:${NAVY};` : ''}">
+                      ${Icon('repost','w-3.5 h-3.5')} ${a.repostCount > 0 ? `Reposted${a.repostCount > 1 ? ' (' + a.repostCount + ')' : ''}` : 'Repost'}
+                    </button>
+                    ${cls.role === 'teacher' ? `<button onclick="deleteClassAnnouncement('${a.id}')" title="Delete announcement" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-gray-400 border border-gray-200">${Icon('trash','w-3.5 h-3.5')}</button>` : ''}
+                  </div>
                 </div>
                 <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">${escapeHtml(a.text)}</div>
                 ${announcementAttachmentsDisplayHTML(a)}
@@ -3472,32 +3455,60 @@ try {
             </div>`;
         }
 
-        function toggleAnnouncementRepost(announcementId){
+        // Reposting an announcement always posts it again to the main feed —
+        // it's a repeatable "share again" action, not a one-time toggle, so
+        // clicking Repost multiple times creates a fresh post each time.
+        function repostAnnouncement(announcementId){
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
           const a = (cls.announcements || []).find(x => x.id === announcementId);
           if (!a) return;
-          if (a.reposted) {
-            PostsAPI.remove(a.repostFeedId);
-            a.reposted = false;
-            a.repostFeedId = null;
-            document.getElementById('overlay').innerHTML = classDetailHTML();
-            renderFeed();
-            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
-          } else {
-            const post = PostsAPI.create({
-              avatarIcon:'bell', avatarBg:'bg-blue-50', name:classTeacherDisplayName(cls),
-              meta: cls.name + ' · Announcement', tag:'Announcement', tagClass:`bg-blue-50 text-[${NAVY}]`,
-              timeAgo:'Just now',
-              body: a.text, mediaHtml:null,
-              reposts:1, reposted:true
-            });
-            a.reposted = true;
-            post.then(p => { a.repostFeedId = p.id; });
-            document.getElementById('overlay').innerHTML = classDetailHTML();
-            renderFeed();
-            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
+          const post = PostsAPI.create({
+            avatarIcon:'bell', avatarBg:'bg-blue-50', name:classTeacherDisplayName(cls),
+            meta: cls.name + ' · Announcement', tag:'Announcement', tagClass:`bg-blue-50 text-[${NAVY}]`,
+            timeAgo:'Just now',
+            body: a.text, mediaHtml:null,
+            reposts:1, reposted:true
+          });
+          a.repostCount = (a.repostCount || 0) + 1;
+          if (!a.repostFeedIds) a.repostFeedIds = [];
+          post.then(p => { if (p) a.repostFeedIds.push(p.id); });
+          document.getElementById('overlay').innerHTML = classDetailHTML();
+          renderFeed();
+          if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
+          queueSaveClassRemote(cls);
+        }
+
+        // ---- Delete announcement (teacher only) ----
+        let deleteAnnouncementPendingId = null;
+        function deleteClassAnnouncement(announcementId){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          if (!cls) return;
+          const a = (cls.announcements || []).find(x => x.id === announcementId);
+          if (!a) return;
+          deleteAnnouncementPendingId = announcementId;
+          openLeaveClassModal(confirmDeleteClassAnnouncement, 'Delete this announcement?', 'This will remove it from the class stream for everyone. This cannot be undone.', 'trash');
+        }
+        function confirmDeleteClassAnnouncement(){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          const announcementId = deleteAnnouncementPendingId;
+          deleteAnnouncementPendingId = null;
+          if (!cls || !announcementId) return;
+          const idx = (cls.announcements || []).findIndex(x => x.id === announcementId);
+          if (idx === -1) return;
+          const [removed] = cls.announcements.splice(idx, 1);
+          // Also remove any feed posts that were created by reposting this announcement.
+          if (removed) {
+            if (removed.repostFeedIds && removed.repostFeedIds.length) {
+              removed.repostFeedIds.forEach(id => PostsAPI.remove(id));
+            } else if (removed.repostFeedId) {
+              PostsAPI.remove(removed.repostFeedId);
+            }
           }
+          document.getElementById('overlay').innerHTML = classDetailHTML();
+          renderFeed();
+          if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
+          queueSaveClassRemote(cls);
         }
 
         function addStreamComment(announcementId){
