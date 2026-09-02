@@ -1841,6 +1841,8 @@ let simpleGameState = null;
         function authShowLogin(){
           document.getElementById('auth-panel-signup').classList.remove('active');
           document.getElementById('auth-panel-verify').classList.remove('active');
+          document.getElementById('auth-panel-forgot').classList.remove('active');
+          document.getElementById('auth-panel-newpass').classList.remove('active');
           document.getElementById('auth-panel-login').classList.add('active');
           authLoginResetToEmailStep();
           document.getElementById('authHeadTitle').textContent = 'Log In';
@@ -2446,7 +2448,7 @@ let simpleGameState = null;
           if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
           try {
             const { error } = await sb.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.origin + window.location.pathname
+              redirectTo: window.location.origin + window.location.pathname + '?type=recovery'
             });
             if (error) {
               console.error('Reset password error:', error);
@@ -2473,6 +2475,7 @@ let simpleGameState = null;
           document.getElementById('authHeadTitle').textContent = 'Set a new password';
           document.getElementById('authHeadSub').textContent = 'Almost done';
           document.getElementById('authBackBtn').style.display = 'none';
+          document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           const gate = document.getElementById('auth-gate');
           if (gate) gate.classList.remove('auth-hidden');
@@ -2633,7 +2636,14 @@ let simpleGameState = null;
         window.onload = async function(){
           const isRecoveryHash = /type=recovery/.test(window.location.hash || '');
           const params = new URLSearchParams(window.location.search || '');
-          const isRecoveryQuery = params.get('type') === 'recovery' || (params.has('code') && /type=recovery/.test(window.location.search || ''));
+          // The reset-password link always points back here with our own
+          // ?type=recovery marker baked into the redirectTo we send Supabase
+          // (see authSubmitForgotPassword), so this check no longer depends
+          // on Supabase's flow (hash tokens vs a bare ?code=) matching a
+          // particular shape -- tapping the email link always lands here.
+          // (Not matching on a bare ?code= alone: Google sign-in also
+          // returns through this same page with its own ?code=.)
+          const isRecoveryQuery = params.get('type') === 'recovery';
           if (isRecoveryHash || isRecoveryQuery) {
             const sb = getSupabaseClient();
             const code = params.get('code');
