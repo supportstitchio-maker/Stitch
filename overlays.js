@@ -1774,12 +1774,59 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           if (dp) dp.requestSent = true;
         }
 
-        function messageViewedProfile(){
+        async function messageViewedProfile(){
           if (!viewedProfile) return;
           const id = viewedProfile.id;
+          const p = viewedProfile;
           const existing = convoArrays().flat().find(c => c.otherUserId === id);
           closeOverlay();
-          if (existing) startNewMessageWith(existing.id);
+          if (existing) { startNewMessageWith(existing.id); return; }
+          // Bug: when two people are connected but have never exchanged a
+          // message yet, no conversation entry/convoMeta exists locally
+          // (those only get created by loadMyAcceptedIncomingRequests /
+          // loadMyAcceptedOutgoingRequests, or by an earlier message).
+          // Tapping "Message" here used to just closeOverlay() and stop --
+          // silently dumping the person back on whatever screen was behind
+          // the profile instead of opening a chat. Look up the accepted
+          // connection between us and this person and build the same
+          // conversation entry those loaders would have, then open it.
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try {
+            const me = await getCachedAuthUser();
+            if (!me) return;
+            const { data: rows } = await sb
+              .from(CONNECTION_REQUESTS_TABLE)
+              .select('*')
+              .eq('status', 'accepted')
+              .or(`and(from_user.eq.${me.id},to_user.eq.${id}),and(from_user.eq.${id},to_user.eq.${me.id})`)
+              .limit(1);
+            const row = rows && rows[0];
+            if (!row) { if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't start that chat. Please try again."); return; }
+            if (viewedProfile !== p || p.id !== id) return; 
+            const convoId = row.id;
+            if (!convoMeta[convoId]) {
+              const entry = {
+                id: convoId,
+                connectionRequestId: row.id,
+                otherUserId: id,
+                icon: p.icon || 'user',
+                avatarBg: p.avatarBg || 'bg-blue-50',
+                name: p.name || 'Stitch member',
+                username: p.username || '',
+                photo: p.photo || null,
+                preview: '',
+                time: formatRequestTime(row.created_at),
+                unread: false,
+                read: true,
+                network: true,
+              };
+              primaryConvos.unshift(entry);
+              convoMeta[convoId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: entry.username, photo: entry.photo, preview: entry.preview, otherUserId: id };
+              queueSaveUserState();
+            }
+            startNewMessageWith(convoId);
+          } catch (e) { console.warn('Starting conversation failed:', e); if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't start that chat. Please try again."); }
         }
 
         function removeLocalConnection(otherUserId){
