@@ -13,6 +13,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           },
           careerStart: (fromPopState) => careerStartBack(fromPopState),
           careerMatching: (fromPopState) => { if (typeof clearCareerMatchingTimers === 'function') clearCareerMatchingTimers(); closeOverlay(fromPopState); },
+          conversation: (fromPopState) => { if (typeof closeConversationOverlay === 'function') closeConversationOverlay(fromPopState); else closeOverlay(fromPopState); },
         };
         const modalBackStack = [];
         // ---- Modal back-button (history) handling ----
