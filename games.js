@@ -1956,6 +1956,15 @@ let simpleGameState = null;
             subscribeToClassesRealtime(),
             subscribeToCollabMembership(),
             subscribeToFeedActivity(),
+            // Kick off the Discover people list right away instead of
+            // waiting for the person to open Discover/the profile panel.
+            // Without this, loadDiscoverPeople() only ever ran the moment
+            // that screen was first opened, which both showed a needless
+            // "Loading people..." flash every time and -- if the
+            // profiles query landed before the auth session was fully
+            // attached -- could resolve to zero rows and wrongly show
+            // "No one else has signed up yet".
+            (typeof loadDiscoverPeople === 'function' ? loadDiscoverPeople() : Promise.resolve()),
           ])).catch(e => console.error(e));
 
           const result = await withBootBudget(essentialLoads, 2000);
