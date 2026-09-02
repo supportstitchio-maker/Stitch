@@ -3406,7 +3406,7 @@ try {
                     <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
                     <div class="text-xs text-gray-400" data-announcement-time="${a.id}">${formatClassStreamTime(a)}</div>
                   </div>
-                  <div class="ml-auto flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <div class="ml-auto flex flex-col items-end gap-3 flex-shrink-0">
                     <button onclick="repostAnnouncement('${a.id}')" id="announcement-repost-${a.id}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full flex-shrink-0 font-semibold text-xs ${(a.repostCount > 0) ? 'text-white' : 'border border-gray-200 text-gray-500'}" style="${(a.repostCount > 0) ? `background:${NAVY};` : ''}">
                       ${Icon('repost','w-3.5 h-3.5')} ${a.repostCount > 0 ? `Reposted${a.repostCount > 1 ? ' (' + a.repostCount + ')' : ''}` : 'Repost'}
                     </button>
