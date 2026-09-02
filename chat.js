@@ -1210,7 +1210,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
           if (cachedNetworkCount !== null) cachedNetworkCount += 1;
           if (currentTab === 4) renderProfile(); 
-          removeFromDiscover(c.otherUserId); 
+          if (typeof removeFromDiscover === 'function') removeFromDiscover(c.otherUserId); 
           setConnectionRequestStatus(c.connectionRequestId, 'accepted').then(() => {
             if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
           });
@@ -1360,7 +1360,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               };
               primaryConvos.unshift(entry);
               convoMeta[convoId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: entry.username, photo: entry.photo, preview: entry.preview, otherUserId: row.from_user };
-              removeFromDiscover(row.from_user);
+              if (typeof removeFromDiscover === 'function') removeFromDiscover(row.from_user);
             });
             queueSaveUserState();
             renderInboxTab();
@@ -1440,7 +1440,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               };
               primaryConvos.unshift(entry);
               convoMeta[convoId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: entry.username, photo: entry.photo, preview: entry.preview, otherUserId: row.to_user };
-              removeFromDiscover(row.to_user); 
+              if (typeof removeFromDiscover === 'function') removeFromDiscover(row.to_user); 
               if (typeof addNotif === 'function') {
                 addNotif({
                   id: 'accepted-' + convoId,
