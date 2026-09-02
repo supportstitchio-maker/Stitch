@@ -1537,7 +1537,7 @@
         }
 
         // ---- Tab switching ----
-        function switchTab(n) {
+        function switchTab(n, fromPopState) {
           autoSaveEditProfileDraft();
           const prevTab = typeof currentTab !== 'undefined' ? currentTab : null;
           if (prevTab === 0 && n !== 0) {
@@ -1583,7 +1583,7 @@
             if (typeof studyFabScrollCleanup === 'function') { studyFabScrollCleanup(); studyFabScrollCleanup = null; }
           }
           currentTab = n;
-          closeOverlay();
+          closeOverlay(fromPopState);
           if (n === 0 || n === 4) {
             morphPlusIcon('topbar-create-icon');
             morphPlusIcon('dnav-create-icon');
