@@ -321,7 +321,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             ov.style.top = '0';
           }
 
-          if (kind === 'discover') { discoverSearchQuery = ''; discoverPeopleLoaded = false; ov.innerHTML = discoverHTML(); loadDiscoverPeople(); }
+          if (kind === 'discover') { discoverSearchQuery = ''; ov.innerHTML = discoverHTML(); if (!discoverPeopleLoaded) loadDiscoverPeople(); else renderDiscoverList(); }
           else if (kind === 'create') {
             selectedMediaItems = []; selectedMediaHtml = null; selectedMediaType = null; selectedMediaFile = null; selectedMediaPreviewHtml = null;
             composeTaggedUsers = []; composeCaptionDraft = ''; tagPickerSearchQuery = '';
