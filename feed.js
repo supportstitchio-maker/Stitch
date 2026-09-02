@@ -21,12 +21,13 @@
 
         function renderFeed() {
           const screenEl = document.getElementById('screen');
-          const prevScrollTop = screenEl ? screenEl.scrollTop : 0;
+          if (!screenEl) return; // shell not mounted yet (e.g. essentialLoads resolved before renderApp() finished) -- it will re-render once the tab is actually shown
+          const prevScrollTop = screenEl.scrollTop;
           if (typeof remotePostsLoaded !== 'undefined' && !remotePostsLoaded) {
-            document.getElementById('screen').innerHTML = feedSkeletonHTML();
+            screenEl.innerHTML = feedSkeletonHTML();
             return;
           }
-          document.getElementById('screen').innerHTML = `
+          screenEl.innerHTML = `
             <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
               ${pullToRefreshIndicatorHTML()}
               <div class="-mx-5 mb-6 border-b border-gray-100">
