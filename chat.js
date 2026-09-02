@@ -2602,8 +2602,29 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         let conversationMessages = {}; 
         let activeConvoId = null;
+        // True when the currently-open conversation was opened from outside
+        // the Messaging tab -- e.g. tapping "Message" on someone's profile
+        // from Discover, or from a notification/feed tap -- rather than from
+        // tapping a chat in the inbox list itself. In that case the overlay
+        // history stack doesn't line up with "one tap back = the inbox" the
+        // way it does for a chat opened from the inbox, so the ordinary
+        // closeOverlay()/browser-back route could land the person somewhere
+        // unexpected (including, in the worst case, out of the app entirely
+        // once the stack ran out of app-owned entries). closeConversationOverlay
+        // below uses this flag to explicitly land on the Messaging tab
+        // instead of trusting history arithmetic for that specific case.
+        let convoOpenedOutsideMessaging = false;
+
+        function closeConversationOverlay(fromPopState){
+          const openedOutside = convoOpenedOutsideMessaging;
+          convoOpenedOutsideMessaging = false;
+          if (openedOutside && typeof switchTab === 'function') { switchTab(3, fromPopState); return; }
+          closeOverlay(fromPopState);
+        }
+
 
         function openConversation(id){
+          convoOpenedOutsideMessaging = currentTab !== 3;
           activeConvoId = id;
           if (!conversationMessages[id]) {
             conversationMessages[id] = [];
@@ -3034,7 +3055,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const reported = isConvoReported(activeConvoId);
           return `
             <div class="px-5 pb-3 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
-              <button onclick="closeOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
                 <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
