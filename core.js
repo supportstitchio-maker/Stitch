@@ -1189,7 +1189,7 @@
        just behind the nav bars (below their z-10, above #screen's
        default stacking) so that gap is always solid white/dark instead
        of ever going transparent, no matter how far the bar has slid. -->
-  <div id="nav-bottom-backdrop" class="bg-white" style="display:none;position:absolute;left:0;right:0;bottom:0;height:calc(5rem + env(safe-area-inset-bottom, 0px));z-index:5;pointer-events:none;"></div>
+  <div id="nav-bottom-backdrop" class="bg-white" style="display:none;position:absolute;left:0;right:0;bottom:0;height:calc(5rem + 50px + env(safe-area-inset-bottom, 0px));z-index:5;pointer-events:none;"></div>
 
   <!-- Bottom Nav -->
   <div id="bottom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare">
