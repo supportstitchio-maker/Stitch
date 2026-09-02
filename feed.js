@@ -188,7 +188,7 @@
             thumbUp: `<path d="M2.5 10.5a1.5 1.5 0 011.5-1.5h2.25a.75.75 0 01.75.75v9.5a.75.75 0 01-.75.75H4a1.5 1.5 0 01-1.5-1.5v-8z"/><path d="M9.9 8.05L14.02 3c.3-.37.82-.48 1.24-.26A3.25 3.25 0 0117 5.6c0 1.14-.24 2.23-.68 3.22a.4.4 0 00.37.56h3.44c1.6 0 2.94 1.25 2.99 2.85.04.9-.06 1.79-.29 2.65l-1.35 5.02a3.26 3.26 0 01-3.15 2.4H10.5a2.75 2.75 0 01-2.75-2.75V9.6c0-.58.2-1.14.57-1.6l1.58-1.95z"/>`,
             thumbUpOutline: `<path d="M2.5 10.5a1.5 1.5 0 011.5-1.5h2.25a.75.75 0 01.75.75v9.5a.75.75 0 01-.75.75H4a1.5 1.5 0 01-1.5-1.5v-8z"/><path fill="none" stroke-linecap="round" stroke-linejoin="round" d="M9.9 8.05L14.02 3c.3-.37.82-.48 1.24-.26A3.25 3.25 0 0117 5.6c0 1.14-.24 2.23-.68 3.22a.4.4 0 00.37.56h3.44c1.6 0 2.94 1.25 2.99 2.85.04.9-.06 1.79-.29 2.65l-1.35 5.02a3.26 3.26 0 01-3.15 2.4H10.5a2.75 2.75 0 01-2.75-2.75V9.6c0-.58.2-1.14.57-1.6l1.58-1.95z"/>`,
             comment: `<path fill-rule="evenodd" d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223z" clip-rule="evenodd"/><circle cx="8.2" cy="11.2" r="1.15" fill="white"/><circle cx="12" cy="11.2" r="1.15" fill="white"/><circle cx="15.8" cy="11.2" r="1.15" fill="white"/>`,
-            repost: `<path fill-rule="evenodd" d="M4.755 10.059a7.5 7.5 0 0112.548-3.364l1.903 1.903h-3.183a.75.75 0 100 1.5h4.992a.75.75 0 00.75-.75V4.356a.75.75 0 00-1.5 0v3.18l-1.9-1.9A9 9 0 003.306 9.67a.75.75 0 101.45.388zm15.408 3.352a.75.75 0 00-.919.53 7.5 7.5 0 01-12.548 3.364l-1.902-1.903h3.183a.75.75 0 000-1.5H2.984a.75.75 0 00-.75.75v4.992a.75.75 0 001.5 0v-3.18l1.9 1.9a9 9 0 0015.059-4.035.75.75 0 00-.53-.918z" clip-rule="evenodd"/>`,
+            repost: `<path d="M18 6.41V4a1 1 0 011.707-.707l3 3a1 1 0 010 1.414l-3 3A1 1 0 0118 10V7.5H8a1 1 0 00-1 1V11H5V8.5a3 3 0 013-3h10zM6 17.59V20a1 1 0 01-1.707.707l-3-3a1 1 0 010-1.414l3-3A1 1 0 016 14v2.5h10a1 1 0 001-1V13h2v2.5a3 3 0 01-3 3H6z"/>`,
             send: `<path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z"/>`,
             link: `<path fill-rule="evenodd" d="M19.902 4.098a3.75 3.75 0 00-5.304 0l-4.5 4.5a3.75 3.75 0 001.035 6.037.75.75 0 01-.646 1.353 5.25 5.25 0 01-1.449-8.45l4.5-4.5a5.25 5.25 0 117.424 7.424l-1.757 1.757a.75.75 0 11-1.06-1.06l1.757-1.757a3.75 3.75 0 000-5.304zm-7.389 4.192a5.25 5.25 0 011.449 8.45l-4.5 4.5a5.25 5.25 0 11-7.424-7.424l1.757-1.757a.75.75 0 111.06 1.06l-1.757 1.757a3.75 3.75 0 105.304 5.304l4.5-4.5a3.75 3.75 0 00-1.035-6.037.75.75 0 01.646-1.353z" clip-rule="evenodd"/>`,
             target: `<circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4.75" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1.5"/>`,
@@ -2729,7 +2729,11 @@
               <div class="feed-media relative" onclick="handleFeedMediaTap(event, ${post.id})" style="cursor:pointer;">${post.mediaHtml || ''}${isVideoPost ? feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, true) : ''}</div>
 
               <div class="flex items-center justify-between px-3.5 pt-1.5 text-gray-800">
-                <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 text-gray-500">
+                <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}">
+                  <span id="like-icon-${post.id}">${post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline','w-[18px] h-[18px]')}</span>
+                  <span class="text-[12px]" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
+                </button>
+                <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 flex items-center gap-1 text-gray-500">
                   ${Icon('comment','w-[18px] h-[18px]')}
                   <span class="text-[12px]" id="comment-inline-count-${post.id}">${formatCount(post.comments)}</span>
                 </button>
@@ -2737,18 +2741,10 @@
                   ${Icon('repost','w-[18px] h-[18px]')}
                   <span class="text-[12px]" id="repost-inline-count-${post.id}">${formatCount(post.reposts)}</span>
                 </button>
-                <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}">
-                  <span id="like-icon-${post.id}">${post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline','w-[18px] h-[18px]')}</span>
-                  <span class="text-[12px]" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
-                </button>
-                <div class="p-1 flex items-center gap-1 text-gray-500" id="views-inline-${post.id}">
-                  ${Icon('chart','w-[18px] h-[18px]')}
-                  <span class="text-[12px]" id="view-inline-count-${post.id}">${formatCount(post.views || 0)}</span>
-                </div>
-                <button onclick="toggleSavePost(${post.id})" id="save-btn-${post.id}" class="p-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}">${Icon('bookmark','w-[18px] h-[18px]')}</button>
-                <button onclick="openShare(${post.id})" id="share-btn-${post.id}" class="p-1 -mr-1 text-gray-500">
+                <button onclick="openShare(${post.id})" id="share-btn-${post.id}" class="p-1 flex items-center gap-1 text-gray-500">
                   ${Icon('send','w-[18px] h-[18px]')}
                 </button>
+                <button onclick="toggleSavePost(${post.id})" id="save-btn-${post.id}" class="p-1 -mr-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}">${Icon('bookmark','w-[18px] h-[18px]')}</button>
               </div>
 
               <div class="px-3.5 pt-1.5 text-[13px] font-semibold" id="like-count-${post.id}">${post.likes.toLocaleString()} likes</div>
