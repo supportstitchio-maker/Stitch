@@ -793,7 +793,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             ${isCurrentUserAdmin()
               ? menuOverlayHeader('Opportunity', jobDetailMenuOpen, 'toggleJobDetailMenu', jobDetailMenuDropdownHTML(job))
               : overlayHeader('Opportunity', '20px')}
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               ${job.coverImage ? `<img src="${job.coverImage}" class="w-full rounded-3xl mb-4 object-cover" style="height:150px;" alt="">` : ''}
               <div class="flex items-center gap-4 mb-5">
                 <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${Icon(job.icon,'w-7 h-7')}</div>
@@ -1918,7 +1918,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const isCourse = job.type === 'Course';
           return `
             ${overlayHeader(isCourse ? 'Enroll' : 'Apply', '20px')}
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="rounded-3xl p-4 mb-5 flex items-center gap-3" style="background:rgba(10,37,64,0.05);">
                 <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${job.coverImage ? `<img src="${job.coverImage}" class="w-full h-full object-cover" alt="">` : Icon(job.icon,'w-5 h-5')}</div>
                 <div class="min-w-0">
@@ -2198,7 +2198,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const isEditing = !!newOppEditingId;
           return `
             ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px')}
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover picture (optional)</label>
                 <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
