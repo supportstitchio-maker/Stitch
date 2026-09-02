@@ -3313,7 +3313,7 @@ try {
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               ${classDetailHeaderHTML(cls.name)}
-              <div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
+              <div class="flex-1 overflow-y-auto no-scrollbar px-5" style="padding-bottom:50px;">
                 <div class="rounded-3xl p-5 text-white relative overflow-hidden mb-4" style="${cls.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}min-height:104px;">
                   ${cls.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${classCardMotifs[classCardIndex(cls) % classCardMotifs.length]}</svg>`}
                   <div class="text-xl font-bold font-display mb-1 truncate pr-4 relative">${escapeHtml(cls.name)}</div>
@@ -3396,6 +3396,10 @@ try {
             </div>
             ${cls.announcements.length ? cls.announcements.map(a => `
               <div class="bg-white rounded-3xl p-4 mb-3 shadow-sm">
+                ${a.repostOf ? `
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 mb-2.5">
+                  ${Icon('repost','w-3.5 h-3.5')} ${escapeHtml(a.repostedByName || 'You')} reposted
+                </div>` : ''}
                 <div class="flex items-center gap-3 mb-2.5">
                   <span class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-5 h-5')}</span>
                   <div class="min-w-0">
@@ -3455,14 +3459,30 @@ try {
             </div>`;
         }
 
-        // Reposting an announcement always posts it again to the main feed —
-        // it's a repeatable "share again" action, not a one-time toggle, so
-        // clicking Repost multiple times creates a fresh post each time.
+        // Reposting an announcement duplicates it back to the top of the
+        // class stream (marked with a small "reposted" badge, like sharing
+        // a post again) so it visibly shows up again for the class -- it's
+        // a repeatable "share again" action, not a one-time toggle. It also
+        // still creates a matching entry in the person's own profile
+        // "Reposts" tab. Note: it deliberately does NOT show up in the main
+        // Home Feed -- that feed only ever displays posts with a photo or
+        // video attached (see submitPost's guard in overlays.js), and a
+        // class announcement repost is text-only.
         function repostAnnouncement(announcementId){
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
           const a = (cls.announcements || []).find(x => x.id === announcementId);
           if (!a) return;
+          const repostEntry = {
+            id: 'a-' + Date.now() + Math.random().toString(36).slice(2, 6),
+            text: a.text,
+            attachments: a.attachments ? a.attachments.slice() : undefined,
+            createdAt: Date.now(),
+            comments: [],
+            repostOf: a.id,
+            repostedByName: (typeof profileData !== 'undefined' && profileData.name) ? profileData.name : 'You',
+          };
+          cls.announcements.unshift(repostEntry);
           const post = PostsAPI.create({
             avatarIcon:'bell', avatarBg:'bg-blue-50', name:classTeacherDisplayName(cls),
             meta: cls.name + ' · Announcement', tag:'Announcement', tagClass:`bg-blue-50 text-[${NAVY}]`,
