@@ -1821,9 +1821,14 @@ let simpleGameState = null;
           authShowLogin();
         }
 
+        function authHideAllPanels(){
+          ['auth-panel-login','auth-panel-signup','auth-panel-verify','auth-panel-forgot','auth-panel-newpass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+          });
+        }
         function authShowSignup(){
-          document.getElementById('auth-panel-login').classList.remove('active');
-          document.getElementById('auth-panel-verify').classList.remove('active');
+          authHideAllPanels();
           document.getElementById('auth-panel-signup').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Register';
           document.getElementById('authHeadSub').textContent = 'Join the Stitch community';
@@ -1839,10 +1844,7 @@ let simpleGameState = null;
           if (promoSignup) promoSignup.classList.add('active');
         }
         function authShowLogin(){
-          document.getElementById('auth-panel-signup').classList.remove('active');
-          document.getElementById('auth-panel-verify').classList.remove('active');
-          document.getElementById('auth-panel-forgot').classList.remove('active');
-          document.getElementById('auth-panel-newpass').classList.remove('active');
+          authHideAllPanels();
           document.getElementById('auth-panel-login').classList.add('active');
           authLoginResetToEmailStep();
           document.getElementById('authHeadTitle').textContent = 'Log In';
@@ -1861,8 +1863,7 @@ let simpleGameState = null;
         function authShowVerify(email, from){
           authPendingEmail = email;
           authPendingFrom = from;
-          document.getElementById('auth-panel-login').classList.remove('active');
-          document.getElementById('auth-panel-signup').classList.remove('active');
+          authHideAllPanels();
           document.getElementById('auth-panel-verify').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Verify your email';
           document.getElementById('authHeadSub').textContent = 'Enter the code we sent to ' + email;
@@ -2414,10 +2415,7 @@ let simpleGameState = null;
         }
         // ---- Forgot/reset password flow ----
         function authShowForgotPassword(){
-          document.getElementById('auth-panel-login').classList.remove('active');
-          document.getElementById('auth-panel-signup').classList.remove('active');
-          document.getElementById('auth-panel-verify').classList.remove('active');
-          document.getElementById('auth-panel-newpass').classList.remove('active');
+          authHideAllPanels();
           document.getElementById('auth-panel-forgot').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Reset password';
           document.getElementById('authHeadSub').textContent = "We'll email you a reset link";
@@ -2448,7 +2446,7 @@ let simpleGameState = null;
           if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
           try {
             const { error } = await sb.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.origin + window.location.pathname + '?type=recovery'
+              redirectTo: window.location.origin + window.location.pathname
             });
             if (error) {
               console.error('Reset password error:', error);
@@ -2467,15 +2465,11 @@ let simpleGameState = null;
           }
         }
         function authShowNewPassword(){
-          document.getElementById('auth-panel-login').classList.remove('active');
-          document.getElementById('auth-panel-signup').classList.remove('active');
-          document.getElementById('auth-panel-verify').classList.remove('active');
-          document.getElementById('auth-panel-forgot').classList.remove('active');
+          authHideAllPanels();
           document.getElementById('auth-panel-newpass').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Set a new password';
           document.getElementById('authHeadSub').textContent = 'Almost done';
           document.getElementById('authBackBtn').style.display = 'none';
-          document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           const gate = document.getElementById('auth-gate');
           if (gate) gate.classList.remove('auth-hidden');
@@ -2636,15 +2630,10 @@ let simpleGameState = null;
         window.onload = async function(){
           const isRecoveryHash = /type=recovery/.test(window.location.hash || '');
           const params = new URLSearchParams(window.location.search || '');
-          // The reset-password link always points back here with our own
-          // ?type=recovery marker baked into the redirectTo we send Supabase
-          // (see authSubmitForgotPassword), so this check no longer depends
-          // on Supabase's flow (hash tokens vs a bare ?code=) matching a
-          // particular shape -- tapping the email link always lands here.
-          // (Not matching on a bare ?code= alone: Google sign-in also
-          // returns through this same page with its own ?code=.)
-          const isRecoveryQuery = params.get('type') === 'recovery';
+          const isRecoveryQuery = params.get('type') === 'recovery' || (params.has('code') && /type=recovery/.test(window.location.search || ''));
           if (isRecoveryHash || isRecoveryQuery) {
+            const landing = document.getElementById('landing-page');
+            if (landing) landing.classList.add('landing-hidden');
             const sb = getSupabaseClient();
             const code = params.get('code');
             if (sb && code) {
