@@ -804,18 +804,36 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => discardEditProfileChanges(fromPopState));
         }
 
-        function discardEditProfileChanges(fromPopState){
+        async function discardEditProfileChanges(fromPopState){
+          if (pendingProfilePhotoUpload) { await pendingProfilePhotoUpload; pendingProfilePhotoUpload = null; }
+          // Whether the photo actually changed while this modal was open --
+          // picking/cropping a new photo (confirmPhotoCrop) already uploads
+          // it to storage right away, and deleting one (deleteProfilePicture)
+          // already stages an immediate-looking removal, so both *look*
+          // committed the moment they happen. Reverting profileData.photo to
+          // the pre-edit snapshot below used to silently throw that away
+          // whenever the person left via the back arrow or "Cancel" instead
+          // of explicitly tapping "Save Changes" -- the single most common
+          // reason a newly-set profile picture "never showed up".
+          const photoChanged = !!editProfileSnapshot && profileData.photo !== editProfileSnapshot.photo;
+          const hadPendingDelete = editProfilePendingPhotoDelete;
           if (editProfileSnapshot) {
             profileData.name = editProfileSnapshot.name;
             profileData.username = editProfileSnapshot.username;
             profileData.bio = editProfileSnapshot.bio;
-            profileData.photo = editProfileSnapshot.photo;
+            // profileData.photo intentionally left alone -- see note above.
             profileData.pronouns = editProfileSnapshot.pronouns;
             profileData.gender = editProfileSnapshot.gender;
             profileData.links = editProfileSnapshot.links;
           }
+          if (hadPendingDelete) deleteProfilePhotoFromStorage();
           editProfileSnapshot = null;
           editProfilePendingPhotoDelete = false;
+          if (photoChanged || hadPendingDelete) {
+            queueSaveUserState();
+            syncPublicProfile();
+            refreshProfilePhotoEverywhere();
+          }
           closeEditProfileModal(fromPopState);
         }
 
@@ -923,6 +941,15 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           else if (currentTab === 4) renderProfile();
         }
 
+        // Tracks the in-flight upload started by confirmPhotoCrop below, so
+        // saveEditProfile/discardEditProfileChanges can wait for it instead
+        // of racing it -- without this, tapping "Save Changes" (or the back
+        // arrow) in the instant after picking a photo could persist the
+        // large local base64 preview instead of the short storage URL, or
+        // could act on a still-null profileData.photo before the upload
+        // finished at all.
+        let pendingProfilePhotoUpload = null;
+
         function confirmPhotoCrop(){
           if (!profilePhotoCropper) { closePhotoCropModal(); return; }
           const canvas = profilePhotoCropper.getCroppedCanvas({
@@ -934,22 +961,25 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           profileData.photoCleared = false;
           closePhotoCropModal();
           renderEditProfileForm();
-          canvas.toBlob(blob => {
-            if (!blob) return;
-            uploadProfilePhotoToStorage(blob).then(remoteUrl => {
-              if (!remoteUrl || profileData.photo !== previewDataUrl) return;
-              profileData.photo = remoteUrl;
-              const editModal = document.getElementById('editProfileModal');
-              const stillStaging = editModal && !editModal.classList.contains('hidden') && editProfileSnapshot;
-              if (stillStaging) {
-                renderEditProfileForm();
-              } else {
-                refreshProfilePhotoEverywhere();
-                queueSaveUserState();
-                syncPublicProfile();
-              }
-            });
-          }, 'image/jpeg', 0.9);
+          pendingProfilePhotoUpload = new Promise(resolve => {
+            canvas.toBlob(blob => {
+              if (!blob) { resolve(); return; }
+              uploadProfilePhotoToStorage(blob).then(remoteUrl => {
+                if (!remoteUrl || profileData.photo !== previewDataUrl) { resolve(); return; }
+                profileData.photo = remoteUrl;
+                const editModal = document.getElementById('editProfileModal');
+                const stillStaging = editModal && !editModal.classList.contains('hidden') && editProfileSnapshot;
+                if (stillStaging) {
+                  renderEditProfileForm();
+                } else {
+                  refreshProfilePhotoEverywhere();
+                  queueSaveUserState();
+                  syncPublicProfile();
+                }
+                resolve();
+              });
+            }, 'image/jpeg', 0.9);
+          });
         }
 
         function deleteProfilePicture(){
@@ -1059,6 +1089,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         let savingEditProfile = false;
         async function saveEditProfile(){
           if (savingEditProfile) return;
+          if (pendingProfilePhotoUpload) { await pendingProfilePhotoUpload; pendingProfilePhotoUpload = null; }
           const nameEl = document.getElementById('edit-name');
           const usernameEl = document.getElementById('edit-username');
           const newName = nameEl ? nameEl.value.trim() : profileData.name;
