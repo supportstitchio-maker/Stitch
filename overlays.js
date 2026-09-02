@@ -53,7 +53,6 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         let noticeBoardMenuOpen = false;
         let joinClassMenuOpen = false;
         let createClassMenuOpen = false;
-        let classDetailMenuOpen = false;
 
         function toggleGamificationMenu(){
           gamificationMenuOpen = !gamificationMenuOpen;
