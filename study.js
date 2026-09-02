@@ -51,7 +51,7 @@ let studyFabMenuOpen = false;
         function renderStudy() {
           const hasClasses = myClasses.length > 0;
           document.getElementById('screen').innerHTML = `
-            <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
+            <div class="px-5" style="padding-top:var(--top-safe-pad);padding-bottom:50px;">
               ${(classroomAreaTab === 'courses' || (classroomAreaTab === 'classes' && (studySub === 'resources' || studySub === 'exams'))) ? `
               <div class="flex items-center justify-between mb-4">
                 <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Classroom</span></button>
