@@ -214,7 +214,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const appShellForCheck = document.getElementById('app-shell');
           if (appShellForCheck && appShellForCheck.classList.contains('messaging-split')) return;
           rightPanelMode = mode;
-          if (mode === 'profile' || mode === 'discover') { discoverPeopleLoaded = false; loadDiscoverPeople(); }
+          if (mode === 'profile' || mode === 'discover') { if (!discoverPeopleLoaded) loadDiscoverPeople(); }
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) appShellEl.classList.add('right-panel-open');
           if (syncNav !== false) {
