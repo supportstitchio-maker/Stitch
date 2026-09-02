@@ -478,7 +478,24 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           if (classroomNavEl) classroomNavEl.style.display = isClassroomTab ? '' : 'none';
           if (overlayHistoryPushed) {
             overlayHistoryPushed = false;
-            if (!fromPopState) history.back();
+            if (!fromPopState) {
+              // popModalBackHandler (above) already sets this flag before its
+              // own history.back() so the resulting async popstate event
+              // doesn't get treated as a real back-press. closeOverlay() was
+              // missing the same guard: history.back() here fires its
+              // popstate asynchronously, so any code that calls closeOverlay()
+              // and then immediately opens a *different* overlay (e.g.
+              // messageViewedProfile() closing the person-profile overlay and
+              // opening the conversation overlay right after) would have that
+              // stray popstate arrive after the new overlay's own
+              // history.pushState -- and since the overlay panel is visible
+              // again by then, the popstate handler read that as "user
+              // pressed back" and immediately closed the overlay that had
+              // just been opened, bouncing the person back to whatever was
+              // underneath (e.g. the Home feed) instead of the chat.
+              suppressNextPopstate = true;
+              history.back();
+            }
           }
           if (currentTab === 2) { renderStudy(); openRightPanel('notebook'); }
           if (currentTab === 0 && typeof setupFeedVideoAutoplay === 'function') {
