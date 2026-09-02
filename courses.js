@@ -1295,11 +1295,17 @@ try {
             let prompt = text || (images.length > 1 ? 'Take a look at these images and tell me what you notice, or help with what is shown.' : 'Take a look at this image and tell me what you notice, or help with what is shown.');
             if (usingPastImage) prompt += '\n\n(Re-attaching the image the student sent earlier in this chat so you can look at it again.)';
             const reply = await callClaude(system, prompt, 'chat', imagePayload);
-            return { text: ackLine + (reply || fallbackAIResponse(text)) };
+            if (!reply) {
+              window.reportError(new Error('callClaude returned an empty reply'), { call: 'getAIResponse', task: 'chat' });
+              return { text: ackLine + "(debug: the AI service returned an empty response instead of an error, check the Supabase Edge Function logs) " + fallbackAIResponse(text) };
+            }
+            return { text: ackLine + reply };
           } catch (err) {
             const msg = (err && err.message) || '';
             if (msg.startsWith('Too many AI requests')) return { text: ackLine + msg };
-            return { text: ackLine + fallbackAIResponse(text) };
+            // TEMP DEBUG: surface the real error instead of the generic "no-API mode" fallback,
+            // so we can see exactly why callClaude is failing. Revert this once the real cause is found.
+            return { text: ackLine + "(debug) AI request failed: " + (msg || 'unknown error') };
           }
         }
 
