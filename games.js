@@ -1973,6 +1973,15 @@ let simpleGameState = null;
 
           essentialLoads.then(() => {
             if (typeof currentTab !== 'undefined' && currentTab === 0 && typeof renderFeed === 'function') renderFeed();
+            // The name/username/bio/photo shown on the Profile tab come from
+            // profileData, which is only filled in once ensureUserStateLoaded
+            // (part of essentialLoads) resolves -- on a slow connection the
+            // 2s boot budget below can expire and renderApp() paint the
+            // Profile tab from the still-empty defaults first. Feed already
+            // re-renders itself once its data lands (the line above); Profile
+            // needs the same so it doesn't keep showing a blank name/bio and
+            // default avatar after the real data has actually arrived.
+            if (typeof currentTab !== 'undefined' && currentTab === 4 && typeof patchProfileHeaderInPlace === 'function') patchProfileHeaderInPlace();
           });
 
           await renderApp();
@@ -1983,6 +1992,7 @@ let simpleGameState = null;
           if (result === BOOT_TIMED_OUT) {
             withBootBudget(essentialLoads, 15000).then(() => {
               if (typeof currentTab !== 'undefined' && currentTab === 0 && typeof renderFeed === 'function') renderFeed();
+              if (typeof currentTab !== 'undefined' && currentTab === 4 && typeof patchProfileHeaderInPlace === 'function') patchProfileHeaderInPlace();
               if (typeof updateNavProfileIcon === 'function') updateNavProfileIcon();
               if (bootSkeleton) fadeOutAppBootSkeleton(bootSkeleton);
             });
