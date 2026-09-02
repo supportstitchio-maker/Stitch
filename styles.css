@@ -112,6 +112,7 @@
           transition:box-shadow .2s ease, transform .2s ease;
         }
         .nav-bar-floating.nav-bare{box-shadow:none !important;border-color:transparent !important;}
+        #bottom-nav, #classroom-nav{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 50px) !important;}
         @media (hover:hover){
           .nav-bar-floating:hover{box-shadow:0 14px 36px rgba(10,37,64,0.18), 0 4px 10px rgba(10,37,64,0.08) !important;}
           .nav-bar-floating button:hover{transform:translateY(-2px);}
