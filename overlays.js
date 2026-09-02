@@ -600,15 +600,29 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         }
 
         // ---- Join/Create class forms ----
-        function classDetailHeaderHTML(title){
+        function classDetailExitHandler(){
+          openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.');
+        }
+
+        function toggleClassDetailMenu(){
+          classDetailMenuOpen = !classDetailMenuOpen;
+          const ov = document.getElementById('overlay');
+          if (ov) ov.innerHTML = classDetailHTML();
+        }
+
+        function classDetailMenuDropdownHTML(cls){
+          const showCancel = cls.isCourse && cls.role !== 'teacher';
+          const showDelete = cls.role === 'teacher';
           return `
-            <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
-              <div class="flex items-center justify-between">
-                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" class="desktop-leave-classroom-btn w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}<span class="desktop-leave-classroom-label grad-text">Leave Classroom</span></button>
-                <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${escapeHtml(title)}</h1>
-                <button onclick="openOverlayFrom('classDetail', 'classNotifications')" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('bell','w-5 h-5'))}</button>
-              </div>
+            <div class="absolute bg-white rounded-2xl border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;width:12rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
+              <button onclick="classDetailMenuOpen=false; openOverlayFrom('classDetail', 'classNotifications')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('bell','w-4 h-4')} Notifications</button>
+              ${showCancel ? `<button onclick="classDetailMenuOpen=false; confirmCancelCourseEnrollment()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Cancel Enrollment</button>` : ''}
+              ${showDelete ? `<button onclick="classDetailMenuOpen=false; confirmDeleteCurrentClass()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete class</button>` : ''}
             </div>`;
+        }
+
+        function classDetailHeaderHTML(cls){
+          return menuOverlayHeader(escapeHtml(cls.name), classDetailMenuOpen, 'toggleClassDetailMenu', classDetailMenuDropdownHTML(cls), { backFn: 'classDetailExitHandler' });
         }
 
         function placeholderDropdownMenu(){
@@ -700,7 +714,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <button type="button" onclick="openTagPeoplePicker()" class="text-xs font-semibold flex items-center gap-1.5 mb-2" style="color:${ROYAL}">${Icon('users','w-4 h-4')} Tag people</button>
               <div id="compose-tagged-chips" class="flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}">${composeTaggedChipsHTML()}</div>
             </div>
-            <div id="create-post-footer" class="p-4 border-t flex-shrink-0">
+            <div id="create-post-footer" class="p-4 border-t flex-shrink-0" style="padding-bottom:50px;">
               <button onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Post</button>
             </div>`;
         }
