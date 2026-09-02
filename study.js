@@ -995,9 +995,8 @@ let studyFabMenuOpen = false;
               <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
-                <div class="text-xs text-gray-500">${r.flashcards.length} flashcards · ${r.questions.length} practice questions${r.usedFallback ? ' · backup screening' : ''}</div>
+                <div class="text-xs text-gray-500">${r.flashcards.length} flashcards · ${r.questions.length} practice questions</div>
               </div>
-              ${r.usedFallback ? `<button onclick="event.stopPropagation();retryAIScreening('${r.id}')" ${r.retrying ? 'disabled' : ''} class="text-xs font-bold flex-shrink-0 px-2.5 py-1.5 rounded-full" style="color:${NAVY};background:rgba(30,144,255,0.1);">${r.retrying ? 'Retrying…' : 'Upgrade'}</button>` : ''}
               <button onclick="event.stopPropagation();removeUploadedResource('${r.id}')" class="text-gray-300 flex-shrink-0 px-1">${Icon('close','w-4 h-4')}</button>
             </div>`;
         }
