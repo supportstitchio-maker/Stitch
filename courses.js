@@ -3318,7 +3318,7 @@ try {
           const showAdminDashboard = isCurrentUserAdmin() && cls.role === 'teacher';
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
-              ${classDetailHeaderHTML(cls.name)}
+              ${classDetailHeaderHTML(cls)}
               <div class="flex-1 overflow-y-auto no-scrollbar px-5" style="padding-bottom:50px;">
                 <div class="rounded-3xl p-5 text-white relative overflow-hidden mb-4" style="${cls.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}min-height:104px;">
                   ${cls.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${classCardMotifs[classCardIndex(cls) % classCardMotifs.length]}</svg>`}
@@ -3328,14 +3328,6 @@ try {
                     <span class="tracking-widest">Code: ${cls.code}</span>${Icon('copy','w-3.5 h-3.5')}
                   </button>` : ''}
                 </div>
-                ${(cls.isCourse && cls.role !== 'teacher') ? `
-                <button onclick="confirmCancelCourseEnrollment()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 mb-4 font-semibold text-xs text-red-500 border border-red-100 bg-red-50">
-                  ${Icon('trash','w-3.5 h-3.5')} Cancel Enrollment
-                </button>` : ''}
-                ${cls.role === 'teacher' ? `
-                <button onclick="confirmDeleteCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-2.5 mb-4 font-semibold text-xs text-red-500 border border-red-100 bg-red-50">
-                  ${Icon('trash','w-3.5 h-3.5')} Delete class
-                </button>` : ''}
                 ${cls.role === 'teacher' ? lectureActionPillsHTML() : ''}
                 <div class="flex gap-1 mb-3 bg-gray-100 rounded-2xl p-1">
                   ${showAdminDashboard ? classDetailTabBtn('dashboard','Dashboard') : ''}
