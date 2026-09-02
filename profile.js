@@ -101,6 +101,20 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           linksEl.innerHTML = profileLinksHTML(profileData.links);
           postsCountEl.textContent = myPostsCount();
           networkCountEl.textContent = networkConnectionCount();
+          // The header fields above are patched individually, but the posts
+          // grid below them was never refreshed here -- it kept whatever
+          // thumbnails were last rendered into #profile-tab-content. That's
+          // harmless when nothing's changed, but after signing out and into
+          // a different account (a cached profile DOM node just gets
+          // reattached, see switchTab in core.js) it meant the previous
+          // account's post thumbnails stayed on screen even though the
+          // posts *count* above correctly showed the new account's total.
+          // Re-rendering the tab content here keeps the grid in sync with
+          // whichever account's feedPosts are currently loaded.
+          const tabsEl = document.getElementById('profile-tabs');
+          const tabContentEl = document.getElementById('profile-tab-content');
+          if (tabsEl) tabsEl.innerHTML = profileTabsHTML();
+          if (tabContentEl) tabContentEl.innerHTML = profileTabContent();
         }
 
         function profilePhotoButtonHTML(){
