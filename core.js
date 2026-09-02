@@ -789,8 +789,8 @@
           if (dcNavBtn) dcNavBtn.innerHTML = navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false);
         }
 
-        function unreadNotifCount(){ return notifData.filter(n => !n.read).length; }
-        function unreadClassroomNotifCount(){ return notifData.filter(n => !n.read && n.source === 'classroom').length; }
+        function unreadNotifCount(){ return (typeof notifData !== 'undefined' ? notifData : []).filter(n => !n.read).length; }
+        function unreadClassroomNotifCount(){ return (typeof notifData !== 'undefined' ? notifData : []).filter(n => !n.read && n.source === 'classroom').length; }
         function unreadMessageCount(){
           return (primaryConvos.filter(c => c.unread && !c.read).length)
                + (typeof collabConvos !== 'undefined' ? collabConvos.filter(c => c.unread && !c.read).length : 0);
