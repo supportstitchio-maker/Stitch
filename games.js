@@ -1914,6 +1914,10 @@ let simpleGameState = null;
           if (gate) gate.classList.add('auth-hidden');
           showAppBootSkeleton();
           resetCachedAuthUser();
+          // Belt-and-suspenders alongside the same call in authSignOut():
+          // make sure no stale cached feed/profile DOM from a previous
+          // session can survive into this login either.
+          if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           // Always land on Home after logging in. renderApp() below only
           // builds/switches tabs on its very first call ever (see
           // appShellMounted) -- on any later login (e.g. sign out, then log
@@ -2206,6 +2210,13 @@ let simpleGameState = null;
               if (sb) { sb.auth.signOut().catch(() => {}); }
             })();
             resetCachedAuthUser();
+            // A cached-but-detached Home feed or Profile screen node (see
+            // switchTab in core.js) still has this account's posts baked
+            // into its DOM. Without clearing it here, that node could later
+            // get reattached under whichever account logs in next -- which
+            // is what made a previous account's posts intermittently show
+            // up after switching accounts on the same device.
+            if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
             if (typeof careerStartProfile !== 'undefined') careerStartProfile = null;
             // Show the login screen (full-screen, on top of everything) BEFORE
             // closing the settings overlay -- otherwise closing the overlay
