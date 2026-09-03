@@ -1306,6 +1306,53 @@
           display:none;
         }
         #auth-gate .auth-error.show{display:block;}
+        /* Live password-requirements checklist (signup). Each item starts
+           neutral/gray and flips to a green check as its rule is met --
+           see updateSignupPasswordChecklist() in games.js. */
+        #auth-gate .auth-pass-checklist{
+          display:flex;
+          flex-wrap:wrap;
+          gap:6px 14px;
+          margin:-6px 0 14px;
+        }
+        #auth-gate .auth-pass-req{
+          display:flex;
+          align-items:center;
+          gap:6px;
+          font-size:11.5px;
+          font-weight:600;
+          color:#9aa2b3;
+          transition:color .15s ease;
+        }
+        #auth-gate .auth-pass-req-icon{
+          width:15px;
+          height:15px;
+          flex-shrink:0;
+          border-radius:50%;
+          border:1.5px solid #d3d8e2;
+          background:#fff;
+          position:relative;
+          transition:background .15s ease, border-color .15s ease;
+        }
+        #auth-gate .auth-pass-req-icon::after{
+          content:"";
+          position:absolute;
+          left:4px;
+          top:1px;
+          width:4px;
+          height:8px;
+          border:solid #fff;
+          border-width:0 2px 2px 0;
+          transform:rotate(45deg);
+          opacity:0;
+          transition:opacity .15s ease;
+        }
+        #auth-gate .auth-pass-req.met{color:#16a34a;}
+        #auth-gate .auth-pass-req.met .auth-pass-req-icon{
+          background:#16a34a;
+          border-color:#16a34a;
+        }
+        #auth-gate .auth-pass-req.met .auth-pass-req-icon::after{opacity:1;}
         #auth-gate .auth-info-banner{
           background:rgba(30,144,255,0.08);
           border:1px solid rgba(30,144,255,0.18);
