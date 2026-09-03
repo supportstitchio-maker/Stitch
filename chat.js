@@ -2618,7 +2618,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function closeConversationOverlay(fromPopState){
           const openedOutside = convoOpenedOutsideMessaging;
           convoOpenedOutsideMessaging = false;
-          if (openedOutside && typeof switchTab === 'function') { switchTab(3, fromPopState); return; }
+          // Always land on the Messaging tab for a chat opened from outside
+          // Messaging (e.g. tapping "Message" on someone's Discover profile).
+          // Passing fromPopState through here used to let switchTab's inner
+          // closeOverlay() fall back to history.back() when this was a plain
+          // tap (fromPopState falsy) -- on a stack with nothing pushed behind
+          // the current overlay entry, that back() could walk the person
+          // straight out of the app instead of just switching tabs. Forcing
+          // true skips that history navigation entirely; switchTab still does
+          // everything else (currentTab, nav highlighting, closing the
+          // overlay) regardless of how it was reached.
+          if (openedOutside && typeof switchTab === 'function') { switchTab(3, true); return; }
           closeOverlay(fromPopState);
         }
 
