@@ -1059,7 +1059,18 @@
           justify-content:flex-start;
         }
         #auth-gate.auth-compact-mode .auth-scroll-inner{
-          justify-content:center;
+          /* "safe center" keeps short compact-mode forms (forgot password,
+             verify code) vertically centered like before, but falls back to
+             top-alignment once content is taller than the viewport --
+             plain "center" would let a tall form (e.g. new-password with
+             its checklist) overflow equally on both sides, making its top
+             portion unreachable even with scrolling enabled below. */
+          justify-content:safe center;
+        }
+        #auth-gate.auth-compact-mode{
+          overflow-y:auto;
+          padding-top:calc(env(safe-area-inset-top, 0px) + 64px);
+          padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 48px);
         }
         #auth-gate.auth-signup-mode{
           overflow-y:auto;
