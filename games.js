@@ -2637,9 +2637,16 @@ let simpleGameState = null;
           setTimeout(() => { if (el.parentNode) el.remove(); }, 600);
         }
         // Password-reset links land the person straight on the "Set a new
-        // password" screen -- the splash's welcome animation doesn't belong
-        // there, so it's skipped (removed instantly, no transition) rather
-        // than just shortened like a normal deep link.
+        // password" screen -- the splash's welcome animation and the
+        // marketing landing page don't belong there. Both used to only get
+        // hidden inside window.onload, which waits for every resource on
+        // the page to finish loading -- on a slow connection that left a
+        // visible flash of the splash and/or the landing page (or the
+        // default Log In panel) before the switch to the new-password
+        // screen happened. Detecting the recovery link and making the
+        // switch here instead -- synchronously, as soon as this script runs
+        // -- means it happens as soon as the DOM exists, well before
+        // window.onload ever fires.
         function isPasswordRecoveryLink(){
           const hash = window.location.hash || '';
           const search = window.location.search || '';
@@ -2647,26 +2654,28 @@ let simpleGameState = null;
           return /type=recovery/.test(hash) || params.get('type') === 'recovery' || (params.has('code') && /type=recovery/.test(search));
         }
         const openedViaLink = !!(window.location.search || window.location.hash);
-        if (isPasswordRecoveryLink()) {
+        const isRecoveryLinkOnBoot = isPasswordRecoveryLink();
+        if (isRecoveryLinkOnBoot) {
           const splashEl = document.getElementById('app-splash');
           if (splashEl) splashEl.remove();
+          const landingEl = document.getElementById('landing-page');
+          if (landingEl) landingEl.classList.add('landing-hidden');
+          authShowNewPassword();
         } else {
           setTimeout(dismissSplash, openedViaLink ? 1000 : 5550);
         }
 
         window.onload = async function(){
-          const isRecoveryHash = /type=recovery/.test(window.location.hash || '');
           const params = new URLSearchParams(window.location.search || '');
-          const isRecoveryQuery = params.get('type') === 'recovery' || (params.has('code') && /type=recovery/.test(window.location.search || ''));
-          if (isRecoveryHash || isRecoveryQuery) {
-            const landing = document.getElementById('landing-page');
-            if (landing) landing.classList.add('landing-hidden');
+          if (isRecoveryLinkOnBoot) {
+            // UI already switched to the new-password screen synchronously
+            // above -- this just handles the (async) code exchange with
+            // Supabase now that its client is available.
             const sb = getSupabaseClient();
             const code = params.get('code');
             if (sb && code) {
               try { await sb.auth.exchangeCodeForSession(code); } catch (e) { console.error('Recovery code exchange failed:', e); }
             }
-            authShowNewPassword();
           } else {
             try { await restoreSessionIfSignedIn(); } catch(e) { console.error(e); }
           }
