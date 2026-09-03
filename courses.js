@@ -3293,7 +3293,12 @@ try {
 
         function classDetailTabBtn(key, label){
           const active = classDetailTab === key;
-          return `<button onclick="classDetailSwitchTab('${key}')" class="flex-1 py-2.5 text-sm font-bold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.5);` : 'background:#f3f4f6;'}">${label}</button>`;
+          // min-w-0 + truncate: without these, a button's intrinsic content
+          // width (min-width:auto is the flexbox default) can force the row
+          // wider than its container once all four tabs are present, which
+          // was pushing "People" past the right margin instead of shrinking
+          // it to fit alongside the others.
+          return `<button onclick="classDetailSwitchTab('${key}')" class="flex-1 min-w-0 truncate py-2.5 text-sm font-bold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.5);` : 'background:#f3f4f6;'}">${label}</button>`;
         }
 
         function confirmDeleteCurrentClass(){
@@ -4288,8 +4293,8 @@ try {
           }).join('');
           const orderedTiles = iAmTeacher ? (localTile + otherTiles) : (otherTiles + localTile);
           const gridClass = isDesktopLecture
-            ? 'grid gap-3 p-4 overflow-y-auto flex-1 content-start justify-center'
-            : 'grid grid-cols-2 gap-2.5 p-3 overflow-y-auto flex-1 content-start';
+            ? 'grid gap-3 p-4 overflow-hidden flex-1 content-start justify-center'
+            : 'grid grid-cols-2 gap-2.5 p-3 overflow-hidden flex-1 content-start';
           const gridStyle = isDesktopLecture ? 'grid-template-columns:repeat(auto-fill,minmax(150px,190px));' : '';
           return `
             ${liveLectureState.mediaError ? `<div class="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">${escapeHtml(liveLectureState.mediaError)}</div>` : ''}
@@ -4927,7 +4932,7 @@ try {
                 <div id="lecture-resources-panel-region" class="absolute inset-0" style="overflow:hidden;pointer-events:none;${isDesktopLecture ? 'display:none;' : ''}">${isDesktopLecture ? '' : lectureResourcesPanelHTML(resourceCount)}</div>
               </div>
               ${!isWhiteboard ? `
-              <div class="flex-shrink-0 pt-3 flex justify-center relative" style="padding-bottom:15px;">
+              <div class="flex-shrink-0 pt-3 flex justify-center relative" style="padding-bottom:20px;">
                 <div class="flex items-center gap-3 rounded-full py-2.5 px-3 shadow-sm overflow-x-auto" style="background:${controlBarBg};">
                   <button onclick="toggleLectureControl('camOff')" id="lecture-cam-btn" title="${liveLectureState.camOff ? 'Turn camera on' : 'Turn camera off'}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.camOff ? activeControlClass : inactiveControlClass}">${Icon(liveLectureState.camOff ? 'cameraOff' : 'video','w-5 h-5')}</button>
                   <button onclick="toggleLectureControl('muted')" id="lecture-mute-btn" title="${liveLectureState.muted ? 'Unmute' : 'Mute'}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.muted ? activeControlClass : inactiveControlClass}">${Icon(liveLectureState.muted ? 'micOff' : 'mic','w-5 h-5')}</button>
@@ -4957,11 +4962,47 @@ try {
         }
 
         function lectureCommentSheetHTML(){
+          // Fixed (not absolute) so its position is computed against the
+          // real viewport rather than the lecture screen's inner wrapper --
+          // that's what lets syncLectureCommentKeyboardInset() below sit it
+          // directly on top of the on-screen keyboard instead of floating
+          // wherever the 94px offset happened to land relative to the
+          // ancestor container.
           return `
-            <div class="absolute z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:94px;left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;">
-              <input id="lecture-comment-input" type="text" placeholder="Type a comment..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLectureComment();}">
+            <div id="lecture-comment-sheet" class="fixed z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:94px;left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
+              <input id="lecture-comment-input" type="text" placeholder="Type a comment..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLectureComment();}" onfocus="handleLectureCommentFocus()" onblur="handleLectureCommentBlur()">
               <button onclick="sendLectureComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
             </div>`;
+        }
+
+        let lectureCommentInputFocused = false;
+        function syncLectureCommentKeyboardInset(){
+          const sheet = document.getElementById('lecture-comment-sheet');
+          if (!sheet) return;
+          if (!lectureCommentInputFocused) { sheet.style.bottom = '94px'; return; }
+          const vv = window.visualViewport;
+          const keyboardInset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+          sheet.style.bottom = (keyboardInset + 10) + 'px';
+        }
+        let lectureCommentInsetRAF = null;
+        function scheduleLectureCommentKeyboardInsetSync(){
+          if (lectureCommentInsetRAF !== null) return;
+          lectureCommentInsetRAF = requestAnimationFrame(() => {
+            lectureCommentInsetRAF = null;
+            syncLectureCommentKeyboardInset();
+          });
+        }
+        function handleLectureCommentFocus(){
+          lectureCommentInputFocused = true;
+          scheduleLectureCommentKeyboardInsetSync();
+        }
+        function handleLectureCommentBlur(){
+          lectureCommentInputFocused = false;
+          scheduleLectureCommentKeyboardInsetSync();
+        }
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', scheduleLectureCommentKeyboardInsetSync);
+          window.visualViewport.addEventListener('scroll', scheduleLectureCommentKeyboardInsetSync);
         }
 
         function lectureMoreSheetHTML(view){
