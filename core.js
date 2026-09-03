@@ -1545,6 +1545,11 @@
         function invalidateFeedAndProfileCaches(){
           cachedHomeFeedNode = null;
           cachedProfileScreenNode = null;
+          // Also forget the fingerprint of whatever was last painted into
+          // the profile posts grid, otherwise a coincidentally-matching key
+          // (e.g. both accounts happen to have zero posts) could make
+          // patchProfileHeaderInPlace() think a rebuild isn't needed.
+          if (typeof lastRenderedProfileGridKey !== 'undefined') lastRenderedProfileGridKey = null;
         }
 
         // ---- Tab switching ----
