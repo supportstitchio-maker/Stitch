@@ -1827,6 +1827,60 @@ let simpleGameState = null;
             if (el) el.classList.remove('active');
           });
         }
+        // Allowed symbol set matches the Supabase Auth project's password
+        // policy (Auth > Providers > Email > Password Requirements) --
+        // update this alongside that setting if it ever changes.
+        const AUTH_PASSWORD_SYMBOL_RE = /[!@#$%^&*()_+\-=\[\]{};':"\\|<>?,./`~]/;
+
+        function passwordChecklistState(passId, cpassId){
+          const pass = (document.getElementById(passId) || {}).value || '';
+          const cpass = (document.getElementById(cpassId) || {}).value || '';
+          return {
+            length: pass.length >= 8,
+            lower: /[a-z]/.test(pass),
+            upper: /[A-Z]/.test(pass),
+            digit: /[0-9]/.test(pass),
+            symbol: AUTH_PASSWORD_SYMBOL_RE.test(pass),
+            match: pass.length > 0 && pass === cpass,
+          };
+        }
+
+        function passwordMeetsRequirements(passId, cpassId){
+          const state = passwordChecklistState(passId, cpassId);
+          return Object.keys(state).every(k => state[k]);
+        }
+
+        // Ticks/unticks each item in a live checklist under a pair of
+        // password fields as the person types, instead of only surfacing
+        // Supabase's full "must contain one of each..." message after a
+        // failed submit. Shared by both the signup form and the "Set a new
+        // password" (reset link) form -- see the oninput handlers on their
+        // password fields in index.html, and the calls when each panel is
+        // first shown, so it always reflects whatever's currently typed.
+        function updatePasswordChecklist(listId, passId, cpassId){
+          const list = document.getElementById(listId);
+          if (!list) return;
+          const state = passwordChecklistState(passId, cpassId);
+          Object.keys(state).forEach(key => {
+            const item = list.querySelector(`[data-req="${key}"]`);
+            if (item) item.classList.toggle('met', state[key]);
+          });
+        }
+
+        function updateSignupPasswordChecklist(){
+          updatePasswordChecklist('auth-su-pass-checklist', 'auth-su-pass', 'auth-su-cpass');
+        }
+        function signupPasswordMeetsRequirements(){
+          return passwordMeetsRequirements('auth-su-pass', 'auth-su-cpass');
+        }
+
+        function updateNewPasswordChecklist(){
+          updatePasswordChecklist('auth-np-pass-checklist', 'auth-np-pass', 'auth-np-cpass');
+        }
+        function newPasswordMeetsRequirements(){
+          return passwordMeetsRequirements('auth-np-pass', 'auth-np-cpass');
+        }
+
         function authShowSignup(){
           authHideAllPanels();
           document.getElementById('auth-panel-signup').classList.add('active');
@@ -1842,6 +1896,7 @@ let simpleGameState = null;
           const promoSignup = document.getElementById('auth-promo-signup');
           if (promoLogin) promoLogin.classList.remove('active');
           if (promoSignup) promoSignup.classList.add('active');
+          updateSignupPasswordChecklist();
         }
         function authShowLogin(){
           authHideAllPanels();
@@ -2329,8 +2384,9 @@ let simpleGameState = null;
             err.classList.add('show');
             return;
           }
-          if (pass.length < 8) {
-            err.textContent = 'Password must be at least 8 characters.';
+          if (!signupPasswordMeetsRequirements()) {
+            updateSignupPasswordChecklist();
+            err.textContent = 'Your password doesn\'t meet the requirements above yet.';
             err.classList.add('show');
             return;
           }
@@ -2485,14 +2541,16 @@ let simpleGameState = null;
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           const gate = document.getElementById('auth-gate');
           if (gate) gate.classList.remove('auth-hidden');
+          updateNewPasswordChecklist();
         }
         async function authSubmitNewPassword(e){
           if (e) e.preventDefault();
           const pass = document.getElementById('auth-np-pass').value;
           const cpass = document.getElementById('auth-np-cpass').value;
           const err = document.getElementById('auth-newpass-error');
-          if (!pass || pass.length < 6 || pass !== cpass) {
-            err.textContent = 'Passwords must match and be at least 6 characters.';
+          if (!newPasswordMeetsRequirements()) {
+            updateNewPasswordChecklist();
+            err.textContent = 'Your password doesn\'t meet the requirements above yet.';
             err.classList.add('show');
             return;
           }
