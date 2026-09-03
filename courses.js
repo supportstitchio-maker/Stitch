@@ -5537,7 +5537,7 @@ try {
                 <div class="font-bold text-gray-700 mb-1">Assign work to your class</div>
                 <div class="text-sm text-gray-400 leading-relaxed">Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork</div>
               </div>
-              <div class="bg-white rounded-3xl px-5 divide-y divide-gray-100 shadow-sm">
+              <div class="bg-white rounded-3xl px-5 divide-y divide-gray-100 shadow-sm" style="padding-top:5px;padding-bottom:5px;">
                 ${classworkCreateMenuOptionRow('doc','Assignment','Students turn in work, you score & remark it', "openNewAssignmentOverlay()")}
                 ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
                 ${classworkCreateMenuOptionRow('help','Question','Post a question for the class to answer', "openNewQuestionOverlay()")}
@@ -5747,17 +5747,12 @@ try {
           return `
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4">
-                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 font-semibold text-lg font-display truncate text-center">${label}</div>
+                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
+                <div class="flex-1 font-semibold text-lg font-display truncate text-center text-[${NAVY}]">${label}</div>
                 <div class="w-8 h-8 flex-shrink-0"></div>
               </div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 pb-24">
-              <div class="flex items-center gap-2.5 mb-5">
-                ${Icon('users','w-5 h-5 text-gray-500 flex-shrink-0')}
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:rgba(30,144,255,0.5);">${cls ? escapeHtml(cls.name) : 'Class'}</span>
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:${NAVY};">All students</span>
-              </div>
               <input type="text" id="classwork-title-input" oninput="const b=document.getElementById('classwork-create-btn'); if(b){const c=this.value.trim().length>0; b.disabled=!c; b.className='font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <textarea id="classwork-instructions-input" placeholder="Instructions (optional)" rows="4" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               ${showScoring ? `
@@ -5895,17 +5890,12 @@ try {
           return `
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4">
-                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 font-semibold text-lg font-display truncate text-center">Quiz</div>
+                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
+                <div class="flex-1 font-semibold text-lg font-display truncate text-center text-[${NAVY}]">Quiz</div>
                 <div class="w-8 h-8 flex-shrink-0"></div>
               </div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 pb-24">
-              <div class="flex items-center gap-2.5 mb-5">
-                ${Icon('users','w-5 h-5 text-gray-500 flex-shrink-0')}
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:rgba(30,144,255,0.5);">${cls ? escapeHtml(cls.name) : 'Class'}</span>
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:${NAVY};">All students</span>
-              </div>
               <input type="text" id="quiz-title-input" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <textarea id="quiz-instructions-input" placeholder="Instructions (optional)" rows="3" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               <div class="grid grid-cols-2 gap-3 mb-6">
@@ -5987,17 +5977,12 @@ try {
           return `
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4">
-                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 font-semibold text-lg font-display truncate text-center">Poll</div>
+                <button onclick="openClassworkCreateMenu()" class="w-8 h-8 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
+                <div class="flex-1 font-semibold text-lg font-display truncate text-center text-[${NAVY}]">Poll</div>
                 <div class="w-8 h-8 flex-shrink-0"></div>
               </div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 pb-24">
-              <div class="flex items-center gap-2.5 mb-5">
-                ${Icon('users','w-5 h-5 text-gray-500 flex-shrink-0')}
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:rgba(30,144,255,0.5);">${cls ? escapeHtml(cls.name) : 'Class'}</span>
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:${NAVY};">All students</span>
-              </div>
               <input type="text" id="poll-title-input" placeholder="Ask a question" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Options</div>
               <div id="poll-options-container">${pollOptionRowHTML(0)}${pollOptionRowHTML(1)}</div>
