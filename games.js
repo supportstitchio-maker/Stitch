@@ -2534,7 +2534,7 @@ let simpleGameState = null;
         function authShowNewPassword(){
           authHideAllPanels();
           document.getElementById('auth-panel-newpass').classList.add('active');
-          document.getElementById('authHeadTitle').textContent = 'Set a new password';
+          document.getElementById('authHeadTitle').textContent = 'Password reset';
           document.getElementById('authHeadSub').textContent = 'Almost done';
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
