@@ -1286,6 +1286,16 @@
 
         function applyBottomNavVisual(nav, ratio){
           const navHeight = nav.offsetHeight || 64;
+          // Re-assert the transition on every call rather than relying on
+          // it having been set once at boot (setupBottomNavScroll). The
+          // classroom nav bar (used inside the Notice Board/AI Class/
+          // gamification overlays) could end up losing this inline style
+          // -- e.g. a hide triggered before the transition was applied, or
+          // any code path that touches nav.style directly -- which made it
+          // snap shut instantly instead of sliding away like the rest of
+          // the app. Setting it here every time guarantees hide and show
+          // always animate the same way, everywhere this nav appears.
+          nav.style.transition = 'transform 0.22s ease-out, margin-bottom 0.22s ease-out, background-color 0.22s ease-out';
           nav.style.transform = `translateY(${ratio * navHeight}px)`;
           nav.style.marginBottom = `-${ratio * navHeight}px`;
           const flatOpacity = Math.max(0, 1 - (ratio / 0.55));
@@ -1294,6 +1304,7 @@
           nav.style.backgroundColor = isDark ? `rgba(22,22,22,${bgOpacity})` : `rgba(255,255,255,${bgOpacity})`;
           nav.style.boxShadow = bgOpacity <= 0 ? 'none' : '';
           nav.querySelectorAll('.nav-flat-item').forEach(item => {
+            item.style.transition = 'opacity 0.22s ease-out';
             item.style.opacity = String(flatOpacity);
           });
         }
