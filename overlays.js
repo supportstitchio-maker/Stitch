@@ -1902,7 +1902,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           if (p.connected) {
             actionHTML = `
               <div class="flex gap-3">
-                <button onclick="removeConnectionWithViewedProfile()" class="flex-1 py-2.5 rounded-2xl font-semibold text-sm bg-red-50 text-red-500">Remove</button>
+                <button onclick="removeConnectionWithViewedProfile()" class="flex-1 py-2.5 rounded-2xl font-semibold text-sm bg-transparent text-gray-500">Remove</button>
                 <button onclick="messageViewedProfile()" class="flex-1 py-2.5 rounded-2xl font-semibold text-sm bg-gray-100" style="color:${NAVY};">Message</button>
               </div>`;
           } else if (p.requestSent) {
