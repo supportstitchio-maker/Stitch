@@ -79,6 +79,27 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             return;
           }
           screenEl.innerHTML = profileScreenHTML();
+          lastRenderedProfileGridKey = profileTabContentKey();
+        }
+
+        // Fingerprint of whatever is currently sitting inside
+        // #profile-tab-content, so patchProfileHeaderInPlace (below) can tell
+        // whether the grid actually needs to be rebuilt. Rebuilding always --
+        // even when nothing changed -- was making every image/video inside it
+        // reload from scratch, which is what showed up as the grid
+        // "blinking" whenever the person switched tabs and came back to
+        // Profile. Comparing against this key lets a no-op tab switch leave
+        // the existing DOM (and its already-loaded media) alone.
+        let lastRenderedProfileGridKey = null;
+
+        function profileTabContentKey(){
+          const items = (profileTab === 'reposts') ? feedPosts.filter(p => p.reposted)
+            : (profileTab === 'saved') ? feedPosts.filter(p => p.saved)
+            : feedPosts.filter(p => p.mine);
+          // Not just IDs: also fold in whether each post still has its
+          // reposted/saved flag and its media, so an unsave/un-repost or an
+          // edit is still picked up even if the ID list is unchanged.
+          return profileTab + '|' + items.map(p => `${p.id}:${p.reposted?1:0}:${p.saved?1:0}`).join(',');
         }
 
         function patchProfileHeaderInPlace(){
@@ -101,20 +122,21 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           linksEl.innerHTML = profileLinksHTML(profileData.links);
           postsCountEl.textContent = myPostsCount();
           networkCountEl.textContent = networkConnectionCount();
-          // The header fields above are patched individually, but the posts
-          // grid below them was never refreshed here -- it kept whatever
-          // thumbnails were last rendered into #profile-tab-content. That's
-          // harmless when nothing's changed, but after signing out and into
-          // a different account (a cached profile DOM node just gets
-          // reattached, see switchTab in core.js) it meant the previous
-          // account's post thumbnails stayed on screen even though the
-          // posts *count* above correctly showed the new account's total.
-          // Re-rendering the tab content here keeps the grid in sync with
-          // whichever account's feedPosts are currently loaded.
           const tabsEl = document.getElementById('profile-tabs');
-          const tabContentEl = document.getElementById('profile-tab-content');
           if (tabsEl) tabsEl.innerHTML = profileTabsHTML();
-          if (tabContentEl) tabContentEl.innerHTML = profileTabContent();
+          // Only rebuild the posts grid when what it should show has
+          // actually changed (different account, different posts, a
+          // save/repost toggle, etc). This is also what keeps a stale grid
+          // from a *previous* account from surviving a sign-out/sign-in --
+          // the key below is derived from the live feedPosts array, which
+          // applyUserState() already refreshes to the new account's data
+          // before this runs, so a mismatch always forces a fresh render.
+          const tabContentEl = document.getElementById('profile-tab-content');
+          const newKey = profileTabContentKey();
+          if (tabContentEl && newKey !== lastRenderedProfileGridKey) {
+            tabContentEl.innerHTML = profileTabContent();
+            lastRenderedProfileGridKey = newKey;
+          }
         }
 
         function profilePhotoButtonHTML(){
@@ -507,7 +529,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const postsCountEl = document.getElementById('profile-posts-count-el');
           if (postsCountEl) postsCountEl.textContent = myPostsCount();
           const content = document.getElementById('profile-tab-content');
-          if (content && typeof profileTabContent === 'function') content.innerHTML = profileTabContent();
+          if (content && typeof profileTabContent === 'function') {
+            content.innerHTML = profileTabContent();
+            lastRenderedProfileGridKey = profileTabContentKey();
+          }
         }
 
         function profileTabSwitch(tab){
@@ -516,7 +541,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const bar = document.getElementById('profile-tabs');
           if (bar) bar.innerHTML = profileTabsHTML();
           const content = document.getElementById('profile-tab-content');
-          if (content) content.innerHTML = profileTabContent();
+          if (content) {
+            content.innerHTML = profileTabContent();
+            lastRenderedProfileGridKey = profileTabContentKey();
+          }
         }
 
         // ---- Bio/field editing + profile links ----
