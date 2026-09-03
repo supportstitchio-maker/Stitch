@@ -5531,12 +5531,22 @@ try {
               </div>
             </div>`;
           };
-          return `
-            ${isTeacher ? `
-            <div class="flex justify-end mb-4">
-              <button onclick="openClassworkCreateMenu()" class="flex items-center gap-2 rounded-full py-2.5 px-4 font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('plus','w-4 h-4')} Create</button>
-            </div>` : ''}
+          if (isTeacher && !cls.classwork.length) {
+            return `
+              <div class="text-center mb-4">
+                <div class="font-bold text-gray-700 mb-1">Assign work to your class</div>
+                <div class="text-sm text-gray-400 leading-relaxed">Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork</div>
+              </div>
+              <div class="bg-white rounded-3xl px-5 divide-y divide-gray-100 shadow-sm">
+                ${classworkCreateMenuOptionRow('doc','Assignment','Students turn in work, you score & remark it', "openNewAssignmentOverlay()")}
+                ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
+                ${classworkCreateMenuOptionRow('help','Question','Post a question for the class to answer', "openNewQuestionOverlay()")}
+                ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the class', "openNewPollOverlay()")}
+                ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()")}
+              </div>`;
+          }
 
+          return `
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Course Materials</div>
             ${materials.length ? materials.map(row).join('') : `
               <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm text-center text-sm text-gray-400">
@@ -5549,7 +5559,12 @@ try {
                 <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
                 <div class="font-bold text-gray-700 mb-1">${isTeacher ? 'Assign work to your class' : 'No assignments yet'}</div>
                 <div class="text-sm text-gray-400 leading-relaxed">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork' : 'Assignments and quizzes from your teacher will show up here.'}</div>
-              </div>`}`;
+              </div>`}
+
+            ${isTeacher ? `
+            <div class="flex justify-end mt-4" style="margin-bottom:50px;">
+              <button onclick="openClassworkCreateMenu()" class="flex items-center gap-2 rounded-full py-2.5 px-4 font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('plus','w-4 h-4')} Create</button>
+            </div>` : ''}`;
         }
 
         function openClassworkCreateMenu(){
