@@ -158,8 +158,8 @@ let studyFabMenuOpen = false;
 
         function studyFeatureCard(icon, eyebrow, title, sub, actionsHtml, onclick, extraStyle, image){
           return `
-            <div ${onclick ? `onclick="${onclick}" class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden study-feature-card-shadow cursor-pointer"` : `class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden study-feature-card-shadow"`} style="${extraStyle || ''}">
-              ${image ? `<img src="${image}" alt="" class="absolute" style="right:-1rem;top:50%;transform:translateY(-50%);width:14rem;height:14rem;opacity:0.22;object-fit:contain;object-position:right center;pointer-events:none;user-select:none;-webkit-user-select:none;">` : ''}
+            <div ${onclick ? `onclick="${onclick}" class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden border border-gray-100 cursor-pointer"` : `class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden border border-gray-100"`} style="${extraStyle || ''}">
+              ${image ? `<img src="${image}" alt="" class="absolute study-feature-card-img" style="right:-1rem;top:50%;transform:translateY(-50%);width:14rem;height:14rem;opacity:0.22;object-fit:contain;object-position:right center;pointer-events:none;user-select:none;-webkit-user-select:none;">` : ''}
               <div class="relative">
                 <div class="flex items-center gap-1.5 text-xs uppercase tracking-wide font-bold mb-2" style="color:${NAVY};opacity:0.75;">${Icon(icon,'w-3.5 h-3.5')} ${eyebrow}</div>
                 <div class="text-xl font-bold mb-2 text-[${NAVY}]">${title}</div>
