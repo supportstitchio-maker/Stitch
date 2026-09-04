@@ -2568,7 +2568,7 @@ let simpleGameState = null;
           if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
           try {
             const { error } = await sb.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.origin + window.location.pathname
+              redirectTo: window.location.origin + window.location.pathname + '?type=recovery'
             });
             if (error) {
               console.error('Reset password error:', error);
