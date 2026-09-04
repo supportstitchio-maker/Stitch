@@ -1036,7 +1036,7 @@
        anywhere on it (other than the hang-up button) re-opens the call. -->
   <div id="call-minimized-banner" class="hidden" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top, 0px) + 10px);z-index:25;max-width:calc(42rem - 24px);margin:0 auto;">
     <div onclick="resumeCall()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 10px 26px rgba(65,105,225,0.35);border:1px solid rgba(255,255,255,0.22);color:#fff;padding-left:10px;padding-right:10px;">
-      <span class="text-sm font-semibold flex-1 truncate">Call in progress</span>
+      <span class="text-xs font-bold flex-1 truncate uppercase tracking-wide font-display">Call in progress</span>
       <span id="call-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">00:00</span>
       <button onclick="event.stopPropagation();endCall()" title="End call" class="call-end-icon-btn w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
         ${Icon('phoneHangup','w-3.5 h-3.5')}
@@ -1116,7 +1116,7 @@
        appConfirmModal above -- see openAppAlertModal below). -->
   <div id="appAlertModal" class="hidden absolute inset-0 z-50 flex items-center justify-center px-6" style="background:rgba(0,0,0,0.5);">
     <div class="bg-white rounded-3xl w-full p-6 text-center" style="max-width:22rem;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
-      <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4" style="color:${NAVY};">${Icon('bell','w-5 h-5')}</div>
+      <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4 flex-shrink-0" style="width:56px;height:56px;color:${NAVY};">${Icon('bell','w-5 h-5')}</div>
       <div class="text-lg font-bold text-[${NAVY}] font-display mb-2" id="appAlertModalTitle">Stitch</div>
       <div class="text-sm text-gray-500 mb-6" id="appAlertModalMessage"></div>
       <button onclick="closeAppAlertModal()" class="w-full py-3 rounded-2xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${ROYAL}, ${NAVY});">OK</button>
