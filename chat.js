@@ -1148,6 +1148,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return c.username ? `@${c.username}` : (c.name || '');
         }
 
+        function callDisplayName(c){
+          if (!c) return '';
+          return c.name || c.username || '';
+        }
+
         function convoRow(c){
           const { id, icon, avatarBg, name, username, preview, time, photo } = c;
           if (!convoMeta[id]) convoMeta[id] = { icon, avatarBg, name, username, preview, photo };
@@ -2329,7 +2334,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         async function sendCallRing(convoId, type, otherUserId){
           const myId = await getCurrentUserId();
           if (!myId) return;
-          const callerName = (typeof profileData !== 'undefined' && profileData.username && `@${profileData.username}`) || (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
+          const callerName = (typeof profileData !== 'undefined' && profileData.username) || (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
           const meta = convoMeta[convoId];
           const isGroup = !!(meta && meta.icon === 'users');
           broadcastToUserChannel(otherUserId, 'ring', {
@@ -4869,7 +4874,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="w-full h-full rounded-2xl overflow-hidden bg-black relative">
                   <video id="call-remote-video" autoplay playsinline class="w-full h-full object-cover ${showRemoteVideo ? '' : 'hidden'}"></video>
                   ${!showRemoteVideo ? `<div class="w-full h-full flex items-center justify-center ${meta.avatarBg} overflow-hidden">${avatarInnerHTML(meta,'w-24 h-24')}</div>` : ''}
-                  <div class="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wide text-white/85 bg-black/40 rounded-full px-2.5 py-1 truncate max-w-[70%]">${escapeHtml(convoDisplayName(meta))}</div>
+                  <div class="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wide text-white/85 bg-black/40 rounded-full px-2.5 py-1 truncate max-w-[70%]">${escapeHtml(callDisplayName(meta))}</div>
                   <div class="absolute rounded-2xl overflow-hidden bg-black shadow-lg" style="top:12px;right:12px;width:26%;aspect-ratio:3/4;">
                     <video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover ${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
                     ${!showLocalVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-800 text-white/60 text-[10px] font-semibold text-center px-1">${callState.mediaError ? escapeHtml(callState.mediaError) : 'Camera off'}</div>` : ''}
@@ -4950,7 +4955,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div id="call-header" class="flex items-center justify-between px-5 flex-shrink-0">
                 <button onclick="minimizeCall()" title="Back" class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700">${IconBold('back','w-5 h-5')}</button>
                 <div class="flex-1 min-w-0 text-center px-2">
-                  <div class="text-lg font-bold font-display truncate">${escapeHtml(convoDisplayName(meta))}</div>
+                  <div class="text-lg font-bold font-display truncate">${escapeHtml(callDisplayName(meta))}</div>
                   <div class="text-sm text-gray-500">${statusText}</div>
                 </div>
                 <div class="w-11 h-11 flex-shrink-0"></div>
