@@ -83,6 +83,7 @@
         }
 
         let ptrPulling = false;
+        let ptrMouseActive = false;
         let ptrStartY = 0;
         let ptrDistance = 0;
         const PTR_DEADZONE = 12;
@@ -123,6 +124,45 @@
             }
             ptrDistance = 0;
           }, { passive: true });
+
+          // Desktop (mouse) support: mirrors the touch handlers above so
+          // click-and-drag with a mouse also triggers pull-to-refresh, since
+          // desktop browsers don't fire touch events.
+          screenEl.addEventListener('mousedown', (e) => {
+            if (typeof currentTab === 'undefined' || currentTab !== 0) return;
+            if (homeFeedRefreshing || screenEl.scrollTop > 0) { ptrPulling = false; return; }
+            ptrMouseActive = true;
+            ptrPulling = true;
+            ptrStartY = e.clientY;
+            ptrDistance = 0;
+          });
+
+          window.addEventListener('mousemove', (e) => {
+            if (!ptrMouseActive || !ptrPulling) return;
+            if (typeof currentTab === 'undefined' || currentTab !== 0 || screenEl.scrollTop > 0) {
+              ptrPulling = false;
+              setPullIndicatorHeight(0, true);
+              return;
+            }
+            const rawDy = e.clientY - ptrStartY;
+            if (rawDy <= PTR_DEADZONE) { ptrDistance = 0; setPullIndicatorHeight(0, false); return; }
+            const dy = rawDy - PTR_DEADZONE;
+            ptrDistance = Math.min(PTR_MAX_DISTANCE, dy * 0.5);
+            setPullIndicatorHeight(ptrDistance, false);
+          });
+
+          window.addEventListener('mouseup', () => {
+            if (!ptrMouseActive) return;
+            ptrMouseActive = false;
+            if (!ptrPulling) return;
+            ptrPulling = false;
+            if (ptrDistance >= PTR_TRIGGER_DISTANCE) {
+              startHomeFeedRefresh();
+            } else {
+              setPullIndicatorHeight(0, true);
+            }
+            ptrDistance = 0;
+          });
         }
 
         function setPullIndicatorHeight(px, animated){
@@ -286,7 +326,9 @@
             photoFrame: `<path fill-rule="evenodd" d="M4 4.75A1.75 1.75 0 015.75 3h13A1.75 1.75 0 0120.5 4.75v9.5a1.75 1.75 0 01-1.75 1.75H9.1L4.7 20.1a.85.85 0 01-1.45-.6V4.75zM8.6 8.6a1.35 1.35 0 100-2.7 1.35 1.35 0 000 2.7zm-2.85 5.4h11.5v-1.15l-3.4-4.15-3.35 3.9-2.05-1.65-2.7 3.05v-.0z" clip-rule="evenodd"/>`,
           };
           const isOutline = /Outline$/.test(type);
-          const attrs = isOutline ? `viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"` : `viewBox="0 0 24 24" fill="currentColor"`;
+          const viewBoxOverrides = { phoneHangup: '0 -5.82 24 24' };
+          const vb = viewBoxOverrides[type] || '0 0 24 24';
+          const attrs = isOutline ? `viewBox="${vb}" fill="none" stroke="currentColor" stroke-width="1.6"` : `viewBox="${vb}" fill="currentColor"`;
           return `<svg ${attrs} class="${cls}">${paths[type] || paths.user}</svg>`;
         }
         function silhouetteIcon(type, cls){ return Icon(type, cls); }
