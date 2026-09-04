@@ -4204,9 +4204,18 @@ try {
           if (isTeacher && !remoteEnded) broadcastLectureSignal({ type: 'end' });
           teardownLectureSignaling();
           inLectureCall = false;
-          if (cls && isTeacher) {
+          // Only drop the lecture from the class's live-lecture list when the
+          // teacher actually ended it for everyone (isTeacher ending it here,
+          // or this client receiving that teacher's 'end' broadcast via
+          // remoteEnded) -- that's what makes the "Join"/"Return" pill
+          // disappear from the Stream tab for every student. A student
+          // leaving on their own (isTeacher false, remoteEnded false) must
+          // NOT touch this list: the lecture is still live for everyone
+          // else, and removing it here would wrongly hide their own way
+          // back in.
+          if (cls && (isTeacher || remoteEnded)) {
             cls.lectures = (cls.lectures || []).filter(l => l.id !== liveLectureState.lectureId);
-            queueSaveClassRemote(cls);
+            if (isTeacher) queueSaveClassRemote(cls);
           }
           const wasGuest = guestLectureMode;
           guestLectureMode = false;
