@@ -15,7 +15,6 @@
           font-display: swap;
         }
         .font-display { font-family: 'Colmeak', 'Montserrat', sans-serif; }
-        .desktop-leave-classroom-label { display: none; }
         .study-leave-classroom-label { font-weight: 800; }
         .study-leave-classroom-icon path { stroke-width: 3.4; }
         .no-scrollbar::-webkit-scrollbar{display:none;}
@@ -581,21 +580,6 @@
             padding-top: 0.875rem !important;
             padding-bottom: 0.875rem !important;
             font-size: 0.95rem !important;
-          }
-          .desktop-leave-classroom-btn {
-            width: auto !important;
-            height: auto !important;
-            gap: 0.5rem;
-          }
-          .desktop-leave-classroom-btn svg {
-            width: 1.5rem !important;
-            height: 1.5rem !important;
-          }
-          .desktop-leave-classroom-label {
-            display: inline-block;
-            font-size: 1.05rem;
-            font-weight: 600;
-            white-space: nowrap;
           }
           .study-leave-classroom-btn {
             gap: 0.4rem !important;
