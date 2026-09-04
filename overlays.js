@@ -615,7 +615,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           return `
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
-                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" class="desktop-leave-classroom-btn w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}<span class="desktop-leave-classroom-label grad-text">Leave Classroom</span></button>
+                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" title="Leave classroom" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${escapeHtml(title)}</h1>
                 <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashes','w-5 h-5'))}</button>
               </div>
