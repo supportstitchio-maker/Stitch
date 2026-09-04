@@ -374,7 +374,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <button onclick="closeOverlay(); startNewMessageWith('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
               <div class="w-11 h-11 rounded-full ${c.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${c.id}')">${avatarInnerHTML(c,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${c.id}')">
-                <div class="text-[15px] text-gray-900 truncate">${escapeHtml(convoDisplayName(c))}</div>
+                <div class="text-[15px] text-gray-900 truncate">${escapeHtml(c.username || convoDisplayName(c))}</div>
                 ${c.name ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${escapeHtml(c.name)}</div>` : ''}
               </div>
             </button>`;
@@ -384,9 +384,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const all = convoArrays().flat();
           const networkContacts = all.filter(c => c.network && c.icon !== 'users');
           return `
-            ${overlayHeader('My Contacts', '20px')}
+            ${overlayHeader('My Network', '20px')}
             <div class="flex-1 overflow-y-auto px-5 pb-6">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide pt-2 pb-1">My Network</div>
               <div class="divide-y divide-gray-100">
                 ${networkContacts.length ? networkContacts.map(contactListRow).join('') : `<div class="py-6 text-center text-gray-400 text-sm">No network connections yet.</div>`}
               </div>
