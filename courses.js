@@ -5695,11 +5695,6 @@ try {
               </div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 pb-24">
-              <div class="flex items-center gap-2.5 mb-5">
-                ${Icon('users','w-5 h-5 text-gray-500 flex-shrink-0')}
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:rgba(30,144,255,0.5);">${cls ? escapeHtml(cls.name) : 'Class'}</span>
-                <span class="text-sm font-semibold px-4 py-2 rounded-full text-white" style="background:${NAVY};">All students</span>
-              </div>
               <textarea id="announcement-text-input" oninput="announcementDraft=this.value; const b=document.getElementById('announcement-create-btn'); if(b){const c=announcementDraft.trim().length>0; b.disabled=!c; b.className='font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Announce something to your class" rows="6" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-6">${announcementDraft}</textarea>
               <input type="file" id="announcement-attach-input" multiple class="hidden" onchange="handleAnnouncementAttachFile(event)">
               <button onclick="document.getElementById('announcement-attach-input').click()" class="flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
