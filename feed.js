@@ -1604,9 +1604,19 @@
         function simplePostVideoHtml(url, errorTarget){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
+          // Feed videos are only fetched with preload="metadata" (to avoid
+          // burning data on posts nobody scrolls to), so the <video> element
+          // has nothing decoded to paint yet and renders solid black until
+          // playback actually starts pulling in frame data. That black
+          // rectangle is what looked like posts "blacking out" on sign-in.
+          // Fix: keep a shimmering skeleton (matching the rest of the app's
+          // loading placeholders) stacked on top of the video and only drop
+          // it once the video has a real frame ready to show (loadeddata/
+          // canplay), instead of ever exposing the raw black canvas.
           return `
             <div class="relative feed-video-wrap" id="${uid}">
-              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              <div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>
+              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadeddata="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" oncanplay="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
@@ -1678,8 +1688,12 @@
         }
 
         function postMediaGridTile(it, index, areaStyle, extraCount){
+          // Same black-canvas issue as simplePostVideoHtml: an unstarted
+          // <video> with preload="metadata" paints black until it has a
+          // frame, so grid tiles need the same shimmer-until-ready treatment
+          // instead of flashing black on sign-in/scroll-in.
           const media = it.type === 'video'
-            ? `<video src="${it.url}" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata"></video>`
+            ? `<video src="${it.url}" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadeddata="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" oncanplay="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`
             : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
