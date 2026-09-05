@@ -2600,7 +2600,7 @@
               const isReelDetail = btn.closest('#video-post-' + id) != null;
               btn.className = isReelDetail
                 ? `flex flex-col items-center ${post.saved ? `text-[${ROYAL}]` : 'text-white'}`
-                : `p-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}`;
+                : `p-1 -mr-1 ${post.saved ? `text-[${ROYAL}]` : 'text-gray-500'}`;
             });
             if (typeof renderSavedItemsOverlay === 'function') renderSavedItemsOverlay();
             if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
@@ -3163,13 +3163,13 @@
         function toggleLike(id){
           PostsAPI.toggleLike(id).then(post => {
             if (!post) return;
-            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = post.liked ? gradientHeartIcon('w-6 h-6') : Icon('heartOutline', 'w-6 h-6'); });
+            forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline', 'w-[18px] h-[18px]'); });
             forEachById('like-count-'+id, likeCountEl => { likeCountEl.textContent = post.likes.toLocaleString() + ' likes'; });
             forEachById('like-btn-'+id, btn => {
               const isReelDetail = btn.closest('#video-post-' + id) != null;
               btn.className = isReelDetail
                 ? `flex flex-col items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-white'}`
-                : `p-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}`;
+                : `p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}`;
             });
             forEachById('like-inline-count-'+id, inline => { inline.textContent = formatCount(post.likes); });
           });
