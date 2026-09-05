@@ -170,7 +170,6 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function careerMenuDropdownHTML(){
           return `
             <div id="career-menu-dropdown" class="fixed bg-white rounded-2xl shadow-lg border border-gray-100 py-1.5 z-30 menu-dropdown-inset" style="visibility:hidden;">
-              <button onclick="closeCareerMenuThen(() => jobsSubTab('applied'))" class="text-left px-3 py-2 text-sm whitespace-nowrap text-gray-700 menu-item-pill">My Applications</button>
               <button onclick="closeCareerMenuThen(() => jobsSubTab('saved'))" class="text-left px-3 py-2 text-sm whitespace-nowrap text-gray-700 menu-item-pill">Saved</button>
               <button onclick="closeCareerMenuThen(() => openCareerStartForm())" class="text-left px-3 py-2 text-sm whitespace-nowrap text-gray-700 menu-item-pill">Match with CV</button>
               ${isCurrentUserAdmin() ? `<button onclick="closeCareerMenuThen(() => openPostOpportunity())" class="text-left px-3 py-2 text-sm whitespace-nowrap text-gray-700 menu-item-pill">Post an Opportunity</button>` : ''}
@@ -182,7 +181,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           fn();
         }
 
-        const ADMIN_EMAILS = ['0festusnkrumah@gmail.com']; 
+        const ADMIN_EMAILS = ['0festusnkrumah@gmail.com', 'amibaphilbert@gmail.com']; 
         const PROFILES_TABLE = 'profiles';
         const OPPORTUNITIES_TABLE = 'opportunities';
         let currentUserRole = 'user';
