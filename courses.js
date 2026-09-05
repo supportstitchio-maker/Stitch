@@ -3438,14 +3438,22 @@ try {
 
         function announcementAttachmentsDisplayHTML(a){
           if (!a.attachments || !a.attachments.length) return '';
+          const images = a.attachments.filter(f => isImageAttachmentFile(f));
+          const files = a.attachments.filter(f => !isImageAttachmentFile(f));
           return `
+            ${images.length ? `
             <div class="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
-              ${a.attachments.map(f => `
+              ${images.map(f => `
+                <img src="${escapeHtml(f.url)}" onclick="openConvoImageViewer('${encodeURIComponent(f.url)}')" class="rounded-xl object-cover flex-shrink-0 cursor-pointer" style="width:96px;height:96px;">`).join('')}
+            </div>` : ''}
+            ${files.length ? `
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
+              ${files.map(f => `
                 <a href="${escapeHtml(f.url)}" target="_blank" rel="noopener" class="flex items-center gap-1.5 bg-gray-100 rounded-full pl-1 pr-3 py-1 flex-shrink-0 text-inherit">
                   <span class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('doc','w-3.5 h-3.5')}</span>
                   <span class="text-xs font-semibold text-gray-700 truncate" style="max-width:140px;">${escapeHtml(f.name)}</span>
                 </a>`).join('')}
-            </div>`;
+            </div>` : ''}`;
         }
 
         function streamAnnouncementCommentsHTML(a){
@@ -5646,14 +5654,19 @@ try {
           openOverlay('classDetail');
         }
 
+        function isImageAttachmentFile(f){
+          if (f && f.type && f.type.indexOf('image/') === 0) return true;
+          return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test((f && f.name) || '');
+        }
+
         function handleAnnouncementAttachFile(event){
           const files = Array.from(event.target.files || []);
           files.forEach(file => {
             const id = 'aa' + Date.now() + Math.random().toString(36).slice(2);
             const url = URL.createObjectURL(file);
-            const entry = { id, name: file.name, file, url, uploading: true };
+            const entry = { id, name: file.name, file, url, type: file.type, uploading: true };
             announcementDraftAttachments.push(entry);
-            uploadClassworkFileToStorage(file, id).then(remoteUrl => {
+            entry.uploadPromise = uploadClassworkFileToStorage(file, id).then(remoteUrl => {
               if (!announcementDraftAttachments.includes(entry)) return; 
               if (remoteUrl) entry.url = remoteUrl; 
               entry.uploading = false;
@@ -5680,7 +5693,7 @@ try {
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
               ${announcementDraftAttachments.map(a => `
                 <span class="flex items-center gap-1.5 bg-gray-100 rounded-full pl-1 pr-2 py-1 flex-shrink-0">
-                  <span class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('doc','w-3.5 h-3.5')}</span>
+                  <span class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${isImageAttachmentFile(a) ? `<img src="${a.url}" class="w-full h-full object-cover">` : Icon('doc','w-3.5 h-3.5')}</span>
                   <span class="text-xs font-semibold text-gray-700 truncate" style="max-width:140px;">${escapeHtml(a.name)}${a.uploading ? ' · Uploading…' : ''}</span>
                   <button onclick="removeAnnouncementAttachment('${a.id}')" class="text-gray-400 flex-shrink-0">${Icon('close','w-3 h-3')}</button>
                 </span>`).join('')}
@@ -5712,18 +5725,36 @@ try {
             <button onclick="submitNewAnnouncement()" ${canPost ? '' : 'disabled'} id="announcement-create-btn" class="font-semibold text-sm px-6 py-3 rounded-full flex-shrink-0 shadow-lg ${canPost ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="position:fixed;right:1.25rem;bottom:50px;z-index:50;${canPost ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Create</button>`;
         }
 
-        function submitNewAnnouncement(){
-          if (!requireCompleteProfile()) return;
-          const cls = myClasses.find(c => c.id === currentClassId);
-          const text = (document.getElementById('announcement-text-input') ? document.getElementById('announcement-text-input').value : announcementDraft).trim();
-          if (!cls || !text) return;
-          if (announcementDraftAttachments.some(a => a.uploading)) { openAppAlertModal('Still uploading -- give it a moment and try again.'); return; }
-          const attachments = announcementDraftAttachments.map(a => ({ id: a.id, name: a.name, url: a.url }));
+        function announcementPostingOverlayHTML(){
+          return `
+            <div class="w-full h-full flex flex-col items-center justify-center" style="background:linear-gradient(160deg, #ffffff 0%, #f4f7fc 50%, #ffffff 100%);">
+              <div style="width:46px;height:46px;border-radius:50%;border:3px solid rgba(10,37,64,0.14);border-top-color:${NAVY};animation:classroom-spin .7s linear infinite;"></div>
+              <div class="mt-4 text-sm font-semibold" style="color:${NAVY};">Posting announcement...</div>
+            </div>`;
+        }
+
+        function finalizeNewAnnouncementSubmit(cls, text){
+          const attachments = announcementDraftAttachments.map(a => ({ id: a.id, name: a.name, url: a.url, type: a.type || (a.file ? a.file.type : '') }));
           cls.announcements.unshift({ id: 'a-' + Date.now(), text, createdAt: Date.now(), comments: [], attachments });
           queueSaveClassRemote(cls);
           announcementDraftAttachments = [];
           classDetailTab = 'stream';
           openOverlay('classDetail');
+        }
+
+        function submitNewAnnouncement(){
+          if (!requireCompleteProfile()) return;
+          const cls = myClasses.find(c => c.id === currentClassId);
+          const text = (document.getElementById('announcement-text-input') ? document.getElementById('announcement-text-input').value : announcementDraft).trim();
+          if (!cls || !text) return;
+          const pendingUploads = announcementDraftAttachments.filter(a => a.uploading && a.uploadPromise).map(a => a.uploadPromise);
+          if (pendingUploads.length) {
+            const ov = document.getElementById('overlay');
+            if (ov) ov.innerHTML = announcementPostingOverlayHTML();
+            Promise.all(pendingUploads.map(p => p.catch(() => null))).then(() => finalizeNewAnnouncementSubmit(cls, text));
+            return;
+          }
+          finalizeNewAnnouncementSubmit(cls, text);
         }
 
         let classworkDraftType = 'assignment';
