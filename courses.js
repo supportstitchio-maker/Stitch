@@ -3444,7 +3444,7 @@ try {
             ${images.length ? `
             <div class="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
               ${images.map(f => `
-                <img src="${escapeHtml(f.url)}" onclick="openConvoImageViewer('${encodeURIComponent(f.url)}')" class="rounded-xl object-cover flex-shrink-0 cursor-pointer" style="width:96px;height:96px;">`).join('')}
+                <img src="${escapeHtml(f.url)}" onclick="openConvoImageViewer('${encodeURIComponent(f.url)}', true)" class="rounded-xl object-cover flex-shrink-0 cursor-pointer" style="width:96px;height:96px;">`).join('')}
             </div>` : ''}
             ${files.length ? `
             <div class="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
