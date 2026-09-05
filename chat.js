@@ -4212,7 +4212,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `<span class="flex-shrink-0" style="color:${color};" title="${m.read ? 'Read' : 'Delivered'}">${Icon('checkDouble','w-3.5 h-3.5')}</span>`;
         }
 
-        function openConvoImageViewer(encodedSrc){
+        function openConvoImageViewer(encodedSrc, onlyBack){
           closeConvoImageViewer();
           const src = decodeURIComponent(encodedSrc);
           const modal = document.createElement('div');
@@ -4222,7 +4222,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           modal.onclick = () => closeConvoImageViewer();
           modal.innerHTML = `
             <button onclick="event.stopPropagation();closeConvoImageViewer()" aria-label="Back" class="absolute top-0 left-0 w-11 h-11 flex items-center justify-center text-white" style="margin:calc(env(safe-area-inset-top, 12px) + 12px) 0 0 8px;">${IconBold('back','w-6 h-6')}</button>
-            <button onclick="event.stopPropagation();closeConvoImageViewer()" aria-label="Close" class="absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-white" style="margin:calc(env(safe-area-inset-top, 12px) + 12px) 12px 0 0;">${Icon('close','w-6 h-6')}</button>
+            ${onlyBack ? '' : `<button onclick="event.stopPropagation();closeConvoImageViewer()" aria-label="Close" class="absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-white" style="margin:calc(env(safe-area-inset-top, 12px) + 12px) 12px 0 0;">${Icon('close','w-6 h-6')}</button>`}
             <img src="${src}" onclick="event.stopPropagation();" style="max-width:96vw;max-height:96vh;width:auto;height:auto;object-fit:contain;">`;
           document.body.appendChild(modal);
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeConvoImageViewer(fromPopState));
