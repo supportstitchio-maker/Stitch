@@ -190,7 +190,10 @@
           if (typeof currentTab === 'undefined' || currentTab !== 0) return;
           setPullIndicatorHeight(0, true);
           setTimeout(() => {
-            if (typeof currentTab !== 'undefined' && currentTab === 0) renderFeed();
+            if (typeof currentTab !== 'undefined' && currentTab === 0) {
+              if (typeof patchFeedInPlace === 'function') patchFeedInPlace();
+              else renderFeed();
+            }
           }, 180);
         }
 
@@ -1603,7 +1606,7 @@
           const err = errorTarget || 'Video no longer available';
           return `
             <div class="relative feed-video-wrap" id="${uid}">
-              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-black block" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
