@@ -505,7 +505,7 @@ try {
           return `
             <div class="h-full min-h-full flex flex-col items-center justify-center text-center px-8">
               <div id="ai-robot-container" class="ai-robot-container">
-                <div class="ai-empty-dot"></div>
+                <div class="ai-empty-dot">${Icon('bot','w-6 h-6')}</div>
                 <div class="ai-empty-greeting">Hi, what would you like to do with Stitch Bot today?</div>
               </div>
             </div>`;
