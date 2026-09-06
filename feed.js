@@ -2027,6 +2027,16 @@
               return remoteIds.has(String(p.id));
             });
             const postsWereRemoved = feedPosts.length !== lengthBeforeFilter;
+            // A post can be pruned here (deleted elsewhere, or a ghost that
+            // never actually made it to the server) while the person is
+            // sitting on some other tab entirely, or while Home/Profile are
+            // cached-but-off-screen (see cachedHomeFeedNode/
+            // cachedProfileScreenNode in core.js). Neither of those DOM
+            // trees gets touched by this function, so without invalidating
+            // them here too, switching back to Home or Profile later would
+            // reattach the stale cached snapshot -- the exact "deleted post
+            // shows back up on my profile" bug this is fixing.
+            if (postsWereRemoved && typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
             if (postsWereRemoved && typeof queueSaveUserState === 'function') queueSaveUserState();
             const knownIds = new Set(feedPosts.map(p => String(p.id)));
             const newRows = data.filter(row => !knownIds.has(row.id) && !deletedPostIds.has(String(row.id)));
@@ -2254,6 +2264,14 @@
           feedPosts = feedPosts.filter(p => String(p.id) !== String(id) && String(p.repostOf) !== String(id));
           if (feedPosts.length === before) return; 
           if (typeof queueSaveUserState === 'function') queueSaveUserState();
+          // This can fire while Home/Profile are cached-but-off-screen (the
+          // person is on a different tab, or the delete came from another
+          // device/tab) -- invalidate both cached DOM snapshots so whichever
+          // one is opened next is rebuilt from the now-current feedPosts
+          // instead of reattaching a stale copy that still has this post in
+          // it. The live-DOM patches below still run too, for whichever tab
+          // happens to be on screen right now.
+          if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
           if (typeof currentTab !== 'undefined' && currentTab === 0) {
             const el = document.getElementById('post-' + id);
             if (el) el.remove(); else if (typeof renderFeed === 'function') renderFeed();
@@ -2644,16 +2662,39 @@
           remove(id){
             return mockRequest(() => {
               const removed = feedPosts.find(p => p.id === id);
+              const removedIndex = feedPosts.indexOf(removed);
               feedPosts = feedPosts.filter(p => p.id !== id);
               deletedPostIds.add(String(id));
               queueSaveUserState();
-              if (removed && removed.mine && removed.mediaPaths && removed.mediaPaths.length) deletePostMediaListFromStorage(removed.mediaPaths);
-              else if (removed && removed.mine && removed.mediaPath) deletePostMediaFromStorage(removed.mediaPath);
               postDeleteRemote(id).then(ok => {
                 if (ok) {
                   deletedPostIds.delete(String(id));
                   queueSaveUserState();
+                  // Only clear the media out of storage once the row itself
+                  // is confirmed gone -- doing this unconditionally used to
+                  // mean a failed delete could still strand a restored post
+                  // with its images wiped out from under it.
+                  if (removed && removed.mine && removed.mediaPaths && removed.mediaPaths.length) deletePostMediaListFromStorage(removed.mediaPaths);
+                  else if (removed && removed.mine && removed.mediaPath) deletePostMediaFromStorage(removed.mediaPath);
+                  return;
                 }
+                // The delete never actually reached the server (RLS
+                // rejection, dropped connection, etc). Leaving the local
+                // state saying "gone" while the server still has the row is
+                // exactly what let a deleted post quietly reappear later --
+                // once deletedPostIds resets on a fresh session/reload, the
+                // still-live row comes right back in via loadRemotePosts.
+                // Put it back and say so, instead of pretending it worked.
+                deletedPostIds.delete(String(id));
+                if (removed && !feedPosts.some(p => p.id === id)) {
+                  const insertAt = Math.min(removedIndex, feedPosts.length);
+                  feedPosts.splice(insertAt < 0 ? feedPosts.length : insertAt, 0, removed);
+                }
+                queueSaveUserState();
+                if (typeof invalidateFeedAndProfileCaches === 'function') invalidateFeedAndProfileCaches();
+                if (typeof refreshFeedPostCard === 'function') refreshFeedPostCard(id);
+                if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
+                if (typeof openAppAlertModal === 'function') openAppAlertModal("Your post couldn't be deleted. Please check your connection and try again.");
               });
               return { id };
             });
