@@ -1738,8 +1738,42 @@
         }
 
         let feedVideoObserver = null;
+        let feedVideoPreloadObserver = null;
+        // Feed videos ship with preload="metadata" so posts nobody scrolls to
+        // never burn data -- but that also means nothing real starts
+        // downloading until playback actually kicks off (autoplay crossing
+        // the 60% threshold below, or a manual tap), which is exactly the gap
+        // the skeleton has to sit through. This second observer watches a
+        // much wider band around the viewport (roughly a screen's worth
+        // ahead) and, the moment a video enters it, bumps it to
+        // preload="auto" so the browser starts pulling real frame data
+        // early -- while the skeleton is still up, well before the post is
+        // actually on screen. armFeedVideoReveal's loadeddata listener then
+        // fires sooner and the skeleton comes down with real content ready,
+        // instead of the user watching it swap to a black gap before frames
+        // arrive. Off-screen videos further down the feed are left alone at
+        // preload="metadata", so this doesn't turn into "load every video in
+        // the feed at once."
+        function setupFeedVideoPreload(container){
+          if (feedVideoPreloadObserver) { feedVideoPreloadObserver.disconnect(); feedVideoPreloadObserver = null; }
+          if (!container || typeof IntersectionObserver === 'undefined') return;
+          const videos = container.querySelectorAll('.feed-video-wrap video');
+          if (!videos.length) return;
+          feedVideoPreloadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (!entry.isIntersecting) return;
+              const video = entry.target;
+              feedVideoPreloadObserver.unobserve(video);
+              if (video.preload === 'auto' || video.readyState >= 2) return;
+              video.preload = 'auto';
+              video.load();
+            });
+          }, { rootMargin: '600px 0px', threshold: 0 });
+          videos.forEach(v => feedVideoPreloadObserver.observe(v));
+        }
         function setupFeedVideoAutoplay(container){
           if (feedVideoObserver) { feedVideoObserver.disconnect(); feedVideoObserver = null; }
+          setupFeedVideoPreload(container);
           if (!container || typeof IntersectionObserver === 'undefined') return;
           const videos = container.querySelectorAll('.feed-video-wrap video');
           if (!videos.length) return;
@@ -3027,6 +3061,7 @@
             }
           });
           if (feedVideoObserver) { feedVideoObserver.disconnect(); feedVideoObserver = null; }
+          if (feedVideoPreloadObserver) { feedVideoPreloadObserver.disconnect(); feedVideoPreloadObserver = null; }
           const isMulti = !!(post.mediaHtml && /post-media-grid/.test(post.mediaHtml));
           const hasSingleMedia = !isMulti && !!post.mediaHtml;
           reelSwipeEnabled = !!(evt && evt.currentTarget && evt.currentTarget.closest && evt.currentTarget.closest('#post-feed-list'));
@@ -3131,6 +3166,7 @@
             if (!v.paused) v.pause();
           });
           if (feedVideoObserver) { feedVideoObserver.disconnect(); feedVideoObserver = null; }
+          if (feedVideoPreloadObserver) { feedVideoPreloadObserver.disconnect(); feedVideoPreloadObserver = null; }
           const ov = document.getElementById('overlay');
           ov.classList.remove('hidden');
           ov.style.top = '0';
