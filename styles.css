@@ -63,6 +63,15 @@
         .ai-robot-img{
           width:170px;max-width:50vw;
         }
+        .ai-empty-dot{
+          width:34px;height:34px;border-radius:9999px;margin:0 auto 16px;
+          background:linear-gradient(135deg,#4169e1,#1e90ff);
+        }
+        .ai-empty-greeting{
+          font-size:1.05rem;font-weight:600;color:#0f1f33;line-height:1.4;
+          max-width:280px;
+        }
+        body.dark-mode .ai-empty-greeting{ color:#ffffff !important; }
         .ai-header-pill{
           width:2.25rem;height:2.25rem;border-radius:9999px;flex-shrink:0;
           display:flex;align-items:center;justify-content:center;
@@ -177,6 +186,20 @@
         body.dark-mode [stroke="url(#navyRoyalGrad)"] { fill:#ffffff !important; stroke:#ffffff !important; }
         body.dark-mode #topbar-brand img,
         body.dark-mode .dside-brand img { filter:brightness(0) invert(1); }
+        /* Stitch Bot header pills: match the frosted, barely-there look of
+           dark-mode system UI (e.g. ChatGPT's header pills) instead of the
+           bright white pill used in light mode. */
+        body.dark-mode .ai-header-pill,
+        body.dark-mode .ai-header-pill-group{
+          background:rgba(255,255,255,0.08) !important;
+          border-color:rgba(255,255,255,0.10) !important;
+          box-shadow:none !important;
+        }
+        @media (hover:hover){
+          body.dark-mode .ai-header-pill:hover,
+          body.dark-mode .ai-header-pill-group:hover{ box-shadow:0 4px 14px rgba(0,0,0,0.4) !important; }
+        }
+        body.dark-mode .ai-header-pill-divider{ background:rgba(255,255,255,0.16) !important; }
         #topbar-icons button:hover svg { opacity:0.7; }
         @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.55;}}
         @keyframes classroom-spin{to{transform:rotate(360deg);}}
@@ -362,6 +385,11 @@
 
         body.dark-mode .classroom-slide-cover { background:var(--c-ebony) !important; }
 
+        /* Desktop side nav: icons/labels default to a dark navy (#0f1f33)
+           which is nearly invisible against the dark sidebar background,
+           so force them white in dark mode. The more specific
+           .dnav-active rule below still wins for the active tab. */
+        body.dark-mode .dnav-item { color:#ffffff !important; }
         body.dark-mode .dnav-item.dnav-active { background:rgba(255,255,255,0.14) !important; color:#ffffff !important; box-shadow:none !important; }
         body.dark-mode [style*="color:#6b7280"],
         body.dark-mode .rounded-full.bg-white.text-gray-500.border-gray-200 { color:#ffffff !important; }
