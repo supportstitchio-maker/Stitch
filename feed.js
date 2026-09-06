@@ -1735,6 +1735,57 @@
           if (btn) btn.style.opacity = '0';
         }
 
+        // A failed video/image load almost always means "the network hiccuped
+        // just now" rather than "this file was actually deleted" -- but the
+        // old error handlers immediately declared it "no longer available"
+        // on the very first failure, which is both misleading (implies
+        // permanent deletion) and gives the person no way to recover from a
+        // one-off blip without reloading the whole page. This retries
+        // automatically a couple of times first (silently fixing most
+        // transient failures), and only falls back to a placeholder -- with
+        // honest wording and an actual "Tap to retry" -- once it's genuinely
+        // struck out.
+        function feedMediaAutoRetry(el, kind){
+          const attempt = (parseInt(el.dataset.retry || '0', 10)) + 1;
+          const baseUrl = el.dataset.baseSrc || el.currentSrc || el.src;
+          el.dataset.baseSrc = baseUrl;
+          if (attempt > 2) {
+            feedMediaShowRetryPlaceholder(el, kind, baseUrl);
+            return;
+          }
+          el.dataset.retry = String(attempt);
+          setTimeout(() => {
+            const sep = baseUrl.indexOf('?') === -1 ? '?' : '&';
+            el.src = baseUrl + sep + '_retry=' + Date.now();
+            if (kind === 'video' && typeof el.load === 'function') el.load();
+          }, attempt * 1200);
+        }
+
+        function feedMediaShowRetryPlaceholder(el, kind, baseUrl){
+          const isVideo = kind === 'video';
+          const host = isVideo ? (el.closest('.feed-video-wrap') || el) : el;
+          const fillCls = el.classList.contains('absolute')
+            ? 'absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-gray-100 text-gray-400 text-xs italic text-center px-2'
+            : 'w-full py-10 flex flex-col items-center justify-center gap-1.5 bg-gray-100 text-gray-400 text-xs italic text-center px-2';
+          const originalClass = el.className;
+          const placeholder = document.createElement('div');
+          placeholder.className = fillCls;
+          placeholder.innerHTML = `<span>Couldn't load this ${isVideo ? 'video' : 'image'} -- check your connection</span><button type="button" class="not-italic font-semibold" style="pointer-events:auto;color:${NAVY};">Tap to retry</button>`;
+          placeholder.querySelector('button').addEventListener('click', () => {
+            const fresh = isVideo ? document.createElement('video') : document.createElement('img');
+            fresh.className = originalClass;
+            if (isVideo) {
+              fresh.setAttribute('controls', '');
+              fresh.setAttribute('playsinline', '');
+              fresh.setAttribute('preload', 'metadata');
+            }
+            fresh.onerror = () => feedMediaAutoRetry(fresh, kind);
+            placeholder.replaceWith(fresh);
+            fresh.src = baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + '_retry=' + Date.now();
+          });
+          host.replaceWith(placeholder);
+        }
+
         function simplePostVideoHtml(url, errorTarget, posterUrl){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
@@ -1759,7 +1810,7 @@
           return `
             <div class="relative feed-video-wrap" id="${uid}">
               ${skeleton}
-              <video src="${url}"${posterAttr} playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              <video src="${url}"${posterAttr} playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="feedMediaAutoRetry(this,'video')"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
@@ -1860,7 +1911,7 @@
         function postMediaHtmlFromUploaded(items){
           const itemHtml = (it) => it.type === 'video'
             ? simplePostVideoHtml(it.url, undefined, it.posterUrl)
-            : `<img src="${it.url}" class="w-full h-auto" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
+            : `<img src="${it.url}" class="w-full h-auto" onerror="feedMediaAutoRetry(this,'image')">`;
           if (items.length === 1) return itemHtml(items[0]);
           return postMediaGridHtml(items);
         }
@@ -1895,8 +1946,8 @@
           const posterAttr = it.posterUrl ? ` poster="${it.posterUrl}"` : '';
           const posterPreload = it.posterUrl ? `<img src="${it.posterUrl}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : '';
           const media = it.type === 'video'
-            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>${posterPreload}</div>`
-            : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
+            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)" onerror="feedMediaAutoRetry(this,'video')"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>${posterPreload}</div>`
+            : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="feedMediaAutoRetry(this,'image')">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
               ${media}
