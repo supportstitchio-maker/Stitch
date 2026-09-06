@@ -95,11 +95,15 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function profileTabContentKey(){
           const items = (profileTab === 'reposts') ? feedPosts.filter(p => p.reposted)
             : (profileTab === 'saved') ? feedPosts.filter(p => p.saved)
-            : feedPosts.filter(p => p.mine);
+            : feedPosts.filter(p => p.mine && !p.isRepost);
           // Not just IDs: also fold in whether each post still has its
           // reposted/saved flag and its media, so an unsave/un-repost or an
-          // edit is still picked up even if the ID list is unchanged.
-          return profileTab + '|' + items.map(p => `${p.id}:${p.reposted?1:0}:${p.saved?1:0}`).join(',');
+          // edit is still picked up even if the ID list is unchanged. The
+          // uploading flag and a media presence bit are folded in too, so a
+          // post finishing its upload (still the same id, still "mine")
+          // still forces the grid to swap its skeleton tile for the real
+          // thumbnail instead of leaving the stale placeholder on screen.
+          return profileTab + '|' + items.map(p => `${p.id}:${p.reposted?1:0}:${p.saved?1:0}:${p.uploading?1:0}:${p.mediaHtml?1:0}`).join(',');
         }
 
         function patchProfileHeaderInPlace(){
@@ -191,6 +195,14 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
         function profileGridItem(post, source){
+          // A post still being uploaded has no mediaHtml yet -- show the
+          // same shimmering placeholder the feed uses instead of falling
+          // through to the "no media" text tile, which used to flash up
+          // blank/wrong and then pop into the real thumbnail once the
+          // upload finished.
+          if (post.uploading) {
+            return `<div class="relative w-full aspect-square overflow-hidden bg-gray-100" style="border-radius:0;">${uploadingMediaSkeletonHtml(post.uploadCount || 1)}</div>`;
+          }
           const isMulti = !!(post.mediaHtml && /post-media-grid/.test(post.mediaHtml));
           let inner;
           let mediaType = null; 
@@ -239,7 +251,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             const items = feedPosts.filter(p => p.saved).sort(byNewestFirst);
             return items.length ? `<div class="profile-thumb-grid">${items.map(p => profileGridItem(p,'saved')).join('')}</div>` : emptyState('Posts you save will show up here.');
           }
-          const items = feedPosts.filter(p => p.mine).sort(byNewestFirst);
+          // Excludes repost cards (see myPostsCount in feed.js) so the
+          // "Posts" grid and its count always agree with each other and
+          // with what shows up as your own uploads in the main feed.
+          const items = feedPosts.filter(p => p.mine && !p.isRepost).sort(byNewestFirst);
           return items.length ? `<div class="profile-thumb-grid">${items.map(p => profileGridItem(p,'mine')).join('')}</div>` : emptyState('Your posts will show up here.');
         }
 
