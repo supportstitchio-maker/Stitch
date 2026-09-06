@@ -1535,6 +1535,48 @@
           }
         }
 
+        // Grabs a real frame out of a video file client-side (via an
+        // off-screen <video>+<canvas>) so it can be uploaded as a poster
+        // image alongside the video. A poster shows instantly and the
+        // browser handles the poster-to-live-frame handoff natively with
+        // no black flash at all -- unlike the shimmer-until-ready fallback
+        // above, which still has to wait on the phone's video decoder.
+        // Best-effort: returns null on any failure/timeout, in which case
+        // the video just falls back to the shimmer treatment as before.
+        function generateVideoPosterFile(file, index){
+          return new Promise((resolve) => {
+            let settled = false;
+            const url = URL.createObjectURL(file);
+            const video = document.createElement('video');
+            const cleanup = () => { try { URL.revokeObjectURL(url); } catch (e) {} };
+            const finish = (blob) => {
+              if (settled) return;
+              settled = true;
+              cleanup();
+              resolve(blob ? new File([blob], `poster-${index}.jpg`, { type: 'image/jpeg' }) : null);
+            };
+            const timer = setTimeout(() => finish(null), 4000);
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.src = url;
+            video.addEventListener('loadedmetadata', () => {
+              try { video.currentTime = Math.min(0.3, (video.duration || 1) / 2); }
+              catch (e) { clearTimeout(timer); finish(null); }
+            }, { once: true });
+            video.addEventListener('seeked', () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 720;
+                canvas.height = video.videoHeight || 1280;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((b) => { clearTimeout(timer); finish(b); }, 'image/jpeg', 0.82);
+              } catch (e) { clearTimeout(timer); finish(null); }
+            }, { once: true });
+            video.addEventListener('error', () => { clearTimeout(timer); finish(null); }, { once: true });
+          });
+        }
+
         async function deletePostMediaFromStorage(path){
           if (!path) return;
           const sb = getSupabaseClient();
@@ -1625,7 +1667,7 @@
           if (btn) btn.style.opacity = '0';
         }
 
-        function simplePostVideoHtml(url, errorTarget){
+        function simplePostVideoHtml(url, errorTarget, posterUrl){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
           // Feed videos are only fetched with preload="metadata" (to avoid
@@ -1633,14 +1675,20 @@
           // has nothing decoded to paint yet and renders solid black until
           // playback actually starts pulling in frame data. That black
           // rectangle is what looked like posts "blacking out" on sign-in.
-          // Fix: keep a shimmering skeleton (matching the rest of the app's
-          // loading placeholders) stacked on top of the video and only drop
-          // it once the video has a real frame ready to show (loadeddata/
-          // canplay), instead of ever exposing the raw black canvas.
+          // Real fix (for newly-uploaded videos): a real poster image,
+          // generated at upload time (see generateVideoPosterFile) -- the
+          // browser shows that instantly and handles the poster-to-live
+          // handoff natively, no black frame possible. Posts uploaded
+          // before that existed have no posterUrl, so they fall back to a
+          // shimmering skeleton removed once the video has a real frame
+          // ready (see armFeedVideoReveal) -- still not zero-flash like a
+          // poster, but far better than exposing the raw black canvas.
+          const posterAttr = posterUrl ? ` poster="${posterUrl}"` : '';
+          const skeleton = posterUrl ? '' : `<div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`;
           return `
             <div class="relative feed-video-wrap" id="${uid}">
-              <div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>
-              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              ${skeleton}
+              <video src="${url}"${posterAttr} playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
@@ -1705,7 +1753,7 @@
         // ---- Post media grid layout (multi-image posts) ----
         function postMediaHtmlFromUploaded(items){
           const itemHtml = (it) => it.type === 'video'
-            ? simplePostVideoHtml(it.url)
+            ? simplePostVideoHtml(it.url, undefined, it.posterUrl)
             : `<img src="${it.url}" class="w-full h-auto" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
           if (items.length === 1) return itemHtml(items[0]);
           return postMediaGridHtml(items);
@@ -1728,12 +1776,13 @@
         }
 
         function postMediaGridTile(it, index, areaStyle, extraCount){
-          // Same black-canvas issue as simplePostVideoHtml: an unstarted
-          // <video> with preload="metadata" paints black until it has a
-          // frame, so grid tiles need the same shimmer-until-ready treatment
-          // instead of flashing black on sign-in/scroll-in.
+          // Same black-canvas issue as simplePostVideoHtml, same fix: a
+          // real posterUrl (newly-uploaded videos) shows instantly with no
+          // skeleton needed at all; older videos with no posterUrl fall
+          // back to the shimmer-until-ready treatment.
+          const posterAttr = it.posterUrl ? ` poster="${it.posterUrl}"` : '';
           const media = it.type === 'video'
-            ? `<video src="${it.url}" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`
+            ? `<video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video>${it.posterUrl ? '' : `<div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`}`
             : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
@@ -2425,11 +2474,17 @@
             const background = (async () => {
               if (files.length) {
                 const uploads = await Promise.all(files.map((f, i) => uploadPostMediaToStorage(f, post.id + '-' + i)));
+                const posterUploads = await Promise.all(files.map(async (f, i) => {
+                  if ((types[i] || 'image') !== 'video') return null;
+                  const posterFile = await generateVideoPosterFile(f, i);
+                  if (!posterFile) return null;
+                  return uploadPostMediaToStorage(posterFile, post.id + '-' + i + '-poster');
+                }));
                 const okItems = uploads
-                  .map((u, i) => u ? { url: u.url, type: types[i] || 'image', path: u.path } : null)
+                  .map((u, i) => u ? { url: u.url, type: types[i] || 'image', path: u.path, posterUrl: posterUploads[i] ? posterUploads[i].url : undefined, posterPath: posterUploads[i] ? posterUploads[i].path : undefined } : null)
                   .filter(Boolean);
                 if (okItems.length) {
-                  post.mediaPaths = okItems.map(it => it.path);
+                  post.mediaPaths = okItems.flatMap(it => it.posterPath ? [it.path, it.posterPath] : [it.path]);
                   post.mediaPath = post.mediaPaths[0];
                   post.mediaHtml = postMediaHtmlFromUploaded(okItems);
                   queueSaveUserState();
