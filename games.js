@@ -2303,6 +2303,14 @@ let simpleGameState = null;
               if (sb) { sb.auth.signOut().catch(() => {}); }
             })();
             resetCachedAuthUser();
+            // Belt-and-suspenders alongside invalidateFeedAndProfileCaches
+            // below: a signed-out account's cached feed snapshot (used to
+            // show something instantly on a slow reconnect -- see
+            // saveFeedCacheSnapshot/renderFeed in feed.js) must never
+            // survive into whoever logs into this browser next. Clearing
+            // every stitchFeedCache:* key (not just this account's) means
+            // it's safe even if the id lookup above ever comes back empty.
+            if (typeof clearAllFeedCaches === 'function') clearAllFeedCaches();
             // A cached-but-detached Home feed or Profile screen node (see
             // switchTab in core.js) still has this account's posts baked
             // into its DOM. Without clearing it here, that node could later
@@ -2362,6 +2370,9 @@ let simpleGameState = null;
                   if (sb) await sb.auth.signOut().catch(() => {});
                   if (window.storage) await window.storage.delete('gameProgress', false);
                 } catch (e) {  }
+                // Account is gone -- make sure no cached feed snapshot for
+                // it lingers in this browser's localStorage either.
+                if (typeof clearAllFeedCaches === 'function') clearAllFeedCaches();
                 // Same minimum-visible-time rule as hideAuthTransitionLoading
                 // above -- a reload that fires the instant the delete call
                 // finishes can cut the cover short if the request happened
