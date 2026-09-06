@@ -24,9 +24,32 @@
           if (!screenEl) return; // shell not mounted yet (e.g. essentialLoads resolved before renderApp() finished) -- it will re-render once the tab is actually shown
           const prevScrollTop = screenEl.scrollTop;
           if (typeof remotePostsLoaded !== 'undefined' && !remotePostsLoaded) {
+            // A slow first connection used to just sit on a bare skeleton
+            // with nothing to look at. If this account has a saved
+            // snapshot from a previous successful load, show that instead
+            // -- clearly labeled as saved, not live -- while the real
+            // fetch keeps running in the background and replaces it the
+            // moment it lands (loadRemotePostsImpl flips
+            // feedShowingCachedOnly off and calls back into renderFeed
+            // through the normal post-load path).
+            const cachedUserId = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null;
+            const cached = cachedUserId ? loadFeedCacheSnapshot(cachedUserId) : null;
+            if (cached) {
+              feedShowingCachedOnly = true;
+              screenEl.innerHTML = `
+                <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
+                  ${feedCacheBannerHTML()}
+                  <div class="space-y-3" id="feed-list">
+                    ${cached.posts.map(feedPost).join('')}
+                  </div>
+                </div>`;
+              return;
+            }
+            feedShowingCachedOnly = false;
             screenEl.innerHTML = feedSkeletonHTML();
             return;
           }
+          feedShowingCachedOnly = false;
           screenEl.innerHTML = `
             <div class="px-5 pb-5" style="padding-top:var(--top-safe-pad);">
               ${pullToRefreshIndicatorHTML()}
@@ -55,6 +78,14 @@
         }
 
         function patchFeedInPlace(){
+          // Still showing the cached snapshot (no successful live fetch
+          // yet) -- defer to renderFeed(), which knows how to correctly
+          // redisplay either state. Patching the cached DOM against the
+          // live feedPosts array here (possibly still empty, if this is
+          // the very first load and the connection hasn't come back)
+          // would otherwise blank out the cached posts a person is
+          // relying on to see something while they wait to reconnect.
+          if (typeof feedShowingCachedOnly !== 'undefined' && feedShowingCachedOnly) { renderFeed(); return; }
           const list = document.getElementById('feed-list');
           if (!list) { renderFeed(); return; }
           const storyStrip = document.getElementById('story-strip');
@@ -2023,6 +2054,80 @@
           } catch (e) { return false; }
         }
 
+        // ---- Feed cache: show something instantly on a slow/first
+        // connection instead of a bare skeleton, using whatever was last
+        // successfully loaded for THIS account. ----
+        const FEED_CACHE_PREFIX = 'stitchFeedCache:';
+        const FEED_CACHE_MAX_POSTS = 10;
+        // True only while the feed on screen is the cached snapshot (not
+        // live data yet). Every write action checks this and refuses to
+        // run rather than let someone like/comment/repost/post against
+        // data that might already be gone or out of date, and that would
+        // silently fail (or worse, appear to succeed) once actually sent.
+        let feedShowingCachedOnly = false;
+
+        function feedCacheKeyForUser(userId){
+          return userId ? (FEED_CACHE_PREFIX + userId) : null;
+        }
+
+        function saveFeedCacheSnapshot(userId){
+          try {
+            if (!userId || typeof localStorage === 'undefined') return;
+            const key = feedCacheKeyForUser(userId);
+            // Only real, finished posts -- never an in-progress upload
+            // (meaningless after a reload) and never anything whose media
+            // markup embeds actual file bytes as a data: URL (a fresh
+            // upload can briefly look like this before its real storage
+            // URL comes back) so the cache stays a handful of KB instead
+            // of ballooning toward localStorage's ~5MB ceiling.
+            const snapshot = feedPosts
+              .filter(p => p.mediaHtml && !p.uploading && p.mediaHtml.indexOf('data:') === -1)
+              .slice(0, FEED_CACHE_MAX_POSTS);
+            if (!snapshot.length) return;
+            localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), posts: snapshot }));
+          } catch (e) { /* storage full/unavailable/private-mode -- caching is a nicety, never worth breaking the feed over */ }
+        }
+
+        function loadFeedCacheSnapshot(userId){
+          try {
+            const key = feedCacheKeyForUser(userId);
+            if (!key || typeof localStorage === 'undefined') return null;
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || !Array.isArray(parsed.posts) || !parsed.posts.length) return null;
+            return parsed;
+          } catch (e) { return null; }
+        }
+
+        function clearFeedCacheSnapshot(userId){
+          try {
+            const key = feedCacheKeyForUser(userId);
+            if (key && typeof localStorage !== 'undefined') localStorage.removeItem(key);
+          } catch (e) {}
+        }
+
+        // Belt-and-suspenders sweep for sign-out on a shared/public device:
+        // even if a user id somehow isn't available at the exact moment of
+        // sign-out, this guarantees no account's cached feed can survive
+        // into whoever logs in next on the same browser.
+        function clearAllFeedCaches(){
+          try {
+            if (typeof localStorage === 'undefined') return;
+            Object.keys(localStorage).forEach(k => {
+              if (k.indexOf(FEED_CACHE_PREFIX) === 0) localStorage.removeItem(k);
+            });
+          } catch (e) {}
+        }
+
+        function feedCacheBannerHTML(){
+          return `
+            <div class="flex items-center gap-2 text-xs font-medium rounded-2xl px-3.5 py-2.5 mb-4" style="background:rgba(10,37,64,0.06);color:${NAVY};">
+              <div style="width:14px;height:14px;border-radius:50%;border:2px solid rgba(30,144,255,0.25);border-top-color:${NAVY};animation:classroom-spin .7s linear infinite;flex-shrink:0;"></div>
+              <span>Showing saved posts -- reconnecting...</span>
+            </div>`;
+        }
+
         let remotePostsLoaded = false;
 
         // Guards against loadRemotePosts() running twice at once (e.g. the
@@ -2192,6 +2297,8 @@
             }
             feedPosts.sort((a, b) => Number(b.id) - Number(a.id));
             rankFeedPosts();
+            feedShowingCachedOnly = false;
+            saveFeedCacheSnapshot(me && me.id);
             return newRows.length > 0 || postsWereRemoved;
           } catch (e) { remotePostsLoaded = true; return false; }
         }
@@ -2971,7 +3078,21 @@
           NetworkAPI.unblock(name).then(() => renderBlockedAccountsOverlay());
         }
 
+        // Shared guard for every write-action entry point below. Cached
+        // posts can already be stale (liked/deleted/edited elsewhere) by
+        // the time a slow connection catches up, so likes/comments/
+        // reposts/shares/saves are blocked outright while on the cached
+        // snapshot rather than letting them appear to work and then
+        // silently fail (or worse, silently succeed against a post that's
+        // since changed) once a request finally goes out.
+        function blockedWhileShowingCachedFeed(){
+          if (!feedShowingCachedOnly) return false;
+          openAppAlertModal("You're viewing saved posts from your last session. Reconnect to the internet to like, comment, repost, share, or post.", "Reconnecting...");
+          return true;
+        }
+
         function toggleSavePost(id){
+          if (blockedWhileShowingCachedFeed()) return;
           PostsAPI.toggleSave(id).then(post => {
             if (!post) return;
             forEachById('save-btn-'+id, btn => {
@@ -3573,6 +3694,7 @@
         }
 
         function toggleLike(id){
+          if (blockedWhileShowingCachedFeed()) return;
           PostsAPI.toggleLike(id).then(post => {
             if (!post) return;
             forEachById('like-icon-'+id, iconEl => { iconEl.innerHTML = post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline', 'w-[18px] h-[18px]'); });
@@ -3588,6 +3710,7 @@
         }
 
         function toggleRepost(id){
+          if (blockedWhileShowingCachedFeed()) return;
           PostsAPI.toggleRepost(id).then(post => {
             if (!post) return;
             forEachById('repost-btn-'+id, btn => {
@@ -3604,6 +3727,7 @@
         }
 
         function openComments(id){
+          if (blockedWhileShowingCachedFeed()) return;
           const post = findPost(id);
           const ov = document.getElementById('overlay');
           ov.classList.remove('hidden');
@@ -3665,6 +3789,7 @@
 
         // ---- Share a post to contacts ----
         function openShare(id){
+          if (blockedWhileShowingCachedFeed()) return;
           const post = findPost(id);
           shareSelected = new Set();
           const ov = document.getElementById('overlay');
