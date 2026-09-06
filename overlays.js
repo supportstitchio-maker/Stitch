@@ -284,6 +284,13 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         }
 
         function openOverlay(kind){
+          // Composing while only the cached (pre-reconnect) feed is on
+          // screen would look like it worked and then either fail to send
+          // or post against stale state once a connection comes back.
+          if (kind === 'create' && typeof feedShowingCachedOnly !== 'undefined' && feedShowingCachedOnly) {
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("You're viewing saved posts from your last session. Reconnect to the internet before creating a new post.", "Reconnecting...");
+            return;
+          }
           collabMembersOverlayOpen = false;
           pauseAllOverlayMedia();
           currentOverlayKind = kind;
