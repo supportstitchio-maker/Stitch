@@ -1564,8 +1564,32 @@
         // Only one feed video should ever be playing at a time -- pause every
         // other feed video before starting this one, whether it was started
         // by the scroll-triggered autoplay observer or a manual tap.
-        function pauseOtherFeedVideos(video){
-          document.querySelectorAll('#feed-list video, #post-feed-list video').forEach(function(v){
+        // loadeddata/canplay only mean "enough data buffered to start" --
+        // on some phones there's a real gap between that and an actual
+        // frame being decoded and composited on screen, which left a
+        // black flash even after the skeleton below had already been
+        // removed. requestVideoFrameCallback is the API that specifically
+        // fires once a frame has really been presented; timeupdate and a
+        // timer are fallbacks for browsers without it (or if it never
+        // fires for some other reason) so the skeleton is never stuck up
+        // forever.
+        function revealFeedVideo(video){
+          const sk = video.parentElement && video.parentElement.querySelector('.feed-video-skeleton');
+          if (sk) sk.remove();
+        }
+        function armFeedVideoReveal(video){
+          if (video.dataset.revealArmed === '1') return;
+          video.dataset.revealArmed = '1';
+          let done = false;
+          const reveal = () => { if (done) return; done = true; revealFeedVideo(video); };
+          if (typeof video.requestVideoFrameCallback === 'function') {
+            video.requestVideoFrameCallback(reveal);
+          }
+          video.addEventListener('timeupdate', reveal, { once: true });
+          video.addEventListener('loadeddata', () => { setTimeout(reveal, 600); }, { once: true });
+        }
+
+        function pauseOtherFeedVideos(video){  document.querySelectorAll('#feed-list video, #post-feed-list video').forEach(function(v){
             if (v === video) return;
             if (!v.paused) {
               v.pause();
@@ -1616,7 +1640,7 @@
           return `
             <div class="relative feed-video-wrap" id="${uid}">
               <div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>
-              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadeddata="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" oncanplay="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
+              <video src="${url}" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="this.onerror=null;this.closest('.feed-video-wrap').replaceWith(Object.assign(document.createElement('div'),{className:'w-full py-10 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'${err}'}))"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
@@ -1687,13 +1711,29 @@
           return postMediaGridHtml(items);
         }
 
+        // Grid-tile videos never autoplay (they're static previews until
+        // tapped open), so there's no playback to key off of the way
+        // armFeedVideoReveal does. Instead, nudge currentTime forward a
+        // hair right after metadata loads -- that forces the browser to
+        // actually decode a real frame at that timestamp, and 'seeked'
+        // fires once it's genuinely rendered, so that's the reveal signal.
+        function armFeedVideoThumbnail(video){
+          if (video.dataset.revealArmed === '1') return;
+          video.dataset.revealArmed = '1';
+          let done = false;
+          const reveal = () => { if (done) return; done = true; revealFeedVideo(video); };
+          video.addEventListener('seeked', reveal, { once: true });
+          video.addEventListener('loadeddata', () => { setTimeout(reveal, 800); }, { once: true });
+          try { video.currentTime = 0.05; } catch (e) { reveal(); }
+        }
+
         function postMediaGridTile(it, index, areaStyle, extraCount){
           // Same black-canvas issue as simplePostVideoHtml: an unstarted
           // <video> with preload="metadata" paints black until it has a
           // frame, so grid tiles need the same shimmer-until-ready treatment
           // instead of flashing black on sign-in/scroll-in.
           const media = it.type === 'video'
-            ? `<video src="${it.url}" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadeddata="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();" oncanplay="const sk=this.parentElement.querySelector('.feed-video-skeleton'); if(sk) sk.remove();"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`
+            ? `<video src="${it.url}" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`
             : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
