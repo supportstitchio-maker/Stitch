@@ -2385,11 +2385,13 @@ let simpleGameState = null;
           if (!isValidEmail(email)) { err.textContent = 'Enter a valid email address (e.g. name@example.com).'; err.classList.add('show'); return; }
 
           if (!passwordUnlocked) {
+            // Just reveal the password field here -- no sign-in attempt and
+            // no OTP email goes out until the person has actually typed
+            // their password and submitted it below. Authentication (the
+            // password check, and the one-time-code check on an untrusted
+            // device) always comes after the password, never before it.
             err.classList.remove('show');
-            if (authIsDeviceTrusted(email)) { authLoginRevealPassword(); return; }
-            const sb = getSupabaseClient();
-            if (!sb) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); return; }
-            authShowVerify(email, 'login-trust');
+            authLoginRevealPassword();
             return;
           }
 
@@ -2402,6 +2404,13 @@ let simpleGameState = null;
             console.error('Login error:', error);
             err.textContent = (error.message && error.message !== '{}') ? error.message : 'Incorrect email or password.';
             err.classList.add('show');
+            return;
+          }
+          // Password verified -- on a device we haven't seen before,
+          // confirm the sign-in with a one-time email code before letting
+          // them into the app. This only runs after a correct password.
+          if (!authIsDeviceTrusted(email)) {
+            authShowVerify(email, 'login-trust');
             return;
           }
           await authEnterApp();
@@ -2521,18 +2530,11 @@ let simpleGameState = null;
             return;
           }
           err.classList.remove('show');
-          authMarkDeviceTrusted(authPendingEmail); 
-
-          if (authPendingFrom === 'login-trust') {
-            const email = authPendingEmail;
-            const sb2 = getSupabaseClient();
-            if (sb2) { try { await sb2.auth.signOut(); } catch (e) {  } }
-            authShowLogin();
-            const emailInput = document.getElementById('auth-li-email');
-            if (emailInput) emailInput.value = email;
-            authLoginRevealPassword();
-            return;
-          }
+          authMarkDeviceTrusted(authPendingEmail);
+          // For 'login-trust' the person's password was already verified
+          // via signInWithPassword before this code screen ever showed up
+          // (see authSubmitLogin), so that session is still the one that's
+          // active -- no need to sign out and make them type it again.
           await authEnterApp();
         }
         // ---- Forgot/reset password flow ----
