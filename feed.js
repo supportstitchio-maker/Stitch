@@ -2510,6 +2510,38 @@
           } catch (e) {  }
         }
 
+        // ---- "Still posting" placeholder (shown until upload is fully done) ----
+        // Mirrors the real grid shapes from postMediaGridHtml so the layout
+        // never jumps once the real media swaps in -- 1 item is a single
+        // block, 2/3/4+ items get the same column/row arrangement the real
+        // grid will use, just filled with shimmer tiles instead of media.
+        function uploadingMediaSkeletonHtml(count){
+          const tile = `<div class="skel-shimmer w-full h-full"></div>`;
+          const gap = 'gap:2px;';
+          if (count <= 1) {
+            return `<div class="skel-shimmer w-full" style="aspect-ratio:4/5;"></div>`;
+          }
+          if (count === 2) {
+            return `<div class="grid" style="grid-template-columns:1fr 1fr;aspect-ratio:4/3;${gap}">${tile}${tile}</div>`;
+          }
+          if (count === 3) {
+            return `<div class="grid" style="grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;aspect-ratio:4/3;${gap}"><div class="skel-shimmer w-full h-full" style="grid-row:1 / 3;"></div>${tile}${tile}</div>`;
+          }
+          return `<div class="grid" style="grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr 1fr;aspect-ratio:4/3;${gap}"><div class="skel-shimmer w-full h-full" style="grid-row:1 / 4;"></div>${tile}${tile}${tile}</div>`;
+        }
+        function uploadingPostMediaHtml(count){
+          return `
+            <div class="relative">
+              ${uploadingMediaSkeletonHtml(count)}
+              <div class="absolute inset-x-0 bottom-2 flex items-center justify-center pointer-events-none">
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full text-white text-[11px] font-medium" style="background:rgba(0,0,0,0.55);">
+                  <span class="inline-block rounded-full border-2 border-white/40 border-t-white animate-spin" style="width:11px;height:11px;"></span>
+                  Posting…
+                </div>
+              </div>
+            </div>`;
+        }
+
         const PostsAPI = {
           list(){
             return mockRequest(() => feedPosts);
@@ -2521,6 +2553,17 @@
             const { mediaFile, mediaType, mediaFiles, mediaTypes, ...rest } = data;
             const files = mediaFiles && mediaFiles.length ? mediaFiles : (mediaFile ? [mediaFile] : []);
             const types = mediaTypes && mediaTypes.length ? mediaTypes : (mediaType ? [mediaType] : []);
+            const willUpload = files.length > 0;
+            // A post with media stays in an explicit "uploading" state --
+            // rendered via uploadingPostMediaHtml above, shaped to match the
+            // real grid it'll become -- until the real, fully-hosted media is
+            // ready: uploaded to storage, video posters generated, and
+            // arranged into its final grid HTML. That avoids the post
+            // popping into the feed with a local blob preview (or a bare
+            // black video box) that then shifts or swaps out from under the
+            // user once the real upload finishes; the post only appears
+            // "final" once it actually is.
+            delete rest.mediaHtml;
             const post = {
               id: Date.now(),
               avatarIcon: 'user', avatarBg: 'bg-blue-100', name: profileData.name, meta: 'now',
@@ -2528,13 +2571,9 @@
               body: '', mediaHtml: null,
               likes: 0, liked: false, reposts: 0, reposted: false, shares: 0, comments: 0, commentsList: [], saved: false, views: 0,
               ...rest,
+              uploading: willUpload,
+              uploadCount: files.length,
             };
-            // Show the post right away using the local preview (rest.mediaHtml
-            // was already built from the picked files) instead of blocking on
-            // the media upload + remote insert round trip first -- that used
-            // to be why a new post took a beat to show up in the feed and on
-            // the profile. The upload/insert now finish in the background and
-            // just refresh the card in place once they're done.
             feedPosts.unshift(post);
             queueSaveUserState();
             const background = (async () => {
@@ -2553,9 +2592,11 @@
                   post.mediaPaths = okItems.flatMap(it => it.posterPath ? [it.path, it.posterPath] : [it.path]);
                   post.mediaPath = post.mediaPaths[0];
                   post.mediaHtml = postMediaHtmlFromUploaded(okItems);
-                  queueSaveUserState();
-                  refreshFeedPostCard(post.id);
                 }
+                post.uploading = false;
+                queueSaveUserState();
+                refreshFeedPostCard(post.id);
+                if (typeof refreshProfilePostsUI === 'function') refreshProfilePostsUI();
               }
               // postInsertRemote used to be fire-and-forget here: if the
               // insert failed silently (flaky network, an RLS hiccup),
@@ -3000,6 +3041,7 @@
           // "feed-video-wrap" either, so isVideoPost still came out false for grids) — fixed
           // for correctness/future-proofing in case the grid markup changes.
           const isVideoPost = !!post.mediaHtml && /feed-video-wrap/.test(post.mediaHtml) && !/post-media-grid/.test(post.mediaHtml);
+          const mediaAreaHtml = post.uploading ? uploadingPostMediaHtml(post.uploadCount || 1) : (post.mediaHtml || '');
           return `
             <div class="bg-white overflow-hidden -mx-5 border-b border-gray-100" id="post-${post.id}">
               ${post.isRepost ? `
@@ -3009,7 +3051,7 @@
                 </div>` : ''}
               ${isVideoPost ? '' : feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, false)}
 
-              <div class="feed-media relative" onclick="handleFeedMediaTap(event, ${post.id})" style="cursor:pointer;">${post.mediaHtml || ''}${isVideoPost ? feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, true) : ''}</div>
+              <div class="feed-media relative" ${post.uploading ? '' : `onclick="handleFeedMediaTap(event, ${post.id})"`} style="cursor:${post.uploading ? 'default' : 'pointer'};">${mediaAreaHtml}${isVideoPost ? feedPostHeaderHtml(post, isStranger, showConnect, showRequestSent, true) : ''}</div>
 
               <div class="flex items-center justify-between px-3.5 pt-1.5 text-gray-800">
                 <button onclick="toggleLike(${post.id})" id="like-btn-${post.id}" class="p-1 -ml-1 flex items-center gap-1 ${post.liked ? `text-[${ROYAL}]` : 'text-gray-500'}">
