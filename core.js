@@ -965,6 +965,7 @@
     <div class="dside-divider"></div>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
     <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
+    <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dnav-4">${IconBold('user','w-5 h-5 dnav-icon')}<span class="dside-label">Profile</span></button>
     </div>
     <!-- Classroom sub-nav: only shown (in place of the main tabs above)
          while Classroom is the active tab. The rest of the app isn't
