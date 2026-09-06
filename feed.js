@@ -37,7 +37,7 @@
               </div>
 
               <div class="space-y-3" id="feed-list">
-                ${feedPosts.filter(p => p.mediaHtml).map(feedPost).join('')}
+                ${feedPosts.filter(p => p.mediaHtml || p.uploading).map(feedPost).join('')}
               </div>
             </div>`;
           if (screenEl) {
@@ -59,7 +59,13 @@
           if (!list) { renderFeed(); return; }
           const storyStrip = document.getElementById('story-strip');
           if (storyStrip) storyStrip.innerHTML = stories.map(storyBubble).join('');
-          const posts = feedPosts.filter(p => p.mediaHtml);
+          // Keep this in sync with the filter in renderFeed() above (and
+          // with the "uploading OR has media" definition used everywhere
+          // else a post is counted) -- a post mid-upload has no mediaHtml
+          // yet, but it should already occupy its slot in the feed (shown
+          // via its skeleton in feedPost()) instead of popping in only once
+          // the upload finishes.
+          const posts = feedPosts.filter(p => p.mediaHtml || p.uploading);
           const keepIds = new Set();
           posts.forEach(post => {
             const elId = 'post-' + post.id;
@@ -1509,8 +1515,15 @@
 
         let deletedPostIds = new Set();
 
+        // Excludes repost cards: those already have their own "Reposts" tab
+        // on the profile, so counting them here too would inflate "Posts"
+        // with items the person never actually uploaded -- and since the
+        // main feed shows reposts as separate cards from the originals,
+        // including them here is exactly what made this count drift away
+        // from what someone would count scrolling their own uploads in the
+        // feed.
         function myPostsCount(){
-          return feedPosts.filter(p => p.mine).length;
+          return feedPosts.filter(p => p.mine && !p.isRepost).length;
         }
 
         function mockRequest(fn){
