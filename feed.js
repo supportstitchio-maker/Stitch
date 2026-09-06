@@ -1619,6 +1619,13 @@
           const sk = video.parentElement && video.parentElement.querySelector('.feed-video-skeleton');
           if (sk) sk.remove();
         }
+        // A wrap-based version of revealFeedVideo for callers (like the poster
+        // preloader below) that only have the wrap element, not the <video> itself.
+        function revealFeedVideoWrap(el){
+          const wrap = el.closest ? el.closest('.feed-video-wrap') : null;
+          const sk = wrap && wrap.querySelector('.feed-video-skeleton');
+          if (sk) sk.remove();
+        }
         function armFeedVideoReveal(video){
           if (video.dataset.revealArmed === '1') return;
           video.dataset.revealArmed = '1';
@@ -1629,6 +1636,20 @@
           }
           video.addEventListener('timeupdate', reveal, { once: true });
           video.addEventListener('loadeddata', () => { setTimeout(reveal, 600); }, { once: true });
+          // Safety net: a <video poster="..."> only shows that poster once the
+          // poster image itself has actually finished downloading -- until
+          // then the browser paints the raw video canvas solid black. Right
+          // after sign-in/sign-up, a burst of posts, avatars, and poster
+          // images all fetch at once, so that "instant" poster paint the
+          // posterUrl branch below assumes can easily take a second or more
+          // -- that stretch of solid black is exactly what looked like posts
+          // "blacking out" on sign-in. So the skeleton is now always kept in
+          // the markup (never skipped just because a posterUrl exists), and
+          // removed as soon as whichever finishes first: the poster image
+          // loading (see armFeedVideoPoster) or a real video frame painting.
+          // A final timer guarantees the skeleton never gets stuck forever
+          // if neither of those signals ever fires for some reason.
+          setTimeout(reveal, 5000);
         }
 
         function pauseOtherFeedVideos(video){  document.querySelectorAll('#feed-list video, #post-feed-list video').forEach(function(v){
@@ -1675,16 +1696,19 @@
           // has nothing decoded to paint yet and renders solid black until
           // playback actually starts pulling in frame data. That black
           // rectangle is what looked like posts "blacking out" on sign-in.
-          // Real fix (for newly-uploaded videos): a real poster image,
-          // generated at upload time (see generateVideoPosterFile) -- the
-          // browser shows that instantly and handles the poster-to-live
-          // handoff natively, no black frame possible. Posts uploaded
-          // before that existed have no posterUrl, so they fall back to a
-          // shimmering skeleton removed once the video has a real frame
-          // ready (see armFeedVideoReveal) -- still not zero-flash like a
-          // poster, but far better than exposing the raw black canvas.
+          // A posterUrl (newly-uploaded videos, see generateVideoPosterFile)
+          // helps a lot, but it is NOT instant -- it's still an image fetched
+          // over the network, and right after sign-in/sign-up a whole feed's
+          // worth of posts, avatars, and posters are all fetching at once, so
+          // it can take a beat to actually paint. The shimmering skeleton is
+          // therefore always rendered (regardless of whether a posterUrl
+          // exists) and only removed once something is genuinely ready to
+          // show -- the poster image loading (armFeedVideoPoster) or the
+          // video producing a real frame (armFeedVideoReveal), whichever
+          // comes first. That keeps the raw black canvas from ever being
+          // exposed to the user.
           const posterAttr = posterUrl ? ` poster="${posterUrl}"` : '';
-          const skeleton = posterUrl ? '' : `<div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`;
+          const skeleton = `<div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`;
           return `
             <div class="relative feed-video-wrap" id="${uid}">
               ${skeleton}
@@ -1693,6 +1717,7 @@
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
               <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volume','w-4 h-4 text-white')}</button>
+              ${posterUrl ? `<img src="${posterUrl}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : ''}
             </div>`;
         }
 
@@ -1773,16 +1798,23 @@
           video.addEventListener('seeked', reveal, { once: true });
           video.addEventListener('loadeddata', () => { setTimeout(reveal, 800); }, { once: true });
           try { video.currentTime = 0.05; } catch (e) { reveal(); }
+          // Safety net so the skeleton can never get stuck forever -- see the
+          // matching comment in armFeedVideoReveal for why this is needed
+          // even when a posterUrl is present.
+          setTimeout(reveal, 5000);
         }
 
         function postMediaGridTile(it, index, areaStyle, extraCount){
-          // Same black-canvas issue as simplePostVideoHtml, same fix: a
-          // real posterUrl (newly-uploaded videos) shows instantly with no
-          // skeleton needed at all; older videos with no posterUrl fall
-          // back to the shimmer-until-ready treatment.
+          // Same black-canvas issue as simplePostVideoHtml, same fix: the
+          // skeleton is always rendered (even when a posterUrl exists,
+          // because that poster is still a real network fetch and isn't
+          // guaranteed to paint instantly) and removed as soon as the
+          // poster image actually finishes loading or the video produces a
+          // real frame, whichever happens first.
           const posterAttr = it.posterUrl ? ` poster="${it.posterUrl}"` : '';
+          const posterPreload = it.posterUrl ? `<img src="${it.posterUrl}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : '';
           const media = it.type === 'video'
-            ? `<video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video>${it.posterUrl ? '' : `<div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>`}`
+            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)"></video><div class="feed-video-skeleton absolute inset-0 skel-shimmer" style="pointer-events:none;"></div>${posterPreload}</div>`
             : `<img src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs italic',textContent:'Image no longer available'}))">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
