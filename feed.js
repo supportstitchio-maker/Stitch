@@ -92,6 +92,8 @@
         let ptrMouseActive = false;
         let ptrStartY = 0;
         let ptrDistance = 0;
+        let ptrWheelAccum = 0;
+        let ptrWheelResetTimer = null;
         const PTR_DEADZONE = 12;
         const PTR_TRIGGER_DISTANCE = 64;
         const PTR_MAX_DISTANCE = 96;
@@ -169,6 +171,37 @@
             }
             ptrDistance = 0;
           });
+
+          // Desktop trackpad/scroll-wheel support: most desktop users
+          // scroll with a wheel rather than click-and-drag, so mirror the
+          // same gesture there -- once the feed is already scrolled all
+          // the way to the top, continuing to scroll up ("up up up, and
+          // there is nothing to display, and you still scroll") pulls
+          // down the refresh indicator instead of doing nothing.
+          screenEl.addEventListener('wheel', (e) => {
+            if (typeof currentTab === 'undefined' || currentTab !== 0 || homeFeedRefreshing) return;
+            if (screenEl.scrollTop > 0) {
+              if (ptrWheelAccum > 0) { ptrWheelAccum = 0; setPullIndicatorHeight(0, true); }
+              return;
+            }
+            if (e.deltaY < 0) {
+              ptrWheelAccum = Math.min(PTR_MAX_DISTANCE, ptrWheelAccum + (-e.deltaY) * 0.6);
+              setPullIndicatorHeight(ptrWheelAccum, false);
+              clearTimeout(ptrWheelResetTimer);
+              ptrWheelResetTimer = setTimeout(() => {
+                if (ptrWheelAccum >= PTR_TRIGGER_DISTANCE) {
+                  startHomeFeedRefresh();
+                } else {
+                  setPullIndicatorHeight(0, true);
+                }
+                ptrWheelAccum = 0;
+              }, 220);
+            } else if (e.deltaY > 0 && ptrWheelAccum > 0) {
+              clearTimeout(ptrWheelResetTimer);
+              ptrWheelAccum = 0;
+              setPullIndicatorHeight(0, true);
+            }
+          }, { passive: true });
         }
 
         function setPullIndicatorHeight(px, animated){
