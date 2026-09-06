@@ -608,7 +608,9 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           return `
             <div class="absolute w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:3.5rem;">
               <button onclick="toggleClassDetailMenu(); openOverlayFrom('classDetail', 'classNotifications')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('bell','w-4 h-4')} Notifications</button>
-              ${isTeacher ? `<button onclick="toggleClassDetailMenu(); confirmDeleteCurrentClass()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete class</button>` : ''}
+              ${isTeacher
+                ? `<button onclick="toggleClassDetailMenu(); confirmDeleteCurrentClass()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete class</button>`
+                : `<button onclick="toggleClassDetailMenu(); confirmLeaveCurrentClass()" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('back','w-4 h-4')} Leave class</button>`}
             </div>`;
         }
         function classDetailHeaderHTML(title, isTeacher){
