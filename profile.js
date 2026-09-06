@@ -147,11 +147,13 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return `<button id="profile-photo-el" ${profileData.photo ? `onclick="viewProfilePhoto('${escapeForJsAttr(profileData.photo)}', '${escapeForJsAttr(profileData.name || '')}')"` : ''} class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center ${profileData.photo ? '' : `text-[${NAVY}]`}" style="${profileData.photo ? '' : 'background:rgba(10,37,64,0.14);'}">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : Icon('user','w-9 h-9')}</button>`;
         }
 
-        function profileScreenHTML(){
+        function profileScreenHTML(asOverlay){
           return `
           <div id="profile-screen-root">
             <div class="px-5 pb-3 flex items-center justify-between" style="padding-top:var(--top-safe-pad);">
-              <button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>
+              ${asOverlay
+                ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
+                : `<button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
               <span id="profile-username-el" class="font-bold text-base font-display grad-text flex items-center gap-1.5">${escapeHtml(profileData.username)}</span>
               <div class="flex items-center rounded-full" style="background:rgba(65,105,225,0.08)">
                 <button onclick="openOverlay('profileMenu')" class="w-8 h-8 flex items-center justify-center">${gradIcon(IconBold('settings','w-4 h-4'))}</button>
@@ -184,6 +186,26 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="flex border-t border-gray-200" id="profile-tabs">${profileTabsHTML()}</div>
             <div class="px-5" id="profile-tab-content">${profileTabContent()}</div>
           </div>`;
+        }
+
+        // "View full profile" normally jumps to the main Profile tab
+        // (switchTab(4)), but that fully leaves whatever tab the person
+        // was on -- most jarringly when they were inside a Classroom and
+        // just wanted a quick look at their own profile. When triggered
+        // from a context that isn't already tab-based navigation (e.g.
+        // Classroom), show the same profile screen as a normal overlay
+        // instead, so closing it lands back exactly where they were.
+        function myProfileOverlayHTML(){
+          return `<div class="absolute inset-0 overflow-y-auto bg-white no-scrollbar">${profileScreenHTML(true)}</div>`;
+        }
+
+        function viewMyFullProfile(){
+          closeRightPanel();
+          if (typeof currentTab !== 'undefined' && currentTab === 2) {
+            openOverlay('myFullProfile');
+          } else {
+            switchTab(4);
+          }
         }
 
         let profileTab = 'posts';
@@ -390,7 +412,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               ${profileData.bio ? `<div class="text-sm text-gray-600 mb-4">${escapeHtml(profileData.bio)}</div>` : ''}
               ${profileLinksHTML(profileData.links, { center: true })}
               <div class="flex gap-2">
-                <button onclick="closeRightPanel();switchTab(4);" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">View full profile</button>
+                <button onclick="viewMyFullProfile()" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">View full profile</button>
                 <button onclick="openEditProfileModal()" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Edit</button>
               </div>
             </div>
