@@ -1242,11 +1242,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stepId === 'contact') {
             return `
               <h2 class="text-xl font-bold text-gray-800 text-center leading-snug" style="margin-bottom:20px;">How can we reach you?</h2>
-              ${careerContactMethodToggleHTML(d.contactMethod)}
               ${careerStartFieldHTML('Full name', 'fullName', 'text', 'Your full name')}
-              ${careerStartFieldHTML(d.contactMethod === 'email' ? 'Email' : 'Email (optional)', 'email', 'email', 'you@example.com')}
+              ${careerStartFieldHTML('Email', 'email', 'email', 'you@example.com')}
               ${careerStartFieldHTML('Phone (optional)', 'phone', 'tel', '+233 24 123 4567')}
-              <div class="text-xs text-gray-400 mt-1 flex items-start gap-2">${Icon('help','w-4 h-4 flex-shrink-0 mt-0.5')}<span>${d.contactMethod === 'email' ? "We'll email match updates to the address above." : "We'll send match updates as in-app notifications inside Stitch."}</span></div>`;
+              <div class="text-xs text-gray-400 mt-1 flex items-start gap-2">${Icon('help','w-4 h-4 flex-shrink-0 mt-0.5')}<span>We'll email match updates to the address above.</span></div>`;
           }
           if (stepId === 'resume') {
             return `
