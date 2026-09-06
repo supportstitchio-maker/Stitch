@@ -489,9 +489,6 @@ try {
 
         function showAIRobot(){
           const container = document.getElementById('ai-robot-container');
-          const img = document.getElementById('ai-robot-img');
-          const pose = currentAIRobotPose();
-          if (img) img.src = pose.src;
           if (container) container.classList.remove('ai-robot-hidden');
         }
 
@@ -505,11 +502,11 @@ try {
         }
 
         function aiChatEmptyStateHTML(){
-          const pose = currentAIRobotPose();
           return `
             <div class="h-full min-h-full flex flex-col items-center justify-center text-center px-8">
               <div id="ai-robot-container" class="ai-robot-container">
-                <img id="ai-robot-img" class="ai-robot-img" src="${pose.src}" alt="Stitch Bot">
+                <div class="ai-empty-dot"></div>
+                <div class="ai-empty-greeting">Hi, what would you like to do with Stitch Bot today?</div>
               </div>
             </div>`;
         }
