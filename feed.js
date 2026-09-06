@@ -396,6 +396,7 @@
             bot: `<path d="M9.75 3v2.25M14.25 3v2.25M5.25 9.75h13.5M5.25 9.75A2.25 2.25 0 003 12v6a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-6a2.25 2.25 0 00-2.25-2.25M5.25 9.75V9a2.25 2.25 0 012.25-2.25h9A2.25 2.25 0 0118.75 9v.75M9 15.75h.008v.008H9v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM14.625 15.75h.008v.008h-.008v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
             compass: `<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M15.3 8.7l-1.9 4.7-4.7 1.9 1.9-4.7 4.7-1.9z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>`,
             graduationCap: `<path d="M4.26 10.15a60.4 60.4 0 00-.49 6.34A48.6 48.6 0 0012 20.9a48.6 48.6 0 018.23-4.4 60.4 60.4 0 00-.49-6.35m-15.48 0a50.6 50.6 0 00-2.66-.82A59.9 59.9 0 0112 3.5a59.9 59.9 0 0110.4 5.83c-.9.25-1.78.52-2.66.82m-15.48 0A50.7 50.7 0 0112 13.49a50.7 50.7 0 017.74-3.34M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.67A55.4 55.4 0 0112 8.44" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+            user: `<path d="M12 12.5c2.9 0 5.25-2.35 5.25-5.25S14.9 2 12 2 6.75 4.35 6.75 7.25 9.1 12.5 12 12.5zm0 2.5c-3.87 0-9 1.94-9 5.25V22h18v-1.75c0-3.31-5.13-5.25-9-5.25z"/>`,
           };
           return `<svg viewBox="0 0 24 24" fill="currentColor" class="${cls}">${boldPaths[type] || ''}</svg>`;
         }
@@ -3200,6 +3201,7 @@
           ov.style.paddingTop = '';
           ov.style.bottom = '0';
           ov.innerHTML = hasSingleMedia ? reelPostDetailHTML(post) : postDetailHTML(post);
+          activeReelPostId = hasSingleMedia ? post.id : null;
           const bottomNavEl = document.getElementById('bottom-nav');
           const classroomNavEl = document.getElementById('classroom-nav');
           if (bottomNavEl) bottomNavEl.style.display = 'none';
@@ -3211,6 +3213,7 @@
         }
 
         // ---- Reel-style (full-screen) post detail + swipe nav ----
+        let activeReelPostId = null;
         function reelPostQueue(){
           return postListForSource(postFeedSource).filter(p => p.mediaHtml && !/post-media-grid/.test(p.mediaHtml));
         }
@@ -3229,6 +3232,7 @@
           const outgoingVideo = ov.querySelector('video');
           if (outgoingVideo && !outgoingVideo.paused) outgoingVideo.pause();
           ov.innerHTML = reelPostDetailHTML(nextPost);
+          activeReelPostId = nextPost.id;
           if (!nextPost.mine && !viewedThisSession.has(String(nextPost.id))) {
             nextPost.views = (nextPost.views || 0) + 1;
           }
@@ -3252,8 +3256,10 @@
           const dy = t.clientY - startY;
           const dx = t.clientX - startX;
           const SWIPE_THRESHOLD = 60;
-          if (Math.abs(dy) < SWIPE_THRESHOLD || Math.abs(dx) > Math.abs(dy)) return; 
-          navigateReelPost(postId, dy < 0 ? 1 : -1); 
+          // Swipe left/right between posts (not up/down) -- mirrors the
+          // same-post image gallery's horizontal swipe below.
+          if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+          navigateReelPost(postId, dx < 0 ? 1 : -1);
         }
 
         function framedMediaLayerHtml(media, extraImgAttrs){
@@ -3288,6 +3294,8 @@
         }
 
         // ---- Post media gallery (swipe through images) ----
+        let activeGalleryPostId = null;
+        let activeGalleryIndex = 0;
         function openPostMediaGallery(postId, index){
           const post = findPost(postId);
           if (!post) return;
@@ -3302,6 +3310,8 @@
           ov.style.paddingTop = '';
           ov.style.bottom = '0';
           ov.innerHTML = postMediaGalleryHTML(post, index || 0);
+          activeGalleryPostId = postId;
+          activeGalleryIndex = index || 0;
           const bottomNavEl = document.getElementById('bottom-nav');
           const classroomNavEl = document.getElementById('classroom-nav');
           if (bottomNavEl) bottomNavEl.style.display = 'none';
@@ -3374,7 +3384,29 @@
           const outgoingVideo = ov.querySelector('video');
           if (outgoingVideo && !outgoingVideo.paused) outgoingVideo.pause();
           ov.innerHTML = postMediaGalleryHTML(post, nextIndex);
+          activeGalleryPostId = postId;
+          activeGalleryIndex = nextIndex;
         }
+
+        // Left/right arrow keys move between posts (reel view) or between
+        // images within the same post (gallery view), mirroring the
+        // horizontal swipe gestures above -- desktop users get the same
+        // navigation without needing a mouse drag.
+        document.addEventListener('keydown', function(e){
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+          const active = document.activeElement;
+          if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+          const ov = document.getElementById('overlay');
+          if (!ov || ov.classList.contains('hidden')) return;
+          const direction = e.key === 'ArrowRight' ? 1 : -1;
+          if (activeGalleryPostId != null && ov.querySelector('[id^="gallery-post-"]')) {
+            e.preventDefault();
+            navigateGalleryItem(activeGalleryPostId, activeGalleryIndex, direction);
+          } else if (activeReelPostId != null && ov.querySelector('[id^="video-post-"]')) {
+            e.preventDefault();
+            navigateReelPost(activeReelPostId, direction);
+          }
+        });
 
         // ---- Standard post detail screen + related post feed ----
         function postDetailHTML(post){
