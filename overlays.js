@@ -1,4 +1,4 @@
-const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'createClassroom', 'classDetail', 'inviteStudents', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'referrals', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'jobApply', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'courseTeachers', 'newCourse', 'personProfile', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerMatching'];
+const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'createClassroom', 'classDetail', 'inviteStudents', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'referrals', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'jobApply', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'courseTeachers', 'newCourse', 'personProfile', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerMatching', 'myFullProfile'];
         const overlayBackAction = {
           call: (fromPopState) => minimizeCall(fromPopState),
           addToCall: () => returnToCallScreen(),
@@ -322,7 +322,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           ov.style.transition = (kind === 'conversation' || kind === 'aiClass') ? 'bottom .3s cubic-bezier(.22,.68,0,1)' : '';
           if (kind === 'conversation' && typeof convoInputFocused !== 'undefined') convoInputFocused = false;
 
-          if (kind === 'profileMenu' || kind === 'profileAnalytics' || kind === 'call' || kind === 'incomingCall' || kind === 'incomingLectureCall' || kind === 'profileQR' || kind === 'lectureCall' || kind === 'editMedia') {
+          if (kind === 'profileMenu' || kind === 'profileAnalytics' || kind === 'call' || kind === 'incomingCall' || kind === 'incomingLectureCall' || kind === 'profileQR' || kind === 'lectureCall' || kind === 'editMedia' || kind === 'myFullProfile') {
             ov.style.top = '0';
           }
 
@@ -405,6 +405,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           }
           else if (kind === 'courseTeachers') ov.innerHTML = courseTeachersHTML();
           else if (kind === 'personProfile') ov.innerHTML = personProfileHTML();
+          else if (kind === 'myFullProfile') ov.innerHTML = myProfileOverlayHTML();
           else if (kind === 'messageRequestCompose') { ov.innerHTML = messageRequestComposeHTML(); const cInp = document.getElementById('message-request-compose-input'); if (cInp) setTimeout(() => cInp.focus(), 60); }
           else if (kind === 'postFeed') { ov.innerHTML = postFeedHTML(); scrollToPostFeedStart(); const pfl = document.getElementById('post-feed-list'); if (pfl && typeof setupFeedVideoAutoplay === 'function') setupFeedVideoAutoplay(pfl); }
           else if (kind === 'personNetwork') ov.innerHTML = personNetworkHTML();
@@ -1494,7 +1495,11 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const myId = await getCurrentUserId();
           if (myId && userId === myId && viewedProfile && viewedProfile.id === userId) {
             closeOverlay();
-            switchTab(4);
+            if (typeof currentTab !== 'undefined' && currentTab === 2) {
+              openOverlay('myFullProfile');
+            } else {
+              switchTab(4);
+            }
           }
         }
 
