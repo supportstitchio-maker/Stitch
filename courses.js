@@ -1665,7 +1665,7 @@ try {
                   <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${isLive ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}">${isLive ? '● Live Teaching' : 'Self-paced'}</span>
                 </div>
                 <div class="text-xl font-bold font-display mb-2" style="color:#1E90FF;">${escapeHtml(c.title)}</div>
-                <div class="text-sm text-gray-600 leading-relaxed mb-4">${escapeHtml(c.description)}</div>
+                <div class="text-sm text-gray-600 leading-relaxed mb-4">${renderRichText(c.description)}</div>
 
                 <div class="flex gap-2 mb-4 bg-gray-100 rounded-full p-1">
                   <button onclick="setCourseDetailTab('content')" class="flex-1 rounded-full py-2 text-xs font-bold ${courseDetailTab === 'content' ? 'text-white' : 'text-gray-500'}" style="${courseDetailTab === 'content' ? `background:${NAVY};` : ''}">Content</button>
@@ -1710,19 +1710,19 @@ try {
                       </button>
                     </div>`}
                   <div class="text-sm font-bold text-gray-700 mb-1">${escapeHtml(mod.title)}</div>
-                  ${mod.description ? `<div class="text-xs text-gray-500 leading-relaxed mb-3">${escapeHtml(mod.description)}</div>` : `<div class="mb-3"></div>`}
+                  ${mod.description ? `<div class="text-xs text-gray-500 leading-relaxed mb-3">${renderRichText(mod.description)}</div>` : `<div class="mb-3"></div>`}
                   ${locked ? `
                     <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
                       <div class="flex justify-center mb-2 text-gray-400">${Icon('lock','w-6 h-6')}</div>
                       Enroll to unlock this module. Module 1 is free to preview.
-                    </div>` : `<div class="divide-y divide-gray-100">${mod.items.map(it => courseItemCardHTML(c, it)).join('')}</div>`}
+                    </div>` : mod.items.map(it => courseItemCardHTML(c, it)).join('')}
                   ${(c.finalItems && c.finalItems.length) ? `
                     <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3 mt-6">Final Project</div>
                     ${!enrolled ? `
                       <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
                         <div class="flex justify-center mb-2 text-gray-400">${Icon('lock','w-6 h-6')}</div>
                         Enroll to unlock the final project.
-                      </div>` : `<div class="divide-y divide-gray-100">${c.finalItems.map(it => courseItemCardHTML(c, it)).join('')}</div>`}
+                      </div>` : c.finalItems.map(it => courseItemCardHTML(c, it)).join('')}
                   ` : ''}
                 `)}
               </div>
@@ -1896,7 +1896,8 @@ try {
               </div>
               <div class="mb-5">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description <span class="normal-case font-medium text-gray-400">(optional)</span></label>
-                <textarea oninput="updateCourseAddModuleField('description', this.value)" placeholder="What will students do in this module?" rows="3" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description || '')}</textarea>
+                ${richTextToolbarHTML('formatCourseModuleDesc')}
+                <textarea id="course-add-module-desc" oninput="updateCourseAddModuleField('description', this.value)" placeholder="What will students do in this module?" rows="3" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description || '')}</textarea>
               </div>
               <button onclick="confirmCourseAddModule()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('plus','w-4 h-4')} Add Module</button>
               <div style="height:50px;"></div>
@@ -2144,7 +2145,8 @@ try {
               ${!isQuiz ? `
                 <div class="mb-5">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${d.type === 'reading' ? 'Reading content' : isMedia ? 'Description (optional)' : 'Content / instructions'}</label>
-                  <textarea oninput="updateCourseItemPageField('description', this.value)" placeholder="${d.type === 'reading' ? 'Paste or write the reading content here -- this is exactly what students will see' : 'Add details...'}" rows="${d.type === 'reading' ? 8 : 3}" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description)}</textarea>
+                  ${richTextToolbarHTML('formatCourseItemDesc')}
+                  <textarea id="course-item-page-desc" oninput="updateCourseItemPageField('description', this.value)" placeholder="${d.type === 'reading' ? 'Paste or write the reading content here -- this is exactly what students will see' : 'Add details...'}" rows="${d.type === 'reading' ? 8 : 3}" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description)}</textarea>
                 </div>` : `
                 <div class="mb-5">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 block">Questions</label>
@@ -2186,27 +2188,50 @@ try {
 
         // ---- Course item detail + quiz taking ----
         function courseItemCardHTML(course, item){
-          const thumb = item.mediaType === 'image' && item.mediaUrl
-            ? `<img src="${item.mediaUrl}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0">`
-            : item.mediaType === 'video' && item.mediaUrl
-              ? `<div class="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0 text-white">${Icon('video','w-4 h-4')}</div>`
-              : item.mediaType === 'document' && item.mediaUrl
-                ? `<div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.12);color:#1E90FF;">${Icon('doc','w-4 h-4')}</div>`
-                : '';
+          const isBigMedia = (item.mediaType === 'image' || item.mediaType === 'video') && item.mediaUrl;
+          const doneBadge = isCourseItemComplete(item) ? `<span title="Completed" class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${Icon('check','w-4 h-4')}</span>` : '';
+
+          if (isBigMedia) {
+            return `
+              <div onclick="openCourseItemDetail('${course.id}','${item.id}')" class="cursor-pointer bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mb-3">
+                <div class="relative w-full bg-black" style="aspect-ratio:16/9;">
+                  ${item.mediaType === 'image'
+                    ? `<img src="${item.mediaUrl}" class="w-full h-full object-cover">`
+                    : `<video src="${item.mediaUrl}" class="w-full h-full object-cover" muted playsinline preload="metadata"></video>`}
+                  ${item.mediaType === 'video' ? `
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.45);">${Icon('video','w-5 h-5')}</div>
+                    </div>` : ''}
+                  ${isCourseItemComplete(item) ? `<span title="Completed" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center">${Icon('check','w-4 h-4')}</span>` : ''}
+                </div>
+                <div class="p-4">
+                  <div class="font-bold text-gray-800 mb-1.5">${escapeHtml(item.title)}</div>
+                  <div class="flex items-center gap-1.5 text-xs font-semibold ${isCourseItemComplete(item) ? 'text-emerald-700' : 'text-gray-500'} ${item.description ? 'mb-1.5' : ''}">
+                    <span>${courseItemTypeLabel(item.type)}</span>
+                    ${item.duration ? `<span class="text-gray-400">· ${escapeHtml(item.duration)}</span>` : ''}
+                  </div>
+                  ${item.description ? `<div class="text-sm text-gray-600 leading-relaxed">${renderRichText(item.description)}</div>` : ''}
+                </div>
+              </div>`;
+          }
+
+          const iconIndicator = item.mediaType === 'document' && item.mediaUrl
+            ? `<div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.12);color:#1E90FF;">${Icon('doc','w-4 h-4')}</div>`
+            : '';
           return `
-            <div onclick="openCourseItemDetail('${course.id}','${item.id}')" class="py-4 cursor-pointer">
+            <div onclick="openCourseItemDetail('${course.id}','${item.id}')" class="cursor-pointer bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-3">
               <div class="flex items-center justify-between gap-2 mb-2">
                 <div class="flex items-center gap-2.5 min-w-0">
-                  ${thumb}
+                  ${iconIndicator}
                   <div class="font-bold text-gray-800 truncate">${escapeHtml(item.title)}</div>
                 </div>
-                ${isCourseItemComplete(item) ? `<span title="Completed" class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${Icon('check','w-4 h-4')}</span>` : ''}
+                ${doneBadge}
               </div>
               <div class="flex items-center gap-1.5 text-xs font-semibold ${isCourseItemComplete(item) ? 'text-emerald-700' : 'text-gray-500'}">
                 <span>${courseItemTypeLabel(item.type)}</span>
                 ${item.duration ? `<span class="text-gray-400">· ${escapeHtml(item.duration)}</span>` : ''}
               </div>
-              ${item.type === 'reading' && item.description ? `<div class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap mt-2">${escapeHtml(item.description)}</div>` : ''}
+              ${item.type === 'reading' && item.description ? `<div class="text-sm text-gray-600 leading-relaxed mt-2">${renderRichText(item.description)}</div>` : ''}
             </div>`;
         }
 
@@ -2297,9 +2322,9 @@ try {
                     <span class="text-white">${Icon('mic','w-10 h-10')}</span>
                   </div>` : ''}
                 ${(item.type === 'video' || item.type === 'audio' || item.type === 'image' || item.type === 'document') && item.description ? `
-                  <div class="py-4 border-t border-gray-100 mb-5 text-sm text-gray-700 leading-relaxed">${escapeHtml(item.description)}</div>` : ''}
+                  <div class="py-4 border-t border-gray-100 mb-5 text-sm text-gray-700 leading-relaxed">${renderRichText(item.description)}</div>` : ''}
                 ${(item.type === 'reading' || item.type === 'assignment' || item.type === 'project') ? `
-                  <div class="py-4 border-t border-gray-100 mb-5 text-sm text-gray-700 leading-relaxed">${escapeHtml(item.description || 'No additional content was added for this item yet.')}</div>` : ''}
+                  <div class="py-4 border-t border-gray-100 mb-5 text-sm text-gray-700 leading-relaxed">${item.description ? renderRichText(item.description) : 'No additional content was added for this item yet.'}</div>` : ''}
                 ${isQuiz ? courseQuizFormHTML(item) : ''}
                 ${!isQuiz ? `
                   <button onclick="markCourseItemComplete()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-white" style="background:${isCourseItemComplete(item) ? '#059669' : 'rgba(30,144,255,0.85)'};">
@@ -2967,7 +2992,8 @@ try {
               </div>
               <div class="mb-5">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description</label>
-                <textarea oninput="updateNewCourseField('description', this.value)" placeholder="What will students learn in this course?" rows="3" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description)}</textarea>
+                ${richTextToolbarHTML('formatNewCourseDesc')}
+                <textarea id="new-course-desc" oninput="updateNewCourseField('description', this.value)" placeholder="What will students learn in this course?" rows="3" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.description)}</textarea>
               </div>
 
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Modules <span class="normal-case font-medium text-gray-400">(add modules, parts, quizzes &amp; assignments from the Engage tab)</span></div>
@@ -3934,6 +3960,74 @@ try {
           return String(str == null ? '' : str)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // ---- Lightweight rich text: **bold**, __underline__, "- " bullet lines ----
+        function inlineRichFormat(s){
+          return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/__(.+?)__/g, '<u>$1</u>');
+        }
+
+        function renderRichText(str){
+          if (!str) return '';
+          const lines = escapeHtml(str).split('\n');
+          let html = '';
+          let inList = false;
+          lines.forEach(line => {
+            const bulletMatch = line.match(/^-\s+(.*)$/);
+            if (bulletMatch) {
+              if (!inList) { html += '<ul class="list-disc pl-5 space-y-0.5">'; inList = true; }
+              html += `<li>${inlineRichFormat(bulletMatch[1])}</li>`;
+            } else {
+              if (inList) { html += '</ul>'; inList = false; }
+              html += line.trim() ? `<div>${inlineRichFormat(line)}</div>` : '<div>&nbsp;</div>';
+            }
+          });
+          if (inList) html += '</ul>';
+          return html;
+        }
+
+        function insertRichFormatAtSelection(el, format){
+          const start = el.selectionStart, end = el.selectionEnd;
+          const value = el.value;
+          const selected = value.slice(start, end);
+          let inserted;
+          if (format === 'bold') inserted = `**${selected || 'bold text'}**`;
+          else if (format === 'underline') inserted = `__${selected || 'underlined text'}__`;
+          else if (format === 'bullet') inserted = (selected || 'List item').split('\n').map(l => l.startsWith('- ') ? l : '- ' + l).join('\n');
+          else return el.value;
+          const newValue = value.slice(0, start) + inserted + value.slice(end);
+          el.value = newValue;
+          const cursor = start + inserted.length;
+          el.focus();
+          el.setSelectionRange(cursor, cursor);
+          return newValue;
+        }
+
+        function richTextToolbarHTML(formatFnName){
+          return `
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <button type="button" onclick="${formatFnName}('bold')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-600">B</button>
+              <button type="button" onclick="${formatFnName}('underline')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-600" style="text-decoration:underline;">U</button>
+              <button type="button" onclick="${formatFnName}('bullet')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-600">&bull;≡</button>
+            </div>`;
+        }
+
+        function formatCourseItemDesc(format){
+          const el = document.getElementById('course-item-page-desc');
+          if (!el) return;
+          updateCourseItemPageField('description', insertRichFormatAtSelection(el, format));
+        }
+
+        function formatCourseModuleDesc(format){
+          const el = document.getElementById('course-add-module-desc');
+          if (!el) return;
+          updateCourseAddModuleField('description', insertRichFormatAtSelection(el, format));
+        }
+
+        function formatNewCourseDesc(format){
+          const el = document.getElementById('new-course-desc');
+          if (!el) return;
+          updateNewCourseField('description', insertRichFormatAtSelection(el, format));
         }
 
         function gradIcon(svgMarkup){
