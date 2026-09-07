@@ -1320,7 +1320,6 @@ try {
         const courseItemTypes = [
           { key:'video', label:'Video' },
           { key:'image', label:'Picture' },
-          { key:'audio', label:'Audio' },
           { key:'reading', label:'Reading' },
           { key:'assignment', label:'Assignment' },
           { key:'project', label:'Project' },
@@ -1460,9 +1459,21 @@ try {
           return !!(m && m.items.length && m.items.every(it => isCourseItemComplete(it)));
         }
 
+        function totalCourseEnrollment(){
+          return allCourses.reduce((n, c) => n + (c.enrolledCount || 0), 0);
+        }
+
         function coursesHomeHTML(){
+          const isAdmin = isCurrentUserAdmin();
           return `
-            ${isCurrentUserAdmin() ? `
+            ${isAdmin ? `
+              <div class="flex items-center gap-3 rounded-3xl p-4 mb-4" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">
+                <div class="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 text-white">${Icon('personPlus','w-5 h-5')}</div>
+                <div class="min-w-0">
+                  <div class="text-xl font-bold font-display text-white leading-tight">${totalCourseEnrollment()}</div>
+                  <div class="text-xs text-white/75">Total enrollment across ${allCourses.length} course${allCourses.length === 1 ? '' : 's'}</div>
+                </div>
+              </div>
               <div class="flex gap-2 mb-5">
                 <button onclick="openNewCourse()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
                   ${Icon('plus','w-4 h-4')} Create a Course
@@ -1495,6 +1506,7 @@ try {
                   <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 bg-white/20">${isLive ? '● Live' : 'Uploaded'}</span>
                 </div>
                 <div class="flex items-center gap-1.5 flex-shrink-0">
+                  ${isAdmin ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-white/20 flex items-center gap-1 flex-shrink-0">${Icon('personPlus','w-3 h-3')} ${c.enrolledCount || 0} enrolled</span>` : ''}
                   ${enrolled ? `<span class="text-[10px] font-bold uppercase text-emerald-200 flex-shrink-0">Enrolled</span>` : ''}
                 </div>
               </div>
@@ -1606,12 +1618,20 @@ try {
           const d = courseEnrollDraft;
           if (!d || !d.name.trim() || !d.agreed) return;
           const courseId = d.courseId;
+          const wasEnrolled = enrolledCourseIds.includes(courseId);
           courseEnrollments[courseId] = { name: d.name.trim(), email: d.email.trim(), agreedAt: Date.now() };
-          if (!enrolledCourseIds.includes(courseId)) enrolledCourseIds.push(courseId);
+          if (!wasEnrolled) enrolledCourseIds.push(courseId);
           courseEnrollDraft = null;
           currentCourseId = courseId;
           openOverlay('courseDetail');
           queueSaveUserState();
+          if (!wasEnrolled) {
+            const c = allCourses.find(x => x.id === courseId);
+            if (c) {
+              c.enrolledCount = (c.enrolledCount || 0) + 1;
+              postCourseInsertRemote(c);
+            }
+          }
         }
 
         function leaveCourse(courseId){
@@ -1636,6 +1656,10 @@ try {
               const ov = document.getElementById('overlay');
               if (ov && currentOverlayKind === 'courseDetail') ov.innerHTML = courseDetailHTML();
               queueSaveUserState();
+              if (c) {
+                c.enrolledCount = Math.max(0, (c.enrolledCount || 0) - 1);
+                postCourseInsertRemote(c);
+              }
             }
           );
         }
@@ -1663,6 +1687,7 @@ try {
                 <div class="flex items-center gap-2 mb-3">
                   <button onclick="openCourseTeachers('${c.id}')" class="text-xs font-bold uppercase tracking-wide text-gray-400 flex items-center gap-1">${escapeHtml(c.org)}${(c.teachers && c.teachers.length) ? ` +${c.teachers.length}` : ''}</button>
                   <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${isLive ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}">${isLive ? '● Live Teaching' : 'Self-paced'}</span>
+                  ${isCurrentUserAdmin() ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-1">${Icon('personPlus','w-3 h-3')} ${c.enrolledCount || 0} enrolled</span>` : ''}
                 </div>
                 <div class="text-xl font-bold font-display mb-2" style="color:#1E90FF;">${escapeHtml(c.title)}</div>
                 <div class="text-sm text-gray-600 leading-relaxed mb-4">${renderRichText(c.description)}</div>
@@ -2083,12 +2108,12 @@ try {
         function courseItemPageQuestionHTML(q, qi){
           return `
             <div class="bg-gray-100 rounded-2xl p-3 mb-2">
-              <div class="flex items-center gap-2 mb-1.5">
+              <div class="flex items-center gap-2 mb-3">
                 <input type="text" value="${escapeHtml(q.text)}" oninput="updateCourseItemPageQuestionText(${qi}, this.value)" placeholder="Question ${qi + 1}" class="flex-1 min-w-0 bg-white rounded-lg px-2.5 py-1.5 text-xs outline-none">
                 <button onclick="removeCourseItemPageQuestion(${qi})" class="text-red-500 flex-shrink-0">${Icon('close','w-3.5 h-3.5')}</button>
               </div>
               ${q.options.map((opt, oi) => `
-                <div class="flex items-center gap-2 mb-1">
+                <div class="flex items-center gap-2 mb-2">
                   <button onclick="setCourseItemPageCorrect(${qi},${oi})" class="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${q.correct === oi ? 'border-emerald-600' : 'border-gray-300'}">
                     ${q.correct === oi ? '<span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>' : ''}
                   </button>
@@ -3122,12 +3147,12 @@ try {
         function addCourseItemQuestionHTML(q, qi){
           return `
             <div class="bg-white rounded-xl p-2.5 mb-2">
-              <div class="flex items-center gap-2 mb-1.5">
+              <div class="flex items-center gap-2 mb-3">
                 <input type="text" value="${escapeHtml(q.text)}" oninput="updateAddingItemQuestionText(${qi}, this.value)" placeholder="Question ${qi + 1}" class="flex-1 min-w-0 bg-gray-100 rounded-lg px-2.5 py-1.5 text-xs outline-none">
                 <button onclick="removeAddingItemQuestion(${qi})" class="text-red-500 flex-shrink-0">${Icon('close','w-3.5 h-3.5')}</button>
               </div>
               ${q.options.map((opt, oi) => `
-                <div class="flex items-center gap-2 mb-1">
+                <div class="flex items-center gap-2 mb-2">
                   <button onclick="setAddingItemCorrect(${qi},${oi})" class="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${q.correct === oi ? 'border-emerald-600' : 'border-gray-300'}">
                     ${q.correct === oi ? '<span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>' : ''}
                   </button>
@@ -3962,9 +3987,9 @@ try {
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        // ---- Lightweight rich text: **bold**, __underline__, "- " bullet lines ----
+        // ---- Lightweight rich text: **bold**, *italic*, __underline__, "- " bullet lines ----
         function inlineRichFormat(s){
-          return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/__(.+?)__/g, '<u>$1</u>');
+          return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/__(.+?)__/g, '<u>$1</u>');
         }
 
         function renderRichText(str){
@@ -3992,6 +4017,7 @@ try {
           const selected = value.slice(start, end);
           let inserted;
           if (format === 'bold') inserted = `**${selected || 'bold text'}**`;
+          else if (format === 'italic') inserted = `*${selected || 'italic text'}*`;
           else if (format === 'underline') inserted = `__${selected || 'underlined text'}__`;
           else if (format === 'bullet') inserted = (selected || 'List item').split('\n').map(l => l.startsWith('- ') ? l : '- ' + l).join('\n');
           else return el.value;
@@ -4005,8 +4031,9 @@ try {
 
         function richTextToolbarHTML(formatFnName){
           return `
-            <div class="flex items-center gap-1.5 mb-1.5">
+            <div class="flex items-center gap-1.5" style="margin-bottom:5px;">
               <button type="button" onclick="${formatFnName}('bold')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-600">B</button>
+              <button type="button" onclick="${formatFnName}('italic')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-600 italic">I</button>
               <button type="button" onclick="${formatFnName}('underline')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-600" style="text-decoration:underline;">U</button>
               <button type="button" onclick="${formatFnName}('bullet')" class="w-8 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-600">&bull;≡</button>
             </div>`;
