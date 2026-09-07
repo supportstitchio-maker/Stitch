@@ -3835,9 +3835,9 @@
               </div>
             </div>
             <div class="flex-shrink-0 w-full flex items-start justify-center gap-8 border-t border-gray-100" style="padding-top:16px;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 16px);background:#fafafa;">
-              ${shareExternalOption('link','Copy link', `shareAction(${post.id}, 'Link copied to clipboard')`)}
+              ${shareExternalOption('link','Copy link', `copyPostLink(${post.id})`)}
               ${shareExternalOption('addGlimpseOutline','Add to Glimpse', `addPostToGlimpse(${post.id})`)}
-              ${shareExternalOption('send','More apps', `shareAction(${post.id}, 'Opening share sheet...')`)}
+              ${shareExternalOption('send','More apps', `sharePostExternally(${post.id})`)}
             </div>
             <div id="share-send-fab-${post.id}">${shareSendFabHTML(post.id)}</div>`;
         }
@@ -3954,6 +3954,39 @@
           openAppAlertModal(msg);
         }
 
+        // ---- Real link-sharing for posts: build a permalink-style URL,
+        // then either copy it or hand off to the OS share sheet via the
+        // Web Share API (same pattern used for class invites/referrals). ----
+        function postShareLink(id){
+          return window.location.origin + window.location.pathname + '?post=' + encodeURIComponent(id);
+        }
+
+        function copyPostLink(id){
+          const link = postShareLink(id);
+          PostsAPI.share(id).then(() => bumpShareCountDisplay(id));
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Link copied to clipboard'));
+          } else {
+            openAppAlertModal('Link: ' + link);
+          }
+          closeOverlay();
+        }
+
+        function sharePostExternally(id){
+          const post = findPost(id);
+          const link = postShareLink(id);
+          PostsAPI.share(id).then(() => bumpShareCountDisplay(id));
+          closeOverlay();
+          if (navigator.share) {
+            const authorName = (post && post.name) ? post.name : 'this post';
+            navigator.share({ title: 'Stitch', text: `Check out ${authorName}'s post on Stitch`, url: link }).catch(() => {});
+          } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Sharing isn\'t supported here -- link copied instead'));
+          } else {
+            openAppAlertModal('Link: ' + link);
+          }
+        }
+
         // ---- Add a post to your glimpse (repost as story) ----
         function extractPostMedia(post){
           if (!post || !post.mediaHtml) return null;
@@ -4027,8 +4060,8 @@
               </div>
             </div>
             <div class="flex-shrink-0 w-full flex items-start justify-center gap-8 border-t border-gray-100" style="padding-top:16px;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 16px);background:#fafafa;">
-              ${shareExternalOption('link','Copy link', `shareGlimpseAction(${g.id}, 'Link copied to clipboard')`)}
-              ${shareExternalOption('send','More apps', `shareGlimpseAction(${g.id}, 'Opening share sheet...')`)}
+              ${shareExternalOption('link','Copy link', `copyGlimpseLink(${g.id})`)}
+              ${shareExternalOption('send','More apps', `shareGlimpseExternally(${g.id})`)}
             </div>
             <div id="share-glimpse-send-fab-${g.id}">${shareGlimpseSendFabHTML(g.id)}</div>`;
         }
@@ -4099,4 +4132,30 @@
         function shareGlimpseAction(id, msg){
           openMyGlimpses();
           openAppAlertModal(msg);
+        }
+
+        function glimpseShareLink(id){
+          return window.location.origin + window.location.pathname + '?glimpse=' + encodeURIComponent(id);
+        }
+
+        function copyGlimpseLink(id){
+          const link = glimpseShareLink(id);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Link copied to clipboard'));
+          } else {
+            openAppAlertModal('Link: ' + link);
+          }
+          closeOverlay();
+        }
+
+        function shareGlimpseExternally(id){
+          const link = glimpseShareLink(id);
+          closeOverlay();
+          if (navigator.share) {
+            navigator.share({ title: 'Stitch', text: 'Check out this Glimpse on Stitch', url: link }).catch(() => {});
+          } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Sharing isn\'t supported here -- link copied instead'));
+          } else {
+            openAppAlertModal('Link: ' + link);
+          }
         }
