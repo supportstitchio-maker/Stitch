@@ -3836,7 +3836,7 @@
             </div>
             <div class="flex-shrink-0 w-full flex items-start no-scrollbar border-t border-gray-100" style="gap:20px;padding:18px 20px calc(env(safe-area-inset-bottom, 12px) + 18px) 20px;background:#fafafa;overflow-x:auto;">
               ${shareExternalOption('link','Copy link', `copyPostLink(${post.id})`, '#eef0f4', NAVY)}
-              ${shareExternalOption('send','Share', `sharePostExternally(${post.id})`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
+              ${shareExternalOption('send','More apps', `sharePostExternally(${post.id})`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
             </div>
             <div id="share-send-fab-${post.id}">${shareSendFabHTML(post.id)}</div>`;
         }
