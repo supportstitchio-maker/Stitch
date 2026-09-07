@@ -862,8 +862,8 @@
                 ${item.mediaUrl ? `
                   <div class="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
                     ${item.mediaType === 'video'
-                      ? `<video src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs(item.trimStart, item.trimEnd)}></video>`
-                      : `<img src="${item.mediaUrl}" class="max-w-full max-h-full object-contain">`}
+                      ? `<video src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(item.trimStart, item.trimEnd)}></video>`
+                      : `<img src="${item.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">`}
                   </div>
                   ${item.caption ? `
                     <div class="absolute left-0 right-0 px-6 py-3 text-sm text-white text-center pointer-events-none" style="bottom:5.5rem;background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);">${escapeHtml(item.caption)}</div>
@@ -1237,8 +1237,8 @@
               <div class="absolute inset-0 flex items-center justify-center ${g.mediaUrl ? 'bg-black' : ''} pointer-events-none">
                 ${g.mediaUrl ? `
                   ${g.mediaType === 'video'
-                    ? `<video src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop ${glimpseVideoAttrs(g.trimStart, g.trimEnd)}></video>`
-                    : `<img src="${g.mediaUrl}" class="max-w-full max-h-full object-contain">`}
+                    ? `<video src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(g.trimStart, g.trimEnd)}></video>`
+                    : `<img src="${g.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;">`}
                 ` : `
                   <div class="px-8 text-center">
                     <div class="text-lg font-medium" style="color:${fg};">${escapeHtml(g.caption)}</div>
