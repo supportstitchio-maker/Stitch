@@ -1467,13 +1467,6 @@ try {
           const isAdmin = isCurrentUserAdmin();
           return `
             ${isAdmin ? `
-              <div class="flex items-center gap-3 rounded-3xl p-4 mb-4" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">
-                <div class="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 text-white">${Icon('personPlus','w-5 h-5')}</div>
-                <div class="min-w-0">
-                  <div class="text-xl font-bold font-display text-white leading-tight">${totalCourseEnrollment()}</div>
-                  <div class="text-xs text-white/75">Total enrollment across ${allCourses.length} course${allCourses.length === 1 ? '' : 's'}</div>
-                </div>
-              </div>
               <div class="flex gap-2 mb-5">
                 <button onclick="openNewCourse()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
                   ${Icon('plus','w-4 h-4')} Create a Course
