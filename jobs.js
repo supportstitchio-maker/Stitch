@@ -2188,7 +2188,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${label}</label>
-              <input type="${type || 'text'}" value="${newOppDraft[field]}" oninput="updateNewOppField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+              <input type="${type || 'text'}" value="${newOppDraft[field]}" oninput="updateNewOppField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
             </div>`;
         }
 
@@ -2220,7 +2220,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Type</label>
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" style="scroll-snap-type:x proximity;">
                   ${oppTypes.map(t => `
-                    <button onclick="setNewOppType('${t}')" class="flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold ${newOppDraft.type===t ? '' : 'bg-gray-100 text-gray-500'}" style="scroll-snap-align:start;${newOppDraft.type===t ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${t}</button>
+                    <button onclick="setNewOppType('${t}')" class="flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold ${newOppDraft.type===t ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="scroll-snap-align:start;${newOppDraft.type===t ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${t}</button>
                   `).join('')}
                 </div>
               </div>
@@ -2229,7 +2229,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Where</label>
                 <div class="flex gap-2">
                   ${oppModes.map(m => `
-                    <button onclick="setNewOppMode('${m}')" class="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.mode===m ? '' : 'bg-gray-100 text-gray-500'}" style="${newOppDraft.mode===m ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${Icon(m==='Online'?'link':'pin','w-4 h-4')} ${m}</button>
+                    <button onclick="setNewOppMode('${m}')" class="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.mode===m ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${newOppDraft.mode===m ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${Icon(m==='Online'?'link':'pin','w-4 h-4')} ${m}</button>
                   `).join('')}
                 </div>
               </div>
@@ -2241,13 +2241,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 : `
                 <div class="mb-4">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Deadline</label>
-                  <input type="date" value="${newOppDraft.deadlineDate}" min="${todayISODate()}" oninput="updateNewOppField('deadlineDate', this.value)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+                  <input type="date" value="${newOppDraft.deadlineDate}" min="${todayISODate()}" oninput="updateNewOppField('deadlineDate', this.value)" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
                   <div class="text-xs text-gray-400 mt-1">This listing disappears automatically once this date passes, so every admin's posts stay consistent.</div>
                 </div>`}
 
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description &amp; requirements</label>
-                <textarea oninput="updateNewOppField('description', this.value)" placeholder="${newOppDraft.type === 'Course' ? 'What will learners cover? Any prerequisites?' : 'What will they be doing? What do you need from applicants?'}" rows="5" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(newOppDraft.description)}</textarea>
+                <textarea oninput="updateNewOppField('description', this.value)" placeholder="${newOppDraft.type === 'Course' ? 'What will learners cover? Any prerequisites?' : 'What will they be doing? What do you need from applicants?'}" rows="5" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(newOppDraft.description)}</textarea>
               </div>
 
               ${newOppDraft.type === 'Course' ? `
@@ -2255,8 +2255,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Enrollment</label>
                   <div class="text-xs text-gray-400 mb-2">Learners join a course by enrolling, not by applying; no application letter needed. Set whether enrollment is free or has a fee.</div>
                   <div class="flex gap-2 mb-3">
-                    <button onclick="setNewOppPriceType('free')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.priceType==='free' ? '' : 'bg-gray-100 text-gray-500'}" style="${newOppDraft.priceType==='free' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Free</button>
-                    <button onclick="setNewOppPriceType('paid')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.priceType==='paid' ? '' : 'bg-gray-100 text-gray-500'}" style="${newOppDraft.priceType==='paid' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Paid</button>
+                    <button onclick="setNewOppPriceType('free')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.priceType==='free' ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${newOppDraft.priceType==='free' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Free</button>
+                    <button onclick="setNewOppPriceType('paid')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.priceType==='paid' ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${newOppDraft.priceType==='paid' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Paid</button>
                   </div>
                   ${newOppDraft.priceType === 'paid' ? oppFieldRow('Enrollment fee', 'price', 'e.g. GHS 150, or $20') : ''}
                 </div>
@@ -2265,8 +2265,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 <div class="mb-4">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Apply via</label>
                   <div class="flex gap-2 mb-3">
-                    <button onclick="setNewOppApplyMethod('email')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.applyMethod!=='website' ? '' : 'bg-gray-100 text-gray-500'}" style="${newOppDraft.applyMethod!=='website' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Email</button>
-                    <button onclick="setNewOppApplyMethod('website')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.applyMethod==='website' ? '' : 'bg-gray-100 text-gray-500'}" style="${newOppDraft.applyMethod==='website' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Website</button>
+                    <button onclick="setNewOppApplyMethod('email')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.applyMethod!=='website' ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${newOppDraft.applyMethod!=='website' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Email</button>
+                    <button onclick="setNewOppApplyMethod('website')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold ${newOppDraft.applyMethod==='website' ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${newOppDraft.applyMethod==='website' ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">Website</button>
                   </div>
                   ${newOppDraft.applyMethod === 'website'
                     ? oppFieldRow('Website to receive applications', 'website', 'e.g. careers.yourorg.com/apply', 'url')
