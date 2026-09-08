@@ -59,6 +59,8 @@
                 </div>
               </div>
 
+              ${trendingHashtagsRowHTML()}
+
               <div class="space-y-3" id="feed-list">
                 ${feedPosts.filter(p => p.mediaHtml || p.uploading).map(feedPost).join('')}
               </div>
@@ -3262,9 +3264,8 @@
 
         function renderPostBodyHtml(post){
           const escapedBody = escapeHtml(post.body);
+          let out = linkifyHashtags(escapedBody);
           const tagged = Array.isArray(post.taggedUsers) ? post.taggedUsers : [];
-          if (!tagged.length) return escapedBody;
-          let out = escapedBody;
           tagged.forEach(t => {
             if (!t || !t.username) return;
             const escapedUsername = t.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -3272,6 +3273,57 @@
             out = out.replace(re, (m, pre) => `${pre}<span class="font-semibold cursor-pointer" style="color:${ROYAL}" onclick="event.stopPropagation(); openPersonProfile('${escapeForJsAttr(t.id)}')">@${escapeHtml(t.username)}</span>`);
           });
           return out;
+        }
+
+        // ---- Hashtags: turn "#word" into a tappable link to that
+        // hashtag's own feed (see openHashtagFeed / postListForSource
+        // below), and let trending hashtags be computed straight from
+        // the posts everyone already has -- no separate hashtag table
+        // needed, since post text is already synced for everyone.
+        function linkifyHashtags(escapedText){
+          return escapedText.replace(/(^|[\s(])#([A-Za-z0-9_]{1,50})\b/g, (m, pre, tag) => {
+            return `${pre}<span class="font-semibold cursor-pointer" style="color:${ROYAL}" onclick="event.stopPropagation(); openHashtagFeed('${tag.toLowerCase()}')">#${escapeHtml(tag)}</span>`;
+          });
+        }
+
+        function extractHashtags(text){
+          if (!text) return [];
+          const seen = new Set();
+          const re = /#([A-Za-z0-9_]{1,50})\b/g;
+          let m;
+          while ((m = re.exec(text))) seen.add(m[1].toLowerCase());
+          return Array.from(seen);
+        }
+
+        function computeTrendingHashtags(limit){
+          limit = limit || 12;
+          const counts = new Map();
+          feedPosts.forEach(p => {
+            extractHashtags(p.body).forEach(tag => counts.set(tag, (counts.get(tag) || 0) + 1));
+          });
+          return Array.from(counts.entries())
+            .map(([tag, count]) => ({ tag, count }))
+            .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+            .slice(0, limit);
+        }
+
+        function openHashtagFeed(tag){
+          openPostFeedFrom('hashtag:' + String(tag).toLowerCase());
+        }
+
+        function trendingHashtagsRowHTML(){
+          const trending = computeTrendingHashtags(12);
+          if (!trending.length) return '';
+          return `
+            <div class="-mx-5 mb-4 pb-1 border-b border-gray-100">
+              <div class="flex gap-2 overflow-x-auto no-scrollbar px-5 pb-3" style="scroll-snap-type:x proximity;">
+                ${trending.map(t => `
+                  <button onclick="openHashtagFeed('${t.tag}')" class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold" style="background:rgba(10,37,64,0.06);color:${NAVY};scroll-snap-align:start;">
+                    <span>#${escapeHtml(t.tag)}</span>
+                    <span class="text-gray-400 font-medium">${formatCount(t.count)}</span>
+                  </button>`).join('')}
+              </div>
+            </div>`;
         }
 
         function gradientHeartIcon(cls){
@@ -3637,6 +3689,10 @@
         function postListForSource(source){
           if (source === 'reposts') return feedPosts.filter(p => p.reposted).sort(byNewestFirst);
           if (source === 'saved') return feedPosts.filter(p => p.saved).sort(byNewestFirst);
+          if (typeof source === 'string' && source.indexOf('hashtag:') === 0) {
+            const tag = source.slice('hashtag:'.length).toLowerCase();
+            return feedPosts.filter(p => extractHashtags(p.body).includes(tag)).sort(byNewestFirst);
+          }
           if (typeof source === 'string' && source.indexOf('author-videos:') === 0) {
             const authorId = source.slice('author-videos:'.length);
             return feedPosts.filter(p => String(p.authorId) === authorId && !p.isRepost && postMediaKind(p) === 'video').sort(byNewestFirst);
@@ -3659,6 +3715,9 @@
         function postFeedTitle(source){
           if (source === 'reposts') return 'Reposts';
           if (source === 'saved') return 'Saved';
+          if (typeof source === 'string' && source.indexOf('hashtag:') === 0) {
+            return '#' + source.slice('hashtag:'.length);
+          }
           if (typeof source === 'string' && (source.indexOf('author-videos:') === 0 || source.indexOf('author-pictures:') === 0 || source.indexOf('author-reposts:') === 0 || source.indexOf('author:') === 0)) {
             const authorId = source.slice(source.indexOf(':') + 1);
             const viewed = (typeof viewedProfile !== 'undefined' && viewedProfile && String(viewedProfile.id) === authorId) ? viewedProfile : null;
