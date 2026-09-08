@@ -783,8 +783,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             : Icon('user','w-8 h-8');
           return `
             <div class="mb-5">
-              <button onclick="discardEditProfileChanges()" class="w-9 h-9 -ml-2 mb-2 flex items-center justify-center font-bold" style="color:#1e90ff;">${Icon('back','w-5 h-5 stroke-[3]')}</button>
-              <div class="text-xl font-bold font-display mb-1" style="color:#1e90ff;">Edit Profile</div>
+              <div class="flex items-center gap-2 mb-1">
+                <button onclick="discardEditProfileChanges()" class="w-9 h-9 -ml-2 flex items-center justify-center font-bold flex-shrink-0" style="color:#1e90ff;">${Icon('back','w-6 h-6 stroke-[3.5]')}</button>
+                <div class="text-xl font-bold font-display" style="color:#1e90ff;">Edit Profile</div>
+              </div>
               <div class="text-sm text-gray-500">Update how your profile appears on Stitch.</div>
             </div>
             <div class="flex items-center gap-4 mb-5">
