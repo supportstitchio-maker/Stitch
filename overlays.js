@@ -1312,7 +1312,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
                 id: row.user_id,
                 name: row.name || 'Stitch member',
                 username: row.username || '',
-                sub: row.bio || 'Stitch member',
+                sub: row.bio || '',
                 icon: 'user',
                 avatarBg: 'bg-blue-50',
                 photo: row.photo || null,
@@ -1402,7 +1402,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <button onclick="openPersonProfileFromDiscover('${p.id}')" class="w-11 h-11 ${p.avatarBg || 'bg-blue-50'} rounded-2xl flex items-center justify-center text-gray-600 overflow-hidden flex-shrink-0">${avatarInner}</button>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileFromDiscover('${p.id}')">
                 <div class="font-semibold text-sm truncate">${escapeHtml(p.name)}</div>
-                <div class="text-xs text-gray-500 truncate">${p.username ? `@${escapeHtml(p.username)} · ` : ''}${escapeHtml(p.sub)}</div>
+                <div class="text-xs text-gray-500 truncate">${p.username ? escapeHtml(p.username) : ''}${p.username && p.sub ? ' · ' : ''}${escapeHtml(p.sub)}</div>
               </div>
               ${actionHTML}
             </div>`;
