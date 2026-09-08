@@ -783,8 +783,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             : Icon('user','w-8 h-8');
           return `
             <div class="mb-5">
-              <button onclick="discardEditProfileChanges()" class="w-9 h-9 -ml-2 mb-2 flex items-center justify-center text-gray-700">${Icon('back','w-5 h-5')}</button>
-              <div class="text-xl font-bold text-gray-900 font-display mb-1">Edit Profile</div>
+              <button onclick="discardEditProfileChanges()" class="w-9 h-9 -ml-2 mb-2 flex items-center justify-center font-bold" style="color:#1e90ff;">${Icon('back','w-5 h-5 stroke-[3]')}</button>
+              <div class="text-xl font-bold font-display mb-1" style="color:#1e90ff;">Edit Profile</div>
               <div class="text-sm text-gray-500">Update how your profile appears on Stitch.</div>
             </div>
             <div class="flex items-center gap-4 mb-5">
@@ -828,23 +828,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="mb-5">
               <label class="text-sm font-bold text-gray-700 block mb-2">Links</label>
               ${profileLinksEditHTML()}
-            </div>
-
-            <div class="mb-6">
-              <label class="text-sm font-bold text-gray-700 block mb-2">Gender</label>
-              <div onclick="toggleGenderMenu()" class="relative w-full border border-gray-200 bg-gray-50 rounded-2xl px-4 py-3 flex items-center justify-between text-left cursor-pointer">
-                <span class="text-[15px]">${p.gender}</span>
-                <div class="relative flex-shrink-0">
-                  ${Icon('chevronDown','w-4 h-4 text-gray-500')}
-                  ${genderMenuOpen ? `
-                    <div onclick="event.stopPropagation(); toggleGenderMenu()" onwheel="event.stopPropagation(); toggleGenderMenu()" ontouchmove="event.stopPropagation(); toggleGenderMenu()" style="position:fixed;inset:0;z-index:30;"></div>
-                    <div onclick="event.stopPropagation()" class="bg-white rounded-2xl border border-gray-100 py-2 text-left menu-dropdown-inset" style="position:absolute;right:0;top:100%;margin-top:0.5rem;width:9rem;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,.14);">
-                      <button onclick="setGender('Male')" class="w-full text-left px-4 py-2.5 text-sm menu-item-pill ${p.gender==='Male' ? `font-semibold text-[${NAVY}]` : 'text-gray-700'}">Male</button>
-                      <button onclick="setGender('Female')" class="w-full text-left px-4 py-2.5 text-sm menu-item-pill ${p.gender==='Female' ? `font-semibold text-[${NAVY}]` : 'text-gray-700'}">Female</button>
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
             </div>
 
             <div class="flex gap-3">
