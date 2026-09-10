@@ -1286,13 +1286,19 @@
         #auth-gate.auth-verify-mode .auth-body{padding-top:32px;}
         #auth-gate .auth-panels{position:relative;}
         #auth-gate .auth-panel{
-          display:grid;
-          grid-template-rows:0fr;
-          transition:grid-template-rows .12s cubic-bezier(.4,0,.2,1), opacity .1s ease;
+          display:none;
           opacity:0;
         }
-        #auth-gate .auth-panel > div{overflow:hidden;}
-        #auth-gate .auth-panel.active{grid-template-rows:1fr; opacity:1;}
+        #auth-gate .auth-panel > div{overflow:visible;}
+        #auth-gate .auth-panel.active{
+          display:block;
+          opacity:1;
+          animation:authPanelFadeIn .15s ease;
+        }
+        @keyframes authPanelFadeIn{
+          from{opacity:0; transform:translateY(4px);}
+          to{opacity:1; transform:translateY(0);}
+        }
         #auth-gate .auth-field{margin-bottom:14px;}
         #auth-gate .auth-field label{
           display:block;
@@ -1502,7 +1508,7 @@
           cursor:pointer; font-size:12px; padding:0;
         }
         @media (prefers-reduced-motion: reduce){
-          #auth-gate .auth-panel{transition:none;}
+          #auth-gate .auth-panel{animation:none;}
           #auth-gate .auth-form-side, #auth-gate .auth-promo-side{transition:none;}
         }
 
