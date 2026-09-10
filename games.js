@@ -1819,6 +1819,7 @@ let simpleGameState = null;
           document.getElementById('authBackBtn').style.display = 'none';
           document.getElementById('authBackToLandingBtn').style.display = 'flex';
           document.getElementById('auth-gate').classList.remove('auth-compact-mode');
+          document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
         }
@@ -1831,6 +1832,12 @@ let simpleGameState = null;
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          // Simple, un-decorated verify screen: no big brand logo, no
+          // gradient hero title, and (see auth-verify-mode CSS) pinned
+          // near the top of the viewport instead of vertically centered,
+          // so it doesn't visibly jump up/down when the keyboard opens
+          // and closes while typing the code.
+          document.getElementById('auth-gate').classList.add('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE MORE STEP';
           const emailLabel = document.getElementById('auth-verify-email-label');
@@ -1856,6 +1863,7 @@ let simpleGameState = null;
           document.getElementById('authBackBtn').style.display = 'none';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
