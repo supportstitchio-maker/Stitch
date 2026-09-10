@@ -1517,13 +1517,15 @@
           #auth-gate.auth-signup-mode{padding:0;}
           #auth-gate .auth-scroll-inner{height:100%;}
           #auth-gate .auth-stage{width:100%; max-width:100%; height:100%;}
-          #auth-gate .auth-card{display:flex; flex-direction:row; align-items:stretch; border-radius:0; height:100%;}
+          #auth-gate .auth-card{display:flex; flex-direction:row; align-items:stretch; justify-content:center; border-radius:0; height:100%;}
+          #auth-gate .auth-promo-side{display:none !important;}
           #auth-gate .auth-form-side{
-            flex:1 1 50%;
+            flex:0 1 480px;
             min-width:0;
             order:1;
             display:flex;
             flex-direction:column;
+            align-items:center;
             justify-content:center;
             padding:72px 48px;
             max-height:100%;
@@ -1531,19 +1533,17 @@
             -webkit-overflow-scrolling:touch;
             transition:transform .5s cubic-bezier(.65,0,.35,1);
           }
-          #auth-gate .auth-promo-side{
-            transition:transform .5s cubic-bezier(.65,0,.35,1);
-          }
-          #auth-gate.auth-signup-mode .auth-form-side{transform:translateX(100%); justify-content:flex-start;}
-          #auth-gate.auth-signup-mode .auth-promo-side{transform:translateX(-100%);}
+          #auth-gate.auth-signup-mode .auth-form-side{transform:none; justify-content:center;}
           #auth-gate .auth-head{
             background:none;
             padding:0;
             min-height:0;
             color:var(--a-ink);
+            width:100%;
+            text-align:center;
           }
           #auth-gate .auth-head::after{display:none;}
-          #auth-gate .auth-head-row{align-items:flex-start;}
+          #auth-gate .auth-head-row{align-items:center; justify-content:center; flex-direction:column;}
           #auth-gate .auth-desktop-brand-mark{
             display:none;
           }
@@ -1553,7 +1553,7 @@
           #auth-gate .auth-eyebrow{display:none;}
           #auth-gate .auth-head h1{font-size:30px; color:var(--a-ink);}
           #auth-gate .auth-head p{color:var(--a-muted); font-size:13px; margin-top:6px;}
-          #auth-gate .auth-body{padding:46px 0 0;}
+          #auth-gate .auth-body{padding:46px 0 0; width:100%; max-width:360px; margin:0 auto;}
 
           #auth-gate .auth-promo-side{
             flex:1 1 50%;
