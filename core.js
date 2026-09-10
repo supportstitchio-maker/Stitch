@@ -567,7 +567,10 @@
           if (typeof aiChatSessions !== 'undefined') aiChatSessions = Array.isArray(d.aiChatSessions) ? d.aiChatSessions : [];
           if (typeof aiChatSessionIdCounter !== 'undefined') aiChatSessionIdCounter = (typeof d.aiChatSessionIdCounter === 'number') ? d.aiChatSessionIdCounter : 0;
           appPrefs = (d.appPrefs && typeof d.appPrefs === 'object') ? Object.assign({ theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false }, d.appPrefs) : { theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false };
-          if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+          if (typeof document !== 'undefined' && document.body) {
+            document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+            if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+          }
           if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();
           const me = (typeof leaderboard !== 'undefined' && leaderboard) ? leaderboard.find(p => p.me) : null;
           if (me) me.pts = userPoints;
