@@ -246,6 +246,31 @@
         }
         .classroom-slide-cover.slide-out{transform:translateX(-100%);}
         .convo-composer-anim{ transition: padding-bottom .3s cubic-bezier(.22,.68,0,1); }
+        .convo-composer-pill{
+          background:#ffffff;
+          border:1.5px solid rgba(10,37,64,0.10);
+          box-shadow:0 8px 24px rgba(10,37,64,0.10);
+        }
+        body.dark-mode .convo-composer-pill{
+          background:var(--c-onyx) !important;
+          border-color:rgba(255,255,255,0.10) !important;
+          box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
+        }
+        .convo-composer-icon-btn{background:rgba(10,37,64,0.06); color:#1e90ff;}
+        body.dark-mode .convo-composer-icon-btn{background:rgba(255,255,255,0.08) !important;}
+        .convo-composer-textarea::placeholder{color:#8a93a6;}
+        body.dark-mode .convo-composer-textarea::placeholder{color:#8a8f98;}
+        .convo-jump-btn{
+          background:#ffffff;
+          color:#1e90ff;
+          border:1px solid rgba(10,37,64,0.08);
+          box-shadow:0 2px 10px rgba(10,37,64,0.18);
+        }
+        body.dark-mode .convo-jump-btn{
+          background:var(--c-onyx) !important;
+          border-color:rgba(255,255,255,0.10) !important;
+          box-shadow:0 2px 10px rgba(0,0,0,0.5) !important;
+        }
         .ai-history-drawer-backdrop{
           position:absolute; inset:0; z-index:29;
           background:rgba(10,37,64,0.35);
