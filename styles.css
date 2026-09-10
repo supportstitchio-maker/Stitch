@@ -1239,8 +1239,8 @@
           filter:drop-shadow(0 8px 18px rgba(65,105,225,0.35));
         }
         #auth-gate .auth-brand-logo{
-          width:160px;
-          margin:0 auto 14px;
+          width:180px;
+          margin:0 auto 18px;
         }
         @media (min-width: 1024px){
           #auth-gate .auth-brand-logo{display:none;}
