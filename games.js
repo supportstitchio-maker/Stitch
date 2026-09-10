@@ -1738,13 +1738,18 @@ let simpleGameState = null;
         });
 
         let authPendingEmail = '';   
-        let authPendingFrom = 'login'; 
         let authPendingReferralCode = '';
-        let authPendingSignupName = '';
 
         const NEVER_EXPIRE_OTP_TRUST_EMAILS = ['dailytheraklick@gmail.com'];
         const AUTH_OTP_TRUST_DAYS = 7;
-        // ---- Auth: login/signup/OTP screens ----
+        // ---- Auth: login/OTP/complete-profile screens ----
+        // There used to be a separate up-front Register panel. It's been
+        // folded into this single Get Started panel: an email that has no
+        // account yet is created automatically once its code is verified
+        // (see authSendOtp), and the missing name/username are collected
+        // right after that, on the new auth-panel-complete-profile screen
+        // (see authCheckNeedsProfileSetup / authSubmitCompleteProfile)
+        // instead of before the code is even sent.
         function authOtpTrustKey(email){
           return 'stitch_otp_trust_' + String(email || '').trim().toLowerCase();
         }
@@ -1766,7 +1771,11 @@ let simpleGameState = null;
         function landingGoToAuth(mode){
           const landing = document.getElementById('landing-page');
           if (landing) landing.classList.add('landing-hidden');
-          if (mode === 'signup') authShowSignup(); else authShowLogin();
+          // The standalone Register screen was merged into this single
+          // Get Started / Log In panel -- every landing entry point
+          // (Sign In, Register, "Join with a code", etc.) opens it now,
+          // regardless of which mode it originally asked for.
+          authShowLogin();
         }
         // games.js is the last script tag to load, but the landing page's
         // Sign In/Register buttons render (and become clickable) much
@@ -1788,55 +1797,39 @@ let simpleGameState = null;
         }
 
         function authHideAllPanels(){
-          ['auth-panel-login','auth-panel-signup','auth-panel-verify'].forEach(id => {
+          ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
           });
         }
-        function authShowSignup(){
-          authHideAllPanels();
-          document.getElementById('auth-panel-signup').classList.add('active');
-          document.getElementById('authHeadTitle').textContent = 'Register';
-          document.getElementById('authHeadSub').textContent = 'Join the Stitch community';
-          document.getElementById('authBackBtn').style.display = 'flex';
-          document.getElementById('authBackToLandingBtn').style.display = 'none';
-          document.getElementById('auth-gate').classList.add('auth-signup-mode');
-          document.getElementById('auth-gate').classList.remove('auth-compact-mode');
-          const eyebrow = document.getElementById('authEyebrow');
-          if (eyebrow) eyebrow.textContent = 'START BUILDING IN MINUTES';
-          const promoLogin = document.getElementById('auth-promo-login');
-          const promoSignup = document.getElementById('auth-promo-signup');
-          if (promoLogin) promoLogin.classList.remove('active');
-          if (promoSignup) promoSignup.classList.add('active');
+        // Focuses the email field on the login/Get Started panel -- used
+        // by the desktop promo side's CTA, since there's no longer a
+        // separate Register screen for it to open.
+        function authFocusEmailField(){
+          const el = document.getElementById('auth-li-email');
+          if (el) el.focus();
         }
         function authShowLogin(){
           authHideAllPanels();
           document.getElementById('auth-panel-login').classList.add('active');
           const loginErr = document.getElementById('auth-login-error');
           if (loginErr) loginErr.classList.remove('show');
-          document.getElementById('authHeadTitle').textContent = 'Log In';
-          document.getElementById('authHeadSub').textContent = 'Welcome back to Stitch';
+          document.getElementById('authHeadTitle').textContent = 'Get Started';
+          document.getElementById('authHeadSub').textContent = 'Welcome to the Stitch community';
           document.getElementById('authBackBtn').style.display = 'none';
           document.getElementById('authBackToLandingBtn').style.display = 'flex';
-          document.getElementById('auth-gate').classList.remove('auth-signup-mode');
           document.getElementById('auth-gate').classList.remove('auth-compact-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
-          const promoLogin = document.getElementById('auth-promo-login');
-          const promoSignup = document.getElementById('auth-promo-signup');
-          if (promoSignup) promoSignup.classList.remove('active');
-          if (promoLogin) promoLogin.classList.add('active');
         }
-        function authShowVerify(email, from){
+        function authShowVerify(email){
           authPendingEmail = email;
-          authPendingFrom = from;
           authHideAllPanels();
           document.getElementById('auth-panel-verify').classList.add('active');
           document.getElementById('authHeadTitle').textContent = 'Verify your email';
           document.getElementById('authHeadSub').textContent = 'Enter the code we sent to ' + email;
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
-          document.getElementById('auth-gate').classList.toggle('auth-signup-mode', from === 'signup');
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE MORE STEP';
@@ -1848,12 +1841,26 @@ let simpleGameState = null;
           authStartResendCountdown();
           setTimeout(() => { const first = document.getElementById('auth-otp-0'); if (first) first.focus(); }, 50);
         }
+        // Shown once, right after the email code is verified, only when
+        // this email has no existing Stitch account yet (see
+        // authCheckNeedsProfileSetup). No back button here -- the person
+        // is already signed in at this point, so there's nowhere useful
+        // to go back to.
+        function authShowCompleteProfile(){
+          authHideAllPanels();
+          document.getElementById('auth-panel-complete-profile').classList.add('active');
+          const err = document.getElementById('auth-complete-profile-error');
+          if (err) err.classList.remove('show');
+          document.getElementById('authHeadTitle').textContent = 'Almost there';
+          document.getElementById('authHeadSub').textContent = "Let's set up your profile";
+          document.getElementById('authBackBtn').style.display = 'none';
+          document.getElementById('authBackToLandingBtn').style.display = 'none';
+          document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          const eyebrow = document.getElementById('authEyebrow');
+          if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
+          setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
+        }
         function authGoBack(){
-          const verifyActive = document.getElementById('auth-panel-verify').classList.contains('active');
-          if (verifyActive) {
-            if (authPendingFrom === 'signup') authShowSignup(); else authShowLogin();
-            return;
-          }
           authShowLogin();
         }
         async function applyGoogleProfileInfo(){
@@ -2030,34 +2037,19 @@ let simpleGameState = null;
           if (authOtpSendInFlight) return;
           authOtpSendInFlight = true;
           try {
-            // shouldCreateUser is true only for signup -- a login attempt
-            // must never silently create an account for an email that
-            // doesn't have one yet (that's what the noAccountExists check
-            // below catches and redirects to Register instead).
+            // This single Get Started panel is now the only entry point,
+            // so shouldCreateUser is always true -- an email with no
+            // existing account is created automatically here instead of
+            // needing a separate Register step first. Missing profile
+            // details (name, username) are collected right after the
+            // code is verified instead, only when needed (see
+            // authSubmitVerify / authCheckNeedsProfileSetup).
             const { error } = await sb.auth.signInWithOtp({
               email: authPendingEmail,
-              options: {
-                shouldCreateUser: authPendingFrom === 'signup',
-                data: authPendingFrom === 'signup' ? { full_name: authPendingSignupName } : undefined
-              }
+              options: { shouldCreateUser: true }
             });
             if (error) {
               console.error('OTP send error:', error);
-              const noAccountExists = authPendingFrom === 'login' &&
-                /signups not allowed for otp/i.test(error.message || '');
-              if (noAccountExists) {
-                authOtpSendInFlight = false;
-                const email = authPendingEmail;
-                authShowSignup();
-                const suEmail = document.getElementById('auth-su-email');
-                if (suEmail) suEmail.value = email;
-                const signupErr = document.getElementById('auth-signup-error');
-                if (signupErr) {
-                  signupErr.textContent = "We couldn't find an account for that email -- create one below.";
-                  signupErr.classList.add('show');
-                }
-                return;
-              }
               const isRateLimit = /security purposes|only request this after|rate limit/i.test(error.message || '');
               if (isRateLimit) {
                 if (err) {
@@ -2332,57 +2324,11 @@ let simpleGameState = null;
           if (!sb) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); return; }
           err.classList.remove('show');
           // No password: authShowVerify (below) sends the one-time email
-          // code itself (see authSendOtp, from === 'login'), and the code
-          // is the entire authentication -- there's nothing else to check
-          // here first.
-          authShowVerify(email, 'login');
-        }
-        async function authSubmitSignup(e){
-          if (e) e.preventDefault();
-          const fname = document.getElementById('auth-su-fname').value.trim();
-          const lname = document.getElementById('auth-su-lname').value.trim();
-          const email = document.getElementById('auth-su-email').value.trim();
-          const err = document.getElementById('auth-signup-error');
-          if (!fname || !lname || !email) {
-            err.textContent = 'Please fill in all fields.';
-            err.classList.add('show');
-            return;
-          }
-          if (!isValidName(fname) || !isValidName(lname)) {
-            err.textContent = 'Names can only contain letters, spaces, hyphens, and apostrophes.';
-            err.classList.add('show');
-            return;
-          }
-          if (!isValidEmail(email)) {
-            err.textContent = 'Enter a valid email address (e.g. name@example.com).';
-            err.classList.add('show');
-            return;
-          }
-          if (isDisposableEmail(email)) {
-            err.textContent = 'Please use a permanent email address -- disposable or temporary email addresses aren\'t allowed.';
-            err.classList.add('show');
-            return;
-          }
-          const sb = getSupabaseClient();
-          if (!sb) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); return; }
-          err.classList.remove('show');
-          const fullName = `${fname} ${lname}`.trim();
-          if (fullName && typeof profileData !== 'undefined') {
-            profileData.name = fullName;
-            profileData.username = fullName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || profileData.username;
-          }
-          const referralInput = document.getElementById('auth-su-referral');
-          const referralCodeEntered = referralInput ? referralInput.value.trim().toUpperCase() : '';
-          if (referralCodeEntered) {
-            authPendingReferralCode = referralCodeEntered;
-            try { sessionStorage.setItem('stitch_pending_referral', referralCodeEntered); } catch (e) {  }
-          }
-          // No password to set -- account creation itself happens via the
-          // email code: authShowVerify below sends the OTP with
-          // shouldCreateUser:true (see authSendOtp), and verifying that
-          // code both creates the account and signs them in.
-          authPendingSignupName = fullName;
-          authShowVerify(email, 'signup');
+          // code itself (see authSendOtp), and the code is the entire
+          // authentication -- there's nothing else to check here first.
+          // If this email has no account yet, one is created automatically
+          // once the code is verified (see authSubmitVerify).
+          authShowVerify(email);
         }
         async function redeemPendingReferralCode(){
           const sb = getSupabaseClient();
@@ -2418,10 +2364,11 @@ let simpleGameState = null;
           const { error } = await sb.auth.verifyOtp({
             email: authPendingEmail,
             token: entered,
-            // Both login and signup now go through signInWithOtp (see
-            // authSendOtp), which always pairs with type 'email' --
-            // verifying the code both creates the account (on first login)
-            // and signs the person in, in one step.
+            // Every entry -- whether this email already has an account
+            // or not -- goes through signInWithOtp (see authSendOtp),
+            // which always pairs with type 'email'. Verifying the code
+            // both creates the account (the first time) and signs the
+            // person in, in one step.
             type: 'email'
           });
           if (error) {
@@ -2432,9 +2379,96 @@ let simpleGameState = null;
           }
           err.classList.remove('show');
           authMarkDeviceTrusted(authPendingEmail);
-          await authEnterApp();
+          // A code was just accepted for this email -- check whether it
+          // already has a Stitch profile. If not, this is a brand-new
+          // account (what used to be a separate up-front Register step),
+          // so collect the missing name/username now instead of dropping
+          // straight into the app.
+          const needsProfileSetup = await authCheckNeedsProfileSetup();
+          if (needsProfileSetup) {
+            authShowCompleteProfile();
+          } else {
+            await authEnterApp();
+          }
         }
-        // ---- Terms screen (shown during signup) ----
+        // Returns true when the signed-in email has no row yet in
+        // PUBLIC_PROFILES_TABLE -- i.e. this is a brand-new Stitch
+        // account that still needs its name/username collected.
+        async function authCheckNeedsProfileSetup(){
+          const sb = getSupabaseClient();
+          if (!sb) return false;
+          try {
+            resetCachedAuthUser();
+            const user = await getCachedAuthUser();
+            if (!user) return false;
+            const { data, error } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id').eq('user_id', user.id).limit(1);
+            if (error) return false;
+            return !(Array.isArray(data) && data.length > 0);
+          } catch (e) { return false; }
+        }
+        let authCompletingProfile = false;
+        // Submits the one-time "tell us about yourself" step for a
+        // brand-new account (see authShowCompleteProfile), then shows the
+        // same loading cover used elsewhere in the auth flow while the
+        // account finishes setting up, and enters the app.
+        async function authSubmitCompleteProfile(e){
+          if (e) e.preventDefault();
+          if (authCompletingProfile) return;
+          const fname = document.getElementById('auth-cp-fname').value.trim();
+          const lname = document.getElementById('auth-cp-lname').value.trim();
+          const username = document.getElementById('auth-cp-username').value.trim();
+          const err = document.getElementById('auth-complete-profile-error');
+          if (!fname || !lname || !username) {
+            err.textContent = 'Please fill in all fields.';
+            err.classList.add('show');
+            return;
+          }
+          if (!isValidName(fname) || !isValidName(lname)) {
+            err.textContent = 'Names can only contain letters, spaces, hyphens, and apostrophes.';
+            err.classList.add('show');
+            return;
+          }
+          if (isReservedStitchIdentity(fname) || isReservedStitchIdentity(lname)) {
+            err.textContent = '"Stitch" is reserved and can\'t be used as your name.';
+            err.classList.add('show');
+            return;
+          }
+          if (isReservedStitchIdentity(username)) {
+            err.textContent = '"Stitch" is reserved and can\'t be used as your username.';
+            err.classList.add('show');
+            return;
+          }
+          if (USERNAME_INVALID_RE.test(username)) {
+            err.textContent = 'Usernames can only contain letters, numbers, periods, and underscores.';
+            err.classList.add('show');
+            return;
+          }
+          authCompletingProfile = true;
+          const taken = await isUsernameTaken(username);
+          authCompletingProfile = false;
+          if (taken) {
+            err.textContent = 'That username is already taken. Please choose another.';
+            err.classList.add('show');
+            return;
+          }
+          err.classList.remove('show');
+          const fullName = `${fname} ${lname}`.trim();
+          if (typeof profileData !== 'undefined') {
+            profileData.name = fullName;
+            profileData.username = username;
+          }
+          showAuthTransitionLoading('Creating your account...');
+          // Persist to this account's saved state first, so the boot
+          // chain's own account-data fetch (ensureUserStateLoaded, run
+          // from inside authEnterApp) reads these values straight back
+          // instead of finding no saved state yet and resetting the
+          // name/username to blank.
+          if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
+          if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
+          await authEnterApp();
+          hideAuthTransitionLoading();
+        }
+        // ---- Terms screen (shown from the Get Started panel) ----
         function authShowTerms(){
           const m = document.getElementById('auth-terms-modal');
           if (m) { m.style.display = 'block'; m.classList.remove('hidden'); }
@@ -2539,7 +2573,7 @@ let simpleGameState = null;
             if (!email) { await authEnterApp(); return; }
             if (freshOAuthRedirect) {
               if (authIsDeviceTrusted(email)) { await authEnterApp(); return; }
-              authShowVerify(email, 'login');
+              authShowVerify(email);
               return;
             }
             await sb.auth.signOut().catch(() => {});
@@ -2562,13 +2596,12 @@ let simpleGameState = null;
           try { await restoreSessionIfSignedIn(); } catch(e) { console.error(e); }
           const refCode = (params.get('ref') || '').trim().toUpperCase();
           if (refCode) {
+            // The referral code no longer needs its own panel/field to
+            // land in -- it's simply held here and applied automatically
+            // once the person actually signs up (see
+            // redeemPendingReferralCode, run during the post-login boot
+            // chain), regardless of which panel they land on first.
             try { sessionStorage.setItem('stitch_pending_referral', refCode); } catch (e) {  }
-            const gate = document.getElementById('auth-gate');
-            if (gate && !gate.classList.contains('auth-hidden') && typeof authShowSignup === 'function') {
-              authShowSignup();
-              const refInput = document.getElementById('auth-su-referral');
-              if (refInput) refInput.value = refCode;
-            }
           }
           await Promise.all([
             loadProgress().catch(e => console.error(e)),
