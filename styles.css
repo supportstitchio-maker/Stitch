@@ -294,6 +294,12 @@
           background:var(--c-black); color-scheme: dark;
           color:#ffffff; 
         }
+        /* html itself (not just body) needs the dark background too --
+           otherwise the moment the layout scrolls past the document (e.g.
+           the browser nudging the page up while the on-screen keyboard is
+           open for typing a comment/message, or an overscroll bounce),
+           whatever sits beneath <body> shows through as plain white. */
+        html.dark-mode { background:#121212 !important; }
         body.dark-mode #app,
         body.dark-mode #app-shell,
         body.dark-mode #screen { background:var(--c-black); }
@@ -317,10 +323,34 @@
         body.dark-mode .border-gray-300 { border-color:var(--c-tapshoe) !important; }
         body.dark-mode .border-white { border-color:var(--c-onyx) !important; }
 
-        body.dark-mode input, body.dark-mode textarea { color:#f2f2f2; }
+        /* Inputs/textareas fall back to the browser's native white canvas
+           unless they carry a bg-* class -- that's the "white space" that
+           shows up wherever someone types (comment box, message box, etc.)
+           in dark mode. Force them transparent so the dark panel behind
+           shows through instead. */
+        body.dark-mode input, body.dark-mode textarea { color:#f2f2f2; background-color:transparent; }
         body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color:var(--c-slate); }
+        /* Comments bottom sheet: panel background is handled by the
+           .bg-white override above, but the divider above the comment
+           input and the little avatar placeholders still need a nudge
+           so nothing reads as a leftover light-mode box. */
+        body.dark-mode [id^="comment-sheet-panel-"] { border-color:var(--c-tapshoe) !important; }
+        body.dark-mode [id^="comment-sheet-panel-"] .border-t { border-color:var(--c-charcoal) !important; }
+        body.dark-mode .bg-blue-50 { background-color:var(--c-charcoal) !important; }
         body.dark-mode .shadow, body.dark-mode .shadow-sm { box-shadow:0 1px 4px rgba(0,0,0,.7) !important; }
-        body.dark-mode .nav-bar-floating { border-color:var(--c-tapshoe) !important; }
+        body.dark-mode .nav-bar-floating { border-color:var(--c-tapshoe) !important; box-shadow:0 -8px 24px rgba(0,0,0,0.45) !important; }
+        body.dark-mode .nav-bar-floating:hover { box-shadow:0 14px 36px rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.3) !important; }
+        /* Royal-blue / navy drop shadows read fine on a white surface but
+           just look like a blue smear floating in a dark UI, so every
+           one of them gets swapped for a plain dark shadow in dark mode. */
+        body.dark-mode .nav-protrude { background:var(--c-onyx) !important; box-shadow:0 4px 12px rgba(0,0,0,0.5) !important; }
+        body.dark-mode .ai-history-drawer { box-shadow:8px 0 28px rgba(0,0,0,0.55) !important; }
+        body.dark-mode .dnav-item.dnav-active { box-shadow:inset 0 0 0 1px rgba(255,255,255,0.12) !important; }
+        body.dark-mode .ai-graph-plot { box-shadow:0 1px 4px rgba(0,0,0,0.4) !important; }
+        body.dark-mode .skel-post { box-shadow:0 1px 3px rgba(0,0,0,0.5) !important; }
+        body.dark-mode #rp-reopen-tab { background:var(--c-onyx) !important; border-color:var(--c-tapshoe) !important; box-shadow:-2px 0 8px rgba(0,0,0,0.4) !important; color:#ffffff !important; }
+        body.dark-mode .pill-cta:active { box-shadow:0 2px 8px rgba(0,0,0,0.5) !important; }
+        body.dark-mode .pill-cta:hover { box-shadow:0 8px 20px rgba(0,0,0,0.55) !important; }
         body.dark-mode .flip-card { background:linear-gradient(135deg,var(--c-onyx),var(--c-black)) !important; border-color:var(--c-tapshoe) !important; }
 
         body.dark-mode .classroom-slide-cover { background:var(--c-raven) !important; }
