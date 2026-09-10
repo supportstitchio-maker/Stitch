@@ -1576,7 +1576,7 @@
             display:none;
           }
           #auth-gate .auth-eyebrow{display:none;}
-          #auth-gate .auth-head h1{font-size:30px; color:var(--a-dodger);}
+          #auth-gate .auth-head h1{font-size:30px; color:var(--a-dodger) !important;}
           #auth-gate .auth-head p{color:var(--a-muted); font-size:13px; margin-top:6px;}
           #auth-gate .auth-body{padding:46px 0 0; width:100%; max-width:360px; margin:0 auto;}
 
