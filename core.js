@@ -568,6 +568,7 @@
           if (typeof aiChatSessionIdCounter !== 'undefined') aiChatSessionIdCounter = (typeof d.aiChatSessionIdCounter === 'number') ? d.aiChatSessionIdCounter : 0;
           appPrefs = (d.appPrefs && typeof d.appPrefs === 'object') ? Object.assign({ theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false }, d.appPrefs) : { theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false };
           if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+          if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();
           const me = (typeof leaderboard !== 'undefined' && leaderboard) ? leaderboard.find(p => p.me) : null;
           if (me) me.pts = userPoints;
           if (typeof leaderboard !== 'undefined' && leaderboard) leaderboard.sort((a, b) => b.pts - a.pts);
@@ -807,7 +808,7 @@
 
         function updateNavProfileIcon(){
           const navBtn = document.getElementById('nav-4-icon');
-          if (navBtn) navBtn.innerHTML = navProfileIconHTML();
+          if (navBtn) navBtn.innerHTML = navProfileIconHTML(undefined, true);
           const dNavBtn = document.getElementById('dnav-4-icon');
           if (dNavBtn) dNavBtn.innerHTML = navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false);
           const dcNavBtn = document.getElementById('dcnav-profile-icon');
@@ -1222,13 +1223,13 @@
   <!-- Bottom Nav -->
   <div id="bottom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare">
     <div class="max-w-2xl mx-auto flex pt-3">
-      <button onclick="switchTab(0)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('home','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
-      <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcase','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
+      <button onclick="switchTab(0)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
+      <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcaseOutline','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
       <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center" id="nav-2">
-        <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('book','w-8 h-8')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Classroom</span>
+        <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookOutline','w-8 h-8')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Classroom</span>
       </button>
-      <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${Icon('comment','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
-      <button onclick="switchTab(4)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-4"><span id="nav-4-icon">${navProfileIconHTML()}</span><span class="text-[9px] font-medium leading-none mt-1">Profile</span></button>
+      <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${Icon('commentOutline','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
+      <button onclick="switchTab(4)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-4"><span id="nav-4-icon">${navProfileIconHTML(undefined, true)}</span><span class="text-[9px] font-medium leading-none mt-1">Profile</span></button>
     </div>
   </div>
 
@@ -1238,10 +1239,10 @@
        and Alerts reserving a gap for it) instead of being hidden there. -->
   <div id="classroom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare" style="display:none;">
     <div class="max-w-2xl mx-auto flex pt-3">
-      <button onclick="studySubTab('resources')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-resources">${Icon('folder','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Resources</span></button>
-      <button onclick="studySubTab('exams')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-practice">${Icon('edit','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Practice</span></button>
-      <button onclick="openAIClass()" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-ai">${Icon('bot','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Stitch Bot</span></button>
-      <button onclick="openClassroomNavOverlay('classAnnouncements')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-notif"><span class="relative">${Icon('bell','w-5 h-5')}${unreadClassroomNotifCount() ? `<span id="cnav-notif-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadClassroomNotifCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Notice Board</span></button>
+      <button onclick="studySubTab('resources')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-resources">${Icon('folderOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Resources</span></button>
+      <button onclick="studySubTab('exams')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-practice">${Icon('editOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Practice</span></button>
+      <button onclick="openAIClass()" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-ai">${Icon('botOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Stitch Bot</span></button>
+      <button onclick="openClassroomNavOverlay('classAnnouncements')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-notif"><span class="relative">${Icon('bellOutline','w-5 h-5')}${unreadClassroomNotifCount() ? `<span id="cnav-notif-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadClassroomNotifCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Notice Board</span></button>
     </div>
   </div>
 
