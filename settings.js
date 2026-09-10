@@ -10,9 +10,22 @@ let appPrefs = {
         };
 
         // ---- Theme toggle ----
+        // Keeps the browser/PWA chrome (status bar tint on Android/Chrome,
+        // and the color-scheme hint used for native form controls/scrollbars)
+        // in sync with the app's own dark mode -- otherwise that strip stays
+        // hard-coded white even while the rest of the UI has gone dark.
+        function applyThemeColorMeta(){
+          const isDark = document.body.classList.contains('dark-mode');
+          const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+          if (themeColorMeta) themeColorMeta.setAttribute('content', isDark ? '#121212' : '#ffffff');
+          const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
+          if (colorSchemeMeta) colorSchemeMeta.setAttribute('content', isDark ? 'dark' : 'light');
+        }
+
         function toggleTheme(){
           appPrefs.theme = appPrefs.theme === 'light' ? 'dark' : 'light';
           document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+          applyThemeColorMeta();
           openOverlay('profileMenu');
           queueSaveUserState();
         }
