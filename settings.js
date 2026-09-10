@@ -25,6 +25,7 @@ let appPrefs = {
         function toggleTheme(){
           appPrefs.theme = appPrefs.theme === 'light' ? 'dark' : 'light';
           document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+          if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           applyThemeColorMeta();
           openOverlay('profileMenu');
           queueSaveUserState();
