@@ -3092,15 +3092,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div id="convo-log" class="overflow-y-auto p-5 flex flex-col gap-3" style="height:100%;">
                 ${convoLogHTML()}
               </div>
-              <button id="convo-jump-latest-btn" onclick="scrollConvoLogToBottom()" title="Jump to latest" class="hidden flex items-center justify-center" style="position:absolute;right:16px;bottom:14px;z-index:5;width:36px;height:36px;border-radius:9999px;background:#fff;color:${NAVY};border:1px solid rgba(10,37,64,0.08);box-shadow:0 2px 10px rgba(10,37,64,0.18);">${Icon('chevronDown','w-4 h-4')}</button>
+              <button id="convo-jump-latest-btn" onclick="scrollConvoLogToBottom()" title="Jump to latest" class="hidden convo-jump-btn flex items-center justify-center" style="position:absolute;right:16px;bottom:14px;z-index:5;width:36px;height:36px;border-radius:9999px;">${Icon('chevronDown','w-4 h-4')}</button>
             </div>
             <div id="convo-attach-strip" class="flex-shrink-0">${convoAttachStripHTML()}</div>
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
-              <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
-                <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('clip','w-4 h-4')}</button>
-                <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center" style="max-height:120px;overflow-y:auto;"></textarea>
-                <button onclick="toggleConvoVoiceNote()" id="convo-mic-btn" title="Record a voice note" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('mic','w-4 h-4')}</button>
+              <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
+                <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('clip','w-4 h-4')}</button>
+                <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
+                <button onclick="toggleConvoVoiceNote()" id="convo-mic-btn" title="Record a voice note" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('mic','w-4 h-4')}</button>
                 <button onclick="handleConvoSendTap()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
               </div>
             </div>`;
