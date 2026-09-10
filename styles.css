@@ -1130,6 +1130,15 @@
              portion unreachable even with scrolling enabled below. */
           justify-content:safe center;
         }
+        #auth-gate.auth-verify-mode .auth-scroll-inner{
+          /* The verify-code screen is pinned near the top instead of
+             centered. Centering here meant that opening/closing the
+             on-screen keyboard (which shrinks the 100dvh viewport this
+             panel is sized against) visibly re-centered the whole card,
+             making it jump up and down while typing. Top alignment keeps
+             its position fixed regardless of keyboard state. */
+          justify-content:flex-start;
+        }
         #auth-gate.auth-compact-mode{
           overflow-y:auto;
           padding-top:calc(env(safe-area-inset-top, 0px) + 64px);
@@ -1203,6 +1212,12 @@
           #auth-gate .auth-brand-logo{display:none;}
         }
         #auth-gate.auth-signup-mode .auth-brand-logo{display:none;}
+        /* Simple verify-code screen, closer to a plain "enter the code"
+           step: no big brand logo and no colored hero banner repeating
+           the title/subtitle -- just the back arrow and the form. */
+        #auth-gate.auth-verify-mode .auth-brand-logo,
+        #auth-gate.auth-verify-mode .auth-desktop-brand-mark{display:none;}
+        #auth-gate.auth-verify-mode .auth-head{display:none;}
         #auth-gate .auth-form-side{display:contents;}
         #auth-gate .auth-promo-side{display:none;}
         #auth-gate .auth-desktop-brand-mark{display:none;}
@@ -1259,6 +1274,7 @@
           font-weight:500;
         }
         #auth-gate .auth-body{position:relative;padding:14px 26px 28px;}
+        #auth-gate.auth-verify-mode .auth-body{padding-top:32px;}
         #auth-gate .auth-panels{position:relative;}
         #auth-gate .auth-panel{
           display:grid;
