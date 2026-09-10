@@ -3518,14 +3518,24 @@
           navigateReelPost(postId, dx < 0 ? 1 : -1);
         }
 
-        function framedMediaLayerHtml(media, extraImgAttrs){
+        function framedMediaLayerHtml(media, extraImgAttrs, anchorTop){
           if (!media) return '';
+          // anchorTop pins object-position to the top instead of the
+          // default center. Used when this media sits behind the comments
+          // sheet, which covers the bottom ~58-92% of the screen --
+          // centering the media there would push most of it behind the
+          // sheet, leaving a big unused gap up top. Anchoring to the top
+          // means whatever's visible above the sheet is an actual part of
+          // the post instead of empty letterboxing. Other callers (the
+          // full reel viewer, the image carousel) keep the normal centered
+          // framing since there's no sheet covering them.
+          const objPos = anchorTop ? 'top' : 'center';
           if (media.type === 'video') {
-            return `<video src="${media.url}" class="absolute inset-0 w-full h-full" style="object-fit:contain;background:#000;" ${extraImgAttrs || ''}></video>`;
+            return `<video src="${media.url}" class="absolute inset-0 w-full h-full" style="object-fit:contain;object-position:${objPos};background:#000;" ${extraImgAttrs || ''}></video>`;
           }
           return `
             <div class="absolute inset-0" style="background-image:url('${media.url}');background-size:cover;background-position:center;filter:blur(28px) brightness(0.55);transform:scale(1.15);"></div>
-            <img src="${media.url}" class="absolute inset-0 w-full h-full" style="object-fit:contain;">`;
+            <img src="${media.url}" class="absolute inset-0 w-full h-full" style="object-fit:contain;object-position:${objPos};">`;
         }
 
         function reelPostDetailHTML(post){
@@ -3844,7 +3854,7 @@
           return `
             <div class="relative w-full h-full bg-black overflow-hidden" id="comment-sheet-root-${post.id}">
               <div class="absolute inset-0" onclick="closeCommentSheet()">
-                ${framedMediaLayerHtml(media)}
+                ${framedMediaLayerHtml(media, '', true)}
               </div>
               <button onclick="event.stopPropagation(); closeCommentSheet()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);">${IconBold('back','w-5 h-5 text-white')}</button>
               <div id="comment-sheet-panel-${post.id}" class="absolute left-0 right-0 bottom-0 bg-white flex flex-col" style="height:${COMMENT_SHEET_DEFAULT_VH}vh;border-radius:22px 22px 0 0;overflow:hidden;transition:height .22s ease;">
