@@ -212,7 +212,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function profileTabsHTML(){
           const tabBtn = (key, icon) => `
-            <button type="button" onclick="profileTabSwitch('${key}')" class="flex-1 flex justify-center py-3 ${profileTab === key ? `border-b-2 border-[${ROYAL}] text-[${NAVY}]` : 'text-gray-400'}" style="cursor:pointer;">${Icon(icon,'w-5 h-5')}</button>`;
+            <button type="button" onclick="profileTabSwitch('${key}')" class="flex-1 flex justify-center py-3 ${profileTab === key ? `border-b-2 border-[${ROYAL}] text-[${NAVY}]` : 'text-gray-400'}" style="cursor:pointer;">${Icon(icon + 'Outline','w-5 h-5')}</button>`;
           return tabBtn('posts','grid') + tabBtn('reposts','repost') + tabBtn('saved','bookmark');
         }
 
