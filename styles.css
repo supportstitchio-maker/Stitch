@@ -2377,3 +2377,32 @@
 .text-\[8px\]{font-size:8px}
 .text-\[10\.5px\]{font-size:10.5px}
 .text-\[12px\]{font-size:12px}
+
+/* Dark mode: bottom nav / classroom nav / profile tabs -- outline icons +
+   visible active state. Earlier dark-mode rules force ALL nav text/icon
+   color to solid white (and force the NAVY "active" color to white too),
+   which made every tab look identically bright and erased the active/
+   inactive distinction. These rules come later in the cascade (same
+   specificity, later wins) or use a more specific selector, so they take
+   over: inactive icons get dimmed to a soft gray instead of pure white,
+   and the active tab keeps a clearly brighter/highlighted look. */
+body.dark-mode #bottom-nav .nav-flat-item,
+body.dark-mode #classroom-nav .nav-flat-item,
+body.dark-mode .nav-protrude-label { color: var(--c-slate) !important; }
+
+body.dark-mode #bottom-nav .nav-flat-item[class*="text-[#1e90ff]"],
+body.dark-mode #classroom-nav .nav-flat-item[class*="text-[#1e90ff]"] {
+  color: #ffffff !important;
+}
+
+/* Profile page tabs (Posts / Reposts / Saved): same dim-inactive /
+   bright-active treatment, and keep the active tab's underline visible
+   instead of it fading into the dark background. */
+body.dark-mode #profile-tabs button {
+  color: var(--c-slate) !important;
+  border-bottom-color: transparent !important;
+}
+body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
+  color: #ffffff !important;
+  border-bottom-color: #ffffff !important;
+}
