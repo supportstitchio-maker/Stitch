@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light">
+    <!-- Critical CSS: inlined so it applies immediately, before the external
+         styles.css request even resolves. On a slow/flaky connection
+         styles.css can take seconds (or fail) to load, and until it does the
+         browser has no rules telling it to (a) use a sane sans-serif font
+         instead of the default serif, or (b) hide the inactive auth panel /
+         any element with the .hidden class -- so the Login and Register
+         forms render stacked on top of each other in Times New Roman. This
+         block covers just enough of styles.css's own rules to prevent that
+         flash; once styles.css finishes loading it simply overrides these
+         (same selectors, later in the cascade) with the fully styled,
+         animated versions. -->
+    <style>
+      html, body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background-color: #ffffff; }
+      .hidden { display: none !important; }
+      #auth-gate .auth-panel { display: none; }
+      #auth-gate .auth-panel.active { display: block; }
+    </style>
+    <!-- Content-Security-Policy: locks script/style/connect/media loading down
+         to exactly the origins this app uses (CDN libraries, Google Fonts,
+         Supabase, Sentry, Formspree, Paystack, Pixabay). If a third-party CDN
+         above were ever compromised, or an attacker tried to inject a request
+         to an unlisted domain, the browser refuses it outright. Note:
+         script-src still needs 'unsafe-inline' because this codebase uses
+         inline onclick="..." handlers throughout -- a future step of removing
+         those (in favor of addEventListener + a nonce-based CSP) would close
+         that remaining gap, but this still blocks the far more common attack
+         of loading/exfiltrating to an arbitrary external origin. -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://browser.sentry-cdn.com https://js.paystack.co;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;
+      font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;
+      img-src 'self' data: blob: https:;
+      media-src 'self' data: blob: https: https://cdn.pixabay.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io https://*.sentry.io https://browser.sentry-cdn.com https://formspree.io https://api.paystack.co;
+      frame-src https://js.paystack.co https://checkout.paystack.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self' https://formspree.io;
+    ">
+    <title>Stitch</title>
+    <meta name="description" content="Stitch is a free student community: turn your notes into flashcards and practice tests, join study groups, and discover internships, scholarships and other opportunities -- all in one app.">
+    <!-- IMPORTANT: replace this with your real production domain (custom domain
+         if you have one, otherwise your *.vercel.app URL) before launch, and
+         keep it in sync with sitemap.xml and robots.txt below. -->
+    <link rel="canonical" href="https://stitch.vercel.app/">
+
+    <!-- Open Graph: controls the title/description/image shown when this link
+         is pasted into WhatsApp, Twitter/X, Slack, Facebook, iMessage, etc.
+         Without these, sharing the bare URL shows no preview at all. -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://stitch.vercel.app/">
+    <meta property="og:title" content="Stitch">
+    <meta property="og:description" content="A student community with the notes, study groups, and opportunities (internships, scholarships and more) to help you go further -- all in one free app.">
+    <meta property="og:image" content="https://stitch.vercel.app/assets/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Stitch">
+
+    <!-- Twitter/X card: separate from Open Graph -- some clients (Twitter/X,
+         some Slack configs) look for these specifically instead of falling
+         back to the og: tags above. -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stitch">
+    <meta name="twitter:description" content="A student community with the notes, study groups, and opportunities (internships, scholarships and more) to help you go further -- all in one free app.">
+    <meta name="twitter:image" content="https://stitch.vercel.app/assets/og-image.jpg">
+
+    <!-- favicon.ico first: this is the file desktop browsers request by
+         default (before they even parse the <link> tags below), so without
+         it some desktop browsers show a blank/generic tab icon even though
+         the PNG links are correct. The PNG links stay for browsers that
+         prefer a sized, higher-res icon. -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Resource-scanning libraries: extract text from uploaded PDF / DOCX / PPTX files client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Cropper.js: drag-to-reposition / pinch-or-slider-to-zoom cropping UI
+         for the profile photo crop step (see photoCropModal / cropper.js
+         usage in profile.js). -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <!-- KaTeX: renders the LaTeX-style math (equations, fractions, etc.)
+         Stitch Bot's replies are now prompted to use -- see formatAIText
+         in courses.js, which converts $$...$$ / $...$ segments in the
+         bot's text into real typeset math via katex.renderToString
+         instead of the raw "$$\frac{585}{-111}$$" text showing up as-is. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <!-- Mermaid: renders the simple diagrams (flowcharts, timelines, etc.)
+         Stitch Bot can now draw -- see formatAIText/renderPendingMermaidDiagrams
+         in courses.js, which turns a fenced ```mermaid code block in the
+         bot's reply into an actual rendered diagram. startOnLoad is left
+         false since diagrams only ever appear inside chat bubbles that get
+         rendered after this loads, not on page load itself. -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <!-- Supabase client: used both to reach the ai-proxy Edge Function and,
+         via Realtime broadcast channels, as the signaling layer for real
+         WebRTC voice/video calls (see startCall/RTC_* below). -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <!-- Sentry: error/performance monitoring. Loaded from Sentry's CDN
+         (no npm build step needed) and initialized immediately so it can
+         catch errors that happen anywhere below, including ones thrown
+         before the app finishes rendering. Replace SENTRY_DSN with the
+         DSN from your Sentry project settings (Settings -> Projects ->
+         [your project] -> Client Keys (DSN)) -- until then this loads but
+         sends nothing anywhere. -->
+    <script src="https://browser.sentry-cdn.com/8.9.2/bundle.tracing.min.js" crossorigin="anonymous"></script>
+    <script>
+      const SENTRY_DSN = 'https://6863efe52fe1583922385c2041626990@o4511841032470528.ingest.de.sentry.io/4511841079525456';
+      if (window.Sentry && SENTRY_DSN && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
+        Sentry.init({
+          dsn: SENTRY_DSN,
+          integrations: [Sentry.browserTracingIntegration()],
+          tracesSampleRate: 0.2,
+          environment: (location.protocol === 'file:' || location.hostname === 'localhost') ? 'development' : 'production',
+        });
+      }
+      // Safe no-op wrapper so the rest of the app can call
+      // Sentry.captureException/captureMessage even when Sentry hasn't
+      // loaded (e.g. offline, ad-blocker, or DSN not configured yet)
+      // without needing an `if (window.Sentry)` check at every call site.
+      window.reportError = function(err, context){
+        try {
+          console.error('[reportError]', err, context || '');
+          if (window.Sentry && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
+            Sentry.captureException(err instanceof Error ? err : new Error(String(err)), context ? { extra: context } : undefined);
+          }
+        } catch (e) { /* never let error reporting itself throw */ }
+      };
+    </script>
+    <script>
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    </script>
+    <!-- Capacitor (native iOS/Android app wrapper) detection: runs
+         synchronously, before styles.css is even requested, so there's
+         no flash of the wrong top spacing. Capacitor's own bridge script
+         injects window.Capacitor into the page before any of the app's
+         own script tags run, so it's already there by this point on a
+         native build. --top-safe-pad (defined in styles.css, default
+         20px) is what every page/window's header padding-top actually
+         reads; bumping it to 40px here is the only thing a Capacitor
+         build needs to clear the status bar / notch / front camera
+         cutout that the plain mobile web view doesn't have to worry
+         about. -->
+    <script>
+      (function(){
+        try {
+          if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+            document.documentElement.style.setProperty('--top-safe-pad', '40px');
+          }
+        } catch (e) { /* not running under Capacitor / detection failed -- keep the 20px web default */ }
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- ================================================================
+         Opening / splash animation: covers the whole screen on first
+         load, above even the auth gate, while the logo animates in.
+         Removed from the DOM automatically once its animation finishes
+         (see the script at the end of <body>), revealing the auth gate
+         underneath. Pure CSS animation so it can start painting before
+         any app JS has run. -->
+    <div id="app-splash" aria-hidden="true">
+      <div class="app-splash-inner">
+        <img src="assets/landing-1.png" id="app-splash-logo" alt="" class="app-splash-logo">
+      </div>
+    </div>
+    <!-- Shared gradient definition (Dodger Blue -> Royal Blue) referenced by
+         any icon that should render with the brand gradient instead of a
+         flat color. Kept as a single global def so every usage stays in
+         sync if the brand colors ever change -- see NAVY/ROYAL in the main
+         script and the .grad-text CSS class below. -->
+    <svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true">
+      <defs>
+        <!-- gradientUnits="userSpaceOnUse" with explicit x1/y1/x2/y2 spanning
+             the 24x24 icon viewBox (instead of the default objectBoundingBox)
+             -- objectBoundingBox gradients fail to paint at all on shapes
+             whose own bounding box has zero width or height, which silently
+             hid any icon built from perfectly straight horizontal/vertical
+             <line> elements (e.g. the profile "+" icon, the Career Space
+             hamburger/dashes icon). userSpaceOnUse coordinates are fixed to
+             the icon's own coordinate system, so it paints correctly no
+             matter what shape references it. -->
+        <linearGradient id="navyRoyalGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="24" y2="24">
+          <stop offset="0%" stop-color="#1e90ff"/>
+          <stop offset="100%" stop-color="#4169e1"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <!-- ================================================================
+         Auth gate: Log In / Sign Up. Covers the whole screen until the
+         person logs in or registers, then fades out to reveal the app
+         underneath (which finishes loading in the background).
+         ================================================================ -->
+    <div id="auth-gate">
+      <div class="auth-scroll-inner">
+      <div class="auth-stage">
+        <div class="auth-orb"></div>
+
+        <div class="auth-brand-logo" role="img" aria-label="Stitch"></div>
+        <div class="auth-desktop-brand-mark" role="img" aria-label="Stitch"></div>
+
+        <button type="button" class="auth-back" id="authBackBtn" onclick="authGoBack()" aria-label="Back" style="display:none;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+
+        <!-- Shown only on the login panel; returns to the landing page
+             (see authBackToLanding() in games.js). Hidden whenever the
+             signup or verify panel is active, since authBackBtn covers
+             those. -->
+        <button type="button" class="auth-back" id="authBackToLandingBtn" onclick="authBackToLanding()" aria-label="Back to home">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+
+        <div class="auth-card">
+        <div class="auth-form-side">
+          <div class="auth-head">
+            <div class="auth-head-row">
+              <div>
+                <span class="auth-eyebrow" id="authEyebrow">YOUR WORKSPACE AWAITS</span>
+                <h1 id="authHeadTitle">Log In</h1>
+                <p id="authHeadSub">Welcome back to Stitch</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-body">
+            <div class="auth-panels">
+
+              <!-- LOGIN PANEL -->
+              <div class="auth-panel active" id="auth-panel-login"><div>
+                <form onsubmit="authSubmitLogin(event); return false;">
+                  <div class="auth-field">
+                    <label for="auth-li-email">Email</label>
+                    <input id="auth-li-email" type="email" placeholder="login@abcd.com" autocomplete="email">
+                  </div>
+                  <div class="auth-error" id="auth-login-error">Enter your email to continue.</div>
+                  <button class="auth-cta" type="submit" id="auth-li-submit-btn">Continue</button>
+                </form>
+
+                <div class="auth-divider">Or</div>
+                <button class="auth-google-cta" type="button" onclick="authContinueWithGoogle()">
+                  <svg viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.5 29.6 4 24 4c-7.7 0-14.3 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 35.4 27 36 24 36c-5.3 0-9.6-3.1-11.3-7.6l-6.5 5C9.6 39.4 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l6.6 5.4C40.9 36.6 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+                  Continue with Google
+                </button>
+
+                <div class="auth-switch">
+                  Don't have an account?
+                  <button type="button" onclick="authShowSignup()">Register</button>
+                </div>
+              </div></div>
+
+              <!-- SIGNUP PANEL -->
+              <div class="auth-panel" id="auth-panel-signup"><div>
+                <form onsubmit="authSubmitSignup(event); return false;">
+                  <div class="auth-row2">
+                    <div class="auth-field">
+                      <label for="auth-su-fname">First name</label>
+                      <input id="auth-su-fname" type="text" placeholder="Kwaku" autocomplete="given-name">
+                    </div>
+                    <div class="auth-field">
+                      <label for="auth-su-lname">Last name</label>
+                      <input id="auth-su-lname" type="text" placeholder="Ananse" autocomplete="family-name">
+                    </div>
+                  </div>
+                  <div class="auth-field">
+                    <label for="auth-su-email">Email</label>
+                    <input id="auth-su-email" type="email" placeholder="login@abcd.com" autocomplete="email">
+                  </div>
+                  <div class="auth-error" id="auth-signup-error">Please fill in all fields.</div>
+                  <button class="auth-cta" type="submit">Register</button>
+                </form>
+
+                <div class="auth-divider">Or</div>
+                <button class="auth-google-cta" type="button" onclick="authContinueWithGoogle()">
+                  <svg viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.5 29.6 4 24 4c-7.7 0-14.3 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 35.4 27 36 24 36c-5.3 0-9.6-3.1-11.3-7.6l-6.5 5C9.6 39.4 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l6.6 5.4C40.9 36.6 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+                  Continue with Google
+                </button>
+
+                <div class="auth-switch">
+                  Already have an account?
+                  <button type="button" onclick="authShowLogin()">Log In</button>
+                </div>
+
+                <div class="auth-terms">By creating an account you agree to our <a href="#" onclick="authShowTerms(); return false;">terms of service</a>.</div>
+              </div></div>
+
+              <!-- VERIFY EMAIL CODE PANEL -->
+              <!-- Shown after every Log In / Register -- there is no
+                   trusted-device shortcut, so this step always runs. -->
+              <div class="auth-panel" id="auth-panel-verify"><div>
+                <form onsubmit="authSubmitVerify(event); return false;">
+                  <div class="auth-info-banner">We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>. It expires shortly, so enter it soon -- you can request a new one below if it does.</div>
+
+                  <div class="auth-otp-row">
+                    <input id="auth-otp-0" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" oninput="authOtpInput(event,0)" onkeydown="authOtpKeydown(event,0)" onpaste="authOtpPaste(event)">
+                    <input id="auth-otp-1" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,1)" onkeydown="authOtpKeydown(event,1)">
+                    <input id="auth-otp-2" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,2)" onkeydown="authOtpKeydown(event,2)">
+                    <input id="auth-otp-3" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,3)" onkeydown="authOtpKeydown(event,3)">
+                    <input id="auth-otp-4" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,4)" onkeydown="authOtpKeydown(event,4)">
+                    <input id="auth-otp-5" type="text" inputmode="numeric" maxlength="1" oninput="authOtpInput(event,5)" onkeydown="authOtpKeydown(event,5)">
+                  </div>
+                  <div class="auth-error" id="auth-verify-error">That code doesn't match. Check it and try again.</div>
+                  <div class="auth-resend">Didn't get a code? Check your spam/junk folder, or <button type="button" id="auth-resend-btn" onclick="authResendCode()">Resend code</button><span id="auth-resend-countdown" class="hidden"></span></div>
+
+                  <button class="auth-cta" type="submit">Verify &amp; Continue</button>
+                </form>
+                <div class="auth-switch" style="margin-top:16px;">
+                  Wrong email? <button type="button" onclick="authGoBack()">Go back</button>
+                </div>
+              </div></div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop-only promo panel: a gradient side that mirrors the
+             active mode (Log In vs Register) with its own copy and a
+             single button that flips the mode. Hidden entirely on
+             phone/tablet widths via .auth-promo-side { display:none }
+             in the base styles, and only shown by the min-width:1024px
+             layout above. -->
+        <div class="auth-promo-side">
+          <div class="auth-promo-inner active" id="auth-promo-login">
+            <div class="auth-promo-art">
+              <div class="ap-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg>
+              </div>
+              <div class="ap-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+              <div class="ap-chip"><span></span><span></span><span></span></div>
+            </div>
+            <span class="auth-promo-eyebrow">Make it yours</span>
+            <h2>New here?</h2>
+            <p>Create a workspace, save your projects, and keep every bright idea within reach.</p>
+            <button type="button" class="auth-promo-cta" onclick="authShowSignup()">
+              Create account
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+            <div class="auth-promo-foot">Free to start · No card needed</div>
+          </div>
+          <div class="auth-promo-inner" id="auth-promo-signup">
+            <div class="auth-promo-art">
+              <div class="ap-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg>
+              </div>
+              <div class="ap-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7M4 12h16"/></svg>
+              </div>
+              <div class="ap-chip"><span></span><span></span><span></span></div>
+            </div>
+            <span class="auth-promo-eyebrow">Good to see you</span>
+            <h2>Already have an account?</h2>
+            <p>Your projects are right where you left them. Sign in and pick up the thread.</p>
+            <button type="button" class="auth-promo-cta" onclick="authShowLogin()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 5l-7 7 7 7"/></svg>
+              Back to sign in
+            </button>
+            <div class="auth-promo-foot">Secure access · Always in sync</div>
+          </div>
+        </div>
+        </div>
+      </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================================
+         Auth transition loading cover: shown the instant Sign Out /
+         Delete Account is confirmed (see authSignOut / authDeleteAccount
+         in games.js). #auth-gate fades itself in over ~180ms, which
+         briefly leaves it semi-transparent -- long enough for the
+         screen the person is leaving (Settings/Profile) to flash
+         through underneath. This sits above #auth-gate (higher
+         z-index) with no fade of its own, so it covers that flash
+         instantly instead of easing in.
+         ================================================================ -->
+    <div id="auth-transition-loading" class="hidden"></div>
+
+    <!-- ================================================================
+         Landing page: the marketing/splash-screen page shown right
+         after the opening app-splash animation finishes and before the
+         auth gate. Sits on top of #auth-gate (later in the DOM, same
+         z-index -- see #landing-page in styles.css) so it's what the
+         person actually sees first; tapping Register or Sign In on it
+         calls landingGoToAuth() (games.js), which fades this page out
+         and reveals the auth gate underneath, already in the right
+         mode.
+         ================================================================ -->
+    <script>
+      // Stub for landingGoToAuth: the real implementation lives in
+      // games.js, which is the last script tag on the page and can still
+      // be downloading when this landing markup is already visible and
+      // tappable (especially on a slow connection). If it's tapped before
+      // games.js is ready, queue the requested mode instead of throwing
+      // "landingGoToAuth is not defined" -- games.js replays it as soon as
+      // it loads.
+      window.landingGoToAuth = window.landingGoToAuth || function(mode){
+        window.__pendingLandingAuthMode = mode;
+      };
+    </script>
+    <div id="landing-page">
+
+  <div class="tint-band">
+
+  <div class="nav-shell">
+    <div class="nav-pill">
+      <div class="brand-mark" role="img" aria-label="Stitch"></div>
+      <nav class="nav-links">
+        <a href="#community">Community</a>
+        <a href="#opportunities">Opportunities</a>
+        <a href="#practice">Practice</a>
+        <a href="#classroom">Classroom</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="javascript:void(0)" class="nav-signin" onclick="landingGoToAuth('login')">Sign In</a>
+        <a href="javascript:void(0)" class="nav-cta" onclick="landingGoToAuth('signup')">Register</a>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <h1 class="headline">Study, share, <span class="accent">stay connected.</span></h1>
+        <p class="lede lede-full">Stitch is a student network built to close the gap between classmates who never get to meet. It exists to make peer learning the norm, not the exception, so no one has to figure things out alone. It does this by connecting you with students beyond your own classroom, letting you form study groups where anyone can lead, and giving you a place to share notes, past questions, and practice materials, plus surface internships and scholarships along the way. Stitch isn't tied to one school; it's built for students everywhere to find each other.</p>
+        <p class="lede lede-short">Stitch is a student network that closes the gap between classmates -- study groups, shared notes, and opportunities, all in one place.</p>
+        <div class="hero-ctas">
+          <a href="javascript:void(0)" class="btn-primary" onclick="landingGoToAuth('signup')">Register</a>
+          <a href="javascript:void(0)" class="btn-ghost" onclick="landingGoToAuth('login')">Sign In</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="orb-back"></div>
+        <img class="hero-robot" src="assets/landing-2-v2.webp" alt="Stitch robot mascot waving">
+        <div class="float-chip chip-a"><span class="dot"></span>Challenge Arena &middot; live now</div>
+        <div class="float-chip chip-b"><span class="dot"></span>+12 flashcards mastered today</div>
+      </div>
+    </div>
+
+    </div>
+  </header>
+
+  </div>
+
+  <section class="pad" id="community">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="eyebrow" style="background:none;padding:0;">Community</span>
+        <h2 class="section-title">Students are already here</h2>
+        <p class="section-sub">A social layer built for students: outfits, dorm room glow-ups, campus events, late-night study snacks, the wins worth bragging about. It's separate from your study groups and open to everyone, not just your school, so it's less about asking questions and more about showing the world what student life actually looks like. And when a post turns into a conversation, Stitch's built-in messaging keeps it going without ever leaving the app.</p>
+      </div>
+      <div class="comm-grid">
+      <div class="comm-card">
+        <h3>Feed</h3>
+        <p class="desc">Post the moments, not the homework. A shared space for students everywhere to show off what's happening in their day.</p>
+        <div class="post-mock feed-pic" style="padding:0;overflow:hidden;">
+          <img src="assets/landing-3.jpg" alt="Aerial view of KNUST campus" style="width:100%;display:block;" loading="lazy" width="700" height="1030" />
+        </div>
+        <a href="javascript:void(0)" class="btn-primary comm-feed-cta" style="display:inline-block;margin-top:14px;" onclick="landingGoToAuth('signup')">To the feed</a>
+      </div>
+      <div class="comm-card comm-card-second">
+        <h3>Messaging</h3>
+        <p class="desc">Direct messages, voice notes, and photos, kept in one thread so a conversation with a study partner never gets lost between apps.</p>
+        <div class="post-mock msg-pic" style="padding:0;overflow:hidden;">
+          <img src="assets/landing-4-v2.jpg" alt="Stitch direct messaging conversation with voice note and photo" style="width:100%;display:block;" loading="lazy" width="500" height="1068">
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pad" id="opportunities">
+    <div class="wrap">
+      <div class="section-head center">
+        <span class="eyebrow" style="background:none;padding:0;">Opportunities</span>
+        <h2 class="section-title">A career space next to your classes, not buried in another app</h2>
+        <p class="section-sub">Internships, jobs, scholarships, and courses posted by the student community, searchable and filterable in the same place you're already studying.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
+          <span class="feature-tag">Internships & Jobs</span>
+          <h3>Part-time roles built for students</h3>
+          <p>Every listing shows mode (remote, hybrid, on-site), duration, and how to apply, so you're not clicking through five pages to find out it wants five years of experience.</p>
+          <span class="feature-meta">Posted by the community</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 2 3 3 6 3s6-1 6-3v-5"/></svg></div>
+          <span class="feature-tag">Scholarships</span>
+          <h3>Funding, without the scavenger hunt</h3>
+          <p>Deadlines and eligibility sit right on the card, so you can tell in five seconds whether it's worth your time before you start the application.</p>
+          <span class="feature-meta">Deadline reminders built in</span>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
+          <span class="feature-tag">Courses</span>
+          <h3>Live or self-paced, your call</h3>
+          <p>Community-run courses show up alongside jobs and scholarships, so leveling up a skill is just as easy to find as your next application.</p>
+          <span class="feature-meta">Live &amp; self-paced</span>
+        </div>
+      </div>
+      <div class="comm-card comm-card-wide">
+        <h3>Career Space</h3>
+        <p class="desc">Filter by Opportunities, Internships, Courses, Scholarships, or Others, or just search.</p>
+        <div class="jobcard-grid">
+          <div class="jobcard teal">
+            <svg class="jobcard-wave" viewBox="0 0 400 140" preserveAspectRatio="none">
+              <path d="M0,90 C100,140 180,40 280,80 C330,100 370,70 400,90 L400,140 L0,140 Z" fill="rgba(255,255,255,0.08)"/>
+              <path d="M0,110 C120,150 200,70 300,100 C350,115 380,95 400,105 L400,140 L0,140 Z" fill="rgba(255,255,255,0.06)"/>
+            </svg>
+            <div class="jobcard-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+            <div class="jobcard-text">
+              <div class="jobcard-title">Software Developer</div>
+              <div class="jobcard-sub">Stitch &middot; Kumasi &middot; Full time &middot; Deadl&hellip;</div>
+            </div>
+            <svg class="jobcard-bookmark" width="18" height="20" viewBox="0 0 24 26" fill="rgba(255,255,255,0.55)"><path d="M4 2h16a1 1 0 011 1v20l-9-6-9 6V3a1 1 0 011-1z"/></svg>
+          </div>
+          <div class="jobcard blue">
+            <svg class="jobcard-wave" viewBox="0 0 400 140" preserveAspectRatio="none">
+              <path d="M0,90 C100,140 180,40 280,80 C330,100 370,70 400,90 L400,140 L0,140 Z" fill="rgba(255,255,255,0.10)"/>
+              <path d="M0,110 C120,150 200,70 300,100 C350,115 380,95 400,105 L400,140 L0,140 Z" fill="rgba(255,255,255,0.08)"/>
+            </svg>
+            <div class="jobcard-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></div>
+            <div class="jobcard-text">
+              <div class="jobcard-title">Data analysis with with R</div>
+              <div class="jobcard-sub">Stitch &middot; 8 weeks &middot; Self-paced</div>
+            </div>
+            <svg class="jobcard-bookmark" width="18" height="20" viewBox="0 0 24 26" fill="rgba(255,255,255,0.55)"><path d="M4 2h16a1 1 0 011 1v20l-9-6-9 6V3a1 1 0 011-1z"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pad" id="practice">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="section-label">Practice</span>
+        <h2 class="section-title">Three ways to actually remember it</h2>
+        <p class="section-sub">Upload a lecture slide, a past paper, or your own notes: Stitch turns it into practice, instantly.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <img src="assets/landing-5.webp" alt="Practice Tests illustration" loading="lazy" width="500" height="417">
+          <span class="feature-tag">Practice Tests</span>
+          <h3>Turn any upload into a test</h3>
+          <p>Auto-generated multiple choice questions pulled straight from your own material, so you're practicing the exact thing your professor taught, auto-graded the moment you submit.</p>
+          <span class="feature-meta">Auto-graded &middot; unlimited on trial</span>
+        </div>
+        <div class="feature-card">
+          <img src="assets/landing-6.webp" alt="Challenge Arena illustration" loading="lazy" width="500" height="417">
+          <span class="feature-tag">Challenge Arena</span>
+          <h3>Compete with fellow students live</h3>
+          <p>Head-to-head quiz rounds on the same material make revision more engaging and far easier to stay consistent with.</p>
+          <span class="feature-meta">Live 1v1 rounds</span>
+        </div>
+        <div class="feature-card">
+          <img src="assets/landing-7.webp" alt="Flashcards illustration" loading="lazy" width="500" height="416">
+          <span class="feature-tag">Flashcards</span>
+          <h3>Cards that adapt to you</h3>
+          <p>Flip, rate, repeat. Stitch resurfaces the cards you're weakest on more frequently, so your revision time goes where it's needed most.</p>
+          <span class="feature-meta">Spaced repetition</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="pad" id="classroom">
+      <div class="classroom-shell">
+        <div class="wrap">
+          <div class="classroom-head-row">
+          <div class="section-head center">
+            <span class="section-label">Classroom</span>
+            <h2 class="section-title">Run your own study group without the group-chat chaos.</h2>
+            <p class="section-sub">Start a study group in seconds, share the code, and everything (updates, tasks, and live sessions) lives in one place, led by students, not tied to any school.</p>
+          </div>
+          <img class="classroom-video-art" src="assets/landing-8.webp" alt="Live study group session on Stitch" loading="lazy" width="1536" height="1024">
+          </div>
+
+          <div class="classroom-art">
+            <img src="assets/landing-9.webp" alt="Classroom study group view in Stitch" loading="lazy" width="900" height="900">
+          </div>
+
+          <div class="join-create-grid">
+            <div class="jc-card simple">
+              <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+              <h3>Join a group</h3>
+              <p>Received a code from a fellow student? Enter it and you're immediately connected to the stream.</p>
+              <a href="javascript:void(0)" class="jc-btn" onclick="landingGoToAuth('signup')">Join with a code</a>
+            </div>
+            <div class="jc-card simple">
+              <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
+              <h3>Start a group</h3>
+              <p>Name your study group and Stitch generates a shareable code instantly, no lengthy setup required.</p>
+              <a href="javascript:void(0)" class="jc-btn ghost" onclick="landingGoToAuth('signup')">Start a group</a>
+            </div>
+          </div>
+
+          <div class="cd-grid">
+            <div class="jc-card simple">
+              <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <h3>Stream</h3>
+              <p>Whoever's leading the session posts updates here, and the moment a live session starts, a banner appears at the top, so nothing gets missed.</p>
+            </div>
+            <div class="jc-card simple">
+              <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+              <h3>Tasks</h3>
+              <p>Quizzes, practice sets, and shared projects sit in one list with their due dates, so it's always clear what's next and what's already done.</p>
+            </div>
+            <div class="jc-card simple">
+              <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+              <h3>People</h3>
+              <p>Everyone who has joined with the group code appears here, all students, with a simple way to invite more.</p>
+            </div>
+          </div>
+
+          <div class="jc-card simple">
+            <div class="jc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+            <h3>Live sessions, built in</h3>
+            <p>Group admins can start a session instantly or schedule one in advance, and everyone is added automatically, no separate meeting link required. Mic, camera, and leave controls are available the moment you join.</p>
+          </div>
+
+        </div>
+      </div>
+  </section>
+
+  <section class="pad" id="stitchbot">
+    <div class="bot-wrap">
+      <div class="bot-section">
+      <div class="bot-inner">
+        <div class="bot-art">
+          <div class="bot-orb"></div>
+          <img class="bot-phone" src="assets/landing-10.webp" alt="Stitch Bot chat on phone" loading="lazy" width="900" height="1350">
+        </div>
+        <div class="bot-copy">
+          <h2>Stuck on a problem at 1am? Stitch Bot's got you.</h2>
+          <p>Stitch Bot is your personal study assistant, built to work directly from your class materials so nothing it tells you is generic. It re-explains concepts that didn't click the first time, walks through past questions step by step, quizzes you on the fly from your own notes and slides, turns your materials into practice tests and flashcards automatically, and remembers your course context so you're not re-explaining your syllabus every time.</p>
+          <div class="bot-chat">
+            <div class="bot-msg user"><div class="bot-bubble me">Can you break down question 4 from the past paper?</div></div>
+            <div class="bot-msg"><div class="bot-bubble">Sure, let's start with what the question is actually asking, then work through it step by step.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <section class="pad">
+    <div class="why-section dodger">
+      <div class="wrap">
+      <div class="why-inner">
+        <h2>The best time to organize your semester was week one. <span class="accent">The next best time is now.</span></h2>
+        <p>Whether week one came and went and you're still relying on a fragmented system, or this is the semester you're ready for something better, there's no catching up required. You simply start from where you are.</p>
+        <p>Every missed announcement, every skipped practice test, every night spent studying alone because coordinating a group felt like too much effort: none of it has to continue. All Stitch needs is your class code to get you set up alongside everyone else.</p>
+        <p>Join fellow students on Stitch and start the semester the way it should: together.</p>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pad">
+    <div class="wrap">
+    <div class="cta-banner">
+      <span class="bot-label">Stitch Bot</span>
+      <img src="assets/landing-11.webp" alt="Stitch robot celebrating" loading="lazy" width="700" height="617">
+      <h2>Every thread of life stitched together.</h2>
+      <p>Connect on the Stitch community. No classroom, no school gate, just students finding students, networking, and helping one another.</p>
+      <div class="cta-actions">
+        <a href="javascript:void(0)" class="btn-secondary" onclick="landingGoToAuth('login')">Sign In</a>
+        <a href="javascript:void(0)" class="btn-primary" onclick="landingGoToAuth('signup')">Register</a>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap footer-stack">
+      <div class="footer-brand-block">
+        <div class="brand-mark footer-logo" role="img" aria-label="Stitch"></div>
+        <p>The student network for finding study partners, sharing resources, and learning together.</p>
+      </div>
+
+      <div class="footer-divider footer-divider-mid"></div>
+
+      <div class="footer-cols-row">
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <a href="#community">Community</a>
+          <a href="#opportunities">Opportunities</a>
+          <a href="#practice">Practice</a>
+          <a href="#classroom">Classroom</a>
+          <a href="#stitchbot">Stitch Bot</a>
+        </div>
+
+        <div class="footer-divider footer-divider-mid"></div>
+
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="javascript:void(0)" onclick="authShowTerms(); return false;">Terms</a>
+          <a href="javascript:void(0)" onclick="openFooterInfo('privacy'); return false;">Privacy Policy</a>
+        </div>
+
+        <div class="footer-divider footer-divider-mid"></div>
+
+        <div class="footer-col">
+          <h4>Support</h4>
+          <a href="javascript:void(0)" onclick="openFooterInfo('help'); return false;">Help Center</a>
+          <a href="javascript:void(0)" onclick="openFooterInfo('report'); return false;">Report an Issue</a>
+          <a href="javascript:void(0)" onclick="openFooterInfo('contact'); return false;">Contact Us</a>
+        </div>
+      </div>
+
+      <div class="footer-divider footer-divider-bottom"></div>
+
+      <p class="footer-copy">&copy; 2026 Stitch. All rights reserved.</p>
+    </div>
+  </footer>
+
+  </div>
+
+    </div>
+
+    <!-- Terms of Service modal and footer info modal: moved to be top-level
+         siblings of #auth-gate/#landing-page (not nested inside #auth-gate)
+         so they render in their own stacking context and open immediately
+         on tap, instead of being trapped behind #landing-page until it
+         fades away. -->
+    <div id="auth-terms-modal" class="hidden" style="position:fixed;inset:0;z-index:10000;background:#fff;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div style="max-width:640px;width:100%;margin:0 auto;min-height:100%;padding:20px 24px 60px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:sticky;top:0;background:#fff;padding-top:6px;padding-bottom:10px;">
+            <h2 style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:800;font-size:19px;margin:0;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">Terms of Service</h2>
+            <button type="button" onclick="authHideTerms()" aria-label="Close" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div style="font-size:13.5px;line-height:1.7;color:#4b5563;">
+            <p style="font-size:11.5px;color:#9ca3af;">Last Updated: August 2026 &middot; support.stitch.io@gmail.com</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">1. Introduction</h3>
+            <p>Welcome to Stitch. By accessing or using our platform, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our service.</p>
+            <p>Stitch is a community and study platform for students, including note-taking, flashcards, quizzes/exams, a study feed with short-lived "stories," messaging, and voice/video calls, designed to help students learn and connect with classmates.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">2. Eligibility</h3>
+            <p>To use Stitch, you must: be at least 16 years of age; provide accurate and truthful information when creating your account; have a valid email address; and not have been previously suspended or removed from our platform. By registering, you confirm that all information you provide is accurate and complete.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">3. User Accounts</h3>
+            <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to keep your password secure, notify us immediately of any unauthorized access, not create multiple accounts to bypass usage limits, and not use bots or automated tools to create accounts or use our service. We reserve the right to suspend or terminate accounts that violate these terms.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">4. Community Content &amp; Conduct</h3>
+            <p>Stitch lets you post notes, join classes, share quiz scores, post short-lived "stories" (visible to your network for 24 hours before disappearing), message other users, and start voice/video calls. You agree to use these features respectfully and to only share content you have the right to post.</p>
+            <p>You must not: upload or share content that is illegal, harmful, offensive, or infringes on others' rights; harass, impersonate, or misrepresent your identity to another user; use bots or automated tools to abuse messaging, calling, or content-generation features; attempt to reverse-engineer, hack, or disrupt our platform; or share, resell, or redistribute study content generated on the platform without permission.</p>
+            <p>Voice and video calls on Stitch connect directly between users (peer-to-peer); we do not record or store call content. Stories are automatically removed 24 hours after posting; we are not responsible for content shared or screenshotted by other users before it disappears.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">5. Uploaded Documents &amp; AI-Generated Content</h3>
+            <p>Stitch allows you to upload documents (such as PDFs and Word files) so the platform can extract text from them and generate study materials, including notes, summaries, flashcards, and practice questions. By uploading a document, you confirm that you have the right to use and share its contents, and you grant us a limited license to process it solely to generate your study content.</p>
+            <p>AI-generated content may occasionally contain errors, should be used as a study aid rather than a definitive academic resource, and depends on the quality of the documents you upload. We are not responsible for academic outcomes based on AI-generated content; always verify it against your original study materials.</p>
+            <p>Stitch automatically checks each upload's extracted content against your other uploaded resources and rejects a file if it detects duplicate content, including the exact same document uploaded again under a different file name or file type. Rejected duplicates are not processed and do not count against your plan's question/flashcard limit.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">6. Stitch Pro Subscriptions</h3>
+            <p>Stitch itself remains free to use. Every new account gets a 7-day free trial with unlimited practice questions, flashcards, and Challenge Arena questions across all uploaded resources, starting from account creation. After the trial, every account gets a free pool combined across all uploaded resources: up to 15 practice questions, 15 flashcards, and 10 Challenge Arena questions. Stitch Pro (GHS 20/month) raises this to 50 each; Stitch Pro Plus (GHS 25/month) raises it to 70 each. Both renew monthly and can be cancelled anytime through the Profile page; when a subscription lapses, your account returns to the free pool with nothing deleted. Payments are processed securely by Paystack, and each payment is independently verified before a plan is activated.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">7. Acceptable Use</h3>
+            <p>You agree to use Stitch only for lawful purposes, and must not upload illegal or offensive content, attempt to hack or disrupt the platform, infringe others' intellectual property, use bots to abuse our AI, messaging, or calling systems, or impersonate another person or entity.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">8. Data &amp; Privacy</h3>
+            <p>We collect account data, uploaded documents, content you create (notes, flashcards, quiz results, stories, messages), usage data, subscription/billing status, and call metadata (not recordings) to provide our service. We do not sell your personal data to third parties: see our Privacy Policy for full details. You may request deletion of your account and data at any time through the Profile page.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">9. Intellectual Property</h3>
+            <p>All content, design, and code on the Stitch platform is owned by us and protected under applicable intellectual property laws. You retain ownership of the documents and content you upload or post, and grant us only a limited license to operate the platform and generate your study content. You may not copy, reproduce, or distribute any part of our platform without written permission.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">10. Account Termination</h3>
+            <p>You may delete your account at any time through the Profile page, which permanently removes your notes, exam history, and messages. We reserve the right to suspend or terminate accounts that violate these Terms without notice. No refund will be issued for course access or an active Pro/Pro Plus subscription if your account is terminated for a violation of these Terms.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">11. Limitation of Liability</h3>
+            <p>Stitch is provided "as is" without warranties of any kind. To the fullest extent permitted by Ghanaian law, we are not liable for indirect or consequential damages, loss of data or exam content, academic outcomes, content shared by other users, or service interruptions. Our total liability shall not exceed the amount you paid us in the 30 days prior to a claim.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">12. Changes to These Terms</h3>
+            <p>We may update these Terms from time to time, including subscription pricing and plan limits, updating the "Last Updated" date above. Continued use of Stitch after changes are posted constitutes acceptance of the updated terms.</p>
+
+            <h3 style="font-weight:700;padding-top:4px;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">13. Contact Us</h3>
+            <p>Have a question about these Terms? Reach out to us at support.stitch.io@gmail.com and you'll hear back from us within 24 hours.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer info modal: a single lightweight pre-login panel (same
+           pattern as auth-terms-modal above) reused for every footer
+           link that isn't already a landing-page anchor -- Help
+           Center, Report an Issue, Contact Us, and Privacy Policy.
+           openFooterInfo(kind) (games.js) fills in the title/body for
+           whichever one was tapped. -->
+      <div id="footer-info-modal" class="hidden" style="position:fixed;inset:0;z-index:10000;background:#fff;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div style="max-width:640px;width:100%;margin:0 auto;min-height:100%;padding:20px 24px 60px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:sticky;top:0;background:#fff;padding-top:6px;padding-bottom:10px;">
+            <h2 id="footer-info-title" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:800;font-size:19px;margin:0;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;"></h2>
+            <button type="button" onclick="closeFooterInfo()" aria-label="Close" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div id="footer-info-body" style="font-size:13.5px;line-height:1.7;color:#4b5563;"></div>
+        </div>
+      </div>
+
+    <div id="app" class="flex flex-col w-full" style="height:100vh;height:100dvh;overflow:hidden;"></div>
+    <!--
+      The ?v=... on each script below is a cache-buster, nothing more --
+      these files have plain, unchanging filenames (no build-hash like
+      chat.abc123.js), so without something in the URL to change, a
+      phone's browser can go on serving whatever copy it cached from
+      months ago even after a brand new version has been deployed to
+      Vercel. Bump STITCH_ASSET_VERSION below (any change works -- the
+      date of the change is a simple, sortable choice) every time these
+      files are pushed, so every device is forced to fetch the real,
+      current versions instead of silently running stale, already-fixed
+      bugs forever.
+    -->
+    <script src="core.js?v=20260831a"></script>
+    <script src="feed.js?v=20260908c"></script>
+    <script src="chat.js?v=20260811a"></script>
+    <script src="study.js?v=20260821a"></script>
+    <script src="courses.js?v=20260831a"></script>
+    <script src="quizzesAndGames.js?v=20260813a"></script>
+    <script src="jobs.js?v=20260831a"></script>
+    <script src="settings.js?v=20260808a"></script>
+    <script src="profile.js?v=20260906a"></script>
+    <script src="overlays.js?v=20260831a"></script>
+    <script src="games.js?v=20260906a"></script>
+</body>
+</html>
