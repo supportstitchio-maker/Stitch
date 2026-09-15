@@ -4672,7 +4672,9 @@ try {
         function lectureLocalMediaHTML(){
           const isSharing = liveLectureState.screenSharing && lectureScreenStream;
           const showLocalVideo = isSharing || (lectureLocalStream && !liveLectureState.camOff && !liveLectureState.mediaError);
-          if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full object-cover" style="${isSharing ? '' : 'transform:scaleX(-1);'}"></video>`;
+          // Screen share stays un-cropped (object-contain) so the whole
+          // shared screen is visible instead of being cover-cropped like a face.
+          if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full ${isSharing ? 'object-contain bg-black' : 'object-cover'}" style="${isSharing ? '' : 'transform:scaleX(-1);'}"></video>`;
           return `<div class="w-full h-full flex items-center justify-center bg-gray-700 overflow-hidden">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : Icon('user','w-10 h-10 text-white/70')}</div>`;
         }
 
@@ -4684,10 +4686,10 @@ try {
             ${liveLectureState.handRaised ? `<div class="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white">${Icon('handRaised','w-3.5 h-3.5')}</div>` : ''}`;
         }
 
-        function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass){
+        function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass, spotlight){
           return `
-            <div class="flex flex-col min-w-0">
-              <div class="relative rounded-2xl overflow-hidden ${bgClass || 'bg-gray-800'}" style="aspect-ratio:4/3;" ${tileId ? `id="${tileId}"` : ''}>
+            <div class="flex flex-col min-w-0 flex-shrink-0 ${spotlight ? 'w-full h-full' : ''}">
+              <div class="relative rounded-2xl overflow-hidden ${bgClass || 'bg-gray-800'}" style="${spotlight ? 'width:100%;height:100%;' : 'aspect-ratio:4/3;'}" ${tileId ? `id="${tileId}"` : ''}>
                 ${videoInner}
                 ${badgesInner || ''}
               </div>
@@ -4712,29 +4714,54 @@ try {
         function lectureGridHTML(){
           const isDesktopLecture = window.innerWidth >= 1024;
           const iAmTeacher = lectureIsTeacher();
+          const peerIds = Object.keys(lecturePresence);
+          // Whoever is presenting (me or a peer) takes over the stage below
+          // instead of sitting in an equal-sized grid cell like everyone else.
+          const localSharing = liveLectureState.screenSharing && lectureScreenStream;
+          const remoteSharingId = peerIds.find(id => lecturePresence[id].sharingScreen);
+          const spotlightId = localSharing ? 'local' : (remoteSharingId || null);
+
           const localTile = lectureTileWrapperHTML(
             `<div id="lecture-local-media" class="w-full h-full">${lectureLocalMediaHTML()}</div>`,
             `<div id="lecture-local-badges">${lectureLocalBadgesHTML()}</div>`,
             iAmTeacher ? 'You · Host' : 'You',
-            'lecture-local-tile'
+            'lecture-local-tile',
+            localSharing ? 'bg-black' : null,
+            spotlightId === 'local'
           );
-          const peerIds = Object.keys(lecturePresence);
           const sortedPeerIds = peerIds.slice().sort((a, b) => {
             const ta = lecturePresence[a].isTeacher ? 1 : 0;
             const tb = lecturePresence[b].isTeacher ? 1 : 0;
             return tb - ta;
           });
-          const otherTiles = sortedPeerIds.map((peerId, i) => {
+          const otherTileHTML = {};
+          sortedPeerIds.forEach((peerId, i) => {
             const p = lecturePresence[peerId];
             const stream = lectureRemoteStreams[peerId];
             const showVideo = !p.camOff && stream && stream.getVideoTracks().some(t => t.enabled);
+            const isSpotlight = spotlightId === peerId;
             const videoInner = `
-              <video id="lecture-remote-video-${peerId}" autoplay playsinline class="w-full h-full object-cover ${showVideo ? '' : 'hidden'}"></video>
+              <video id="lecture-remote-video-${peerId}" autoplay playsinline class="w-full h-full ${isSpotlight ? 'object-contain' : 'object-cover'} ${showVideo ? '' : 'hidden'}"></video>
               ${!showVideo ? `<div class="w-full h-full flex items-center justify-center"><span class="text-white font-bold text-2xl">${escapeHtml((p.name || '?').trim().charAt(0).toUpperCase())}</span></div>` : ''}`;
             const badgesInner = `<div id="lecture-remote-badges-${peerId}">${lectureRemoteBadgesHTML(p)}</div>`;
             const caption = `${escapeHtml(p.name)}${p.isTeacher ? ' · Host' : ''}`;
-            return lectureTileWrapperHTML(videoInner, badgesInner, caption, null, showVideo ? 'bg-gray-800' : LECTURE_TILE_COLORS[i % LECTURE_TILE_COLORS.length]);
-          }).join('');
+            const bgClass = showVideo ? (isSpotlight ? 'bg-black' : 'bg-gray-800') : LECTURE_TILE_COLORS[i % LECTURE_TILE_COLORS.length];
+            otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, bgClass, isSpotlight);
+          });
+          const otherTiles = sortedPeerIds.map(id => otherTileHTML[id]).join('');
+
+          if (spotlightId) {
+            const spotlightTile = spotlightId === 'local' ? localTile : otherTileHTML[spotlightId];
+            const stripIds = spotlightId === 'local' ? sortedPeerIds : ['local', ...sortedPeerIds.filter(id => id !== spotlightId)];
+            const stripTiles = stripIds.map(id => id === 'local' ? localTile : otherTileHTML[id]).join('');
+            return `
+              ${liveLectureState.mediaError ? `<div class="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">${escapeHtml(liveLectureState.mediaError)}</div>` : ''}
+              <div class="flex-1 min-h-0 flex flex-col p-3 gap-2">
+                <div class="flex-1 min-h-0">${spotlightTile}</div>
+                ${stripTiles ? `<div class="flex gap-2 overflow-x-auto flex-shrink-0" style="height:92px;">${stripTiles}</div>` : ''}
+              </div>`;
+          }
+
           const orderedTiles = iAmTeacher ? (localTile + otherTiles) : (otherTiles + localTile);
           const gridClass = isDesktopLecture
             ? 'grid gap-3 p-4 overflow-hidden flex-1 content-start justify-center'
