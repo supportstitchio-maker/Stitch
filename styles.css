@@ -1225,15 +1225,6 @@
         }
         #auth-gate *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
         #auth-gate .auth-stage{position:relative;width:340px;max-width:100%;}
-        #auth-gate .auth-orb{
-          position:absolute;top:50%;left:50%;
-          width:420px;height:420px;
-          transform:translate(-50%,-50%);
-          background:radial-gradient(circle at 35% 30%, rgba(65,105,225,0.30), rgba(30,144,255,0.12) 55%, rgba(30,144,255,0) 75%);
-          border-radius:50%;
-          z-index:0;
-          pointer-events:none;
-        }
         #auth-gate .auth-card{
           position:relative;
           z-index:1;
