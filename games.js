@@ -1784,28 +1784,22 @@ let simpleGameState = null;
           authShowLogin();
         }
 
-        // The Get Started panel is vertically centered, so keyboard open/close
-        // resizes the viewport and re-centers it. Snap back immediately on close.
-        (function setupAuthKeyboardSettle(){
-          if (!window.visualViewport) return;
-          let lastHeight = window.visualViewport.height;
-          window.visualViewport.addEventListener('resize', function(){
-            const vv = window.visualViewport;
-            const authGate = document.getElementById('auth-gate');
-            const grew = vv.height - lastHeight;
-            const isCentered = authGate && !authGate.classList.contains('auth-hidden') &&
-              !authGate.classList.contains('auth-compact-mode') &&
-              !authGate.classList.contains('auth-signup-mode') &&
-              !authGate.classList.contains('auth-verify-mode');
-            if (isCentered && grew > 40) {
-              const stage = authGate.querySelector('.auth-stage');
-              if (stage) {
-                stage.style.transition = 'none';
-                stage.style.transform = '';
-              }
-            }
-            lastHeight = vv.height;
-          });
+        // The Get Started panel is vertically centered, and #auth-gate uses
+        // 100dvh which natively tracks the OS keyboard's own slide animation
+        // frame by frame -- that live tracking is what reads as a slow drop
+        // when the keyboard closes, not a CSS transition. Pinning the gate's
+        // height in px (only while the keyboard is confirmed closed) stops it
+        // from following the keyboard at all, so it just sits at rest.
+        (function pinAuthGateHeight(){
+          const gate = document.getElementById('auth-gate');
+          if (!gate) return;
+          function applyStableHeight(){
+            const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            if (Math.abs(window.innerHeight - h) < 60) gate.style.height = h + 'px';
+          }
+          applyStableHeight();
+          window.addEventListener('resize', applyStableHeight);
+          window.addEventListener('orientationchange', function(){ setTimeout(applyStableHeight, 300); });
         })();
 
         function authHideAllPanels(){
