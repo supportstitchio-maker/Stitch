@@ -1765,9 +1765,7 @@ let simpleGameState = null;
         function landingGoToAuth(mode){
           const landing = document.getElementById('landing-page');
           if (landing) landing.classList.add('landing-hidden');
-          // Collect "why are you here" before the actual sign-up/sign-in
-          // step, not after -- see authShowCareerIntent.
-          authShowCareerIntent();
+          authShowLogin();
         }
         // games.js is the last script tag to load, but the landing page's Sign In/Register buttons
         // render (and become clickable) much earlier. On a slow connection a tap can land before
@@ -1779,18 +1777,9 @@ let simpleGameState = null;
         }
 
         function authBackToLanding(){
-          // This button is shared by two screens: on the login/Get Started
-          // panel it steps back one screen to the career-intent question;
-          // everywhere else (i.e. the career-intent screen itself) it goes
-          // all the way back to the marketing landing page.
-          const loginPanel = document.getElementById('auth-panel-login');
-          if (loginPanel && loginPanel.classList.contains('active')) {
-            authShowCareerIntent();
-            return;
-          }
           const landing = document.getElementById('landing-page');
           if (landing) landing.classList.remove('landing-hidden');
-          authShowCareerIntent();
+          authShowLogin();
         }
 
         // The Get Started panel is vertically centered, and #auth-gate uses
@@ -1828,41 +1817,10 @@ let simpleGameState = null;
         })();
 
         function authHideAllPanels(){
-          ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile','auth-panel-career-intent'].forEach(id => {
+          ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
           });
-        }
-        // Career Space's signup Q&A: shown right after complete-profile, reuses
-        // posterApplicationFormHTML() (jobs.js) so signup and the later in-app "Apply to post"
-        function authShowCareerIntent(){
-          authHideAllPanels();
-          document.getElementById('auth-panel-career-intent').classList.add('active');
-          document.getElementById('authHeadTitle').textContent = 'Welcome';
-          document.getElementById('authHeadSub').textContent = "Tell us a bit about why you're here";
-          document.getElementById('authBackBtn').style.display = 'none';
-          document.getElementById('authBackToLandingBtn').style.display = 'flex';
-          document.getElementById('auth-gate').classList.remove('auth-verify-mode');
-          document.getElementById('auth-gate').classList.add('auth-compact-mode');
-          const eyebrow = document.getElementById('authEyebrow');
-          if (eyebrow) eyebrow.textContent = 'BEFORE YOU SIGN UP';
-          if (typeof resetPosterAppDraft === 'function') resetPosterAppDraft();
-          const body = document.getElementById('auth-career-intent-body');
-          if (body && typeof posterApplicationFormHTML === 'function') body.innerHTML = posterApplicationFormHTML();
-        }
-        // Just moves on to the actual sign-up/sign-in step -- there's no
-        // account yet to save this to. The answers stay in posterAppDraft
-        // and get submitted from authSubmitCompleteProfile() once the
-        // account is actually created (see submitPosterApplication).
-        function authContinueFromCareerIntent(){
-          authShowLogin();
-        }
-        // Existing users don't need the "why are you here" onboarding --
-        // this skips straight to sign-in, leaving posterAppDraft untouched
-        // (it just won't be submitted since submitPosterApplication() only
-        // ever runs for a brand-new account, in authSubmitCompleteProfile).
-        function authSkipToLogin(){
-          authShowLogin();
         }
         // Focuses the email field on the login/Get Started panel -- used by the desktop promo
         // side's CTA, since there's no longer a separate Register screen for it to open.
@@ -2499,10 +2457,6 @@ let simpleGameState = null;
           if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
           if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
           showAuthTransitionLoading('Creating your account', 'sparkles');
-          // The account now exists, so the "why are you here" answers
-          // collected before sign-up (see authShowCareerIntent) can finally
-          // be saved against it.
-          if (typeof submitPosterApplication === 'function') { try { await submitPosterApplication(); } catch (e) {} }
           await authEnterApp();
           hideAuthTransitionLoading();
         }
