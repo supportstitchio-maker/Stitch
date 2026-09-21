@@ -2357,13 +2357,10 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           queueSaveUserState();
           refreshNotifBadge();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'notifications') renderNotifTab();
-          if (typeof appPrefs !== 'undefined' && appPrefs.notifEmail && typeof sendEmailNotification === 'function') {
-            sendEmailNotification({
-              subject: opts.name ? `${opts.name}: ${opts.message || 'New notification'}` : (opts.message || 'New notification on Stitch'),
-              title: opts.name || 'Stitch',
-              body: opts.message || '',
-            });
-          }
+          // Regular activity (messages, connection requests, likes, etc.) no longer emails
+          // per-event -- those get rolled into the once-daily digest instead (see the
+          // send-daily-digest Edge Function). Only admin update notices email immediately,
+          // and only to users who opted in (handled separately in submitAdminNotice()).
           return id;
         }
 
