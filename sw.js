@@ -1,10 +1,27 @@
+// Only offline.html is cached -- app files (core.js, feed.js, etc.) stay untouched so
+// ?v=... cache-busting keeps working.
+const OFFLINE_CACHE = 'stitch-offline-v1';
+const OFFLINE_URL = '/offline.html';
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(OFFLINE_CACHE).then((cache) => cache.add(OFFLINE_URL)).catch(() => {})
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+// Only for page navigations, and only when the network fetch actually fails.
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode !== 'navigate') return;
+  event.respondWith(
+    fetch(event.request).catch(() =>
+      caches.open(OFFLINE_CACHE).then((cache) => cache.match(OFFLINE_URL))
+    )
+  );
 });
 
 self.addEventListener('push', (event) => {
