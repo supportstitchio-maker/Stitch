@@ -2357,10 +2357,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           queueSaveUserState();
           refreshNotifBadge();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'notifications') renderNotifTab();
-          // Regular activity (messages, connection requests, likes, etc.) no longer emails
-          // per-event -- those get rolled into the once-daily digest instead (see the
-          // send-daily-digest Edge Function). Only admin update notices email immediately,
-          // and only to users who opted in (handled separately in submitAdminNotice()).
+          // No per-event email anymore -- rolled into the daily digest (send-daily-digest).
           return id;
         }
 
