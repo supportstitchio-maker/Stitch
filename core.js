@@ -316,6 +316,27 @@
               active: true,
             });
             if (error) throw error;
+            // Email only the users who've opted into email notifications -- this calls a
+            // separate server-side function (send-notice-email) since it needs to look up every
+            // opted-in user's email, which the app itself never has access to on its own.
+            try {
+              const accessToken = await getAuthAccessToken();
+              if (accessToken) {
+                fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-notice-email`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + accessToken,
+                    'apikey': SUPABASE_ANON_KEY,
+                  },
+                  body: JSON.stringify({
+                    title: (titleEl && titleEl.value.trim()) ? titleEl.value.trim() : null,
+                    message,
+                    image_url: imageUrl,
+                  }),
+                });
+              }
+            } catch (e) { /* the notice itself already posted fine; email is best-effort */ }
             noticeComposeImageFile = null;
             noticeComposeImagePreviewUrl = null;
             if (typeof closeOverlay === 'function') closeOverlay();
