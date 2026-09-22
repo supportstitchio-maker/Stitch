@@ -1903,30 +1903,193 @@ let simpleGameState = null;
         // Shown once, right after Complete Profile, so the Career Space "post or explore"
         // question is answered during onboarding instead of surfacing later in Explore (see
         // posterApplicationFormHTML / submitPosterApplication in jobs.js, which this reuses).
+        // Onboarding asks one casual question at a time instead of dumping everything on
+        // one crowded screen. The path branches right after the first question:
+        //   'post opportunities'        -> role chips -> business name -> 100-char description -> submit
+        //   'explore' or 'network'      -> profile photo (optional) -> submit
+        // authPosterAppStageIdx is where the person currently is within whichever path applies.
+        let authPosterAppStageIdx = 0;
+        // A photo picked on the explore/network path is uploaded at final submit (once we know
+        // the account exists), not the instant it's picked -- see authHandlePhotoSelected.
+        let authPendingPhotoBlob = null;
+        function authPosterAppStages(){
+          return posterAppDraft.intent === 'post'
+            ? ['intent', 'role', 'bizname', 'bizdesc']
+            : ['intent', 'photo'];
+        }
         function authShowPosterApp(){
           authHideAllPanels();
           document.getElementById('auth-panel-poster-app').classList.add('active');
           const err = document.getElementById('auth-poster-app-error');
           if (err) err.classList.remove('show');
           document.getElementById('authHeadTitle').textContent = 'One more thing';
-          document.getElementById('authHeadSub').textContent = 'Tell us what brings you to Career Space';
           document.getElementById('authBackBtn').style.display = 'none';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
           document.getElementById('auth-gate').classList.add('auth-compact-mode');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
-          setAuthProgress(1, 100);
           if (typeof resetPosterAppDraft === 'function') resetPosterAppDraft();
+          authPendingPhotoBlob = null;
+          authPosterAppStageIdx = 0;
+          authRenderPosterAppStage();
+        }
+        function authPosterAppStageHTML(stage){
+          const d = posterAppDraft;
+          if (stage === 'role') {
+            return `
+              <div class="mb-2">
+                <div class="flex gap-2 flex-wrap">
+                  ${POSTER_ROLE_OPTIONS.map(([key, label]) => `
+                    <button type="button" onclick="authSetPosterAppRole('${key}')" class="px-4 py-2 rounded-full text-xs font-semibold ${d.role===key ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${d.role===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>
+                  `).join('')}
+                </div>
+              </div>`;
+          }
+          if (stage === 'bizname') {
+            return `
+              <div class="mb-2">
+                <input type="text" id="auth-bizname-input" oninput="updatePosterAppField('businessName', this.value)" placeholder="e.g. Acme Design Studio" value="${escapeHtml(d.businessName || '')}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
+              </div>`;
+          }
+          if (stage === 'bizdesc') {
+            const len = (d.businessInfo || '').length;
+            return `
+              <div class="mb-2">
+                <textarea id="auth-bizdesc-textarea" maxlength="100" oninput="updatePosterAppField('businessInfo', this.value); document.getElementById('auth-bizdesc-counter').textContent = this.value.length + '/100';" placeholder="A couple of words about what you post." rows="3" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.businessInfo)}</textarea>
+                <div id="auth-bizdesc-counter" class="text-right" style="font-size:11px;color:#9ca3af;margin-top:4px;">${len}/100</div>
+              </div>`;
+          }
+          if (stage === 'photo') {
+            return `
+              <div class="mb-2 flex flex-col items-center gap-3">
+                <div id="auth-photo-circle" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <img id="auth-photo-preview-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                  <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
+                </div>
+                <input type="file" accept="image/*" id="auth-photo-file-input" class="hidden" onchange="authHandlePhotoSelected(this)">
+                <button type="button" onclick="document.getElementById('auth-photo-file-input').click()" id="auth-photo-add-btn" class="px-5 py-2 rounded-full text-sm font-semibold" style="background:rgba(10,37,64,0.08);color:${NAVY};">Add a photo</button>
+                <a href="#" onclick="authPosterAppNext(); return false;" style="font-size:12px;color:#9ca3af;">Skip for now</a>
+              </div>`;
+          }
+          // stage === 'intent'
+          return `
+            <div class="mb-2">
+              <div class="flex flex-col gap-2">
+                ${[['post','Post opportunities'],['explore','Explore'],['network','Network']].map(([key, label]) => `
+                  <button type="button" onclick="authSetPosterAppIntent('${key}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-left ${d.intent===key ? '' : 'bg-gray-100 text-gray-500 border border-gray-300'}" style="${d.intent===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
+                    <span class="flex-shrink-0 rounded-full" style="width:18px;height:18px;box-sizing:border-box;${d.intent===key ? `border:5.5px solid ${NAVY};background:#fff;` : 'border:1.5px solid #9ca3af;background:transparent;'}"></span>
+                    ${label}
+                  </button>
+                `).join('')}
+              </div>
+            </div>`;
+        }
+        function authPosterAppStageSub(stage){
+          if (stage === 'role') return 'Which best describes you?';
+          if (stage === 'bizname') return "What's your business called?";
+          if (stage === 'bizdesc') return 'Describe it in a few words';
+          if (stage === 'photo') return 'Add a profile picture';
+          return 'How will you be using Stitch?';
+        }
+        function authRenderPosterAppStage(){
+          const stages = authPosterAppStages();
+          const stage = stages[authPosterAppStageIdx];
           const container = document.getElementById('auth-poster-app-form-container');
-          if (container && typeof posterApplicationFormHTML === 'function') container.innerHTML = posterApplicationFormHTML();
+          if (container) container.innerHTML = authPosterAppStageHTML(stage);
+          const sub = document.getElementById('authHeadSub');
+          if (sub) sub.textContent = authPosterAppStageSub(stage);
+          setAuthProgress(1, Math.round(((authPosterAppStageIdx + 1) / stages.length) * 100));
+          const backLink = document.getElementById('auth-poster-app-back');
+          if (backLink) backLink.style.display = authPosterAppStageIdx > 0 ? 'flex' : 'none';
+          const continueBtn = document.getElementById('auth-poster-app-continue-btn');
+          if (continueBtn) {
+            continueBtn.style.display = stage === 'photo' ? 'none' : 'block';
+            continueBtn.textContent = (authPosterAppStageIdx >= stages.length - 1) ? 'Continue' : 'Next';
+          }
+        }
+        function authSetPosterAppIntent(intent){
+          posterAppDraft.intent = intent;
+          // Changing intent changes which stage list applies -- always restart at the
+          // first stage after it so nobody lands on an index that no longer makes sense.
+          authPosterAppStageIdx = 0;
+          authRenderPosterAppStage();
+        }
+        function authSetPosterAppRole(role){
+          posterAppDraft.role = role;
+          authRenderPosterAppStage();
+        }
+        // Quick client-side square center-crop (no interactive cropper during onboarding --
+        // that modal lives in the main app shell, which doesn't exist until after this
+        // finishes) so the circular preview isn't stretched. Good enough for a first photo;
+        // the person can always refine it later from Edit Profile's full crop tool.
+        function authHandlePhotoSelected(input){
+          const file = input.files && input.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(ev){
+            const img = new Image();
+            img.onload = function(){
+              const side = Math.min(img.width, img.height);
+              const sx = (img.width - side) / 2;
+              const sy = (img.height - side) / 2;
+              const canvas = document.createElement('canvas');
+              canvas.width = 640; canvas.height = 640;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, sx, sy, side, side, 0, 0, 640, 640);
+              canvas.toBlob(blob => {
+                if (!blob) return;
+                authPendingPhotoBlob = blob;
+                const previewImg = document.getElementById('auth-photo-preview-img');
+                const placeholder = document.getElementById('auth-photo-placeholder-icon');
+                if (previewImg) { previewImg.src = canvas.toDataURL('image/jpeg', 0.9); previewImg.style.display = 'block'; }
+                if (placeholder) placeholder.style.display = 'none';
+                const addBtn = document.getElementById('auth-photo-add-btn');
+                if (addBtn) addBtn.textContent = 'Change photo';
+                // A photo is now staged -- surface the normal Continue button instead of
+                // only offering Skip, so picking one doesn't leave the person stuck.
+                const continueBtn = document.getElementById('auth-poster-app-continue-btn');
+                if (continueBtn) continueBtn.style.display = 'block';
+              }, 'image/jpeg', 0.9);
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+        function authPosterAppBack(){
+          if (authPosterAppStageIdx > 0) {
+            authPosterAppStageIdx--;
+            authRenderPosterAppStage();
+          }
+        }
+        async function authPosterAppNext(){
+          const stages = authPosterAppStages();
+          if (authPosterAppStageIdx < stages.length - 1) {
+            authPosterAppStageIdx++;
+            authRenderPosterAppStage();
+            return;
+          }
+          await authSubmitPosterApp();
         }
         let authSubmittingPosterApp = false;
         async function authSubmitPosterApp(){
           if (authSubmittingPosterApp) return;
           authSubmittingPosterApp = true;
-          const btn = document.querySelector('#auth-panel-poster-app .auth-cta');
+          const btn = document.getElementById('auth-poster-app-continue-btn');
           if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Submitting…'; }
+          // Explore/network picked a profile photo instead of the business questions --
+          // upload it now that we know the account exists, before entering the app.
+          if (authPendingPhotoBlob) {
+            try {
+              const remoteUrl = await uploadProfilePhotoToStorage(authPendingPhotoBlob);
+              if (remoteUrl && typeof profileData !== 'undefined') {
+                profileData.photo = remoteUrl;
+                profileData.photoCleared = false;
+                if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
+                if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
+              }
+            } catch (e) { /* onboarding shouldn't block account creation over a photo upload hiccup */ }
+          }
           const ok = typeof submitPosterApplication === 'function' ? await submitPosterApplication() : true;
           authSubmittingPosterApp = false;
           if (!ok) {
