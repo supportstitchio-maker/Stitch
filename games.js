@@ -1913,8 +1913,10 @@ let simpleGameState = null;
         // the account exists), not the instant it's picked -- see authHandlePhotoSelected.
         let authPendingPhotoBlob = null;
         function authPosterAppStages(){
+          // Every path ends with the profile photo -- posting a business shouldn't
+          // skip it, same as explore/network.
           return posterAppDraft.intent === 'post'
-            ? ['intent', 'role', 'bizname', 'bizdesc']
+            ? ['intent', 'role', 'bizname', 'bizdesc', 'photo']
             : ['intent', 'photo'];
         }
         function authShowPosterApp(){
