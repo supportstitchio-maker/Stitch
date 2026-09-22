@@ -1817,7 +1817,7 @@ let simpleGameState = null;
         })();
 
         function authHideAllPanels(){
-          ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile'].forEach(id => {
+          ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile','auth-panel-poster-app'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
           });
@@ -1880,6 +1880,44 @@ let simpleGameState = null;
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
+        }
+        // Shown once, right after Complete Profile, so the Career Space "post or explore"
+        // question is answered during onboarding instead of surfacing later in Explore (see
+        // posterApplicationFormHTML / submitPosterApplication in jobs.js, which this reuses).
+        function authShowPosterApp(){
+          authHideAllPanels();
+          document.getElementById('auth-panel-poster-app').classList.add('active');
+          const err = document.getElementById('auth-poster-app-error');
+          if (err) err.classList.remove('show');
+          document.getElementById('authHeadTitle').textContent = 'One more thing';
+          document.getElementById('authHeadSub').textContent = 'Tell us what brings you to Career Space';
+          document.getElementById('authBackBtn').style.display = 'none';
+          document.getElementById('authBackToLandingBtn').style.display = 'none';
+          document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          document.getElementById('auth-gate').classList.remove('auth-verify-mode');
+          const eyebrow = document.getElementById('authEyebrow');
+          if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
+          if (typeof resetPosterAppDraft === 'function') resetPosterAppDraft();
+          const container = document.getElementById('auth-poster-app-form-container');
+          if (container && typeof posterApplicationFormHTML === 'function') container.innerHTML = posterApplicationFormHTML();
+        }
+        let authSubmittingPosterApp = false;
+        async function authSubmitPosterApp(){
+          if (authSubmittingPosterApp) return;
+          authSubmittingPosterApp = true;
+          const btn = document.querySelector('#auth-panel-poster-app .auth-cta');
+          if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Submitting…'; }
+          const ok = typeof submitPosterApplication === 'function' ? await submitPosterApplication() : true;
+          authSubmittingPosterApp = false;
+          if (!ok) {
+            const err = document.getElementById('auth-poster-app-error');
+            if (err) err.classList.add('show');
+            if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Continue'; }
+            return;
+          }
+          showAuthTransitionLoading('Creating your account', 'user');
+          await authEnterApp();
+          hideAuthTransitionLoading();
         }
         function authGoBack(){
           authShowLogin();
@@ -2460,9 +2498,9 @@ let simpleGameState = null;
           // (ensureUserStateLoaded, run from inside authEnterApp) reads these values straight back
           if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
           if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
-          showAuthTransitionLoading('Creating your account', 'user');
-          await authEnterApp();
-          hideAuthTransitionLoading();
+          // Ask the Career Space "post or explore" question here, as part of onboarding,
+          // instead of entering the app directly (see authShowPosterApp).
+          authShowPosterApp();
         }
         // ---- Terms screen (shown from the Get Started panel) ----
         function authShowTerms(){
