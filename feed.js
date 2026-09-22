@@ -1819,6 +1819,13 @@
         }
 
         function attemptFeedVideoPlay(video, btn){
+          // The Home feed (which lives in #screen, behind #auth-gate) can be pre-rendered before
+          // login/signup finishes, so its IntersectionObserver can fire while the auth gate is
+          // still the only thing the person actually sees. Feed videos autoplay WITH sound (see
+          // toggleFeedVideoMute), so without this guard that sound would play "behind" the
+          // still-loading login/signup screen. Skip autoplay entirely until the gate is hidden.
+          const gate = document.getElementById('auth-gate');
+          if (gate && !gate.classList.contains('auth-hidden')) return;
           pauseOtherFeedVideos(video);
           const playPromise = video.play();
           if (playPromise && typeof playPromise.catch === 'function') {
