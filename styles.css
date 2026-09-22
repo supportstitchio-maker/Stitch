@@ -1327,6 +1327,31 @@
         }
         #auth-gate .auth-body{position:relative;padding:14px 26px 28px;}
         #auth-gate.auth-verify-mode .auth-body{padding-top:32px;}
+        /* Complete-profile and poster-app (the "Almost there" / "One more thing" steps)
+           used to sit in a blue gradient banner with a curved white cutout underneath --
+           a boxed two-tone "panel" look. Flattened to plain text on a single white
+           page for these two screens only; the verify screen and the Get Started/login
+           hero keep their existing look untouched. */
+        #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{
+          box-shadow:none;
+          background:transparent;
+          border-radius:0;
+        }
+        #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head{
+          background:none;
+          padding:0 0 4px;
+          min-height:0;
+          color:var(--a-ink);
+        }
+        #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head::after{
+          content:none;
+        }
+        #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head p{
+          color:var(--a-muted);
+        }
+        #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-body{
+          padding:14px 4px 28px;
+        }
         #auth-gate .auth-panels{position:relative;}
         #auth-gate .auth-panel{
           display:none;
