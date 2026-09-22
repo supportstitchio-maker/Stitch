@@ -220,36 +220,14 @@
         }
 
         // ---- Admin: compose an in-app update notice (image optional) ----
+        // NOTE: openAdminDashboard() and adminDashboardHTML() themselves live in jobs.js
+        // (loaded after this file) -- that version now includes this "Post an update" card
+        // directly, so it isn't duplicated here anymore. Keeping two functions of the same
+        // name in different files meant the later-loaded one silently won, and this card
+        // was the one that got dropped -- don't reintroduce that split.
         let noticeComposeImageFile = null;
         let noticeComposeImagePreviewUrl = null;
         let noticeComposeSubmitting = false;
-
-        function openAdminDashboard(){
-          if (!isCurrentUserAdmin()) return;
-          noticeComposeImageFile = null;
-          noticeComposeImagePreviewUrl = null;
-          openOverlay('adminDashboard');
-        }
-
-        function adminDashboardHTML(){
-          return `
-            ${overlayHeader('Admin', '20px', null, null, { center: true })}
-            <div class="flex-1 overflow-y-auto p-5">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Post an update</div>
-              <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 mb-6">
-                <input id="notice-compose-title" type="text" placeholder="Title (optional)" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm" />
-                <textarea id="notice-compose-message" placeholder="What's the update?" rows="4" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
-                <div class="mb-3">${noticeComposeImagePreviewUrl ? `
-                  <div class="relative inline-block">
-                    <img src="${noticeComposeImagePreviewUrl}" class="rounded-xl max-h-40" />
-                    <button onclick="removeNoticeComposeImage()" class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs">✕</button>
-                  </div>` : ''}</div>
-                <input id="notice-compose-image-input" type="file" accept="image/*" class="hidden" onchange="onNoticeComposeImageSelected(this)" />
-                <button onclick="document.getElementById('notice-compose-image-input').click()" class="w-full mb-3 py-2.5 rounded-xl font-medium text-sm bg-gray-100">${noticeComposeImagePreviewUrl ? 'Change image' : 'Add image (optional)'}</button>
-                <button id="notice-compose-submit-btn" onclick="submitAdminNotice()" class="w-full py-2.5 rounded-xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Post update</button>
-              </div>
-            </div>`;
-        }
 
         function onNoticeComposeImageSelected(input){
           const file = input.files && input.files[0];
