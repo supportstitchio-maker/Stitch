@@ -209,6 +209,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let currentUserPosterStatus = 'none'; // 'none' | 'pending' | 'approved' | 'denied'
         let currentUserPosterIntent = '';     // 'post' | 'explore'
         let currentUserPosterRole = '';       // 'student' | 'entrepreneur' | 'employee' | 'other'
+        let currentUserPosterBusinessName = '';
         let currentUserPosterBusinessInfo = '';
 
         async function loadCurrentUserRole(){
@@ -218,6 +219,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           currentUserPosterStatus = 'none';
           currentUserPosterIntent = '';
           currentUserPosterRole = '';
+          currentUserPosterBusinessName = '';
           currentUserPosterBusinessInfo = '';
           const sb = getSupabaseClient();
           if (!sb) return; 
@@ -228,7 +230,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             currentUserId = user.id;
             const { data: profile, error } = await sb
               .from(PROFILES_TABLE)
-              .select('role, poster_status, poster_intent, poster_role, poster_business_info')
+              .select('role, poster_status, poster_intent, poster_role, poster_business_name, poster_business_info')
               .eq('user_id', user.id)
               .maybeSingle();
             if (!error && profile) {
@@ -236,6 +238,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               currentUserPosterStatus = profile.poster_status || 'none';
               currentUserPosterIntent = profile.poster_intent || '';
               currentUserPosterRole = profile.poster_role || '';
+              currentUserPosterBusinessName = profile.poster_business_name || '';
               currentUserPosterBusinessInfo = profile.poster_business_info || '';
             }
           } catch (e) {  }
@@ -261,11 +264,12 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // ---- Poster application (the signup Q&A that unlocks posting) ---- Collected at signup
         // or later via "Apply to post"; saved to the private PROFILES_TABLE row for admins to
-        let posterAppDraft = { intent: 'explore', role: 'student', businessInfo: '' };
+        let posterAppDraft = { intent: 'explore', role: 'student', businessName: '', businessInfo: '' };
         function resetPosterAppDraft(){
           posterAppDraft = {
             intent: currentUserPosterIntent || 'explore',
             role: currentUserPosterRole || 'student',
+            businessName: currentUserPosterBusinessName || '',
             businessInfo: currentUserPosterBusinessInfo || '',
           };
         }
@@ -300,6 +304,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               user_id: user.id,
               poster_intent: intent,
               poster_role: posterAppDraft.role || '',
+              poster_business_name: (posterAppDraft.businessName || '').trim(),
               poster_business_info: (posterAppDraft.businessInfo || '').trim(),
               poster_status: posterStatus,
               poster_applied_at: new Date().toISOString(),
@@ -308,6 +313,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             currentUserPosterStatus = posterStatus;
             currentUserPosterIntent = intent;
             currentUserPosterRole = posterAppDraft.role || '';
+            currentUserPosterBusinessName = (posterAppDraft.businessName || '').trim();
             currentUserPosterBusinessInfo = (posterAppDraft.businessInfo || '').trim();
             if (posterStatus === 'pending') {
               notifyAllAdminsRemote({
@@ -358,9 +364,14 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   </div>
                 </div>
                 <div class="mb-5">
-                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Tell us a little about yourself or your business</label>
-                  <div class="text-xs text-gray-400 mb-2">This goes straight to an admin's review queue -- a couple of sentences is enough.</div>
-                  <textarea oninput="updatePosterAppField('businessInfo', this.value)" placeholder="e.g. I run a small design studio and want to post internships to our team." rows="4" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.businessInfo)}</textarea>
+                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 block">What's your business called?</label>
+                  <input type="text" oninput="updatePosterAppField('businessName', this.value)" placeholder="e.g. Acme Design Studio" value="${escapeHtml(d.businessName || '')}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
+                </div>
+                <div class="mb-5">
+                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Describe it in a few words</label>
+                  <div class="text-xs text-gray-400 mb-2">This goes straight to an admin's review queue.</div>
+                  <textarea id="poster-app-bizdesc-textarea" maxlength="100" oninput="updatePosterAppField('businessInfo', this.value); document.getElementById('poster-app-bizdesc-counter').textContent = this.value.length + '/100';" placeholder="e.g. Internships and design roles for students." rows="3" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none resize-none">${escapeHtml(d.businessInfo)}</textarea>
+                  <div id="poster-app-bizdesc-counter" class="text-right" style="font-size:11px;color:#9ca3af;margin-top:4px;">${(d.businessInfo || '').length}/100</div>
                 </div>
               ` : `
                 <div class="mb-5 text-xs text-gray-400">You'll be able to browse and apply to every listing right away. If you change your mind later, you can apply to post from Career Space's menu at any time.</div>
@@ -2756,6 +2767,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function openAdminDashboard(){
           if (!isCurrentUserAdmin()) return;
           adminDashboardTab = 'applications';
+          if (typeof noticeComposeImageFile !== 'undefined') noticeComposeImageFile = null;
+          if (typeof noticeComposeImagePreviewUrl !== 'undefined') noticeComposeImagePreviewUrl = null;
           openOverlay('adminDashboard');
           loadAdminDashboardData();
         }
@@ -2767,7 +2780,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           refreshAdminDashboardDom();
           try {
             const [appsRes, reportsRes] = await Promise.all([
-              sb.from(PROFILES_TABLE).select('user_id, poster_status, poster_intent, poster_role, poster_business_info, poster_applied_at').eq('poster_status', 'pending').order('poster_applied_at', { ascending: true }),
+              sb.from(PROFILES_TABLE).select('user_id, poster_status, poster_intent, poster_role, poster_business_name, poster_business_info, poster_applied_at').eq('poster_status', 'pending').order('poster_applied_at', { ascending: true }),
               sb.from(OPPORTUNITY_REPORTS_TABLE).select('*').eq('status', 'open').order('created_at', { ascending: false }),
             ]);
             const apps = (appsRes && appsRes.data) || [];
@@ -2867,6 +2880,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 </div>
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-50 flex-shrink-0" style="color:${NAVY};">${escapeHtml(roleLabel)}</span>
               </div>
+              ${app.poster_business_name ? `<div class="text-xs font-semibold text-gray-700 mb-1">${escapeHtml(app.poster_business_name)}</div>` : ''}
               ${app.poster_business_info ? `<div class="text-xs text-gray-600 bg-gray-50 rounded-2xl p-3 mb-3" style="white-space:pre-wrap;">${escapeHtml(app.poster_business_info)}</div>` : `<div class="text-xs text-gray-400 mb-3">No additional details provided.</div>`}
               <div class="flex gap-2">
                 <button onclick="reviewPosterApplication('${app.user_id}','denied')" class="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600">Deny</button>
@@ -2911,6 +2925,19 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   <div class="text-xl font-bold" style="color:${NAVY};">${adminPostedCount}</div>
                   <div class="text-[10px] text-gray-400">By admins</div>
                 </div>
+              </div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Post an update</div>
+              <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 mb-6">
+                <input id="notice-compose-title" type="text" placeholder="Title (optional)" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm" />
+                <textarea id="notice-compose-message" placeholder="What's the update?" rows="4" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none"></textarea>
+                <div class="mb-3">${(typeof noticeComposeImagePreviewUrl !== 'undefined' && noticeComposeImagePreviewUrl) ? `
+                  <div class="relative inline-block">
+                    <img src="${noticeComposeImagePreviewUrl}" class="rounded-xl max-h-40" />
+                    <button onclick="removeNoticeComposeImage()" class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs">✕</button>
+                  </div>` : ''}</div>
+                <input id="notice-compose-image-input" type="file" accept="image/*" class="hidden" onchange="onNoticeComposeImageSelected(this)" />
+                <button onclick="document.getElementById('notice-compose-image-input').click()" class="w-full mb-3 py-2.5 rounded-xl font-medium text-sm bg-gray-100">${(typeof noticeComposeImagePreviewUrl !== 'undefined' && noticeComposeImagePreviewUrl) ? 'Change image' : 'Add image (optional)'}</button>
+                <button id="notice-compose-submit-btn" onclick="submitAdminNotice()" class="w-full py-2.5 rounded-xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Post update</button>
               </div>
               ${adminDashboardTabPillsHTML()}
               ${adminDashboardLoading ? `<div class="text-center text-gray-400 text-sm py-8">Loading…</div>` : (
