@@ -542,7 +542,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             return `
               <div class="flex-shrink-0 w-full"${padStyle}>
                 <div class="max-w-2xl mx-auto px-5 pb-3 relative flex items-center justify-center">
-                  <button onclick="${backAction || 'overlayGoBack()'}" class="absolute left-5 top-1/2 -translate-y-1/2">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
+                  <button onclick="${backAction || 'overlayGoBack()'}" class="absolute" style="left:20px;top:50%;transform:translateY(-50%);">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
                   <div class="font-semibold text-lg font-display grad-text text-center">${title}</div>
                 </div>
               </div>`;
@@ -2210,7 +2210,13 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         function personProfileHTML(){
           const p = viewedProfile || {};
-          const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon(p.icon || 'user','w-9 h-9');
+          // Profile pictures are only shown to people this account is actually connected with --
+          // accounts here are always private (see settings.js), so a photo shouldn't be visible to
+          // someone who hasn't been accepted into this person's network yet, even if a photo URL
+          // was already cached locally (e.g. from Discover or a chat list) before that connection
+          // status came back from the server.
+          const showPhoto = !!(p.photo && p.connected);
+          const avatarInner = showPhoto ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon(p.icon || 'user','w-9 h-9');
           const postGroups = personProfilePostGroups();
           const theirPostsCount = postGroups.videos.length + postGroups.pictures.length + postGroups.reposts.length;
           const networkCount = typeof p.networkCount === 'number' ? p.networkCount : '\u00b7\u00b7\u00b7';
@@ -2224,7 +2230,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">
                 <div class="relative flex-shrink-0">
-                  <button ${p.photo ? `onclick="viewProfilePhoto('${escapeForJsAttr(p.photo)}', '${escapeForJsAttr(p.name || 'Stitch member')}')"` : ''} class="w-20 h-20 ${p.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 overflow-hidden">${avatarInner}</button>
+                  <button ${showPhoto ? `onclick="viewProfilePhoto('${escapeForJsAttr(p.photo)}', '${escapeForJsAttr(p.name || 'Stitch member')}')"` : ''} class="w-20 h-20 ${p.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 overflow-hidden">${avatarInner}</button>
                 </div>
                 <div class="flex-1">
                   <div class="font-bold text-base mb-2">${escapeHtml(p.name || 'Stitch member')}${p.pronouns ? ` <span class="font-normal text-gray-400">${escapeHtml(p.pronouns)}</span>` : ''}</div>
