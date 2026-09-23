@@ -1220,7 +1220,7 @@
           transition:opacity .18s ease, visibility 0s linear .18s;
         }
         #auth-gate *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-        #auth-gate .auth-stage{position:relative;width:340px;max-width:100%;}
+        #auth-gate .auth-stage{position:relative;width:380px;max-width:100%;}
         #auth-gate .auth-card{
           position:relative;
           z-index:1;
