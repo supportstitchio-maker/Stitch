@@ -2807,30 +2807,35 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
   #auth-gate .auth-body{max-width:540px;}
 }
 
-/* ---- Auth: soft brand artwork behind login, verify and onboarding (mobile + desktop) ----
-   Sits behind everything at low strength: visible, but never competes with the form. */
-#auth-gate::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  background:url('assets/auth-bg.webp') center / cover no-repeat;
-  opacity:.16;
-  filter:saturate(.9);
-}
-@media (max-width:1023px){
-  /* portrait phones: keep the loops framed instead of a tight center crop */
-  #auth-gate::before{background-position:30% center; background-size:auto 70%; background-repeat:no-repeat; background-position:20% 88%; opacity:.2;}
-}
-#auth-gate .auth-scroll-inner{position:relative; z-index:1;}
-#auth-gate .auth-back{z-index:3;}
-/* Let the artwork show through the white surfaces that used to hide it */
-#auth-gate .auth-card{background:rgba(255,255,255,0.78);}
+/* ---- Auth: soft brand artwork behind login, verify and onboarding -- DESKTOP ONLY ----
+   Hidden on phones for now. On desktop the form sits on its own white, rounded, shadowed
+   panel so the artwork frames it without ever showing through the fields. */
 @media (min-width:1024px){
-  #auth-gate .auth-card{background:transparent;}
-  #auth-gate::before{opacity:.2;}
+  #auth-gate::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:url('assets/auth-bg.webp') center / cover no-repeat;
+    opacity:.2;
+  }
+  #auth-gate .auth-scroll-inner{position:relative; z-index:1;}
+  #auth-gate .auth-card{
+    background:transparent;
+    box-shadow:none;
+    align-items:center;
+    padding:40px;
+  }
+  #auth-gate .auth-form-side{
+    background:#ffffff;
+    border-radius:28px;
+    box-shadow:0 30px 70px -18px rgba(10,37,64,0.32), 0 12px 28px -10px rgba(10,37,64,0.18), 0 0 0 1px rgba(10,37,64,0.05);
+    max-height:100%;
+  }
+  body.dark-mode #auth-gate::before{opacity:.1;}
+  body.dark-mode #auth-gate .auth-form-side{
+    background:var(--c-onyx, #16191f);
+    box-shadow:0 30px 70px -18px rgba(0,0,0,0.7), 0 12px 28px -10px rgba(0,0,0,0.5);
+  }
 }
-body.dark-mode #auth-gate::before{opacity:.1; filter:saturate(.8) brightness(.9);}
-body.dark-mode #auth-gate .auth-card{background:rgba(22,25,31,0.8);}
-@media (min-width:1024px){ body.dark-mode #auth-gate .auth-card{background:transparent;} }
