@@ -2839,3 +2839,21 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
     box-shadow:0 30px 70px -18px rgba(0,0,0,0.7), 0 12px 28px -10px rgba(0,0,0,0.5);
   }
 }
+
+/* ---- Auth back button: labelled, full-arrow version on desktop (phones keep the chevron) ---- */
+#auth-gate .auth-back-arrow, #auth-gate .auth-back-label{display:none;}
+@media (min-width:1024px){
+  #auth-gate .auth-back{
+    top:28px; left:32px;
+    width:auto; height:40px;
+    gap:8px; padding:0 16px 0 12px;
+    border-radius:9999px;
+    background:rgba(255,255,255,0.92);
+    box-shadow:0 4px 14px -6px rgba(10,37,64,0.3), 0 0 0 1px rgba(10,37,64,0.06);
+    font-family:'Montserrat',sans-serif; font-weight:700; font-size:14px;
+  }
+  #auth-gate .auth-back-chev{display:none;}
+  #auth-gate .auth-back-arrow{display:block;}
+  #auth-gate .auth-back-label{display:inline;}
+  body.dark-mode #auth-gate .auth-back{background:rgba(35,38,45,0.92);}
+}
