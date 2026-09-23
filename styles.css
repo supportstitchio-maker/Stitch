@@ -2754,3 +2754,83 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
   color: #ffffff !important;
   border-bottom-color: #ffffff !important;
 }
+
+
+/* ---- Utility missing from the precompiled Tailwind subset above ----
+   The nav Profile avatar wrapper relied on .inline-flex, which doesn't exist here, so the
+   wrapper never got its size and the photo rendered full-size, unclipped. */
+.inline-flex{display:inline-flex}
+
+/* ---- Auth: phone -- compact verify screen so the keyboard never hides "Verify & Continue" ---- */
+@media (max-width:1023px){
+  #auth-gate.auth-verify-mode{
+    padding-top:calc(env(safe-area-inset-top, 0px) + 52px);
+    padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+  #auth-gate.auth-verify-mode .auth-body{padding:6px 18px 14px;}
+  #auth-gate.auth-verify-mode .auth-info-banner{
+    padding:8px 10px; font-size:11px; line-height:1.4; margin-bottom:10px; border-radius:12px;
+  }
+  #auth-gate.auth-verify-mode .auth-otp-row{gap:6px; margin-bottom:8px;}
+  #auth-gate.auth-verify-mode .auth-otp-row input{
+    aspect-ratio:auto; height:44px; font-size:17px; border-radius:10px; padding:0;
+  }
+  #auth-gate.auth-verify-mode .auth-resend{margin:0 0 10px; font-size:11.5px; line-height:1.4;}
+  #auth-gate.auth-verify-mode .auth-cta{padding:12px; font-size:14px;}
+  #auth-gate.auth-verify-mode .auth-error{margin-bottom:8px;}
+}
+
+/* ---- Auth: desktop -- roomier login, verify and onboarding ---- */
+@media (min-width:1024px){
+  #auth-gate .auth-form-side{flex:0 1 680px; padding:64px 72px;}
+  #auth-gate .auth-body{max-width:500px; padding-top:52px;}
+  #auth-gate .auth-desktop-brand-mark{width:200px; margin-bottom:32px;}
+  #auth-gate .auth-head h1{font-size:40px;}
+  #auth-gate .auth-head p{font-size:16px; margin-top:10px;}
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head h1{font-size:38px;}
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head p{font-size:16px;}
+  #auth-gate .auth-field{margin-bottom:18px;}
+  #auth-gate .auth-field label{font-size:13px; margin-bottom:8px;}
+  #auth-gate .auth-field input{padding:16px 18px; font-size:16px; border-radius:14px;}
+  #auth-gate .auth-cta{padding:17px; font-size:16.5px;}
+  #auth-gate .auth-google-cta,
+  #auth-gate .auth-apple-cta{padding:15px; font-size:15px; border-radius:14px;}
+  #auth-gate .auth-info-banner{font-size:14px; padding:14px 16px; margin-bottom:22px; border-radius:16px;}
+  #auth-gate .auth-otp-row{gap:12px; margin-bottom:20px;}
+  #auth-gate .auth-otp-row input{aspect-ratio:auto; height:68px; font-size:26px; border-radius:16px;}
+  #auth-gate .auth-resend{font-size:14px; margin-bottom:24px;}
+  #auth-gate .auth-resend button{font-size:14px;}
+  #auth-gate .auth-terms{font-size:12.5px;}
+}
+@media (min-width:1440px){
+  #auth-gate .auth-form-side{flex-basis:780px; padding:72px 96px;}
+  #auth-gate .auth-body{max-width:540px;}
+}
+
+/* ---- Auth: soft brand artwork behind login, verify and onboarding (mobile + desktop) ----
+   Sits behind everything at low strength: visible, but never competes with the form. */
+#auth-gate::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:url('assets/auth-bg.webp') center / cover no-repeat;
+  opacity:.16;
+  filter:saturate(.9);
+}
+@media (max-width:1023px){
+  /* portrait phones: keep the loops framed instead of a tight center crop */
+  #auth-gate::before{background-position:30% center; background-size:auto 70%; background-repeat:no-repeat; background-position:20% 88%; opacity:.2;}
+}
+#auth-gate .auth-scroll-inner{position:relative; z-index:1;}
+#auth-gate .auth-back{z-index:3;}
+/* Let the artwork show through the white surfaces that used to hide it */
+#auth-gate .auth-card{background:rgba(255,255,255,0.78);}
+@media (min-width:1024px){
+  #auth-gate .auth-card{background:transparent;}
+  #auth-gate::before{opacity:.2;}
+}
+body.dark-mode #auth-gate::before{opacity:.1; filter:saturate(.8) brightness(.9);}
+body.dark-mode #auth-gate .auth-card{background:rgba(22,25,31,0.8);}
+@media (min-width:1024px){ body.dark-mode #auth-gate .auth-card{background:transparent;} }
