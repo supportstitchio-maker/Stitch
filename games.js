@@ -2005,7 +2005,7 @@ let simpleGameState = null;
             const isPost = d.intent === 'post';
             return `
               <div class="mb-2 flex flex-col items-center gap-3">
-                <div id="auth-photo-circle" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div id="auth-photo-circle" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                   <img id="auth-photo-preview-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
                   <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
                 </div>
@@ -2129,6 +2129,8 @@ let simpleGameState = null;
                 const placeholder = document.getElementById('auth-photo-placeholder-icon');
                 if (previewImg) { previewImg.src = canvas.toDataURL('image/jpeg', 0.9); previewImg.style.display = 'block'; }
                 if (placeholder) placeholder.style.display = 'none';
+                const errNow = document.getElementById('auth-poster-app-error');
+                if (errNow) errNow.classList.remove('show');
                 const addBtn = document.getElementById('auth-photo-add-btn');
                 if (addBtn) addBtn.textContent = 'Change photo';
                 // A photo is now staged -- surface the normal Continue button instead of
@@ -2137,9 +2139,14 @@ let simpleGameState = null;
                 if (continueBtn) continueBtn.style.display = 'block';
               }, 'image/jpeg', 0.9);
             };
+            img.onerror = function(){
+              const err = document.getElementById('auth-poster-app-error');
+              if (err) { err.textContent = "That photo couldn't be read. Please try a JPG or PNG."; err.classList.add('show'); }
+            };
             img.src = ev.target.result;
           };
           reader.readAsDataURL(file);
+          try { input.value = ''; } catch (e) {}
         }
         function authPosterAppBack(){
           if (authPosterAppStageIdx > 0) {
@@ -2174,7 +2181,8 @@ let simpleGameState = null;
           // upload it now that we know the account exists, before entering the app.
           if (authPendingPhotoBlob) {
             try {
-              const remoteUrl = await uploadProfilePhotoToStorage(authPendingPhotoBlob);
+              let remoteUrl = await uploadProfilePhotoToStorage(authPendingPhotoBlob);
+              if (!remoteUrl) remoteUrl = await uploadProfilePhotoToStorage(authPendingPhotoBlob);
               if (remoteUrl && typeof profileData !== 'undefined') {
                 profileData.photo = remoteUrl;
                 profileData.photoCleared = false;
@@ -2183,7 +2191,11 @@ let simpleGameState = null;
               }
             } catch (e) { /* onboarding shouldn't block account creation over a photo upload hiccup */ }
           }
-          const ok = typeof submitPosterApplication === 'function' ? await submitPosterApplication() : true;
+          let ok = typeof submitPosterApplication === 'function' ? await submitPosterApplication() : true;
+          // Explore/network people aren't applying for anything -- the poster record is just a
+          // bookkeeping row. A failure there (not a real connection problem) must never trap
+          // them on this screen, so only the 'post' path treats it as fatal.
+          if (!ok && posterAppDraft.intent !== 'post') ok = true;
           authSubmittingPosterApp = false;
           if (!ok) {
             const err = document.getElementById('auth-poster-app-error');
