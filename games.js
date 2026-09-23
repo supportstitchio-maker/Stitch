@@ -1817,6 +1817,8 @@ let simpleGameState = null;
         })();
 
         function authHideAllPanels(){
+          const gateEl = document.getElementById('auth-gate');
+          if (gateEl) gateEl.style.removeProperty('height');
           ['auth-panel-login','auth-panel-verify','auth-panel-complete-profile','auth-panel-poster-app'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
@@ -1856,6 +1858,28 @@ let simpleGameState = null;
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
           setAuthProgress(null);
+        }
+        // Some mobile browsers (in-app / custom tabs especially) don't shrink the page when the
+        // keyboard opens, so the Verify button ends up hidden behind it. Track the visible area
+        // and keep the button scrolled into view while the verify screen is up.
+        function authFitVerifyToKeyboard(){
+          const gate = document.getElementById('auth-gate');
+          if (!gate) return;
+          const vv = window.visualViewport;
+          const verifyActive = gate.classList.contains('auth-verify-mode') && !gate.classList.contains('auth-hidden');
+          if (!vv || !verifyActive) { gate.style.removeProperty('height'); return; }
+          const covered = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+          if (covered > 80) {
+            gate.style.height = vv.height + 'px';
+            const cta = document.querySelector('#auth-panel-verify .auth-cta');
+            if (cta) setTimeout(() => cta.scrollIntoView({ block: 'end', behavior: 'smooth' }), 60);
+          } else {
+            gate.style.removeProperty('height');
+          }
+        }
+        if (window.visualViewport && !window.__authVvBound) {
+          window.__authVvBound = true;
+          window.visualViewport.addEventListener('resize', authFitVerifyToKeyboard);
         }
         function authShowVerify(email){
           authPendingEmail = email;
@@ -2237,6 +2261,7 @@ let simpleGameState = null;
         }
 
         async function authEnterApp(){
+          authMarkOnboarded();
           const gate = document.getElementById('auth-gate');
           if (gate) gate.classList.add('auth-hidden');
           resetCachedAuthUser();
@@ -2757,10 +2782,36 @@ let simpleGameState = null;
             resetCachedAuthUser();
             const user = await getCachedAuthUser();
             if (!user) return false;
+            // Anyone who has already been through onboarding once (flag stored on the account
+            // itself, mirrored in localStorage) goes straight into the app -- even if their
+            // public-profile row is missing or slow to appear.
+            if (authIsOnboardedFlagSet(user)) return false;
             const { data, error } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id').eq('user_id', user.id).limit(1);
             if (error) return false;
-            return !(Array.isArray(data) && data.length > 0);
+            const hasRow = Array.isArray(data) && data.length > 0;
+            if (hasRow) authMarkOnboarded(user);
+            return !hasRow;
           } catch (e) { return false; }
+        }
+        function authIsOnboardedFlagSet(user){
+          try {
+            if (user && user.user_metadata && user.user_metadata.stitch_onboarded) return true;
+            if (user && user.id && localStorage.getItem('stitchOnboarded:' + user.id) === '1') return true;
+          } catch (e) {}
+          return false;
+        }
+        // Records (on the account and on this device) that onboarding is finished, so signing
+        // back in later never shows it again.
+        async function authMarkOnboarded(userArg){
+          try {
+            const sb = getSupabaseClient();
+            const user = userArg || (sb ? await getCachedAuthUser() : null);
+            if (!user || !user.id) return;
+            try { localStorage.setItem('stitchOnboarded:' + user.id, '1'); } catch (e) {}
+            if (sb && !(user.user_metadata && user.user_metadata.stitch_onboarded)) {
+              await sb.auth.updateUser({ data: { stitch_onboarded: true } });
+            }
+          } catch (e) { /* best-effort; the localStorage flag and the profile row still cover it */ }
         }
         let authCompletingProfile = false;
         // Submits the one-time "tell us about yourself" step for a brand-new account (see
@@ -2815,6 +2866,7 @@ let simpleGameState = null;
           // (ensureUserStateLoaded, run from inside authEnterApp) reads these values straight back
           if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
           if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
+          authMarkOnboarded();
           // Ask the Career Space "post or explore" question here, as part of onboarding,
           // instead of entering the app directly (see authShowPosterApp).
           authShowPosterApp();
