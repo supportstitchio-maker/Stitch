@@ -3103,9 +3103,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const userPostedCount = allJobsList.filter(j => j.createdByRole === 'user').length;
           const adminPostedCount = allJobsList.length - userPostedCount;
           return `
-            ${overlayHeader('Admin Dashboard', '20px')}
+            ${overlayHeader('Admin Dashboard', '20px', null, null, {center:true})}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
-              <div class="grid grid-cols-3 gap-2 mb-5">
+              <div class="grid grid-cols-3 gap-2 mb-5" style="margin-top:calc(20px - 0.75rem);">
                 <div class="bg-white rounded-2xl p-3 text-center shadow-sm">
                   <div class="text-xl font-bold" style="color:${NAVY};">${allJobsList.length}</div>
                   <div class="text-[10px] text-gray-400">Live listings</div>
