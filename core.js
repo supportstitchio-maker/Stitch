@@ -1067,7 +1067,7 @@
           // Same broken-image fallback as profilePhotoButtonHTML in profile.js: if the photo
           // fails to load, drop back to the plain silhouette instead of a broken-image icon.
           return photo
-            ? `<span class="${cls} rounded-full overflow-hidden inline-flex items-center justify-center">
+            ? `<span class="${cls} rounded-full overflow-hidden items-center justify-center" style="display:inline-flex;flex-shrink:0;">
                 <img src="${photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <span class="w-full h-full items-center justify-center" style="display:none;">${Icon(outline ? 'userOutline' : 'user', cls)}</span>
               </span>`
