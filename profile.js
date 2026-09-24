@@ -151,6 +151,19 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return profileTab + '|' + items.map(p => `${p.id}:${p.reposted?1:0}:${p.saved?1:0}:${p.uploading?1:0}:${p.mediaHtml?1:0}`).join(',');
         }
 
+        // Split out so both the initial render (profileScreenHTML) and the in-place patch
+        // (patchProfileHeaderInPlace) can share it. isCurrentUserAdmin() only knows the right
+        // answer once loadCurrentUserRole() (part of essentialLoads, fired at boot) has actually
+        // resolved -- on a first render that's often still in flight, so this has to be
+        // re-evaluated and repainted once it settles, not just baked in at initial render.
+        function profileAdminDashboardButtonHTML(){
+          if (!(typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin())) return '';
+          return `
+            <div class="mb-2">
+              <button onclick="openAdminDashboard()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-medium text-sm" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('trending','w-4 h-4')} Admin Dashboard</button>
+            </div>`;
+        }
+
         function patchProfileHeaderInPlace(){
           const usernameEl = document.getElementById('profile-username-el');
           const photoEl = document.getElementById('profile-photo-el');
@@ -171,6 +184,11 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           linksEl.innerHTML = profileLinksHTML(profileData.links);
           postsCountEl.textContent = myPostsCount();
           networkCountEl.textContent = networkConnectionCount();
+          // Admin status resolves asynchronously (see profileAdminDashboardButtonHTML above) --
+          // without this the button stayed permanently hidden for an admin who happened to be
+          // sitting on the Profile tab before loadCurrentUserRole() finished at boot.
+          const adminBtnEl = document.getElementById('profile-admin-btn-el');
+          if (adminBtnEl) adminBtnEl.innerHTML = profileAdminDashboardButtonHTML();
           const tabsEl = document.getElementById('profile-tabs');
           if (tabsEl) tabsEl.innerHTML = profileTabsHTML();
           // Only rebuild the posts grid when what it should show has actually changed (different
@@ -230,10 +248,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <button onclick="openEditProfileModal()" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Edit profile</button>
                 <button onclick="openOverlay('profileQR')" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Share profile</button>
               </div>
-              ${typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin() ? `
-                <div class="mb-2">
-                  <button onclick="openAdminDashboard()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-medium text-sm" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('trending','w-4 h-4')} Admin Dashboard</button>
-                </div>` : ''}
+              <div id="profile-admin-btn-el">${profileAdminDashboardButtonHTML()}</div>
             </div>
 
             <div class="flex border-t border-gray-200" id="profile-tabs">${profileTabsHTML()}</div>
