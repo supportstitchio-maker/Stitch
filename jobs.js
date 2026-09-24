@@ -843,7 +843,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function posterApplicationOverlayHTML(){
-          const bg = `<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('assets/apply-bg.webp') center / cover no-repeat;opacity:0.1;"></div>`;
+          const bg = `<div aria-hidden="true" class="apply-bg-overlay"></div>`;
           // Already submitted and waiting on an admin: nothing to fill in, so just say so.
           if (currentUserPosterStatus === 'pending') {
             return `
@@ -2383,7 +2383,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           // Same background technique as "Apply to post" (posterApplicationOverlayHTML): a
           // sibling of the scrollable step area, not inside it, so it never scrolls or shifts
           // as you move between questions.
-          const bg = `<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('assets/apply-bg.webp') center / cover no-repeat;opacity:0.1;"></div>`;
+          const bg = `<div aria-hidden="true" class="apply-bg-overlay"></div>`;
           return `
             ${bg}
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true})}
