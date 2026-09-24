@@ -1992,3 +1992,58 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+
+// ---- Offline overlay ----
+// Whole-app takeover the moment the device loses its connection, instead of leaving whatever
+// screen was on-screen to degrade piece by piece (broken feed images, stalled Glimpse loads,
+// stuck spinners, etc). This is the in-app counterpart to offline.html -- that page only ever
+// shows up via sw.js's navigation fallback (i.e. on a fresh page load while offline), which
+// never fires once the SPA is already running and just loses its connection mid-session.
+let offlineOverlayShown = false;
+function updateOfflineOverlay(){
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  const el = document.getElementById('offline-overlay');
+  if (!el) return;
+  if (offline === offlineOverlayShown) return;
+  offlineOverlayShown = offline;
+  el.classList.toggle('hidden', !offline);
+  if (!offline) {
+    const btn = document.getElementById('offline-overlay-retry');
+    const desc = document.getElementById('offline-overlay-desc');
+    if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+    if (desc) desc.textContent = 'Check your connection, then give it another try.';
+    // The 'online' event (and therefore this) is unreliable in a lot of mobile WebViews/PWAs --
+    // same caveat as feedMediaSweepFailed's own comment in feed.js -- so lean on that existing
+    // sweep (plus its own setInterval/visibilitychange retries) to quietly recover anything that
+    // failed to load while the overlay was up, instead of duplicating that logic here.
+    if (typeof feedMediaSweepFailed === 'function') feedMediaSweepFailed();
+  }
+}
+window.addEventListener('offline', updateOfflineOverlay);
+window.addEventListener('online', updateOfflineOverlay);
+document.addEventListener('DOMContentLoaded', updateOfflineOverlay);
+// Covers the case where DOMContentLoaded has already fired by the time this script runs.
+if (document.readyState !== 'loading') updateOfflineOverlay();
+
+// Real network check (more reliable than navigator.onLine, same technique as offline.html's own
+// retryConnection) -- navigator.onLine can only tell us the device THINKS it has a link-layer
+// connection, not that the internet is actually reachable.
+function retryOfflineOverlayConnection(){
+  const btn = document.getElementById('offline-overlay-retry');
+  const desc = document.getElementById('offline-overlay-desc');
+  if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+  if (desc) desc.textContent = 'Checking\u2026';
+  const timeout = new Promise(resolve => setTimeout(() => resolve(false), 4000));
+  const check = fetch('/index.html', { method: 'HEAD', cache: 'no-store' })
+    .then(res => res.ok)
+    .catch(() => false);
+  Promise.race([check, timeout]).then(reachable => {
+    if (reachable) {
+      offlineOverlayShown = true; // force updateOfflineOverlay() to actually run the "back online" branch
+      updateOfflineOverlay();
+    } else {
+      if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+      if (desc) desc.textContent = "Still can't reach the internet. Try again in a moment.";
+    }
+  });
+}
