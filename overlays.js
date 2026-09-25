@@ -2022,6 +2022,15 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         let personProfileMenuOpen = false;
         function togglePersonProfileMenu(){
           personProfileMenuOpen = !personProfileMenuOpen;
+          // Patch just the action row (Connect/Message/... pills) in place instead of re-rendering
+          // the whole profile screen -- replacing the entire overlay here used to blow away and
+          // rebuild everything above and below it (photo, bio, post grid) on every tap of the "..."
+          // button, which is what caused the visible flash/blink when opening or closing this menu.
+          const row = document.getElementById('person-profile-action-row');
+          if (row && currentOverlayKind === 'personProfile') {
+            row.outerHTML = personProfileActionRowHTML(viewedProfile || {});
+            return;
+          }
           const ov = document.getElementById('overlay');
           if (ov && currentOverlayKind === 'personProfile') ov.innerHTML = personProfileHTML();
         }
