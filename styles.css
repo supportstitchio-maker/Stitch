@@ -678,10 +678,10 @@
             padding-bottom: 0.6rem !important;
           }
           /* "Apply to post" and "Match with CV/Resume" are menu-item-pill
-             entries in this dropdown -- sized up to match the rest of the
-             desktop Career Space increase above. */
+             entries in this dropdown -- sized to match #career-titlebar h1
+             ("Career Space", 1.65rem) above, not just bumped part-way. */
           #career-menu-dropdown .menu-item-pill {
-            font-size: 1.2rem !important;
+            font-size: 1.65rem !important;
             padding: 0.85rem 1.2rem !important;
           }
           #career-searchbar > button,
