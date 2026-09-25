@@ -84,6 +84,11 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         // Loads this account's cached snapshot straight into the live profileData object (same
         // reference, so anything holding onto it stays in sync), resetting to defaults first so
         function hydrateProfileFromCache(userId){
+          // Always reset first, even when this userId has no cached snapshot -- otherwise a brand
+          // new account created right after signing out (same page, no full reload) would keep
+          // whatever name/username/photo was still sitting in the in-memory profileData object
+          // from the previous account, since the old code only reset when a cache HIT was found.
+          if (typeof resetProfileDataToDefault === 'function') resetProfileDataToDefault();
           try {
             const key = profileCacheKeyForUser(userId);
             if (!key || typeof localStorage === 'undefined') return false;
@@ -91,7 +96,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             if (!raw) return false;
             const cached = JSON.parse(raw);
             if (!cached || typeof cached !== 'object') return false;
-            if (typeof resetProfileDataToDefault === 'function') resetProfileDataToDefault();
             Object.assign(profileData, cached);
             return true;
           } catch (e) { return false; }
