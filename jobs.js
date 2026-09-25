@@ -249,25 +249,6 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               .select('role, poster_status, poster_intent, poster_role, poster_business_name, poster_business_info, poster_business_established, poster_business_category, poster_business_website, poster_business_document_url, poster_id_document_url, poster_photo_url, poster_consent_accepted, poster_consent_at')
               .eq('user_id', user.id)
               .maybeSingle();
-            // TEMP DEBUG -- capture the raw query outcome and the actual JWT's sub claim so we
-            // can see server-side truth instead of guessing from derived variables.
-            try {
-              const { data: sessionData } = await sb.auth.getSession();
-              const token = sessionData && sessionData.session ? sessionData.session.access_token : null;
-              let jwtSub = '(no token)';
-              if (token) {
-                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-                jwtSub = payload.sub || '(no sub in token)';
-              }
-              window.__roleDebug = {
-                cachedUserId: user.id,
-                jwtSub,
-                queryError: error ? { message: error.message, code: error.code, details: error.details, hint: error.hint } : null,
-                profileReturned: profile,
-              };
-            } catch (dbgErr) {
-              window.__roleDebug = { debugCaptureFailed: String(dbgErr) };
-            }
             if (!error && profile) {
               if (profile.role === 'admin') currentUserRole = 'admin';
               currentUserPosterStatus = profile.poster_status || 'none';
