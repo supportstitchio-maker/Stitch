@@ -2066,7 +2066,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <button onclick="messageAndConnectViewedProfile()" class="${pillBase} bg-white" style="${outline}">${Icon('mail','w-4 h-4')} Message</button>`;
           }
           return `
-            <div class="flex items-center gap-2 mb-4 relative">
+            <div id="person-profile-action-row" class="flex items-center gap-2 mb-4 relative">
               ${pills}
               <button onclick="togglePersonProfileMenu()" aria-label="More" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="border:1.5px solid #d1d5db;color:#374151;">${IconBold('dots','w-5 h-5')}</button>
               ${personProfileMenuOpen ? `<div onclick="togglePersonProfileMenu()" onwheel="togglePersonProfileMenu()" ontouchmove="togglePersonProfileMenu()" class="fixed inset-0 z-10"></div>${personProfileDropdownMenuHTML(p)}` : ''}
@@ -2230,12 +2230,12 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         function personProfileHTML(){
           const p = viewedProfile || {};
-          // Profile pictures are only shown to people this account is actually connected with --
-          // accounts here are always private (see settings.js), so a photo shouldn't be visible to
-          // someone who hasn't been accepted into this person's network yet, even if a photo URL
-          // was already cached locally (e.g. from Discover or a chat list) before that connection
-          // status came back from the server.
-          const showPhoto = !!(p.photo && p.connected);
+          // NOTE: this used to also require p.connected, on the idea that a photo shouldn't be
+          // visible to someone outside this person's network. But feedPostHeaderHtml already
+          // shows the same photo on every one of their posts regardless of connection status, so
+          // gating it here just hid it inconsistently -- the photo everyone can already see on a
+          // post was missing from the profile it belongs to.
+          const showPhoto = !!p.photo;
           // Same broken-image fallback as avatarMediaHTML in chat.js / editProfileHTML in profile.js:
           // an image that fails to load falls back to the plain silhouette instead of showing the
           // browser's broken-image icon.
