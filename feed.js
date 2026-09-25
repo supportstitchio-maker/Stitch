@@ -1287,9 +1287,8 @@
           const hasCaptionBar = g.caption && g.mediaUrl;
           return `
               <div class="absolute left-4 flex items-center" style="bottom:calc(env(safe-area-inset-bottom, 16px) + ${hasCaptionBar ? '4.5rem' : '16px'});pointer-events:auto;">
-                <button onclick="toggleMyGlimpseViewers(${g.id})" class="flex items-center gap-2 rounded-full pl-3 pr-4 py-2 text-white" style="background:rgba(0,0,0,0.45);color:#ffffff;">
-                  ${Icon(open ? 'eyeOff' : 'eye', 'w-5 h-5')}
-                  <span class="text-sm font-semibold">${viewers.length}</span>
+                <button onclick="toggleMyGlimpseViewers(${g.id})" class="flex items-center gap-2 rounded-full pl-4 pr-4 py-2 text-white" style="background:rgba(0,0,0,0.45);color:#ffffff;">
+                  <span class="text-sm font-semibold">${viewers.length} ${viewers.length === 1 ? 'view' : 'views'}</span>
                 </button>
               </div>
               ${open ? `
