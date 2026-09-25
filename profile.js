@@ -249,7 +249,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <button onclick="openOverlay('profileQR')" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Share profile</button>
               </div>
               <div id="profile-admin-btn-el">${profileAdminDashboardButtonHTML()}</div>
-              <div style="font-size:10px;color:#f00;word-break:break-all;margin-top:8px;">TEMP DEBUG — uid: ${typeof currentUserId !== 'undefined' ? currentUserId : '(undefined)'} | role: ${typeof currentUserRole !== 'undefined' ? currentUserRole : '(undefined)'} | isAdmin(): ${typeof isCurrentUserAdmin === 'function' ? isCurrentUserAdmin() : '(fn missing)'}<br>${(typeof window !== 'undefined' && window.__roleDebug) ? escapeHtml(JSON.stringify(window.__roleDebug)) : '(no __roleDebug captured yet)'}</div>
             </div>
 
             <div class="flex border-t border-gray-200" id="profile-tabs">${profileTabsHTML()}</div>
