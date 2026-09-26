@@ -3298,7 +3298,7 @@ try {
           if (!btn) return;
           btn.disabled = busy;
           btn.style.opacity = busy ? '0.7' : '';
-          btn.innerHTML = busy ? classActionBtnSpinnerHTML(NAVY) : 'Join Class';
+          btn.innerHTML = busy ? classActionBtnSpinnerHTML(NAVY, 'Joining...') : 'Join Class';
         }
 
         // ---- Join/Create classroom flow ----
@@ -3422,7 +3422,7 @@ try {
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Class Code</label>
               <input type="text" id="join-code-input" placeholder="e.g. ECN4821" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase">
               <div class="text-xs text-gray-400 mb-5 leading-relaxed">Use a class code with 6-8 letters or numbers, and no spaces or symbols.</div>
-              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3 rounded-2xl border flex items-center justify-center" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML(NAVY) : 'Join Class'}</button>
+              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3 rounded-2xl border flex items-center justify-center" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML(NAVY, 'Joining...') : 'Join Class'}</button>
             </div>`;
         }
 
@@ -3456,9 +3456,10 @@ try {
         // ---- Class action loading/result animation ----
         // Small inline spinner used inside buttons (Join Class, Continue to Pay) so tapping them
         // gives immediate feedback instead of looking frozen while a request is in flight.
-        function classActionBtnSpinnerHTML(color){
+        function classActionBtnSpinnerHTML(color, label){
           const track = color === '#ffffff' ? 'rgba(255,255,255,0.35)' : 'rgba(10,37,64,0.22)';
-          return `<span style="display:inline-block;width:18px;height:18px;border-radius:9999px;border:2.5px solid ${track};border-top-color:${color};animation:classroom-spin .7s linear infinite;"></span>`;
+          const spinner = `<span style="display:inline-block;width:18px;height:18px;border-radius:9999px;border:2.5px solid ${track};border-top-color:${color};animation:classroom-spin .7s linear infinite;"></span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:8px;">${spinner}${label ? `<span>${escapeHtml(label)}</span>` : ''}</span>`;
         }
 
         function classActionLoadingMarkup(text, iconName){
@@ -3669,6 +3670,8 @@ try {
             subject: cls.subject || result.subject || '',
             photo: cls.photo || result.photo || null,
             description: cls.description || result.description || '',
+            colorIndex: (typeof cls.colorIndex === 'number') ? cls.colorIndex : ((typeof result.colorIndex === 'number') ? result.colorIndex : 0),
+            motifIndex: (typeof cls.motifIndex === 'number') ? cls.motifIndex : ((typeof result.motifIndex === 'number') ? result.motifIndex : 0),
           };
           openOverlayFrom('joinClassroom', 'classPaymentConfirm');
         }
@@ -3688,13 +3691,17 @@ try {
               </div>
             </div>
             <div class="p-4 flex-1 overflow-y-auto flex flex-col">
-              <div class="rounded-3xl p-5 text-white relative overflow-hidden mb-5" style="${p.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${p.photo}');background-size:cover;background-position:center;` : 'background:linear-gradient(135deg,#2563eb,#1d4ed8);'}min-height:96px;">
+              <div class="rounded-3xl p-5 text-white relative overflow-hidden mb-5" style="${p.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${p.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(p)}min-height:104px;">
+                ${p.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${classCardMotifs[(p.motifIndex || 0) % classCardMotifs.length]}</svg>`}
                 <div class="text-xl font-bold font-display mb-1 truncate pr-4 relative">${escapeHtml(p.className)}</div>
-                ${(p.section || p.subject) ? `<div class="text-sm text-white/85 truncate relative mb-3">${escapeHtml(p.section || p.subject)}</div>` : ''}
-                <div class="text-2xl font-bold font-display relative">${classPaymentFeeLabel(p)}</div>
+                <div class="flex items-center justify-between gap-3 relative">
+                  <div class="text-sm text-white/85 truncate">${(p.section || p.subject) ? escapeHtml(p.section || p.subject) : ''}</div>
+                  <div class="text-sm font-bold text-white/95 flex-shrink-0">${classPaymentFeeLabel(p)}</div>
+                </div>
               </div>
               ${p.description ? `<div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-6"><div class="text-sm text-gray-600 leading-relaxed">${escapeHtml(p.description)}</div></div>` : ''}
               <div class="mt-auto flex flex-col gap-2">
+                <div class="text-sm text-gray-500 text-center mb-1">This class charges a one-time entrance fee before you can join</div>
                 <button id="confirm-class-payment-btn" onclick="confirmClassPayment()" class="w-full font-semibold py-3 rounded-2xl text-white flex items-center justify-center" style="background:${NAVY};">Continue to Pay ${classPaymentFeeLabel(p)}</button>
                 <button onclick="cancelClassPaymentConfirm()" class="w-full font-semibold py-3 rounded-2xl text-gray-500 bg-gray-100">Cancel</button>
               </div>
@@ -3715,7 +3722,7 @@ try {
             return;
           }
           const btn = document.getElementById('confirm-class-payment-btn');
-          if (btn) { btn.disabled = true; btn.style.opacity = '0.75'; btn.innerHTML = classActionBtnSpinnerHTML('#ffffff'); }
+          if (btn) { btn.disabled = true; btn.style.opacity = '0.75'; btn.innerHTML = classActionBtnSpinnerHTML('#ffffff', 'Processing...'); }
           startClassPayment(p.classId, p.className, p.amount, p.currency);
         }
         function cancelClassPaymentConfirm(){
