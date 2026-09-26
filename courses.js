@@ -3661,17 +3661,23 @@ try {
         let pendingClassPayment = null;
         function openClassPaymentConfirm(result){
           const cls = result.class || {};
+          // The join_class_by_code RPC's payment_required payload only carries what it needs to
+          // show a fee (name/amount/photo) -- it doesn't return colorIndex/motifIndex, and may not
+          // return section/subject either. If this class is already sitting in myClasses (e.g. the
+          // teacher previewing their own join code), prefer that -- it's the real row, so the card
+          // below matches the one on the classroom list pixel-for-pixel instead of defaulting to blue.
+          const cached = myClasses.find(c => c.id === result.classId) || {};
           pendingClassPayment = {
             classId: result.classId,
-            className: result.className || cls.name || 'This class',
+            className: cached.name || result.className || cls.name || 'This class',
             amount: result.amount,
-            currency: result.currency || cls.paymentCurrency || 'GHS',
-            section: cls.section || result.section || '',
-            subject: cls.subject || result.subject || '',
-            photo: cls.photo || result.photo || null,
-            description: cls.description || result.description || '',
-            colorIndex: (typeof cls.colorIndex === 'number') ? cls.colorIndex : ((typeof result.colorIndex === 'number') ? result.colorIndex : 0),
-            motifIndex: (typeof cls.motifIndex === 'number') ? cls.motifIndex : ((typeof result.motifIndex === 'number') ? result.motifIndex : 0),
+            currency: result.currency || cached.paymentCurrency || cls.paymentCurrency || 'GHS',
+            section: cached.section || cls.section || result.section || '',
+            subject: cached.subject || cls.subject || result.subject || '',
+            photo: cached.photo || cls.photo || result.photo || null,
+            description: cached.description || cls.description || result.description || '',
+            colorIndex: (typeof cached.colorIndex === 'number') ? cached.colorIndex : ((typeof cls.colorIndex === 'number') ? cls.colorIndex : ((typeof result.colorIndex === 'number') ? result.colorIndex : 0)),
+            motifIndex: (typeof cached.motifIndex === 'number') ? cached.motifIndex : ((typeof cls.motifIndex === 'number') ? cls.motifIndex : ((typeof result.motifIndex === 'number') ? result.motifIndex : 0)),
           };
           openOverlayFrom('joinClassroom', 'classPaymentConfirm');
         }
@@ -3682,7 +3688,9 @@ try {
         function classPaymentConfirmHTML(){
           const p = pendingClassPayment;
           if (!p) { setTimeout(overlayGoBack, 0); return '<div class="flex-1"></div>'; }
+          const bg = `<div aria-hidden="true" class="apply-bg-overlay"></div>`;
           return `
+            ${bg}
             <div class="w-full px-5 pb-3 relative flex-shrink-0" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="cancelClassPaymentConfirm()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
