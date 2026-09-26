@@ -3238,7 +3238,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function postOpportunityHTML(){
           const isEditing = !!newOppEditingId;
           return `
-            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px')}
+            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true })}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover picture (optional)</label>
