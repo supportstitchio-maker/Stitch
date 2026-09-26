@@ -483,6 +483,15 @@
         let currentStoryId = null;
         let currentItemIndex = 0;
         let storyTimer = null;
+        // How long the *currently open* item's progress bar sweeps for. Images/text glimpses
+        // always use the flat STORY_ITEM_DURATION_MS above; a video glimpse instead gets this
+        // corrected to its own (up-to-60s-capped) length once its metadata loads, via
+        // startStoryTimerWithDuration -- see storyVideoReady below -- so a 10s clip advances
+        // after 10s instead of sitting on screen (looping) until a flat 60s runs out.
+        let currentItemDurationMs = STORY_ITEM_DURATION_MS;
+        // Guards against a video's ontimeupdate cap *and* its natural onended both firing for
+        // the same item (advancing the story twice). Reset whenever a new item opens.
+        let storyVideoDoneIdx = -1;
         let storyTypingTimeout = null;
         let activeSpeechRecognition = null;
         // ---- Voice recording for story replies ----
@@ -596,17 +605,33 @@
 
         function startStoryTimer(s){
           storyElapsedMs = 0;
+          storyVideoDoneIdx = -1;
+          // Default assumption until a video item's real (possibly 60s-capped) length is known
+          // -- see startStoryTimerWithDuration, called from storyVideoReady once metadata loads.
+          currentItemDurationMs = STORY_ITEM_DURATION_MS;
+          resumeStoryTimer(s);
+        }
+
+        // Called once a video glimpse's actual playable length (its own duration, capped at
+        // GLIMPSE_MAX_SECONDS, further capped by any trim window) is known -- restarts the
+        // progress bar/auto-advance timer against that real length instead of the flat 60s
+        // default, so a clip shorter than 60s doesn't sit around (looping) for the full 60s.
+        function startStoryTimerWithDuration(durationMs){
+          const s = stories.find(x => x.id === currentStoryId);
+          if (!s) return;
+          storyElapsedMs = 0;
+          currentItemDurationMs = Math.max(250, durationMs);
           resumeStoryTimer(s);
         }
 
         function resumeStoryTimer(s){
           clearStoryTimer();
           storyPaused = false;
-          const remaining = Math.max(0, STORY_ITEM_DURATION_MS - storyElapsedMs);
+          const remaining = Math.max(0, currentItemDurationMs - storyElapsedMs);
           storyRunStartedAt = Date.now();
           const fill = document.getElementById('story-fill-' + currentItemIndex);
           if (fill) {
-            const startPct = Math.min(100, (storyElapsedMs / STORY_ITEM_DURATION_MS) * 100);
+            const startPct = Math.min(100, (storyElapsedMs / currentItemDurationMs) * 100);
             fill.style.transition = 'none';
             fill.style.width = startPct + '%';
             void fill.offsetWidth; 
@@ -619,11 +644,11 @@
         function pauseStoryTimer(){
           if (storyPaused) return;
           storyPaused = true;
-          storyElapsedMs = Math.min(STORY_ITEM_DURATION_MS, storyElapsedMs + (Date.now() - storyRunStartedAt));
+          storyElapsedMs = Math.min(currentItemDurationMs, storyElapsedMs + (Date.now() - storyRunStartedAt));
           clearStoryTimer();
           const fill = document.getElementById('story-fill-' + currentItemIndex);
           if (fill) {
-            const pct = Math.min(100, (storyElapsedMs / STORY_ITEM_DURATION_MS) * 100);
+            const pct = Math.min(100, (storyElapsedMs / currentItemDurationMs) * 100);
             fill.style.transition = 'none';
             fill.style.width = pct + '%';
           }
@@ -887,7 +912,7 @@
                 ${item.mediaUrl ? `
                   <div class="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
                     ${item.mediaType === 'video'
-                      ? `<video id="story-video-${idx}" src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(item.trimStart, item.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
+                      ? `<video id="story-video-${idx}" src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${storyVideoAttrs(idx, item.trimStart, item.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
                       : `<img src="${item.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" onerror="glimpseMediaLoadError(this)">`}
                   </div>
                   ${item.mediaType === 'video' ? `
@@ -1265,7 +1290,7 @@
               <div class="absolute inset-0 flex items-center justify-center ${g.mediaUrl ? 'bg-black' : ''} pointer-events-none">
                 ${g.mediaUrl ? `
                   ${g.mediaType === 'video'
-                    ? `<video id="my-glimpse-video-${g.id}" src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(g.trimStart, g.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
+                    ? `<video id="my-glimpse-video-${g.id}" src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${myGlimpseVideoAttrs(g.trimStart, g.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
                     : `<img src="${g.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" onerror="glimpseMediaLoadError(this)">`}
                 ` : `
                   <div class="px-8 text-center">
@@ -1427,10 +1452,63 @@
 
         // glimpseVideoAttrs(startSec, endSec) builds the ontimeupdate/onloadedmetadata attributes
         // that keep a <video> looping over just the trimmed window a user selected in the crop
+        // step of the composer -- used for the small looping previews/thumbnails (the story-strip
+        // bubble, the compose preview) where looping is the intended, at-a-glance behaviour.
         function glimpseVideoAttrs(startSec, endSec){
           const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
           const e = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
           return `onloadedmetadata="if(this.currentTime<${s}){this.currentTime=${s};}" ontimeupdate="if(this.currentTime>=${e}||this.currentTime<${s}){this.currentTime=${s};}"`;
+        }
+
+        // ---- Full-screen glimpse video playback (actually *watching* a glimpse, as opposed to
+        // a looping thumbnail/preview above) -- a clip under 60s plays through once and stops
+        // instead of looping forever, and a clip over 60s only ever shows its first 60 seconds.
+
+        // storyVideoAttrs: for the main story viewer (someone else's glimpse), where finishing
+        // playback should also auto-advance to the next glimpse, same as the flat 60s timer used
+        // to for images. idx identifies which story-item index this <video> belongs to, so late
+        // callbacks from a video the person has already swiped away from are ignored.
+        function storyVideoAttrs(idx, startSec, endSec){
+          const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
+          const requestedEnd = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
+          const e = Math.min(requestedEnd, s + GLIMPSE_MAX_SECONDS);
+          return `onloadedmetadata="storyVideoReady(this,${idx},${s},${e})" ontimeupdate="storyVideoGuard(this,${idx},${s},${e})" onended="storyVideoDone(${idx})"`;
+        }
+
+        function storyVideoReady(video, idx, s, e){
+          if (video.currentTime < s) { try { video.currentTime = s; } catch (err) {} }
+          const realDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : e;
+          const effectiveEnd = Math.min(e, realDuration);
+          video.dataset.glimpseEnd = String(effectiveEnd);
+          if (idx === currentItemIndex) {
+            startStoryTimerWithDuration((effectiveEnd - s) * 1000);
+          }
+        }
+
+        function storyVideoGuard(video, idx, s, e){
+          if (video.currentTime < s) { video.currentTime = s; return; }
+          const effectiveEnd = video.dataset.glimpseEnd ? Number(video.dataset.glimpseEnd) : e;
+          if (video.currentTime >= effectiveEnd) {
+            video.pause();
+            storyVideoDone(idx);
+          }
+        }
+
+        function storyVideoDone(idx){
+          if (idx !== currentItemIndex || storyVideoDoneIdx === idx) return;
+          storyVideoDoneIdx = idx;
+          const s = stories.find(x => x.id === currentStoryId);
+          if (s) advanceStory(s, 1);
+        }
+
+        // myGlimpseVideoAttrs: for viewing your own glimpse (myGlimpseViewerHTML) -- same
+        // once-through, 60s-capped playback, but that screen has no auto-advance to drive (it's
+        // a single item), so it simply stops -- and stays on its last frame -- once it's done.
+        function myGlimpseVideoAttrs(startSec, endSec){
+          const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
+          const requestedEnd = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
+          const e = Math.min(requestedEnd, s + GLIMPSE_MAX_SECONDS);
+          return `onloadedmetadata="if(this.currentTime<${s}){this.currentTime=${s};} this.dataset.glimpseEnd=String(Math.min(${e}, (isFinite(this.duration)&&this.duration>0)?this.duration:${e}));" ontimeupdate="const ge=this.dataset.glimpseEnd?Number(this.dataset.glimpseEnd):${e}; if(this.currentTime<${s}){this.currentTime=${s};} else if(this.currentTime>=ge){this.pause();}"`;
         }
 
         // Glimpse videos always start muted (see the <video muted> above) -- mobile browsers
