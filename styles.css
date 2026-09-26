@@ -950,6 +950,32 @@
         @media (max-width: 1023px) {
           #desktop-right-panel { display: none !important; }
         }
+        /* ---- Minimized "call in progress" card (see #call-minimized-banner in core.js) ----
+           Light mode: white card, near-black mute button with a white icon.
+           Dark mode: dark card (via the existing body.dark-mode .bg-white rule), white mute
+           button with a dark icon -- i.e. the mute button always inverts against the card,
+           the way a native in-call status pill does, regardless of the app's own theme. */
+        .call-min-card{
+          box-shadow:0 10px 30px rgba(0,0,0,0.18);
+          border:1px solid rgba(0,0,0,0.06);
+        }
+        body.dark-mode .call-min-card{
+          border-color:rgba(255,255,255,0.08);
+        }
+        .call-min-mute-btn{
+          background:#111827;
+          color:#ffffff;
+        }
+        body.dark-mode .call-min-mute-btn{
+          background:#ffffff;
+          color:#111827 !important;
+        }
+        .call-min-actions button{ color:#4b5563; }
+        body.dark-mode .call-min-actions{ border-color:rgba(255,255,255,0.08) !important; }
+        body.dark-mode .call-min-actions button[style*="border-left"]{
+          border-left-color:rgba(255,255,255,0.08) !important;
+          border-right-color:rgba(255,255,255,0.08) !important;
+        }
         /* ---- Call action buttons (end / decline / accept) ----
            Soft halo rings behind the icon, matching the classic
            red "end call" / green "answer" glyph treatment. The
