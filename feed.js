@@ -887,9 +887,12 @@
                 ${item.mediaUrl ? `
                   <div class="absolute inset-0 flex items-center justify-center bg-black pointer-events-none">
                     ${item.mediaType === 'video'
-                      ? `<video src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(item.trimStart, item.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
+                      ? `<video id="story-video-${idx}" src="${item.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(item.trimStart, item.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
                       : `<img src="${item.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" onerror="glimpseMediaLoadError(this)">`}
                   </div>
+                  ${item.mediaType === 'video' ? `
+                    <button type="button" onclick="event.stopPropagation(); toggleGlimpseVideoMute('story-video-${idx}', this)" class="glimpse-mutebtn absolute flex items-center justify-center rounded-full" style="top:calc(var(--top-safe-pad, 0px) + 3.25rem);right:1rem;width:2rem;height:2rem;background:rgba(0,0,0,0.45);z-index:5;pointer-events:auto;">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+                  ` : ''}
                   ${item.caption ? `
                     <div class="absolute left-0 right-0 px-6 py-3 text-sm text-white text-center pointer-events-none" style="bottom:5.5rem;background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);">${escapeHtml(item.caption)}</div>
                   ` : ''}
@@ -1262,7 +1265,7 @@
               <div class="absolute inset-0 flex items-center justify-center ${g.mediaUrl ? 'bg-black' : ''} pointer-events-none">
                 ${g.mediaUrl ? `
                   ${g.mediaType === 'video'
-                    ? `<video src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(g.trimStart, g.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
+                    ? `<video id="my-glimpse-video-${g.id}" src="${g.mediaUrl}" class="max-w-full max-h-full" autoplay playsinline muted loop oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${glimpseVideoAttrs(g.trimStart, g.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
                     : `<img src="${g.mediaUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" onerror="glimpseMediaLoadError(this)">`}
                 ` : `
                   <div class="px-8 text-center">
@@ -1270,6 +1273,9 @@
                   </div>
                 `}
               </div>
+              ${g.mediaUrl && g.mediaType === 'video' ? `
+                <button type="button" onclick="event.stopPropagation(); toggleGlimpseVideoMute('my-glimpse-video-${g.id}', this)" class="glimpse-mutebtn absolute flex items-center justify-center rounded-full" style="top:calc(var(--top-safe-pad, 0px) + 3.25rem);right:1rem;width:2rem;height:2rem;background:rgba(0,0,0,0.45);z-index:5;pointer-events:auto;">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+              ` : ''}
               <div class="relative flex items-center gap-3 px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);z-index:20;">
                 <button onclick="openMyGlimpses()" class="flex-shrink-0" style="color:${fg};">${IconBold('back','w-5 h-5')}</button>
                 <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:${avatarBg};color:${fg};">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : silhouetteIcon(g.icon,'w-4 h-4')}</div>
@@ -1425,6 +1431,18 @@
           const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
           const e = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
           return `onloadedmetadata="if(this.currentTime<${s}){this.currentTime=${s};}" ontimeupdate="if(this.currentTime>=${e}||this.currentTime<${s}){this.currentTime=${s};}"`;
+        }
+
+        // Glimpse videos always start muted (see the <video muted> above) -- mobile browsers
+        // silently refuse to autoplay video with sound, and since a story is the whole screen
+        // with nothing else to look at, a blocked autoplay used to just show a black screen with
+        // no error and no way to recover. Starting muted guarantees it always plays; this button
+        // (a genuine tap, i.e. a real user gesture) is what lets sound turn on safely afterward.
+        function toggleGlimpseVideoMute(videoId, btn){
+          const video = document.getElementById(videoId);
+          if (!video) return;
+          video.muted = !video.muted;
+          if (btn) btn.innerHTML = Icon(video.muted ? 'volumeOff' : 'volume', 'w-4 h-4 text-white');
         }
 
         // A glimpse's photo/video is the whole screen -- there's nothing else to look at -- so a
