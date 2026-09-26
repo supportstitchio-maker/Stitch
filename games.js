@@ -2498,6 +2498,7 @@ let simpleGameState = null;
             subscribeToIncomingCalls(),
             subscribeToIncomingLectureCalls(),
             subscribeToConnectionUpdates(),
+            (typeof startConnectionsPolling === 'function' ? startConnectionsPolling() : null),
             subscribeToCoursesRealtime(),
             startCoursesPolling(),
             startOpportunitiesPolling(),
@@ -2508,6 +2509,8 @@ let simpleGameState = null;
             // Kick off the Discover people list right away instead of waiting for the person to open
             // Discover/the profile panel. Without this, loadDiscoverPeople() only ever ran the moment
             (typeof loadDiscoverPeople === 'function' ? loadDiscoverPeople() : Promise.resolve()),
+            (typeof subscribeToDiscoverPeople === 'function' ? subscribeToDiscoverPeople() : null),
+            (typeof startDiscoverPeoplePolling === 'function' ? startDiscoverPeoplePolling() : null),
           ])).catch(e => console.error(e));
 
           const result = await withBootBudget(essentialLoads, 2000);
@@ -2777,6 +2780,20 @@ let simpleGameState = null;
               if (sb) { sb.auth.signOut().catch(() => {}); }
             })();
             resetCachedAuthUser();
+            // Reset every in-memory glimpse/story global back to a clean slate. Without this, the
+            // account that just signed out leaves its own glimpses and the other-people stories it
+            // had loaded sitting in memory -- the next account to sign in on this same tab would
+            // briefly render that leftover data (wrong photos, media URLs that may 401/404 under
+            // the new session, or a stale "mine" ring) until the next remote fetch happened to
+            // overwrite it. Both a brand-new signup and a re-login now always start from empty.
+            if (typeof stories !== 'undefined') stories = [{ id:0, name:'Glimpse', icon:'person', bg:'', mine:true }];
+            if (typeof myGlimpses !== 'undefined') myGlimpses = [];
+            if (typeof myGlimpsesViewed !== 'undefined') myGlimpsesViewed = false;
+            if (typeof remoteGlimpsesLoaded !== 'undefined') remoteGlimpsesLoaded = false;
+            if (typeof openMyGlimpseMenuId !== 'undefined') openMyGlimpseMenuId = null;
+            if (typeof currentStoryId !== 'undefined') currentStoryId = null;
+            if (typeof currentItemIndex !== 'undefined') currentItemIndex = 0;
+            if (typeof viewedGlimpsesThisSession !== 'undefined') viewedGlimpsesThisSession.clear();
             // Belt-and-suspenders alongside invalidateFeedAndProfileCaches below: a signed-out
             // account's cached feed snapshot (used to show something instantly on a slow reconnect --
             if (typeof clearAllFeedCaches === 'function') clearAllFeedCaches();
