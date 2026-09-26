@@ -349,6 +349,12 @@
         body.dark-mode #screen { background:var(--c-black); }
 
         body.dark-mode .bg-white { background-color:var(--c-onyx) !important; }
+        /* Feed post cards sit right under the glimpse strip's divider line. The
+           general card background (--c-onyx) reads a shade lighter than the
+           screen behind it, so right below that divider the two blacks don't
+           match -- pin feed post cards to the same black as the screen so the
+           whole feed reads as one consistent color. */
+        body.dark-mode #feed-list [id^="post-"] { background-color:var(--c-black) !important; }
         body.dark-mode .bg-gray-50 { background-color:var(--c-blackout) !important; }
         body.dark-mode .bg-gray-100 { background-color:var(--c-charcoal) !important; }
         body.dark-mode .bg-gray-300 { background-color:var(--c-tapshoe) !important; }
@@ -1927,6 +1933,24 @@
         body.dark-mode #auth-gate .auth-card{
           background:var(--c-onyx, #16191f);
           box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), 0 10px 24px -12px rgba(0,0,0,0.4);
+        }
+        /* The header's bright blue gradient and the Continue pill are the two
+           other spots still carrying the light-mode blue -- dial both down to
+           dark, low-key fills so the whole sheet sits at one consistent dark
+           tone instead of a bright blue patch against the rest of the panel. */
+        body.dark-mode #auth-gate .auth-head{
+          background:var(--c-charcoal, #2b2b2b);
+        }
+        body.dark-mode #auth-gate .auth-cta{
+          background:var(--c-charcoal, #2b2b2b);
+          box-shadow:0 10px 20px -8px rgba(0,0,0,0.55);
+        }
+        /* The curved shape stitching the blue header into the card below it is a
+           decorative ::after hardcoded to white for the light-mode card -- in dark
+           mode the card underneath is onyx, so this needs to follow it or it shows
+           up as a stray white bar between the header and the sign-in fields. */
+        body.dark-mode #auth-gate .auth-head::after{
+          background:var(--c-onyx, #16191f);
         }
         body.dark-mode #auth-gate .auth-head p{ color:rgba(255,255,255,0.7); }
         /* The compact-mode (complete-profile / poster-app) subtitle is solid dark ink on
