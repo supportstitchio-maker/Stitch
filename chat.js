@@ -1295,7 +1295,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else if (action === 'read'){
             ids.forEach(id => {
               const found = findConvoAndArray(id);
-              if (found) found.arr[found.idx].read = true;
+              if (found) { found.arr[found.idx].read = true; found.arr[found.idx].unreadCount = 0; }
             });
           } else if (action === 'block'){
             const names = new Set(ids.map(id => { const f = findConvoAndArray(id); return f && f.arr[f.idx].name; }));
@@ -1402,9 +1402,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 <div class="text-[11px] text-gray-400">${time}</div>
-                ${showUnread ? `<div class="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>` : ''}
+                ${showUnread ? unreadCountBadge(c.unreadCount) : ''}
               </div>
             </div>`;
+        }
+
+        // A plain dot only ever showed "something's unread", not how much -- this renders the
+        // actual count instead, and grows (min-width, not a fixed circle) so 2-3 digit counts
+        // still fit comfortably rather than being clipped by a small fixed-size dot.
+        function unreadCountBadge(count){
+          const n = count || 1;
+          const label = n > 99 ? '99+' : String(n);
+          return `<div class="rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0" style="min-width:1.25rem;height:1.25rem;padding:0 0.35rem;font-size:10px;font-weight:700;line-height:1;">${label}</div>`;
         }
 
         // ---- Message requests (accept/reject) ---- LinkedIn-style: name/preview on the left, and
@@ -1471,7 +1480,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const idx = requestConvos.findIndex(c => c.id === id);
           if (idx === -1) return;
           const [c] = requestConvos.splice(idx, 1);
-          primaryConvos.unshift({ ...c, preview: c.preview || 'You are now connected', unread: true, read: false, network: true });
+          primaryConvos.unshift({ ...c, preview: c.preview || 'You are now connected', unread: true, read: false, unreadCount: 1, network: true });
           queueSaveUserState();
           renderInboxTab();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
@@ -2098,6 +2107,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 // the "mark as read" save finished its 800ms debounce. Without this branch, a convo that's
                 c.unread = false;
                 c.read = true;
+                c.unreadCount = 0;
                 changed = true;
               }
             });
@@ -2426,7 +2436,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 preview: (existing && existing.preview) || 'Collaboration', members, createdBy: row.created_by, membersCanAdd: !!row.members_can_add,
               };
               if (!collabConvos.some(c => c.id === id)) {
-                collabConvos.unshift({ id, icon: 'users', avatarBg: 'bg-emerald-100', name: displayName, photo: row.photo || null, preview: 'You were added to this collaboration', time: formatRequestTime(Date.now()), unread: true, read: false });
+                collabConvos.unshift({ id, icon: 'users', avatarBg: 'bg-emerald-100', name: displayName, photo: row.photo || null, preview: 'You were added to this collaboration', time: formatRequestTime(Date.now()), unread: true, read: false, unreadCount: 1 });
                 if (!conversationMessages[id]) conversationMessages[id] = [{ from: 'them', text: `You were added to "${displayName}".`, time: Date.now() }];
               } else {
                 const entry = collabConvos.find(c => c.id === id);
@@ -2685,7 +2695,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
             c.preview = text; c.time = formatRequestTime(Date.now());
-            if (activeConvoId !== convoId) { c.unread = true; c.read = false; }
+            if (activeConvoId !== convoId) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
             found.arr.unshift(c);
           }
           if (convoMeta[convoId]) convoMeta[convoId].preview = text;
@@ -2888,7 +2898,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             [c] = found.arr.splice(found.idx, 1);
             c.preview = previewText;
             c.time = formatRequestTime(Date.now());
-            if (activeConvoId !== convoId) { c.unread = true; c.read = false; }
+            if (activeConvoId !== convoId) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
             found.arr.unshift(c);
           }
 
@@ -2955,6 +2965,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (found && found.arr[found.idx].unread) {
             found.arr[found.idx].unread = false;
             found.arr[found.idx].read = true;
+            found.arr[found.idx].unreadCount = 0;
             queueSaveUserState();
           }
           if (typeof markNotifsReadForConvo === 'function') markNotifsReadForConvo(id);
@@ -4616,7 +4627,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const found = findConvoAndArray(convoId);
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
-            c.preview = previewText; c.time = formatRequestTime(Date.now()); c.unread = false; c.read = true;
+            c.preview = previewText; c.time = formatRequestTime(Date.now()); c.unread = false; c.read = true; c.unreadCount = 0;
             c._lastMsgAt = Date.now();
             found.arr.unshift(c);
           }
@@ -4905,6 +4916,87 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!banner || banner.classList.contains('hidden')) return;
           const timer = document.getElementById('call-minimized-timer');
           if (timer) timer.textContent = callState.statusOverride || (callState.connected ? formatCallTime(callState.seconds) : '…');
+          const nameEl = document.getElementById('call-minimized-name');
+          if (nameEl) {
+            const meta = convoMeta[callState.convoId] || {};
+            nameEl.textContent = callDisplayName(meta) || 'Call';
+          }
+          const muteBtn = document.getElementById('call-minimized-mute-btn');
+          if (muteBtn) muteBtn.innerHTML = Icon(callState.muted ? 'micOff' : 'mic', 'w-4 h-4');
+        }
+
+        // Mute toggle from the minimized banner -- reuses the same callState.muted flag and
+        // applyCallTrackStates the full call screen's mute button uses (toggleCallControl),
+        // so muting from the banner and muting from the call screen always agree.
+        function callBannerToggleMute(){
+          toggleCallControl('muted');
+          updateMinimizedCallBanner();
+        }
+
+        // Message icon on the minimized banner: opens the chat with whoever the call is with,
+        // while leaving the call minimized and running -- the banner (outside #overlay) stays
+        // on screen above the conversation so the call is still visibly live and reachable.
+        function callBannerMessage(){
+          if (!callState.convoId) return;
+          openConversation(callState.convoId);
+        }
+
+        // Plus icon on the minimized banner: unlike messaging, adding someone to the call is
+        // itself a call-management action, so this returns to the full call screen (clearing
+        // the banner) before showing the add-to-call list, rather than leaving the banner
+        // floating on top of that screen.
+        function callBannerAddToCall(){
+          if (!callState.convoId) return;
+          callMinimized = false;
+          const banner = document.getElementById('call-minimized-banner');
+          if (banner) banner.classList.add('hidden');
+          openAddToCall();
+        }
+
+        // ---- Call notes: a short note per conversation, jotted down while a call with them is
+        // in progress (via the pencil icon on the minimized banner) and kept even after the call
+        // ends -- see callNotes below, persisted through collectUserState/applyUserState in
+        // core.js exactly like every other piece of saved app state.
+        let callNotes = {};
+        let activeCallNotesConvoId = null;
+        let callNotesSaveTimer = null;
+
+        function openCallNotes(){
+          if (!callState.convoId) return;
+          activeCallNotesConvoId = callState.convoId;
+          const modal = document.getElementById('callNotesModal');
+          const titleEl = document.getElementById('callNotesModalTitle');
+          const ta = document.getElementById('callNotesTextarea');
+          const hint = document.getElementById('callNotesSavedHint');
+          if (titleEl) {
+            const meta = convoMeta[callState.convoId] || {};
+            titleEl.textContent = `Notes · ${callDisplayName(meta) || 'Call'}`;
+          }
+          if (ta) ta.value = callNotes[activeCallNotesConvoId] || '';
+          if (hint) hint.textContent = 'Saved automatically';
+          if (modal) modal.classList.remove('hidden');
+          requestAnimationFrame(() => { if (ta) ta.focus(); });
+        }
+
+        function closeCallNotesModal(){
+          const modal = document.getElementById('callNotesModal');
+          if (modal) modal.classList.add('hidden');
+          activeCallNotesConvoId = null;
+        }
+
+        function handleCallNotesInput(){
+          const key = activeCallNotesConvoId;
+          const ta = document.getElementById('callNotesTextarea');
+          if (!key || !ta) return;
+          callNotes[key] = ta.value;
+          const hint = document.getElementById('callNotesSavedHint');
+          if (hint) hint.textContent = 'Saving…';
+          if (callNotesSaveTimer) clearTimeout(callNotesSaveTimer);
+          callNotesSaveTimer = setTimeout(() => {
+            queueSaveUserState();
+            const hintNow = document.getElementById('callNotesSavedHint');
+            if (hintNow) hintNow.textContent = 'Saved automatically';
+          }, 500);
         }
 
         function ensurePeerConnection(peerId){
@@ -5102,6 +5194,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const wasMinimized = callMinimized;
           const callDurationSecs = callState.seconds;
           const callType = callState.type;
+          closeCallNotesModal();
           clearCallTimers();
           stopCallLocalStream();
           if (!remoteInitiated) {
