@@ -3386,7 +3386,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="px-5 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 10px);">
+            <div class="px-5 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);">
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
