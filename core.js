@@ -680,6 +680,7 @@
             appPrefs,
             contentInterestAuthorIds: (typeof contentInterestAuthorIds !== 'undefined') ? contentInterestAuthorIds : [],
             contentInterestTerms: (typeof contentInterestTerms !== 'undefined') ? contentInterestTerms : [],
+            callNotes: (typeof callNotes !== 'undefined') ? callNotes : {},
           };
         }
 
@@ -776,6 +777,7 @@
           appPrefs = (d.appPrefs && typeof d.appPrefs === 'object') ? Object.assign({ theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false }, d.appPrefs) : { theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false };
           if (typeof contentInterestAuthorIds !== 'undefined') contentInterestAuthorIds = Array.isArray(d.contentInterestAuthorIds) ? d.contentInterestAuthorIds : [];
           if (typeof contentInterestTerms !== 'undefined') contentInterestTerms = Array.isArray(d.contentInterestTerms) ? d.contentInterestTerms : [];
+          if (typeof callNotes !== 'undefined') callNotes = (d.callNotes && typeof d.callNotes === 'object') ? d.callNotes : {};
           if (typeof document !== 'undefined' && document.body) {
             document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
             if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
@@ -1248,21 +1250,54 @@
        tapped back to browse the rest of the app instead of ending it
        (see minimizeCall/resumeCall in chat.js) -- the call itself (its
        WebRTC connections and local mic/camera stream) keeps running the
-       whole time this is up; tapping it just re-opens the call screen,
-       and the red button ends the call outright without having to.
+       whole time this is up; tapping the name/timer row re-opens the call
+       screen, the red button ends the call outright, and the row of three
+       icons below (message / notes / add-to-call) work without re-opening
+       the call -- see callBannerMessage/openCallNotes/callBannerAddToCall
+       in chat.js.
        Lives outside #overlay (which minimizeCall clears) so it survives
        being minimized and stays reachable from every tab.
-       Styled like a phone's "ongoing call" status pill: a horizontal,
-       full-width-ish rounded bar pinned to the top of the screen (below
-       the safe-area inset), not a floating bubble -- a plain tap
-       anywhere on it (other than the hang-up button) re-opens the call. -->
+       Styled like a native "ongoing call" card: light card + dark mute
+       button in light mode, dark card + light mute button in dark mode
+       (see .call-min-mute-btn in styles.css), so it always reads clearly
+       against either theme rather than only looking right in one. -->
   <div id="call-minimized-banner" class="hidden" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top, 0px) + 10px);z-index:25;max-width:calc(42rem - 24px);margin:0 auto;">
-    <div onclick="resumeCall()" class="flex items-center gap-2 rounded-full shadow-lg py-2 select-none cursor-pointer" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 10px 26px rgba(65,105,225,0.35);border:1px solid rgba(255,255,255,0.22);color:#fff;padding-left:10px;padding-right:10px;">
-      <span class="text-xs font-bold flex-1 truncate uppercase tracking-wide font-display">Call in progress</span>
-      <span id="call-minimized-timer" class="text-xs font-semibold text-white/80 flex-shrink-0">00:00</span>
-      <button onclick="event.stopPropagation();endCall()" title="End call" class="call-end-icon-btn w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-        ${Icon('phoneHangup','w-3.5 h-3.5')}
-      </button>
+    <div class="call-min-card rounded-2xl overflow-hidden bg-white">
+      <div onclick="resumeCall()" class="flex items-center gap-3 px-4 py-3 select-none cursor-pointer">
+        <div class="flex-1 min-w-0">
+          <div id="call-minimized-name" class="text-sm font-semibold text-gray-900 truncate font-display">Call</div>
+          <div class="text-xs text-gray-500 truncate">Call in progress · <span id="call-minimized-timer">00:00</span></div>
+        </div>
+        <button onclick="event.stopPropagation();callBannerToggleMute()" id="call-minimized-mute-btn" title="Mute" class="call-min-mute-btn w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0">
+          ${Icon('mic','w-4 h-4')}
+        </button>
+        <button onclick="event.stopPropagation();endCall()" title="End call" class="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0">
+          ${Icon('phoneHangup','w-4 h-4')}
+        </button>
+      </div>
+      <div class="call-min-actions flex items-center border-t border-gray-100">
+        <button onclick="event.stopPropagation();callBannerMessage()" title="Message" class="flex-1 py-2.5 flex items-center justify-center text-gray-600">${Icon('comment','w-4 h-4')}</button>
+        <button onclick="event.stopPropagation();openCallNotes()" title="Notes" class="flex-1 py-2.5 flex items-center justify-center text-gray-600" style="border-left:1px solid rgba(0,0,0,0.06);border-right:1px solid rgba(0,0,0,0.06);">${Icon('edit','w-4 h-4')}</button>
+        <button onclick="event.stopPropagation();callBannerAddToCall()" title="Add to call" class="flex-1 py-2.5 flex items-center justify-center text-gray-600">${Icon('plus','w-4 h-4')}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call notes: jot down notes while a call is in progress (opened via the
+       pencil icon on the minimized call banner above). Kept as its own
+       small modal, separate from the call screen and the minimized banner,
+       so it keeps working while the call is minimized -- and the note text
+       (callNotes in chat.js, keyed by conversation) is saved through the
+       same queueSaveUserState mechanism as everything else, so it's still
+       there after the call ends. -->
+  <div id="callNotesModal" class="hidden absolute inset-0 z-50 flex items-end justify-center" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-t-3xl w-full p-5" style="max-width:42rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-lg font-bold text-[${NAVY}] font-display truncate" id="callNotesModalTitle">Call notes</div>
+        <button onclick="closeCallNotesModal()" class="text-gray-400 flex-shrink-0" aria-label="Close">${IconBold('close','w-5 h-5')}</button>
+      </div>
+      <textarea id="callNotesTextarea" rows="6" placeholder="Type notes while the call is in progress -- they'll still be here after it ends." oninput="handleCallNotesInput()" class="w-full text-sm text-gray-800 rounded-2xl p-3" style="background:#f3f4f6;outline:none;resize:none;"></textarea>
+      <div class="text-[11px] text-gray-400 mt-2" id="callNotesSavedHint">Saved automatically</div>
     </div>
   </div>
   <!-- Note: a minimized live lecture is NOT shown as a global floating
