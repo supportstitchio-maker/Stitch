@@ -1355,8 +1355,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               return `<div class="bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel('No collaborations yet.')}</div>`;
             }
             return `
-              <button onclick="openNewCollaboration()" class="w-full bg-white p-8 text-center flex flex-col items-center gap-3" style="border:none;">
-                <div class="w-14 h-14 rounded-full flex items-center justify-center text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">${Icon('plus','w-6 h-6')}</div>
+              <button onclick="morphPlusIcon('collab-create-plus-icon');openNewCollaboration()" class="w-full bg-white p-8 text-center flex flex-col items-center gap-3" style="border:none;">
+                <span id="collab-create-plus-icon" class="plus-morph-icon is-plus">${gradIcon(IconBold('plus','w-8 h-8'))}</span>
                 <div class="text-gray-400 text-sm">No collaborations yet.</div>
                 <div class="font-semibold text-sm grad-text">Create a collaboration</div>
               </button>`;
@@ -1665,6 +1665,32 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('postgres_changes', { event: '*', schema: 'public', table: CONNECTION_REQUESTS_TABLE, filter: `to_user=eq.${myId}` }, onConnectionChange)
             .on('postgres_changes', { event: '*', schema: 'public', table: CONNECTION_REQUESTS_TABLE, filter: `from_user=eq.${myId}` }, onConnectionChange)
             .subscribe();
+        }
+
+        // ---- Connection-request polling fallback ---- Same idea as startFeedPolling /
+        // startCoursesPolling / startOpportunitiesPolling: the realtime channel above is the fast
+        // path for a request (or acceptance) showing up right away, but realtime delivery isn't
+        // guaranteed -- a dropped websocket, a brief reconnect, or a Realtime replication hiccup
+        // can silently swallow an event with nothing telling either side it was missed. Without a
+        // fallback, a sent request could sit invisible for the recipient until they happened to
+        // reopen the Inbox tab themselves. This just re-checks on a timer so a request or an
+        // acceptance is never more than a few seconds late even if the push never arrives.
+        let connectionsPollInterval = null;
+        function startConnectionsPolling(){
+          if (connectionsPollInterval) return;
+          connectionsPollInterval = setInterval(() => {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            Promise.all([
+              loadIncomingConnectionRequests(),
+              loadMyAcceptedIncomingRequests(),
+              loadMyAcceptedOutgoingRequests(),
+              loadMyPendingOutgoingRequests(),
+            ]).then(() => {
+              if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates();
+            }).catch(() => {});
+            if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
+          }, 8000);
         }
 
         async function loadMyAcceptedOutgoingRequests(){
