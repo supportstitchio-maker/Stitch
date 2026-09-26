@@ -1278,6 +1278,58 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         let discoverLoadError = false;
 
+        // ---- Live "new person just signed up" delivery ---- loadDiscoverPeople() used to be a
+        // one-shot fetch: someone who signed up while you already had the app open simply never
+        // appeared for you until you happened to close and reopen Discover. This subscribes to new
+        // rows landing in public_profiles (which every signup writes to) and drops each new person
+        // straight into the in-memory list and, if Discover is open right now, the visible list --
+        // no refresh needed. A short poll underneath is the same belt-and-suspenders fallback used
+        // everywhere else in this app (see startFeedPolling/startConnectionsPolling) in case the
+        // realtime event itself never arrives.
+        let discoverPeopleChannel = null;
+        let discoverPeopleSubscribedForUserId = null;
+        async function subscribeToDiscoverPeople(){
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          const myId = await getCurrentUserId();
+          if (!myId) return;
+          if (discoverPeopleChannel && discoverPeopleSubscribedForUserId === myId) return;
+          if (discoverPeopleChannel) { try { sb.removeChannel(discoverPeopleChannel); } catch (e) {  } discoverPeopleChannel = null; }
+          discoverPeopleSubscribedForUserId = myId;
+          discoverPeopleChannel = sb.channel('discover-people')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: PUBLIC_PROFILES_TABLE }, (payload) => handleNewDiscoverProfile(payload, myId))
+            .subscribe();
+        }
+
+        function handleNewDiscoverProfile(payload, myId){
+          const row = payload && payload.new;
+          if (!row || !row.user_id || row.user_id === myId) return;
+          if (!((row.name || '').trim() || (row.username || '').trim())) return;
+          if (discoverPeople.some(p => p.id === row.user_id)) return;
+          discoverPeople.push({
+            id: row.user_id,
+            name: row.name || 'Stitch member',
+            username: row.username || '',
+            sub: row.bio || '',
+            icon: 'user',
+            avatarBg: 'bg-blue-50',
+            photo: row.photo || null,
+            requestSent: false,
+            connected: false,
+          });
+          if (discoverPeopleLoaded) renderDiscoverList();
+        }
+
+        let discoverPeoplePollInterval = null;
+        function startDiscoverPeoplePolling(){
+          if (discoverPeoplePollInterval) return;
+          discoverPeoplePollInterval = setInterval(() => {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            loadDiscoverPeople().catch(() => {});
+          }, 20000);
+        }
+
         async function loadDiscoverPeople(retryCount){
           discoverLoadError = false;
           const sb = getSupabaseClient();
