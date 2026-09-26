@@ -3238,7 +3238,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function postOpportunityHTML(){
           const isEditing = !!newOppEditingId;
           return `
-            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true })}
+            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true, pb: '10px' })}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover picture (optional)</label>
@@ -3587,7 +3587,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const userPostedCount = allJobsList.filter(j => j.createdByRole === 'user').length;
           const adminPostedCount = allJobsList.length - userPostedCount;
           return `
-            ${overlayHeader('Admin Dashboard', '20px', null, null, {center:true})}
+            ${overlayHeader('Admin Dashboard', '20px', null, null, {center:true, pb: '10px'})}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="grid grid-cols-3 gap-2 mb-5" style="margin-top:calc(20px - 0.75rem);">
                 <div class="bg-white rounded-2xl p-3 text-center shadow-sm">
