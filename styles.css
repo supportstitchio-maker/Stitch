@@ -669,9 +669,22 @@
           #career-titlebar h1 {
             font-size: 1.65rem !important;
           }
-          #inbox-username-el,
+          /* "Apply to post" and "Match with CV/Resume" are the two step-by-step flows launched
+             from the Career Space menu -- their titles used to stay at the overlay default
+             (text-xl, 1.25rem) even on desktop, so they read noticeably smaller than the
+             "Career Space" title above them. Matched to the same 1.65rem here. */
+          .career-flow-title {
+            font-size: 1.65rem !important;
+          }
           #profile-username-el {
             font-size: 1.65rem !important;
+          }
+          /* The Messaging sidebar header ("victoria_hammond") used to be bumped up to the same
+             1.65rem as Career Space/Profile, which made it read far larger than the name shown
+             once you actually open a conversation (#chat-header-name, plain text-sm/0.875rem).
+             Matched to that instead so both headers in Messaging read at the same size. */
+          #inbox-username-el {
+            font-size: 0.875rem !important;
           }
           /* Saved / Match with CV / Apply to post: sized to match the
              messaging page's dropdowns (#inbox-filter-dropdown, which uses
