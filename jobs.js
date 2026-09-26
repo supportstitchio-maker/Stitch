@@ -892,7 +892,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (currentUserPosterStatus === 'pending') {
             return `
               ${bg}
-              ${overlayHeader('Apply to post', '20px', null, null, {center:true, titleSize:'text-xl'})}
+              ${overlayHeader('Apply to post', '20px', null, null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title'})}
               <div class="flex-1 overflow-y-auto px-5" style="padding-top:18px;padding-bottom:50px;">
                 <div class="max-w-2xl mx-auto">
                   <div class="bg-amber-50 border border-amber-100 text-amber-700 rounded-2xl p-3 text-xs">Your application is already awaiting review -- you'll be notified once an admin decides.</div>
@@ -909,7 +909,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div class="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl p-3 text-xs mb-5">Your previous application wasn't approved. Feel free to update the details below and reapply.</div>` : '';
           return `
             ${bg}
-            ${overlayHeader('Apply to post', '20px', 'posterAppBack()', null, {center:true, titleSize:'text-xl'})}
+            ${overlayHeader('Apply to post', '20px', 'posterAppBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title'})}
             <div class="flex-shrink-0 w-full px-5" style="margin-top:30px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
@@ -2436,7 +2436,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const bg = `<div aria-hidden="true" class="apply-bg-overlay"></div>`;
           return `
             ${bg}
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title'})}
             <div class="flex-shrink-0 w-full px-5" style="margin-top:30px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
