@@ -545,12 +545,13 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           opts = opts || {};
           const padStyle = ` style="padding-top:${extraTopPad || '20px'};"`;
           const titleSize = opts.titleSize || 'text-lg';
+          const titleClass = opts.titleClass ? (' ' + opts.titleClass) : '';
           if (opts.center) {
             return `
               <div class="flex-shrink-0 w-full"${padStyle}>
                 <div class="max-w-2xl mx-auto px-5 pb-3 relative flex items-center justify-center">
                   <button onclick="${backAction || 'overlayGoBack()'}" class="absolute" style="left:20px;top:50%;transform:translateY(-50%);">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
-                  <div class="font-semibold ${titleSize} font-display grad-text text-center">${title}</div>
+                  <div class="font-semibold ${titleSize} font-display grad-text text-center${titleClass}">${title}</div>
                 </div>
               </div>`;
           }
@@ -558,7 +559,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             <div class="flex-shrink-0 w-full"${padStyle}>
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4">
                 <button onclick="${backAction || 'overlayGoBack()'}">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
-                <div class="font-semibold ${titleSize} font-display grad-text">${title}</div>
+                <div class="font-semibold ${titleSize} font-display grad-text${titleClass}">${title}</div>
               </div>
             </div>`;
         }
