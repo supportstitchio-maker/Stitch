@@ -2665,12 +2665,10 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
                   <div class="font-semibold text-sm ${n.read ? 'text-gray-500' : ''}" style="${n.read ? '' : `color:${NAVY};`}">${escapeHtml(n.name)}</div>
                   ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
                 </div>
-                <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} mt-0.5 leading-relaxed">${escapeHtml(n.message)}</div>
-                ${n.type === 'connect_request' ? `
-                <div class="flex gap-2 mt-3">
-                  <button onclick="event.stopPropagation(); acceptConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-[${NAVY}]">Accept</button>
-                  <button onclick="event.stopPropagation(); declineConnection('${n.id}')" class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Decline</button>
-                </div>` : ''}
+                <div class="flex items-center justify-between gap-2 mt-0.5">
+                  <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} leading-relaxed truncate">${escapeHtml(n.message)}</div>
+                  ${n.type === 'connect_request' ? connectRequestActionsHTML(n) : ''}
+                </div>
               </div>
               <div class="flex flex-col items-center gap-1 flex-shrink-0 relative">
                 ${selecting ? '' : `
@@ -2683,7 +2681,25 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           }).join('');
         }
 
-        // ---- Connection request accept/decline ----
+        // ---- Connection request accept/decline ---- LinkedIn/messaging-style outlined check/x
+        // icon buttons, inline with the "Wants to connect with you" line (right next to the
+        // timestamp) instead of a separate text-button row underneath. Once acted on, the icons
+        // swap for a small "Accepted"/"Declined" status so the row visibly changes in place
+        // rather than just vanishing.
+        function connectRequestActionsHTML(n){
+          if (n.connectionStatus === 'accepted'){
+            return `<div class="flex items-center gap-1 text-xs font-semibold flex-shrink-0" style="color:${ROYAL};">${IconBold('check','w-3.5 h-3.5')} Accepted</div>`;
+          }
+          if (n.connectionStatus === 'declined'){
+            return `<div class="flex items-center gap-1 text-xs font-semibold text-gray-400 flex-shrink-0">${IconBold('close','w-3.5 h-3.5')} Declined</div>`;
+          }
+          return `
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button onclick="event.stopPropagation(); declineConnection('${n.id}')" aria-label="Decline" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white" style="border:1.5px solid #d1d5db;color:#6b7280;">${IconBold('close','w-3.5 h-3.5')}</button>
+              <button onclick="event.stopPropagation(); acceptConnection('${n.id}')" aria-label="Accept" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white" style="border:1.5px solid ${ROYAL};color:${ROYAL};">${IconBold('check','w-3.5 h-3.5')}</button>
+            </div>`;
+        }
+
         function deleteNotif(id){
           const idx = notifData.findIndex(x => x.id === id);
           if (idx === -1) return;
@@ -2698,7 +2714,8 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         function acceptConnection(id){
           const n = notifData.find(x => x.id === id);
           if (!n) return;
-          notifData.splice(notifData.indexOf(n), 1);
+          n.connectionStatus = 'accepted';
+          n.read = true;
           queueSaveUserState();
           if (typeof acceptRequest === 'function') acceptRequest(id);
           refreshNotifBadge();
@@ -2708,7 +2725,8 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         function declineConnection(id){
           const n = notifData.find(x => x.id === id);
           if (!n) return;
-          notifData.splice(notifData.indexOf(n), 1);
+          n.connectionStatus = 'declined';
+          n.read = true;
           queueSaveUserState();
           if (typeof rejectRequest === 'function') rejectRequest(id);
           refreshNotifBadge();
