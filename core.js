@@ -1736,6 +1736,17 @@
           });
         }
 
+        // Every "+" that uses the morph animation (the topbar/bottom-nav Create buttons, and the
+        // bare plus shown on an empty Collaborations list) replays that same pop-in animation on
+        // its own every few seconds, instead of only when tapped -- a small idle pulse that keeps
+        // drawing the eye to "you can create something here" without needing user interaction.
+        // morphPlusIcon() already no-ops via its `if (!el) return;` guard for any id not currently
+        // in the DOM, so it's safe to always list every possible plus icon here.
+        const PULSING_PLUS_ICON_IDS = ['topbar-create-icon', 'dnav-create-icon', 'collab-create-plus-icon'];
+        setInterval(() => {
+          PULSING_PLUS_ICON_IDS.forEach(id => morphPlusIcon(id));
+        }, 3000);
+
         let cachedHomeFeedNode = null;
         let cachedProfileScreenNode = null;
 
