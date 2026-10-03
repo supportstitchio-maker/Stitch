@@ -1,0 +1,13 @@
+# Stitch is a single-page app: the only content a crawler can ever see
+# without logging in is the public landing/marketing page served at "/".
+# Everything past the auth gate (notes, chats, courses, student data) lives
+# behind Supabase authentication and is never rendered into static HTML a
+# crawler could fetch directly, so there is nothing else to disallow here.
+#
+# If you later add real sub-paths (e.g. /blog, /help) that should stay out
+# of search results, add explicit Disallow lines for them below.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://stitch.vercel.app/sitemap.xml
