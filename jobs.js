@@ -2417,7 +2417,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             const cards = allExploreCards();
             return cards.length
               ? cards.map(jobCard).join('')
-              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm"><div>Nothing posted yet.</div><div class="text-xs text-gray-400 mt-1">Tap on the menu on the right corner to get started</div></div>`;
+              : `<div class="empty-center bg-white px-8 text-center"><div class="text-base font-semibold text-gray-600">Nothing posted yet</div><div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Tap on the menu on the right corner to get started</div></div>`;
           }
           if (jobsSub === 'opportunities') return jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
           if (jobsSub === 'internships') return jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');

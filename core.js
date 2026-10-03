@@ -50,7 +50,7 @@
           return String(str || '').trim().toLowerCase() === STITCH_TEST_EMAIL;
         }
         function isStitchTestAccount(){
-          try { return typeof currentUserEmail !== 'undefined' && isStitchTestEmail(currentUserEmail); } catch (e) { return false; }
+          try { return (typeof currentUserEmail !== 'undefined' && isStitchTestEmail(currentUserEmail)) || (typeof authPendingEmail !== 'undefined' && isStitchTestEmail(authPendingEmail)); } catch (e) { return false; }
         }
         function isValidEmail(str){
           return EMAIL_RE.test(String(str || '').trim());

@@ -2116,7 +2116,7 @@ let simpleGameState = null;
           }
           if (stage === 'photo') {
             return `
-              <div class="mb-2 flex flex-col items-center gap-3">
+              <div class="mb-2 flex flex-col items-center gap-3" style="min-height:calc(100dvh - 300px);justify-content:center;">
                 <div id="auth-photo-circle" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                   <img id="auth-photo-preview-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
                   <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
@@ -2970,6 +2970,25 @@ let simpleGameState = null;
           if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); }
         }
 
+        // Test account only: wipes everything it created (database rows + this device's saved data)
+        // so the next sign-in starts from a brand-new sign-up. Safe no-op for any other account.
+        async function resetStitchTestAccount(keepSession){
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try {
+            const { error } = await sb.rpc('reset_test_account');
+            if (error) console.warn('Test account reset failed:', error);
+          } catch (e) { console.warn('Test account reset failed:', e); }
+          try {
+            // On sign-in the fresh Supabase session (sb-* keys) must survive the wipe
+            Object.keys(localStorage).forEach(k => { if (!(keepSession && k.indexOf('sb-') === 0)) localStorage.removeItem(k); });
+          } catch (e) {}
+          try { sessionStorage.clear(); } catch (e) {}
+          try { if (window.storage) await window.storage.delete('gameProgress', false); } catch (e) {}
+                    try { if (window.caches) { (await caches.keys()).forEach(k => caches.delete(k)); } } catch (e) {}
+          try { resetCachedAuthUser(); } catch (e) {}
+        }
+
         function authSignOut(){
           openAppConfirmModal('Sign out of Stitch?', "You'll need to log back in to access your account.", 'Sign Out', function(){
             overlayHistoryPushed = false;
@@ -2977,8 +2996,14 @@ let simpleGameState = null;
             showAuthTransitionLoading('Signing out', 'logout');
             // Persist any unsaved state and end the Supabase session in the background
             (async () => {
-              if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
               const sb = getSupabaseClient();
+              if (isStitchTestAccount()) {
+                // Test account: save nothing, erase everything, then sign out
+                await resetStitchTestAccount();
+                if (sb) { sb.auth.signOut().catch(() => {}); }
+                return;
+              }
+              if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
               if (sb) { sb.auth.signOut().catch(() => {}); }
             })();
             resetCachedAuthUser();
@@ -3118,6 +3143,12 @@ let simpleGameState = null;
                 error = { message: 'Test account: the code is 000000.' };
               } else {
                 ({ error } = await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }));
+                if (!error) {
+                  // Every test sign-in starts from scratch, even if the last session never signed out
+                  await resetStitchTestAccount(true);
+                  await sb.auth.refreshSession().catch(() => {});
+                  resetCachedAuthUser();
+                }
               }
             } else {
               ({ error } = await sb.auth.verifyOtp({

@@ -3435,3 +3435,13 @@ body.dark-mode .cmt-sheet-grip{ background:#6b6f78; }
 body:has(#class-action-loading-overlay) #study-fab-wrap,
 body:has(#class-action-loading-overlay) #study-fab-btn,
 body:has(#class-action-loading-overlay) #study-fab-menu { display:none !important; }
+
+
+/* Empty states (inbox tabs, Career Space): fill the space under the sticky bars and centre their content */
+.empty-center{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1 1 auto;}
+#screen:has(.empty-center){display:flex;flex-direction:column;}
+#screen:has(.empty-center) > *{flex-shrink:0;}
+#screen:has(.empty-center) > #inbox-list,
+#screen:has(.empty-center) > #jobs-content{flex:1 1 auto;display:flex;flex-direction:column;}
+#screen:has(.empty-center) > #inbox-list > .empty-center,
+#screen:has(.empty-center) > #jobs-content > .empty-center{flex:1 1 auto;}

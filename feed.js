@@ -50,7 +50,9 @@
           if (typeof currentTab !== 'undefined' && currentTab !== 0) return;
           const prevScrollTop = screenEl.scrollTop;
           // First-time sign-up: open Home immediately (no shimmer skeleton)
-          const freshSignupFeed = (window.__stitchFreshSignup === true);
+          const wasFreshSignup = (window.__stitchFreshSignup === true);
+          // Always show the shimmer skeleton first, even for a brand-new sign-up on a fast connection
+          const freshSignupFeed = false;
           if (typeof remotePostsLoaded !== 'undefined' && !remotePostsLoaded && !freshSignupFeed) {
             // A slow first connection used to just sit on a bare skeleton with nothing to look at
             const cachedUserId = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null;
@@ -96,7 +98,7 @@
           // The bare skeleton (not a cached snapshot
           if (feedSkeletonShownAt) {
             const elapsed = Date.now() - feedSkeletonShownAt;
-            const remaining = FEED_SKELETON_MIN_VISIBLE_MS - elapsed;
+            const remaining = (wasFreshSignup ? 1600 : FEED_SKELETON_MIN_VISIBLE_MS) - elapsed;
             feedSkeletonShownAt = null;
             // Only wait when the skeleton itself is still on screen
             const staleOtherTab = !!screenEl.querySelector('#inbox-titlebar, #inbox-list, #profile-screen-root');
@@ -135,7 +137,7 @@
           syncFeedImageReadyState(screenEl);
           // Skeleton has fully finished and the real feed is painted -- tabs may be used now.
           unlockBootShell();
-          if (freshSignupFeed && typeof remotePostsLoaded !== 'undefined' && remotePostsLoaded) window.__stitchFreshSignup = false;
+          if (wasFreshSignup && typeof remotePostsLoaded !== 'undefined' && remotePostsLoaded) window.__stitchFreshSignup = false;
         }
 
         function patchFeedInPlace(){

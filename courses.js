@@ -1546,10 +1546,10 @@ try {
                 </button>
               </div>` : ''}
             ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : `
-              <div class="flex flex-col items-center text-center py-10">
-                <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('book','w-9 h-9')}</div>
-                <div class="font-bold text-gray-700 mb-1">No courses yet</div>
-                <div class="text-sm text-gray-400 leading-relaxed">Structured, self-paced courses will show up here once one is published.</div>
+              <div class="flex flex-col items-center justify-center text-center px-3" style="min-height:calc(100dvh - 400px);">
+                <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}]" style="margin-bottom:20px;">${Icon('book','w-9 h-9')}</div>
+                <div class="text-base font-semibold text-gray-600">No courses yet</div>
+                <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Structured, self-paced courses will show up here once one is published.</div>
               </div>`}`;
         }
 
