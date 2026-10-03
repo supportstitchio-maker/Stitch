@@ -2405,6 +2405,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         // ---- Job list + job detail screens ----
+        // Same centered "Nothing posted yet" message on every Career Space tab
+        function careerEmptyHTML(title, hint){
+          return `<div class="empty-center bg-white px-8 text-center"><div class="text-base font-semibold text-gray-600">${title || 'Nothing posted yet'}</div><div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">${hint || 'Tap on the menu on the right corner to get started'}</div></div>`;
+        }
+        function careerListOrEmpty(list, title, hint){
+          return list.length ? list.map(jobCard).join('') : careerEmptyHTML(title, hint);
+        }
         function jobsContent(){
           const q = careerSearchQuery.trim().toLowerCase();
           if (q) {
@@ -2419,31 +2426,27 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               ? cards.map(jobCard).join('')
               : `<div class="empty-center bg-white px-8 text-center"><div class="text-base font-semibold text-gray-600">Nothing posted yet</div><div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Tap on the menu on the right corner to get started</div></div>`;
           }
-          if (jobsSub === 'opportunities') return jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
-          if (jobsSub === 'internships') return jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
-          if (jobsSub === 'courses') return exploreCourseCards().map(jobCard).join('');
+          if (jobsSub === 'opportunities') return careerListOrEmpty(jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)));
+          if (jobsSub === 'internships') return careerListOrEmpty(jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)));
+          if (jobsSub === 'courses') return careerListOrEmpty(exploreCourseCards());
           if (jobsSub === 'scholarships') {
             const scholarships = jobsData.scholarships.filter(j => !isOpportunityDeadlinePassed(j));
-            return scholarships.length
-              ? scholarships.map(jobCard).join('')
-              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No scholarships posted yet.</div>`;
+            return careerListOrEmpty(scholarships);
           }
           if (jobsSub === 'others') {
             const others = jobsData.others.filter(j => !isOpportunityDeadlinePassed(j));
-            return others.length
-              ? others.map(jobCard).join('')
-              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">Nothing else posted yet.</div>`;
+            return careerListOrEmpty(others);
           }
           if (jobsSub === 'saved') {
             const savedJobs = allJobs().filter(j => j.saved);
             return savedJobs.length
               ? savedJobs.map(jobCard).join('')
-              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No saved career opportunities yet.<br>Tap the bookmark icon on a listing to save it here.</div>`;
+              : careerEmptyHTML('No saved opportunities yet', 'Tap the bookmark icon on a listing to save it here');
           }
           const appliedJobs = allJobs().filter(j => isJobApplied(j));
           return appliedJobs.length
             ? appliedJobs.map(jobCard).join('')
-            : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">You haven't applied to anything yet.<br>Browse opportunities to get started.</div>`;
+            : careerEmptyHTML("You haven't applied to anything yet", 'Browse opportunities to get started');
         }
 
         function jobCard(job){

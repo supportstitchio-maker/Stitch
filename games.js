@@ -1986,6 +1986,14 @@ let simpleGameState = null;
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
           setAuthProgress(0, 100);
+          // Test account: always arrives pre-filled so nothing has to be typed on this step
+          if (isStitchTestAccount()) {
+            const f = document.getElementById('auth-cp-fname'), l = document.getElementById('auth-cp-lname'), u = document.getElementById('auth-cp-username');
+            if (f) f.value = 'Test';
+            if (l) l.value = 'Mode';
+            if (u) u.value = 'test_mode';
+            return;
+          }
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
         }
         // Shown once, right after Complete Profile, so the Career Space "post or explore" question
