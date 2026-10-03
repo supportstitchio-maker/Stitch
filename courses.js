@@ -4129,7 +4129,7 @@ try {
                     ${['GHS','NGN','USD','ZAR','KES'].map(c => `<option value="${c}" ${d.paymentCurrency===c ? 'selected' : ''}>${c}</option>`).join('')}
                   </select>
                 </div>
-                <div class="text-xs text-gray-400 mt-2">Students pay this through Paystack before they get access.</div>
+                <div class="text-xs text-gray-400 mt-2">Students pay this online before they get access.</div>
               ` : ''}
             </div>`;
         }
@@ -9946,6 +9946,7 @@ try {
             </div>
             <button onclick="this.parentElement.remove()" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>`;
           document.body.appendChild(el);
+          enableSwipeDismiss(el, () => el.remove(), 'translateX(-50%)');
           setTimeout(() => el.remove(), 7000);
         }
 

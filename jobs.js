@@ -1112,7 +1112,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               <div style="background:#f9fafb;border:1.5px solid #cbd5e1;border-radius:16px;padding:14px 16px;">
                 <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55;color:#4b5563;">
                   ${row(`Stitch keeps <b>${PAID_SELLER_SHARE_PCT}%</b> of every sale. You keep <b>${100 - PAID_SELLER_SHARE_PCT}%</b>. On a GH₵100 sale, that's GH₵${100 - PAID_SELLER_SHARE_PCT} for you.`)}
-                  ${row(`Students pay through Paystack. Your earnings go into your Stitch wallet. ${PAID_SELLER_SCHEDULE_TEXT}`)}
+                  ${row(`Students pay online. Your earnings go into your Stitch wallet. ${PAID_SELLER_SCHEDULE_TEXT}`)}
                   ${row(`The minimum withdrawal is <b>${PAID_SELLER_MIN_WITHDRAWAL}</b>.`)}
                   ${row(`Withdrawals are reviewed and <b>approved within ${PAID_SELLER_APPROVAL_HOURS} hours</b>, then sent to your mobile money or bank account.`)}
                   ${row(`If a class is reported, Stitch can pause it and hold payouts while we look into it.`)}
@@ -4702,7 +4702,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div aria-hidden="true" class="apply-bg-overlay"></div>
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:44px;padding-bottom:20px;">
               <div class="max-w-2xl mx-auto">
                 <div class="flex items-center" style="gap:18px;margin-bottom:26px;">
@@ -4753,7 +4753,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div aria-hidden="true" class="apply-bg-overlay"></div>
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:30px;padding-bottom:20px;">
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
@@ -4763,7 +4763,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="rounded-3xl p-4" style="background:rgba(10,37,64,0.05);margin-top:6px;">
                   ${careerIntroBulletsHTML(features).replace('margin-top:22px;', 'margin-top:0;')}
                 </div>
-                <div class="text-xs text-gray-400 text-center" style="margin-top:14px;">Paid securely with Paystack. Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
+                <div class="text-xs text-gray-400 text-center" style="margin-top:14px;">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
               </div>
             </div>
             </div>
@@ -4949,7 +4949,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerMatchesHeaderHTML(){
           return `
             <div class="relative flex-shrink-0 w-full">
-              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
+              <div style="padding-right:36px;">${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { right: true })}</div>
               <button onclick="openCareerCvMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
             </div>`;
         }
@@ -5312,7 +5312,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${bg}
             <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="w-full px-5" style="margin-top:10px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
@@ -5964,7 +5964,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const p = careerStartProfile;
           if (!p) {
             return `
-              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
+              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { right: true })}
               <div class="flex-1 overflow-y-auto px-5 pb-6">
                 <div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No Career Profile yet -- fill out the quick quiz to get matched with opportunities.</div>
                 <button onclick="startCareerStartQuiz('careerMatches')" class="w-full font-semibold text-sm py-3 rounded-full text-white mt-4" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Get Started</button>

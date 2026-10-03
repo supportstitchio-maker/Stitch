@@ -2894,6 +2894,7 @@ let simpleGameState = null;
             if (typeof onClose === 'function') onClose();
           };
           el.querySelector('button').addEventListener('click', dismiss);
+          enableSwipeDismiss(el, dismiss, 'translateX(-50%)');
           setTimeout(dismiss, 6000);
         }
 
@@ -3320,7 +3321,7 @@ let simpleGameState = null;
               <h3 style="font-weight:700;padding-top:4px;">How we use it</h3>
               <p>To run the platform: generating your study materials from uploads, matching you with classmates and classes, powering messaging/calls, and improving the product. We do not sell your personal data to third parties.</p>
               <h3 style="font-weight:700;padding-top:4px;">Sharing</h3>
-              <p>We share data only with the processors that keep Stitch running (e.g. Paystack for payments), and only as needed to provide the service -- never for advertising.</p>
+              <p>We share data only with the processors that keep Stitch running (e.g. our payment provider), and only as needed to provide the service -- never for advertising.</p>
               <h3 style="font-weight:700;padding-top:4px;">Your choices</h3>
               <p>You can review, edit, or delete your content at any time from within the app, and request full account deletion from the Profile page.</p>
               <h3 style="font-weight:700;padding-top:4px;">Contact</h3>

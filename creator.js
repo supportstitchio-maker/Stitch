@@ -749,7 +749,7 @@
                   <button onclick="adminRejectPayout('${id}')" class="flex-1 py-2 rounded-full text-xs font-semibold bg-red-50 text-red-500">Reject</button>
                 </div>` : `
                 <div class="flex gap-2 mt-3">
-                  <button onclick="creatorAdminRun('approve-payout',{payoutId:'${id}'},'Approve ${ghs(p.amount)}?','Stitch sends it to ${escapeForJsAttr(prof.account_name || 'their account')} through Paystack.','Approve')" class="flex-1 py-2 rounded-full text-xs font-semibold text-white" style="${creatorNavyBtn}">Approve</button>
+                  <button onclick="creatorAdminRun('approve-payout',{payoutId:'${id}'},'Approve ${ghs(p.amount)}?','Stitch sends it to ${escapeForJsAttr(prof.account_name || 'their account')} to their account.','Approve')" class="flex-1 py-2 rounded-full text-xs font-semibold text-white" style="${creatorNavyBtn}">Approve</button>
                   <button onclick="adminPayoutRejectId='${id}';refreshAdminDashboardDom()" class="flex-1 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Reject</button>
                 </div>`) : ''}
             </div>`;
@@ -819,7 +819,7 @@
               </div>
               <div class="text-[11px] text-gray-400 mt-1">${escapeHtml(personName(d.people, p.buyer_id))} → ${escapeHtml(personName(d.people, p.creator_id))} · ${creatorDate(p.paid_at)} ${walletStatusChip(p.status)}</div>
               <div class="text-[11px] text-gray-500 mt-1">Stitch ${ghs(p.stitch_fee)} · Creator ${ghs(p.creator_net)} · ${escapeHtml(p.paystack_reference || '')}</div>
-              ${p.status === 'paid' ? `<button onclick="creatorAdminRun('refund-payment',{paymentId:'${escapeForJsAttr(p.id)}'},'Refund ${ghs(p.gross_amount)}?','The student is refunded through Paystack and the creator\\'s wallet is reduced. If they already withdrew it, their wallet goes negative.','Refund')" class="mt-3 text-xs font-semibold text-red-500">Refund</button>` : ''}
+              ${p.status === 'paid' ? `<button onclick="creatorAdminRun('refund-payment',{paymentId:'${escapeForJsAttr(p.id)}'},'Refund ${ghs(p.gross_amount)}?','The student is refunded and the creator\\'s wallet is reduced. If they already withdrew it, their wallet goes negative.','Refund')" class="mt-3 text-xs font-semibold text-red-500">Refund</button>` : ''}
             </div>`).join('');
         }
         function adminPaymentsTabHTML(){
@@ -841,7 +841,7 @@
               ${card('Owed to creators', ghs(owed), 'Pending + available')}
               ${card('Payouts waiting', String(pendingPayouts.length), ghs(pendingPayouts.reduce((n, p) => n + Number(p.amount || 0), 0)))}
             </div>
-            <div class="text-[11px] text-gray-400 mt-3">Based on the latest ${d.payments.length} payments. Check totals against the Paystack dashboard before paying out.</div>`;
+            <div class="text-[11px] text-gray-400 mt-3">Based on the latest ${d.payments.length} payments. Check totals against your payment records before paying out.</div>`;
         }
 
         function adminAuditTabHTML(){

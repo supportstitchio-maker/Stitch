@@ -241,6 +241,50 @@
 
         // userAction=true (the X button) remembers the dismissal so it never comes back for this
         // account
+        // Lets a top popup be swiped away (up, or sideways) as well as closed with its X button.
+        function enableSwipeDismiss(el, onDismiss, baseTransform){
+          if (!el) return;
+          const base = baseTransform || '';
+          let sx = 0, sy = 0, dx = 0, dy = 0, t0 = 0, down = false, moved = false, pid = null;
+          el.style.touchAction = 'none';
+          el.style.willChange = 'transform, opacity';
+          el.addEventListener('pointerdown', e => {
+            if (e.target.closest && e.target.closest('button, a')) return;
+            down = true; moved = false; pid = e.pointerId;
+            sx = e.clientX; sy = e.clientY; dx = 0; dy = 0; t0 = Date.now();
+            el.style.transition = 'none';
+          });
+          el.addEventListener('pointermove', e => {
+            if (!down || e.pointerId !== pid) return;
+            dx = e.clientX - sx; dy = e.clientY - sy;
+            if (!moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+            if (!moved) { moved = true; try { el.setPointerCapture(pid); } catch (err) {} }
+            const ry = dy > 0 ? dy * 0.15 : dy; // resist pulling down, follow swipes up
+            el.style.transform = base + ' translate(' + dx + 'px,' + ry + 'px)';
+            el.style.opacity = String(Math.max(0.2, 1 - Math.max(Math.abs(dx) / 300, -dy / 150)));
+          });
+          const end = e => {
+            if (!down || (e && e.pointerId !== pid)) return;
+            down = false;
+            const dt = Math.max(1, Date.now() - t0);
+            const flickUp = dy < -20 && (-dy / dt) > 0.4;
+            const flickSide = Math.abs(dx) > 40 && (Math.abs(dx) / dt) > 0.5;
+            if (moved && (dy < -40 || Math.abs(dx) > 90 || flickUp || flickSide)) {
+              const goSide = Math.abs(dx) > Math.abs(dy);
+              el.style.transition = 'transform .2s ease, opacity .2s ease';
+              el.style.transform = base + (goSide ? ' translate(' + (dx > 0 ? 120 : -120) + '%,0)' : ' translate(' + dx + 'px,-140%)');
+              el.style.opacity = '0';
+              setTimeout(() => { try { onDismiss && onDismiss(); } catch (err) { el.remove(); } }, 200);
+            } else {
+              el.style.transition = 'transform .18s ease, opacity .18s ease';
+              el.style.transform = base;
+              el.style.opacity = '1';
+            }
+          };
+          el.addEventListener('pointerup', end);
+          el.addEventListener('pointercancel', end);
+        }
+
         function dismissAppNotice(userAction){
           const bar = document.getElementById('app-notice-banner');
           if (bar) {
@@ -274,6 +318,7 @@
               '<button type="button" onclick="dismissAppNotice(true)" aria-label="Dismiss" style="flex-shrink:0;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:999px;width:24px;height:24px;font-size:16px;line-height:1;cursor:pointer;">×</button>';
           }
           document.body.appendChild(bar);
+          enableSwipeDismiss(bar, () => dismissAppNotice(true));
         }
 
         async function checkAppNotice(){
