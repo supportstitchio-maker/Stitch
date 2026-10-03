@@ -122,7 +122,7 @@
       font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;
       img-src 'self' data: blob: https:;
       media-src 'self' data: blob: https: https://cdn.pixabay.com;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io https://*.sentry.io https://browser.sentry-cdn.com https://formspree.io https://api.paystack.co;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io https://*.sentry.io https://browser.sentry-cdn.com https://formspree.io https://api.paystack.co https://*.i.posthog.com;
       frame-src https://js.paystack.co https://checkout.paystack.com;
       object-src 'none';
       base-uri 'self';
@@ -830,6 +830,10 @@
 
     <div id="app" class="flex flex-col w-full" style="height:100vh;height:100dvh;overflow:hidden;"></div>
     <!-- The ?v=... on each script below is a cache-buster, nothing more -->
+    <!-- Analytics (PostHog): vendored + pinned (posthog-js 1.435.8). Must load BEFORE core.js so the
+         network hook is installed before the Supabase client is created. Fill in the key in analytics.js -->
+    <script src="vendor-posthog.js?v=1435_8"></script>
+    <script src="analytics.js?v=20261003a"></script>
     <script src="core.js?v=20261003c"></script>
     <script src="feed.js?v=20261002f"></script>
     <script src="chat.js?v=20261002f"></script>
