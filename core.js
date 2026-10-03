@@ -42,6 +42,16 @@
         let _sbClient = null;
         const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
         // ---- Form/input validation helpers ----
+        // ---- Test account (reviewers/QA): skips the emailed code and all payments ----
+        const STITCH_TEST_EMAIL = 'test@account.stitch';
+        const STITCH_TEST_CODE = '000000';
+        const STITCH_TEST_PASSWORD = 'Stitch-Test-7Kq2xPvM94';
+        function isStitchTestEmail(str){
+          return String(str || '').trim().toLowerCase() === STITCH_TEST_EMAIL;
+        }
+        function isStitchTestAccount(){
+          try { return typeof currentUserEmail !== 'undefined' && isStitchTestEmail(currentUserEmail); } catch (e) { return false; }
+        }
         function isValidEmail(str){
           return EMAIL_RE.test(String(str || '').trim());
         }

@@ -568,8 +568,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="flex items-center gap-4">
                 <button onclick="openOverlay('newMessage')" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-lg font-display truncate grad-text">New collaboration</div>
-                  <div class="text-xs text-gray-400">${count ? count + ' selected' : 'Select contacts to add'}</div>
+                  <div class="font-semibold text-lg font-display truncate grad-text text-right">New collaboration</div>
+                  ${count ? `<div class="text-xs text-gray-400 text-right">${count} selected</div>` : ''}
                 </div>
               </div>
             </div>
@@ -614,7 +614,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="px-5 pb-3 flex-shrink-0 border-b border-gray-100 flex items-center gap-4" style="padding-top:var(--top-safe-pad);">
               <button onclick="backToNewCollabSelect()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div class="font-semibold text-lg font-display truncate grad-text">New collaboration</div>
+              <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text text-right">New collaboration</div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 py-5">
               <div style="height:20px;"></div>
@@ -1474,6 +1474,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="inbox-empty w-full bg-white p-8 text-center flex flex-col items-center gap-3">
                 <button type="button" onclick="openNewCollaboration()" class="neu-add-btn" aria-label="Create a collaboration"><span class="neu-add-plus"></span></button>
                 <div class="text-gray-400 text-sm">No collaborations yet.</div>
+                <div class="text-gray-400 text-xs">Tap on the plus to collaborate with your network</div>
                 <button type="button" onclick="openNewCollaboration()" class="font-semibold text-sm grad-text" style="border:none;background:transparent;padding:0;">Create a collaboration</button>
               </div>`;
           }

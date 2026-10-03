@@ -2417,7 +2417,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             const cards = allExploreCards();
             return cards.length
               ? cards.map(jobCard).join('')
-              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">Nothing posted yet.</div>`;
+              : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm"><div>Nothing posted yet.</div><div class="text-xs text-gray-400 mt-1">Tap on the menu on the right corner to get started</div></div>`;
           }
           if (jobsSub === 'opportunities') return jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
           if (jobsSub === 'internships') return jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)).map(jobCard).join('');
@@ -4776,6 +4776,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         async function startCareerPlanPayment(){
           if (careerPlanBusy || !careerStartProfile) return;
           const plan = CAREER_PLANS[careerPlanChoice] || CAREER_PLANS.monthly;
+          // Test account: skip Paystack entirely
+          if (isStitchTestAccount()) { careerPlanBusy = true; verifyCareerPlanPayment(plan, 'stitchtest_' + Date.now()); return; }
           const payEmail = String(careerStartProfile.email || (typeof currentUserEmail !== 'undefined' && currentUserEmail) || '').trim();
           if (!payEmail) { openAppAlertModal('Please add your email first.', 'Payment unavailable'); return; }
           careerPlanBusy = true;
@@ -4812,6 +4814,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         async function verifyCareerPlanPayment(plan, reference){
           try {
+            if (!isStitchTestAccount()) {
             const accessToken = await getAuthAccessToken();
             if (!accessToken) throw new Error('You need to be signed in to complete payment: please log in again.');
             const res = await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/paystack-verify`, {
@@ -4822,6 +4825,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             const data = await res.json();
             if (!res.ok || data.error) throw new Error(data.error || 'Payment verification failed (' + res.status + ')');
             if (!data.verified) throw new Error('We could not confirm this payment. If you were charged, contact support with reference ' + reference + '.');
+            }
             // Renewing early extends from the current end date instead of losing the time already paid
             // for
             const prev = careerStartProfile.subscription;
@@ -6164,10 +6168,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         async function startPaystackPayment(job){
           const d = jobApplyDraft;
           const { subunit, currency } = parseCoursePriceForPaystack(job.price);
-          if (!subunit || subunit <= 0) {
+          if (!isStitchTestAccount() && (!subunit || subunit <= 0)) {
             openAppAlertModal("This course's enrollment fee isn't set up correctly. Please contact the organizer.", 'Payment unavailable');
             return;
           }
+
+          // Test account: enroll without paying
+          if (isStitchTestAccount()) { jobApplyPaymentBusy = false; completeJobApplication(job); return; }
 
           jobApplyPaymentBusy = true;
           const ov = document.getElementById('overlay');

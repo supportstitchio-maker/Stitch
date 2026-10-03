@@ -4177,7 +4177,7 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:12px;text-align:right;max-width:60%;">Join a Class</h1>
+                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Class</h1>
                 <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
               </div>
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
@@ -4205,7 +4205,7 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:12px;text-align:right;max-width:60%;">Create a Class</h1>
+                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Class</h1>
                 <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
               </div>
               ${createClassMenuOpen ? createClassDropdownMenu() : ''}

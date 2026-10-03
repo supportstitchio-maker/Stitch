@@ -2742,6 +2742,11 @@ let simpleGameState = null;
             return;
           }
           if (authOtpSendInFlight) return;
+          // Test account: nothing to send. Type the code 000000 on the next screen
+          if (isStitchTestEmail(authPendingEmail)) {
+            if (err) { err.textContent = 'Test account: enter 000000 as the code.'; err.style.color = '#b45309'; err.classList.add('show'); }
+            return;
+          }
           authOtpSendInFlight = true;
           try {
             // This single Get Started panel is now the only entry point, so shouldCreateUser is always
@@ -3107,12 +3112,21 @@ let simpleGameState = null;
           const verifyBtnOriginalText = verifyBtn ? verifyBtn.textContent : '';
           if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = 'Verifying...'; }
           try {
-            const { error } = await sb.auth.verifyOtp({
-              email: authPendingEmail,
-              token: entered,
-              // Every entry
-              type: 'email'
-            });
+            let error;
+            if (isStitchTestEmail(authPendingEmail)) {
+              if (entered !== STITCH_TEST_CODE) {
+                error = { message: 'Test account: the code is 000000.' };
+              } else {
+                ({ error } = await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }));
+              }
+            } else {
+              ({ error } = await sb.auth.verifyOtp({
+                email: authPendingEmail,
+                token: entered,
+                // Every entry
+                type: 'email'
+              }));
+            }
             if (error) {
               console.error('OTP verify error:', error);
               err.textContent = (error.message && error.message !== '{}') ? error.message : 'That code is incorrect or expired.';
