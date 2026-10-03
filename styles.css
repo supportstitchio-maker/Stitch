@@ -3445,3 +3445,16 @@ body:has(#class-action-loading-overlay) #study-fab-menu { display:none !importan
 #screen:has(.empty-center) > #jobs-content{flex:1 1 auto;display:flex;flex-direction:column;}
 #screen:has(.empty-center) > #inbox-list > .empty-center,
 #screen:has(.empty-center) > #jobs-content > .empty-center{flex:1 1 auto;}
+
+
+/* Tap feedback for the onboarding photo step + bottom "Skip for now" link */
+#auth-gate .auth-tap{ transition:transform .12s ease, background-color .12s ease, box-shadow .12s ease; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+#auth-gate .auth-tap:active{ transform:scale(.94); filter:brightness(.93); }
+#auth-gate #auth-photo-circle:active{ box-shadow:0 0 0 6px rgba(37,99,235,.15); }
+#auth-gate .auth-skip-link{
+  display:block; width:100%; margin-top:12px; padding:12px 8px; background:none; border:0;
+  font:inherit; font-size:14px; color:#9ca3af; text-align:center; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  border-radius:12px; transition:background-color .12s ease, color .12s ease, transform .12s ease;
+}
+#auth-gate .auth-skip-link:active{ background:rgba(10,37,64,.08); color:#0a2540; transform:scale(.97); }

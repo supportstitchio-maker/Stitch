@@ -2117,13 +2117,12 @@ let simpleGameState = null;
           if (stage === 'photo') {
             return `
               <div class="mb-2 flex flex-col items-center gap-3" style="min-height:calc(100dvh - 300px);justify-content:center;">
-                <div id="auth-photo-circle" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                <div id="auth-photo-circle" class="auth-tap" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                   <img id="auth-photo-preview-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
                   <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
                 </div>
                 <input type="file" accept="image/*" id="auth-photo-file-input" class="hidden" onchange="authHandlePhotoSelected(this)">
-                <button type="button" onclick="document.getElementById('auth-photo-file-input').click()" id="auth-photo-add-btn" class="px-5 py-2 rounded-full text-sm font-semibold" style="background:rgba(10,37,64,0.08);color:${NAVY};">Add a photo</button>
-                <a href="#" onclick="authPosterAppNext(); return false;" style="font-size:12px;color:#9ca3af;">Skip for now</a>
+                <button type="button" onclick="document.getElementById('auth-photo-file-input').click()" id="auth-photo-add-btn" class="auth-tap px-5 py-2 rounded-full text-sm font-semibold" style="background:rgba(10,37,64,0.08);color:${NAVY};">Add a photo</button>
               </div>`;
           }
           if (stage === 'iddoc') {
@@ -2233,6 +2232,9 @@ let simpleGameState = null;
             continueBtn.style.display = stage === 'photo' ? 'none' : 'block';
             continueBtn.textContent = (authPosterAppStageIdx >= stages.length - 1) ? 'Continue' : 'Next';
           }
+          // "Skip for now" on the photo step lives in the footer at the bottom of the screen
+          const skipPhotoBtn = document.getElementById('auth-photo-skip-btn');
+          if (skipPhotoBtn) skipPhotoBtn.style.display = stage === 'photo' ? 'block' : 'none';
         }
         function authSetPosterAppIntent(intent){
           posterAppDraft.intent = intent;
@@ -2354,6 +2356,8 @@ let simpleGameState = null;
                 // A photo is now staged
                 const continueBtn = document.getElementById('auth-poster-app-continue-btn');
                 if (continueBtn) continueBtn.style.display = 'block';
+                const skipPhotoBtn = document.getElementById('auth-photo-skip-btn');
+                if (skipPhotoBtn) skipPhotoBtn.style.display = 'none';
               }, 'image/jpeg', 0.9);
             };
             img.onerror = function(){
