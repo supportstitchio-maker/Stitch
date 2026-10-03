@@ -1442,15 +1442,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return arr;
           };
           const emptyLabel = (defaultText) => inboxViewFilter === 'pinned' ? 'No pinned messages.' : defaultText;
+          const emptyState = (title, body, fallback) => inboxViewFilter === 'pinned'
+            ? `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel(fallback)}</div>`
+            : `<div class="inbox-empty bg-white px-8 py-10 text-center flex flex-col items-center gap-2">
+                 <div class="text-base font-semibold text-gray-600">${title}</div>
+                 <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;">${body}</div>
+               </div>`;
           if (inboxFilter === 'general') {
             const list = applyView(primaryConvos);
-            return list.length ? list.map(c => convoRow(c)).join('') : `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel('No messages.')}</div>`;
+            return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');
           }
           if (inboxFilter === 'requests') {
             const incoming = applyView(requestConvos);
             const sent = applyView(sentRequestConvos);
             if (!incoming.length && !sent.length) {
-              return `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel('No requests.')}</div>`;
+              return emptyState('No requests yet', 'Message requests you send and receive will appear here.', 'No requests.');
             }
             const incomingHTML = incoming.length ? incoming.map(c => requestRow(c)).join('') : '';
             const sentHTML = sent.length ? `
