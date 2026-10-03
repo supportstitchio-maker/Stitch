@@ -736,8 +736,9 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes ? 'dashesShortRight' : 'dashes');
           const menuIconSize = opts.shortDashes ? 'w-6 h-6' : 'w-5 h-5';
           const menuIcon = opts.boldMenuIcon ? IconBold(menuIconName,menuIconSize) : Icon(menuIconName,menuIconSize);
-          const menuBtnClass = `w-8 h-8 flex items-center justify-center flex-shrink-0${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
-          const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}">${opts.flipMenuIcon ? `<span style="display:flex;transform:scaleX(-1);">${gradIcon(menuIcon)}</span>` : gradIcon(menuIcon)}</button>`;
+          const menuBtnClass = `${opts.menuEnd ? 'h-10 flex items-center justify-end flex-shrink-0' : 'w-8 h-8 flex items-center justify-center flex-shrink-0'}${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
+          const menuBtnStyle = opts.menuEnd ? ' style="width:32px;margin-right:-2px;"' : '';
+          const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}"${menuBtnStyle}>${opts.flipMenuIcon ? `<span style="display:flex;transform:scaleX(-1);">${gradIcon(menuIcon)}</span>` : gradIcon(menuIcon)}</button>`;
           const titleSize = opts.titleSize || 'text-base';
           const titleClass = opts.titleRight
             ? `${titleSize} font-bold font-display grad-text truncate`
