@@ -3353,6 +3353,9 @@ let simpleGameState = null;
         // ---- Terms screen (shown from the Get Started panel) ----
         function authShowTerms(){
           const m = document.getElementById('auth-terms-modal');
+          // Same text as the in-app Terms of Service (settings.js)
+          const body = document.getElementById('auth-terms-body');
+          if (body && typeof legalTermsSections === 'function') body.innerHTML = legalDateLineHTML('plain') + legalRenderHTML(legalTermsSections(), 'plain');
           if (m) { m.style.display = 'block'; m.classList.remove('hidden'); }
           setStitchPageTitle('Terms of Service');
         }
@@ -3364,19 +3367,12 @@ let simpleGameState = null;
         const FOOTER_INFO_CONTENT = {
           privacy: {
             title: 'Privacy Policy',
-            html: `
-              <p style="font-size:11.5px;color:#9ca3af;">Last Updated: August 2026 &middot; support.stitch.io@gmail.com</p>
-              <h3 style="font-weight:700;padding-top:4px;">What we collect</h3>
-              <p>Account details (name, email), documents you upload, content you create (notes, flashcards, quiz results, stories, messages), usage data, subscription/billing status, and call metadata (never call recordings).</p>
-              <h3 style="font-weight:700;padding-top:4px;">How we use it</h3>
-              <p>To run the platform: generating your study materials from uploads, matching you with classmates and classes, powering messaging/calls, and improving the product. We do not sell your personal data to third parties.</p>
-              <h3 style="font-weight:700;padding-top:4px;">Sharing</h3>
-              <p>We share data only with the processors that keep Stitch running (e.g. our payment provider), and only as needed to provide the service -- never for advertising.</p>
-              <h3 style="font-weight:700;padding-top:4px;">Your choices</h3>
-              <p>You can review, edit, or delete your content at any time from within the app, and request full account deletion from the Profile page.</p>
-              <h3 style="font-weight:700;padding-top:4px;">Contact</h3>
-              <p>Questions about this policy? Email support.stitch.io@gmail.com and you'll hear back within 24 hours.</p>
-            `
+            // Rendered from the same source as the in-app Privacy Policy (settings.js)
+            get html(){
+              return (typeof legalPrivacySections === 'function')
+                ? legalDateLineHTML('plain') + legalRenderHTML(legalPrivacySections(), 'plain')
+                : '<p>Questions about privacy? Email support.stitch.io@gmail.com.</p>';
+            }
           },
           help: {
             title: 'Help Center',
