@@ -9721,40 +9721,40 @@ try {
           const upcoming = getNextUpcomingClass();
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Study Timetable', '20px', null, null, { center: true })}
-            <div class="p-4">
-              <div class="text-sm text-gray-500 mb-5">Your weekly schedule, all in one place; we'll notify you before each class starts.</div>
+            ${overlayHeader('Study Timetable', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
+            <div class="px-5 pb-10">
+              <div class="text-base text-gray-500 mb-5">Your weekly schedule, all in one place; we'll notify you before each class starts.</div>
 
               <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm">
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">New Entry · Schedule a Class</div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Day</label>
-                <select id="class-day-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4">
+                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Entry · Schedule a Class</div>
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Day</label>
+                <select id="class-day-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
                   <option value="">(Select day)</option>
                   ${WEEKDAYS.map(d => `<option value="${d}">${d}</option>`).join('')}
                 </select>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Subject</label>
-                <input type="text" id="class-subject-input" placeholder="e.g. Organic Chemistry" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4">
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Subject</label>
+                <input type="text" id="class-subject-input" placeholder="e.g. Organic Chemistry" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
                 <div class="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Start time</label>
-                    <input type="time" id="class-start-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm">
+                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Start time</label>
+                    <input type="time" id="class-start-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
                   </div>
                   <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">End time</label>
-                    <input type="time" id="class-end-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm">
+                    <label class="text-sm font-semibold text-gray-500 mb-1 block">End time</label>
+                    <input type="time" id="class-end-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
                   </div>
                 </div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Room / Location (optional)</label>
-                <input type="text" id="class-room-input" placeholder="e.g. Lecture Hall 3" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4">
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Remind me</label>
-                <select id="class-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-5">
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Room / Location (optional)</label>
+                <input type="text" id="class-room-input" placeholder="e.g. Lecture Hall 3" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Remind me</label>
+                <select id="class-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-5">
                   <option value="0">Right at the time</option>
                   <option value="10" selected>10 minutes before</option>
                   <option value="15">15 minutes before</option>
                   <option value="30">30 minutes before</option>
                   <option value="60">1 hour before</option>
                 </select>
-                <button onclick="submitClassSchedule()" class="w-full font-semibold py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Class</button>
+                <button onclick="submitClassSchedule()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Class</button>
               </div>
 
               ${upcoming ? `
@@ -9764,7 +9764,7 @@ try {
                   <button onclick="addClassToCalendar('${upcoming.id}')" class="text-amber-700 flex-shrink-0">${Icon('calendar','w-5 h-5')}</button>
                 </div>` : ''}
 
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Weekly schedule</div>
+              <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Weekly schedule</div>
               ${WEEKDAYS.map(d => weekdayScheduleCard(d)).join('')}
             </div>
             </div>`;
@@ -9775,14 +9775,14 @@ try {
           return `
             <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
               <div class="flex items-center justify-between mb-3">
-                <div class="font-bold text-[${NAVY}]">${day}</div>
-                <div class="text-xs font-bold text-gray-400">${classes.length} class${classes.length===1?'':'es'}</div>
+                <div class="font-bold text-lg text-[${NAVY}]">${day}</div>
+                <div class="text-sm font-bold text-gray-400">${classes.length} class${classes.length===1?'':'es'}</div>
               </div>
-              ${classes.length === 0 ? `<div class="text-sm text-gray-400 text-center py-3">No classes, free day</div>` : classes.map(c => `
+              ${classes.length === 0 ? `<div class="text-base text-gray-400 text-center py-3">No classes, free day</div>` : classes.map(c => `
                 <div class="flex items-center justify-between bg-amber-50 rounded-2xl px-4 py-3 mb-2">
                   <div class="min-w-0">
-                    <div class="text-xs font-bold text-amber-700">${formatTime12(c.start)} - ${formatTime12(c.end)}</div>
-                    <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(c.subject)}${c.room ? ' · ' + c.room : ''}</div>
+                    <div class="text-sm font-bold text-amber-700">${formatTime12(c.start)} - ${formatTime12(c.end)}</div>
+                    <div class="font-semibold text-base text-gray-800 truncate">${escapeHtml(c.subject)}${c.room ? ' · ' + c.room : ''}</div>
                   </div>
                   <div class="flex items-center gap-3 flex-shrink-0">
                     <button onclick="addClassToCalendar('${c.id}')" class="text-gray-400">${Icon('calendar','w-4 h-4')}</button>
@@ -9835,43 +9835,43 @@ try {
           const sorted = [...studyReminders].sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Set Reminders', '20px', null, null, { center: true })}
-            <div class="p-4">
-              <div class="text-sm text-gray-500 mb-5">Add an exam, deadline, or study session and we'll prompt you as it gets close.</div>
+            ${overlayHeader('Set Reminders', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
+            <div class="px-5 pb-10">
+              <div class="text-base text-gray-500 mb-5">Add an exam, deadline, or study session and we'll prompt you as it gets close.</div>
 
               <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm">
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">New Reminder · Add an Event</div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Event</label>
-                <input type="text" id="reminder-event-input" placeholder="e.g. Chemistry Mid-sem" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4">
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Type</label>
-                <select id="reminder-type-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4">
+                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Reminder · Add an Event</div>
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Event</label>
+                <input type="text" id="reminder-event-input" placeholder="e.g. Chemistry Mid-sem" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Type</label>
+                <select id="reminder-type-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
                   <option>Exam</option>
                   <option>Deadline</option>
                   <option>Study Session</option>
                 </select>
                 <div class="grid grid-cols-2 gap-3 mb-5">
                   <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Date</label>
-                    <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="reminder-date-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm">
+                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Date</label>
+                    <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="reminder-date-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
                     ${typedDateHintHTML()}
                   </div>
                   <div>
-                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Time</label>
-                    <input type="time" id="reminder-time-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm">
+                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Time</label>
+                    <input type="time" id="reminder-time-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
                   </div>
                 </div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Remind me</label>
-                <select id="reminder-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm mb-5">
+                <label class="text-sm font-semibold text-gray-500 mb-1 block">Remind me</label>
+                <select id="reminder-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-5">
                   <option value="0">Right at the time</option>
                   <option value="15">15 minutes before</option>
                   <option value="60" selected>1 hour before</option>
                   <option value="180">3 hours before</option>
                   <option value="1440">1 day before</option>
                 </select>
-                <button onclick="submitReminder()" class="w-full font-semibold py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Reminder</button>
+                <button onclick="submitReminder()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Reminder</button>
               </div>
 
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Upcoming</div>
+              <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Upcoming</div>
               ${sorted.length === 0 ? `<div class="text-sm text-gray-400 text-center py-6">No reminders yet</div>` : sorted.map(r => reminderRow(r)).join('')}
             </div>
             </div>`;
@@ -9883,10 +9883,10 @@ try {
               <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('bell','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <div class="font-semibold text-sm truncate">${escapeHtml(r.title)}</div>
-                  <span class="text-[10px] font-bold uppercase text-gray-400 flex-shrink-0">${r.type}</span>
+                  <div class="font-semibold text-base truncate">${escapeHtml(r.title)}</div>
+                  <span class="text-xs font-bold uppercase text-gray-400 flex-shrink-0">${r.type}</span>
                 </div>
-                <div class="text-xs text-gray-500 mt-1">${formatReminderDate(r.date)} · ${formatTime12(r.time)}</div>
+                <div class="text-sm text-gray-500 mt-1">${formatReminderDate(r.date)} · ${formatTime12(r.time)}</div>
               </div>
               <button onclick="addReminderToCalendar('${r.id}')" class="text-gray-400 flex-shrink-0">${Icon('calendar','w-4 h-4')}</button>
               <button onclick="deleteReminder('${r.id}')" class="text-gray-400 flex-shrink-0">${Icon('trash','w-4 h-4')}</button>
