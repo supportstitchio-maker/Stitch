@@ -18,7 +18,7 @@
   'use strict';
 
   // ---- 1. CONFIG: paste the two values from PostHog > Project settings ----
-  var POSTHOG_KEY  = 'YOUR_POSTHOG_PROJECT_KEY';          // starts with phc_
+  var POSTHOG_KEY  = 'phc_opx8LVuipTxTHffL2svicqcGuqoMTGLRJ5tYE6E9aYGs';          // starts with phc_
   var POSTHOG_HOST = 'https://us.i.posthog.com';          // or https://eu.i.posthog.com
   var ENABLE_SESSION_REPLAY = true;
 
