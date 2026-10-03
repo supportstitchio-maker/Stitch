@@ -3579,9 +3579,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               </div>`}`;
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
-              ${menuOverlayHeader('Overview', jobDashboardMenuOpen, 'toggleJobDashboardMenu', jobDashboardMenuDropdownHTML(job), {backFn: 'jobDashboardBack', titleSize: 'text-lg'})}
+              ${menuOverlayHeader('Overview', jobDashboardMenuOpen, 'toggleJobDashboardMenu', jobDashboardMenuDropdownHTML(job), {backFn: 'jobDashboardBack', titleSize: 'text-lg', shortDashes: true, menuEnd: true})}
               <div class="flex-1 overflow-y-auto px-5 pb-8">
-                <div class="font-bold text-lg font-display mb-1" style="color:#1E90FF;">${escapeHtml(job.title)}</div>
+                <div class="font-bold text-lg font-display mb-1" style="color:#1E90FF;margin-top:8px;">${escapeHtml(job.title)}</div>
                 <div class="text-xs text-gray-400 mb-4">${isCourse ? 'Enrollment' : 'Application'} activity for this listing${isCourse ? '' : ' · swipe the tabs and tap someone to see their details'}</div>
                 ${isCourse ? `
                   <button onclick="goToJobCourse('${job.id}')" class="w-full flex items-center gap-3 bg-white rounded-3xl p-4 mb-5 shadow-sm border border-gray-100 text-left">
