@@ -2979,11 +2979,16 @@ let simpleGameState = null;
             const { error } = await sb.rpc('reset_test_account');
             if (error) console.warn('Test account reset failed:', error);
           } catch (e) { console.warn('Test account reset failed:', e); }
-          try {
-            // On sign-in the fresh Supabase session (sb-* keys) must survive the wipe
-            Object.keys(localStorage).forEach(k => { if (!(keepSession && k.indexOf('sb-') === 0)) localStorage.removeItem(k); });
-          } catch (e) {}
-          try { sessionStorage.clear(); } catch (e) {}
+          // Wipe both storages; on sign-in the fresh Supabase session (stored under 'stitch-auth' in
+          // sessionStorage on web, localStorage in the native app) must survive the wipe
+          [window.localStorage, window.sessionStorage].forEach(store => {
+            try {
+              Object.keys(store).forEach(k => {
+                const isSession = k.indexOf('stitch-auth') === 0 || k.indexOf('sb-') === 0;
+                if (!(keepSession && isSession)) store.removeItem(k);
+              });
+            } catch (e) {}
+          });
           try { if (window.storage) await window.storage.delete('gameProgress', false); } catch (e) {}
                     try { if (window.caches) { (await caches.keys()).forEach(k => caches.delete(k)); } } catch (e) {}
           try { resetCachedAuthUser(); } catch (e) {}
