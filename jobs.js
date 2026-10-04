@@ -1699,6 +1699,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             poster_blocked: 'lock',
             admin_message: 'comment',
             opportunity_reported: 'flag',
+            cancel_reason: 'flag',
           };
           // Update local poster status the instant the decision notification lands, so "Poster
           // application pending" reflects it right away instead of waiting on a reload
@@ -7451,6 +7452,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         let adminHistoryLoaded = false;
         let adminHistoryLoading = false;
 
+        // From a "Stitch Bot cancellation" notification: open the admin dashboard on that tab
+        function openAdminCancellations(){
+          if (!isCurrentUserAdmin()) return;
+          openAdminDashboard();
+          setTimeout(function(){ try { switchAdminDashboardTab('cancellations'); } catch (e) {} }, 60);
+        }
         function openAdminDashboard(){
           if (!isCurrentUserAdmin()) return;
           adminDashboardTab = 'applications';

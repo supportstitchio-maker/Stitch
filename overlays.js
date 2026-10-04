@@ -3483,14 +3483,15 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const n = notifData.find(x => x.id === id);
           if (!n) return;
           if (!n.read) { n.read = true; queueSaveUserState(); refreshNotifBadge(); }
-          const canOpen = n.type === 'classroom' && n.classId;
+          const isCancel = n.type === 'cancel_reason' && typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin();
+          const canOpen = (n.type === 'classroom' && n.classId) || isCancel;
           showNotifDetail({
             icon: n.icon, iconBg: n.iconBg, iconClass: n.iconClass,
             title: n.name || 'Notification',
             time: (typeof formatNotifTime === 'function' && n.createdAt) ? formatNotifTime(n.createdAt) : '',
             body: n.body || n.message || '',
-            openFn: canOpen ? `openNotifTarget('${n.id}')` : '',
-            openLabel: 'Open class'
+            openFn: isCancel ? 'openAdminCancellations()' : (canOpen ? `openNotifTarget('${n.id}')` : ''),
+            openLabel: isCancel ? 'See cancellations' : 'Open class'
           });
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classAnnouncements') renderClassAnnouncementsTab();
         }
