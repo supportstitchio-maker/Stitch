@@ -6503,26 +6503,83 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (toStore.length) await careerBotStoreDocs(docId, toStore, '');
         }
         async function careerBotStoreDoc(docId, file, text){ return careerBotStoreDocs(docId, [file], text); }
+        // Never let a stalled step (PDF worker, slow storage) leave an upload hanging on "Saving…"
+        function careerWithTimeout(promise, ms, fallback){
+          return new Promise(resolve => {
+            let done = false;
+            const t = setTimeout(() => { if (!done) { done = true; resolve(fallback); } }, ms);
+            Promise.resolve(promise).then(v => { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+                                          () => { if (!done) { done = true; clearTimeout(t); resolve(fallback); } });
+          });
+        }
+        function careerDataUrlToFile(dataUrl, name){
+          try {
+            const m = String(dataUrl).match(/^data:([^;,]*)(;base64)?,(.*)$/);
+            if (!m) return null;
+            const bin = atob(m[3]); const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return new File([arr], name || 'document', { type: m[1] || careerMimeFor(name) });
+          } catch (e) { return null; }
+        }
         async function careerBotStoreDocs(docId, files, text){
           const p = careerBotEnsure(); if (!p) return;
           careerBotDocBusy = docId; rerenderCareerMatches(true);
+          let saved = 0, failed = 0;
           try {
-            const uid = await getCurrentUserId();
+            let uid = null;
+            try { uid = await careerWithTimeout(getCurrentUserId(), 8000, null); } catch (e) {}
             const list = careerBotDocList(docId).slice();
             for (const file of files) {
-              const [extracted, url] = await Promise.all([
-                text ? Promise.resolve(text) : extractCareerStartResumeText(file),
-                (uid && typeof uploadApplicationDocumentToStorage === 'function') ? uploadApplicationDocumentToStorage(file, 'career-profile', uid, docId) : Promise.resolve(null),
-              ]);
-              const rec = { fileName: file.name, url: url || '', text: String(extracted || '').slice(0, 6000), addedAt: Date.now() };
-              if (!rec.url) rec.dataUrl = await fileToDataUrl(file);
-              const dup = list.findIndex(d => d.fileName === rec.fileName);
-              if (dup >= 0) list[dup] = rec; else list.push(rec);
+              try {
+                const canUpload = !!(uid && typeof uploadApplicationDocumentToStorage === 'function');
+                const [extracted, url] = await Promise.all([
+                  text ? Promise.resolve(text) : careerWithTimeout(extractCareerStartResumeText(file), 10000, ''),
+                  canUpload ? careerWithTimeout(uploadApplicationDocumentToStorage(file, 'career-profile', uid, docId), 30000, null) : Promise.resolve(null),
+                ]);
+                const rec = { fileName: file.name, url: url || '', text: String(extracted || '').slice(0, 6000), addedAt: Date.now() };
+                // Storage unavailable: keep the file itself so it is never lost, and re-upload it when sending
+                if (!rec.url) rec.dataUrl = await fileToDataUrl(file);
+                const dup = list.findIndex(d => d.fileName === rec.fileName);
+                if (dup >= 0) list[dup] = rec; else list.push(rec);
+                saved++;
+              } catch (e) { console.warn('Document not saved:', file && file.name, e); failed++; }
             }
-            p.botDocs[docId] = list.slice(0, CAREER_BOT_MAX_FILES);
-            saveCareerStartProfile();
-          } catch (e) { openAppAlertModal("We couldn't save that document. Check your connection and try again."); }
+            if (saved) {
+              p.botDocs[docId] = list.slice(0, CAREER_BOT_MAX_FILES);
+              await saveCareerStartProfile();
+            }
+          } catch (e) { failed = failed || 1; }
           careerBotDocBusy = ''; rerenderCareerMatches(true);
+          if (failed) openAppAlertModal(saved ? `${failed} file${failed === 1 ? '' : 's'} couldn't be saved. The others were added.` : "We couldn't save that document. Check your connection and try again.", 'Upload failed');
+        }
+        // Before sending, copy every attached document under THIS listing's folder
+        // (application-documents/<jobId>/<uid>/...). Storage only lets the poster open files in
+        // their own listing's folder, so files left under career-profile/ would arrive unreadable.
+        async function careerBotEnsureHosted(recs, jobId){
+          let uid = null;
+          try { uid = await careerWithTimeout(getCurrentUserId(), 8000, null); } catch (e) {}
+          if (!uid || !jobId || typeof uploadApplicationDocumentToStorage !== 'function') return;
+          for (const r of recs) {
+            if (!r) continue;
+            try {
+              let f = null;
+              if (r.dataUrl) f = careerDataUrlToFile(r.dataUrl, r.fileName);
+              else if (r.url) {
+                let href = r.url;
+                try {
+                  const rm = String(r.url).match(/\/storage\/v1\/object\/(?:public|authenticated|sign)\/resume-files\/([^?#]+)/);
+                  const sb = getSupabaseClient();
+                  if (rm && sb) { const { data: sd } = await sb.storage.from('resume-files').createSignedUrl(decodeURIComponent(rm[1]), 600); if (sd && sd.signedUrl) href = sd.signedUrl; }
+                  else { const sgn = await getApplicationDocumentSignedUrl(r.url); if (sgn) href = sgn; }
+                } catch (e) {}
+                const blob = await careerWithTimeout(fetch(href).then(x => x.ok ? x.blob() : null), 30000, null);
+                if (blob) f = new File([blob], r.fileName || 'document', { type: blob.type || careerMimeFor(r.fileName) });
+              }
+              if (!f) continue;
+              const url = await careerWithTimeout(uploadApplicationDocumentToStorage(f, jobId, uid, 'sent'), 30000, null);
+              if (url) { r.url = url; delete r.dataUrl; }
+            } catch (e) { console.warn('Could not attach document to listing:', r && r.fileName, e); }
+          }
         }
         function removeCareerBotDoc(docId, idx){
           const p = careerBotEnsure(); if (!p) return;
@@ -6660,6 +6717,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (prefs.extras === 'all' || wantsDegree) careerBotDocList('degree').forEach(d => additionalDocuments.push(careerBotRec(d)));
           if (prefs.extras === 'all' || wantsSample) careerBotDocList('writingSample').forEach(d => additionalDocuments.push(careerBotRec(d)));
           if (prefs.extras !== 'all') CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).forEach(sl => { if (sl.id === 'certificate' && wantsDegree) careerBotDocList(sl.id).forEach(d => additionalDocuments.push(careerBotRec(d))); });
+          try { await careerBotEnsureHosted(Array.from(new Set(Object.values(documents).concat(additionalDocuments))), job.id); } catch (e) {}
           finalizeJobApplication(job.id, { documents, additionalDocuments });
           resetJobApplyDraft();
           p.botSeen[job.id] = 'applied';
