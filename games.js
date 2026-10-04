@@ -3163,8 +3163,16 @@ let simpleGameState = null;
                 if (!error) {
                   // Every test sign-in starts from scratch, even if the last session never signed out
                   await resetStitchTestAccount(true);
-                  await sb.auth.refreshSession().catch(() => {});
                   resetCachedAuthUser();
+                  // The reset can invalidate the session that was just created (and refreshing a dead
+                  // token signs the app out, which dropped the tester back to Get Started). So don't
+                  // refresh: just make sure a session exists, and sign in again if it doesn't.
+                  let hasSession = false;
+                  try { const { data: sd } = await sb.auth.getSession(); hasSession = !!(sd && sd.session); } catch (e) {}
+                  if (!hasSession) {
+                    ({ error } = await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }));
+                    resetCachedAuthUser();
+                  }
                 }
               }
             } else {
@@ -3183,7 +3191,13 @@ let simpleGameState = null;
             }
             authMarkDeviceTrusted(authPendingEmail);
             // A code was just accepted for this email -- check whether it already has a Stitch profile
-            const needsProfileSetup = await authCheckNeedsProfileSetup();
+            let needsProfileSetup = await authCheckNeedsProfileSetup();
+            // Test account: if the check couldn't confirm (session dropped), sign in once more and retry
+            if (needsProfileSetup === null && isStitchTestEmail(authPendingEmail)) {
+              try { await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }); } catch (e) {}
+              resetCachedAuthUser();
+              needsProfileSetup = await authCheckNeedsProfileSetup();
+            }
             if (needsProfileSetup === null) {
               await authAbortUnverifiedSignIn();
             } else if (needsProfileSetup) {
