@@ -4812,10 +4812,68 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             ${CAREER_PLANS[careerPlanChoice] ? `
             <div class="flex-shrink-0 w-full px-5" style="${careerPlanPillAnim ? 'animation:careerPillIn .28s cubic-bezier(0.16,1,0.3,1);' : ''}padding-top:10px;padding-bottom:max(22px, env(safe-area-inset-bottom));">
               <div class="max-w-2xl mx-auto">
-                <button id="career-plan-pay-btn" onclick="startCareerPlanPayment()" ${careerPlanBusy ? 'disabled' : ''} class="pill-cta font-display w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;${careerPlanBusy ? 'opacity:.6;' : ''}">${careerPlanBusy ? 'Processing…' : 'Subscribe'}</button>
+                <button id="career-plan-pay-btn" onclick="openCareerSubscribeSheet()" ${careerPlanBusy ? 'disabled' : ''} class="pill-cta font-display w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;${careerPlanBusy ? 'opacity:.6;' : ''}">${careerPlanBusy ? 'Processing…' : 'Subscribe'}</button>
               </div>
             ` : ''}
             </div>`;
+        }
+        // Slide-up sheet shown when "Subscribe" is tapped: spells out the plan, price, end date and
+        // what Stitch Bot does, like the cancel-subscription sheet does, before payment starts.
+        function careerPlanEndDate(plan){
+          const prev = careerStartProfile && careerStartProfile.subscription;
+          const base = (prev && prev.expiresAt && prev.expiresAt > Date.now()) ? prev.expiresAt : Date.now();
+          const end = new Date(base);
+          if (plan.months) end.setMonth(end.getMonth() + plan.months);
+          if (plan.days) end.setDate(end.getDate() + plan.days);
+          return end.getTime();
+        }
+        function openCareerSubscribeSheet(){
+          if (careerPlanBusy || !careerStartProfile || !CAREER_PLANS[careerPlanChoice]) return;
+          const plan = CAREER_PLANS[careerPlanChoice];
+          const modal = document.getElementById('careerSubscribeModal');
+          const box = document.getElementById('careerSubscribeModalContent');
+          if (!modal || !box) { startCareerPlanPayment(); return; }
+          const items = [
+            ['Matches you to opportunities', 'Stitch Bot reads your CV and what you are looking for, then picks the posts that fit you best.'],
+            ['Applies for you', 'It sends your CV, open application letter and any documents a post asks for. Only to posts inside Stitch, never outside websites.'],
+            ['Keeps watch', 'It tracks every application and tells you when a status changes, an interview is set or a deadline is close.'],
+          ];
+          const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
+          box.innerHTML = `
+            <div class="text-center">
+              <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(65,105,225,0.14);color:${ROYAL};">${Icon('bot','w-6 h-6')}</div>
+              <div class="text-lg font-bold text-[${NAVY}] font-display mb-2">Subscribe to Stitch Bot?</div>
+              <div class="text-sm text-gray-500 mb-4">Stitch Bot is your job-hunting assistant inside Stitch. This plan is what keeps it working for you until ${escapeHtml(careerPlanDateLabel(careerPlanEndDate(plan)))}.</div>
+            </div>
+            <div class="mb-3">
+              ${row('Plan', escapeHtml(plan.label) + ' · GH₵' + plan.price + ' per ' + plan.unit)}
+              ${row('You pay today', 'GH₵' + plan.price)}
+              ${row('Access until', escapeHtml(careerPlanDateLabel(careerPlanEndDate(plan))))}
+            </div>
+            <div class="text-sm font-semibold text-gray-800 mb-1">What you are subscribing to</div>
+            ${items.map(it => `
+              <div class="flex items-start gap-3" style="padding:7px 0;">
+                <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('check','w-3.5 h-3.5')}</span>
+                <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-gray-800">${it[0]}</div><div class="text-xs text-gray-500">${it[1]}</div></div>
+              </div>`).join('')}
+            <div class="text-xs text-gray-400 mb-5" style="margin-top:6px;">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
+            <div class="flex gap-3">
+              <button onclick="closeCareerSubscribeSheet()" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(65,105,225,0.14);color:#1e3a8a;">Back</button>
+              <button onclick="confirmCareerSubscribeSheet()" class="flex-1 py-3 rounded-2xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Subscribe</button>
+            </div>`;
+          const wasHidden = modal.classList.contains('hidden');
+          modal.classList.remove('hidden');
+          if (wasHidden && typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeCareerSubscribeSheet(fromPopState));
+        }
+        function closeCareerSubscribeSheet(fromPopState){
+          const modal = document.getElementById('careerSubscribeModal');
+          if (!modal || modal.classList.contains('hidden')) return;
+          modal.classList.add('hidden');
+          if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
+        }
+        function confirmCareerSubscribeSheet(){
+          closeCareerSubscribeSheet();
+          startCareerPlanPayment();
         }
         async function startCareerPlanPayment(){
           if (careerPlanBusy || !careerStartProfile || !CAREER_PLANS[careerPlanChoice]) return;

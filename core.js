@@ -1924,6 +1924,14 @@
     </div>
   </div>
 
+  <!-- Stitch Bot subscribe sheet: slides up like the confirm sheet above, but shows what the
+       person is subscribing to before they pay. Filled by openCareerSubscribeSheet (jobs.js). -->
+  <div id="careerSubscribeModal" class="hidden absolute inset-0 z-50 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);" onclick="if(event.target===this) closeCareerSubscribeSheet()">
+    <div class="bg-white w-full p-6 confirm-sheet" style="max-width:640px;max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
+      <div id="careerSubscribeModalContent"></div>
+    </div>
+  </div>
+
   <!-- Note: the old center-screen "Stitch" alert modal (appAlertModal) has
        been replaced by a dismissible top banner -- see openAppAlertModal
        in games.js, styled like pushInAppNotification's reminder toasts. -->

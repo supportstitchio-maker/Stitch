@@ -33,6 +33,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
         }
 
+        // Header row for the pages inside the challenge sheet: same look as overlayHeader's
+        // right-aligned variant (gradient back arrow on the left, gradient display title on the right)
+        function challengeSheetHeader(title, backAction){
+          return `
+            <div class="flex items-center justify-between gap-4 mb-4">
+              <button onclick="${backAction || 'closeChallengeModal()'}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              <div class="font-semibold text-lg font-display grad-text text-right" style="min-width:0;">${title}</div>
+            </div>`;
+        }
+
         function openChallengeModal(html){
           const modal = document.getElementById('challengeModal');
           const wasHidden = modal.classList.contains('hidden');
@@ -74,7 +84,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function challengeSetupHTML(){
           return `
-            <div class="text-2xl font-bold text-gray-900 mb-2">Set Up a Challenge</div>
+            ${challengeSheetHeader('Set Up a Challenge')}
             <div class="text-sm text-gray-500 mb-5">Pulls questions from all your uploaded resources. Pick a time limit, then share the code with your class.</div>
 
             <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Time / Question</label>
@@ -96,8 +106,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function challengeCreatedHTML(code){
           return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Challenge created!</div>
+            ${challengeSheetHeader('Challenge created!')}
             <div class="text-sm text-gray-500 mb-5">Share this code with whoever you want to challenge, then start whenever you're ready.</div>
             <div class="rounded-2xl flex items-center justify-center gap-2 font-bold text-2xl tracking-wide mb-5" style="padding-top:7px;padding-bottom:7px;background:rgba(65,105,225,0.12); color:${NAVY};">
               <span>${code}</span>
@@ -228,8 +237,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function inviteFriendHTML(code){
           const link = buildChallengeInviteLink(code);
           return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Invite a friend to the Arena</div>
+            ${challengeSheetHeader('Invite a friend to the Arena')}
             <div class="text-sm text-gray-500 mb-5">Send this link to a friend -- opening it drops them straight into your challenge, no code to type.</div>
             <div class="rounded-2xl flex items-center gap-2 mb-5" style="padding:12px 14px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25);">
               <span class="flex-1 text-sm font-semibold truncate" style="color:${NAVY};">${escapeHtml(link)}</span>
@@ -300,8 +308,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function joinChallengeCodeHTML(err){
           return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Join with a Code</div>
+            ${challengeSheetHeader('Join with a Code')}
             <div class="text-sm text-gray-500 mb-5">Enter the code a friend shared with you to jump straight into their challenge.</div>
             <label class="text-xs font-semibold text-gray-500 mb-1 block">Challenge Code</label>
             <input type="text" id="join-challenge-code-input" placeholder="e.g. 4F9K-QX7Z" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase" onkeydown="if(event.key==='Enter') submitJoinChallengeCode()">
@@ -420,7 +427,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function practiceTestsHTML(){
           return `
             <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Practice Tests', '20px')}
+              ${overlayHeader('Practice Tests', '20px', null, null, { right: true })}
               <div class="px-5" style="margin-top:10px;">
                 <div class="flex gap-2 mb-4">
                   ${practiceTestsTabBtn('test','Mock Test')}
@@ -519,8 +526,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function mockTestStartHTML(){
           const n = selectedCourseNames.size;
           return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Mock Test</div>
+            ${challengeSheetHeader('Mock Test')}
             <div class="text-base text-gray-500 mb-5">${n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's')} selected. How do you want to take this test?</div>
             <button onclick="startMockTest('timed')" class="w-full text-white font-bold text-center py-4 rounded-full mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('clock','w-4 h-4 inline-block mr-1 -mt-0.5')} Timed · 60s per question</button>
             <button onclick="startMockTest('self')" class="w-full font-bold text-center py-4 rounded-full mb-4 border" style="color:${NAVY};border-color:rgba(65,105,225,0.3);">Self-paced · no timer</button>
@@ -1289,11 +1295,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="flex-1 overflow-y-auto" style="background:#fff;">
               <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
-                <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between gap-4 text-[${NAVY}]">
-                  <div class="flex items-center gap-4 min-w-0">
-                    <button onclick="${isQuiz ? "openOverlay('gamification')" : 'closeOverlay()'}">${IconBold('back','w-5 h-5')}</button>
-                    <div class="font-semibold text-lg font-display truncate">${escapeHtml(examTest.title)}</div>
-                  </div>
+                <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between gap-4">
+                  <button onclick="${isQuiz ? "openOverlay('gamification')" : 'closeOverlay()'}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                  <div class="font-semibold text-lg font-display grad-text text-right truncate" style="min-width:0;">${escapeHtml(examTest.title)}</div>
                 </div>
               </div>
               <div class="px-5 pb-8">
