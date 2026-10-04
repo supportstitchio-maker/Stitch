@@ -3272,17 +3272,20 @@ body.dark-mode .share-sheet-actions .text-gray-600{ color:#d6d8dc !important; }
 
 
 /* ---- Option pills everywhere ---- */
-:root{ --pill-line:#1f2937; --pill-on:#1e90ff; --pill-text:#1f2937; }
-html.dark-mode, body.dark-mode{ --pill-line:#8a909c; --pill-text:#f2f2f2; }
+:root{ --pill-line:#e2e5ea; --pill-fill:#f3f4f6; --pill-on:#1e90ff; --pill-on-fill:#eef6ff; --pill-text:#1f2937; }
+html.dark-mode, body.dark-mode{ --pill-line:#3a3f48; --pill-fill:#1e1e1e; --pill-on-fill:rgba(30,144,255,0.16); --pill-text:#f2f2f2; }
+/* Every option pill/card: a light fill instead of an empty outline. Picked = tinted fill + the same
+   blue outline as the onboarding / Apply to post chips (.auth-intent-chip). */
 .outline-pill{
-  background:transparent !important; background-image:none !important;
+  background:var(--pill-fill) !important; background-image:none !important;
   border:1.5px solid var(--pill-line) !important; color:var(--pill-text) !important;
   box-shadow:none !important;
-  transition:border-color .15s ease;
+  transition:border-color .15s ease, background .15s ease;
 }
 .outline-pill.is-selected, .outline-pill.on{
+  background:var(--pill-on-fill) !important;
   border-color:var(--pill-on) !important;
-  box-shadow:inset 0 0 0 .5px var(--pill-on) !important;
+  box-shadow:none !important;
 }
 
 

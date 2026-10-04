@@ -4780,7 +4780,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 </div>
                 <div class="flex items-center gap-3">
                   <div class="text-right"><span class="text-2xl font-bold" style="color:var(--pill-text);">GHS ${plan.price}</span><span class="text-xs" style="color:var(--pill-text);opacity:0.6;"> /${plan.unit}</span></div>
-                  <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;${selected ? `background:#1e90ff;color:#fff;` : 'border:2px solid var(--pill-line);'}">${selected ? Icon('check','w-3.5 h-3.5') : ''}</span>
+                  <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;${selected ? `background:#1e90ff;color:#fff;` : 'border:2px solid rgba(128,128,128,0.45);'}">${selected ? Icon('check','w-3.5 h-3.5') : ''}</span>
                 </div>
               </div>
             </button>`;
@@ -5178,12 +5178,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="text-xs text-gray-400" style="margin-bottom:14px;">${escapeHtml(slot.label || 'Document')}</div>
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">File name</div>
               <div class="flex gap-2" style="margin-bottom:16px;">
-                <input id="career-doc-rename" type="text" value="${escapeHtml(d.fileName || '')}" class="flex-1 min-w-0 text-sm rounded-2xl px-3 py-2.5" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;">
+                <input id="career-doc-rename" type="text" value="${escapeHtml(d.fileName || '')}" class="flex-1 min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;">
                 <button onclick="careerDocRename('${docId}',${idx})" class="text-sm font-semibold px-4 rounded-2xl text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Save</button>
               </div>
               ${canText ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">Text</div>
-              <textarea id="career-doc-text" rows="8" class="w-full text-sm rounded-2xl px-3 py-2.5" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;resize:vertical;">${escapeHtml(d.text)}</textarea>
+              <textarea id="career-doc-text" rows="8" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;resize:vertical;">${escapeHtml(d.text)}</textarea>
               <button onclick="careerDocSaveText('${docId}',${idx})" class="w-full text-sm font-semibold py-2.5 rounded-2xl text-white" style="margin:8px 0 16px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Save text</button>` : ''}
               <input type="file" id="career-doc-replace" class="hidden" accept="${docId === 'idDocument' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx'}" onchange="careerDocReplace('${docId}',${idx},event)">
               <button onclick="document.getElementById('career-doc-replace').click()" class="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px dashed ${ROYAL};">${Icon('upload','w-4 h-4')} Replace with a new file</button>
@@ -5600,7 +5600,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                   ${sub2('Most applications per day')}
                   ${careerPrefChipsHTML('dailyLimit', [{ v: 5, l: '5' }, { v: 10, l: '10' }, { v: 20, l: '20' }, { v: 0, l: 'No limit' }], pr.dailyLimit)}
                 `)}
-                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full text-sm rounded-2xl px-3 py-2.5" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`)}
+                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`)}
               </div>
             </div>`;
         }
@@ -5730,7 +5730,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="px-5" style="padding-top:18px;">
                 <div class="text-xs font-semibold text-gray-400" style="margin-bottom:10px;">${escapeHtml(d.label)}</div>
                 <div class="text-base font-semibold text-gray-800" style="margin-bottom:10px;">${escapeHtml(d.ask)}</div>
-                <textarea id="career-cancel-text" rows="7" maxlength="1000" oninput="careerCancelDraft.text=this.value" placeholder="Type here…" class="w-full text-sm rounded-2xl px-4 py-3" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;resize:none;">${escapeHtml(d.text)}</textarea>
+                <textarea id="career-cancel-text" rows="7" maxlength="1000" oninput="careerCancelDraft.text=this.value" placeholder="Type here…" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-4 py-3" style="border:1.5px solid #cbd5e1;outline:none;resize:none;">${escapeHtml(d.text)}</textarea>
               </div>
             </div>
             <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(18px, env(safe-area-inset-bottom));">
@@ -6798,14 +6798,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const phoneBlock = phoneNow.ok
             ? `<div class="flex items-center justify-between text-sm py-2"><span class="text-gray-500">Phone</span><span class="font-semibold text-gray-800">${escapeHtml(phoneNow.display)}</span></div>`
             : `<div class="text-xs mb-1" style="color:#ef4444;">Add your phone number with its country code so Stitch Bot can apply for you.</div>
-               <input type="tel" value="${escapeHtml(p.botContact.phone || '')}" onchange="setCareerBotPhone(this.value)" placeholder="e.g. +233 24 123 4567" class="w-full min-w-0 text-sm rounded-2xl px-3 py-2 mb-1" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;">`;
+               <input type="tel" value="${escapeHtml(p.botContact.phone || '')}" onchange="setCareerBotPhone(this.value)" placeholder="e.g. +233 24 123 4567" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="border:1.5px solid #cbd5e1;outline:none;">`;
           return `
             <div class="px-1 mb-5">
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Application documents</div>
               <div class="text-xs text-gray-400 mb-2">Stitch Bot uses these, plus your CV, to apply for you. Posts that ask for other documents are skipped until you add them. You can add more than one file to each section.</div>
               ${phoneBlock}
               <div class="text-xs text-gray-400" style="margin:2px 0 4px;">${(p.botContact.location || '').trim() ? 'Your city and country, taken from your forms. Change it here if you move.' : 'Add your city and country so applications carry your location.'}</div>
-              <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 text-sm rounded-2xl px-3 py-2 mb-1" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;">
+              <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="border:1.5px solid #cbd5e1;outline:none;">
               ${rows}
             </div>`;
         }
