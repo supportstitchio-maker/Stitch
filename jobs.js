@@ -3836,7 +3836,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Date of birth</label>
-              <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" id="job-apply-input-dob" value="${escapeHtml(jobApplyDraft.dob || '')}" oninput="onJobApplyDobInput(this)" placeholder="DD/MM/YYYY" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;border:1.5px solid ${err ? '#dc2626' : '#cbd5e1'};">
+              <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" id="job-apply-input-dob" value="${escapeHtml(jobApplyDraft.dob || '')}" oninput="onJobApplyDobInput(this)" placeholder="DD/MM/YYYY" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;${err ? 'border-color:#dc2626;' : ''}">
               ${err ? `<div class="field-error" id="job-apply-error-dob">${escapeHtml(err)}</div>` : ''}
               ${typedDateHintHTML()}
             </div>`;
@@ -3858,7 +3858,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${label}</label>
-              <input type="${type || 'text'}" id="job-apply-input-${field}" value="${escapeHtml(jobApplyDraft[field] || '')}" oninput="updateJobApplyField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;border:1.5px solid ${err ? '#dc2626' : '#cbd5e1'};">
+              <input type="${type || 'text'}" id="job-apply-input-${field}" value="${escapeHtml(jobApplyDraft[field] || '')}" oninput="updateJobApplyField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;${err ? 'border-color:#dc2626;' : ''}">
               ${err ? `<div class="field-error" id="job-apply-error-${field}">${escapeHtml(err)}</div>` : ''}
             </div>`;
         }
@@ -4374,7 +4374,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${label}</label>
-              <input type="${type || 'text'}" autocomplete="off" value="${escapeHtml(careerStartDraft[field])}" oninput="updateCareerStartField('${field}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();careerStartFieldEnter(this);}" enterkeyhint="next" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;border:1.5px solid ${err ? '#dc2626' : '#cbd5e1'};">
+              <input type="${type || 'text'}" autocomplete="off" value="${escapeHtml(careerStartDraft[field])}" oninput="updateCareerStartField('${field}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();careerStartFieldEnter(this);}" enterkeyhint="next" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;${err ? 'border-color:#dc2626;' : ''}">
               ${err ? `<div class="field-error">${escapeHtml(err)}</div>` : ''}
             </div>`;
         }
@@ -5178,12 +5178,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="text-xs text-gray-400" style="margin-bottom:14px;">${escapeHtml(slot.label || 'Document')}</div>
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">File name</div>
               <div class="flex gap-2" style="margin-bottom:16px;">
-                <input id="career-doc-rename" type="text" value="${escapeHtml(d.fileName || '')}" class="flex-1 min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;">
+                <input id="career-doc-rename" type="text" value="${escapeHtml(d.fileName || '')}" class="flex-1 min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="outline:none;">
                 <button onclick="careerDocRename('${docId}',${idx})" class="text-sm font-semibold px-4 rounded-2xl text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Save</button>
               </div>
               ${canText ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">Text</div>
-              <textarea id="career-doc-text" rows="8" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;resize:vertical;">${escapeHtml(d.text)}</textarea>
+              <textarea id="career-doc-text" rows="8" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="outline:none;resize:vertical;">${escapeHtml(d.text)}</textarea>
               <button onclick="careerDocSaveText('${docId}',${idx})" class="w-full text-sm font-semibold py-2.5 rounded-2xl text-white" style="margin:8px 0 16px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Save text</button>` : ''}
               <input type="file" id="career-doc-replace" class="hidden" accept="${docId === 'idDocument' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx'}" onchange="careerDocReplace('${docId}',${idx},event)">
               <button onclick="document.getElementById('career-doc-replace').click()" class="w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px dashed ${ROYAL};">${Icon('upload','w-4 h-4')} Replace with a new file</button>
@@ -5600,7 +5600,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                   ${sub2('Most applications per day')}
                   ${careerPrefChipsHTML('dailyLimit', [{ v: 5, l: '5' }, { v: 10, l: '10' }, { v: 20, l: '20' }, { v: 0, l: 'No limit' }], pr.dailyLimit)}
                 `)}
-                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="border:1.5px solid #cbd5e1;outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`)}
+                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`)}
               </div>
             </div>`;
         }
@@ -5730,7 +5730,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="px-5" style="padding-top:18px;">
                 <div class="text-xs font-semibold text-gray-400" style="margin-bottom:10px;">${escapeHtml(d.label)}</div>
                 <div class="text-base font-semibold text-gray-800" style="margin-bottom:10px;">${escapeHtml(d.ask)}</div>
-                <textarea id="career-cancel-text" rows="7" maxlength="1000" oninput="careerCancelDraft.text=this.value" placeholder="Type here…" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-4 py-3" style="border:1.5px solid #cbd5e1;outline:none;resize:none;">${escapeHtml(d.text)}</textarea>
+                <textarea id="career-cancel-text" rows="7" maxlength="1000" oninput="careerCancelDraft.text=this.value" placeholder="Type here…" class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-4 py-3" style="outline:none;resize:none;">${escapeHtml(d.text)}</textarea>
               </div>
             </div>
             <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(18px, env(safe-area-inset-bottom));">
@@ -6856,14 +6856,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const phoneBlock = phoneNow.ok
             ? `<div class="flex items-center justify-between text-sm py-2"><span class="text-gray-500">Phone</span><span class="font-semibold text-gray-800">${escapeHtml(phoneNow.display)}</span></div>`
             : `<div class="text-xs mb-1" style="color:#ef4444;">Add your phone number with its country code so Stitch Bot can apply for you.</div>
-               <input type="tel" value="${escapeHtml(p.botContact.phone || '')}" onchange="setCareerBotPhone(this.value)" placeholder="e.g. +233 24 123 4567" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="border:1.5px solid #cbd5e1;outline:none;">`;
+               <input type="tel" value="${escapeHtml(p.botContact.phone || '')}" onchange="setCareerBotPhone(this.value)" placeholder="e.g. +233 24 123 4567" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="outline:none;">`;
           return `
             <div class="px-1 mb-5">
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Application documents</div>
               <div class="text-xs text-gray-400 mb-2">Stitch Bot uses these, plus your CV, to apply for you. Posts that ask for other documents are skipped until you add them. You can add more than one file to each section.</div>
               ${phoneBlock}
               <div class="text-xs text-gray-400" style="margin:2px 0 4px;">${(p.botContact.location || '').trim() ? 'Your city and country, taken from your forms. Change it here if you move.' : 'Add your city and country so applications carry your location.'}</div>
-              <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="border:1.5px solid #cbd5e1;outline:none;">
+              <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="outline:none;">
               ${rows}
             </div>`;
         }

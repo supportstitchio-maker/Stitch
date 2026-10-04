@@ -587,7 +587,8 @@
         .career-flow-title { font-size: 1rem !important; }
         /* Visible outline on text boxes / grey bars in the two step flows */
         #overlay .flow-outline { border: 1.5px solid #cbd5e1; }
-        #overlay .flow-outline:focus { border-color: #4169e1; }
+        #overlay .flow-outline:focus { border-color: #4169e1 !important; }
+        #overlay .flow-outline.field-invalid:focus { border-color: #dc2626 !important; }
         @media (min-width: 1024px) {
           body.bg-gray-50 {
             background: #f2ede1;
