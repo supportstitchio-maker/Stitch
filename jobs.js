@@ -4743,7 +4743,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             ? ['Reads your CV and your preferences', 'Scores every posted opportunity for your fit', 'Tells you which ones to prioritize']
             : ['Applies to your matches on your behalf', 'Stays in the Stitch ecosystem (a total homebody)', 'You can cancel your subscription any time'];
           return `
-            <div aria-hidden="true" class="apply-bg-overlay"></div>
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:44px;padding-bottom:20px;">
@@ -4794,7 +4793,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             'Cancel any time',
           ];
           return `
-            <div aria-hidden="true" class="apply-bg-overlay"></div>
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:30px;padding-bottom:20px;">
