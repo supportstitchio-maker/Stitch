@@ -1754,16 +1754,16 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
 
 
-        // ---- Edit Profile: page stays put; it only lifts above the keyboard for the "Add link" field ----
+        // ---- Edit Profile: page stays put; it only lifts above the keyboard for the Bio and "Add link" fields ----
         (function setupEditProfileKeyboardAvoidance(){
           const BASE_PAD = 88;
-          const LINK_ID = 'new-profile-link-input';
+          const LIFT_IDS = ['new-profile-link-input', 'edit-bio'];
           let lifted = false;
           function modalEl(){ return document.getElementById('editProfileModal'); }
           function linkFocused(){
             const m = modalEl();
             const ae = document.activeElement;
-            return !!(m && ae && ae.id === LINK_ID && m.contains(ae));
+            return !!(m && ae && LIFT_IDS.indexOf(ae.id) > -1 && m.contains(ae));
           }
           // Not scrollable unless the content really is taller than the screen
           function applyIdleScroll(m){
@@ -1777,7 +1777,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           }
           function reveal(m){
             const ae = document.activeElement;
-            const target = (ae && ae.parentElement) ? ae.parentElement : ae;
+            const target = (ae && ae.parentElement) ? ae.parentElement : ae; // whole row / field block, not just the bare input
             if (!target) return;
             const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(true) : 0;
             const vv = window.visualViewport;
