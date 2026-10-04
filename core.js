@@ -1939,7 +1939,7 @@
   <!-- Edit Profile: fields sit flush on the page background, same margin
        as every other full-screen surface in the app -- no separate
        floating/shadowed card on top of it. -->
-  <div id="editProfileModal" class="hidden absolute inset-0 z-40" style="background:#ffffff;padding-top:calc(env(safe-area-inset-top, 12px) + 20px);padding-bottom:88px;overflow-y:auto;">
+  <div id="editProfileModal" class="hidden absolute inset-0 z-40" style="background:#ffffff;padding-top:calc(env(safe-area-inset-top, 12px) + 20px);padding-bottom:88px;overflow-y:hidden;">
     <div id="editProfileModalContent" class="max-w-2xl mx-auto px-5 w-full"></div>
   </div>
 

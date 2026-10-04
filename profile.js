@@ -1045,7 +1045,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>
 
             <div class="flex gap-3">
-              <button onclick="discardEditProfileChanges()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
+              <button id="edit-profile-cancel-btn" onclick="cancelEditProfileWithSpinner()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">Cancel</button>
               <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2" style="white-space:nowrap;">Save Changes</button>
             </div>`;
         }
@@ -1078,6 +1078,24 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const modal = document.getElementById('editProfileModal');
           if (modal) modal.classList.remove('hidden');
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => discardEditProfileChanges(fromPopState));
+        }
+
+        let cancellingEditProfile = false;
+        function cancelEditProfileWithSpinner(){
+          if (cancellingEditProfile) return;
+          cancellingEditProfile = true;
+          const btn = document.getElementById('edit-profile-cancel-btn');
+          const save = document.getElementById('edit-profile-save-btn');
+          if (save) { save.disabled = true; save.style.pointerEvents = 'none'; save.style.opacity = '0.7'; }
+          if (btn) {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = `<span style="width:15px;height:15px;border-radius:50%;border:2px solid rgba(10,37,64,0.25);border-top-color:${NAVY};animation:classroom-spin .7s linear infinite;flex-shrink:0;"></span>Cancel`;
+          }
+          setTimeout(function(){
+            cancellingEditProfile = false;
+            discardEditProfileChanges();
+          }, 2000);
         }
 
         async function discardEditProfileChanges(fromPopState){
@@ -1733,101 +1751,70 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>`;
         }
 
-// ---- Edit Profile: keep the last fields reachable above the keyboard ----
-(function editProfileKeyboardRoom(){
-  const SPACER_ID = 'edit-profile-kb-spacer';
-  const modal = () => document.getElementById('editProfileModal');
-  const isTypingIn = (m) => { const a = document.activeElement; return !!(a && m.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName)); };
-  function keyboardHeight(){
-    const vv = window.visualViewport;
-    return vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-  }
-  function setSpacer(px){
-    const m = modal();
-    const content = document.getElementById('editProfileModalContent');
-    if (!m || !content) return;
-    let sp = document.getElementById(SPACER_ID);
-    if (!sp) { sp = document.createElement('div'); sp.id = SPACER_ID; sp.style.cssText = 'height:0;flex-shrink:0;'; content.appendChild(sp); }
-    sp.style.height = px + 'px';
-  }
-  function reveal(target){
-    const m = modal();
-    if (!m || !target || document.activeElement !== target) return;
-    const vv = window.visualViewport;
-    const visibleBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
-    const overflow = target.getBoundingClientRect().bottom - (visibleBottom - 24);
-    if (overflow > 0) m.scrollTop += overflow;
-  }
-  function update(){
-    const m = modal();
-    if (!m || m.classList.contains('hidden')) return;
-    setSpacer(isTypingIn(m) ? keyboardHeight() : 0);
-  }
-  document.addEventListener('focusin', function(e){
-    const m = modal();
-    if (!m || m.classList.contains('hidden') || !m.contains(e.target) || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-    const target = e.target;
-    // The keyboard takes a moment to slide up; measure again once it has.
-    [0, 150, 350].forEach(ms => setTimeout(function(){ update(); reveal(target); }, ms));
-  });
-  document.addEventListener('focusout', function(){
-    setTimeout(function(){ const m = modal(); if (m && !isTypingIn(m)) setSpacer(0); }, 120);
-  });
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', function(){
-      update();
-      const a = document.activeElement, m = modal();
-      if (m && a && m.contains(a)) reveal(a);
-    });
-  }
-})();
 
 
-        // ---- Edit Profile: keep fields above the on-screen keyboard ----
+
+        // ---- Edit Profile: page stays put; it only lifts above the keyboard for the "Add link" field ----
         (function setupEditProfileKeyboardAvoidance(){
           const BASE_PAD = 88;
-          let scrollTimer = null;
+          const LINK_ID = 'new-profile-link-input';
+          let lifted = false;
           function modalEl(){ return document.getElementById('editProfileModal'); }
-          function focusedInModal(){
+          function linkFocused(){
             const m = modalEl();
             const ae = document.activeElement;
-            return !!(m && ae && m.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+            return !!(m && ae && ae.id === LINK_ID && m.contains(ae));
           }
-          function revealFocused(){
+          // Not scrollable unless the content really is taller than the screen
+          function applyIdleScroll(m){
+            m.style.paddingBottom = BASE_PAD + 'px';
+            m.style.overflowY = 'hidden';
+            if (m.scrollHeight > m.clientHeight + 1) m.style.overflowY = 'auto';
+          }
+          function drop(m){
+            if (lifted) { m.scrollTop = 0; lifted = false; }
+            applyIdleScroll(m);
+          }
+          function reveal(m){
             const ae = document.activeElement;
-            const m = modalEl();
-            if (!ae || !m || !m.contains(ae)) return;
-            // Scroll the whole row (field + Add pill) into view, not just the bare input.
-            const target = (ae.id === 'new-profile-link-input' && ae.parentElement) ? ae.parentElement : ae;
+            const target = (ae && ae.parentElement) ? ae.parentElement : ae;
+            if (!target) return;
             const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(true) : 0;
-            const mr = m.getBoundingClientRect();
-            const tr = target.getBoundingClientRect();
-            const visibleBottom = mr.bottom - inset - 16;
-            const visibleTop = mr.top + 16;
-            if (tr.bottom > visibleBottom) m.scrollTop += (tr.bottom - visibleBottom);
-            else if (tr.top < visibleTop) m.scrollTop -= (visibleTop - tr.top);
+            const vv = window.visualViewport;
+            const visibleBottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 12;
+            const over = target.getBoundingClientRect().bottom - visibleBottom;
+            if (over > 0) m.scrollTop += over;
           }
           function sync(){
             const m = modalEl();
             if (!m || m.classList.contains('hidden')) return;
-            const focused = focusedInModal();
-            const inset = focused && typeof getKeyboardInset === 'function' ? getKeyboardInset(true) : 0;
-            m.style.paddingBottom = (inset > 0 ? (BASE_PAD + inset + 24) : BASE_PAD) + 'px';
-            if (inset > 0) {
-              clearTimeout(scrollTimer);
-              scrollTimer = setTimeout(revealFocused, 60);
+            const inset = linkFocused() && typeof getKeyboardInset === 'function' ? getKeyboardInset(true) : 0;
+            if (inset > 0 && linkFocused()) {
+              lifted = true;
+              m.style.overflowY = 'auto';
+              m.style.paddingBottom = (BASE_PAD + inset + 24) + 'px';
+              reveal(m);
+            } else {
+              drop(m);
             }
           }
           document.addEventListener('focusin', function(e){
             const m = modalEl();
-            if (m && m.contains(e.target)) { sync(); setTimeout(sync, 250); setTimeout(sync, 600); }
+            if (m && m.contains(e.target)) { sync(); setTimeout(sync, 150); setTimeout(sync, 350); setTimeout(sync, 600); }
           });
+          // Keyboard going away: drop the page back down straight away
           document.addEventListener('focusout', function(){
-            setTimeout(function(){ if (!focusedInModal()) { const m = modalEl(); if (m) m.style.paddingBottom = BASE_PAD + 'px'; } }, 150);
+            const m = modalEl();
+            if (m) drop(m);
+            setTimeout(sync, 0);
           });
           if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', sync);
             window.visualViewport.addEventListener('scroll', sync);
           }
           window.addEventListener('resize', sync);
+          // Re-render of the form (open, add/remove link) -> re-check whether scrolling is needed
+          const mm = modalEl();
+          if (mm) new MutationObserver(function(){ if (!mm.classList.contains('hidden') && !linkFocused()) applyIdleScroll(mm); })
+            .observe(mm, { childList:true, subtree:true });
         })();
