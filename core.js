@@ -849,7 +849,6 @@
               ? ((profileData.photo && String(profileData.photo).indexOf('data:') === 0) ? { ...profileData, photo: null } : profileData)
               : undefined,
             userPoints, userCoins, userStreak, quizzesWon, quizWasPerfect,
-            matchingCardsWins, dotsBoxesWins, fourInARowWins, wordHuntWins,
             lastDailyQuizDate,
             aiPromptCount: (typeof aiPromptCount !== 'undefined') ? aiPromptCount : 0,
             aiPromptDate: (typeof aiPromptDate !== 'undefined') ? aiPromptDate : null,
@@ -940,10 +939,6 @@
           userStreak = (typeof d.userStreak === 'number') ? d.userStreak : 7;
           quizzesWon = (typeof d.quizzesWon === 'number') ? d.quizzesWon : 0;
           quizWasPerfect = (typeof d.quizWasPerfect === 'boolean') ? d.quizWasPerfect : false;
-          matchingCardsWins = (typeof d.matchingCardsWins === 'number') ? d.matchingCardsWins : 0;
-          dotsBoxesWins = (typeof d.dotsBoxesWins === 'number') ? d.dotsBoxesWins : 0;
-          fourInARowWins = (typeof d.fourInARowWins === 'number') ? d.fourInARowWins : 0;
-          wordHuntWins = (typeof d.wordHuntWins === 'number') ? d.wordHuntWins : 0;
           lastDailyQuizDate = (typeof d.lastDailyQuizDate === 'string') ? d.lastDailyQuizDate : null;
           if (typeof aiPromptCount !== 'undefined') aiPromptCount = (typeof d.aiPromptCount === 'number') ? d.aiPromptCount : 0;
           if (typeof aiPromptDate !== 'undefined') aiPromptDate = (typeof d.aiPromptDate === 'string') ? d.aiPromptDate : null;
@@ -1123,30 +1118,6 @@
             userStateSaveInFlight = false;
             if (userStateSaveQueuedAgain) { userStateSaveQueuedAgain = false; queueSaveUserState(); }
           }
-        }
-
-        let referralCode = '';
-        let referralPoints = 0;
-        let referralRedeemedPoints = 0;
-        let referralCount = 0;
-        let referralProfileLoaded = false;
-
-        async function loadReferralProfile(){
-          const sb = getSupabaseClient();
-          if (!sb) return;
-          try {
-            const { data, error } = await sb.rpc('get_referral_profile');
-            if (error || !data) return;
-            referralCode = data.code || '';
-            referralPoints = typeof data.points === 'number' ? data.points : 0;
-            referralRedeemedPoints = typeof data.redeemed_points === 'number' ? data.redeemed_points : 0;
-            referralCount = typeof data.referral_count === 'number' ? data.referral_count : 0;
-            referralProfileLoaded = true;
-            if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'referrals') {
-              const ov = document.getElementById('overlay');
-              if (ov && typeof referralsHTML === 'function') ov.innerHTML = referralsHTML();
-            }
-          } catch (e) { console.warn('Loading referral profile failed:', e); }
         }
 
         async function ensureUserStateLoaded(forceForNewLogin){

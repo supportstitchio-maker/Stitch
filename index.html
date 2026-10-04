@@ -238,7 +238,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261003b">
+    <link rel="stylesheet" href="styles.css?v=20261004a">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -320,7 +320,7 @@
                   <button class="auth-cta" type="submit" id="auth-li-submit-btn">Continue</button>
                 </form>
 
-                <div class="auth-terms">By continuing you agree to our <a href="#" onclick="authShowTerms(); return false;">terms of service</a>.</div>
+                <div class="auth-terms">By continuing you agree to our <a href="#" onclick="authShowTerms(); return false;">terms of service</a> and <a href="#" onclick="openFooterInfo('privacy'); return false;">privacy policy</a>.</div>
               </div></div>
 
               <!-- VERIFY EMAIL CODE PANEL -->
@@ -761,7 +761,7 @@
        context and open immediately on tap, instead of being trapped behind -->
     <div id="auth-terms-modal" class="hidden" style="position:fixed;inset:0;z-index:10000;background:#fff;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="max-width:640px;width:100%;margin:0 auto;min-height:100%;padding:20px 24px 60px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:sticky;top:0;background:#fff;padding-top:6px;padding-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-top:6px;padding-bottom:10px;">
             <h2 style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:800;font-size:19px;margin:0;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;">Terms of Service</h2>
             <button type="button" onclick="authHideTerms()" aria-label="Close" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -775,7 +775,7 @@
          modal above) reused for every footer link that isn't already a landing-page anchor -->
       <div id="footer-info-modal" class="hidden" style="position:fixed;inset:0;z-index:10000;background:#fff;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="max-width:640px;width:100%;margin:0 auto;min-height:100%;padding:20px 24px 60px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:sticky;top:0;background:#fff;padding-top:6px;padding-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-top:6px;padding-bottom:10px;">
             <h2 id="footer-info-title" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:800;font-size:19px;margin:0;background-image:linear-gradient(135deg, var(--a-dodger), var(--a-royal) 60%, var(--a-navy));-webkit-background-clip:text;background-clip:text;color:transparent;"></h2>
             <button type="button" onclick="closeFooterInfo()" aria-label="Close" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -790,18 +790,18 @@
     <!-- Analytics (PostHog): vendored + pinned (posthog-js 1.435.8). Must load BEFORE core.js so the
          network hook is installed before the Supabase client is created. Fill in the key in analytics.js -->
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261003a"></script>
-    <script src="core.js?v=20261003z"></script>
-    <script src="feed.js?v=20261002f"></script>
-    <script src="chat.js?v=20261003y"></script>
+    <script src="analytics.js?v=20261004a"></script>
+    <script src="core.js?v=20261004a"></script>
+    <script src="feed.js?v=20261004a"></script>
+    <script src="chat.js?v=20261004a"></script>
     <script src="study.js?v=20260821a"></script>
-    <script src="courses.js?v=20261003z"></script>
-    <script src="quizzesAndGames.js?v=20260813a"></script>
-    <script src="jobs.js?v=20261003z"></script>
+    <script src="courses.js?v=20261004a"></script>
+    <script src="quizzesAndGames.js?v=20261004a"></script>
+    <script src="jobs.js?v=20261004a"></script>
     <script src="creator.js?v=20261003z"></script>
-    <script src="settings.js?v=20261003l"></script>
-    <script src="profile.js?v=20261002a"></script>
-    <script src="overlays.js?v=20261003c"></script>
-    <script src="games.js?v=20261003l"></script>
+    <script src="settings.js?v=20261004a"></script>
+    <script src="profile.js?v=20261004a"></script>
+    <script src="overlays.js?v=20261004a"></script>
+    <script src="games.js?v=20261004a"></script>
 </body>
 </html>

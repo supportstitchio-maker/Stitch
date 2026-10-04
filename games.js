@@ -1,523 +1,4 @@
-let simpleGameState = null;
-        let matchingCardsWins = 0;
-        let dotsBoxesWins = 0;
-        let fourInARowWins = 0;
-        let wordHuntWins = 0;
-
-        // ---- Simple mini-games (rewards + generic overlay) ----
-        function awardGamePoints(pts){
-          userPoints += pts;
-          const me = leaderboard.find(p => p.me);
-          if (me) me.pts = userPoints;
-          leaderboard.sort((a, b) => b.pts - a.pts);
-          saveProgress();
-        }
-
-        function startSimpleGame(id){
-          closeFlashModal();
-          const initFns = {
-            matchingCards: initMatchingGame,
-            wordHunt: initWordHuntGame,
-            dotsAndBoxes: initDotsBoxesGame,
-            fourInARow: initFourInARowGame,
-          };
-          const init = initFns[id];
-          if (!init) { openAppAlertModal('This game is still in development: check back soon!'); return; }
-          const g = subGames.find(x => x.id === id);
-          runClassActionLoading(g ? `Loading ${escapeHtml(g.title)}` : 'Loading game', g ? g.icon : 'play', () => {
-            simpleGameState = init();
-            gamificationSubView = 'simpleGame';
-            document.getElementById('overlay').innerHTML = gamificationHTML();
-          });
-        }
-
-        function simpleGameHTML(){
-          const s = simpleGameState;
-          if (!s) return '';
-          if (s.gameId === 'matchingCards') return matchingCardsHTML();
-          if (s.gameId === 'wordHunt') return wordHuntHTML();
-          if (s.gameId === 'dotsAndBoxes') return dotsAndBoxesHTML();
-          if (s.gameId === 'fourInARow') return fourInARowHTML();
-          return '';
-        }
-
-        function gameResultHTML(){
-          const s = simpleGameState;
-          if (!s) return '';
-          const g = subGames.find(x => x.id === s.gameId);
-          const title = g ? g.title : 'Game';
-          let headline = '';
-          let scoreRow = '';
-          if (s.gameId === 'matchingCards') {
-            headline = s.scores[1] === s.scores[2] ? "It's a tie!" : (s.scores[1] > s.scores[2] ? 'You win!' : 'Player 2 wins!');
-            scoreRow = `
-              <div class="flex items-center justify-center gap-10" style="margin-top:20px;">
-                <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">You</div><div class="text-3xl font-bold font-display" style="color:${NAVY};">${s.scores[1]}</div></div>
-                <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 2</div><div class="text-3xl font-bold font-display" style="color:#db2777;">${s.scores[2]}</div></div>
-              </div>`;
-          } else if (s.gameId === 'dotsAndBoxes') {
-            headline = s.scores[1] === s.scores[2] ? "It's a tie!" : `Player ${s.scores[1] > s.scores[2] ? 1 : 2} wins!`;
-            scoreRow = `
-              <div class="flex items-center justify-center gap-10" style="margin-top:20px;">
-                <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 1</div><div class="text-3xl font-bold font-display" style="color:${NAVY};">${s.scores[1]}</div></div>
-                <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 2</div><div class="text-3xl font-bold font-display" style="color:#db2777;">${s.scores[2]}</div></div>
-              </div>`;
-          } else if (s.gameId === 'fourInARow') {
-            headline = s.winner ? `Player ${s.winner} wins!` : "It's a tie!";
-          } else if (s.gameId === 'wordHunt') {
-            headline = 'All words found!';
-          }
-          const pointsBadge = s.pointsEarned ? `
-              <div class="flex items-center justify-center gap-1.5 text-sm font-bold" style="margin-top:20px;color:${NAVY};">${Icon('gem','w-4 h-4')} +${s.pointsEarned} points</div>` : '';
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 flex flex-col">
-              ${gamificationSubHeaderHTML(title)}
-              <div class="flex-1 flex flex-col items-center justify-center px-6 pb-10">
-                <div class="game-win-banner w-full max-w-xs rounded-3xl px-6 py-8 text-white text-center" style="background:linear-gradient(135deg,${ROYAL},${NAVY});">
-                  ${Icon('trophy','w-10 h-10 text-amber-300 mx-auto mb-3')}
-                  <div class="text-xl font-bold font-display">${headline}</div>
-                </div>
-                ${scoreRow}
-                ${pointsBadge}
-                <button onclick="startSimpleGame('${s.gameId}')" class="w-full max-w-xs bg-white text-[${NAVY}] font-semibold px-5 py-3 rounded-2xl text-sm" style="margin-top:20px;box-shadow:${BOARD_SHADOW};">Play Again</button>
-                <button onclick="backToGamificationHome()" class="mt-3 w-full max-w-xs text-gray-500 font-semibold px-5 py-3 rounded-2xl text-sm">Back to Games</button>
-              </div>
-            </div>`;
-        }
-
-        // ---- Matching (memory card) game ----
-        function initMatchingGame(){
-          const symbols = ['🍎','🍌','🍇','🍒','🍉','⭐','🍋','🍓','🥝','🍑','🍍','🥭','🍈','🍐','🥥'];
-          const deck = symbols.concat(symbols).map((sym, i) => ({ id:i, symbol: sym, flipped:false, matched:false }));
-          for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-          }
-          return { gameId:'matchingCards', cards: deck, flipped: [], moves: 0, matched: 0, busy: false, turn: 1, scores: { 1: 0, 2: 0 }, memory: {} };
-        }
-
-        function matchingCardsHTML(){
-          const s = simpleGameState;
-          const total = s.cards.length / 2;
-          const done = s.matched === total;
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 game-bg-matching">
-              ${gamificationSubHeaderHTML('Matching Cards')}
-              <div class="px-5 pb-6">
-                <div class="flex items-center justify-center gap-6 mb-4">
-                  <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">You</div><div class="text-2xl font-bold" style="color:${NAVY};">${s.scores[1]}</div></div>
-                  <div class="text-sm font-semibold text-gray-500">${done ? 'Game Over' : (s.turn === 1 ? 'Your turn' : "Player 2's turn")}</div>
-                  <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 2</div><div class="text-2xl font-bold" style="color:#db2777;">${s.scores[2]}</div></div>
-                </div>
-                <div class="bg-white p-4 quiz-board-wrap" style="box-shadow:${BOARD_SHADOW};border-radius:0;">
-                  <div class="grid gap-2" style="grid-template-columns:repeat(5,1fr);">
-                    ${s.cards.map((c, i) => `
-                      <button onclick="flipMatchingCard(${i})" class="flex items-center justify-center text-lg font-bold" style="aspect-ratio:3/4;border-radius:0.9rem;box-shadow:${PIECE_SHADOW};background:${c.matched ? 'linear-gradient(145deg,rgba(21,128,61,0.18),rgba(21,128,61,0.08))' : (c.flipped ? 'linear-gradient(145deg,#fff,#f3f4f6)' : `url('${flashcardBackImage}') center/cover, linear-gradient(145deg,${NAVY},${ROYAL})`)};background-size:cover;border:${c.matched ? '2px solid #15803d' : 'none'};">
-                        ${c.flipped || c.matched ? c.symbol : ''}
-                      </button>`).join('')}
-                  </div>
-                </div>
-              </div>
-            </div>`;
-        }
-
-        function rerenderOverlayKeepScroll(){
-          const overlay = document.getElementById('overlay');
-          if (!overlay) return;
-          const scrollTop = overlay.scrollTop;
-          overlay.innerHTML = gamificationHTML();
-          overlay.scrollTop = scrollTop;
-        }
-
-        function matchingRevealCard(i){
-          const s = simpleGameState;
-          const c = s.cards[i];
-          if (c.flipped || c.matched) return false;
-          c.flipped = true;
-          s.memory[i] = c.symbol;
-          s.flipped.push(i);
-          rerenderOverlayKeepScroll();
-          return true;
-        }
-
-        function flipMatchingCard(i){
-          const s = simpleGameState;
-          if (s.busy || s.turn !== 1) return;
-          if (!matchingRevealCard(i)) return;
-          if (s.flipped.length === 2) resolveMatchingTurn();
-        }
-
-        function resolveMatchingTurn(){
-          const s = simpleGameState;
-          s.moves++;
-          s.busy = true;
-          const [a, b] = s.flipped;
-          const isMatch = s.cards[a].symbol === s.cards[b].symbol;
-          setTimeout(() => {
-            if (isMatch) {
-              s.cards[a].matched = true;
-              s.cards[b].matched = true;
-              s.matched++;
-              s.scores[s.turn]++;
-            } else {
-              s.cards[a].flipped = false;
-              s.cards[b].flipped = false;
-            }
-            s.flipped = [];
-            s.busy = false;
-            if (s.matched === s.cards.length / 2) {
-              if (s.scores[1] > s.scores[2]) { matchingCardsWins++; awardGamePoints(2); s.pointsEarned = 2; }
-              gamificationSubView = 'gameResult';
-              rerenderOverlayKeepScroll();
-              return;
-            }
-            if (!isMatch) s.turn = s.turn === 1 ? 2 : 1;
-            rerenderOverlayKeepScroll();
-            if (s.turn === 2) scheduleComputerMatchingTurn();
-          }, 700);
-        }
-
-        function scheduleComputerMatchingTurn(){
-          setTimeout(computerMatchingMove, 600);
-        }
-
-        const COMPUTER_RECALL_CHANCE = 0.6;
-
-        function computerMatchingMove(){
-          const s = simpleGameState;
-          if (!s || s.gameId !== 'matchingCards' || s.turn !== 2 || s.busy) return;
-          const unmatched = s.cards.map((c, idx) => idx).filter(idx => !s.cards[idx].matched && !s.cards[idx].flipped);
-          if (!unmatched.length) return;
-          const bySymbol = {};
-          unmatched.forEach(idx => {
-            const sym = s.memory[idx];
-            if (sym !== undefined && Math.random() < COMPUTER_RECALL_CHANCE) (bySymbol[sym] = bySymbol[sym] || []).push(idx);
-          });
-          let first = null;
-          for (const sym in bySymbol) {
-            if (bySymbol[sym].length >= 2) { first = bySymbol[sym][0]; break; }
-          }
-          if (first === null) first = unmatched[Math.floor(Math.random() * unmatched.length)];
-          matchingRevealCard(first);
-          setTimeout(() => {
-            const s2 = simpleGameState;
-            if (!s2 || s2.gameId !== 'matchingCards') return;
-            const firstSymbol = s2.cards[first].symbol;
-            const remaining = s2.cards.map((c, idx) => idx).filter(idx => !s2.cards[idx].matched && !s2.cards[idx].flipped);
-            const knownMatch = remaining.find(idx => s2.memory[idx] === firstSymbol && Math.random() < COMPUTER_RECALL_CHANCE);
-            const second = knownMatch !== undefined ? knownMatch : remaining[Math.floor(Math.random() * remaining.length)];
-            matchingRevealCard(second);
-            if (s2.flipped.length === 2) resolveMatchingTurn();
-          }, 700);
-        }
-
-        const WORDHUNT = {
-          size: 11,
-          words: ['STUDY','FOCUS','LEARN','NOTES','EXAM','QUIZ','GROUP','CLASS','GRADE','GOAL','SKILL','TOPIC','PAPER','BOOKS','SHARE'],
-          grid: null,
-        };
-
-        // ---- Word Hunt game ----
-        function wordHuntShuffle(arr){
-          const a = arr.slice();
-          for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [a[i], a[j]] = [a[j], a[i]];
-          }
-          return a;
-        }
-
-        function generateWordHuntGrid(){
-          const size = WORDHUNT.size;
-          const dirs = [[0,1],[1,0],[1,1],[-1,1]]; 
-          const wordsByLength = wordHuntShuffle(WORDHUNT.words).sort((a, b) => b.length - a.length);
-          let grid = null;
-          for (let attempt = 0; attempt < 60 && !grid; attempt++) {
-            const g = Array.from({ length: size }, () => Array(size).fill(null));
-            let ok = true;
-            for (const w of wordsByLength) {
-              const spots = [];
-              for (const [dr, dc] of dirs) {
-                const rMin = dr === -1 ? w.length - 1 : 0;
-                const rMax = dr === 1 ? size - w.length : size - 1;
-                const cMax = dc === 1 ? size - w.length : size - 1;
-                for (let r = rMin; r <= rMax; r++) {
-                  for (let c = 0; c <= cMax; c++) spots.push([r, c, dr, dc]);
-                }
-              }
-              let placed = false;
-              for (const [r, c, dr, dc] of wordHuntShuffle(spots)) {
-                let fits = true;
-                for (let i = 0; i < w.length; i++) {
-                  const cell = g[r + dr * i][c + dc * i];
-                  if (cell !== null && cell !== w[i]) { fits = false; break; }
-                }
-                if (fits) {
-                  for (let i = 0; i < w.length; i++) g[r + dr * i][c + dc * i] = w[i];
-                  placed = true;
-                  break;
-                }
-              }
-              if (!placed) { ok = false; break; }
-            }
-            if (ok) grid = g;
-          }
-          if (!grid) grid = Array.from({ length: size }, () => Array(size).fill(null)); 
-          const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-          for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-              if (grid[r][c] === null) grid[r][c] = letters[Math.floor(Math.random() * letters.length)];
-            }
-          }
-          WORDHUNT.grid = grid;
-        }
-
-        function initWordHuntGame(){
-          generateWordHuntGrid();
-          return { gameId: 'wordHunt', found: [], foundCells: {}, selStart: null, message: '' };
-        }
-
-        function wordHuntCellKey(r, c){ return r + ',' + c; }
-
-        function wordHuntCellsBetween(r1, c1, r2, c2){
-          if (r1 !== r2 && c1 !== c2 && Math.abs(r2 - r1) !== Math.abs(c2 - c1)) return null;
-          const dr = Math.sign(r2 - r1), dc = Math.sign(c2 - c1);
-          const cells = [];
-          let r = r1, c = c1;
-          while (true) {
-            cells.push([r, c]);
-            if (r === r2 && c === c2) break;
-            r += dr; c += dc;
-            if (cells.length > WORDHUNT.size) return null;
-          }
-          return cells;
-        }
-
-        function selectWordHuntCell(r, c){
-          const s = simpleGameState;
-          s.message = '';
-          if (!s.selStart) {
-            s.selStart = [r, c];
-            document.getElementById('overlay').innerHTML = gamificationHTML();
-            return;
-          }
-          const [r1, c1] = s.selStart;
-          s.selStart = null;
-          if (r1 === r && c1 === c) { document.getElementById('overlay').innerHTML = gamificationHTML(); return; }
-          const cells = wordHuntCellsBetween(r1, c1, r, c);
-          if (!cells) {
-            s.message = "That's not a straight line: try again.";
-            document.getElementById('overlay').innerHTML = gamificationHTML();
-            return;
-          }
-          const letters = cells.map(([rr, cc]) => WORDHUNT.grid[rr][cc]).join('');
-          const reversed = letters.split('').reverse().join('');
-          const match = WORDHUNT.words.find(w => (w === letters || w === reversed) && !s.found.includes(w));
-          if (match) {
-            s.found.push(match);
-            const colorGroup = s.found.length % 2 === 1 ? 1 : 2;
-            cells.forEach(([rr, cc]) => { s.foundCells[wordHuntCellKey(rr, cc)] = colorGroup; });
-            if (s.found.length === WORDHUNT.words.length) {
-              wordHuntWins++;
-              awardGamePoints(2);
-              s.pointsEarned = 2;
-              gamificationSubView = 'gameResult';
-            }
-          } else {
-            s.message = 'No word there: keep looking!';
-          }
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-
-        function wordHuntHTML(){
-          const s = simpleGameState;
-          const size = WORDHUNT.size;
-          const done = s.found.length === WORDHUNT.words.length;
-          let cellsHtml = '';
-          for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-              const key = wordHuntCellKey(r, c);
-              const group = s.foundCells[key];
-              const isSelStart = s.selStart && s.selStart[0] === r && s.selStart[1] === c;
-              const bg = group === 1 ? 'rgba(65,105,225,0.22)' : group === 2 ? 'rgba(219,39,119,0.18)' : (isSelStart ? 'rgba(65,105,225,0.35)' : '#fff');
-              const color = group === 1 ? NAVY : group === 2 ? '#db2777' : '#111827';
-              cellsHtml += `<button onclick="selectWordHuntCell(${r},${c})" class="aspect-square flex items-center justify-center font-bold text-sm" style="background:${bg};color:${color};border:1px solid #e5e7eb;border-radius:0.35rem;box-shadow:0 1px 2px rgba(0,0,0,0.08);">${WORDHUNT.grid[r][c]}</button>`;
-            }
-          }
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 game-bg-wordhunt">
-              ${gamificationSubHeaderHTML('Word Hunt')}
-              <div class="px-5 pb-6">
-                <div class="text-sm text-gray-500 mb-3">Tap the first letter, then the last letter, of a hidden word. Words run across, down, or diagonally.</div>
-                <div class="bg-white p-3 mb-4 w-full" style="box-shadow:${BOARD_SHADOW};border-radius:0;">
-                  <div class="grid gap-1 w-full" style="grid-template-columns:repeat(${size},1fr);">${cellsHtml}</div>
-                </div>
-                ${s.message ? `<div class="text-center text-sm text-rose-600 mb-3">${escapeHtml(s.message)}</div>` : ''}
-                <div class="bg-white p-5 w-full" style="box-shadow:${BOARD_SHADOW};border-radius:0;">
-                  <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Find these words</div>
-                  <div class="grid gap-x-2 gap-y-2.5 w-full" style="grid-template-columns:repeat(3,1fr);">
-                    ${WORDHUNT.words.map(w => `<span class="text-xs font-semibold truncate ${s.found.includes(w) ? 'line-through text-green-700' : ''}" style="color:${s.found.includes(w) ? '#15803d' : NAVY};">${w}</span>`).join('')}
-                  </div>
-                </div>
-              </div>
-            </div>`;
-        }
-
-        // ---- Dots and Boxes game ----
-        function initDotsBoxesGame(){
-          const rows = 5, cols = 5;
-          const hLines = Array.from({ length: rows + 1 }, () => Array(cols).fill(0));
-          const vLines = Array.from({ length: rows }, () => Array(cols + 1).fill(0));
-          const boxes = Array.from({ length: rows }, () => Array(cols).fill(null));
-          return { gameId: 'dotsAndBoxes', rows, cols, hLines, vLines, boxes, turn: 1, scores: { 1: 0, 2: 0 } };
-        }
-
-        function dotsAndBoxesHTML(){
-          const s = simpleGameState;
-          const rows = s.rows, cols = s.cols;
-          const P1 = ROYAL, P2 = '#db2777';
-          let rowsHtml = '';
-          for (let dr = 0; dr <= 2 * rows; dr++) {
-            let cellsHtml = '';
-            if (dr % 2 === 0) {
-              const r = dr / 2;
-              for (let dc = 0; dc <= 2 * cols; dc++) {
-                if (dc % 2 === 0) {
-                  cellsHtml += `<div class="dots-dot" style="width:9px;height:9px;border-radius:9999px;background:#1f2937;box-shadow:0 1px 2px rgba(0,0,0,0.35);flex-shrink:0;"></div>`;
-                } else {
-                  const c = (dc - 1) / 2;
-                  const owner = s.hLines[r][c];
-                  const color = owner === 1 ? P1 : owner === 2 ? P2 : '#e5e7eb';
-                  cellsHtml += `<button onclick="playDotsLine('h',${r},${c})" class="dots-hline" style="width:40px;height:4px;flex-shrink:0;background:${color};border-radius:3px;box-shadow:${owner ? '0 1px 3px rgba(0,0,0,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.1)'};" ${owner ? 'disabled' : ''}></button>`;
-                }
-              }
-            } else {
-              const r = (dr - 1) / 2;
-              for (let dc = 0; dc <= 2 * cols; dc++) {
-                if (dc % 2 === 0) {
-                  const c = dc / 2;
-                  const owner = s.vLines[r][c];
-                  const color = owner === 1 ? P1 : owner === 2 ? P2 : '#e5e7eb';
-                  cellsHtml += `<button onclick="playDotsLine('v',${r},${c})" class="dots-vline-btn" style="width:9px;height:40px;flex-shrink:0;background:transparent;border:none;padding:0;display:flex;align-items:center;justify-content:center;" ${owner ? 'disabled' : ''}><span class="dots-vline-inner" style="width:4px;height:100%;border-radius:3px;background:${color};box-shadow:${owner ? '0 1px 3px rgba(0,0,0,0.3)' : 'inset 0 1px 2px rgba(0,0,0,0.1)'};display:block;"></span></button>`;
-                } else {
-                  const c = (dc - 1) / 2;
-                  const owner = s.boxes[r][c];
-                  const fill = owner === 1 ? 'linear-gradient(145deg,rgba(65,105,225,0.3),rgba(65,105,225,0.14))' : owner === 2 ? 'linear-gradient(145deg,rgba(219,39,119,0.26),rgba(219,39,119,0.12))' : 'transparent';
-                  cellsHtml += `<div class="dots-box" style="width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${fill};box-shadow:${owner ? 'inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(0,0,0,0.1)' : 'none'};border-radius:6px;">${owner ? `<span style="font-size:11px;font-weight:700;color:${owner === 1 ? NAVY : '#db2777'};">${owner === 1 ? 'P1' : 'P2'}</span>` : ''}</div>`;
-                }
-              }
-            }
-            rowsHtml += `<div style="display:flex;align-items:center;">${cellsHtml}</div>`;
-          }
-          const gameOver = s.scores[1] + s.scores[2] === rows * cols;
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 game-bg-dotsboxes">
-              ${gamificationSubHeaderHTML('Dots and Boxes')}
-              <div class="px-5 pb-6">
-                <div class="flex items-center justify-center gap-6 mb-4">
-                  <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 1</div><div class="text-2xl font-bold" style="color:${NAVY};">${s.scores[1]}</div></div>
-                  <div class="text-sm font-semibold text-gray-500">${gameOver ? 'Game Over' : `Player ${s.turn}'s turn`}</div>
-                  <div class="text-center"><div class="text-xs font-bold text-gray-400 uppercase">Player 2</div><div class="text-2xl font-bold" style="color:#db2777;">${s.scores[2]}</div></div>
-                </div>
-                <div class="bg-white p-5 flex flex-col items-center gap-0 overflow-x-auto" style="box-shadow:${BOARD_SHADOW};border-radius:0;">${rowsHtml}</div>
-              </div>
-            </div>`;
-        }
-
-        function playDotsLine(type, r, c){
-          const s = simpleGameState;
-          if (type === 'h') { if (s.hLines[r][c]) return; s.hLines[r][c] = s.turn; }
-          else { if (s.vLines[r][c]) return; s.vLines[r][c] = s.turn; }
-          const rows = s.rows, cols = s.cols;
-          function boxComplete(br, bc){
-            if (br < 0 || br >= rows || bc < 0 || bc >= cols) return false;
-            return s.hLines[br][bc] && s.hLines[br + 1][bc] && s.vLines[br][bc] && s.vLines[br][bc + 1];
-          }
-          if (type === 'h') {
-            if (boxComplete(r, c) && !s.boxes[r][c]) { s.boxes[r][c] = s.turn; s.scores[s.turn]++; }
-            if (boxComplete(r - 1, c) && !s.boxes[r - 1][c]) { s.boxes[r - 1][c] = s.turn; s.scores[s.turn]++; }
-          } else {
-            if (boxComplete(r, c) && !s.boxes[r][c]) { s.boxes[r][c] = s.turn; s.scores[s.turn]++; }
-            if (boxComplete(r, c - 1) && !s.boxes[r][c - 1]) { s.boxes[r][c - 1] = s.turn; s.scores[s.turn]++; }
-          }
-          s.turn = s.turn === 1 ? 2 : 1;
-          if (s.scores[1] + s.scores[2] === rows * cols) {
-            if (s.scores[1] !== s.scores[2]) { dotsBoxesWins++; awardGamePoints(2); s.pointsEarned = 2; }
-            gamificationSubView = 'gameResult';
-          }
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-
-        // ---- Four in a Row game ----
-        function initFourInARowGame(){
-          const rows = 8, cols = 7;
-          const board = Array.from({ length: rows }, () => Array(cols).fill(0));
-          return { gameId: 'fourInARow', rows, cols, board, turn: 1, winner: null, full: false };
-        }
-
-        function fourInARowHTML(){
-          const s = simpleGameState;
-          let columnsHtml = '';
-          for (let c = 0; c < s.cols; c++) {
-            let cellsHtml = '';
-            for (let r = 0; r < s.rows; r++) {
-              const v = s.board[r][c];
-              if (v === 0) {
-                cellsHtml += `<div style="width:62%;aspect-ratio:1/1;border-radius:9999px;background:#0f2a5c;"></div>`;
-              } else {
-                const color = v === 1 ? '#ffffff' : '#f97316';
-                cellsHtml += `<div style="width:62%;aspect-ratio:1/1;border-radius:9999px;background:${color};"></div>`;
-              }
-            }
-            columnsHtml += `<button onclick="dropFourInARow(${c})" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;padding:0;" ${s.winner || s.full ? 'disabled' : ''}>${cellsHtml}</button>`;
-          }
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 game-bg-fourinarow">
-              ${gamificationSubHeaderHTML('Four in a Row')}
-              <div class="px-5 pb-6">
-                ${(s.winner || s.full) ? '' : `<div class="text-center text-sm font-semibold text-gray-500 mb-4">Player ${s.turn}'s turn</div>`}
-                <div class="mx-auto fourinarow-board" style="max-width:280px;background:linear-gradient(160deg,${ROYAL},${NAVY});box-shadow:${BOARD_SHADOW};border-radius:0;display:grid;grid-template-columns:repeat(${s.cols},1fr);gap:3px;padding:8px 5px;">
-                  ${columnsHtml}
-                </div>
-              </div>
-            </div>`;
-        }
-
-        function checkFourWin(board, r, c, player){
-          const dirs = [[0,1],[1,0],[1,1],[1,-1]];
-          for (const [dr, dc] of dirs) {
-            let count = 1;
-            let rr = r + dr, cc = c + dc;
-            while (rr >= 0 && rr < board.length && cc >= 0 && cc < board[0].length && board[rr][cc] === player) { count++; rr += dr; cc += dc; }
-            rr = r - dr; cc = c - dc;
-            while (rr >= 0 && rr < board.length && cc >= 0 && cc < board[0].length && board[rr][cc] === player) { count++; rr -= dr; cc -= dc; }
-            if (count >= 4) return true;
-          }
-          return false;
-        }
-
-        function dropFourInARow(c){
-          const s = simpleGameState;
-          if (s.winner || s.full) return;
-          let placedRow = -1;
-          for (let r = s.rows - 1; r >= 0; r--) { if (s.board[r][c] === 0) { s.board[r][c] = s.turn; placedRow = r; break; } }
-          if (placedRow === -1) return;
-          if (checkFourWin(s.board, placedRow, c, s.turn)) {
-            s.winner = s.turn;
-            fourInARowWins++;
-            awardGamePoints(2);
-            s.pointsEarned = 2;
-            gamificationSubView = 'gameResult';
-          } else if (s.board.every(row => row.every(v => v !== 0))) {
-            s.full = true;
-            gamificationSubView = 'gameResult';
-          } else {
-            s.turn = s.turn === 1 ? 2 : 1;
-          }
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-
-        let userPoints = 0;
+let userPoints = 0;
         let userStreak = 7;
         let quizzesWon = 0;
         let lastDailyQuizDate = null; 
@@ -588,15 +69,6 @@ let simpleGameState = null;
         ];
         const quizStakeOptions = [20, 50, 100, 200, 500, 1000, 1500, 2000];
         let quizFriends = [];
-        let gameChatMessages = []; 
-        let gameChatDraft = '';
-
-        function liveGamePlayers(){
-          const list = [];
-          if (quizOpponent) list.push(quizOpponent);
-          quizFriends.forEach(f => { if (!list.some(p => p.id === f.id)) list.push(f); });
-          return list;
-        }
 
         let leaderboard = [
           { name: 'You', pts: userPoints, me: true },
@@ -606,7 +78,6 @@ let simpleGameState = null;
         function getProgressSnapshot(){
           return {
             userPoints, userCoins, userStreak, quizzesWon, quizWasPerfect,
-            matchingCardsWins, dotsBoxesWins, fourInARowWins, wordHuntWins,
             lastDailyQuizDate,
           };
         }
@@ -635,14 +106,12 @@ let simpleGameState = null;
         }
         function backToGamificationHome(){
           gamificationSubView = 'home';
-          simpleGameState = null;
           document.getElementById('overlay').innerHTML = gamificationHTML();
         }
 
         // ---- Badges + daily quiz status ----
         function getBadges(){
           const myRank = leaderboard.findIndex(p => p.me);
-          const miniGameWins = matchingCardsWins + dotsBoxesWins + fourInARowWins + wordHuntWins;
           return [
             { icon: 'flame', label: '7-day streak', desc: "Complete the Daily Quiz 7 days in a row.", earned: userStreak >= 7 },
             { icon: 'target', label: 'Perfect score', desc: "Answer every question right in a quiz.", earned: quizWasPerfect },
@@ -650,7 +119,6 @@ let simpleGameState = null;
             { icon: 'trophy', label: 'Top 10', desc: "Reach the top 10 on the leaderboard.", earned: myRank !== -1 && myRank < 10 },
             { icon: 'crown', label: 'Quiz champion', desc: "Take the #1 spot on the leaderboard.", earned: myRank === 0 },
             { icon: 'gem', label: 'Point collector', desc: "Earn 2,000 points.", earned: userPoints >= 2000 },
-            { icon: 'circle', label: 'Mini-Game Master', desc: "Win 5 rounds across Matching Cards, Dots and Boxes, Four in a Row, and Word Hunt.", earned: miniGameWins >= 5 },
           ];
         }
 
@@ -1294,12 +762,9 @@ let simpleGameState = null;
         }
 
         function gamificationHTML(){
-          if (gamificationSubView === 'simpleGame') return simpleGameHTML();
-          if (gamificationSubView === 'gameResult') return gameResultHTML();
           if (gamificationSubView === 'leaderboard') return leaderboardHTML();
           if (gamificationSubView === 'achievements') return achievementsHTML();
           if (gamificationSubView === 'profile') return gameProfileHTML();
-          if (gamificationSubView === 'gamechat') return gameChatHTML();
           return `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
               <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
@@ -1387,71 +852,6 @@ let simpleGameState = null;
             </div>`;
         }
 
-        function openGameChat(){
-          gamificationSubView = 'gamechat';
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-
-        function gameChatHTML(){
-          const players = liveGamePlayers();
-          return `
-            <div class="flex flex-col h-full bg-gray-50">
-              <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
-                <div class="flex items-center justify-between">
-                  <button onclick="backToGamificationHome()" class="w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-                  <h1 class="text-base font-bold text-[${NAVY}] font-display absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">Game Chat</h1>
-                  ${coinBadgeHTML()}
-                </div>
-              </div>
-              <div class="px-5 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar flex-shrink-0">
-                ${players.length ? players.map(p => `
-                  <div class="flex items-center gap-1.5 bg-white rounded-full pl-1 pr-3 py-1 flex-shrink-0 shadow-sm">
-                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style="background:${p.color||NAVY};">${escapeHtml((p.name||'?').charAt(0))}</div>
-                    <span class="text-xs font-semibold text-gray-700 whitespace-nowrap">${escapeHtml(p.name||'Player')}</span>
-                  </div>`).join('') : `<div class="text-xs text-gray-400">Join a live match to chat with the players you're up against.</div>`}
-              </div>
-              <div id="game-chat-messages" class="flex-1 overflow-y-auto px-5 space-y-3 pb-3">${gameChatMessagesHTML()}</div>
-              <div class="px-5 py-3 border-t border-gray-100 flex items-center gap-2 flex-shrink-0">
-                <input id="game-chat-input" value="${escapeHtml(gameChatDraft)}" oninput="gameChatDraft=this.value" onkeydown="if(event.key==='Enter'){sendGameChatMessage();}" placeholder="Message the players in your game..." class="flex-1 border border-gray-200 rounded-2xl px-4 py-2.5 text-sm" autocomplete="off">
-                <button onclick="sendGameChatMessage()" class="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0" style="background:${ROYAL};">${Icon('send','w-4 h-4')}</button>
-              </div>
-            </div>`;
-        }
-
-        function gameChatMessagesHTML(){
-          if (!gameChatMessages.length) return `<div class="text-gray-400 text-sm text-center py-10">Messages with the players in your live game will show up here.</div>`;
-          return gameChatMessages.map(m => `
-            <div class="flex ${m.self ? 'justify-end' : 'justify-start'}">
-              <div class="max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${m.self ? 'text-white' : 'bg-white text-gray-700'}" style="${m.self ? `background:${ROYAL};` : ''}">
-                ${!m.self ? `<div class="text-[11px] font-semibold mb-0.5" style="color:${m.color||NAVY};">${escapeHtml(m.name||'Player')}</div>` : ''}
-                <div style="white-space:pre-wrap;">${escapeHtml(m.text)}</div>
-              </div>
-            </div>`).join('');
-        }
-
-        function sendGameChatMessage(){
-          const text = gameChatDraft.trim();
-          if (!text) return;
-          gameChatMessages.push({ id: 'gchat-' + Date.now(), self: true, text, time: 'Just now' });
-          gameChatDraft = '';
-          const list = document.getElementById('game-chat-messages');
-          if (list) { list.innerHTML = gameChatMessagesHTML(); list.scrollTop = list.scrollHeight; }
-          const input = document.getElementById('game-chat-input');
-          if (input) input.value = '';
-          const players = liveGamePlayers();
-          if (players.length) {
-            const replyDelay = 900;
-            setTimeout(() => {
-              if (gamificationSubView !== 'gamechat') return;
-              const p = players[Math.floor(Math.random() * players.length)];
-              const replies = ['Good luck!', 'Nice one!', "Let's go!", 'Watch out for the next round.'];
-              gameChatMessages.push({ id: 'gchat-' + Date.now(), self: false, name: p.name, color: p.color, text: replies[Math.floor(Math.random() * replies.length)], time: 'Just now' });
-              const list2 = document.getElementById('game-chat-messages');
-              if (list2) { list2.innerHTML = gameChatMessagesHTML(); list2.scrollTop = list2.scrollHeight; }
-            }, replyDelay);
-          }
-        }
-
         function gamificationSubHeaderHTML(title){
           return `
             <div class="w-full px-5 relative" style="padding-top:var(--top-safe-pad);padding-bottom:10px;">
@@ -1531,157 +931,6 @@ let simpleGameState = null;
             </div>`;
         }
 
-        // ---- Multiplayer game invites (code join, waiting screen) ----
-        function subGameCard(g){
-          if (g.img) {
-            return `
-              <div onclick="openGameInfo('${g.id}')" class="text-center cursor-pointer">
-                <div class="rounded-3xl overflow-hidden shadow-sm" style="aspect-ratio:1/1;">
-                  <img src="${g.img}" alt="${escapeHtml(g.title)}" class="w-full h-full object-cover" />
-                </div>
-                <div class="font-semibold text-sm mt-2">${escapeHtml(g.title)}</div>
-              </div>`;
-          }
-          return `
-            <div onclick="openGameInfo('${g.id}')" class="bg-white rounded-3xl p-5 text-center shadow-sm cursor-pointer">
-              <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-50 flex items-center justify-center mb-2 text-[${NAVY}]">${Icon(g.icon,'w-6 h-6')}</div>
-              <div class="font-semibold text-sm">${escapeHtml(g.title)}</div>
-            </div>`;
-        }
-
-        function openGameInfo(id){
-          const g = subGames.find(x => x.id === id);
-          if (!g) return;
-          document.getElementById('flashModal').classList.remove('hidden');
-          document.getElementById('flashModalContent').innerHTML = `
-            <div class="flex items-start justify-between mb-4">
-              <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[${NAVY}]">${Icon(g.icon,'w-7 h-7')}</div>
-              <button onclick="closeFlashModal()" class="text-gray-400 mt-1">${Icon('close','w-5 h-5')}</button>
-            </div>
-            <div class="text-[10px] font-bold uppercase tracking-wide text-amber-600 mb-1">${g.tag}</div>
-            <div class="text-xl font-bold text-[${NAVY}] font-display mb-3">${escapeHtml(g.title)}</div>
-            <div class="text-sm text-gray-600 leading-relaxed mb-6">${escapeHtml(g.desc)}</div>
-            <div class="flex gap-3">
-              <button onclick="closeFlashModal(); startSimpleGame('${g.id}')" class="flex-1 text-white font-semibold px-6 rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding-top:10px;padding-bottom:10px;">Play Now</button>
-              <button onclick="openInviteFriendToGame('${g.id}')" class="flex-1 font-semibold px-6 rounded-2xl flex items-center justify-center gap-1.5" style="background:rgba(65,105,225,0.12);color:${NAVY};padding-top:10px;padding-bottom:10px;">${Icon('personPlus','w-4 h-4')} Invite Friend</button>
-            </div>
-          `;
-        }
-
-        function openInviteFriendToGame(id){
-          const g = subGames.find(x => x.id === id);
-          if (!g) return;
-          const code = generateChallengeCode();
-          pendingGameInvites[code] = { gameId: id, joined: false };
-          insertGameInviteRemote(code, id); 
-          openChallengeModal(inviteFriendToGameHTML(g, code));
-        }
-
-        function inviteFriendToGameHTML(g, code){
-          return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Invite a friend to ${escapeHtml(g.title)}</div>
-            <div class="text-sm text-gray-500 mb-5">Share this code, whoever enters it gets matched straight to you for a round of ${escapeHtml(g.title)}.</div>
-            <div class="rounded-2xl flex items-center justify-center gap-2 font-bold text-2xl tracking-wide mb-5" style="padding-top:7px;padding-bottom:7px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25); color:${NAVY};">
-              <span>${code}</span>
-              <button onclick="copyChallengeCode('${code}')" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
-            </div>
-            <div class="text-xs text-gray-400 mb-5 leading-relaxed">They can enter it from Games &gt; Join with a Code.</div>
-            <button onclick="startWaitingForFriend('${code}', '${g.id}')" class="w-full rounded-2xl font-bold text-center" style="padding-top:9px;padding-bottom:9px;background:rgba(65,105,225,0.12); color:${NAVY};">Start Now</button>`;
-        }
-
-        let waitingForFriendTimer = null;
-        let waitingForFriendCode = null;
-
-        function startWaitingForFriend(code, gameId){
-          waitingForFriendCode = code;
-          openChallengeModal(waitingForFriendHTML());
-          clearInterval(waitingForFriendTimer);
-          waitingForFriendTimer = setInterval(async () => {
-            const invite = pendingGameInvites[code];
-            let joined = !invite || invite.joined;
-            if (!joined) {
-              const remote = await fetchGameInviteRemote(code);
-              if (remote && remote.joined) joined = true;
-            }
-            if (joined) {
-              clearInterval(waitingForFriendTimer);
-              waitingForFriendTimer = null;
-              delete pendingGameInvites[code];
-              deleteGameInviteRemote(code);
-              closeChallengeModal();
-              openOverlay('gamification');
-              startSimpleGame(gameId);
-            }
-          }, 800);
-        }
-
-        function waitingForFriendHTML(){
-          return `
-            <div class="flex flex-col items-center text-center py-4">
-              <div style="position:relative;width:64px;height:64px;" class="mb-4">
-                <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(65,105,225,0.15) 45%, rgba(65,105,225,0.15) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));animation:classroom-spin 0.9s linear infinite;"></div>
-              </div>
-              <div class="text-xl font-bold text-gray-900 mb-2">Waiting for your friend…</div>
-              <div class="text-sm text-gray-500 mb-6">The game will start as soon as they enter your code in Join with a Code.</div>
-              <div class="rounded-2xl flex items-center justify-center gap-2 font-bold text-xl tracking-wide mb-6" style="padding-top:7px;padding-bottom:7px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25); color:${NAVY};">
-                <span>${waitingForFriendCode}</span>
-                <button onclick="copyChallengeCode('${waitingForFriendCode}')" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
-              </div>
-              <button onclick="cancelWaitingForFriend()" class="w-full rounded-2xl font-bold text-center py-2.5" style="background:rgba(65,105,225,0.12); color:${NAVY};">Cancel</button>
-            </div>`;
-        }
-
-        function cancelWaitingForFriend(){
-          clearInterval(waitingForFriendTimer);
-          waitingForFriendTimer = null;
-          if (waitingForFriendCode) {
-            delete pendingGameInvites[waitingForFriendCode];
-            deleteGameInviteRemote(waitingForFriendCode);
-          }
-          waitingForFriendCode = null;
-          closeChallengeModal();
-        }
-
-        function openJoinGameCodeModal(){
-          openChallengeModal(joinGameCodeHTML());
-        }
-
-        function joinGameCodeHTML(err){
-          return `
-            <button onclick="closeChallengeModal()" class="w-8 h-8 -ml-1 -mt-1 mb-2 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-            <div class="text-2xl font-bold text-gray-900 mb-2">Join with a Code</div>
-            <div class="text-sm text-gray-500 mb-5">Enter the code a friend shared with you to jump straight into their game.</div>
-            <label class="text-xs font-semibold text-gray-500 mb-1 block">Game Code</label>
-            <input type="text" id="join-game-code-input" placeholder="e.g. 4F9K-QX7Z" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase" onkeydown="if(event.key==='Enter') submitJoinGameCode()">
-            ${err ? `<div class="text-xs text-red-500 mb-3">${err}</div>` : `<div class="text-xs text-gray-400 mb-5 leading-relaxed">Codes are shared from the "Invite a Friend" screen on a game.</div>`}
-            <button onclick="submitJoinGameCode()" class="w-full rounded-2xl font-bold text-center" style="padding-top:9px;padding-bottom:9px;background:rgba(65,105,225,0.12); color:${NAVY};">Join Game</button>`;
-        }
-
-        async function submitJoinGameCode(){
-          const input = document.getElementById('join-game-code-input');
-          const code = (input ? input.value : '').trim().toUpperCase();
-          if (!code) { openChallengeModal(joinGameCodeHTML('Enter a code to join.')); return; }
-
-          const invite = pendingGameInvites[code];
-          if (invite) {
-            invite.joined = true;
-            markGameInviteJoinedRemote(code);
-            closeChallengeModal();
-            openOverlay('gamification');
-            startSimpleGame(invite.gameId);
-            return;
-          }
-
-          openChallengeModal(joinGameCodeLoadingHTML());
-          const remote = await fetchGameInviteRemote(code);
-          if (!remote) { openChallengeModal(joinGameCodeHTML("We couldn't find that code. Check it and try again.")); return; }
-          await markGameInviteJoinedRemote(code);
-          closeChallengeModal();
-          openOverlay('gamification');
-          startSimpleGame(remote.game_id);
-        }
-
         function joinGameCodeLoadingHTML(){
           return `
             <div class="flex flex-col items-center text-center py-8">
@@ -1738,7 +987,6 @@ let simpleGameState = null;
         });
 
         let authPendingEmail = '';   
-        let authPendingReferralCode = '';
 
         const NEVER_EXPIRE_OTP_TRUST_EMAILS = ['dailytheraklick@gmail.com'];
         const AUTH_OTP_TRUST_DAYS = 7;
@@ -2733,8 +1981,6 @@ let simpleGameState = null;
               loadMyCollaborations(),
               reconcileUnreadMessages(),
               (typeof reconcileConvoOrder === 'function' ? reconcileConvoOrder() : Promise.resolve()),
-              (typeof redeemPendingReferralCode === 'function' ? redeemPendingReferralCode() : Promise.resolve())
-                .then(() => { if (typeof loadReferralProfile === 'function') return loadReferralProfile(); }),
             ]))
             .then(() => {
               refreshMessagingBadges();
@@ -3029,7 +2275,7 @@ let simpleGameState = null;
             if (typeof myGlimpses !== 'undefined') myGlimpses = [];
             if (typeof myGlimpsesViewed !== 'undefined') myGlimpsesViewed = false;
             if (typeof remoteGlimpsesLoaded !== 'undefined') remoteGlimpsesLoaded = false;
-            if (typeof openMyGlimpseMenuId !== 'undefined') openMyGlimpseMenuId = null;
+            if (typeof closeMyGlimpseMenu === 'function') closeMyGlimpseMenu();
             if (typeof currentStoryId !== 'undefined') currentStoryId = null;
             if (typeof currentItemIndex !== 'undefined') currentItemIndex = 0;
             if (typeof viewedGlimpsesThisSession !== 'undefined') viewedGlimpsesThisSession.clear();
@@ -3110,23 +2356,6 @@ let simpleGameState = null;
           // No password: authShowVerify (below) sends the one-time email code itself (see
           // authSendOtp), and the code is the entire authentication
           authShowVerify(email);
-        }
-        async function redeemPendingReferralCode(){
-          const sb = getSupabaseClient();
-          if (!sb) return;
-          let code = authPendingReferralCode;
-          if (!code) {
-            try { code = sessionStorage.getItem('stitch_pending_referral') || ''; } catch (e) { code = ''; }
-          }
-          code = (code || '').trim().toUpperCase();
-          if (!code) return;
-          try {
-            const { error } = await sb.rpc('redeem_referral_code', { code_input: code });
-            if (!error) {
-              authPendingReferralCode = '';
-              try { sessionStorage.removeItem('stitch_pending_referral'); } catch (e) {  }
-            }
-          } catch (e) { console.warn('Referral code redemption failed:', e); }
         }
         let authSubmittingVerify = false;
         async function authSubmitVerify(e){
@@ -3596,7 +2825,6 @@ let simpleGameState = null;
         }
 
         window.onload = async function(){
-          const params = new URLSearchParams(window.location.search || '');
           try { await restoreSessionIfSignedIn(); } catch(e) { console.error(e); }
           // Page was reloaded while sitting on the verify-your-email screen: put them back there.
           try {
@@ -3606,11 +2834,6 @@ let simpleGameState = null;
               authShowVerify(pendingVerifyEmail, true);
             }
           } catch (e) {}
-          const refCode = (params.get('ref') || '').trim().toUpperCase();
-          if (refCode) {
-            // The referral code no longer needs its own panel/field to land in
-            try { sessionStorage.setItem('stitch_pending_referral', refCode); } catch (e) {  }
-          }
           await Promise.all([
             loadProgress().catch(e => console.error(e)),
             loadUserNotes().catch(e => console.error(e)),

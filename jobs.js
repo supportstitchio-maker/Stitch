@@ -4956,7 +4956,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerMatchesHeaderHTML(){
           return `
             <div class="relative flex-shrink-0 w-full">
-              <div style="padding-right:36px;">${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { right: true })}</div>
+              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
               <button onclick="openCareerCvMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
             </div>`;
         }
@@ -5220,7 +5220,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(18px, env(safe-area-inset-bottom));">
                   <div class="max-w-2xl mx-auto flex flex-col gap-3">
                     ${needsSubscribe ? `<button onclick="careerSubscribeAgain()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${!active || sub.cancelled ? 'Subscribe again' : 'Renew subscription'}</button>` : ''}
-                    ${canCancel ? `<button onclick="cancelCareerSubscription()" class="w-full inline-flex items-center justify-center font-semibold text-center rounded-full text-sm" style="background:#fef2f2;color:#dc2626;padding:0.85rem 1.1rem;">Cancel subscription</button>` : ''}
+                    ${canCancel ? `<button onclick="cancelCareerSubscription()" class="w-full inline-flex items-center justify-center font-semibold text-center rounded-full text-sm" style="background-image:linear-gradient(135deg,#b91c1c,#7f1d1d);background-color:#991b1b;color:#ffffff;border:none;padding:0.85rem 1.1rem;box-shadow:0 6px 16px rgba(127,29,29,0.28);">Cancel subscription</button>` : ''}
                   </div>
                 </div>`;
             }
@@ -5378,13 +5378,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const sc = ov.querySelector('.overflow-y-auto');
           const top = sc ? sc.scrollTop : 0;
           ov.innerHTML = build();
-          if (top && (keepScroll === true || currentOverlayKind !== 'careerMatches')) { const sc2 = ov.querySelector('.overflow-y-auto'); if (sc2) sc2.scrollTop = top; }
+          if (top) { const sc2 = ov.querySelector('.overflow-y-auto'); if (sc2) sc2.scrollTop = top; }
         }
         async function refreshCareerMatches(){
           if (!careerStartProfile) return;
           careerMatchesLoading = true;
           careerMatchesError = '';
-          rerenderCareerMatches();
+          rerenderCareerMatches(true);
+          const minSpin = new Promise(resolve => setTimeout(resolve, 1100));
           const hadMatchesBefore = careerStartProfile.matchesUpdatedAt;
           const previousMatchIds = new Set((careerStartProfile.matches || []).map(m => m.id));
           try {
@@ -5415,8 +5416,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               ? 'Your Stitch Bot subscription has ended. Renew to keep getting AI matches.'
               : "We couldn't refresh your matches -- check your connection and try again.";
           } finally {
+            await minSpin;
             careerMatchesLoading = false;
-            rerenderCareerMatches();
+            rerenderCareerMatches(true);
           }
           careerBotAutoApplyRun();
         }
@@ -5971,7 +5973,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const p = careerStartProfile;
           if (!p) {
             return `
-              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { right: true })}
+              ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
               <div class="flex-1 overflow-y-auto px-5 pb-6">
                 <div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No Career Profile yet -- fill out the quick quiz to get matched with opportunities.</div>
                 <button onclick="startCareerStartQuiz('careerMatches')" class="w-full font-semibold text-sm py-3 rounded-full text-white mt-4" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Get Started</button>
@@ -6027,10 +6029,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="font-semibold text-base font-display grad-text text-center whitespace-nowrap mb-2">Matched opportunities</div>
                 <div class="flex items-center justify-between w-full">
                   <button onclick="careerBotApplyAll()" ${careerBotBusy ? 'disabled' : ''} class="text-xs font-semibold whitespace-nowrap" style="color:${careerBotBusy ? '#c1c5cc' : NAVY};">${careerBotBusy ? 'Applying…' : 'Apply to all'}</button>
-                  <button onclick="refreshCareerMatches()" ${careerMatchesLoading ? 'disabled' : ''} class="text-xs font-semibold flex items-center gap-1 whitespace-nowrap" style="color:${careerMatchesLoading ? '#c1c5cc' : NAVY};">${Icon('shuffle','w-3.5 h-3.5')}Refresh</button>
+                  <button type="button" onclick="refreshCareerMatches()" ${careerMatchesLoading ? 'disabled' : ''} class="career-refresh-btn text-xs font-semibold flex items-center gap-1 whitespace-nowrap${careerMatchesLoading ? ' career-refresh-spinning' : ''}" style="color:${NAVY};">${Icon('repost','w-4 h-4')}Refresh</button>
                 </div>
               </div>
-              ${careerMatchesLoading
+              ${careerMatchesLoading && !matches.length
                 ? `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm flex flex-col items-center gap-3">
                     <div style="width:28px;height:28px;border-radius:9999px;border:3px solid rgba(10,37,64,0.12);border-top-color:${NAVY};animation:classroom-spin 0.9s linear infinite;"></div>
                     Screening posted opportunities against your profile…
@@ -6038,8 +6040,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 : careerMatchesError
                   ? `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">${escapeHtml(careerMatchesError)}<button onclick="refreshCareerMatches()" class="block mx-auto mt-3 text-sm font-semibold" style="color:${NAVY};">Try again</button></div>`
                   : matches.length
-                    ? (priorityJob && planHasCvRecommendations() ? careerPriorityCalloutHTML({ job: priorityJob, reason: p.priorityReason }) : '') +
-                      matches.map(m => jobCard(m.job) + careerMatchReasonHTML(m, priorityJob && m.job.id === priorityJob.id) + careerBotMatchActionHTML(m.job)).join('')
+                    ? `<div style="transition:opacity .2s ease;${careerMatchesLoading ? 'opacity:0.45;pointer-events:none;' : ''}">` + (priorityJob && planHasCvRecommendations() ? careerPriorityCalloutHTML({ job: priorityJob, reason: p.priorityReason }) : '') +
+                      matches.map(m => jobCard(m.job) + careerMatchReasonHTML(m, priorityJob && m.job.id === priorityJob.id) + careerBotMatchActionHTML(m.job)).join('') + '</div>'
                     : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm">No strong matches yet -- check back once more opportunities are posted, or widen your filters.</div>`
               }
             </div>

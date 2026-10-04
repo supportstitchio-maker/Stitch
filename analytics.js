@@ -107,10 +107,8 @@
   var RPC_EVENTS = {
     join_class_by_code:       { event: 'class_joined', needsJsonOk: true },
     join_collaboration_by_id: { event: 'collaboration_joined' },
-    redeem_referral_code:     { event: 'referral_redeemed', needsJsonOk: true },
     submit_classwork_assignment: { event: 'classwork_submitted', props: { kind: 'assignment' } },
-    submit_classwork_quiz:       { event: 'classwork_submitted', props: { kind: 'quiz' } },
-    spend_referral_points:    { event: 'referral_points_spent' }
+    submit_classwork_quiz:       { event: 'classwork_submitted', props: { kind: 'quiz' } }
   };
   var FN_EVENTS = {
     'ai-proxy':        'ai_request',

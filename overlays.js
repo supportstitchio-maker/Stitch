@@ -1,4 +1,4 @@
-const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'referrals', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerMatching', 'myFullProfile', 'forwardMessage'];
+const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerMatching', 'myFullProfile', 'forwardMessage'];
         const overlayBackAction = {
           // Phone back on People / Class profile / My class report returns to the class page instead
           // of leaving the class
@@ -441,7 +441,6 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           else if (kind === 'notificationSettings') ov.innerHTML = notificationSettingsHTML();
           else if (kind === 'savedItems') ov.innerHTML = savedItemsHTML();
           else if (kind === 'blockedAccounts') ov.innerHTML = blockedAccountsHTML();
-          else if (kind === 'referrals') { ov.innerHTML = referralsHTML(); if (typeof loadReferralProfile === 'function') loadReferralProfile(); }
           else if (kind === 'termsOfService') ov.innerHTML = termsOfServiceHTML();
           else if (kind === 'privacyPolicy') ov.innerHTML = privacyPolicyHTML();
           else if (kind === 'helpCenter') ov.innerHTML = helpCenterHTML();
@@ -864,7 +863,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         function createPostHTML(captionDraft){
           const hasMedia = selectedMediaItems.length > 0;
           return `
-            ${overlayHeader('New post', '20px', null, 'close', { center: true })}
+            ${overlayHeader('New post', '20px', null, 'close', { right: true })}
             <div id="create-post-scroll" class="p-5 flex-1 overflow-y-auto no-scrollbar">
               <div id="media-preview" class="mb-4">${mediaPreviewStripHTML()}</div>
               <input type="file" id="media-input" accept="image/*,video/*" multiple class="hidden" onchange="handleMediaSelect(event)">
@@ -3518,11 +3517,6 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         function getQuizChampion(){
           return leaderboard[0] || { name: '-', pts: 0 };
         }
-
-        const subGames = [
-          { id:'wordHunt', icon:'search', title:'Word Hunt', tag:'Puzzle', img: GAME_IMG_wordHunt,
-            desc:"Tap the first and last letter of a hidden word to select it. Words can run across, down, or diagonally: find them all." },
-        ];
 
         // ---- Keep #overlay from being pushed up by the on-screen keyboard ----
         (function pinOverlayHeightAgainstKeyboard(){

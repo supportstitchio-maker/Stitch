@@ -1546,82 +1546,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>`;
         }
 
-        // ---- Referrals screen ----
-        function buildReferralInviteLink(code){
-          return window.location.origin + window.location.pathname + '?ref=' + encodeURIComponent(code || referralCode || '');
-        }
-
-        function referralStatCard(value, label){
-          return `
-            <div class="flex-1 rounded-2xl py-4 text-center" style="border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
-              <div class="text-xl font-bold font-display" style="color:${NAVY};">${value}</div>
-              <div class="text-[11px] text-gray-500 mt-0.5">${label}</div>
-            </div>`;
-        }
-
-        function referralsHTML(){
-          if (!referralProfileLoaded && typeof loadReferralProfile === 'function') loadReferralProfile();
-          const code = referralCode || '···· ····';
-          const link = buildReferralInviteLink(referralCode);
-          return `
-            <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Referrals', '20px', null, null, { right: true })}
-              <div class="p-5">
-                <div class="rounded-2xl p-5 mb-5 text-center text-white relative overflow-hidden" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">
-                  <div class="text-xs font-bold uppercase tracking-wide text-white text-opacity-70 mb-1">Available credit</div>
-                  <div class="text-3xl font-bold font-display">GHS ${referralPoints}</div>
-                  <div class="text-xs text-white text-opacity-70 mt-1">${referralPoints} referral point${referralPoints===1?'':'s'} · 1 point = GHS 1</div>
-                </div>
-                <div class="flex gap-3 mb-5">
-                  ${referralStatCard(referralCount, referralCount === 1 ? 'Friend referred' : 'Friends referred')}
-                  ${referralStatCard(referralRedeemedPoints, 'Points redeemed')}
-                </div>
-
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your referral code</div>
-                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:14px 16px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
-                  <span class="flex-1 text-lg font-bold tracking-widest" style="color:${NAVY};">${escapeHtml(code)}</span>
-                  <button onclick="copyReferralCode()" class="flex-shrink-0 p-2 rounded-full" style="color:${NAVY};border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${Icon('copy','w-4 h-4')}</button>
-                </div>
-
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your referral link</div>
-                <div class="rounded-2xl flex items-center gap-2 mb-3" style="padding:12px 14px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
-                  <span class="flex-1 text-sm font-semibold truncate" style="color:${NAVY};">${escapeHtml(link)}</span>
-                  <button onclick="copyReferralLink()" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">${Icon('copy','w-4 h-4')}</button>
-                </div>
-                <button onclick="shareReferralLink()" class="w-full rounded-2xl font-bold text-center mb-5" style="padding-top:11px;padding-bottom:11px;border:1px solid rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;color:${NAVY};">Share invite link</button>
-
-                <div class="text-xs text-gray-400 leading-relaxed">Share your code or link with a friend. When they register with it, you earn 1 point as a thank-you reward.</div>
-              </div>
-            </div>`;
-        }
-
-        function copyReferralCode(){
-          if (!referralCode) { openAppAlertModal('Still generating your code -- try again in a moment.'); return; }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(referralCode).then(() => openAppAlertModal('Referral code copied to clipboard')).catch(() => openAppAlertModal(referralCode));
-          } else {
-            openAppAlertModal(referralCode);
-          }
-        }
-
-        function copyReferralLink(){
-          const link = buildReferralInviteLink(referralCode);
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Referral link copied to clipboard')).catch(() => openAppAlertModal(link));
-          } else {
-            openAppAlertModal(link);
-          }
-        }
-
-        function shareReferralLink(){
-          const link = buildReferralInviteLink(referralCode);
-          if (navigator.share) {
-            navigator.share({ title: 'Join me on Stitch', text: 'Join me on Stitch -- use my referral code and we both benefit:', url: link }).catch(() => {});
-          } else {
-            copyReferralLink();
-          }
-        }
-
         // ---- Profile QR code (generate/share/download) ----
         function profileQRLink(){
           return `https://stitch.app/@${escapeHtml(profileData.username)}`;
@@ -1785,10 +1709,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 ${settingsRow('close','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
                 ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}
-              <!-- Referrals hidden for now -- settingsSection('Referrals', ...) with
-                   settingsRow('gift','Referrals', ...) removed from the list below.
-                   referralsHTML()/loadReferralProfile() are left intact so this can
-                   be turned back on later by re-adding the section. -->
               ${settingsSection('Notification Preferences', `
                 ${settingsToggleRow('bell','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
                 ${settingsToggleRow('comment','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}

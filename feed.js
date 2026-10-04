@@ -1644,16 +1644,16 @@
         function myGlimpsesHTML(){
           return `
             <div class="flex flex-col h-full bg-white relative" data-my-glimpses-root="1">
-              <div class="relative flex items-center justify-center px-4 pb-4 border-b border-gray-100 flex-shrink-0 bg-white" style="padding-top:var(--top-safe-pad);">
-                <button onclick="closeOverlay()" class="absolute" style="color:${NAVY};left:16px;bottom:16px;">${IconBold('close','w-5 h-5')}</button>
-                <div class="text-xl font-bold font-display text-center" style="color:${NAVY};">My glimpse</div>
+              <div class="flex items-center justify-between gap-4 px-5 pb-4 border-b border-gray-100 flex-shrink-0 bg-white" style="padding-top:var(--top-safe-pad);">
+                <button onclick="closeOverlay()" class="flex items-center flex-shrink-0" style="color:${NAVY};">${IconBold('close','w-5 h-5')}</button>
+                <div class="text-xl font-bold font-display text-right" style="color:${NAVY};min-width:0;">My glimpse</div>
               </div>
               <div class="flex-1 overflow-y-auto">
                 ${myGlimpses.length === 0 ? `
                   <div class="px-6 py-16 text-center text-gray-400 text-sm">No glimpses yet.<br>Tap "Add glimpse" below to share a photo or video.</div>
                 ` : myGlimpses.map(myGlimpseRow).join('')}
                 <div class="px-6 pt-2 pb-4 flex justify-center">
-                  <button type="button" onclick="composeGlimpseMedia()" class="flex items-center justify-center gap-2.5 rounded-full px-8 py-3 min-w-[200px]" style="color:${NAVY};background:rgba(10,37,64,0.08);cursor:pointer;">
+                  <button type="button" onclick="composeGlimpseMedia()" class="glimpse-add-pill flex items-center justify-center gap-2.5 rounded-full px-8 py-3" style="color:${NAVY};background:rgba(10,37,64,0.08);cursor:pointer;min-width:min(200px,100%);">
                     ${Icon('addGlimpseOutline','w-5 h-5')}
                     <span class="text-sm font-semibold">Add glimpse</span>
                   </button>
@@ -1690,31 +1690,42 @@
                 ${subLine}
               </button>
               ${status}
-              <button onclick="toggleMyGlimpseMenu(${g.id})" class="w-8 h-8 flex items-center justify-center text-gray-400 flex-shrink-0">${IconBold('dots','w-5 h-5')}</button>
-              <div id="glimpse-menu-${g.id}">${openMyGlimpseMenuId === g.id ? glimpseRowMenuHTML(g) : ''}</div>
+              <button onclick="toggleMyGlimpseMenu(${g.id})" aria-label="Glimpse menu" class="h-8 flex items-center justify-end flex-shrink-0" style="width:32px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
             </div>`;
         }
 
+        // Three-dash menu on a glimpse row: a sheet that pulls up from the bottom (same as the
+        // feed's post menu), mounted on <body> so it always sits above the page
         function glimpseRowMenuHTML(g){
-          return `
-            <div onclick="toggleMyGlimpseMenu(${g.id})" onwheel="toggleMyGlimpseMenu(${g.id})" ontouchmove="toggleMyGlimpseMenu(${g.id})" class="fixed inset-0 z-10"></div>
-            <div class="absolute bg-white rounded-2xl border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:2.75rem;top:2.75rem;width:11rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
-              ${(g.uploading || g.failed) ? '' : `<button onclick="toggleMyGlimpseMenu(${g.id}); openShareGlimpse(${g.id});" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('send','w-4 h-4')} Share glimpse</button>`}
-              <button onclick="deleteMyGlimpse(${g.id})" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete glimpse</button>
-            </div>`;
+          const rows = [];
+          if (!(g.uploading || g.failed)) rows.push({ onclick: `closeMyGlimpseMenu(); openShareGlimpse(${g.id});`, icon: 'send', label: 'Share glimpse' });
+          rows.push({ onclick: `closeMyGlimpseMenu(); deleteMyGlimpse(${g.id});`, icon: 'trash', label: 'Delete glimpse', cls: 'text-red-500' });
+          return classMenuSheetHTML('closeMyGlimpseMenu', rows);
+        }
+
+        function removeMyGlimpseMenuSheet(){
+          document.querySelectorAll('[data-glimpse-menu-sheet]').forEach(el => el.remove());
+        }
+
+        function closeMyGlimpseMenu(){
+          openMyGlimpseMenuId = null;
+          removeMyGlimpseMenuSheet();
         }
 
         function toggleMyGlimpseMenu(id){
-          const prevId = openMyGlimpseMenuId;
-          openMyGlimpseMenuId = (openMyGlimpseMenuId === id) ? null : id;
-          [id, prevId].forEach(gid => {
-            if (gid === null) return;
-            const menuEl = document.getElementById('glimpse-menu-' + gid);
-            const g = myGlimpses.find(x => x.id === gid);
-            if (menuEl && g) menuEl.innerHTML = openMyGlimpseMenuId === gid ? glimpseRowMenuHTML(g) : '';
-          });
-          const ov = document.getElementById('overlay');
-          attachMenuScrollCloser(ov ? ov.querySelector('.overflow-y-auto') : null, openMyGlimpseMenuId === id, () => toggleMyGlimpseMenu(id));
+          const wasOpen = openMyGlimpseMenuId === id;
+          closeMyGlimpseMenu();
+          if (wasOpen) return;
+          const g = myGlimpses.find(x => x.id === id);
+          if (!g) return;
+          openMyGlimpseMenuId = id;
+          const wrap = document.createElement('div');
+          wrap.innerHTML = glimpseRowMenuHTML(g);
+          while (wrap.firstElementChild) {
+            const el = wrap.firstElementChild;
+            el.setAttribute('data-glimpse-menu-sheet', '1');
+            document.body.appendChild(el);
+          }
         }
 
         function viewMyGlimpse(id){
@@ -2384,7 +2395,7 @@
 
         function deleteMyGlimpse(id){
           GlimpsesAPI.remove(id).then(() => {
-            openMyGlimpseMenuId = null;
+            closeMyGlimpseMenu();
             refreshMyGlimpses();
             refreshStoryStrip();
           });
@@ -5285,7 +5296,7 @@
           }
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar" id="post-feed-list">
-              <div class="bg-white" style="padding-bottom:20px;">${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null, { center: true })}</div>
+              <div class="bg-white" style="padding-bottom:20px;">${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null, { right: true })}</div>
               ${items.length
                 ? `<div class="px-5 space-y-3">${items.map(feedPost).join('')}</div>`
                 : '<div class="text-center text-gray-400 text-sm py-10">Nothing here yet.</div>'}
