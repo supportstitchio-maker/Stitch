@@ -1046,7 +1046,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
             <div class="flex gap-3">
               <button onclick="discardEditProfileChanges()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
-              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">Save Changes</button>
+              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2" style="white-space:nowrap;">Save Changes</button>
             </div>`;
         }
 
@@ -1384,7 +1384,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           btn.style.opacity = saving ? '0.7' : '';
           btn.style.pointerEvents = saving ? 'none' : '';
           btn.innerHTML = saving
-            ? `<span style="width:15px;height:15px;border-radius:50%;border:2px solid rgba(10,37,64,0.25);border-top-color:${NAVY};animation:classroom-spin .7s linear infinite;flex-shrink:0;"></span>Updating profile...`
+            ? `<span style="width:15px;height:15px;border-radius:50%;border:2px solid rgba(10,37,64,0.25);border-top-color:${NAVY};animation:classroom-spin .7s linear infinite;flex-shrink:0;"></span>Updating`
             : 'Save Changes';
         }
 

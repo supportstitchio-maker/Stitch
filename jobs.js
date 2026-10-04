@@ -4836,7 +4836,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
           box.innerHTML = `
             <div class="text-center">
-              <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(65,105,225,0.14);color:${ROYAL};">${Icon('bot','w-6 h-6')}</div>
+              <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(107,114,128,0.16);color:#6b7280;">${Icon('bot','w-6 h-6')}</div>
               <div class="text-lg font-bold text-[${NAVY}] font-display mb-2">Subscribe to Stitch Bot?</div>
               <div class="text-sm text-gray-500 mb-4">Stitch Bot is your job-hunting assistant inside Stitch. This plan is what keeps it working for you until ${escapeHtml(careerPlanDateLabel(careerPlanEndDate(plan)))}.</div>
             </div>

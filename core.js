@@ -1886,7 +1886,7 @@
   <!-- Leave Classroom confirmation modal -->
   <div id="leaveClassModal" class="hidden absolute inset-0 z-40 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);" onclick="if(event.target===this) closeLeaveClassModal()">
     <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
-      <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4" id="leaveClassModalIcon">${IconBold('back','w-5 h-5')}</div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" id="leaveClassModalIcon" style="background:rgba(107,114,128,0.16);color:#6b7280;">${IconBold('back','w-5 h-5')}</div>
       <div class="text-sm text-gray-500 mb-6" id="leaveClassModalMessage">You'll be removed from this classroom and its materials until you rejoin.</div>
       <div class="flex gap-3">
         <button onclick="closeLeaveClassModal()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">No</button>
@@ -1899,7 +1899,7 @@
        Apps Script sandboxed iframe, so this in-app modal replaces it) -->
   <div id="examExitModal" class="hidden absolute inset-0 z-50 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);" onclick="if(event.target===this) closeExamExitModal()">
     <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
-      <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4">${IconBold('back','w-5 h-5')}</div>
+      <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(107,114,128,0.16);color:#6b7280;">${IconBold('back','w-5 h-5')}</div>
       <div class="text-lg font-bold text-[${NAVY}] font-display mb-2">Exit this test?</div>
       <div class="text-sm text-gray-500 mb-6" id="examExitMessage">Leaving now ends the test and locks in your score.</div>
       <div class="flex gap-3">
@@ -1914,7 +1914,7 @@
        of looking like part of the app). See openAppConfirmModal below. -->
   <div id="appConfirmModal" class="hidden absolute inset-0 z-50 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);" onclick="if(event.target===this) closeAppConfirmModal()">
     <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
-      <div id="appConfirmModalIcon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(239,68,68,0.14);color:#ef4444;">${Icon('trash','w-6 h-6')}</div>
+      <div id="appConfirmModalIcon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(107,114,128,0.16);color:#6b7280;">${Icon('trash','w-6 h-6')}</div>
       <div class="text-lg font-bold text-[${NAVY}] font-display mb-2" id="appConfirmModalTitle">Are you sure?</div>
       <div class="text-sm text-gray-500 mb-6" id="appConfirmModalMessage"></div>
       <div class="flex gap-3">
@@ -2700,3 +2700,180 @@ function updateOfflineOverlay(){ realOfflineCheck(); }
 setInterval(function(){ if (!document.hidden) realOfflineCheck(); }, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) realOfflineCheck(); });
 window.addEventListener('online', () => { realOfflineCheck(); });
+
+// ---- Pull-up panels: grey icons + slow slide-down when you tap the empty space ----
+// (1) Any red or blue icon that sits on a bottom panel (confirm sheets, menus, share/comment sheets,
+//     notification details...) is turned grey. White icons on coloured buttons and the
+//     like/dislike buttons keep their colours.
+// (2) Tapping the dimmed area outside a panel no longer makes it vanish instantly: the panel slides
+//     down slowly and the dim fades out first, then the panel's own close handler runs.
+(function sheetPolish(){
+  var GREY = '#6b7280';
+  var GREY_BG = 'rgba(107,114,128,0.16)';
+  var CLOSE_MS = 450;
+  var EASE = 'cubic-bezier(0.32,0.72,0,1)';
+
+  function parseColor(str){
+    var m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?/.exec(str || '');
+    if (!m) return null;
+    var a = 1;
+    if (m[4] != null) a = m[4].indexOf('%') > -1 ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+    return { r: +m[1], g: +m[2], b: +m[3], a: a };
+  }
+  // Blue family (hue ~190-265, incl. navy/royal/sky) or red family (hue ~340-18). minSat keeps greys/whites out
+  // (higher for icon colours, lower for the pale tinted circles behind icons).
+  function isBlueOrRed(c, minSat, minChroma){
+    if (!c || c.a < 0.2) return false;
+    var r = c.r / 255, g = c.g / 255, b = c.b / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    var sat = max === 0 ? 0 : d / max;
+    if (sat < minSat || d * 255 < minChroma) return false;   // too grey (cool greys like gray-800 stay as they are)
+    var h = 0;
+    if (d) {
+      if (max === r) h = ((g - b) / d) % 6; else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+      h *= 60; if (h < 0) h += 360;
+    }
+    return h <= 18 || h >= 340 || (h >= 190 && h <= 265);
+  }
+
+  var PANEL_SEL = '.confirm-sheet,.convo-sheet,.share-sheet-panel,.rounded-t-3xl,[id^="comment-sheet-panel-"],[style*="border-radius"][style*="px 0 0"]';
+  function inPanel(el){
+    for (var n = el, i = 0; n && n.nodeType === 1 && i < 14; n = n.parentElement, i++) {
+      if (n.matches && n.matches(PANEL_SEL)) return true;
+    }
+    return false;
+  }
+  function keepsColour(svg){
+    var host = svg.closest ? svg.closest('button,[onclick]') : null;
+    var oc = host && host.getAttribute('onclick');
+    return !!(oc && /like|react|vote/i.test(oc));                 // liked / reacted state stays coloured
+  }
+  function greyOne(svg){
+    if (svg.__greyed || keepsColour(svg)) return;
+    var c = parseColor(getComputedStyle(svg).color);
+    if (!isBlueOrRed(c, 0.25, 40)) return;
+    svg.__greyed = true;
+    svg.style.setProperty('color', GREY, 'important');
+    // tinted round badge behind the icon (e.g. light-red circle) -> neutral grey tint
+    var w = svg.parentElement;
+    for (var i = 0; w && i < 3; w = w.parentElement, i++) {
+      if (w.matches && w.matches(PANEL_SEL)) break;
+      var cs = getComputedStyle(w);
+      var bg = parseColor(cs.backgroundColor);
+      if (bg && bg.a > 0.02) {
+        var r = w.getBoundingClientRect();
+        if (r.width <= 80 && r.height <= 80 && isBlueOrRed({ r: bg.r, g: bg.g, b: bg.b, a: 1 }, 0.08, 20)) {
+          w.style.setProperty('background-color', GREY_BG, 'important');
+          w.style.setProperty('color', GREY, 'important');
+        }
+        break;
+      }
+    }
+  }
+  function greyIn(root){
+    if (!root || root.nodeType !== 1) return;
+    var svgs = [];
+    if (root.tagName && root.tagName.toLowerCase() === 'svg') svgs.push(root);
+    else if (root.querySelectorAll) svgs = Array.prototype.slice.call(root.querySelectorAll('svg'));
+    if (!svgs.length) return;
+    if (inPanel(root)) { svgs.forEach(greyOne); return; }
+    // root itself is not in a panel -- but it may contain panels
+    if (root.querySelectorAll) {
+      var panels = root.querySelectorAll(PANEL_SEL);
+      for (var i = 0; i < panels.length; i++) {
+        var ss = panels[i].querySelectorAll('svg');
+        for (var j = 0; j < ss.length; j++) greyOne(ss[j]);
+      }
+    }
+  }
+
+  var queue = new Set(), scheduled = false;
+  function flush(){
+    scheduled = false;
+    var items = Array.from(queue); queue.clear();
+    items.forEach(function(n){ if (n.isConnected) greyIn(n); });
+  }
+  function start(){
+    greyIn(document.body);
+    new MutationObserver(function(muts){
+      for (var i = 0; i < muts.length; i++) {
+        var added = muts[i].addedNodes;
+        for (var j = 0; j < added.length; j++) if (added[j].nodeType === 1) queue.add(added[j]);
+      }
+      if (queue.size && !scheduled) { scheduled = true; requestAnimationFrame(flush); }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+
+  // ---- slow slide-down when tapping the dimmed empty space ----
+  function looksLikeBackdrop(el){
+    if (!el || el.nodeType !== 1 || !el.hasAttribute('onclick')) return false;
+    var cs = getComputedStyle(el);
+    if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+    var c = parseColor(cs.backgroundColor);
+    if (!c || c.a < 0.05 || c.r > 60 || c.g > 60 || c.b > 60) return false;   // must be a dark dim
+    var r = el.getBoundingClientRect();
+    return r.width >= 280 && r.height >= 300;
+  }
+  function isBottomPanel(p, bd){
+    var r = p.getBoundingClientRect(), b = bd.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    return Math.abs(r.bottom - b.bottom) < 6 && r.top > b.top + 20;
+  }
+  function findPanel(bd){
+    var n = bd.nextElementSibling;
+    if (n && isBottomPanel(n, bd)) return n;
+    for (var i = bd.children.length - 1; i >= 0; i--) if (isBottomPanel(bd.children[i], bd)) return bd.children[i];
+    return null;
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if (!t || t.nodeType !== 1) return;
+    if (t.__sheetClosing) { e.stopPropagation(); e.preventDefault(); return; }   // ignore taps mid-slide
+    if (t.__sheetPass) { t.__sheetPass = false; return; }                          // the replayed tap: let it through
+    if (!looksLikeBackdrop(t)) return;
+    var panel = findPanel(t);
+    if (!panel) return;
+    e.stopPropagation(); e.preventDefault();
+    t.__sheetClosing = true;
+    var savedPanel = panel.getAttribute('style'), savedBd = t.getAttribute('style');
+    panel.style.animation = 'none';
+    panel.style.transition = 'transform ' + CLOSE_MS + 'ms ' + EASE;
+    t.style.transition = 'background-color ' + CLOSE_MS + 'ms ease';
+    // force a style flush so the transition starts from the current position
+    void panel.offsetHeight;
+    panel.style.transform = 'translateY(100%)';
+    t.style.backgroundColor = 'rgba(0,0,0,0)';
+    setTimeout(function(){
+      t.__sheetClosing = false;
+      t.__sheetPass = true;
+      t.click();                       // now run the panel's own close handler
+      t.__sheetPass = false;
+      setTimeout(function(){           // if the panel is still around (re-used / not closed), put it back
+        if (panel.isConnected) { if (savedPanel == null) panel.removeAttribute('style'); else panel.setAttribute('style', savedPanel); }
+        if (t.isConnected) { if (savedBd == null) t.removeAttribute('style'); else t.setAttribute('style', savedBd); }
+      }, 60);
+    }, CLOSE_MS);
+  }, true);
+
+  // The comments sheet is a draggable panel (no dim backdrop): slide it down slowly too when it is
+  // closed by tapping the post behind it or the back arrow. Back-button/popstate closes stay immediate.
+  document.addEventListener('DOMContentLoaded', function(){
+    var orig = window.closeCommentSheet;
+    if (typeof orig !== 'function' || orig.__slowClose) return;
+    var timer = null;
+    function slowClose(fromPopState){
+      var panel = document.querySelector('[id^="comment-sheet-panel-"]');
+      var self = this, args = arguments;
+      if (fromPopState === true || !panel) { if (timer) { clearTimeout(timer); timer = null; } return orig.apply(self, args); }
+      if (timer) return;               // already sliding down
+      panel.style.transition = 'transform ' + CLOSE_MS + 'ms ' + EASE;
+      void panel.offsetHeight;
+      panel.style.transform = 'translateY(100%)';
+      timer = setTimeout(function(){ timer = null; orig.apply(self, args); }, CLOSE_MS);
+    }
+    slowClose.__slowClose = true;
+    window.closeCommentSheet = slowClose;
+  });
+})();
