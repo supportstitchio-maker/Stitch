@@ -375,8 +375,8 @@ let userPoints = 0;
                 <div class="text-xs text-gray-500">Coins you can stake later in the Join Quiz</div>
               </div>
             </div>
-            <button onclick="closeChallengeModal(); startDailyQuiz();" class="w-full text-white font-bold text-center py-4 rounded-full mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Start Quiz</button>
-            <button onclick="closeChallengeModal()" class="w-full font-bold text-center rounded-lg border" style="background:rgba(65,105,225,0.14);color:#1e3a8a;border-color:rgba(65,105,225,0.25);padding:5px 0;">Cancel</button>`;
+            <button onclick="closeChallengeModal(); startDailyQuiz();" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm mb-3">Start Quiz</button>
+            <button onclick="closeChallengeModal()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel</button>`;
         }
 
         let quizInviteTarget = null;
@@ -427,7 +427,7 @@ let userPoints = 0;
             <div class="text-sm text-gray-500 mb-4">Send a stake invite to a friend's ID, or pick from your quiz friends below.</div>
             <div class="flex gap-2 mb-5">
               <input id="quiz-friend-id-input" type="text" placeholder="Friend's ID (e.g. NEX-1234)" class="flex-1 min-w-0 rounded-2xl px-4 py-3 text-sm font-semibold text-gray-800" style="background:rgba(65,105,225,0.08); border:1px solid rgba(65,105,225,0.2);">
-              <button onclick="quizInviteById()" class="font-bold text-white rounded-full px-4 flex-shrink-0" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Send</button>
+              <button onclick="quizInviteById()" class="sheet-pill text-sm rounded-2xl px-4 flex-shrink-0">Send</button>
             </div>
             ${quizFriends.length ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your quiz friends</div>
@@ -498,7 +498,7 @@ let userPoints = 0;
                 </button>`).join('')}
             </div>
             <div class="text-xs text-gray-400 mb-4 flex items-center gap-1.5">${Icon('coin','w-3.5 h-3.5 text-amber-500')} Balance: ${userCoins.toLocaleString()} coins.</div>
-            <button onclick="closeChallengeModal()" class="w-full font-bold text-center rounded-lg border" style="background:rgba(65,105,225,0.14);color:#1e3a8a;border-color:rgba(65,105,225,0.25);padding:5px 0;">Cancel</button>`;
+            <button onclick="closeChallengeModal()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel</button>`;
         }
 
         function sendQuizInvite(amount){
@@ -527,7 +527,7 @@ let userPoints = 0;
               </div>
               <div class="text-lg font-bold text-gray-900 mb-1">Waiting for ${escapeHtml(t.name)}...</div>
               <div class="text-sm text-gray-500 mb-6">You sent a ${amount}-coin quiz invite. The match starts automatically once they accept.</div>
-              <button onclick="cancelQuizInvite()" class="w-full font-bold text-center rounded-lg border" style="background:rgba(65,105,225,0.14);color:#1e3a8a;border-color:rgba(65,105,225,0.25);padding:5px 0;">Cancel Invite</button>
+              <button onclick="cancelQuizInvite()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel Invite</button>
             </div>`;
         }
 
@@ -541,7 +541,7 @@ let userPoints = 0;
             <div class="text-center py-4">
               <div class="text-lg font-bold text-gray-900 mb-1">No response from ${escapeHtml(target.name)}</div>
               <div class="text-sm text-gray-500 mb-6">They didn't accept in time, so no coins were staked.</div>
-              <button onclick="closeChallengeModal()" class="w-full font-bold text-center py-3.5 rounded-lg border" style="background:rgba(65,105,225,0.14);color:#1e3a8a;border-color:rgba(65,105,225,0.25);">Close</button>
+              <button onclick="closeChallengeModal()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Close</button>
             </div>`;
         }
 
@@ -586,7 +586,7 @@ let userPoints = 0;
               <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style="background:rgba(65,105,225,0.12);">${Icon('search','w-7 h-7')}</div>
               <div class="text-lg font-bold text-gray-900 mb-1">Searching for a match...</div>
               <div class="text-sm text-gray-500 mb-6">Looking for someone online staking ${quizSearchStake} coins.</div>
-              <button onclick="cancelQuizMatchSearch()" class="w-full font-bold text-center py-3.5 rounded-lg border" style="background:rgba(65,105,225,0.14);color:#1e3a8a;border-color:rgba(65,105,225,0.25);">Cancel</button>
+              <button onclick="cancelQuizMatchSearch()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel</button>
             </div>`;
         }
 
@@ -611,8 +611,8 @@ let userPoints = 0;
               ${Icon('bolt','w-5 h-5 text-amber-500 flex-shrink-0')}
               <div class="font-bold text-sm flex-shrink-0" style="color:${NAVY};">You</div>
             </div>
-            <button onclick="quizAddFriendFromMatch(${amount})" class="w-full flex items-center justify-center gap-2 font-bold text-center py-3 rounded-lg mb-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}" style="background:rgba(65,105,225,0.1);color:${NAVY};">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>
-            <button onclick="joinWeeklyQuizWithStake(${amount})" class="w-full font-bold text-center rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:5px 0;">Start Match</button>`;
+            <button onclick="quizAddFriendFromMatch(${amount})" class="sheet-pill w-full flex items-center justify-center gap-2 text-center py-3 rounded-2xl text-sm mb-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>
+            <button onclick="joinWeeklyQuizWithStake(${amount})" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Start Match</button>`;
         }
 
         function quizAddFriendFromMatch(amount){

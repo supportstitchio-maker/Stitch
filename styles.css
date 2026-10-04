@@ -153,6 +153,33 @@
         .tab-plain-btn{background:#ffffff;border:none;border-radius:0.5rem;transition:background-color .12s ease;}
         .tab-plain-btn:active{background:#ffffff;box-shadow:inset 0 0 0 9999px rgba(0,0,0,0.04);}
         @media (hover:hover){ .tab-plain-btn:hover{background:#ffffff;box-shadow:inset 0 0 0 9999px rgba(0,0,0,0.04);} }
+        /* Pills inside pull-up panels (confirm sheets, challenge sheets, subscribe sheet...):
+           one grey look in the Colmeak font, with a visible reaction when tapped. */
+        .sheet-pill{
+          background:#eceef1;
+          color:#1f2937;
+          border:none;
+          font-family:'Colmeak','Montserrat',sans-serif;
+          font-weight:600;
+          letter-spacing:0.01em;
+          cursor:pointer;
+          -webkit-tap-highlight-color:transparent;
+          touch-action:manipulation;
+          user-select:none;
+          -webkit-user-select:none;
+          transition:transform .12s cubic-bezier(0.16,1,0.3,1), background-color .12s ease, box-shadow .12s ease;
+        }
+        .sheet-pill:active{
+          background:#d6dae0;
+          transform:scale(0.95);
+          box-shadow:inset 0 2px 6px rgba(0,0,0,0.10);
+        }
+        .sheet-pill:focus-visible{ outline:2px solid rgba(65,105,225,0.55); outline-offset:2px; }
+        .sheet-pill:disabled{ opacity:.55; pointer-events:none; }
+        @media (hover:hover){ .sheet-pill:hover{ background:#e2e5e9; } .sheet-pill:active{ background:#d6dae0; } }
+        body.dark-mode .sheet-pill{ background:rgba(255,255,255,0.10) !important; color:#ffffff !important; }
+        body.dark-mode .sheet-pill:active{ background:rgba(255,255,255,0.20) !important; }
+        @media (hover:hover){ body.dark-mode .sheet-pill:hover{ background:rgba(255,255,255,0.15) !important; } }
         .career-filter-grid{
           display:grid;
           gap:0.5rem;

@@ -1316,7 +1316,7 @@ try {
               'Stay concise (2-5 sentences unless they ask for more detail or a worked example) and never let the friendly tone or the humor get in the way of being clear and accurate. ' +
               'If an image is attached, actually look at it and respond to what is in it (read handwriting, diagrams, or problems shown) rather than only acknowledging that a file was sent. ' +
               'Ground your answer in the excerpts from their uploaded resources when they are relevant to the question. ' +
-              'If nothing relevant was uploaded, answer from your general knowledge instead. Never mention Claude or Anthropic. ' +
+              'If nothing relevant was uploaded, answer from your general knowledge instead. If someone asks what AI model or company is behind you, say you are Stitch Bot, an AI study buddy, and that you do not go into technical details about how you are built. ' +
               'Never use em dashes or double-hyphen dashes; use a comma, colon, semicolon, or a full stop instead. ' +
               'Use **double asterisks** around any word or phrase that should be bold (key terms, formulas, headings). ' +
               'When you are listing steps, options, or multiple items, format them as a numbered list (1. 2. 3.) or bullet list (- item) on their own lines instead of run-on prose. ' +
@@ -1344,7 +1344,7 @@ try {
           } catch (err) {
             const msg = (err && err.message) || '';
             if (msg.startsWith('Too many AI requests')) return { text: ackLine + msg };
-            // The raw Anthropic/Edge Function error used to be shown directly to the student here
+            // The raw AI-provider/Edge Function error used to be shown directly to the student here
             // (handy for debugging, but not something a student should ever see)
             if (typeof window !== 'undefined' && typeof window.reportError === 'function') {
               window.reportError(err instanceof Error ? err : new Error(msg || 'unknown error'), { call: 'getAIResponse', task: 'chat' });
