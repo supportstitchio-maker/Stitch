@@ -1,4 +1,4 @@
-const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerMatching', 'myFullProfile', 'forwardMessage'];
+const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
         const overlayBackAction = {
           // Phone back on People / Class profile / My class report returns to the class page instead
           // of leaving the class
@@ -19,6 +19,11 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           careerAutoApply: (fromPopState) => { if (overlayReturnTo) { if (fromPopState) overlayHistoryPushed = false; overlayGoBack(); return; } closeOverlay(fromPopState); },
           careerSubscription: (fromPopState) => { if (overlayReturnTo) { if (fromPopState) overlayHistoryPushed = false; overlayGoBack(); return; } closeOverlay(fromPopState); },
           careerSaved: (fromPopState) => { if (overlayReturnTo) { if (fromPopState) overlayHistoryPushed = false; overlayGoBack(); return; } closeOverlay(fromPopState); },
+          careerDocuments: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; careerBackToAutoApply(); },
+          careerNotifications: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; careerBackToAutoApply(); },
+          careerPreferences: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; careerBackToAutoApply(); },
+          careerCancelReason: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openOverlayFrom('careerMatches', 'careerSubscription'); },
+          careerCancelDetail: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openOverlayFrom('careerSubscription', 'careerCancelReason'); },
           profileAnalytics: (fromPopState) => { if (overlayReturnTo) { overlayGoBack(); return; } closeOverlay(fromPopState); },
           jobDashboard: (fromPopState) => jobDashboardBack(fromPopState),
           call: (fromPopState) => minimizeCall(fromPopState),
@@ -457,6 +462,11 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           else if (kind === 'careerAutoApply') ov.innerHTML = careerAutoApplyHTML();
           else if (kind === 'careerSubscription') ov.innerHTML = careerSubscriptionPageHTML();
           else if (kind === 'careerSaved') ov.innerHTML = careerSavedPageHTML();
+          else if (kind === 'careerDocuments') ov.innerHTML = careerDocumentsHTML();
+          else if (kind === 'careerNotifications') ov.innerHTML = careerNotificationsHTML();
+          else if (kind === 'careerPreferences') ov.innerHTML = careerPreferencesHTML();
+          else if (kind === 'careerCancelReason') ov.innerHTML = careerCancelReasonHTML();
+          else if (kind === 'careerCancelDetail') ov.innerHTML = careerCancelDetailHTML();
           else if (kind === 'postOpportunity') {
             // Editing an existing listing is an ownership/management check (same as the Dashboard's
             // Edit button), not the "am I allowed to post something new" check
@@ -3533,7 +3543,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             return !!(a && ov.contains(a) && /^(INPUT|TEXTAREA)$/.test(a.tagName));
           }
           function applyStableHeight(){
-            if (typeof currentOverlayKind !== 'undefined' && (currentOverlayKind === 'careerMatches' || currentOverlayKind === 'careerAutoApply')) { ov.style.removeProperty('height'); return; }
+            if (typeof currentOverlayKind !== 'undefined' && (currentOverlayKind === 'careerMatches' || currentOverlayKind === 'careerAutoApply' || currentOverlayKind === 'careerPreferences' || currentOverlayKind === 'careerCancelDetail' || currentOverlayKind === 'careerDocuments')) { ov.style.removeProperty('height'); return; }
             if (tracksKeyboardItself()) { ov.style.removeProperty('height'); return; }
             const h = vv ? vv.height : window.innerHeight;
             if (!isTyping() && Math.abs(window.innerHeight - h) < 60) {
@@ -3546,7 +3556,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           window.__pinOverlayApplyStable = applyStableHeight;
           function dropNow(){
             if (tracksKeyboardItself()) return;
-            if (typeof currentOverlayKind !== 'undefined' && (currentOverlayKind === 'careerMatches' || currentOverlayKind === 'careerAutoApply')) return;
+            if (typeof currentOverlayKind !== 'undefined' && (currentOverlayKind === 'careerMatches' || currentOverlayKind === 'careerAutoApply' || currentOverlayKind === 'careerPreferences' || currentOverlayKind === 'careerCancelDetail' || currentOverlayKind === 'careerDocuments')) return;
             ov.style.height = restH + 'px';
           }
           applyStableHeight();

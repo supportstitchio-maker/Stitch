@@ -3431,3 +3431,5 @@ body:has(#class-action-loading-overlay) #study-fab-menu { display:none !importan
 /* Empty-page messages (inbox, Career Space...) stay in place when the bottom taskbar slides away:
    the screen grows by the taskbar's height, so the padding below cancels that out in sync */
 .empty-center{ padding-bottom:var(--nav-hide-px,0px); transition:padding-bottom .22s ease-out; box-sizing:border-box; }
+
+@keyframes careerPillIn{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}

@@ -1378,7 +1378,7 @@ let userPoints = 0;
                   <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
                 </div>
                 <input type="file" accept="image/*" id="auth-photo-file-input" class="hidden" onchange="authHandlePhotoSelected(this)">
-                <button type="button" onclick="document.getElementById('auth-photo-file-input').click()" id="auth-photo-add-btn" class="auth-tap px-5 py-2 rounded-full text-sm font-semibold" style="background:rgba(10,37,64,0.08);color:${NAVY};">Add a photo</button>
+                
               </div>`;
           }
           if (stage === 'iddoc') {
