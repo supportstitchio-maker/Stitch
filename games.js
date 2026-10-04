@@ -1752,7 +1752,7 @@ let userPoints = 0;
           }
           authSubmittingPosterApp = true;
           const btn = document.getElementById('auth-poster-app-continue-btn');
-          if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Submitting…'; }
+          if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = 'Sending…'; }
           // Only now -- at the very last button -- does the account actually get created.
           const committed = await authCommitNewAccount();
           if (!committed) {

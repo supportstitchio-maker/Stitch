@@ -1350,7 +1350,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const missing = posterApplicationMissingFieldMessage();
           if (missing) { openAppAlertModal(missing); return; }
           const btn = document.getElementById('poster-app-submit-btn');
-          if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.innerHTML = 'Submitting…'; }
+          if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.innerHTML = 'Sending…'; }
           const paidOnlyApproved = posterAppPaidOnlyApproved();
           const ok = paidOnlyApproved ? await submitPaidSellerApplication() : await submitPosterApplication();
           if (!ok) {
@@ -4549,7 +4549,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const educationLabel = (careerEducationLevels.find(l => l.id === d.education) || {}).label || d.education;
           const workStyleLabel = (careerWorkStyles.find(w => w.id === d.workStyle) || {}).label || d.workStyle;
           const submitBtn = document.getElementById('career-start-submit-btn');
-          if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+          if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
 
           try {
             const fd = new FormData();
@@ -6114,7 +6114,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const isLastStep = stepId === 'resume';
           const pct = Math.round((stepNum / total) * 100);
           const resumeBusy = isLastStep && careerStartResumeUploading;
-          const nextBtnLabel = resumeBusy ? 'Matching…' : (isLastStep ? 'Submit' : 'Next');
+          const nextBtnLabel = resumeBusy ? 'Fetching…' : (isLastStep ? 'Submit' : 'Next');
           const hint = careerStartStepHint(stepId);
           // Same background technique as "Apply to post" (posterApplicationOverlayHTML): a sibling
           // of the scrollable step area, not inside it, so it never scrolls or shifts as you move

@@ -204,6 +204,7 @@
           transition: box-shadow .2s ease, transform .22s ease-out, margin-bottom .22s ease-out, background-color .22s ease-out;
         }
         #classroom-nav .nav-flat-item{ transition: transform .15s ease; }
+        .pill-cta, button.rounded-full[style*="linear-gradient"]{font-family:'Colmeak','Montserrat',sans-serif !important;}
         .pill-cta{transition:transform .15s ease, box-shadow .15s ease;}
         .pill-cta:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(30,144,255,0.35) !important;}
         @media (hover:hover){
