@@ -1045,8 +1045,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>
 
             <div class="flex gap-3">
-              <button onclick="discardEditProfileChanges()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border" style="color:#dc2626;border-color:rgba(220,38,38,0.25);background-image:linear-gradient(135deg, rgba(220,38,38,0.16) 0%, rgba(220,38,38,0.03) 100%);">Cancel</button>
-              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="flex-1 py-3 rounded-2xl font-semibold text-sm border flex items-center justify-center gap-2" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">Save Changes</button>
+              <button onclick="discardEditProfileChanges()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
+              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">Save Changes</button>
             </div>`;
         }
 

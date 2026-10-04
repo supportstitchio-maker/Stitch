@@ -4833,11 +4833,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const modal = document.getElementById('careerSubscribeModal');
           const box = document.getElementById('careerSubscribeModalContent');
           if (!modal || !box) { startCareerPlanPayment(); return; }
-          const items = [
-            ['Matches you to opportunities', 'Stitch Bot reads your CV and what you are looking for, then picks the posts that fit you best.'],
-            ['Applies for you', 'It sends your CV, open application letter and any documents a post asks for. Only to posts inside Stitch, never outside websites.'],
-            ['Keeps watch', 'It tracks every application and tells you when a status changes, an interview is set or a deadline is close.'],
-          ];
           const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
           box.innerHTML = `
             <div class="text-center">
@@ -4850,16 +4845,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               ${row('You pay today', 'GH₵' + plan.price)}
               ${row('Access until', escapeHtml(careerPlanDateLabel(careerPlanEndDate(plan))))}
             </div>
-            <div class="text-sm font-semibold text-gray-800 mb-1">What you are subscribing to</div>
-            ${items.map(it => `
-              <div class="flex items-start gap-3" style="padding:7px 0;">
-                <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('check','w-3.5 h-3.5')}</span>
-                <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-gray-800">${it[0]}</div><div class="text-xs text-gray-500">${it[1]}</div></div>
-              </div>`).join('')}
-            <div class="text-xs text-gray-400 mb-5" style="margin-top:6px;">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
+            <div class="text-xs text-gray-400 mb-5">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
             <div class="flex gap-3">
-              <button onclick="closeCareerSubscribeSheet()" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(65,105,225,0.14);color:#1e3a8a;">Back</button>
-              <button onclick="confirmCareerSubscribeSheet()" class="flex-1 py-3 rounded-2xl font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Subscribe</button>
+              <button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Back</button>
+              <button onclick="confirmCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
             </div>`;
           const wasHidden = modal.classList.contains('hidden');
           modal.classList.remove('hidden');
@@ -8030,8 +8019,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <textarea id="admin-msg-text" maxlength="600" placeholder="Type your message about their report or account…" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm resize-none" style="flex:1;min-height:140px;"></textarea>
               </div>
               <div style="display:flex;gap:8px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid #eef0f3;background:#fff;">
-                <button onclick="adminCloseMenuSheet()" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(65,105,225,0.14);color:#1e3a8a;">Cancel</button>
-                <button id="admin-msg-send" onclick="adminSendPosterMessage('${userId}')" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(30,144,255,0.18);color:#1e3a8a;">Send</button>
+                <button onclick="adminCloseMenuSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
+                <button id="admin-msg-send" onclick="adminSendPosterMessage('${userId}')" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Send</button>
               </div>
             </div>`);
           const vv = window.visualViewport;
