@@ -271,6 +271,16 @@
             </div>`;
         }
         // The wallet's content on its own, so the Dashboard can show it as a tab.
+        // Earnings charts on the creator wallet
+        function walletChartsHTML(b){
+          try {
+            if (walletState.loading || walletState.missing) return '';
+            const paid = walletState.payments.filter(x => x.status === 'paid');
+            const withdrawn = Math.max(0, b.lifetime - b.available - b.pending);
+            return chartColumnsCardHTML('Your earnings per week', chartTimeline(paid, x => x.paid_at, x => Number(x.creator_net || 0) / CREATOR_AMOUNT_DIVISOR, 8, 7), '#1e90ff', chartCompact, 'GH₵, last 8 weeks') +
+              chartDonutCardHTML('Where your money is', [{ label: 'Available', n: b.available / CREATOR_AMOUNT_DIVISOR, color: '#059669' }, { label: 'Pending', n: b.pending / CREATOR_AMOUNT_DIVISOR, color: '#f59e0b' }, { label: 'Withdrawn', n: withdrawn / CREATOR_AMOUNT_DIVISOR, color: '#94a3b8' }], chartCompact(b.lifetime / CREATOR_AMOUNT_DIVISOR), 'lifetime GH₵');
+          } catch (e) { return ''; }
+        }
         function creatorWalletBodyHTML(){
           const b = walletBalances();
           const upcoming = walletState.payments.filter(x => x.status === 'paid' && x.release_at && new Date(x.release_at) > new Date()).sort((a, c) => new Date(a.release_at) - new Date(c.release_at));
@@ -300,6 +310,7 @@
                     <div class="text-[11px] text-gray-400 mt-1">Your ${creatorShareLabel()} of every sale</div>
                   </div>
                 </div>
+                ${walletChartsHTML(b)}
                 ${upcoming.length ? `
                   <div class="text-[11px] text-gray-400 mb-4 px-1">${upcoming.slice(0, 3).map(x => `${ghs(x.creator_net)} on ${creatorDate(x.release_at)}`).join(' · ')}</div>` : '<div class="mb-4"></div>'}
                 <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
@@ -565,8 +576,8 @@
         // ============================================================
         // Admin dashboard tabs
         // ============================================================
-        const CREATOR_ADMIN_TABS = ['creators', 'payouts', 'classreports', 'payments', 'money', 'audit'];
-        let adminCreatorData = { loading: false, loaded: false, missing: [], apps: [], creators: [], payouts: [], reports: [], payments: [], ledger: [], audit: [], people: {} };
+        const CREATOR_ADMIN_TABS = ['creators', 'payouts', 'classreports', 'payments', 'money', 'cancellations', 'audit'];
+        let adminCreatorData = { loading: false, loaded: false, missing: [], apps: [], creators: [], payouts: [], reports: [], payments: [], ledger: [], audit: [], cancels: [], people: {} };
         let adminPaymentSearch = '';
         let adminCreatorOpenId = null;
         let adminCreatorOpenClasses = {};
@@ -592,7 +603,7 @@
           const pendingPayouts = d.payouts.filter(p => p.status === 'pending_approval').length;
           const openReports = d.reports.filter(r => r.status === 'open' || r.status === 'reviewing').length;
           const n = x => x ? ` (${x})` : '';
-          return [['creators', 'Creators' + n(pendingApps)], ['payouts', 'Payouts' + n(pendingPayouts)], ['classreports', 'Class reports' + n(openReports)], ['payments', 'Payments'], ['money', 'Money'], ['audit', 'Audit log']];
+          return [['creators', 'Creators' + n(pendingApps)], ['payouts', 'Payouts' + n(pendingPayouts)], ['classreports', 'Class reports' + n(openReports)], ['payments', 'Payments'], ['money', 'Money'], ['cancellations', 'Cancellations' + n(d.cancels.filter(c => c.status === 'new').length)], ['audit', 'Audit log']];
         }
 
         async function loadAdminCreatorData(){
@@ -608,6 +619,7 @@
             ['reports', sb.from('class_reports').select('*').order('created_at', { ascending: false }).limit(300)],
             ['payments', sb.from('payments').select('*').order('paid_at', { ascending: false }).limit(500)],
             ['ledger', sb.from('wallet_ledger').select('creator_id, payment_id, type, amount, state').limit(5000)],
+            ['cancels', sb.from('career_cancel_reasons').select('*').order('created_at', { ascending: false }).limit(300)],
             ['audit', sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(150)],
           ];
           const results = await Promise.all(q.map(([, p]) => p.then(r => r, e => ({ data: null, error: e }))));
@@ -619,7 +631,7 @@
           });
           adminCreatorData.missing = missing;
           const d = adminCreatorData;
-          const ids = [].concat(d.apps.map(a => a.user_id), d.creators.map(c => c.user_id), d.payouts.map(p => p.creator_id), d.reports.map(r => r.reporter_id), d.payments.map(p => p.buyer_id), d.payments.map(p => p.creator_id), d.audit.map(a => a.admin_id));
+          const ids = [].concat(d.apps.map(a => a.user_id), d.creators.map(c => c.user_id), d.payouts.map(p => p.creator_id), d.reports.map(r => r.reporter_id), d.payments.map(p => p.buyer_id), d.payments.map(p => p.creator_id), d.audit.map(a => a.admin_id), d.cancels.map(c => c.user_id));
           d.people = await creatorPeopleByIds(ids);
           d.loading = false; d.loaded = true;
           refreshAdminDashboardDom();
@@ -844,6 +856,30 @@
             <div class="text-[11px] text-gray-400 mt-3">Based on the latest ${d.payments.length} payments. Check totals against your payment records before paying out.</div>`;
         }
 
+        // Why people cancelled Stitch Bot (written by careerCancelSubmit in jobs.js)
+        function adminCancellationsTabHTML(){
+          const rows = adminCreatorData.cancels;
+          if (!rows.length) return creatorEmpty('No cancellations yet. Reasons show up here when someone cancels Stitch Bot.');
+          const summary = chartDonutCardHTML('Why people cancel', chartCountBy(rows, r => r.reason_label || 'Skipped'), rows.length, 'cancelled') +
+            chartColumnsCardHTML('Cancellations per week', chartTimeline(rows, r => r.created_at, () => 1, 8, 7), '#ef4444', null, 'Last 8 weeks');
+          const cards = rows.map(r => `
+            <div class="${creatorCard} p-4 mb-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="font-semibold text-sm">${escapeHtml(r.reason_label || 'Skipped')}</div>
+                ${r.status === 'new' ? `<button onclick="markCancelReasonRead(${r.id})" class="text-xs font-semibold flex-shrink-0" style="color:#1e90ff;">Mark read</button>` : `<span class="text-xs text-gray-400 flex-shrink-0">Read</span>`}
+              </div>
+              ${r.detail ? `<div class="text-sm text-gray-700 mt-2" style="white-space:pre-wrap;">${escapeHtml(r.detail)}</div>` : ''}
+              <div class="text-[11px] text-gray-400 mt-2">${escapeHtml(personName(adminCreatorData.people, r.user_id))} · ${creatorDate(r.created_at)}${r.plan ? ' · ' + escapeHtml(r.plan) : ''}</div>
+            </div>`).join('');
+          return summary + cards;
+        }
+        async function markCancelReasonRead(id){
+          const sb = getSupabaseClient(); if (!sb || !isCurrentUserAdmin()) return;
+          const row = adminCreatorData.cancels.find(c => c.id === id); if (row) row.status = 'read';
+          refreshAdminDashboardDom();
+          try { await sb.from('career_cancel_reasons').update({ status: 'read' }).eq('id', id); } catch (e) {}
+        }
+
         function adminAuditTabHTML(){
           const rows = adminCreatorData.audit;
           if (!rows.length) return creatorEmpty('No admin actions logged yet.');
@@ -852,6 +888,43 @@
               <div class="font-semibold">${escapeHtml(String(a.action || '').replace(/_/g, ' '))}</div>
               <div class="text-gray-400 mt-0.5">${escapeHtml(personName(adminCreatorData.people, a.admin_id))} · ${creatorDate(a.created_at)} · ${escapeHtml(String(a.target || '').slice(0, 60))}</div>
             </div>`).join('');
+        }
+
+        // Charts shown at the top of each creator/money tab
+        function adminCreatorChartsHTML(tab){
+          const d = adminCreatorData;
+          const typeLabel = p => String(p.product_type || 'other').replace(/_/g, ' ').replace(/^./, ch => ch.toUpperCase());
+          const paid = d.payments.filter(p => p.status === 'paid');
+          const money = v => chartCompact(v);
+          const mu = x => Number(x || 0) / CREATOR_AMOUNT_DIVISOR; // amounts are stored in minor units
+          if (tab === 'creators') {
+            const rows = adminCreatorRows();
+            return chartDonutCardHTML('Creators by status', chartCountBy(rows, r => ({ pending: 'Pending', approved: 'Approved', suspended: 'Suspended' }[r.status || 'pending'] || 'Other'), { Pending: '#f59e0b', Approved: '#059669', Suspended: '#ef4444' }), rows.length, 'people');
+          }
+          if (tab === 'payouts') {
+            const lab = { pending_approval: 'Waiting', approved: 'Approved', paid: 'Paid', rejected: 'Rejected', failed: 'Failed' };
+            return chartDonutCardHTML('Withdrawals by status', chartCountBy(d.payouts, p => lab[p.status] || String(p.status || 'Other').replace(/_/g, ' ')), d.payouts.length, 'requests') +
+              chartColumnsCardHTML('Withdrawal requests per week', chartTimeline(d.payouts, p => p.requested_at, p => mu(p.amount), 8, 7), '#4f46e5', chartCompact, 'Amount in GH₵, last 8 weeks');
+          }
+          if (tab === 'classreports') {
+            return chartDonutCardHTML('Class reports by status', chartCountBy(d.reports, r => String(r.status || 'open').replace(/^./, ch => ch.toUpperCase())), d.reports.length, 'reports');
+          }
+          if (tab === 'payments') {
+            return chartColumnsCardHTML('Sales per day', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 14, 1), '#1e90ff', money, 'GH₵, last 14 days') +
+              chartDonutCardHTML('What people bought', chartCountBy(paid, typeLabel), paid.length, 'payments');
+          }
+          if (tab === 'money') {
+            const gross = paid.reduce((n, p) => n + mu(p.gross_amount), 0);
+            const fee = paid.reduce((n, p) => n + mu(p.stitch_fee), 0);
+            return chartLineCardHTML('Sales per week', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 8, 7), 'Last 8 weeks') +
+              chartColumnsCardHTML('Stitch revenue per week', chartTimeline(paid, p => p.paid_at, p => mu(p.stitch_fee), 8, 7), '#059669', money, 'GH₵, last 8 weeks') +
+              (gross > 0 ? chartDonutCardHTML('Who gets the money', [{ label: 'Creators', n: Math.max(0, gross - fee), color: '#1e90ff' }, { label: 'Stitch', n: fee, color: '#059669' }], Math.round(fee / gross * 100) + '%', 'Stitch share') : '') +
+              chartDonutCardHTML('Sales by type', chartCountBy(paid, typeLabel), paid.length, 'payments');
+          }
+          if (tab === 'audit') {
+            return chartBarsCardHTML('Most common admin actions', chartCountBy(d.audit, a => String(a.action || 'other').replace(/_/g, ' ')), 'Latest ' + d.audit.length);
+          }
+          return '';
         }
 
         // Called from adminBodyHTML() in jobs.js for the tabs above.
@@ -864,6 +937,9 @@
             : tab === 'classreports' ? adminClassReportsTabHTML()
             : tab === 'payments' ? adminPaymentsTabHTML()
             : tab === 'money' ? adminMoneyTabHTML()
+            : tab === 'cancellations' ? adminCancellationsTabHTML()
             : adminAuditTabHTML();
-          return note + body;
+          let charts = '';
+          try { charts = adminCreatorChartsHTML(tab); } catch (e) { charts = ''; }
+          return note + charts + body;
         }

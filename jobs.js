@@ -5220,6 +5220,103 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerLegendHTML(segs){
           return segs.map(s => `<div class="flex items-center gap-2 text-xs" style="margin:3px 0;"><span style="width:9px;height:9px;border-radius:9999px;background:${s.color};flex-shrink:0;"></span><span class="text-gray-600 flex-1 min-w-0 truncate">${s.label}</span><span class="font-bold text-gray-800">${s.n}</span></div>`).join('');
         }
+
+        // ---- Shared chart helpers: used by the admin dashboard and the wallet ----
+        const CHART_COLORS = ['#1e90ff', '#4f46e5', '#059669', '#f59e0b', '#ef4444', '#94a3b8', '#a5b4fc', '#0ea5e9'];
+        function chartCardHTML(title, right, inner){
+          return `<div class="bg-white rounded-3xl p-4 mb-4 shadow-sm"><div class="flex items-center justify-between" style="margin-bottom:10px;"><div class="font-semibold text-sm text-gray-800">${title}</div>${right ? `<div class="text-xs text-gray-400">${right}</div>` : ''}</div>${inner}</div>`;
+        }
+        // Count rows by a key -> [{label, n, color}] biggest first
+        function chartCountBy(rows, keyFn, colorMap){
+          const m = {};
+          rows.forEach(r => { const k = String(keyFn(r) || 'Other'); m[k] = (m[k] || 0) + 1; });
+          return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([label, n], i) => ({ label, n, color: (colorMap && colorMap[label]) || CHART_COLORS[i % CHART_COLORS.length] }));
+        }
+        // Pie (donut) + legend. items: [{label, n, color?}]
+        function chartDonutCardHTML(title, items, big, small, right){
+          const segs = items.filter(x => x.n > 0).map((x, i) => ({ label: escapeHtml(x.label), n: x.n, color: x.color || CHART_COLORS[i % CHART_COLORS.length] }));
+          const total = segs.reduce((a, x) => a + x.n, 0);
+          if (!total) return '';
+          return chartCardHTML(title, right, `<div class="flex items-center gap-4"><div class="flex-shrink-0">${careerDonutSVG(segs, big != null ? big : total, small || 'total')}</div><div class="flex-1 min-w-0">${careerLegendHTML(segs)}</div></div>`);
+        }
+        // Horizontal bars. items: [{label, n, color?}]
+        function chartBarsCardHTML(title, items, right, valueFmt){
+          const list = items.filter(x => x.n > 0).slice(0, 8);
+          if (!list.length) return '';
+          const max = Math.max(1, ...list.map(x => x.n));
+          return chartCardHTML(title, right, list.map((x, i) => careerBarRowHTML(escapeHtml(x.label), x.n, max, x.color || CHART_COLORS[i % CHART_COLORS.length], valueFmt ? valueFmt(x.n) : x.n)).join(''));
+        }
+        function chartCompact(v){ v = Number(v) || 0; if (v >= 1e6) return (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (v >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'k'; return v < 10 && v % 1 ? v.toFixed(1) : String(Math.round(v)); }
+        // Totals per time slot, newest last. unitDays: 1 = per day, 7 = per week
+        function chartTimeline(rows, tsFn, valFn, slots, unitDays){
+          const UNIT = unitDays * 86400000, now = Date.now();
+          const vals = new Array(slots).fill(0);
+          rows.forEach(r => {
+            const t = tsFn(r); const ts = t ? new Date(t).getTime() : 0; if (!ts) return;
+            const i = slots - 1 - Math.floor((now - ts) / UNIT);
+            if (i >= 0 && i < slots) vals[i] += Number(valFn(r)) || 0;
+          });
+          const labels = vals.map((_, k) => new Date(now - (slots - 1 - k) * UNIT).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+          return { vals, labels };
+        }
+        // Column chart (bar chart over time)
+        function chartColumnsSVG(vals, labels, color, fmt, ariaLabel){
+          const W = 300, H = 130, pl = 8, pr = 8, pt = 16, pb = 20;
+          const max = Math.max(1, ...vals); const n = vals.length;
+          const slot = (W - pl - pr) / n, bw = Math.min(26, slot * 0.62);
+          const f = fmt || (v => String(v));
+          const every = n > 8 ? Math.ceil(n / 7) : 1;
+          const bars = vals.map((v, i) => {
+            const h = v ? Math.max(3, (H - pt - pb) * v / max) : 0; const x = pl + i * slot + (slot - bw) / 2; const y = H - pb - h;
+            return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${color}"/>${v && n <= 8 ? `<text x="${(x + bw / 2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#374151">${escapeHtml(f(v))}</text>` : ''}${i % every === 0 ? `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="8.5" fill="#9ca3af">${escapeHtml(labels[i])}</text>` : ''}`;
+          }).join('');
+          return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${escapeHtml(ariaLabel || 'Chart')}"><line x1="${pl}" x2="${W - pr}" y1="${H - pb}" y2="${H - pb}" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>${bars}</svg>`;
+        }
+        function chartColumnsCardHTML(title, tl, color, fmt, right){
+          if (!tl.vals.some(v => v > 0)) return '';
+          return chartCardHTML(title, right, chartColumnsSVG(tl.vals, tl.labels, color, fmt, title));
+        }
+        // Line chart with an area, for trends
+        function chartLineCardHTML(title, tl, right){
+          if (!tl.vals.some(v => v > 0)) return '';
+          return chartCardHTML(title, right, careerTrendSVG(tl.vals, tl.labels));
+        }
+
+        // ---- Admin dashboard: charts for the poster / report tabs ----
+        function adminPosterChartsHTML(tab){
+          const pend = adminPosterApplications, rev = adminReviewedApplications;
+          if (tab === 'applications') {
+            if (adminDashboardLoading) return '';
+            if (!adminHistoryLoaded && !adminHistoryLoading) setTimeout(loadAdminHistoryData, 0);
+            const count = s => rev.filter(a => a.poster_status === s).length;
+            const items = [{ label: 'Pending', n: pend.length, color: '#f59e0b' }];
+            if (adminHistoryLoaded) items.push({ label: 'Approved', n: count('approved'), color: '#059669' }, { label: 'Declined', n: count('denied'), color: '#ef4444' }, { label: 'Frozen', n: count('frozen'), color: '#0ea5e9' }, { label: 'Blocked', n: count('blocked'), color: '#6b7280' });
+            const all = pend.concat(rev);
+            return chartDonutCardHTML('Poster applications', items, all.length, 'applications') +
+              chartColumnsCardHTML('New applications per week', chartTimeline(all, a => a.poster_applied_at, () => 1, 8, 7), '#1e90ff', null, 'Last 8 weeks');
+          }
+          if (tab === 'approved' || tab === 'declined' || tab === 'frozen' || tab === 'blocked') {
+            if (!adminHistoryLoaded) return '';
+            const want = tab === 'declined' ? 'denied' : tab;
+            const rows = rev.filter(a => a.poster_status === want);
+            const color = { approved: '#059669', declined: '#ef4444', frozen: '#0ea5e9', blocked: '#6b7280' }[tab];
+            const label = { approved: 'Approvals', declined: 'Declines', frozen: 'Freezes', blocked: 'Blocks' }[tab];
+            return chartColumnsCardHTML(label + ' per week', chartTimeline(rows, a => a.poster_reviewed_at || a.poster_applied_at, () => 1, 8, 7), color, null, 'Last 8 weeks');
+          }
+          if (tab === 'reports') {
+            if (adminDashboardLoading || !adminOpenReports.length) return '';
+            const cat = r => { const raw = String(r.reason || '').trim(); const nl = raw.indexOf('\n'); return (nl === -1 ? raw : raw.slice(0, nl)) || 'No reason given'; };
+            return chartDonutCardHTML('Open reports by reason', chartCountBy(adminOpenReports, cat), adminOpenReports.length, 'open') +
+              chartColumnsCardHTML('Reports per week', chartTimeline(adminOpenReports, r => r.created_at, () => 1, 8, 7), '#f59e0b', null, 'Last 8 weeks');
+          }
+          if (tab === 'log') {
+            if (!adminHistoryLoaded || !adminHistoryItems.length) return '';
+            const dec = chartCountBy(adminHistoryItems, x => x.decision === 'listing_removed' ? 'Listing removed' : 'Dismissed', { 'Listing removed': '#ef4444', 'Dismissed': '#94a3b8' });
+            return chartDonutCardHTML('How reports ended', dec, adminHistoryItems.length, 'closed') +
+              chartColumnsCardHTML('Reports closed per week', chartTimeline(adminHistoryItems, x => x.when, () => 1, 8, 7), '#4f46e5', null, 'Last 8 weeks');
+          }
+          return '';
+        }
         function careerBotStats(){
           const p = careerBotEnsure();
           const list = careerBotAppliedList();
@@ -5300,8 +5397,22 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </div>`;
           const docsNote = s.left.length ? `<div class="text-xs text-gray-400 px-1 mb-4" style="margin-top:-4px;">${s.totalFiles} file${s.totalFiles === 1 ? '' : 's'} uploaded. Still to add: ${escapeHtml(s.left.slice(0, 4).join(', '))}${s.left.length > 4 ? ` and ${s.left.length - 4} more` : ''}. <button onclick="openCareerDocumentsPage()" class="font-semibold" style="color:${NAVY};">Open Documents</button></div>` : `<div class="text-xs text-gray-400 px-1 mb-4" style="margin-top:-4px;">${s.totalFiles} files uploaded. Every section is filled.</div>`;
           const score = s.avgScore !== null ? card(`${title('Match quality')}${careerBarRowHTML('Average match of the posts Stitch Bot chose', s.avgScore, 100, s.avgScore < 50 ? '#f59e0b' : '#059669', s.avgScore + '%')}`) : '';
+          const tile2 = (n, label) => `<div class="rounded-2xl text-center" style="background:rgba(10,37,64,0.05);padding:12px 4px;"><div class="text-lg font-bold" style="color:${NAVY};">${n}</div><div class="text-xs text-gray-500" style="margin-top:2px;">${label}</div></div>`;
+          const thisWeek = s.weekly[s.weekly.length - 1] || 0;
+          const tiles2 = `<div class="grid grid-cols-4 gap-2 mb-4">${tile2(thisWeek, 'This week')}${tile2(s.applied ? s.responseRate + '%' : '-', 'Heard back')}${tile2(s.avgScore !== null ? s.avgScore + '%' : '-', 'Avg match')}${tile2(s.filled + '/' + s.totalSections, 'Documents')}</div>`;
+          const todo = [];
+          if (!s.p.resumeFileName) todo.push(['Attach your CV', 'openCareerDocumentsPage()']);
+          if (!careerBotDocList('openLetter').length) todo.push(['Add an open application letter', 'openCareerDocumentsPage()']);
+          if (!careerBotDocList('degree').length) todo.push(['Add your degree or diploma', 'openCareerDocumentsPage()']);
+          if (!careerBotDocList('reference').length) todo.push(['Add a reference letter', 'openCareerDocumentsPage()']);
+          if (!s.applied) todo.push(['Review your preferences before the first application', 'openCareerPreferencesPage()']);
+          const nextSteps = todo.length ? card(`
+            ${title('Next steps')}
+            ${todo.slice(0, 4).map((t, i) => `<button onclick="${t[1]}" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}"><span>${t[0]}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`).join('')}`) : '';
           return `
             ${tiles}
+            ${tiles2}
+            ${nextSteps}
             ${careerBotPendingHTML()}
             ${progress}${funnel}${trend}${statusCard}${pair}${docsNote}${score}
             ${careerAutoApplyInsightsHTML(true)}
@@ -5332,6 +5443,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <div class="bg-white rounded-3xl p-4 mb-5 shadow-sm">
               <div class="text-sm font-semibold text-gray-800" style="margin-bottom:4px;">Add your first document</div>
               <div class="text-xs text-gray-500">Upload your open application letter or any document below. Once the first one is in, your documents move to the Documents page in the menu and this page becomes your dashboard: progress, funnel, applications sent and your tracker.</div>
+              <div class="text-xs text-gray-500" style="margin-top:10px;">You can add: ${CAREER_BOT_DOC_SLOTS.map(x => x.label.toLowerCase()).join(', ')}. Each section takes several files.</div>
             </div>
             ${careerBotDocsCardHTML()}`;
           return `
@@ -5405,24 +5517,24 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         // ---- Preferences page ----
         function careerPrefChipsHTML(key, options, current){
-          return `<div class="flex flex-wrap" style="gap:10px;">${options.map(o => {
+          return `<div class="flex flex-wrap" style="gap:12px;">${options.map(o => {
             const sel = current === o.v; const val = typeof o.v === 'number' ? o.v : `'${o.v}'`;
-            return `<button onclick="setCareerBotPref('${key}',${val})" class="text-sm font-semibold rounded-full" style="padding:0.7rem 1.1rem;${sel ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);color:#fff;` : 'background:#eef2f8;color:#374151;'}">${o.l}</button>`;
+            return `<button onclick="setCareerBotPref('${key}',${val})" class="px-4 py-3 rounded-full text-sm font-medium outline-pill ${sel ? 'is-selected' : ''}">${o.l}</button>`;
           }).join('')}</div>`;
         }
         function careerPrefChoiceHTML(key, options, current){
           return options.map(o => {
             const sel = current === o.v;
-            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full text-left rounded-2xl flex items-start gap-3" style="padding:14px;margin-bottom:10px;border:2px solid ${sel ? '#1e90ff' : 'rgba(128,128,128,0.2)'};background:${sel ? 'rgba(30,144,255,0.06)' : 'transparent'};">
-              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;color:#fff;' : 'border:2px solid rgba(128,128,128,0.4);'}">${sel ? Icon('check','w-3 h-3') : ''}</span>
-              <span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-gray-800">${o.l}</span><span class="block text-xs text-gray-500" style="margin-top:2px;">${o.d}</span></span>
+            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full px-4 py-4 rounded-2xl text-left text-sm font-medium outline-pill ${sel ? 'is-selected' : ''}" style="margin-bottom:12px;">
+              ${o.l}
+              <div class="text-xs font-normal mt-0.5" style="color:var(--pill-text);opacity:${sel ? '0.85' : '0.6'};">${o.d}</div>
             </button>`;
           }).join('');
         }
         function careerPreferencesHTML(){
           const pr = careerBotPrefs();
-          const sec = (t, sub, inner) => `<div class="bg-white rounded-3xl p-4 mb-4 shadow-sm"><div class="text-sm font-semibold text-gray-800">${t}</div>${sub ? `<div class="text-xs text-gray-400" style="margin:2px 0 12px;">${sub}</div>` : '<div style="height:10px;"></div>'}${inner}</div>`;
-          const sub2 = (t) => `<div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:20px 0 10px;">${t}</div>`;
+          const sec = (t, sub, inner) => `<div style="margin-bottom:28px;"><div class="text-base font-semibold text-gray-800">${t}</div>${sub ? `<div class="text-xs text-gray-400" style="margin:2px 0 12px;">${sub}</div>` : '<div style="height:10px;"></div>'}${inner}</div>`;
+          const sub2 = (t) => `<div class="text-sm font-semibold text-gray-500" style="margin:20px 0 10px;">${t}</div>`;
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Preferences')}
@@ -5543,7 +5655,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="text-sm text-gray-500 text-center" style="margin-bottom:18px;">We're sorry to see you go. Pick the closest reason. It takes a few seconds and helps us improve.</div>
                 ${CAREER_CANCEL_GROUPS.map(g => `
                   <div class="text-xs font-bold uppercase tracking-wide text-gray-400 px-1" style="margin:16px 0 8px;">${g.title}</div>
-                  ${g.items.map(i => `<button onclick="careerCancelPick('${i.id}')" class="w-full flex items-center justify-between text-left font-semibold text-sm" style="background:#eef2f8;color:#374151;border-radius:9999px;padding:0.95rem 1.25rem;margin-bottom:10px;"><span>${i.label}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`).join('')}`).join('')}
+                  ${g.items.map((i, ix) => `<button onclick="careerCancelPick('${i.id}')" class="w-full flex items-center justify-between text-left font-semibold text-sm" style="background:transparent;color:#374151;padding:1rem 0.25rem;${ix ? '' : 'border-top:1px solid rgba(128,128,128,0.18);'}border-bottom:1px solid rgba(128,128,128,0.18);"><span>${i.label}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`).join('')}`).join('')}
                 <button onclick="careerCancelSkip()" class="w-full text-sm font-semibold text-gray-400 py-4">Skip</button>
               </div>
             </div>`;
@@ -5553,14 +5665,28 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           careerCancelDraft = { id: it.id, label: it.label, ask: it.ask, text: '' };
           openOverlayFrom('careerCancelReason', 'careerCancelDetail');
         }
-        function careerCancelSkip(){ openOverlayFrom('careerMatches', 'careerSubscription'); }
+        // Saves the reason so admins can read it in Admin Dashboard > Cancellations
+        async function careerSendCancelReason(reasonId, label, text){
+          try {
+            const sb = getSupabaseClient(); if (!sb) return;
+            const { data } = await sb.auth.getUser();
+            const uid = data && data.user && data.user.id; if (!uid) return;
+            const sub = (careerStartProfile && careerStartProfile.subscription) || {};
+            await sb.from('career_cancel_reasons').insert({
+              user_id: uid, reason_id: String(reasonId || 'skipped').slice(0, 40), reason_label: String(label || '').slice(0, 120),
+              detail: String(text || '').trim().slice(0, 1000), plan: sub.plan ? String(sub.plan).slice(0, 40) : null,
+              expires_at: sub.expiresAt ? new Date(sub.expiresAt).toISOString() : null,
+            });
+          } catch (e) {}
+        }
+        function careerCancelSkip(){ careerSendCancelReason('skipped', '', ''); openOverlayFrom('careerMatches', 'careerSubscription'); }
         function careerCancelDetailHTML(){
           const d = careerCancelDraft;
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:20px;">
               ${overlayHeader('Tell us more', '20px', 'overlayGoBack()', null, { right: true })}
               <div class="px-5" style="padding-top:18px;">
-                <div class="inline-block text-xs font-semibold px-3 py-1.5 rounded-full" style="background:#eef2f8;color:#374151;margin-bottom:12px;">${escapeHtml(d.label)}</div>
+                <div class="text-xs font-semibold text-gray-400" style="margin-bottom:10px;">${escapeHtml(d.label)}</div>
                 <div class="text-base font-semibold text-gray-800" style="margin-bottom:10px;">${escapeHtml(d.ask)}</div>
                 <textarea id="career-cancel-text" rows="7" maxlength="1000" oninput="careerCancelDraft.text=this.value" placeholder="Type here…" class="w-full text-sm rounded-2xl px-4 py-3" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;resize:none;">${escapeHtml(d.text)}</textarea>
               </div>
@@ -5575,6 +5701,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             p.subscription.cancelReason = { id: d.id, label: d.label, text: String(d.text || '').trim().slice(0, 1000), ts: Date.now() };
             saveCareerStartProfile();
           }
+          careerSendCancelReason(d.id, d.label, d.text);
           try { if (window.posthog && typeof window.posthog.capture === 'function') window.posthog.capture('career_subscription_cancel_reason', { reason: d.id, text: String(d.text || '').slice(0, 500) }); } catch (e) {}
           openOverlayFrom('careerMatches', 'careerSubscription');
           openAppAlertModal('Thanks for telling us. Stitch Bot keeps working until your plan ends.', 'Feedback sent');
@@ -6210,8 +6337,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           { id: 'transcript', label: 'Academic transcript', hint: 'Sent when a post asks for it.' },
           { id: 'portfolio', label: 'Portfolio', hint: 'Sent when a post asks for it.' },
           { id: 'idDocument', label: 'ID document', hint: 'Only sent when a post requires it.' },
+          { id: 'degree', label: 'Degree or diploma', hint: 'Sent when a post asks for proof of your qualification.' },
+          { id: 'writingSample', label: 'Writing sample', hint: 'Sent when a post asks for work samples.' },
           { id: 'certificate', label: 'Certificates', hint: 'Attached to your applications as extra documents.', extra: true },
           { id: 'reference', label: 'Reference letter', hint: 'Attached to your applications as extra documents.', extra: true },
+          { id: 'license', label: 'Licence or registration', hint: 'Professional licence, membership or registration. Attached as an extra document.', extra: true },
           { id: 'otherDocument', label: 'Other documents', hint: 'Anything else you want sent with your applications.', extra: true },
         ];
         function careerBotEnsure(){
@@ -6602,7 +6732,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="flex items-center gap-2" style="margin-top:5px;">
                   ${p.resumeDataUrl ? `<button type="button" onclick="careerViewResume()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};">View</button><button type="button" onclick="careerDownloadResume()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};">Download</button>` : ''}
                   <input type="file" id="career-profile-resume-input" accept=".pdf,.doc,.docx" class="hidden" onchange="handleCareerProfileResumeReplace(event)">
-                  <button onclick="document.getElementById('career-profile-resume-input').click()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:#f3f4f6;color:#374151;">${p.resumeFileName ? 'Replace resume' : 'Attach resume'}</button>
+                  <button onclick="document.getElementById('career-profile-resume-input').click()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:#f3f4f6;color:#374151;">${p.resumeFileName ? 'Replace' : 'Attach resume'}</button>
                 </div>
               </div>
               ${careerHasBotDocs() ? '' : careerProgressGraphHTML()}
@@ -7997,6 +8127,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         function adminBodyHTML(){
+          const tab0 = adminDashboardTab;
+          if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab0)) return adminBodyCoreHTML();
+          let charts = '';
+          try { charts = adminPosterChartsHTML(tab0); } catch (e) { charts = ''; }
+          return charts + adminBodyCoreHTML();
+        }
+        function adminBodyCoreHTML(){
           const empty = msg => `<div class="text-center text-gray-400 text-sm py-8">${msg}</div>`;
           const tab = adminDashboardTab;
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab)) return creatorAdminBodyHTML(tab);
