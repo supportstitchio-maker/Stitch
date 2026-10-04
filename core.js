@@ -1872,18 +1872,15 @@
   <audio id="call-bg-audio" autoplay playsinline class="hidden"></audio>
 
   <!-- Flashcard study modal -->
-  <div id="flashModal" class="hidden absolute inset-0 z-30 flex flex-col" style="background:#fff;z-index:30;">
-    <div class="px-5 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-      <button onclick="closeFlashModal()" class="text-gray-400" aria-label="Back">${IconBold('back','w-5 h-5')}</button>
-    </div>
-    <div class="flex-1 flex items-center justify-center px-4 overflow-y-auto">
-      <div id="flashModalContent" class="bg-white rounded-3xl w-full p-5" style="max-width:28rem;max-height:80vh;max-height:80dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 10px 40px rgba(65,105,225,0.15);"></div>
-    </div>
+  <div id="flashModal" class="hidden absolute inset-0 z-30 flex flex-col fc-root" style="z-index:30;">
+    <div id="flashModalContent" class="flex-1 flex flex-col min-h-0"></div>
   </div>
 
   <!-- Challenge Arena modal: Set Up a Challenge / Challenge created / Invite a Friend -->
-  <div id="challengeModal" class="hidden absolute inset-0 z-40 flex justify-center items-center overflow-y-auto px-5" style="background:rgba(0,0,0,0.55);padding-top:8vh;padding-bottom:8vh;">
-    <div id="challengeModalContent" class="bg-white rounded-3xl w-full p-6" style="max-width:26rem;box-shadow:0 10px 40px rgba(0,0,0,0.25);"></div>
+  <div id="challengeModal" class="hidden absolute inset-0 z-40 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.55);">
+    <div class="bg-white w-full p-6 confirm-sheet" style="max-width:640px;max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
+      <div id="challengeModalContent"></div>
+    </div>
   </div>
 
   <!-- Leave Classroom confirmation modal -->

@@ -1068,6 +1068,12 @@ let studyFabMenuOpen = false;
         let cardFlipped = false;
 
         // ---- Flashcard deck viewer modal ----
+        // Card-stack study session: tap to flip, swipe right = "Got it", swipe left = "Again".
+        // Ends in a summary with a ring score and a one-tap review of the missed cards.
+        const FC_TINTS = ['#dfe5ff', '#ffd9d6', '#e6f5b5', '#d2ecff', '#ebdcff'];
+        let fcQueue = [], fcPos = 0, fcKnown = [], fcLearning = [], fcHistory = [];
+        let fcDone = false, fcBusy = false, fcStartedAt = 0, fcElapsedMs = 0, fcTimerId = null, fcRound = 1;
+
         function openFlashDeck(key){
           const deck = key === 'all' ? getAllResourcesDeck() : flashDecks[key];
           if (!deck || !deck.cards || !deck.cards.length) {
@@ -1076,94 +1082,312 @@ let studyFabMenuOpen = false;
           }
           currentDeckKey = key;
           currentDeck = deck;
-          currentCardIndex = 0;
-          cardFlipped = false;
+          fcStartedAt = Date.now();
+          fcRound = 1;
+          fcStartRound(deck.cards.slice());
           document.getElementById('flashModal').classList.remove('hidden');
           renderFlashModal();
+          fcStartTimer();
+          document.addEventListener('keydown', fcKey);
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeFlashModal(fromPopState));
         }
 
         function closeFlashModal(fromPopState){
+          fcStopTimer();
+          document.removeEventListener('keydown', fcKey);
           document.getElementById('flashModal').classList.add('hidden');
           document.getElementById('flashModalContent').innerHTML = '';
           if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
         }
 
-        function renderFlashModal(){
-          const deck = currentDeck;
-          const card = deck.cards[currentCardIndex];
-          const pct = Math.round(((currentCardIndex + 1) / deck.cards.length) * 100);
-          document.getElementById('flashModalContent').innerHTML = `
-            <div class="mb-4">
-              <div class="flex items-center gap-1.5 font-bold text-base mb-1" style="color:${NAVY};">
-                ${Icon('bookmark','w-5 h-5')} Flashcards
-              </div>
-              <div class="text-sm text-gray-400">Card ${currentCardIndex + 1} of ${deck.cards.length}</div>
-            </div>
-            <div class="w-full h-2 rounded-full mb-5 overflow-hidden" style="background:rgba(30,144,255,0.12);">
-              <div class="h-full rounded-full" style="width:${pct}%;background:${NAVY};"></div>
-            </div>
-            <div id="studyCardBody" class="flip-card" onclick="flipStudyCard()">
-              ${studyCardFaceHTML(card)}
-            </div>
-            <div class="text-center text-sm text-gray-400 mb-5 flex items-center justify-center gap-1.5">${Icon('tap','w-4 h-4')} Tap the card to flip between term and definition</div>
-            <div class="flex gap-3 mb-3">
-              <button onclick="prevStudyCard()" class="flex-1 border border-gray-200 rounded-2xl py-3 font-bold text-[${NAVY}] text-center">‹ Prev</button>
-              <button onclick="shuffleStudyDeck()" class="flex-1 border border-gray-200 rounded-2xl py-3 font-bold text-[${NAVY}] flex items-center justify-center gap-2">${Icon('shuffle','w-4 h-4')} Shuffle</button>
-            </div>
-            <button onclick="nextStudyCard()" class="w-full text-white font-bold py-3 rounded-full text-center" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Next ›</button>
-          `;
+        function fcStartRound(cards){
+          fcQueue = cards;
+          fcPos = 0;
+          fcKnown = [];
+          fcLearning = [];
+          fcHistory = [];
+          fcDone = false;
+          fcBusy = false;
+          currentCardIndex = 0;
+          cardFlipped = false;
         }
 
-        function studyCardFaceHTML(card){
-          const text = escapeHtml(cardFlipped ? card.def : card.term);
+        function fcFmtTime(ms){
+          const t = Math.max(0, Math.floor(ms / 1000));
+          const m = Math.floor(t / 60), sec = t % 60;
+          return m + ':' + (sec < 10 ? '0' : '') + sec;
+        }
+        function fcStartTimer(){
+          fcStopTimer();
+          fcTimerId = setInterval(() => {
+            const el = document.getElementById('fcTimer');
+            if (el) el.textContent = fcFmtTime(Date.now() - fcStartedAt);
+          }, 1000);
+        }
+        function fcStopTimer(){
+          if (fcTimerId) { clearInterval(fcTimerId); fcTimerId = null; }
+        }
+        function fcBuzz(ms){
+          try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch (e) {}
+        }
+
+        const FC_ICONS = {
+          back: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+          smile: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c.9 1.3 2.1 2 3.5 2s2.6-.7 3.5-2"/><path d="M9 9.6h.01M15 9.6h.01" stroke-width="2.8"/></svg>',
+          frown: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 16.2c.9-1.3 2.1-2 3.5-2s2.6.7 3.5 2"/><path d="M9 9.6h.01M15 9.6h.01" stroke-width="2.8"/></svg>',
+          undo: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>',
+          shuffle: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+          flip: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>'
+        };
+
+        function fcTextSize(t){
+          const n = (t || '').length;
+          return n > 150 ? 'fc-t-sm' : (n > 62 ? 'fc-t-md' : 'fc-t-lg');
+        }
+
+        function fcFaceHTML(card, side, idx){
+          const isFront = side === 'front';
+          const text = isFront ? card.term : card.def;
           const source = card.source ? escapeHtml(card.source) : '';
-          const label = cardFlipped ? 'DEFINITION' : 'TERM';
           return `
-            <div class="flip-card-inner">
-              <div class="w-full">
-                ${source ? `<div class="text-xs font-bold uppercase tracking-wide mb-1 break-words" style="color:${NAVY};overflow-wrap:break-word;">${source}</div>` : ''}
-                <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1.5">${label}</div>
-                <div class="text-base text-gray-900 leading-snug break-words" style="overflow-wrap:break-word;">${text}</div>
+            <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back'}" ${isFront ? `style="--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};"` : ''}>
+              <div class="fc-face-top">
+                <span class="fc-chip">${isFront ? 'Term' : 'Definition'}</span>
+                ${source ? `<span class="fc-source">${source}</span>` : ''}
               </div>
+              <div class="fc-face-body">
+                <div class="fc-text ${fcTextSize(text)} ${isFront ? 'font-display' : ''}">${escapeHtml(text)}</div>
+              </div>
+              <div class="fc-face-foot">${isFront ? 'Tap to reveal' : 'Swipe it away when you are ready'}</div>
             </div>`;
         }
 
-        function flipStudyCard(){
-          const cardEl = document.getElementById('studyCardBody');
-          if (!cardEl) { cardFlipped = !cardFlipped; renderFlashModal(); return; }
-          const card = currentDeck.cards[currentCardIndex];
-          cardEl.classList.add('flipping');
-          setTimeout(() => {
-            cardFlipped = !cardFlipped;
-            cardEl.innerHTML = studyCardFaceHTML(card);
-            cardEl.classList.remove('flipping');
-          }, 150);
+        function renderFlashModal(){
+          if (fcDone) { fcRenderSummary(); return; }
+          const total = fcQueue.length;
+          const card = fcQueue[fcPos];
+          const idx = fcPos;
+          const pct = Math.round((fcPos / total) * 100);
+          const ghosts = [2, 1].map(i => {
+            if (fcPos + i >= total) return '';
+            return `<div class="fc-ghost fc-ghost-${i}" style="background:${FC_TINTS[(idx + i) % FC_TINTS.length]};"></div>`;
+          }).join('');
+          document.getElementById('flashModalContent').innerHTML = `
+            <div class="fc-head" style="padding-top:var(--top-safe-pad);">
+              <button onclick="closeFlashModal()" class="fc-round-btn" aria-label="Back">${FC_ICONS.back}</button>
+              <div class="fc-head-mid">
+                <div class="fc-head-title">${currentDeckKey === 'all' ? 'All resources' : escapeHtml((currentDeck && currentDeck.name) || 'Flashcards')}${fcRound > 1 ? ' · review' : ''}</div>
+                <div class="fc-head-sub"><span id="fcTimer">${fcFmtTime(Date.now() - fcStartedAt)}</span></div>
+              </div>
+              <button onclick="fcEnd()" class="fc-end-btn">End</button>
+            </div>
+            <div class="fc-progress-wrap">
+              <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%;"></div></div>
+              <div class="fc-progress-count">${fcPos + 1} / ${total}</div>
+            </div>
+            <div class="fc-stage">
+              <div class="fc-stack">
+                ${ghosts}
+                <div id="fcCard" class="fc-card" style="touch-action:pan-y;">
+                  <div id="fcFlipper" class="fc-flipper ${cardFlipped ? 'is-flipped' : ''}">
+                    ${fcFaceHTML(card, 'front', idx)}
+                    ${fcFaceHTML(card, 'back', idx)}
+                  </div>
+                  <div class="fc-stamp fc-stamp-yes">Got it</div>
+                  <div class="fc-stamp fc-stamp-no">Again</div>
+                </div>
+              </div>
+            </div>
+            <div class="fc-tools">
+              <button onclick="prevStudyCard()" class="fc-tool-btn" ${fcHistory.length ? '' : 'disabled'} aria-label="Undo last card">${FC_ICONS.undo}<span>Undo</span></button>
+              <div class="fc-tally"><span class="fc-tally-no">${fcLearning.length}</span><span class="fc-tally-sep"></span><span class="fc-tally-yes">${fcKnown.length}</span></div>
+              <button onclick="shuffleStudyDeck()" class="fc-tool-btn" aria-label="Shuffle remaining cards">${FC_ICONS.shuffle}<span>Shuffle</span></button>
+            </div>
+            <div class="fc-actions" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
+              <button onclick="fcMark(false)" class="fc-act fc-act-no" aria-label="Still learning">${FC_ICONS.frown}</button>
+              <button onclick="flipStudyCard()" class="fc-act fc-act-flip">${FC_ICONS.flip}<span id="fcFlipLabel">${cardFlipped ? 'Show term' : 'Show answer'}</span></button>
+              <button onclick="fcMark(true)" class="fc-act fc-act-yes" aria-label="Got it">${FC_ICONS.smile}</button>
+            </div>`;
+          fcBindDrag();
         }
 
-        function nextStudyCard(){
-          const deck = currentDeck;
-          const wasLastCard = currentCardIndex === deck.cards.length - 1;
-          currentCardIndex = (currentCardIndex + 1) % deck.cards.length;
-          cardFlipped = false;
-          if (wasLastCard && currentDeckKey === 'all') flashcardsCompleted = true;
+        function fcBindDrag(){
+          const el = document.getElementById('fcCard');
+          if (!el) return;
+          let sx = 0, dx = 0, drag = false, moved = false;
+          const reset = () => {
+            el.style.removeProperty('--fc-x');
+            el.style.removeProperty('--fc-r');
+            el.style.removeProperty('--fc-yes');
+            el.style.removeProperty('--fc-no');
+          };
+          el.onpointerdown = e => {
+            if (fcBusy) return;
+            drag = true; moved = false; sx = e.clientX; dx = 0;
+            try { el.setPointerCapture(e.pointerId); } catch (err) {}
+            el.classList.add('fc-dragging');
+          };
+          el.onpointermove = e => {
+            if (!drag) return;
+            dx = e.clientX - sx;
+            if (Math.abs(dx) > 6) moved = true;
+            if (!moved) return;
+            const p = Math.min(1, Math.abs(dx) / 110);
+            el.style.setProperty('--fc-x', dx + 'px');
+            el.style.setProperty('--fc-r', (dx / 16) + 'deg');
+            el.style.setProperty('--fc-yes', dx > 0 ? p : 0);
+            el.style.setProperty('--fc-no', dx < 0 ? p : 0);
+          };
+          const end = () => {
+            if (!drag) return;
+            drag = false;
+            el.classList.remove('fc-dragging');
+            if (!moved) { flipStudyCard(); return; }
+            if (Math.abs(dx) > 90) fcMark(dx > 0); else reset();
+          };
+          el.onpointerup = end;
+          el.onpointercancel = () => { drag = false; el.classList.remove('fc-dragging'); reset(); };
+        }
+
+        function flipStudyCard(){
+          if (fcDone || fcBusy) return;
+          const fl = document.getElementById('fcFlipper');
+          if (!fl) { cardFlipped = !cardFlipped; renderFlashModal(); return; }
+          cardFlipped = !cardFlipped;
+          fl.classList.toggle('is-flipped', cardFlipped);
+          const lbl = document.getElementById('fcFlipLabel');
+          if (lbl) lbl.textContent = cardFlipped ? 'Show term' : 'Show answer';
+          fcBuzz(8);
+        }
+
+        function fcMark(known){
+          if (fcDone || fcBusy) return;
+          const card = fcQueue[fcPos];
+          if (!card) return;
+          fcBusy = true;
+          (known ? fcKnown : fcLearning).push(card);
+          fcHistory.push({ card, known });
+          const el = document.getElementById('fcCard');
+          if (el) {
+            el.style.setProperty(known ? '--fc-yes' : '--fc-no', 1);
+            el.classList.add(known ? 'fc-out-right' : 'fc-out-left');
+          }
+          fcBuzz(known ? 12 : [8, 30, 8]);
+          setTimeout(() => {
+            fcPos++;
+            currentCardIndex = fcPos;
+            cardFlipped = false;
+            fcBusy = false;
+            if (fcPos >= fcQueue.length) fcFinish(true); else renderFlashModal();
+          }, 240);
+        }
+
+        function fcFinish(completed){
+          fcDone = true;
+          fcElapsedMs = Date.now() - fcStartedAt;
+          fcStopTimer();
+          if (completed && currentDeckKey === 'all') flashcardsCompleted = true;
           renderFlashModal();
         }
 
+        function fcEnd(){
+          if (fcDone) { closeFlashModal(); return; }
+          fcFinish(false);
+        }
+
+        function fcRenderSummary(){
+          const seen = fcKnown.length + fcLearning.length;
+          const total = fcQueue.length;
+          const pct = seen ? Math.round((fcKnown.length / seen) * 100) : 0;
+          const left = Math.max(0, total - seen);
+          const C = 2 * Math.PI * 54;
+          const title = pct >= 90 ? 'Flawless run' : (pct >= 60 ? 'Solid session' : (seen ? 'Good start, go again' : 'Nothing studied yet'));
+          document.getElementById('flashModalContent').innerHTML = `
+            <div class="fc-head" style="padding-top:var(--top-safe-pad);">
+              <button onclick="closeFlashModal()" class="fc-round-btn" aria-label="Close">${FC_ICONS.back}</button>
+              <div class="fc-head-mid"><div class="fc-head-title">Session complete</div><div class="fc-head-sub">${fcFmtTime(fcElapsedMs)}</div></div>
+              <span style="width:64px;"></span>
+            </div>
+            <div class="fc-summary">
+              <div class="fc-ring">
+                <svg viewBox="0 0 128 128" width="176" height="176">
+                  <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(30,144,255,0.14)" stroke-width="12"/>
+                  <circle id="fcRingArc" cx="64" cy="64" r="54" fill="none" stroke="url(#fcRingGrad)" stroke-width="12" stroke-linecap="round" transform="rotate(-90 64 64)" stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+                  <defs><linearGradient id="fcRingGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4169e1"/><stop offset="1" stop-color="#1e90ff"/></linearGradient></defs>
+                </svg>
+                <div class="fc-ring-label"><div class="fc-ring-pct font-display">${pct}%</div><div class="fc-ring-sub">got it</div></div>
+              </div>
+              <div class="fc-summary-title font-display">${title}</div>
+              <div class="fc-summary-chips">
+                <div class="fc-sum-chip fc-sum-yes"><b>${fcKnown.length}</b><span>Got it</span></div>
+                <div class="fc-sum-chip fc-sum-no"><b>${fcLearning.length}</b><span>Again</span></div>
+                <div class="fc-sum-chip fc-sum-left"><b>${left}</b><span>Left</span></div>
+              </div>
+            </div>
+            <div class="fc-summary-actions" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
+              ${fcLearning.length ? `<button onclick="fcReviewMissed()" class="fc-cta">Review ${fcLearning.length} missed card${fcLearning.length === 1 ? '' : 's'}</button>` : ''}
+              <button onclick="fcRestart()" class="fc-ghost-cta">Restart deck</button>
+              <button onclick="closeFlashModal()" class="fc-text-cta">Done</button>
+            </div>`;
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const arc = document.getElementById('fcRingArc');
+            if (arc) arc.style.strokeDashoffset = String(C * (1 - pct / 100));
+          }));
+        }
+
+        function fcReviewMissed(){
+          if (!fcLearning.length) return;
+          fcRound++;
+          fcStartRound(fcLearning.slice());
+          fcStartedAt = Date.now() - fcElapsedMs;
+          renderFlashModal();
+          fcStartTimer();
+        }
+
+        function fcRestart(){
+          fcRound = 1;
+          fcStartedAt = Date.now();
+          fcStartRound(currentDeck.cards.slice());
+          renderFlashModal();
+          fcStartTimer();
+        }
+
+        function fcKey(e){
+          const m = document.getElementById('flashModal');
+          if (!m || m.classList.contains('hidden') || fcDone) return;
+          const onBtn = e.target && e.target.tagName === 'BUTTON';
+          if (e.key === 'ArrowRight') { fcMark(true); e.preventDefault(); }
+          else if (e.key === 'ArrowLeft') { fcMark(false); e.preventDefault(); }
+          else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || ((e.key === ' ' || e.key === 'Enter') && !onBtn)) { flipStudyCard(); e.preventDefault(); }
+        }
+
+        // Kept for any older callers: "next" now means "got it", "prev" undoes the last card.
+        function nextStudyCard(){ fcMark(true); }
+
         function prevStudyCard(){
-          const deck = currentDeck;
-          currentCardIndex = (currentCardIndex - 1 + deck.cards.length) % deck.cards.length;
+          if (fcBusy || !fcHistory.length) return;
+          const last = fcHistory.pop();
+          const arr = last.known ? fcKnown : fcLearning;
+          const i = arr.lastIndexOf(last.card);
+          if (i > -1) arr.splice(i, 1);
+          fcPos = Math.max(0, fcPos - 1);
+          currentCardIndex = fcPos;
           cardFlipped = false;
+          fcDone = false;
           renderFlashModal();
         }
 
         function shuffleStudyDeck(){
-          const deck = currentDeck;
-          for (let i = deck.cards.length - 1; i > 0; i--) {
+          if (fcBusy || fcDone) return;
+          const rest = fcQueue.slice(fcPos);
+          for (let i = rest.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [deck.cards[i], deck.cards[j]] = [deck.cards[j], deck.cards[i]];
+            [rest[i], rest[j]] = [rest[j], rest[i]];
           }
-          currentCardIndex = 0;
+          fcQueue = fcQueue.slice(0, fcPos).concat(rest);
           cardFlipped = false;
           renderFlashModal();
+          const st = document.querySelector('.fc-stack');
+          if (st) { st.classList.add('fc-shuffling'); setTimeout(() => st.classList.remove('fc-shuffling'), 420); }
+          fcBuzz(10);
         }
