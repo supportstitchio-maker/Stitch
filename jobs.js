@@ -3792,7 +3792,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // ---- Job application form ----
         function resetJobApplyDraft(){
           const prefillName = (typeof profileData !== 'undefined' && profileData.name) || '';
-          jobApplyDraft = { fullName: prefillName, email: currentUserEmail || '', phone:'', dob:'', dobIso:'', location:'', letterText:'', documents:{}, additionalDocuments:[] };
+          jobApplyDraft = { fullName: prefillName, email: currentUserEmail || '', phone:'', dob:'', dobIso:'', location: careerKnownLocation(), letterText:'', documents:{}, additionalDocuments:[] };
           jobApplyErrors = { fullName:'', email:'', phone:'', dob:'', location:'' };
         }
 
@@ -4052,7 +4052,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return false;
         }
         let careerStartStepIndex = 0;
-        let careerStartDraft = { interests: [], jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', contactMethod: 'email', resumeFileName: '', resumeFile: null, resumeText: '', resumeDataUrl: '' };
+        let careerStartDraft = { interests: [], jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', city: '', country: '', contactMethod: 'email', resumeFileName: '', resumeFile: null, resumeText: '', resumeDataUrl: '' };
         let careerStartErrors = { interests: '', jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', resume: '' };
         let careerStartProfile = null;
         let careerMatchesLoading = false;
@@ -4075,6 +4075,27 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             careerStartProfile = winner || null;
             if (key && winner) { try { localStorage.setItem(key, JSON.stringify(winner)); } catch (e) {  } }
           } catch (e) {  }
+        }
+        // ---- City and country: asked once (Match with CV form or any application form) and reused everywhere ----
+        function careerSplitLocation(loc){
+          const v = String(loc || '').trim();
+          const i = v.lastIndexOf(',');
+          return i < 0 ? { city: v, country: '' } : { city: v.slice(0, i).trim(), country: v.slice(i + 1).trim() };
+        }
+        function careerJoinLocation(city, country){
+          return [String(city || '').trim(), String(country || '').trim()].filter(Boolean).join(', ');
+        }
+        function careerKnownLocation(){
+          try { const v = careerStartProfile && careerStartProfile.botContact && String(careerStartProfile.botContact.location || '').trim(); if (v) return v; } catch (e) {}
+          try { return (localStorage.getItem('stitch-last-location:' + (typeof currentUserId !== 'undefined' ? currentUserId : '')) || '').trim(); } catch (e) { return ''; }
+        }
+        function careerRememberLocation(loc){
+          const v = String(loc || '').trim(); if (!v) return;
+          try { localStorage.setItem('stitch-last-location:' + (typeof currentUserId !== 'undefined' ? currentUserId : ''), v); } catch (e) {}
+          if (careerStartProfile) {
+            if (!careerStartProfile.botContact) careerStartProfile.botContact = { phone: careerStartProfile.phone || '', location: '' };
+            if (!String(careerStartProfile.botContact.location || '').trim()) { careerStartProfile.botContact.location = v; saveCareerStartProfile(); }
+          }
         }
         async function saveCareerStartProfile(){
           try {
@@ -4134,7 +4155,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           careerStartIntroThenPlan = false;
           careerPlanFromMatches = false;
           // The separate "How can we reach you?" page is gone: name and email come from the account.
-          careerStartDraft = { interests: [], jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: (typeof profileData !== 'undefined' && profileData && profileData.name) || '', email: (typeof currentUserEmail !== 'undefined' && currentUserEmail) || '', phone: '', contactMethod: 'email', resumeFileName: '', resumeFile: null, resumeText: '', resumeDataUrl: '' };
+          careerStartDraft = { interests: [], jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: (typeof profileData !== 'undefined' && profileData && profileData.name) || '', email: (typeof currentUserEmail !== 'undefined' && currentUserEmail) || '', phone: '', city: careerSplitLocation(careerKnownLocation()).city, country: careerSplitLocation(careerKnownLocation()).country, contactMethod: 'email', resumeFileName: '', resumeFile: null, resumeText: '', resumeDataUrl: '' };
           careerStartErrors = { interests: '', jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', resume: '' };
           clearCareerStartResumeUploadTimers();
           careerStartResumeUploading = false;
@@ -4441,7 +4462,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             return careerStartOptionListHTML(careerGenders, d.gender, 'setCareerStartGender', 'gender', false);
           }
           if (stepId === 'resume') {
-            return careerStartFieldHTML('Phone number (with country code)', 'phone', 'tel', 'e.g. +233 24 123 4567') + careerStartResumePickerHTML();
+            return careerStartFieldHTML('Phone number (with country code)', 'phone', 'tel', 'e.g. +233 24 123 4567') +
+              careerStartFieldHTML('City', 'city', 'text', 'e.g. Accra') +
+              careerStartFieldHTML('Country', 'country', 'text', 'e.g. Ghana') +
+              careerStartResumePickerHTML();
           }
           return '';
         }
@@ -4497,6 +4521,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             const phoneCheck = normalizeIntlPhone(d.phone);
             if (!phoneCheck.ok) careerStartErrors.phone = phoneCheck.error;
             else d.phone = phoneCheck.display;
+            // Asked here once, so Stitch Bot and the application forms never ask again
+            if (!String(d.city || '').trim()) careerStartErrors.city = 'Please add your city.';
+            if (!String(d.country || '').trim()) careerStartErrors.country = 'Please add your country.';
             // A resume/CV is mandatory: Stitch Bot can't match or apply without one.
             if (!d.resumeFile && !d.resumeFileName) careerStartErrors.resume = 'Please attach your resume/CV to continue.';
             else if (careerStartResumeUploading) careerStartErrors.resume = 'Hold on, your resume is still being read.';
@@ -4531,6 +4558,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             fd.append('fullName', d.fullName);
             fd.append('email', d.email);
             if (d.phone.trim()) fd.append('phone', d.phone.trim());
+            fd.append('city', String(d.city || '').trim());
+            fd.append('country', String(d.country || '').trim());
             fd.append('contactMethod', d.contactMethod === 'inApp' ? 'In-app notification' : 'Email');
             fd.append('interestedIn', interestLabels);
             fd.append('jobTitle', d.jobTitle);
@@ -4572,7 +4601,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             priorityReason: existing.priorityReason || '',
             subscription: existing.subscription || null,
             botDocs: existing.botDocs || {},
-            botContact: Object.assign({ phone: '', location: '' }, existing.botContact || {}, { phone: d.phone.trim() }),
+            city: String(d.city || '').trim(),
+            country: String(d.country || '').trim(),
+            botContact: Object.assign({ phone: '', location: '' }, existing.botContact || {}, { phone: d.phone.trim(), location: careerJoinLocation(d.city, d.country) || (existing.botContact && existing.botContact.location) || '' }),
             botLog: existing.botLog || [],
             botSeen: existing.botSeen || {},
             botApplied: existing.botApplied || {},
@@ -4580,6 +4611,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             updatedAt: Date.now(),
           };
           saveCareerStartProfile();
+          careerRememberLocation(careerStartProfile.botContact.location);
 
           if (careerStartProfile.resumeFileName) markCareerStartPillDismissed();
           if (!careerSubscriptionActive()) {
@@ -4638,8 +4670,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         // ---- Intro pages + subscription plans for "Match with CV/Resume" ----
         const CAREER_PLANS = {
-          weekly:  { id: 'weekly',  label: 'Weekly',  price: 20, unit: 'week',  months: 0, days: 7 },
-          monthly: { id: 'monthly', label: 'Monthly', price: 69, unit: 'month', months: 1, days: 0 },
+          daily:   { id: 'daily',   label: 'Daily',   price: 20,  unit: 'day',   months: 0, days: 1 },
+          weekly:  { id: 'weekly',  label: 'Weekly',  price: 90,  unit: 'week',  months: 0, days: 7 },
+          monthly: { id: 'monthly', label: 'Monthly', price: 300, unit: 'month', months: 1, days: 0 },
         };
         let careerPlanChoice = '';
         let careerPlanPillAnim = false;
@@ -4768,6 +4801,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
                 <div class="text-sm text-gray-500" style="margin-bottom:22px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
+                ${careerPlanCardHTML(CAREER_PLANS.daily)}
                 ${careerPlanCardHTML(CAREER_PLANS.weekly)}
                 ${careerPlanCardHTML(CAREER_PLANS.monthly)}
                 <div class="rounded-3xl p-4" style="background:rgba(10,37,64,0.05);margin-top:6px;">
@@ -4861,6 +4895,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         // ---- Renewal prompts: "Subscribe" pill after cancelling + expiry reminders ----
         function careerSubscriptionRemindWindowMs(sub){
           const plan = CAREER_PLANS[sub && sub.plan] || CAREER_PLANS.monthly;
+          // A daily plan only lasts 24 hours, so remind in the last 4 hours instead of 2 days out
+          if (plan.days === 1) return 4 * 3600000;
           return (plan.days ? 2 : 3) * 86400000;
         }
         function careerSubscriptionExpiringSoon(){
@@ -5517,18 +5553,22 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         // ---- Preferences page ----
+        // Same white, shadowed chip as the onboarding "What brings you here?" and sign-up pills
+        // (.auth-intent-chip in styles.css). Selected = blue outline.
         function careerPrefChipsHTML(key, options, current){
-          return `<div class="flex flex-wrap" style="gap:12px;">${options.map(o => {
+          return `<div class="auth-intent-row">${options.map(o => {
             const sel = current === o.v; const val = typeof o.v === 'number' ? o.v : `'${o.v}'`;
-            return `<button onclick="setCareerBotPref('${key}',${val})" class="px-4 py-3 rounded-full text-sm font-medium outline-pill ${sel ? 'is-selected' : ''}">${o.l}</button>`;
+            return `<button type="button" aria-pressed="${sel}" onclick="setCareerBotPref('${key}',${val})" class="auth-intent-chip ${sel ? 'on' : ''}"><span>${o.l}</span></button>`;
           }).join('')}</div>`;
         }
+        // The two big "Ask me first / Go ahead on its own" cards: tick circle, blue border and a
+        // light blue fill when picked
         function careerPrefChoiceHTML(key, options, current){
           return options.map(o => {
             const sel = current === o.v;
-            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full px-4 py-4 rounded-2xl text-left text-sm font-medium outline-pill ${sel ? 'is-selected' : ''}" style="margin-bottom:12px;">
-              ${o.l}
-              <div class="text-xs font-normal mt-0.5" style="color:var(--pill-text);opacity:${sel ? '0.85' : '0.6'};">${o.d}</div>
+            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full text-left rounded-2xl flex items-start gap-3" style="padding:14px;margin-bottom:10px;border:2px solid ${sel ? '#1e90ff' : 'rgba(128,128,128,0.2)'};background:${sel ? 'rgba(30,144,255,0.06)' : 'transparent'};">
+              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;color:#fff;' : 'border:2px solid rgba(128,128,128,0.4);'}">${sel ? Icon('check','w-3 h-3') : ''}</span>
+              <span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-gray-800">${o.l}</span><span class="block text-xs text-gray-500" style="margin-top:2px;">${o.d}</span></span>
             </button>`;
           }).join('');
         }
@@ -5576,7 +5616,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const sends = ['your CV'];
           if (careerBotDocList('openLetter').length) sends.push('your open letter');
           const extra = CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).reduce((a, sl) => a + careerBotDocList(sl.id).length, 0);
-          if (extra && pr.extras === 'all') sends.push(`${extra} extra document${extra === 1 ? '' : 's'}`);
+          const more = ['degree', 'writingSample'].reduce((a, id) => a + careerBotDocList(id).length, 0);
+          if ((extra + more) && pr.extras === 'all') sends.push(`${extra + more} extra document${(extra + more) === 1 ? '' : 's'}`);
           return { why: why.join('. ') + '.', sends: sends.join(', ') + (pr.coverNote === 'letter' ? '' : ' and a new cover note') };
         }
         function careerBotPendingHTML(){
@@ -5890,6 +5931,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                     <div class="flex-1 min-w-0">
                       <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(x.job.title)}</div>
                       <div class="text-xs text-gray-400 truncate">${escapeHtml(stitchOrgName(x.job.org || x.job.sub || ''))}${x.job.org || x.job.sub ? ' · ' : ''}Sent ${escapeHtml(careerPlanDateLabel(x.rec.ts))}</div>
+                      ${x.rec.sent && x.rec.sent.length ? `<div class="text-xs text-gray-500" style="margin-top:2px;">Documents sent: ${escapeHtml(x.rec.sent.join(', '))}</div>` : ''}
                     </div>
                     <span class="flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full" style="${x.rec.by === 'auto' ? `background:rgba(10,37,64,0.08);color:${NAVY};` : 'background:rgba(128,128,128,0.15);color:#6b7280;'}">${x.rec.by === 'auto' ? 'Auto' : 'You chose'}</span>
                   </div>
@@ -6225,25 +6267,81 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             return '';
           }
         }
+        // ---- What Stitch Bot's AI gets to work with: the CV, every uploaded document (as text) and
+        // the person's location and preferences. The ID document is never sent to the AI. ----
+        const CAREER_AI_DOC_LABELS = { openLetter: 'Open application letter', transcript: 'Academic transcript', portfolio: 'Portfolio', degree: 'Degree or diploma', writingSample: 'Writing sample', certificate: 'Certificates', reference: 'Reference letter', license: 'Licence or registration', otherDocument: 'Other documents' };
+        function careerBotDocDigest(perDoc, total){
+          const p = careerBotEnsure(); if (!p) return [];
+          const out = []; let used = 0;
+          Object.keys(CAREER_AI_DOC_LABELS).forEach(id => {
+            careerBotDocList(id).forEach(d => {
+              if (used >= total) return;
+              const text = String(d.text || '').replace(/\s+/g, ' ').trim().slice(0, Math.min(perDoc, total - used));
+              used += text.length;
+              out.push({ type: CAREER_AI_DOC_LABELS[id], fileName: d.fileName || '', excerpt: text });
+            });
+          });
+          return out;
+        }
+        function careerBotAIContext(p){
+          const loc = (p.botContact && p.botContact.location) || careerJoinLocation(p.city, p.country) || careerKnownLocation();
+          const parts = careerSplitLocation(loc);
+          const prefs = careerBotPrefs();
+          return {
+            location: loc, city: p.city || parts.city, country: p.country || parts.country,
+            documentTypesOnHand: ['CV'].concat(Object.keys(CAREER_AI_DOC_LABELS).filter(id => careerBotDocList(id).length).map(id => CAREER_AI_DOC_LABELS[id])),
+            documents: careerBotDocDigest(1200, 6000),
+            candidateNotes: prefs.notes || '',
+          };
+        }
+        const CAREER_AI_MATCH_RULES = [
+          'You are Stitch Bot, a careful career matcher. Judge fit only from evidence in the CV and uploaded documents (degrees, certificates, references, transcript, portfolio, writing sample) and the candidate profile.',
+          'Weigh skills, experience level, education, field, and the kind of opportunity the person wants. Prefer opportunities in the candidate\'s country or those that are remote/online.',
+          'Do not recommend posts whose "openTo" excludes the candidate, and treat a missing required document as a reason to lower the rank but still mention it.',
+          'Scores are honest 0-100 fit scores; do not inflate. Each reason is one plain sentence naming the specific CV or document evidence that supports the match.',
+        ].join(' ');
+        const CAREER_AI_WRITING_RULES = [
+          'Write as the candidate in the first person, using only facts found in their CV and documents. Never invent employers, degrees, dates or skills.',
+          'Match the post: name the role and organisation, connect two or three concrete strengths from the CV or documents to what the post asks for, and keep it honest and natural.',
+          'Respect the requested tone and any instructions from the candidate. No placeholders, no brackets, no subject line.',
+        ].join(' ');
+
         async function computeCareerMatchesAI(profile, jobs){
           const { interestLabels, levelLabel, eduLabel, styleLabel } = careerProfileFiltersSummary(profile);
-          const listing = jobs.slice(0, 60).map(j => ({
-            id: j.id,
-            type: j.type,
-            title: j.title,
-            org: j.org || j.sub || '',
-            mode: j.mode || '',
-            openTo: j.gender === 'male' ? 'men only' : j.gender === 'female' ? 'women only' : 'everyone',
-            description: (j.description || '').slice(0, 500),
-          }));
+          const ctx = careerBotAIContext(profile);
+          // Send the 60 posts that already look closest to this person, not just the newest 60
+          const ranked = jobs.map(j => ({ j, sc: careerScoreJob(profile, j, ctx) })).sort((a, b) => b.sc - a.sc).slice(0, 60).map(x => x.j);
+          const listing = ranked.map(j => {
+            const missing = careerBotMissingFor(j);
+            return {
+              id: j.id,
+              type: j.type,
+              title: j.title,
+              org: j.org || j.sub || '',
+              mode: j.mode || '',
+              location: j.location || j.place || '',
+              duration: j.duration || '',
+              deadline: j.deadlineDate || '',
+              pay: j.priceType === 'paid' ? (j.price || 'paid') : 'free',
+              requiredDocuments: ['Resume / CV'].concat((j.requiredDocs || []).filter(id => id !== 'resume').map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id)),
+              missingDocuments: missing,
+              openTo: j.gender === 'male' ? 'men only' : j.gender === 'female' ? 'women only' : 'everyone',
+              description: (j.description || '').slice(0, 900),
+            };
+          });
           const raw = await callCareerAI('match', {
+            instructions: CAREER_AI_MATCH_RULES,
             profile: {
               interestLabels,
               jobTitle: profile.jobTitle || '',
               levelLabel, eduLabel, styleLabel,
               age: profile.age || '',
               genderLabel: (careerGenders.find(g => g.id === profile.gender) || {}).label || '',
-              resumeText: (profile.resumeText || '').slice(0, 8000),
+              location: ctx.location, city: ctx.city, country: ctx.country,
+              documentTypesOnHand: ctx.documentTypesOnHand,
+              documents: ctx.documents,
+              candidateNotes: ctx.candidateNotes,
+              resumeText: (profile.resumeText || '').slice(0, 9000),
             },
             jobs: listing,
           });
@@ -6254,7 +6352,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             .map(m => ({ job: byId.get(String(m.id)), score: Math.max(0, Math.min(100, Number(m.score) || 0)), reason: String(m.reason || '').trim() }))
             .filter(m => m.job)
             .sort((a, b) => b.score - a.score)
-            .slice(0, 8);
+            .slice(0, 12);
           let priority = null;
           if (parsed.priority && parsed.priority.id) {
             const pJob = byId.get(String(parsed.priority.id));
@@ -6270,29 +6368,42 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerTokenize(text){
           return (text || '').toLowerCase().match(/[a-z0-9+#]{3,}/g) || [];
         }
-        function computeCareerMatchesLocal(profile, jobs){
+        // One post's local score (0-100): CV/document keyword overlap, title, type, work style, gender
+        // and country. Also used to pick which posts are worth sending to the AI.
+        function careerScoreJob(profile, job, ctx){
           const { styleLabel } = careerProfileFiltersSummary(profile);
-          const resumeTokens = careerTokenize([profile.resumeText, profile.jobTitle].filter(Boolean).join(' ')).filter(t => !CAREER_STOPWORDS.has(t));
-          const resumeSet = new Set(resumeTokens);
+          if (!profile._tokCache || profile._tokCacheKey !== (profile.resumeText || '').length + ':' + (ctx ? ctx.documents.length : 0)) {
+            const docText = ctx ? ctx.documents.map(d => d.excerpt).join(' ') : '';
+            const toks = careerTokenize([profile.resumeText, profile.jobTitle, docText].filter(Boolean).join(' ')).filter(t => !CAREER_STOPWORDS.has(t));
+            Object.defineProperty(profile, '_tokCache', { value: new Set(toks), enumerable: false, writable: true, configurable: true });
+            Object.defineProperty(profile, '_tokCacheKey', { value: (profile.resumeText || '').length + ':' + (ctx ? ctx.documents.length : 0), enumerable: false, writable: true, configurable: true });
+          }
+          const resumeSet = profile._tokCache;
           const wantsTypes = new Set();
           if ((profile.interests || []).includes('jobs')) wantsTypes.add('Job');
           if ((profile.interests || []).includes('internships')) wantsTypes.add('Internship');
           if ((profile.interests || []).includes('scholarships')) wantsTypes.add('Scholarship');
           if ((profile.interests || []).includes('volunteering')) wantsTypes.add('Other');
           if ((profile.interests || []).includes('courses')) wantsTypes.add('Course');
-
-          let scored = jobs.map(job => {
-            const jobTokens = careerTokenize([job.title, job.org, job.sub, job.description].filter(Boolean).join(' '));
-            let overlap = 0;
-            jobTokens.forEach(t => { if (resumeSet.has(t)) overlap++; });
-            let score = Math.min(70, overlap * 6);
-            if (profile.jobTitle && profile.jobTitle.trim() && (job.title || '').toLowerCase().includes(profile.jobTitle.trim().toLowerCase())) score += 20;
-            if (wantsTypes.size && wantsTypes.has(job.type)) score += 15;
-            if (styleLabel && job.mode && job.mode.toLowerCase() === styleLabel.toLowerCase()) score += 10;
-            if (styleLabel === 'No preference') score += 3;
-            if ((job.gender === 'male' || job.gender === 'female') && job.gender === profile.gender) score += 5;
-            return { job, score: Math.max(0, Math.min(100, score)) };
-          }).filter(m => m.score > 0);
+          const jobTokens = careerTokenize([job.title, job.org, job.sub, job.description].filter(Boolean).join(' '));
+          let overlap = 0;
+          new Set(jobTokens).forEach(t => { if (resumeSet.has(t)) overlap++; });
+          let score = Math.min(70, overlap * 6);
+          if (profile.jobTitle && profile.jobTitle.trim() && (job.title || '').toLowerCase().includes(profile.jobTitle.trim().toLowerCase())) score += 20;
+          if (wantsTypes.size && wantsTypes.has(job.type)) score += 15;
+          if (styleLabel && job.mode && job.mode.toLowerCase() === styleLabel.toLowerCase()) score += 10;
+          if (styleLabel === 'No preference') score += 3;
+          if ((job.gender === 'male' || job.gender === 'female') && job.gender === profile.gender) score += 5;
+          // Same country, or can be done from anywhere
+          const country = ((ctx && ctx.country) || profile.country || '').toLowerCase();
+          const where = String([job.location, job.place, job.mode].filter(Boolean).join(' ')).toLowerCase();
+          if (country && where.indexOf(country) !== -1) score += 8;
+          else if (/online|remote/.test(where)) score += 4;
+          return Math.max(0, Math.min(100, score));
+        }
+        function computeCareerMatchesLocal(profile, jobs){
+          const ctx = careerBotAIContext(profile);
+          let scored = jobs.map(job => ({ job, score: careerScoreJob(profile, job, ctx) })).filter(m => m.score > 0);
 
           if (!scored.length) {
             scored = jobs.slice(0, 5).map(job => ({ job, score: 0 }));
@@ -6300,7 +6411,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           }
           const matches = scored
             .sort((a, b) => b.score - a.score)
-            .slice(0, 8)
+            .slice(0, 12)
             .map(m => ({ job: m.job, score: m.score, reason: careerLocalMatchReason(profile) }));
           const priority = matches.length ? { job: matches[0].job, reason: `Your highest-scoring match (${Math.round(matches[0].score)}% fit) -- start here.` } : null;
           return { matches, priority };
@@ -6350,6 +6461,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (!p) return null;
           if (!p.botDocs) p.botDocs = {};
           if (!p.botContact) p.botContact = { phone: p.phone || '', location: '' };
+          if (!String(p.botContact.location || '').trim()) {
+            const known = careerJoinLocation(p.city, p.country) || careerKnownLocation();
+            if (known) p.botContact.location = known;
+          }
           if (!p.botLog) p.botLog = [];
           if (!p.botSeen) p.botSeen = {};
           return p;
@@ -6443,8 +6558,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           careerBotDocBusy = 'openLetter'; rerenderCareerMatches();
           try {
             const { interestLabels } = careerProfileFiltersSummary(p);
+            const ctx = careerBotAIContext(p);
             const letter = String(await callCareerAI('letter', {
-              fullName: p.fullName, interestLabels, jobTitle: p.jobTitle || '', resumeText: p.resumeText.slice(0, 7000),
+              instructions: CAREER_AI_WRITING_RULES + ' This is a general open application letter, not tied to one post.',
+              fullName: p.fullName, interestLabels, jobTitle: p.jobTitle || '', location: ctx.location,
+              tone: careerBotPrefs().tone, candidateNotes: ctx.candidateNotes,
+              documents: ctx.documents.filter(d => d.type !== 'Open application letter'),
+              resumeText: p.resumeText.slice(0, 8000),
             }) || '').trim();
             if (!letter) throw new Error('empty');
             const file = new File([letter], 'Open-application-letter.txt', { type: 'text/plain' });
@@ -6477,10 +6597,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         async function careerBotCoverNote(job, p){
           const letter = (careerBotDocList('openLetter').find(d => d.text) || {}).text || '';
           try {
+            const ctx = careerBotAIContext(p);
             return String(await callCareerAI('cover_note', {
-              fullName: p.fullName, title: job.title, org: job.org || '',
-              description: (job.description || '').slice(0, 600), tone: careerBotPrefs().tone, instructions: careerBotPrefs().notes || '',
-              resumeText: (p.resumeText || '').slice(0, 3500), letterText: letter.slice(0, 2000),
+              fullName: p.fullName, title: job.title, org: job.org || '', type: job.type || '',
+              location: ctx.location, jobLocation: job.location || job.place || '', mode: job.mode || '',
+              requiredDocuments: (job.requiredDocs || []).map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id),
+              description: (job.description || '').slice(0, 1500), tone: careerBotPrefs().tone,
+              // Writing rules first, then anything the person asked for in Preferences
+              instructions: CAREER_AI_WRITING_RULES + (careerBotPrefs().notes ? ' The candidate also asks: ' + careerBotPrefs().notes : ''),
+              candidateNotes: careerBotPrefs().notes || '',
+              documents: ctx.documents.filter(d => d.type !== 'Open application letter'),
+              resumeText: (p.resumeText || '').slice(0, 6000), letterText: letter.slice(0, 2500),
             }) || '').trim();
           } catch (e) {
             if (e && e.code === 'subscription_required') throw e; // lapsed: stop, don't paper over it
@@ -6497,9 +6624,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (missing.length) return 'Needs: ' + missing.join(', ');
           const botPhone = normalizeIntlPhone(p.botContact.phone || p.phone);
           if (!botPhone.ok) return 'Add your phone number with its country code under Auto apply.';
+          const botLocation = (p.botContact.location || '').trim();
+          if (!botLocation) return 'Add your city and country under Documents so applications carry your location.';
           resetJobApplyDraft();
           const d = jobApplyDraft;
-          d.fullName = p.fullName; d.email = p.email; d.phone = botPhone.display; d.location = (p.botContact.location || '').trim();
+          d.fullName = p.fullName; d.email = p.email; d.phone = botPhone.display; d.location = botLocation;
           const prefs = careerBotPrefs();
           try {
             const openLetterText = (careerBotDocList('openLetter').find(x => x.text) || {}).text || '';
@@ -6523,12 +6652,23 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             if (list.length) { documents[id] = careerBotRec(list[0]); list.slice(1).forEach(d => additionalDocuments.push(careerBotRec(d))); }
           });
           if (prefs.extras === 'all') CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).forEach(sl => careerBotDocList(sl.id).forEach(d => additionalDocuments.push(careerBotRec(d))));
+          // Degree and writing sample are not on the poster's checklist, so send them when the
+          // all-in preference is on or the post's own text asks for them
+          const postText = [job.title, job.description].filter(Boolean).join(' ').toLowerCase();
+          const wantsDegree = /degree|diploma|qualification|bachelor|master'?s|certificat/.test(postText);
+          const wantsSample = /writing sample|work sample|samples? of (your )?(work|writing)|portfolio of writing/.test(postText);
+          if (prefs.extras === 'all' || wantsDegree) careerBotDocList('degree').forEach(d => additionalDocuments.push(careerBotRec(d)));
+          if (prefs.extras === 'all' || wantsSample) careerBotDocList('writingSample').forEach(d => additionalDocuments.push(careerBotRec(d)));
+          if (prefs.extras !== 'all') CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).forEach(sl => { if (sl.id === 'certificate' && wantsDegree) careerBotDocList(sl.id).forEach(d => additionalDocuments.push(careerBotRec(d))); });
           finalizeJobApplication(job.id, { documents, additionalDocuments });
           resetJobApplyDraft();
           p.botSeen[job.id] = 'applied';
           if (!p.botApplied) p.botApplied = {};
           const mScore = ((p.matches || []).find(m => m.id === job.id) || {}).score;
-          p.botApplied[job.id] = { ts: Date.now(), by: by === 'auto' ? 'auto' : 'manual', score: typeof mScore === 'number' ? mScore : null };
+          // Remember what was actually sent, so the Applied list can show it
+          const sentLabels = Object.keys(documents).map(id => id === 'resume' ? 'CV' : ((OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id)).filter((l, i, a) => a.indexOf(l) === i && !(l === 'Cover letter' && a.indexOf('Application letter') !== -1));
+          if (additionalDocuments.length) sentLabels.push(`${additionalDocuments.length} extra document${additionalDocuments.length === 1 ? '' : 's'}`);
+          p.botApplied[job.id] = { ts: Date.now(), by: by === 'auto' ? 'auto' : 'manual', score: typeof mScore === 'number' ? mScore : null, sent: sentLabels };
           careerBotLog(`Applied to "${job.title}" for you.`, job.id, true);
           saveCareerStartProfile();
           return '';
@@ -6568,7 +6708,29 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 const meta = JOB_STATUS_META[st];
                 careerBotLog(`"${job.title}": ${meta ? meta.label : st}. ${meta && meta.message ? meta.message : ''}`.trim(), job.id, true);
               }
+              // Follow-up reminders for posts Stitch Bot applied to that have gone quiet
+              const sentTs = (p.botApplied && p.botApplied[job.id] && p.botApplied[job.id].ts) || app.appliedDate || 0;
+              if (st === 'applied' && sentTs && p.botApplied && p.botApplied[job.id]) {
+                const days = Math.floor((Date.now() - sentTs) / 86400000);
+                const k7 = 'fu7:' + job.id, k14 = 'fu14:' + job.id;
+                if (days >= 14 && !p.botSeen[k14]) {
+                  p.botSeen[k7] = 1; p.botSeen[k14] = 1; changed = true;
+                  careerBotLog(`No reply yet from "${job.title}" after ${days} days. It may be worth a short, polite follow-up with the poster, or moving on to your next match.`, job.id, true);
+                } else if (days >= 7 && !p.botSeen[k7]) {
+                  p.botSeen[k7] = 1; changed = true;
+                  careerBotLog(`A week has passed since you applied to "${job.title}" with no update. Stitch Bot will keep watching and tell you the moment its status changes.`, job.id, true);
+                }
+              }
               const mine = (job.applicants || []).find(a => a.id === currentUserId);
+              if (mine && mine.interview && mine.interview.date) {
+                // A heads-up the day before (or the same day) of an interview
+                const ivDay = Date.parse(mine.interview.date + 'T00:00:00');
+                const rk = 'ivr:' + job.id + ':' + mine.interview.date;
+                if (ivDay && !p.botSeen[rk] && ivDay - Date.now() < 86400000 && ivDay - Date.now() > -86400000) {
+                  p.botSeen[rk] = 1; changed = true;
+                  careerBotLog(`Reminder: your interview for "${job.title}" is ${ivDay > Date.now() ? 'tomorrow' : 'today'} (${jobInterviewWhenText(mine.interview)}). Have your CV and documents handy.`, job.id, true);
+                }
+              }
               if (mine && mine.interview) {
                 const key = 'iv:' + job.id + ':' + mine.interview.date + mine.interview.time;
                 if (!p.botSeen[key]) {
@@ -6642,6 +6804,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Application documents</div>
               <div class="text-xs text-gray-400 mb-2">Stitch Bot uses these, plus your CV, to apply for you. Posts that ask for other documents are skipped until you add them. You can add more than one file to each section.</div>
               ${phoneBlock}
+              <div class="text-xs text-gray-400" style="margin:2px 0 4px;">${(p.botContact.location || '').trim() ? 'Your city and country, taken from your forms. Change it here if you move.' : 'Add your city and country so applications carry your location.'}</div>
               <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 text-sm rounded-2xl px-3 py-2 mb-1" style="background:rgba(128,128,128,0.12);border:1.5px solid rgba(128,128,128,0.2);outline:none;">
               ${rows}
             </div>`;
@@ -6822,6 +6985,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             return;
           }
 
+          careerRememberLocation(d.location);
+
           // The poster/admin decides, per opportunity, which documents are mandatory
           if (!isCourse) {
             const allRequired = ['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume'));
@@ -6856,9 +7021,42 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             }
           }
 
+          if (docsPayload && !isCourse) await careerSyncApplyDocsToVault(d, docsPayload);
           completeJobApplication(job, docsPayload);
         }
 
+        // Documents a person attaches to an application also land in Documents, with their text read,
+        // so Stitch Bot (and its AI) can reuse them on the next post
+        const CAREER_APPLY_DOC_SLOT = { applicationLetter: 'openLetter', coverLetter: 'openLetter', transcript: 'transcript', portfolio: 'portfolio', idDocument: 'idDocument' };
+        async function careerSyncApplyDocsToVault(draft, payload){
+          const p = careerBotEnsure(); if (!p || !payload || !draft) return;
+          try {
+            let changed = false;
+            const addFile = async (slot, entry, rec) => {
+              if (!entry || !entry.file || !rec) return;
+              const list = careerBotDocList(slot).slice();
+              if (list.some(x => x.fileName === rec.fileName) || list.length >= CAREER_BOT_MAX_FILES) return;
+              const text = await extractCareerStartResumeText(entry.file);
+              const vrec = { fileName: rec.fileName, url: rec.url || '', text: String(text || '').slice(0, 6000), addedAt: Date.now() };
+              if (!vrec.url) { if (!rec.dataUrl) return; vrec.dataUrl = rec.dataUrl; }
+              list.push(vrec); p.botDocs[slot] = list; changed = true;
+            };
+            const docs = payload.documents || {};
+            for (const docId of Object.keys(docs)) {
+              const entry = (draft.documents || {})[docId]; const rec = docs[docId];
+              if (docId === 'resume') {
+                if (!p.resumeFileName && entry && entry.file && rec && (rec.url || rec.dataUrl)) {
+                  p.resumeFileName = rec.fileName; p.resumeText = await extractCareerStartResumeText(entry.file); p.resumeDataUrl = rec.url || rec.dataUrl; changed = true;
+                }
+                continue;
+              }
+              const slot = CAREER_APPLY_DOC_SLOT[docId]; if (slot) await addFile(slot, entry, rec);
+            }
+            const extras = payload.additionalDocuments || [];
+            for (let i = 0; i < extras.length; i++) await addFile('otherDocument', (draft.additionalDocuments || [])[i], extras[i]);
+            if (changed) saveCareerStartProfile();
+          } catch (e) { console.warn('Could not copy application documents into Documents:', e); }
+        }
         function completeJobApplication(job, docsPayload){
           finalizeJobApplication(job.id, docsPayload);
           resetJobApplyDraft();

@@ -146,9 +146,9 @@ let appPrefs = {
         const LEGAL_SUPPORT_EMAIL = 'support.stitch.io@gmail.com';
         function legalPlanPricesText(){
           try {
-            if (typeof CAREER_PLANS !== 'undefined') return `GHS ${CAREER_PLANS.weekly.price} per week or GHS ${CAREER_PLANS.monthly.price} per month`;
+            if (typeof CAREER_PLANS !== 'undefined') return `GHS ${CAREER_PLANS.daily.price} per day, GHS ${CAREER_PLANS.weekly.price} per week or GHS ${CAREER_PLANS.monthly.price} per month`;
           } catch (e) {}
-          return 'the weekly or monthly price shown before you pay';
+          return 'the daily, weekly or monthly price shown before you pay';
         }
         function legalTermsSections(){
           const sharePct = (typeof PAID_SELLER_SHARE_PCT !== 'undefined') ? PAID_SELLER_SHARE_PCT : 20;
@@ -314,7 +314,7 @@ let appPrefs = {
         const helpFAQData = [
           { category: 'Getting Started', items: [
             { id: 'gs-profile', q: 'How do I set up my profile?', a: 'Open Settings from your profile menu, then tap your photo or name to add a picture, bio, department, and pronouns. You can update any of this again at any time.' },
-            { id: 'gs-free', q: 'Is Stitch free to use?', a: "Yes, Stitch is free to use. The one paid extra is the Stitch Bot subscription in \"Match with CV/Resume\" (GHS 20 a week or GHS 69 a month, cancel any time). Every account gets 70 Stitch Bot prompts a day (up to 300 a week and 1500 a month). Practice questions, flashcards, and Challenge Arena questions generated from your uploads are unlimited. Some courses in the Opportunities tab are posted by outside creators who set their own price, and those payments are handled securely by Paystack." },
+            { id: 'gs-free', q: 'Is Stitch free to use?', a: "Yes, Stitch is free to use. The one paid extra is the Stitch Bot subscription in \"Match with CV/Resume\" (GHS 20 a day, GHS 90 a week or GHS 300 a month, cancel any time). Every account gets 70 Stitch Bot prompts a day (up to 300 a week and 1500 a month). Practice questions, flashcards, and Challenge Arena questions generated from your uploads are unlimited. Some courses in the Opportunities tab are posted by outside creators who set their own price, and those payments are handled securely by Paystack." },
           ]},
           { category: 'Stitch Bot AI Tutor', items: [
             { id: 'sb-help', q: 'What can Stitch Bot help me with?', a: "Stitch Bot can explain concepts, generate notes and flashcards from your uploaded documents, quiz you on a topic, and answer questions about your course material in plain language." },
