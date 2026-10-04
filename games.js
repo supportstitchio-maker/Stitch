@@ -2105,7 +2105,7 @@ let userPoints = 0;
           if (target) target.focus();
         }
         let appConfirmModalAction = null; 
-        function openAppConfirmModal(title, message, confirmLabel, action, iconType){
+        function openAppConfirmModal(title, message, confirmLabel, action, iconType, cancelLabel){
           appConfirmModalAction = typeof action === 'function' ? action : null;
           // Icon in the red circle: sign-out gets the logout icon, everything else the trash can.
           const iconEl = document.getElementById('appConfirmModalIcon');
@@ -2120,6 +2120,8 @@ let userPoints = 0;
           if (titleEl) titleEl.textContent = title || 'Are you sure?';
           if (messageEl) messageEl.textContent = message || '';
           if (btnEl) btnEl.textContent = confirmLabel || 'Confirm';
+          const cancelBtnEl = document.getElementById('appConfirmModalCancelBtn');
+          if (cancelBtnEl) cancelBtnEl.textContent = cancelLabel || 'Cancel';
           if (modal) modal.classList.remove('hidden');
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeAppConfirmModal(fromPopState));
         }

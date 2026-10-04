@@ -1887,8 +1887,8 @@
   </div>
 
   <!-- Leave Classroom confirmation modal -->
-  <div id="leaveClassModal" class="hidden absolute inset-0 z-40 flex items-center justify-center px-6" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-3xl w-full p-6 text-center" style="max-width:22rem;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+  <div id="leaveClassModal" class="hidden absolute inset-0 z-40 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
       <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4" id="leaveClassModalIcon">${IconBold('back','w-5 h-5')}</div>
       <div class="text-sm text-gray-500 mb-6" id="leaveClassModalMessage">You'll be removed from this classroom and its materials until you rejoin.</div>
       <div class="flex gap-3">
@@ -1900,8 +1900,8 @@
 
   <!-- Exam Exit confirmation modal (native confirm() is blocked inside the
        Apps Script sandboxed iframe, so this in-app modal replaces it) -->
-  <div id="examExitModal" class="hidden absolute inset-0 z-50 flex items-center justify-center px-6" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-3xl w-full p-6 text-center" style="max-width:22rem;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+  <div id="examExitModal" class="hidden absolute inset-0 z-50 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
       <div class="w-14 h-14 rounded-full bg-red-100 text-red-500 flex items-center justify-center mx-auto mb-4">${IconBold('back','w-5 h-5')}</div>
       <div class="text-lg font-bold text-[${NAVY}] font-display mb-2">Exit this test?</div>
       <div class="text-sm text-gray-500 mb-6" id="examExitMessage">Leaving now ends the test and locks in your score.</div>
@@ -1915,13 +1915,13 @@
   <!-- Generic app-styled confirm (replaces window.confirm, which shows
        "mystitch.vercel.app says" chrome from the hosting platform instead
        of looking like part of the app). See openAppConfirmModal below. -->
-  <div id="appConfirmModal" class="hidden absolute inset-0 z-50 flex items-center justify-center px-6" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-3xl w-full p-6 text-center" style="max-width:22rem;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+  <div id="appConfirmModal" class="hidden absolute inset-0 z-50 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
       <div id="appConfirmModalIcon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(239,68,68,0.14);color:#ef4444;">${Icon('trash','w-6 h-6')}</div>
       <div class="text-lg font-bold text-[${NAVY}] font-display mb-2" id="appConfirmModalTitle">Are you sure?</div>
       <div class="text-sm text-gray-500 mb-6" id="appConfirmModalMessage"></div>
       <div class="flex gap-3">
-        <button onclick="closeAppConfirmModal()" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(65,105,225,0.14);color:#1e3a8a;">Cancel</button>
+        <button onclick="closeAppConfirmModal()" id="appConfirmModalCancelBtn" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(65,105,225,0.14);color:#1e3a8a;">Cancel</button>
         <button onclick="confirmAppConfirmYes()" class="flex-1 py-3 rounded-2xl font-semibold text-sm" style="background:rgba(239,68,68,0.18);color:#b91c1c;" id="appConfirmModalConfirmBtn">Confirm</button>
       </div>
     </div>
