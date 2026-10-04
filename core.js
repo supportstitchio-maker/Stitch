@@ -2096,6 +2096,8 @@
           nav.style.transition = 'transform 0.22s ease-out, margin-bottom 0.22s ease-out, background-color 0.22s ease-out';
           nav.style.transform = `translateY(${ratio * navHeight}px)`;
           nav.style.marginBottom = `-${ratio * navHeight}px`;
+          // Lets empty-page messages cancel out the screen resizing, so they stay put (see .empty-center)
+          document.documentElement.style.setProperty('--nav-hide-px', (ratio * navHeight) + 'px');
           const flatOpacity = Math.max(0, 1 - (ratio / 0.55));
           const bgOpacity = Math.max(0, 1 - ratio);
           const isDark = document.body.classList.contains('dark-mode');

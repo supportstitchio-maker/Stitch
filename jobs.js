@@ -5220,7 +5220,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(18px, env(safe-area-inset-bottom));">
                   <div class="max-w-2xl mx-auto flex flex-col gap-3">
                     ${needsSubscribe ? `<button onclick="careerSubscribeAgain()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${!active || sub.cancelled ? 'Subscribe again' : 'Renew subscription'}</button>` : ''}
-                    ${canCancel ? `<button onclick="cancelCareerSubscription()" class="w-full inline-flex items-center justify-center font-semibold text-center rounded-full text-sm" style="background-image:linear-gradient(135deg,#b91c1c,#7f1d1d);background-color:#991b1b;color:#ffffff;border:none;padding:0.85rem 1.1rem;box-shadow:0 6px 16px rgba(127,29,29,0.28);">Cancel subscription</button>` : ''}
+                    ${canCancel ? `<button onclick="cancelCareerSubscription()" class="w-full inline-flex items-center justify-center font-semibold text-center rounded-full text-sm" style="background-image:linear-gradient(90deg,#ff3b30,#d4161f);background-color:#e11d28;color:#ffffff;border:none;padding:0.85rem 1.1rem;box-shadow:0 6px 16px rgba(212,22,31,0.30);">Cancel subscription</button>` : ''}
                   </div>
                 </div>`;
             }

@@ -3427,3 +3427,7 @@ body:has(#class-action-loading-overlay) #study-fab-menu { display:none !importan
 /* My glimpse: "Add glimpse" pill gives instant press feedback */
 .glimpse-add-pill { transition: transform .12s ease, background-color .15s ease, box-shadow .15s ease; -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 .glimpse-add-pill:active { transform: scale(0.95); background: rgba(10,37,64,0.16) !important; }
+
+/* Empty-page messages (inbox, Career Space...) stay in place when the bottom taskbar slides away:
+   the screen grows by the taskbar's height, so the padding below cancels that out in sync */
+.empty-center{ padding-bottom:var(--nav-hide-px,0px); transition:padding-bottom .22s ease-out; box-sizing:border-box; }

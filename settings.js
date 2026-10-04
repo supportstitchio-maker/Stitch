@@ -283,7 +283,7 @@ let appPrefs = {
         }
         // variant 'app' = in-app Tailwind styling; 'plain' = pre-login modals (inline styles)
         function legalRenderHTML(sections, variant){
-          const grad = 'background-image:linear-gradient(135deg, #1e90ff, #4169e1 60%, #0a2540);-webkit-background-clip:text;background-clip:text;color:transparent;';
+          const grad = 'background-image:linear-gradient(90deg, #1e90ff, #4169e1);-webkit-background-clip:text;background-clip:text;color:transparent;';
           return sections.map(sec => {
             const h = variant === 'app'
               ? `<h3 class="font-bold pt-1" style="${grad}">${sec[0]}</h3>`
