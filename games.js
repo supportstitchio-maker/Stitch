@@ -1051,6 +1051,7 @@ let userPoints = 0;
           }
           window.__authApplyStable = applyStableHeight;
           function dropNow(){
+            if (window.__authResetLift) window.__authResetLift();
             gate.style.transition = 'none';
             gate.style.height = restH + 'px';
             gate.scrollTop = 0;
@@ -1067,19 +1068,48 @@ let userPoints = 0;
           window.addEventListener('resize', applyStableAll);
           window.addEventListener('orientationchange', function(){ setTimeout(applyStableAll, 300); });
 
-          // Scroll the focused field into view ourselves (instant, no smooth scrolling)
+          // Lift the focused field above the keyboard. The card is centred and fits the screen, so the
+          // gate has nothing to scroll; instead the whole card is nudged up with a transform, by exactly
+          // as much as the keyboard covers the field.
+          const inner = gate.querySelector('.auth-scroll-inner');
+          let liftPx = 0;
+          function setLift(px){
+            liftPx = Math.max(0, Math.round(px));
+            if (!inner) return;
+            inner.style.transition = 'transform .12s ease-out';
+            inner.style.transform = liftPx ? 'translateY(-' + liftPx + 'px)' : '';
+          }
+          function resetLiftNow(){
+            liftPx = 0;
+            if (!inner) return;
+            inner.style.transition = 'none';
+            inner.style.transform = '';
+          }
+          window.__authResetLift = resetLiftNow;
+          function liftFocusedField(){
+            const t = document.activeElement;
+            if (!t || !gate.contains(t) || !/^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
+            const v = window.visualViewport;
+            const visibleBottom = v ? (v.offsetTop + v.height) : window.innerHeight;
+            const covered = v ? Math.max(0, window.innerHeight - v.height - v.offsetTop) : 0;
+            if (covered < 80) { if (liftPx) resetLiftNow(); return; }
+            const margin = 16;
+            const overflow = t.getBoundingClientRect().bottom - (visibleBottom - margin);
+            // overflow is measured with the current lift applied, so add/subtract it to get the target
+            setLift(liftPx + overflow);
+          }
           document.addEventListener('focusin', function(e){
             if (!gate.contains(e.target) || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-            const target = e.target;
-            setTimeout(function(){
-              if (document.activeElement !== target) return;
-              const vv = window.visualViewport;
-              const visibleBottom = vv ? (vv.offsetTop + vv.height) : window.innerHeight;
-              const margin = 16;
-              const overflow = target.getBoundingClientRect().bottom - (visibleBottom - margin);
-              if (overflow > 0) gate.scrollTop += overflow;
-            }, 80);
+            [0, 80, 180, 320, 520].forEach(function(ms){ setTimeout(liftFocusedField, ms); });
           });
+          if (vv) {
+            vv.addEventListener('resize', function(){
+              // keyboard fully gone -> card drops at once, in step with the keyboard
+              if (window.innerHeight - vv.height < 60) { resetLiftNow(); return; }
+              liftFocusedField();
+            });
+            vv.addEventListener('scroll', liftFocusedField);
+          }
           // Keyboard dismissed by tapping away / Done / Go: drop immediately
           document.addEventListener('focusout', function(e){
             if (!gate.contains(e.target) || !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;

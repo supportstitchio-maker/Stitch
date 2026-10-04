@@ -1009,9 +1009,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             : Icon('user','w-8 h-8');
           return `
             <div class="mb-5">
-              <div class="relative flex items-center justify-center pb-1">
-                <button onclick="discardEditProfileChanges()" class="absolute" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <div class="font-semibold text-lg font-display grad-text text-center">Edit Profile</div>
+              <div class="flex items-center justify-start gap-3 pb-1">
+                <button onclick="discardEditProfileChanges()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="font-semibold text-lg font-display grad-text text-left">Edit Profile</div>
               </div>
               <div class="text-sm text-gray-500 text-left mt-1">Update how your profile appears on Stitch.</div>
             </div>
@@ -1754,55 +1754,55 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
 
 
-        // ---- Edit Profile: page stays put; it only lifts above the keyboard for the Bio and "Add link" fields ----
+        // ---- Edit Profile: the page is NOT scrollable. It only moves by itself, up above the keyboard
+        // while the Bio or "Add link" box is focused, and drops straight back when the keyboard goes ----
         (function setupEditProfileKeyboardAvoidance(){
           const BASE_PAD = 88;
           const LIFT_IDS = ['new-profile-link-input', 'edit-bio'];
-          let lifted = false;
           function modalEl(){ return document.getElementById('editProfileModal'); }
-          function linkFocused(){
+          function liftFocused(){
             const m = modalEl();
             const ae = document.activeElement;
             return !!(m && ae && LIFT_IDS.indexOf(ae.id) > -1 && m.contains(ae));
           }
-          // Not scrollable unless the content really is taller than the screen
-          function applyIdleScroll(m){
-            m.style.paddingBottom = BASE_PAD + 'px';
-            m.style.overflowY = 'hidden';
-            if (m.scrollHeight > m.clientHeight + 1) m.style.overflowY = 'auto';
+          function lock(m){
+            m.style.overflowY = 'hidden';          // no finger-scrolling, ever
+            m.style.overscrollBehavior = 'contain';
+            m.style.scrollBehavior = 'auto';
           }
           function drop(m){
-            if (lifted) { m.scrollTop = 0; lifted = false; }
-            applyIdleScroll(m);
+            lock(m);
+            m.style.paddingBottom = BASE_PAD + 'px';
+            m.scrollTop = 0;
           }
-          function reveal(m){
+          function keyboardCovered(){
+            const vv = window.visualViewport;
+            return vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+          }
+          function lift(m){
             const ae = document.activeElement;
-            const target = (ae && ae.parentElement) ? ae.parentElement : ae; // whole row / field block, not just the bare input
+            const target = (ae && ae.parentElement) ? ae.parentElement : ae;
             if (!target) return;
-            const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(true) : 0;
+            const covered = keyboardCovered();
             const vv = window.visualViewport;
             const visibleBottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 12;
+            // room under the content so the page has somewhere to move to
+            m.style.paddingBottom = (BASE_PAD + covered + 24) + 'px';
             const over = target.getBoundingClientRect().bottom - visibleBottom;
             if (over > 0) m.scrollTop += over;
           }
           function sync(){
             const m = modalEl();
             if (!m || m.classList.contains('hidden')) return;
-            const inset = linkFocused() && typeof getKeyboardInset === 'function' ? getKeyboardInset(true) : 0;
-            if (inset > 0 && linkFocused()) {
-              lifted = true;
-              m.style.overflowY = 'auto';
-              m.style.paddingBottom = (BASE_PAD + inset + 24) + 'px';
-              reveal(m);
-            } else {
-              drop(m);
-            }
+            lock(m);
+            if (liftFocused() && keyboardCovered() > 80) lift(m);
+            else drop(m);
           }
           document.addEventListener('focusin', function(e){
             const m = modalEl();
-            if (m && m.contains(e.target)) { sync(); setTimeout(sync, 150); setTimeout(sync, 350); setTimeout(sync, 600); }
+            if (m && m.contains(e.target)) { sync(); [60, 150, 300, 500].forEach(function(ms){ setTimeout(sync, ms); }); }
           });
-          // Keyboard going away: drop the page back down straight away
+          // Keyboard going away: drop the page back down at once
           document.addEventListener('focusout', function(){
             const m = modalEl();
             if (m) drop(m);
@@ -1813,8 +1813,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             window.visualViewport.addEventListener('scroll', sync);
           }
           window.addEventListener('resize', sync);
-          // Re-render of the form (open, add/remove link) -> re-check whether scrolling is needed
           const mm = modalEl();
-          if (mm) new MutationObserver(function(){ if (!mm.classList.contains('hidden') && !linkFocused()) applyIdleScroll(mm); })
-            .observe(mm, { childList:true, subtree:true });
+          if (mm) {
+            lock(mm);
+            new MutationObserver(function(){ if (!mm.classList.contains('hidden') && !liftFocused()) lock(mm); })
+              .observe(mm, { childList:true, subtree:true });
+          }
         })();
