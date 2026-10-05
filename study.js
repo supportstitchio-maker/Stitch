@@ -1199,7 +1199,7 @@ let studyFabMenuOpen = false;
             <div class="fc-stage">
               <div class="fc-stack">
                 ${ghosts}
-                <div id="fcCard" class="fc-card" style="touch-action:pan-y;">
+                <div id="fcCard" class="fc-card" style="touch-action:none;-webkit-user-select:none;user-select:none;">
                   <div id="fcFlipper" class="fc-flipper ${cardFlipped ? 'is-flipped' : ''}">
                     ${fcFaceHTML(card, 'front', idx)}
                     ${fcFaceHTML(card, 'back', idx)}
@@ -1222,42 +1222,67 @@ let studyFabMenuOpen = false;
           fcBindDrag();
         }
 
+        // Swipe handling. The card owns every touch on it (touch-action:none), so the browser can
+        // no longer steal a slightly diagonal swipe as a page scroll and cancel it halfway.
+        // Long text inside a card is scrolled by hand when the finger moves mostly vertically.
         function fcBindDrag(){
           const el = document.getElementById('fcCard');
           if (!el) return;
-          let sx = 0, dx = 0, drag = false, moved = false;
+          let id = null, sx = 0, sy = 0, lx = 0, ly = 0, dx = 0, t0 = 0, vx = 0, lt = 0;
+          let moved = false, axis = null, body = null;
           const reset = () => {
-            el.style.removeProperty('--fc-x');
-            el.style.removeProperty('--fc-r');
-            el.style.removeProperty('--fc-yes');
-            el.style.removeProperty('--fc-no');
+            ['--fc-x','--fc-r','--fc-yes','--fc-no'].forEach(k => el.style.removeProperty(k));
+          };
+          const faceBody = () => {
+            const flipped = !!(document.getElementById('fcFlipper') || {}).classList && document.getElementById('fcFlipper').classList.contains('is-flipped');
+            return el.querySelector(flipped ? '.fc-face-back .fc-face-body' : '.fc-face-front .fc-face-body');
           };
           el.onpointerdown = e => {
-            if (fcBusy) return;
-            drag = true; moved = false; sx = e.clientX; dx = 0;
+            if (fcBusy || id !== null) return;
+            id = e.pointerId; sx = lx = e.clientX; sy = ly = e.clientY; dx = 0; vx = 0;
+            t0 = lt = performance.now(); moved = false; axis = null; body = faceBody();
             try { el.setPointerCapture(e.pointerId); } catch (err) {}
-            el.classList.add('fc-dragging');
           };
           el.onpointermove = e => {
-            if (!drag) return;
-            dx = e.clientX - sx;
-            if (Math.abs(dx) > 6) moved = true;
-            if (!moved) return;
-            const p = Math.min(1, Math.abs(dx) / 110);
+            if (e.pointerId !== id) return;
+            const now = performance.now();
+            const tx = e.clientX - sx, ty = e.clientY - sy;
+            if (!axis) {
+              if (Math.abs(tx) < 8 && Math.abs(ty) < 8) return;
+              // Horizontal unless clearly vertical, so loose swipes still count
+              axis = Math.abs(ty) > Math.abs(tx) * 1.6 && body && body.scrollHeight > body.clientHeight + 2 ? 'y' : 'x';
+              moved = true;
+              if (axis === 'x') el.classList.add('fc-dragging');
+            }
+            if (axis === 'y') {
+              body.scrollTop -= (e.clientY - ly);
+              ly = e.clientY; lx = e.clientX; lt = now;
+              return;
+            }
+            dx = tx;
+            if (now > lt) vx = (e.clientX - lx) / (now - lt);
+            lx = e.clientX; ly = e.clientY; lt = now;
+            const p = Math.min(1, Math.abs(dx) / 90);
             el.style.setProperty('--fc-x', dx + 'px');
             el.style.setProperty('--fc-r', (dx / 16) + 'deg');
             el.style.setProperty('--fc-yes', dx > 0 ? p : 0);
             el.style.setProperty('--fc-no', dx < 0 ? p : 0);
           };
-          const end = () => {
-            if (!drag) return;
-            drag = false;
+          const finish = cancelled => {
+            if (id === null) return;
+            try { el.releasePointerCapture(id); } catch (err) {}
+            id = null;
             el.classList.remove('fc-dragging');
-            if (!moved) { flipStudyCard(); return; }
-            if (Math.abs(dx) > 90) fcMark(dx > 0); else reset();
+            if (cancelled) { reset(); return; }
+            if (!moved) { if (performance.now() - t0 < 600) flipStudyCard(); return; }
+            if (axis === 'y') return;
+            // Distance OR a quick flick commits the swipe
+            const flick = Math.abs(vx) > 0.45 && Math.abs(dx) > 30;
+            if (Math.abs(dx) > 70 || flick) fcMark(dx > 0); else reset();
           };
-          el.onpointerup = end;
-          el.onpointercancel = () => { drag = false; el.classList.remove('fc-dragging'); reset(); };
+          el.onpointerup = () => finish(false);
+          el.onpointercancel = () => finish(true);
+          el.onlostpointercapture = () => { if (id !== null) finish(false); };
         }
 
         function flipStudyCard(){
