@@ -41,7 +41,7 @@ try {
           if (!transcript.trim()) { session.summary = 'New chat'; refreshAIChatHistoryViews(); return; }
           try {
             const system = 'Summarise what this chat between a student and their AI study buddy was about, in 5 words or fewer. Describe the topic or task discussed, not who said what. No punctuation at the end, no quotation marks, no leading capital-letter labels like "Topic:".';
-            const reply = await callClaude(system, transcript, 'chat');
+            const reply = await callClaude(system, transcript, 'summary');
             const clean = String(reply || '').trim().replace(/^["']|["']$/g, '').replace(/\.$/, '');
             session.summary = clean.slice(0, 60) || fallbackAIChatSummary(session);
           } catch (err) {
