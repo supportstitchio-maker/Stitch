@@ -3612,32 +3612,44 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 // ---- Long username marquee: every profile username uses one size; names that don't fit slide
 // sideways (and back) by themselves so the rest can be read ----
 (function setupNameMarquee(){
-  if (window.__nmMarquee) return; window.__nmMarquee = true;
+  if (window.__nmMarquee2) return; window.__nmMarquee2 = true;
   const st = document.createElement('style');
   st.textContent = `
     .nm-wrap{overflow:hidden;white-space:nowrap;text-align:center;display:block}
     .nm-inner{display:inline-block;white-space:nowrap;will-change:transform}
     .nm-inner.nm-run{animation:nmSlide var(--nm-t,8s) ease-in-out infinite alternate}
     @keyframes nmSlide{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--nm-d,0px))}}
-    @media (prefers-reduced-motion:reduce){.nm-inner.nm-run{animation:none}}`;
+    /* If the phone asks for reduced motion, don't animate: let the name be swiped instead */
+    @media (prefers-reduced-motion:reduce){
+      .nm-inner.nm-run{animation:none}
+      .nm-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;text-align:left}
+      .nm-wrap::-webkit-scrollbar{display:none}
+    }`;
   document.head.appendChild(st);
   let queued = false;
+  // Only touches an element when its measurement changed, so unrelated page updates never
+  // restart a slide that is already running
   function measure(){
     queued = false;
     document.querySelectorAll('.nm-wrap').forEach(w => {
       const i = w.querySelector('.nm-inner'); if (!i) return;
-      i.classList.remove('nm-run'); i.style.removeProperty('--nm-d');
       const over = Math.ceil(i.getBoundingClientRect().width - w.clientWidth);
       if (over > 2) {
-        i.style.setProperty('--nm-d', (-over - 2) + 'px');
-        i.style.setProperty('--nm-t', Math.max(5, over / 18 + 3) + 's');
-        i.classList.add('nm-run');
+        const d = (-over - 2) + 'px';
+        const t = Math.max(5, over / 18 + 3) + 's';
+        if (i.style.getPropertyValue('--nm-d') !== d) i.style.setProperty('--nm-d', d);
+        if (i.style.getPropertyValue('--nm-t') !== t) i.style.setProperty('--nm-t', t);
+        if (!i.classList.contains('nm-run')) i.classList.add('nm-run');
+      } else if (i.classList.contains('nm-run')) {
+        i.classList.remove('nm-run');
+        i.style.removeProperty('--nm-d');
       }
     });
   }
-  function queue(){ if (!queued) { queued = true; requestAnimationFrame(() => setTimeout(measure, 60)); } }
-  new MutationObserver(queue).observe(document.body || document.documentElement, { childList: true, subtree: true });
+  function queue(){ if (!queued) { queued = true; requestAnimationFrame(() => setTimeout(measure, 80)); } }
+  new MutationObserver(queue).observe(document.documentElement, { childList: true, subtree: true });
   window.addEventListener('resize', queue);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(queue);
+  setInterval(queue, 1500);
   queue();
 })();
