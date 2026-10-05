@@ -2691,7 +2691,7 @@ let userPoints = 0;
               <p>Register with your email, join or create a class with a class code, and you're set -- upload a document to generate notes, flashcards, and practice questions from it automatically.</p>
               <h3 style="font-weight:700;padding-top:4px;">Common questions</h3>
               <p><strong>How do study groups work?</strong> Anyone in a class can start or lead a group -- no admin approval needed.</p>
-              <p><strong>What are the usage limits?</strong> Every account gets 70 Stitch Bot prompts a day (up to 300 a week and 1500 a month). Practice questions, flashcards, and Challenge Arena questions generated from your uploads are unlimited. There's no paid tier -- these limits are the same for everyone.</p>
+              <p><strong>What are the usage limits?</strong> Every account gets 50 Stitch Bot prompts a day (up to 250 a week and 1000 a month). Practice questions, flashcards, and Challenge Arena questions generated from your uploads are unlimited. There's no paid tier -- these limits are the same for everyone.</p>
               <p><strong>My upload didn't generate anything.</strong> This usually means it looked like a duplicate of something you already uploaded. Try again with the original file.</p>
               <p>Didn't find your answer? Reach out below and we'll help directly.</p>
             `

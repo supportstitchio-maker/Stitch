@@ -313,7 +313,7 @@ let studyFabMenuOpen = false;
         }
 
         // ---- Stitch Bot prompt usage/rate limiting (daily + weekly + monthly) ----
-        const AI_PROMPT_LIMITS = { daily: 70, weekly: 300, monthly: 1500 };
+        const AI_PROMPT_LIMITS = { daily: 50, weekly: 250, monthly: 1000 };
         let aiPromptCount = 0;
         let aiPromptDate = null;     // 'YYYY-MM-DD'
         let aiPromptWeekCount = 0;
