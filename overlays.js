@@ -1656,7 +1656,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
 
         function discoverHTML(){
           return `
-            ${overlayHeader('Discover', '20px', null, null, {center:true})}
+            ${overlayHeader('Discover', '20px', null, null, {right:true})}
             <div class="px-5 pt-3 pb-3 flex-shrink-0" style="padding-bottom:calc(0.75rem + 5px);">
               <input id="discover-search-input" value="${escapeHtml(discoverSearchQuery)}" oninput="onDiscoverSearchInput(this.value)" placeholder="Search by name, school, field..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm" autocomplete="off">
             </div>
@@ -2449,18 +2449,14 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         // right under the "..." button --
         function personProfileDropdownMenuHTML(p){
           const blocked = isPersonProfileBlocked(p);
-          const rows = [];
-          rows.push(`<button onclick="togglePersonProfileMenu(); openOverlayFrom('personProfile','personProfileQR');" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('send','w-4 h-4')} Share profile</button>`);
-          rows.push(`<button onclick="togglePersonProfileMenu(); togglePersonProfileBlock();" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('block','w-4 h-4')} ${blocked ? 'Unblock' : 'Block'}</button>`);
+          const rows = [
+            { onclick: "togglePersonProfileMenu(); openOverlayFrom('personProfile','personProfileQR');", icon: 'send', label: 'Share profile' },
+            { onclick: "togglePersonProfileMenu(); togglePersonProfileBlock();", icon: 'block', label: blocked ? 'Unblock' : 'Block', cls: 'text-red-500' }
+          ];
           if (p.connected) {
-            rows.push(`<button onclick="togglePersonProfileMenu(); removeConnectionWithViewedProfile();" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Remove</button>`);
+            rows.push({ onclick: "togglePersonProfileMenu(); removeConnectionWithViewedProfile();", icon: 'trash', label: 'Remove', cls: 'text-red-500' });
           }
-          // Divider lines between the rows
-          const items = rows.map((row, i) => i < rows.length - 1 ? row.replace('menu-item-pill"', 'menu-item-pill" style="border-bottom:1px solid #f3f4f6;"') : row);
-          return `
-            <div class="absolute w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:0;top:3.25rem;">
-              ${items.join('')}
-            </div>`;
+          return classMenuSheetHTML('togglePersonProfileMenu', rows);
         }
 
         // ---- Share a viewed (other) person's profile as a QR code ----
@@ -2651,7 +2647,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             <div class="flex-1 overflow-y-auto">
             <div class="px-5 pb-3 flex items-center justify-between relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <span class="font-bold text-base font-display grad-text flex items-center gap-1.5">${p.username ? escapeHtml(p.username) : escapeHtml(p.name || 'Profile')}</span>
+              ${(() => { const _t = p.username ? String(p.username) : String(p.name || 'Profile'); const _fs = _t.length <= 16 ? 16 : _t.length <= 22 ? 14 : _t.length <= 30 ? 12 : 10.5; return `<span class="font-bold font-display grad-text" style="flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:${_fs}px;">${escapeHtml(_t)}</span>`; })()}
               <div class="w-10 h-10"></div>
             </div>
             <div class="p-5">
@@ -3200,7 +3196,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           const cards = notifCards(items, { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap', full: true });
           return `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${menuOverlayHeader(escapeHtml(title), notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction'), { backFn: notifSelected.size ? 'notifCancelSelect' : 'notifGroupBack', hideMenuOnDesktop: true })}
+              ${menuOverlayHeader(escapeHtml(title), notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'notifGroupBack', hideMenuOnDesktop: true })}
               <div class="p-5">
                 <div class="flex items-center justify-between mb-3">
                   <div class="text-xs text-gray-400">${items.length} ${items.length === 1 ? 'notification' : 'notifications'}</div>
@@ -3226,7 +3222,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               : '<div class="text-sm text-gray-400 text-center py-10">No notifications yet.</div>';
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-                ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction'), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
+                ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
                 <div class="p-5">
                   <div class="notif-list space-y-2">${listHTML}</div>
                 </div>

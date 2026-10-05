@@ -204,18 +204,18 @@ let studyFabMenuOpen = false;
           `;
           if (studySub === 'exams') return `
             ${studyFeatureCard('doc', 'Practice Tests', 'Full mock tests, timed or self-paced', 'Exam-ready questions sourced from your uploaded resources.', `
-              <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Browse Mock Tests</div>
+              <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="font-family:'Colmeak','Montserrat',sans-serif;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Browse Mock Tests</div>
             `, 'openPracticeTestsOverlay()', null, 'assets/practice/practice-tests.png')}
             ${studyFeatureCard('bolt', 'Live · Head-to-head', 'Challenge Arena', 'Real-time, competitive practice: go head-to-head with another student on the same question set.', `
               <div class="challenge-arena-actions relative">
                 <button onclick="openChallengeSetupModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full mb-3 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Set Up a Challenge</button>
                 <button onclick="openInviteFriendModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full mb-3 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Invite a Friend</button>
-                <button onclick="openJoinChallengeCodeModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full border" style="border-color:${NAVY};color:${NAVY};">Join with a Code</button>
+                <button onclick="openJoinChallengeCodeModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full border" style="font-family:'Colmeak','Montserrat',sans-serif;border-color:${NAVY};color:${NAVY};">Join with a Code</button>
               </div>
             `, null, null, 'assets/practice/challenge-arena.png')}
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3 mt-6">Flashcards</div>
             ${studyFeatureCard('bookmark', 'All Resources', 'Study All Flashcards', "Auto-generated from everything you've uploaded: no need to open each resource separately.", `
-              <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Start Studying</div>
+              <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="font-family:'Colmeak','Montserrat',sans-serif;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Start Studying</div>
             `, "openFlashDeck('all')", 'margin-bottom:50px;', 'assets/practice/flashcards.png')}
           `;
         }

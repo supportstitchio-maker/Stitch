@@ -1648,10 +1648,9 @@
                 <button onclick="closeOverlay()" class="flex items-center flex-shrink-0" style="color:${NAVY};">${IconBold('close','w-5 h-5')}</button>
                 <div class="text-xl font-bold font-display text-right" style="color:${NAVY};min-width:0;">My glimpse</div>
               </div>
-              <div class="flex-1 overflow-y-auto">
-                ${myGlimpses.length === 0 ? `
-                  <div class="px-6 py-16 text-center text-gray-400 text-sm">No glimpses yet.<br>Tap "Add glimpse" below to share a photo or video.</div>
-                ` : myGlimpses.map(myGlimpseRow).join('')}
+              <div class="flex-1 overflow-y-auto flex flex-col">
+                ${myGlimpses.length === 0 ? '' : myGlimpses.map(myGlimpseRow).join('')}
+                <div class="${myGlimpses.length === 0 ? 'flex-1 flex flex-col items-center justify-center' : ''}" style="${myGlimpses.length === 0 ? 'padding-bottom:12vh;' : ''}">
                 <div class="px-6 pt-2 pb-4 flex justify-center">
                   <button type="button" onclick="composeGlimpseMedia()" class="glimpse-add-pill flex items-center justify-center gap-2.5 rounded-full px-8 py-3" style="color:${NAVY};background:rgba(10,37,64,0.08);cursor:pointer;min-width:min(200px,100%);">
                     ${Icon('addGlimpseOutline','w-5 h-5')}
@@ -1660,6 +1659,7 @@
                 </div>
                 <div class="px-6 pb-6 text-center text-xs text-gray-400 leading-relaxed">
                   Your glimpses are private to your Stitch network and disappear after 24 hours.
+                </div>
                 </div>
               </div>
             </div>`;

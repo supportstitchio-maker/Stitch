@@ -3597,7 +3597,7 @@ try {
           const isEditing = !!newCourseEditingId;
           return `
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
+            ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { right: true, pb: '20px' })}
             <div class="px-5 pb-8" style="padding-top:20px;">
               <div class="flex flex-col items-center mb-5">
                 <button onclick="triggerCoursePhotoUpload()" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${d.photo ? `background-image:url('${d.photo}');background-size:cover;background-position:center;` : `background:linear-gradient(135deg,${blueCardPalette[0][0]},${blueCardPalette[0][1]});`}">
@@ -3656,7 +3656,7 @@ try {
                 ${Icon('plus','w-4 h-4')} Add Resource
               </button>
 
-              <button onclick="publishNewCourse()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-white" style="background:rgba(30,144,255,0.85);">
+              <button onclick="publishNewCourse()" class="pill-cta w-full inline-flex items-center justify-center gap-2 text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">
                 ${isEditing ? 'Save Changes' : 'Publish Course'}
               </button>
               <div style="height:50px;"></div>
@@ -4183,6 +4183,7 @@ try {
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
             </div>
 </div>
+              <div style="height:20px;"></div>
               <div class="text-sm font-semibold text-gray-700 mb-3">You're currently signed in as</div>
               <div class="flex items-center gap-3 mb-6">
                 <span class="w-11 h-11 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${avatarMediaHTML(profileData.photo, 'user', 'w-6 h-6')}</span>
