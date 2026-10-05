@@ -1009,9 +1009,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             : Icon('user','w-8 h-8');
           return `
             <div class="mb-5">
-              <div class="flex items-center justify-start gap-3 pb-1">
+              <div class="flex items-center justify-between gap-3 pb-1">
                 <button onclick="discardEditProfileChanges()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <div class="font-semibold text-lg font-display grad-text text-left">Edit Profile</div>
+                <div class="font-semibold text-lg font-display grad-text text-right">Edit Profile</div>
               </div>
               <div class="text-sm text-gray-500 text-left mt-1">Update how your profile appears on Stitch.</div>
             </div>
@@ -1777,15 +1777,17 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           }
           function keyboardCovered(){
             const vv = window.visualViewport;
-            return vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+            let h = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+            const vk = navigator.virtualKeyboard;
+            if (vk && vk.boundingRect) h = Math.max(h, Math.round(vk.boundingRect.height || 0));
+            return h;
           }
           function lift(m){
             const ae = document.activeElement;
             const target = (ae && ae.parentElement) ? ae.parentElement : ae;
             if (!target) return;
             const covered = keyboardCovered();
-            const vv = window.visualViewport;
-            const visibleBottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 12;
+            const visibleBottom = (window.innerHeight - covered) - 12;
             // room under the content so the page has somewhere to move to
             m.style.paddingBottom = (BASE_PAD + covered + 24) + 'px';
             const over = target.getBoundingClientRect().bottom - visibleBottom;
@@ -1813,6 +1815,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             window.visualViewport.addEventListener('scroll', sync);
           }
           window.addEventListener('resize', sync);
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', sync);
           const mm = modalEl();
           if (mm) {
             lock(mm);

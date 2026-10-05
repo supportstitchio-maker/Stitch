@@ -3449,6 +3449,16 @@ body:has(#class-action-loading-overlay) #study-fab-menu { display:none !importan
   -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   border-radius:9999px; transition:background-color .12s ease, color .12s ease, transform .12s ease;
 }
+#auth-gate .auth-skip-link.loading{
+  background:linear-gradient(135deg,#1e90ff,#4169e1); color:#fff; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 8px 20px rgba(30,144,255,.28);
+}
+#auth-gate .auth-skip-link.loading::before{
+  content:''; width:16px; height:16px; border-radius:50%;
+  border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+  animation:classroom-spin .7s linear infinite; flex-shrink:0;
+}
 #auth-gate .auth-skip-link:active{ background:#d6dae0; color:#0a2540; transform:scale(.97); }
 
 

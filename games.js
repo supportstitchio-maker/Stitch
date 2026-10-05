@@ -1086,12 +1086,20 @@ let userPoints = 0;
             inner.style.transform = '';
           }
           window.__authResetLift = resetLiftNow;
+          // The app switches on the VirtualKeyboard API (overlaysContent), so in many browsers the page
+          // never resizes when the keyboard opens -- read the keyboard's own height as well
+          function kbHeight(){
+            const v = window.visualViewport;
+            let h = v ? Math.max(0, window.innerHeight - v.height - v.offsetTop) : 0;
+            const k = navigator.virtualKeyboard;
+            if (k && k.boundingRect) h = Math.max(h, Math.round(k.boundingRect.height || 0));
+            return h;
+          }
           function liftFocusedField(){
             const t = document.activeElement;
             if (!t || !gate.contains(t) || !/^(INPUT|TEXTAREA)$/.test(t.tagName)) return;
-            const v = window.visualViewport;
-            const visibleBottom = v ? (v.offsetTop + v.height) : window.innerHeight;
-            const covered = v ? Math.max(0, window.innerHeight - v.height - v.offsetTop) : 0;
+            const covered = kbHeight();
+            const visibleBottom = window.innerHeight - covered;
             if (covered < 80) { if (liftPx) resetLiftNow(); return; }
             const margin = 16;
             const overflow = t.getBoundingClientRect().bottom - (visibleBottom - margin);
@@ -1105,10 +1113,15 @@ let userPoints = 0;
           if (vv) {
             vv.addEventListener('resize', function(){
               // keyboard fully gone -> card drops at once, in step with the keyboard
-              if (window.innerHeight - vv.height < 60) { resetLiftNow(); return; }
+              if (kbHeight() < 60) { resetLiftNow(); return; }
               liftFocusedField();
             });
             vv.addEventListener('scroll', liftFocusedField);
+          }
+          if (navigator.virtualKeyboard) {
+            navigator.virtualKeyboard.addEventListener('geometrychange', function(){
+              if (kbHeight() < 60) resetLiftNow(); else liftFocusedField();
+            });
           }
           // Keyboard dismissed by tapping away / Done / Go: drop immediately
           document.addEventListener('focusout', function(e){
@@ -1659,6 +1672,16 @@ let userPoints = 0;
           if (authPosterAppStageIdx > 0) {
             authPosterAppStageIdx--;
             authRenderPosterAppStage();
+          }
+        }
+        // "Skip for now" on the photo step: turns solid blue with a spinner so people can see it's working
+        async function authSkipPhoto(){
+          const btn = document.getElementById('auth-photo-skip-btn');
+          if (btn && btn.classList.contains('loading')) return;
+          if (btn) { btn.classList.add('loading'); btn.textContent = 'Skipping…'; }
+          try { await authPosterAppNext(); }
+          finally {
+            if (btn) { btn.classList.remove('loading'); btn.textContent = 'Skip for now'; }
           }
         }
         async function authPosterAppNext(){
