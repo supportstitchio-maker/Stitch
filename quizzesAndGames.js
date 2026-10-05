@@ -1117,8 +1117,36 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function toggleExamDirections(){ examDirectionsOpen = !examDirectionsOpen; renderExamTake(true); }
         function toggleExamTimerHidden(){ examTimerHidden = !examTimerHidden; renderExamTake(true); }
-        function toggleExamMark(){ examMarked[examQIndex] = !examMarked[examQIndex]; renderExamTake(true); }
-        function selectExamOption(i){ examAnswers[examQIndex] = i; renderExamTake(true); }
+        // Updates only what changed (option highlight, mark icon, palette, progress) instead of
+        // rebuilding the whole page, so tapping an answer never blinks, replays the fade-in or
+        // jumps the scroll position. Falls back to a full render if the layout doesn't line up.
+        function examPatchInPlace(){
+          if (examStage !== 'take' || examContext === 'weeklyQuiz' || examContext === 'dailyQuiz') { renderExamTake(true); return; }
+          const ov = document.getElementById('overlay');
+          const fresh = document.createElement('template');
+          fresh.innerHTML = examTakeHTML();
+          const curCard = ov && ov.querySelector('.ar-take > .ar-card.ar-fade');
+          const newCard = fresh.content.querySelector('.ar-take > .ar-card.ar-fade');
+          const curOpts = curCard ? curCard.querySelectorAll('.ar-opt') : [];
+          const newOpts = newCard ? newCard.querySelectorAll('.ar-opt') : [];
+          const curNums = ov ? ov.querySelectorAll('.ar-n') : [];
+          const newNums = fresh.content.querySelectorAll('.ar-n');
+          const curSide = ov && ov.querySelector('.ar-side');
+          const newSide = fresh.content.querySelector('.ar-side');
+          const curMark = curCard && curCard.querySelector('button[onclick="toggleExamMark()"]');
+          const newMark = newCard && newCard.querySelector('button[onclick="toggleExamMark()"]');
+          if (!curCard || !newCard || curOpts.length !== newOpts.length || curNums.length !== newNums.length
+              || !curSide || !newSide || !curMark || !newMark) { renderExamTake(true); return; }
+          curOpts.forEach((el, k) => { el.className = newOpts[k].className; });
+          curNums.forEach((el, k) => { el.className = newNums[k].className; });
+          curMark.className = newMark.className;
+          curMark.setAttribute('style', newMark.getAttribute('style') || '');
+          curMark.setAttribute('aria-label', newMark.getAttribute('aria-label') || '');
+          curSide.innerHTML = newSide.innerHTML;
+        }
+
+        function toggleExamMark(){ examMarked[examQIndex] = !examMarked[examQIndex]; examPatchInPlace(); }
+        function selectExamOption(i){ examAnswers[examQIndex] = i; examPatchInPlace(); }
         function setExamWrittenAnswer(i, text){ examAnswers[i] = text; }
 
         function examGoBack(){
