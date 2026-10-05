@@ -565,13 +565,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         function newCollabTypeHTML(){
           const card = (vis, title, desc, bullets, iconName) => `
-            <button onclick="chooseNewCollabType('${vis}')" class="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 mb-3 flex gap-3 items-start" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-              <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon(iconName,'w-5 h-5')}</div>
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold text-[15px] text-gray-900">${title}</div>
-                <div class="text-sm text-gray-500 mt-0.5 leading-snug">${desc}</div>
-                <ul class="text-xs text-gray-400 mt-2 leading-relaxed" style="list-style:disc;padding-left:16px;">${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
-              </div>
+            <button onclick="chooseNewCollabType('${vis}')" class="collab-type-card w-full text-left rounded-2xl border border-gray-200 bg-white p-4 mb-3 block" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div class="font-display font-semibold text-[17px] text-gray-900">${title}</div>
+              <div class="text-sm text-gray-500 mt-0.5 leading-snug">${desc}</div>
+              <p class="text-xs text-gray-400 mt-2 leading-relaxed">${bullets.map(b => b.replace(/[.]$/, '') + '.').join(' ')}</p>
             </button>`;
           return `
             <div class="px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
@@ -580,7 +577,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text" style="text-align:right;">New collaboration</div>
               </div>
             </div>
-            <div class="flex-1 overflow-y-auto px-5 pt-5">
+            <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
               <div class="text-sm text-gray-500 mb-4">What kind of collaboration do you want to create?</div>
               ${card('general','General','Open to everyone on Stitch.',['Anyone can find it by searching Messages and Collaborations','Shown on the Collaborations page','Anyone can join, no member limit'],'users')}
               ${card('private','Private','Only for people you invite.',[`Up to ${PRIVATE_COLLAB_MAX_MEMBERS} members`,'Never shown in search or on the Collaborations page','Only people with access can see it'],'lock')}
@@ -604,8 +601,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="flex items-center gap-4">
                 <button onclick="newCollabStep='type';openOverlay('newCollaboration')" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-lg font-display truncate grad-text" style="text-align:right;">${newCollabVisibility === 'general' ? 'New general collaboration' : 'New private collaboration'}</div>
-                  ${count ? `<div class="text-xs text-gray-400" style="text-align:right;">${count} selected${newCollabVisibility === 'private' ? ` · max ${PRIVATE_COLLAB_MAX_MEMBERS}` : ''}</div>` : (newCollabVisibility === 'general' ? '<div class="text-xs text-gray-400" style="text-align:right;">Inviting people is optional</div>' : '')}
+                  <div class="font-semibold text-lg font-display truncate grad-text" style="text-align:right;">${newCollabVisibility === 'general' ? 'General collaboration' : 'Private collaboration'}</div>
+                  ${count ? `<div class="text-xs text-gray-400" style="text-align:right;">${count} selected${newCollabVisibility === 'private' ? ` · max ${PRIVATE_COLLAB_MAX_MEMBERS}` : ''}</div>` : ''}
                 </div>
               </div>
             </div>
