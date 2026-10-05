@@ -1723,7 +1723,6 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div class="p-5">
               ${settingsSection('Your account', `
                 ${settingsRow('chart','Your activity', null, "openOverlayFrom('profileMenu','profileAnalytics')")}
-                ${settingsRow('bookmark','Saved', null, "openSavedItems('posts')")}
                 ${settingsRow('close','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
                 ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}

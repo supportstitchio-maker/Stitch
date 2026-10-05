@@ -17,12 +17,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function deactivateInboxSearch(){
           inboxSearchActive = false;
           inboxSearchQuery = '';
+          inboxCollabSearchResults = [];
           renderInboxTab();
         }
         function onInboxSearchInput(val){
           inboxSearchQuery = val;
           const list = document.getElementById('inbox-list');
           if (list) list.innerHTML = inboxContent();
+          scheduleInboxCollabSearch();
         }
 
         function toggleInboxFilterMenu(){
@@ -495,7 +497,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           openConversation(id);
         }
 
-        let newCollabStep = 'select'; 
+        let newCollabStep = 'type';
+        let newCollabVisibility = 'private'; 
         let newCollabSelected = new Set();
         let newCollabName = '';
         let newCollabDescription = '';
@@ -503,7 +506,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // ---- New message / new collaboration (group chat) setup ----
         function openNewCollaboration(){
-          newCollabStep = 'select';
+          newCollabStep = 'type';
+          newCollabVisibility = 'private';
           newCollabSelected = new Set();
           newCollabName = '';
           newCollabDescription = '';
@@ -548,7 +552,39 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function newCollaborationHTML(){
+          if (newCollabStep === 'type') return newCollabTypeHTML();
           return newCollabStep === 'name' ? newCollabNameHTML() : newCollabSelectHTML();
+        }
+
+        // ---- Step 1: General (public) or Private ----
+        const PRIVATE_COLLAB_MAX_MEMBERS = 500;
+        function chooseNewCollabType(vis){
+          newCollabVisibility = vis === 'general' ? 'general' : 'private';
+          newCollabStep = 'select';
+          openOverlay('newCollaboration');
+        }
+        function newCollabTypeHTML(){
+          const card = (vis, title, desc, bullets, iconName) => `
+            <button onclick="chooseNewCollabType('${vis}')" class="w-full text-left rounded-2xl border border-gray-200 bg-white p-4 mb-3 flex gap-3 items-start" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon(iconName,'w-5 h-5')}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-[15px] text-gray-900">${title}</div>
+                <div class="text-sm text-gray-500 mt-0.5 leading-snug">${desc}</div>
+                <ul class="text-xs text-gray-400 mt-2 leading-relaxed" style="list-style:disc;padding-left:16px;">${bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+              </div>
+            </button>`;
+          return `
+            <div class="px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
+              <div class="flex items-center gap-3">
+                <button onclick="closeOverlay()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text" style="text-align:right;">New collaboration</div>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-5 pt-5">
+              <div class="text-sm text-gray-500 mb-4">What kind of collaboration do you want to create?</div>
+              ${card('general','General','Open to everyone on Stitch.',['Anyone can find it by searching Messages and Collaborations','Shown on the Collaborations page','Anyone can join, no member limit'],'users')}
+              ${card('private','Private','Only for people you invite.',[`Up to ${PRIVATE_COLLAB_MAX_MEMBERS} members`,'Never shown in search or on the Collaborations page','Only people with access can see it'],'lock')}
+            </div>`;
         }
 
         function newCollabContactSource(){
@@ -566,10 +602,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="px-5 pb-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center gap-4">
-                <button onclick="openOverlay('newMessage')" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <button onclick="newCollabStep='type';openOverlay('newCollaboration')" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-lg font-display truncate grad-text" style="text-align:right;">New collaboration</div>
-                  ${count ? `<div class="text-xs text-gray-400" style="text-align:right;">${count} selected</div>` : ''}
+                  <div class="font-semibold text-lg font-display truncate grad-text" style="text-align:right;">${newCollabVisibility === 'general' ? 'New general collaboration' : 'New private collaboration'}</div>
+                  ${count ? `<div class="text-xs text-gray-400" style="text-align:right;">${count} selected${newCollabVisibility === 'private' ? ` · max ${PRIVATE_COLLAB_MAX_MEMBERS}` : ''}</div>` : (newCollabVisibility === 'general' ? '<div class="text-xs text-gray-400" style="text-align:right;">Inviting people is optional</div>' : '')}
                 </div>
               </div>
             </div>
@@ -585,17 +621,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   </button>`).join('')}
               </div>
             </div>
-            ${count ? `
+            ${(count || newCollabVisibility === 'general') ? `
               <div class="flex-shrink-0 flex justify-end" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
                 <button onclick="proceedToNewCollabName()" class="flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
-                  Next
+                  ${count || newCollabVisibility !== 'general' ? 'Next' : 'Skip'}
                 </button>
               </div>
             ` : ''}`;
         }
 
         function proceedToNewCollabName(){
-          if (!newCollabSelected.size) return;
+          if (!newCollabSelected.size && newCollabVisibility !== 'general') return;
+          if (newCollabVisibility === 'private' && newCollabSelected.size + 1 > PRIVATE_COLLAB_MAX_MEMBERS) {
+            openAppAlertModal(`Private collaborations can have up to ${PRIVATE_COLLAB_MAX_MEMBERS} members.`);
+            return;
+          }
           newCollabStep = 'name';
           openOverlay('newCollaboration');
         }
@@ -664,6 +704,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const finalName = typedName;
           const finalDescription = typedDescription;
           const finalPhoto = newCollabPhoto;
+          const finalVisibility = newCollabVisibility === 'general' ? 'general' : 'private';
+          if (finalVisibility === 'private' && contacts.length + 1 > PRIVATE_COLLAB_MAX_MEMBERS) {
+            openAppAlertModal(`Private collaborations can have up to ${PRIVATE_COLLAB_MAX_MEMBERS} members.`);
+            return;
+          }
           // Random, unguessable id: the invite link is the only key to join, so it must not be
           // derivable from the creation time
           const id = 'c' + Date.now() + '-' + (function(){
@@ -677,15 +722,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const members = [myMember, ...contacts.map(c => ({ otherUserId: c.otherUserId || null, name: c.name, avatarBg: c.avatarBg, icon: c.icon, photo: c.photo || null, mine: false }))];
           const newConvo = { id, icon:'users', avatarBg:'bg-emerald-100', name: finalName, photo: finalPhoto, preview:'You created this collaboration', time: formatRequestTime(Date.now()), unread:false };
           collabConvos.unshift(newConvo);
-          convoMeta[id] = { icon:'users', avatarBg:'bg-emerald-100', name: finalName, description: finalDescription, photo: finalPhoto, preview:'You created this collaboration', members, createdBy: 'me', membersCanAdd: false };
-          conversationMessages[id] = [{ from:'them', text: `You created "${finalName}" with ${contacts.map(c => c.name).join(', ')}.`, time: Date.now() }];
+          convoMeta[id] = { icon:'users', avatarBg:'bg-emerald-100', name: finalName, description: finalDescription, photo: finalPhoto, preview:'You created this collaboration', members, createdBy: 'me', membersCanAdd: false, visibility: finalVisibility };
+          conversationMessages[id] = [{ from:'them', text: contacts.length ? `You created "${finalName}" with ${contacts.map(c => c.name).join(', ')}.` : `You created "${finalName}". Anyone on Stitch can find and join it.`, time: Date.now() }];
           queueSaveUserState();
           inboxFilter = 'collaborations';
           inboxViewFilter = 'all';
           closeOverlay();
           renderInboxTab();
           openConversation(id);
-          const createdRemotely = await collabCreateRemote(id, finalName, finalPhoto, contacts, finalDescription);
+          const createdRemotely = await collabCreateRemote(id, finalName, finalPhoto, contacts, finalDescription, finalVisibility);
           if (createdRemotely && convoMeta[id]) {
             const myRealId = _cachedAuthUser && _cachedAuthUser.id;
             convoMeta[id].createdBy = myRealId;
@@ -970,6 +1015,103 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           closeOverlay(fromPopState);
         }
 
+        // ---- General (public) collaborations: discovery, search and join ----
+        let generalCollabs = [];
+        let generalCollabsLoaded = false;
+        let generalCollabsLoading = false;
+        let inboxCollabSearchResults = [];
+        let inboxCollabSearchSeq = 0;
+        let inboxCollabSearchTimer = null;
+        let joiningGeneralCollabIds = new Set();
+
+        function rerenderInboxList(){
+          const list = document.getElementById('inbox-list');
+          if (list && typeof currentTab !== 'undefined' && currentTab === 3) list.innerHTML = inboxContent();
+        }
+
+        async function loadGeneralCollabs(force){
+          if (generalCollabsLoading || (generalCollabsLoaded && !force)) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          generalCollabsLoading = true;
+          try {
+            const { data, error } = await sb.rpc('list_general_collaborations', { p_limit: 50, p_offset: 0 });
+            if (error) { console.warn('Could not load general collaborations:', error); }
+            else { generalCollabs = Array.isArray(data) ? data : []; generalCollabsLoaded = true; }
+          } catch (e) { console.warn('Loading general collaborations threw:', e); }
+          generalCollabsLoading = false;
+          if (inboxFilter === 'collaborations') rerenderInboxList();
+        }
+
+        function scheduleInboxCollabSearch(){
+          clearTimeout(inboxCollabSearchTimer);
+          const q = (inboxSearchQuery || '').trim();
+          if (!inboxSearchActive || !q) { inboxCollabSearchResults = []; return; }
+          const seq = ++inboxCollabSearchSeq;
+          inboxCollabSearchTimer = setTimeout(async () => {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            try {
+              const { data, error } = await sb.rpc('search_general_collaborations', { p_query: q, p_limit: 20 });
+              if (seq !== inboxCollabSearchSeq) return;
+              inboxCollabSearchResults = (!error && Array.isArray(data)) ? data : [];
+              rerenderInboxList();
+            } catch (e) {}
+          }, 250);
+        }
+
+        function generalCollabRowHTML(g){
+          const joined = !!g.is_member || collabConvos.some(c => c.id === g.id);
+          const joining = joiningGeneralCollabIds.has(g.id);
+          const count = Number(g.member_count) || 0;
+          const gid = escapeHtml(String(g.id)).replace(/'/g, "\\'");
+          return `
+            <div class="flex items-center gap-4 px-5 py-4 bg-white">
+              <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${g.photo ? `<img src="${escapeHtml(safeChatUrl(String(g.photo)))}" class="w-full h-full object-cover">` : Icon('users','w-5 h-5')}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[15px] font-semibold text-gray-900 truncate">${escapeHtml(g.name || 'Collaboration')}</div>
+                <div class="text-xs text-gray-400 truncate">${count} member${count === 1 ? '' : 's'}${g.description ? ' · ' + escapeHtml(g.description) : ''}</div>
+              </div>
+              ${joined
+                ? `<button onclick="openConversation('${gid}')" class="text-xs font-semibold rounded-full px-4 py-2 flex-shrink-0" style="color:${NAVY};border:1.5px solid ${NAVY};">Open</button>`
+                : `<button ${joining ? 'disabled' : ''} onclick="joinGeneralCollab('${gid}')" class="text-xs font-semibold rounded-full px-4 py-2 text-white flex-shrink-0" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);${joining ? 'opacity:.6;' : ''}">${joining ? 'Joining...' : 'Join'}</button>`}
+            </div>`;
+        }
+
+        async function joinGeneralCollab(id){
+          if (!id || joiningGeneralCollabIds.has(id)) return;
+          const sb = getSupabaseClient();
+          if (!sb) { openAppAlertModal("Couldn't join right now. Please check your connection."); return; }
+          joiningGeneralCollabIds.add(id);
+          rerenderInboxList();
+          let ok = false, status = '';
+          try {
+            const { data, error } = await sb.rpc('join_collaboration_by_id', { p_collab_id: id });
+            status = data && data.status;
+            ok = !error && status === 'joined';
+          } catch (e) {}
+          joiningGeneralCollabIds.delete(id);
+          if (!ok) {
+            rerenderInboxList();
+            openAppAlertModal(status === 'not_found' ? 'That collaboration no longer exists.' : status === 'full' ? 'That collaboration is full.' : "Couldn't join that collaboration. Please try again.");
+            return;
+          }
+          generalCollabs = generalCollabs.map(g => g.id === id ? { ...g, is_member: true, member_count: (Number(g.member_count) || 0) + 1 } : g);
+          inboxCollabSearchResults = inboxCollabSearchResults.map(g => g.id === id ? { ...g, is_member: true, member_count: (Number(g.member_count) || 0) + 1 } : g);
+          await loadMyCollaborations();
+          rerenderInboxList();
+          openConversation(id);
+        }
+
+        function discoverCollabsSectionHTML(){
+          const mine = new Set(collabConvos.map(c => c.id));
+          const items = generalCollabs.filter(g => !g.is_member && !mine.has(g.id));
+          if (!items.length) return '';
+          return `
+            <div class="px-5 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">Discover collaborations</div>
+            ${items.map(generalCollabRowHTML).join('')}`;
+        }
+
         function leaveCollaboration(){
           const id = activeConvoId;
           const meta = convoMeta[id];
@@ -1171,12 +1313,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${inboxSearchActive ? `
                 <div class="w-full flex items-center gap-2.5 bg-gray-100 text-gray-500 rounded-full px-4 py-2.5 text-sm">
                   ${Icon('search','w-4 h-4')}
-                  <input id="inbox-search-input" type="text" value="${inboxSearchQuery}" oninput="onInboxSearchInput(this.value)" placeholder="Search contacts..." class="flex-1 min-w-0 bg-transparent outline-none text-gray-800" autocomplete="off">
+                  <input id="inbox-search-input" type="text" value="${escapeHtml(inboxSearchQuery)}" oninput="onInboxSearchInput(this.value)" placeholder="Search contacts and collaborations..." class="flex-1 min-w-0 bg-transparent outline-none text-gray-800" autocomplete="off">
                   <button onclick="deactivateInboxSearch()" class="text-xs font-semibold flex-shrink-0" style="color:${NAVY};">Cancel</button>
                 </div>
               ` : `
                 <button onclick="activateInboxSearch()" class="w-full flex items-center gap-2.5 bg-gray-100 text-gray-500 rounded-full px-4 py-2.5 text-sm text-left">
-                  ${Icon('search','w-4 h-4')}<span>Search contacts...</span>
+                  ${Icon('search','w-4 h-4')}<span>Search contacts and collaborations...</span>
                 </button>
               `}
             </div>
@@ -1432,9 +1574,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (inboxSearchActive && inboxSearchQuery.trim()){
             const q = inboxSearchQuery.trim().toLowerCase();
             const results = convoArrays().flat().filter(c => c.name.toLowerCase().includes(q));
-            return results.length
-              ? results.map(c => convoRow(c)).join('')
-              : `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">No contacts found for "${inboxSearchQuery}".</div>`;
+            const myIds = new Set(collabConvos.map(c => c.id));
+            const publicResults = inboxCollabSearchResults.filter(g => !myIds.has(g.id));
+            const publicHTML = publicResults.length ? `
+              <div class="px-5 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">Public collaborations</div>
+              ${publicResults.map(generalCollabRowHTML).join('')}` : '';
+            return (results.length || publicResults.length)
+              ? results.map(c => convoRow(c)).join('') + publicHTML
+              : `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">No results found for "${escapeHtml(inboxSearchQuery)}".</div>`;
           }
           const applyView = (arr) => {
             if (inboxViewFilter === 'unread') return arr.filter(c => c.unread && !c.read);
@@ -1461,8 +1608,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return incomingHTML + sentHTML;
           }
           if (inboxFilter === 'collaborations') {
+            if (!generalCollabsLoaded && !generalCollabsLoading) loadGeneralCollabs();
             const list = applyView(collabConvos);
-            if (list.length) return list.map(c => convoRow(c)).join('');
+            const discoverHTML = inboxViewFilter === 'all' ? discoverCollabsSectionHTML() : '';
+            if (list.length) return list.map(c => convoRow(c)).join('') + discoverHTML;
+            if (discoverHTML && inboxViewFilter === 'all') {
+              return `
+                <div class="bg-white px-5 pt-6 pb-4 flex flex-col items-center text-center">
+                  <button type="button" onclick="openNewCollaboration()" class="neu-add-btn" aria-label="Create a collaboration"><span class="neu-add-plus"></span></button>
+                  <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:12px;">Tap the plus to start your own, or join one below</div>
+                </div>${discoverHTML}`;
+            }
             if (inboxViewFilter === 'pinned') {
               return `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel('No collaborations yet.')}</div>`;
             }
@@ -2698,13 +2854,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         const COLLABORATIONS_TABLE = 'collaborations';
         const COLLAB_MEMBERS_TABLE = 'collaboration_members';
 
-        async function collabCreateRemote(id, name, photo, memberContacts, description){
+        async function collabCreateRemote(id, name, photo, memberContacts, description, visibility){
           const sb = getSupabaseClient();
           const myId = await getCurrentUserId();
           if (!sb || !myId) return false;
           try {
             let { error: cErr } = await sb.from(COLLABORATIONS_TABLE)
-              .insert({ id, name, description: description || null, photo: photo || null, created_by: myId, members_can_add: false });
+              .insert({ id, name, description: description || null, photo: photo || null, created_by: myId, members_can_add: false, visibility: visibility === 'general' ? 'general' : 'private' });
             if (cErr && missingColumnFromError(cErr) === 'description') {
               ({ error: cErr } = await sb.from(COLLABORATIONS_TABLE)
                 .insert({ id, name, photo: photo || null, created_by: myId, members_can_add: false }));
@@ -2736,7 +2892,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const rows = newContacts.filter(c => c.otherUserId).map(c => ({ collab_id: id, user_id: c.otherUserId, name: c.name, avatar_bg: c.avatarBg, icon: c.icon, photo: c.photo || null }));
             if (rows.length) {
               const { error } = await sb.from(COLLAB_MEMBERS_TABLE).upsert(rows, { onConflict: 'collab_id,user_id', ignoreDuplicates: true });
-              if (error) { console.warn('Adding collaboration members did not sync:', error); return false; }
+              if (error) {
+                console.warn('Adding collaboration members did not sync:', error);
+                if (/COLLAB_FULL/.test(error.message || '')) openAppAlertModal('This private collaboration is full (500 members maximum).');
+                return false;
+              }
             }
             return true;
           } catch (e) { console.warn('Adding collaboration members threw an error:', e); return false; }
@@ -2823,9 +2983,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const ids = [...new Set(myRows.map(r => r.collab_id))];
             const [{ data: collabs, error: collabsErr }, { data: allMembers }] = await Promise.all([
               (async () => {
-                let res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by,members_can_add').in('id', ids);
-                if (res.error && missingColumnFromError(res.error) === 'members_can_add') {
-                  res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by').in('id', ids);
+                let res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by,members_can_add,description,visibility').in('id', ids);
+                if (res.error) {
+                  res = await sb.from(COLLABORATIONS_TABLE).select('id,name,photo,created_by,members_can_add').in('id', ids);
                 }
                 return res;
               })(),
@@ -2844,6 +3004,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               convoMeta[id] = {
                 icon: 'users', avatarBg: (existing && existing.avatarBg) || 'bg-emerald-100', name: displayName, photo: row.photo || null,
                 preview: (existing && existing.preview) || 'Collaboration', members, createdBy: row.created_by, membersCanAdd: !!row.members_can_add,
+                description: row.description || (existing && existing.description) || '', visibility: row.visibility || 'private',
               };
               if (!collabConvos.some(c => c.id === id)) {
                 collabConvos.unshift({ id, icon: 'users', avatarBg: 'bg-emerald-100', name: displayName, photo: row.photo || null, preview: 'You were added to this collaboration', time: formatRequestTime(Date.now()), unread: true, read: false, unreadCount: 1 });
