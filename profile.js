@@ -257,7 +257,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
         function profileUsernameHTML(){
           const u = profileShownUsername();
-          return u ? escapeHtml(u) : profileNamePlaceholderHTML('7rem');
+          return u ? `<span class="nm-inner grad-text">${escapeHtml(u)}</span>` : profileNamePlaceholderHTML('7rem');
         }
         function profileNameHTML(){
           const n = profileShownName();
@@ -386,7 +386,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               ${asOverlay
                 ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
                 : `<button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
-              <span id="profile-username-el" class="font-bold text-base font-display grad-text flex items-center gap-1.5">${profileUsernameHTML()}</span>
+              <span id="profile-username-el" class="nm-wrap font-bold text-base font-display" style="flex:1;min-width:0;font-size:16px;">${profileUsernameHTML()}</span>
               <div class="flex items-center rounded-full" style="background:rgba(65,105,225,0.08)">
                 <button onclick="openOverlay('profileMenu')" class="w-8 h-8 flex items-center justify-center">${gradIcon(IconBold('settings','w-4 h-4'))}</button>
               </div>

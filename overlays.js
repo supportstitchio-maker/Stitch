@@ -2647,7 +2647,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             <div class="flex-1 overflow-y-auto">
             <div class="px-5 pb-3 flex items-center justify-between relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              ${(() => { const _t = p.username ? String(p.username) : String(p.name || 'Profile'); const _fs = _t.length <= 16 ? 16 : _t.length <= 22 ? 14 : _t.length <= 30 ? 12 : 10.5; return `<span class="font-bold font-display grad-text" style="flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:${_fs}px;">${escapeHtml(_t)}</span>`; })()}
+              <span class="nm-wrap font-bold font-display" style="flex:1;min-width:0;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
               <div class="w-10 h-10"></div>
             </div>
             <div class="p-5">
@@ -3607,3 +3607,37 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             });
           }
         })();
+
+
+// ---- Long username marquee: every profile username uses one size; names that don't fit slide
+// sideways (and back) by themselves so the rest can be read ----
+(function setupNameMarquee(){
+  if (window.__nmMarquee) return; window.__nmMarquee = true;
+  const st = document.createElement('style');
+  st.textContent = `
+    .nm-wrap{overflow:hidden;white-space:nowrap;text-align:center;display:block}
+    .nm-inner{display:inline-block;white-space:nowrap;will-change:transform}
+    .nm-inner.nm-run{animation:nmSlide var(--nm-t,8s) ease-in-out infinite alternate}
+    @keyframes nmSlide{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--nm-d,0px))}}
+    @media (prefers-reduced-motion:reduce){.nm-inner.nm-run{animation:none}}`;
+  document.head.appendChild(st);
+  let queued = false;
+  function measure(){
+    queued = false;
+    document.querySelectorAll('.nm-wrap').forEach(w => {
+      const i = w.querySelector('.nm-inner'); if (!i) return;
+      i.classList.remove('nm-run'); i.style.removeProperty('--nm-d');
+      const over = Math.ceil(i.getBoundingClientRect().width - w.clientWidth);
+      if (over > 2) {
+        i.style.setProperty('--nm-d', (-over - 2) + 'px');
+        i.style.setProperty('--nm-t', Math.max(5, over / 18 + 3) + 's');
+        i.classList.add('nm-run');
+      }
+    });
+  }
+  function queue(){ if (!queued) { queued = true; requestAnimationFrame(() => setTimeout(measure, 60)); } }
+  new MutationObserver(queue).observe(document.body || document.documentElement, { childList: true, subtree: true });
+  window.addEventListener('resize', queue);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(queue);
+  queue();
+})();

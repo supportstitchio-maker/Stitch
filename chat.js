@@ -129,6 +129,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               out.push(c);
               return;
             }
+            if (c.type === 'stitch/challenge') {
+              const code = String(a.code || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+              if (!code) return;
+              out.push({ type: 'stitch/challenge', name: '', code, timePerQ: String(a.timePerQ || '').slice(0, 20), fromName: String(a.fromName || '').slice(0, 80) });
+              return;
+            }
             if (a.url != null) { c.url = safeChatUrl(a.url); if (!c.url) return; }
             if (a.dataUrl != null) { c.dataUrl = safeChatUrl(a.dataUrl); if (!c.dataUrl) return; }
             if (a.thumbnail != null) c.thumbnail = safeChatUrl(a.thumbnail) || undefined;
@@ -2410,7 +2416,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             } : {
               title: (typeof profileData !== 'undefined' && profileData.name) || 'New message',
               body: text ? (text.length > 120 ? text.slice(0, 117) + '...' : text)
-                : (attachments && attachments.length && attachments[0].type === 'stitch/post') ? (typeof convoAttachmentPreviewText === 'function' ? convoAttachmentPreviewText(attachments) : 'Shared a post')
+                : (attachments && attachments.length && (attachments[0].type === 'stitch/post' || attachments[0].type === 'stitch/challenge')) ? (typeof convoAttachmentPreviewText === 'function' ? convoAttachmentPreviewText(attachments) : 'Shared a post')
                 : (attachments && attachments.length ? 'Sent a photo' : 'Sent a voice message'),
               tag: 'msg-' + convoId,
               data: { kind: 'message', convoId },
@@ -2632,6 +2638,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             return first.caption ? `Shared a post: "${first.caption.slice(0,60)}"` : 'Shared a post';
           }
+          if (first && first.type === 'stitch/challenge') return mine ? 'You sent a challenge invite' : (first.fromName ? `${first.fromName} challenged you` : 'Challenge invite');
           if (first && first.type && first.type.startsWith('image/')) return '📷 Photo';
           if (first && first.type && first.type.startsWith('video/')) return '🎥 Video';
           return first && first.name ? `📎 ${first.name}` : '📎 Attachment';
@@ -4270,9 +4277,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
             }
             const sharedPosts = (m.attachments || []).filter(f => f.type === 'stitch/post');
+            const sharedChallenges = (m.attachments || []).filter(f => f.type === 'stitch/challenge');
             const images = (m.attachments || []).filter(f => f.type && f.type.startsWith('image/') && (f.dataUrl || f.url));
             const videos = (m.attachments || []).filter(f => f.type && f.type.startsWith('video/') && (f.url || f.file));
-            const files = (m.attachments || []).filter(f => !images.includes(f) && !videos.includes(f) && !sharedPosts.includes(f));
+            const files = (m.attachments || []).filter(f => !images.includes(f) && !videos.includes(f) && !sharedPosts.includes(f) && !sharedChallenges.includes(f));
             const hasBubbleContent = !!m.text || files.length > 0;
             const mine = m.from === 'me';
             const voiceHTML = m.voice ? convoVoiceNoteHTML(m.voice, mine, m) : '';
@@ -4281,7 +4289,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
                 : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
             ) : '';
-            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine);
+            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine);
             const imagesHTML = convoImageAttachmentsHTML(images);
             const videosHTML = convoVideoAttachmentsHTML(videos);
             const footer = mine
@@ -4717,6 +4725,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // A shared post's caption now travels with it in one tappable card (thumbnail + author +
         // caption) instead of a bare text line, so the recipient can go straight to the post
+        // Tappable challenge invite card: opens the challenge straight away for the friend
+        function convoSharedChallengeAttachmentsHTML(items, mine){
+          if (!items || !items.length) return '';
+          return `
+            <div class="flex flex-col gap-1.5">
+              ${items.map(ch => `
+                <button type="button" onclick="openChallengeFromChat('${escapeHtml(ch.code)}')" class="block text-left overflow-hidden" style="max-width:240px;width:100%;border-radius:16px;background:linear-gradient(135deg,${NAVY},${ROYAL});color:#fff;padding:12px 14px;">
+                  <div class="text-[11px] font-semibold" style="opacity:.8;">${mine ? 'You invited them to a challenge' : (ch.fromName ? escapeHtml(ch.fromName) + ' challenged you' : 'Challenge invite')}</div>
+                  <div class="font-display" style="font-size:1.15rem;font-weight:800;letter-spacing:.08em;margin-top:2px;">${escapeHtml(ch.code)}</div>
+                  <div class="text-[11px]" style="opacity:.8;margin-top:2px;">${ch.timePerQ ? (ch.timePerQ === 'No limit' ? 'No time limit' : escapeHtml(ch.timePerQ) + ' per question') : 'Head-to-head'}</div>
+                  <div class="text-[11px] font-semibold" style="margin-top:8px;background:rgba(255,255,255,.18);border-radius:999px;padding:6px 12px;text-align:center;">${mine ? 'Waiting for your friend' : 'Tap to join'}</div>
+                </button>`).join('')}
+            </div>`;
+        }
+
         function convoSharedPostAttachmentsHTML(items, mine){
           if (!items || !items.length) return '';
           return `

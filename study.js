@@ -1145,9 +1145,20 @@ let studyFabMenuOpen = false;
           return n > 150 ? 'fc-t-sm' : (n > 62 ? 'fc-t-md' : 'fc-t-lg');
         }
 
+        // PDF/slide extraction leaves private-use glyphs (bullets, icons), replacement chars and
+        // zero-width marks in the text; they render as empty boxes, so drop them for display
+        function fcCleanText(t){
+          return String(t || '')
+            .replace(/[\uE000-\uF8FF\uFFFC\uFFFD\uFFF0-\uFFFF\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u2064\uFEFF]/g, ' ')
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, ' ')
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\s+([,.;:!?])/g, '$1')
+            .trim();
+        }
+
         function fcFaceHTML(card, side, idx){
           const isFront = side === 'front';
-          const text = isFront ? card.term : card.def;
+          const text = fcCleanText(isFront ? card.term : card.def);
           const source = card.source ? escapeHtml(card.source) : '';
           return `
             <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back'}" ${isFront ? `style="--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};"` : ''}>

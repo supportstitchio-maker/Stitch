@@ -27,9 +27,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function shareChallengeLink(code){
           const link = buildChallengeInviteLink(code);
           if (navigator.share) {
-            navigator.share({ title: 'Join my Stitch challenge', text: 'Join my challenge on Stitch -- tap the link to jump straight in:', url: link }).catch(() => {});
+            navigator.share({ title: 'Join my Stitch challenge', text: 'Join my challenge on Stitch. Code: ' + code + '\nOr tap to jump straight in:', url: link }).catch(() => {});
           } else {
-            copyChallengeLink(code);
+            copyChallengeCode(code);
           }
         }
 
@@ -204,17 +204,116 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           openChallengeModal(inviteFriendHTML(code));
         }
 
+        function challengeCodeBoxHTML(code){
+          return `
+            <div class="rounded-2xl flex items-center justify-center gap-3 mb-5" style="padding:16px 14px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25);">
+              <span class="font-display" style="font-size:1.75rem;font-weight:800;letter-spacing:.1em;color:${NAVY};">${escapeHtml(code)}</span>
+              <button onclick="copyChallengeCode('${code}')" aria-label="Copy code" class="flex-shrink-0 p-2 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
+            </div>`;
+        }
+
         function inviteFriendHTML(code){
-          const link = buildChallengeInviteLink(code);
           return `
             ${challengeSheetHeader('Invite a friend to the Arena')}
-            <div class="text-sm text-gray-500 mb-5">Send this link to a friend -- opening it drops them straight into your challenge, no code to type.</div>
-            <div class="rounded-2xl flex items-center gap-2 mb-5" style="padding:12px 14px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25);">
-              <span class="flex-1 text-sm font-semibold truncate" style="color:${NAVY};">${escapeHtml(link)}</span>
-              <button onclick="copyChallengeLink('${code}')" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
-            </div>
-            <button onclick="shareChallengeLink('${code}')" class="w-full rounded-2xl font-bold text-center mb-3" style="padding-top:9px;padding-bottom:9px;background:rgba(65,105,225,0.12); color:${NAVY};">Send Link</button>
-            <button onclick="startWaitingForChallengeFriend('${code}')" class="w-full rounded-2xl font-bold text-center tab-plain-btn" style="padding-top:9px;padding-bottom:9px;color:${NAVY};">Start Now</button>`;
+            <div class="text-sm text-gray-500 mb-5">Share this code with a friend. They can enter it under Join with a Code, or open the link you send.</div>
+            ${challengeCodeBoxHTML(code)}
+            <button onclick="openChallengeSendPicker('${code}','invite')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
+            <button onclick="startWaitingForChallengeFriend('${code}')" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">Start Now</button>`;
+        }
+
+        // ---- Send the challenge to people in your chats as a tappable card ----
+        let challengeSendSelected = new Set();
+
+        function challengeSendBack(code, from){
+          if (from === 'waiting') return waitingForChallengeFriendHTML();
+          if (from === 'created') return challengeCreatedHTML(code);
+          return inviteFriendHTML(code);
+        }
+
+        function openChallengeSendPicker(code, from){
+          challengeSendSelected = new Set();
+          openChallengeModal(challengeSendPickerHTML(code, from));
+        }
+
+        function challengeSendPickerHTML(code, from){
+          const contacts = (typeof shareContactsList === 'function') ? shareContactsList() : [];
+          const rows = contacts.map(c => `
+            <button id="ch-send-${c.id}" data-name="${escapeHtml((c.name || '').toLowerCase())}" onclick="toggleChallengeSendContact('${c.id}')" class="w-full flex items-center gap-3 text-left" style="padding:8px 4px;">
+              <div class="w-11 h-11 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden flex-shrink-0">${avatarInnerHTML(c,'w-5 h-5')}</div>
+              <div class="flex-1 min-w-0 text-sm font-semibold truncate">${escapeHtml(c.name || '')}</div>
+              <div class="ch-send-check flex items-center justify-center rounded-full flex-shrink-0" style="width:24px;height:24px;border:2px solid rgba(65,105,225,0.35);color:#fff;">${Icon('check','w-3 h-3')}</div>
+            </button>`).join('');
+          return `
+            ${challengeSheetHeader('Send challenge', `challengeSendClose('${code}','${from}')`)}
+            <div class="text-sm text-gray-500 mb-3">Pick people from your chats. They get a card they can tap to join.</div>
+            ${contacts.length ? `
+              <input id="ch-send-search" oninput="filterChallengeSendContacts()" placeholder="Search" class="w-full bg-gray-100 rounded-full text-sm mb-2" style="outline:none;padding:0.6rem 1rem;">
+              <div id="ch-send-list" style="max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;">${rows}</div>
+              <div id="ch-send-empty" class="hidden text-center text-sm text-gray-400 py-4">No matches</div>` : `<div class="text-center text-sm text-gray-400 py-6">No chats yet.</div>`}
+            <button id="ch-send-go" onclick="sendChallengeToSelected('${code}','${from}')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;opacity:.55;pointer-events:none;">Send</button>
+            <button onclick="shareChallengeLink('${code}')" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">More apps</button>`;
+        }
+
+        function challengeSendClose(code, from){
+          openChallengeModal(challengeSendBack(code, from));
+        }
+
+        function toggleChallengeSendContact(id){
+          if (challengeSendSelected.has(id)) challengeSendSelected.delete(id); else challengeSendSelected.add(id);
+          const on = challengeSendSelected.has(id);
+          const row = document.getElementById('ch-send-' + id);
+          const chk = row && row.querySelector('.ch-send-check');
+          if (chk) { chk.style.background = on ? ROYAL : 'transparent'; chk.style.borderColor = on ? ROYAL : 'rgba(65,105,225,0.35)'; }
+          const n = challengeSendSelected.size;
+          const go = document.getElementById('ch-send-go');
+          if (go) {
+            go.textContent = n ? 'Send to ' + n + (n === 1 ? ' person' : ' people') : 'Send';
+            go.style.opacity = n ? '1' : '.55';
+            go.style.pointerEvents = n ? 'auto' : 'none';
+          }
+        }
+
+        function filterChallengeSendContacts(){
+          const input = document.getElementById('ch-send-search');
+          const q = input ? input.value.trim().toLowerCase() : '';
+          const list = document.getElementById('ch-send-list');
+          const empty = document.getElementById('ch-send-empty');
+          if (!list) return;
+          let visible = 0;
+          Array.from(list.children).forEach(r => {
+            const match = !q || (r.dataset.name || '').includes(q);
+            r.classList.toggle('hidden', !match);
+            if (match) visible++;
+          });
+          if (empty) empty.classList.toggle('hidden', visible !== 0);
+        }
+
+        function sendChallengeToSelected(code, from){
+          if (!challengeSendSelected.size) return;
+          const invite = pendingChallengeInvites[code];
+          const attachment = {
+            type: 'stitch/challenge',
+            name: '',
+            code,
+            timePerQ: invite ? invite.timePerQ : challengeConfig.timePerQ,
+            fromName: (typeof profileData !== 'undefined' && profileData && profileData.name) || '',
+          };
+          const ids = Array.from(challengeSendSelected);
+          ids.forEach(id => deliverSharedMessage(id, '', { attachments: [attachment], previewText: 'You sent a challenge invite' }));
+          challengeSendSelected = new Set();
+          pushInAppNotification('Sent', ids.length === 1 ? 'Challenge invite sent.' : 'Challenge invite sent to ' + ids.length + ' people.');
+          openChallengeModal(challengeSendBack(code, from));
+        }
+
+        // Friend taps the card in chat
+        function openChallengeFromChat(code){
+          code = String(code || '').trim().toUpperCase();
+          if (!code) return;
+          if (pendingChallengeInvites[code] || (typeof waitingForChallengeFriendCode !== 'undefined' && waitingForChallengeFriendCode === code)) {
+            pushInAppNotification('Your challenge', 'This is your own invite. It starts when your friend joins.');
+            return;
+          }
+          joinChallengeByCode(code);
         }
 
         let waitingForChallengeFriendTimer = null;
@@ -254,12 +353,10 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                 <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(65,105,225,0.15) 45%, rgba(65,105,225,0.15) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));animation:classroom-spin 0.9s linear infinite;"></div>
               </div>
               <div class="text-xl font-bold text-gray-900 mb-2">Waiting for your friend…</div>
-              <div class="text-sm text-gray-500 mb-6">The challenge will start as soon as they open your link.</div>
-              <div class="rounded-2xl flex items-center gap-2 mb-6" style="padding:12px 14px;background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25);">
-                <span class="flex-1 text-sm font-semibold truncate" style="color:${NAVY};">${escapeHtml(buildChallengeInviteLink(waitingForChallengeFriendCode))}</span>
-                <button onclick="copyChallengeLink('${waitingForChallengeFriendCode}')" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
-              </div>
-              <button onclick="cancelWaitingForChallengeFriend()" class="w-full rounded-2xl font-bold text-center py-2.5" style="background:rgba(65,105,225,0.12); color:${NAVY};">Cancel</button>
+              <div class="text-sm text-gray-500 mb-6">The challenge starts as soon as they join with your code or link.</div>
+              <div class="w-full">${challengeCodeBoxHTML(waitingForChallengeFriendCode)}</div>
+              <button onclick="openChallengeSendPicker('${waitingForChallengeFriendCode}','waiting')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
+              <button onclick="cancelWaitingForChallengeFriend()" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">Cancel</button>
             </div>`;
         }
 
@@ -1433,7 +1530,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <div class="text-xs mt-2" style="color:var(--sub);">${challengeConfig.timePerQ === 'No limit' ? 'No time limit' : challengeConfig.timePerQ + ' per question'}</div>
             </div>
             <div class="flex gap-3 mb-3">
-              <button onclick="shareChallengeLink('${code}')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Share link</button>
+              <button onclick="openChallengeSendPicker('${code}','created')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
               <button onclick="copyChallengeLink('${code}')" class="ar-btn flex-1">${Icon('link','w-4 h-4 inline-block mr-1 -mt-0.5')} Copy link</button>
             </div>
             <button onclick="startWaitingForChallengeFriend('${code}')" class="ar-btn p w-full">Wait for Friend &amp; Start</button></div>`;
@@ -1570,8 +1667,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             const fb = written && examWrittenGrades[i] ? examWrittenGrades[i].feedback : '';
             const body = written
               ? `<div class="text-sm mb-1" style="color:var(--sub)">Your answer: <b style="color:var(--tx)">${sel === undefined ? 'Skipped' : escapeHtml(sel)}</b></div>${o === 'bad' || o === 'skip' ? `<div class="text-sm" style="color:#16a34a">Model answer: <b>${escapeHtml(q.answer || '')}</b></div>` : ''}${fb ? `<div class="text-xs mt-1" style="color:var(--sub)">${escapeHtml(fb)}</div>` : ''}`
-              : q.options.map((opt, oi) => `<div class="ar-opt ${oi === q.correct ? 'ok' : (oi === sel ? 'no' : '')}" style="margin-bottom:8px;padding:10px 12px;"><span class="l">${String.fromCharCode(65 + oi)}</span><span class="text-sm flex-1">${escapeHtml(opt)}</span>${oi === q.correct ? Icon('check','w-4 h-4') : (oi === sel ? Icon('close','w-4 h-4') : '')}</div>`).join('');
-            return `<div class="ar-card mb-3" id="ar-q-${i}"><div class="flex items-start justify-between gap-2 mb-3"><div class="text-sm font-semibold">${i + 1}. ${escapeHtml(q.text)}</div><span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full" style="background:${badge[1]}1f;color:${badge[1]}">${badge[0]}</span></div>${body}${examMarked[i] ? `<div class="text-xs mt-1" style="color:#dc2626;font-weight:700">Marked for review</div>` : ''}</div>`;
+              : q.options.map((opt, oi) => `<div class="ar-opt ${oi === q.correct ? 'ok' : (oi === sel ? 'no' : '')}" style="margin-bottom:10px;padding:12px 14px;"><span class="l">${String.fromCharCode(65 + oi)}</span><span class="text-sm flex-1">${escapeHtml(opt)}</span></div>`).join('');
+            return `<div class="ar-card mb-3" id="ar-q-${i}"><div class="flex items-start justify-between gap-4 mb-4"><div class="text-sm font-semibold" style="min-width:0;line-height:1.45;">${i + 1}. ${escapeHtml(q.text)}</div><span class="flex-shrink-0 text-xs font-bold rounded-full" style="padding:6px 14px;margin-top:-2px;white-space:nowrap;background:${badge[1]}1f;color:${badge[1]}">${badge[0]}</span></div>${body}${examMarked[i] ? `<div class="text-xs mt-1" style="color:#dc2626;font-weight:700">Marked for review</div>` : ''}</div>`;
           }).join('');
           return `<div class="flex gap-2 mb-3 flex-wrap">${chip('all','All')}${chip('bad','Incorrect')}${chip('skip','Skipped')}${chip('mark','Marked')}</div>${cards || '<div class="ar-card text-center" style="color:var(--sub)">Nothing here. Nice.</div>'}`;
         }
