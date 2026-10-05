@@ -1442,12 +1442,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return arr;
           };
           const emptyLabel = (defaultText) => inboxViewFilter === 'pinned' ? 'No pinned messages.' : defaultText;
-          const emptyState = (title, body, fallback) => inboxViewFilter === 'pinned'
-            ? `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel(fallback)}</div>`
-            : `<div class="inbox-empty empty-center bg-white px-8 text-center">
-                 <div class="text-base font-semibold text-gray-600">${title}</div>
-                 <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">${body}</div>
-               </div>`;
+          // Empty inbox / requests / pinned: just a clean blank page, no text
+          const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center bg-white"></div>`;
           if (inboxFilter === 'general') {
             const list = applyView(primaryConvos);
             return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');

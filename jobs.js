@@ -2408,7 +2408,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // ---- Job list + job detail screens ----
         // Same centered "Nothing posted yet" message on every Career Space tab
         function careerEmptyHTML(title, hint){
-          return `<div class="empty-center bg-white px-8 text-center"><div class="text-base font-semibold text-gray-600">${title || 'Nothing posted yet'}</div><div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">${hint || 'Tap on the menu on the right corner to get started'}</div></div>`;
+          return `<div class="empty-center bg-white"></div>`;
         }
         function careerListOrEmpty(list, title, hint){
           return list.length ? list.map(jobCard).join('') : careerEmptyHTML(title, hint);
@@ -2425,7 +2425,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             const cards = allExploreCards();
             return cards.length
               ? cards.map(jobCard).join('')
-              : `<div class="empty-center bg-white px-8 text-center"><div class="text-base font-semibold text-gray-600">Nothing posted yet</div><div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Tap on the menu on the right corner to get started</div></div>`;
+              : careerEmptyHTML();
           }
           if (jobsSub === 'opportunities') return careerListOrEmpty(jobsData.opportunities.filter(j => !isOpportunityDeadlinePassed(j)));
           if (jobsSub === 'internships') return careerListOrEmpty(jobsData.internships.filter(j => !isOpportunityDeadlinePassed(j)));
@@ -4686,9 +4686,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function setCareerPlan(id){
           if (!CAREER_PLANS[id]) return;
-          if (careerPlanChoice === id) { careerPlanChoice = ''; careerPlanPillAnim = false; }
-          else { careerPlanPillAnim = !careerPlanChoice; careerPlanChoice = id; }
+          if (careerPlanBusy) return;
+          careerPlanPillAnim = false;
+          careerPlanChoice = id;
           rerenderCareerStart();
+          openCareerSubscribeSheet();   // the panel pulls up right away; no separate Subscribe pill
         }
         function careerIntroBulletsHTML(items){
           return `<div class="flex flex-col gap-3" style="margin-top:22px;">${items.map(t => `
@@ -4795,7 +4797,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:30px;padding-bottom:20px;">
+            <div class="px-5" style="padding-top:30px;padding-bottom:max(28px, env(safe-area-inset-bottom));">
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
                 <div class="text-sm text-gray-500" style="margin-bottom:22px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
@@ -4809,13 +4811,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               </div>
             </div>
             </div>
-            ${CAREER_PLANS[careerPlanChoice] ? `
-            <div class="flex-shrink-0 w-full px-5" style="${careerPlanPillAnim ? 'animation:careerPillIn .28s cubic-bezier(0.16,1,0.3,1);' : ''}padding-top:10px;padding-bottom:max(22px, env(safe-area-inset-bottom));">
-              <div class="max-w-2xl mx-auto">
-                <button id="career-plan-pay-btn" onclick="openCareerSubscribeSheet()" ${careerPlanBusy ? 'disabled' : ''} class="pill-cta font-display w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;${careerPlanBusy ? 'opacity:.6;' : ''}">${careerPlanBusy ? 'Processing…' : 'Subscribe'}</button>
-              </div>
-            ` : ''}
-            </div>`;
+            `;
         }
         // Slide-up sheet shown when "Subscribe" is tapped: spells out the plan, price, end date and
         // what Stitch Bot does, like the cancel-subscription sheet does, before payment starts.

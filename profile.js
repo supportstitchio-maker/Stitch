@@ -1823,3 +1823,73 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               .observe(mm, { childList:true, subtree:true });
           }
         })();
+
+
+        // ---- Full-page screens (Match with CV/Resume steps, Contact Us, Report an issue, and the other pages that
+        // open in #overlay): when a text box gets focus the page makes room above the keyboard and moves the box into
+        // view; when the keyboard goes, the page drops straight back to where it was ----
+        (function setupOverlayKeyboardAvoidance(){
+          const GAP = 20;
+          let state = null; // { sc, pad, top }
+          function ovEl(){ return document.getElementById('overlay'); }
+          function kbHeight(){
+            const vv = window.visualViewport;
+            let h = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+            const vk = navigator.virtualKeyboard;
+            if (vk && vk.boundingRect) h = Math.max(h, Math.round(vk.boundingRect.height || 0));
+            return h;
+          }
+          function isTextField(el){
+            if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return false;
+            if (el.tagName === 'INPUT' && /^(checkbox|radio|file|button|submit|range|color)$/i.test(el.type)) return false;
+            return true;
+          }
+          function scrollerOf(el, root){
+            for (let n = el.parentElement; n && n !== root.parentElement; n = n.parentElement) {
+              const oy = getComputedStyle(n).overflowY;
+              if (oy === 'auto' || oy === 'scroll') return n;
+              if (n === root) break;
+            }
+            return null;
+          }
+          function release(){
+            if (!state) return;
+            const s = state; state = null;
+            s.sc.style.paddingBottom = s.pad;
+            s.sc.scrollTop = s.top;
+          }
+          function lift(){
+            const ov = ovEl();
+            const ae = document.activeElement;
+            if (!ov || ov.classList.contains('hidden') || !ae || !ov.contains(ae) || !isTextField(ae)) { release(); return; }
+            const kb = kbHeight();
+            if (kb < 80) { release(); return; }
+            const sc = scrollerOf(ae, ov);
+            if (!sc) return;
+            if (!state || state.sc !== sc) { release(); state = { sc: sc, pad: sc.style.paddingBottom, top: sc.scrollTop }; }
+            sc.style.paddingBottom = (kb + 28) + 'px';          // room under the content so the page can move up
+            const visibleBottom = window.innerHeight - kb - GAP;
+            const r = ae.getBoundingClientRect();
+            if (r.bottom > visibleBottom) sc.scrollTop += (r.bottom - visibleBottom);
+            else if (r.top < 70) sc.scrollTop -= (70 - r.top);
+          }
+          document.addEventListener('focusin', function(e){
+            const ov = ovEl();
+            if (ov && ov.contains(e.target) && isTextField(e.target)) {
+              lift(); [60, 150, 300, 500].forEach(function(ms){ setTimeout(lift, ms); });
+            }
+          });
+          // Keyboard closing / tapping away: drop immediately (unless focus just moved to another box)
+          document.addEventListener('focusout', function(){
+            setTimeout(function(){
+              const ov = ovEl(); const ae = document.activeElement;
+              if (!(ov && ae && ov.contains(ae) && isTextField(ae))) release();
+            }, 0);
+          });
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', lift);
+            window.visualViewport.addEventListener('scroll', lift);
+          }
+          window.addEventListener('resize', lift);
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', lift);
+        })();

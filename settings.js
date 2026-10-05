@@ -89,7 +89,7 @@ let appPrefs = {
         }
 
         function savedEmptyState(text){
-          return `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm shadow-sm">${text}</div>`;
+          return `<div class="text-center text-gray-500 text-sm" style="padding:36px 24px;">${text}</div>`;
         }
 
         function savedItemsHTML(){
@@ -394,35 +394,76 @@ let appPrefs = {
               <div class="text-sm font-semibold text-gray-800" style="word-break:break-word;">${value}</div>
             </div>`;
         }
+
+        // ---- Forms: everything we collect goes to us through Formspree. Never opens the user's email app. ----
+        const FORM_SEND_FAIL_MSG = "We couldn't send that just now. Please check your connection and try again. Nothing was lost, your answers are still here.";
+        async function sendToFormspree(fields){
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 20000);
+          try {
+            const clean = {};
+            Object.keys(fields).forEach(k => { if (fields[k] !== undefined && fields[k] !== null && fields[k] !== '') clean[k] = fields[k]; });
+            clean._gotcha = '';   // Formspree spam honeypot: real users leave it empty
+            const res = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(clean),
+              signal: ctrl.signal
+            });
+            if (!res.ok) {
+              let detail = '';
+              try { const j = await res.json(); detail = (j && j.errors && j.errors.map(e => e.message).join('; ')) || j.error || ''; } catch (e) {}
+              throw new Error('Formspree ' + res.status + (detail ? ': ' + detail : ''));
+            }
+            return { ok: true };
+          } catch (err) {
+            return { ok: false, error: err };
+          } finally {
+            clearTimeout(timer);
+          }
+        }
+        function setFormBusy(btnId, busy, idleLabel){
+          const b = document.getElementById(btnId);
+          if (!b) return;
+          b.disabled = !!busy;
+          b.style.opacity = busy ? '0.7' : '';
+          b.style.pointerEvents = busy ? 'none' : '';
+          b.textContent = busy ? 'Sending…' : idleLabel;
+        }
+        let contactFormSending = false, issueFormSending = false;
+        const EMAIL_LOOKS_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
         async function submitContactForm(){
+          if (contactFormSending) return;
           const d = contactFormDraft;
           if (!d.name.trim() || !d.email.trim() || !d.message.trim()) {
             openAppAlertModal('Please fill in your name, email, and message.');
             return;
           }
-          try {
-            const res = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({
-                _subject: 'Stitch - Contact Us: ' + d.name,
-                form: 'Contact Us',
-                name: d.name,
-                email: d.email,
-                message: d.message,
-                _replyto: d.email
-              })
-            });
-            if (!res.ok) throw new Error('Formspree request failed: ' + res.status);
-          } catch (err) {
-            console.error('Contact form send failed, falling back to mailto:', err);
-            window.reportError(err, { form: 'contact-us' });
-            const subject = encodeURIComponent('Stitch - Contact Us: ' + d.name);
-            const body = encodeURIComponent(`From: ${d.name} <${d.email}>\n\n${d.message}`);
-            window.location.href = `mailto:${SUGGESTIONS_EMAIL}?subject=${subject}&body=${body}`;
+          if (!EMAIL_LOOKS_OK.test(d.email.trim())) {
+            openAppAlertModal('That email address does not look right. Please check it so we can reply to you.');
+            return;
+          }
+          contactFormSending = true;
+          setFormBusy('contact-send-btn', true, 'Send Message');
+          const r = await sendToFormspree({
+            _subject: 'Stitch - Contact Us: ' + d.name.trim(),
+            form: 'Contact Us',
+            name: d.name.trim(),
+            email: d.email.trim(),
+            message: d.message.trim(),
+            _replyto: d.email.trim(),
+            userId: (typeof currentUserId !== 'undefined' && currentUserId) || undefined
+          });
+          contactFormSending = false;
+          if (!r.ok) {
+            console.error('Contact form send failed:', r.error);
+            window.reportError && window.reportError(r.error, { form: 'contact-us' });
+            setFormBusy('contact-send-btn', false, 'Send Message');
+            openAppAlertModal(FORM_SEND_FAIL_MSG, 'Message not sent');
+            return;   // keep the draft so nothing has to be retyped
           }
           resetContactFormDraft();
-          openAppAlertModal("Thanks for reaching out! We'll get back to you at " + d.email + " within 24 hours.");
+          openAppAlertModal("Thanks for reaching out! We'll get back to you at " + d.email.trim() + " within 24 hours.");
           openOverlay('profileMenu');
         }
         function contactUsHTML(){
@@ -446,7 +487,7 @@ let appPrefs = {
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Message</label>
                 <textarea oninput="updateContactField('message', this.value)" placeholder="How can we help you?" rows="6" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;resize:none;">${escapeHtml(d.message)}</textarea>
               </div>
-              <button onclick="submitContactForm()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:10px;">Send Message</button>
+              <button id="contact-send-btn" onclick="submitContactForm()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:10px;">Send Message</button>
             </div>
             </div>`;
         }
@@ -468,33 +509,36 @@ let appPrefs = {
         }
         function updateReportIssueField(field, value){ reportIssueDraft[field] = value; }
         async function submitIssueReport(){
+          if (issueFormSending) return;
           const d = reportIssueDraft;
           if (!d.type) { openAppAlertModal('Please choose what type of issue this is.'); return; }
           if (!d.description.trim()) { openAppAlertModal('Please describe the issue.'); return; }
+          if (d.email.trim() && !EMAIL_LOOKS_OK.test(d.email.trim())) {
+            openAppAlertModal('That email address does not look right. Fix it or leave it empty.');
+            return;
+          }
           const typeLabel = (reportIssueTypes.find(t => t.id === d.type) || {}).label || d.type;
-          try {
-            const res = await fetch(`https://formspree.io/f/${FORMSPREE_FORM_ID}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({
-                _subject: 'Stitch - Report an Issue: ' + typeLabel,
-                form: 'Report an Issue',
-                issueType: typeLabel,
-                description: d.description,
-                email: d.email || undefined,
-                _replyto: d.email || undefined
-              })
-            });
-            if (!res.ok) throw new Error('Formspree request failed: ' + res.status);
-          } catch (err) {
-            console.error('Issue report send failed, falling back to mailto:', err);
-            window.reportError(err, { form: 'report-issue', issueType: typeLabel });
-            const subject = encodeURIComponent('Stitch - Report an Issue: ' + typeLabel);
-            const body = encodeURIComponent(`Issue type: ${typeLabel}\n\n${d.description}` + (d.email ? `\n\nReply to: ${d.email}` : ''));
-            window.location.href = `mailto:${SUGGESTIONS_EMAIL}?subject=${subject}&body=${body}`;
+          issueFormSending = true;
+          setFormBusy('issue-send-btn', true, 'Submit Report');
+          const r = await sendToFormspree({
+            _subject: 'Stitch - Report an Issue: ' + typeLabel,
+            form: 'Report an Issue',
+            issueType: typeLabel,
+            description: d.description.trim(),
+            email: d.email.trim() || undefined,
+            _replyto: d.email.trim() || undefined,
+            userId: (typeof currentUserId !== 'undefined' && currentUserId) || undefined
+          });
+          issueFormSending = false;
+          if (!r.ok) {
+            console.error('Issue report send failed:', r.error);
+            window.reportError && window.reportError(r.error, { form: 'report-issue', issueType: typeLabel });
+            setFormBusy('issue-send-btn', false, 'Submit Report');
+            openAppAlertModal(FORM_SEND_FAIL_MSG, 'Report not sent');
+            return;
           }
           resetReportIssueDraft();
-          openAppAlertModal("Thanks for the report. Our team will look into it" + (d.email ? (" and follow up at " + d.email) : "") + ".");
+          openAppAlertModal("Thanks for the report. Our team will look into it" + (d.email.trim() ? (" and follow up at " + d.email.trim()) : "") + ".");
           openOverlay('profileMenu');
         }
         function reportIssueHTML(){
@@ -520,7 +564,7 @@ let appPrefs = {
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Email for follow-up (optional)</label>
                 <input type="email" value="${escapeHtml(d.email)}" oninput="updateReportIssueField('email', this.value)" placeholder="your@email.com" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;">
               </div>
-              <button onclick="submitIssueReport()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:50px;">Submit Report</button>
+              <button id="issue-send-btn" onclick="submitIssueReport()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:50px;">Submit Report</button>
             </div>
             </div>`;
         }
