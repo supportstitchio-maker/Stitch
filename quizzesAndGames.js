@@ -226,15 +226,17 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           clearInterval(waitingForChallengeFriendTimer);
           waitingForChallengeFriendTimer = setInterval(async () => {
             const invite = pendingChallengeInvites[code];
-            let joined = !invite || invite.joined;
+            if (waitingForChallengeFriendCode !== code) { clearInterval(waitingForChallengeFriendTimer); return; }
+            let joined = !!(invite && invite.joined);
+            let remote = null;
             if (!joined) {
-              const remote = await fetchChallengeInviteRemote(code);
+              remote = await fetchChallengeInviteRemote(code);
               if (remote && remote.joined) joined = true;
             }
             if (joined) {
               clearInterval(waitingForChallengeFriendTimer);
               waitingForChallengeFriendTimer = null;
-              const questions = invite ? invite.questions : (await fetchChallengeInviteRemote(code))?.questions || [];
+              const questions = invite ? invite.questions : (remote && remote.questions) || [];
               delete pendingChallengeInvites[code];
               activeChallengeCode = code;
               activeChallengeRole = 'inviter';
@@ -359,7 +361,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
           stopChallengeScorePolling();
           challengeOpponentScore = null;
-          examTest = { title: 'Challenge · ' + (subject || 'All Resources'), questions };
+          examTest = { title: 'Challenge', questions };
           examContext = 'challenge';
           examTimerSeconds = parseInt(timePerQ) || 60;
           examMode = timePerQ === 'No limit' ? 'self' : 'timed';
@@ -1154,16 +1156,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function examResultFooterHTML(){
           if (examContext === 'dailyQuiz') {
-            return `<button onclick="openOverlay('gamification')" class="flex-1 font-semibold text-center rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.4rem 0;font-size:0.8rem;">Back to Games</button>`;
+            return `<button onclick="openOverlay('gamification')" class="sheet-pill">Back to Games</button>`;
           }
           if (examContext === 'weeklyQuiz') {
             return `
-              <button onclick="openOverlay('gamification')" class="flex-1 font-semibold text-center rounded-lg border border-gray-200 text-gray-700" style="padding:0.8rem 0;font-size:0.8rem;">Back to Games</button>
-              <button onclick="openWeeklyQuizJoin()" class="flex-1 font-semibold text-center rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.8rem 0;font-size:0.8rem;">Play Again</button>`;
+              <button onclick="openOverlay('gamification')" class="sheet-pill">Back to Games</button>
+              <button onclick="openWeeklyQuizJoin()" class="sheet-pill">Play Again</button>`;
           }
           return `
-            <button onclick="closeOverlay()" class="flex-1 font-semibold text-center rounded-lg border border-gray-200 text-gray-700" style="padding:0.4rem 0;font-size:0.8rem;">Close</button>
-            <button onclick="startMockTest(examMode)" class="flex-1 font-semibold text-center rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.4rem 0;font-size:0.8rem;">Practice Again</button>`;
+            <button onclick="closeOverlay()" class="sheet-pill">Close</button>
+            <button onclick="startMockTest(examMode)" class="sheet-pill">Practice Again</button>`;
         }
 
         function quizRewardBannerHTML(){
@@ -1239,6 +1241,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-page{flex:1;overflow-y:auto;background:var(--bg)}
           .ar-in{max-width:1080px;margin:0 auto;padding:0 20px 28px}
           .ar-top{padding-top:var(--top-safe-pad);padding-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+          .ar-top,.ar-top *{font-family:'Colmeak','Montserrat',sans-serif}
           .ar-title{font-weight:700;font-size:1.05rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
           .ar-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}
           .ar-h{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:12px}
@@ -1265,6 +1268,11 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-opt.ok{border-color:var(--ok);background:rgba(22,163,74,.1)}.ar-opt.ok .l{background:var(--ok);color:#fff}
           .ar-opt.no{border-color:var(--bad);background:rgba(220,38,38,.08)}.ar-opt.no .l{background:var(--bad);color:#fff}
           .ar-bar{height:10px;border-radius:99px;background:rgba(148,163,184,.2);overflow:hidden}.ar-bar>i{display:block;height:100%;border-radius:99px}
+          .ar-end{display:flex;gap:10px;align-items:center;margin-top:20px;padding-bottom:calc(env(safe-area-inset-bottom,8px) + 12px)}
+          .ar-end .sheet-pill{flex:1;padding:.75rem 0;font-size:.85rem;border-radius:9999px;text-align:center}
+          .ar-chips-row{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none;margin-bottom:20px;padding:2px 0}
+          .ar-chips-row::-webkit-scrollbar{display:none}
+          .ar-chips-row .ar-chip{flex:0 0 auto}
           .ar-foot{flex-shrink:0;border-top:1px solid var(--line);background:var(--card);padding:10px 20px calc(env(safe-area-inset-bottom,8px) + 10px)}
           .ar-foot-in{max-width:1080px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between}
           .ar-timer{font-weight:800;font-variant-numeric:tabular-nums;color:var(--pri);background:var(--soft);border-radius:999px;padding:.35rem .8rem;font-size:.95rem}
@@ -1371,6 +1379,18 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         // ---- Challenge setup / lobby ----
+        function challengeTimeNote(t){
+          return t === 'No limit' ? 'Relaxed round: take as long as you need.' : 'Fast round: unanswered questions move on after ' + t + '.';
+        }
+        // Updates the selection in place so the sheet never re-renders or jumps
+        function setChallengeTimePill(btn){
+          const t = btn.getAttribute('data-t');
+          challengeConfig.timePerQ = t;
+          const row = document.getElementById('challenge-time-row');
+          if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
+          const note = document.getElementById('challenge-time-note');
+          if (note) note.textContent = challengeTimeNote(t);
+        }
         function challengeSetupHTML(){
           const q = Math.min(buildChallengeQuestionPool().length, 99);
           return `
@@ -1378,9 +1398,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             ${challengeSheetHeader('Set Up a Challenge')}
             <div class="text-sm text-gray-500 mb-4">Questions are pulled from all your uploaded resources (${q} ready). Pick a pace, then share the code with your class.</div>
             <div class="ar-h">Time per question</div>
-            <div class="flex flex-wrap gap-2 mb-5">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" onclick="challengeConfig.timePerQ='${t}';openChallengeModal(challengeSetupHTML())">${t}</button>`).join('')}</div>
+            <div class="ar-chips-row" id="challenge-time-row">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" data-t="${t}" onclick="setChallengeTimePill(this)">${t}</button>`).join('')}</div>
             <div class="ar-card mb-5" style="padding:14px;background:var(--soft);border:0;">
-              <div class="flex items-center gap-2 text-sm font-semibold">${Icon('bolt','w-4 h-4')} ${challengeConfig.timePerQ === 'No limit' ? 'Relaxed round: take as long as you need.' : 'Fast round: unanswered questions move on after ' + challengeConfig.timePerQ + '.'}</div>
+              <div class="flex items-center gap-2 text-sm font-semibold">${Icon('bolt','w-4 h-4')} <span id="challenge-time-note">${challengeTimeNote(challengeConfig.timePerQ)}</span></div>
             </div>
             <div class="flex gap-3">
               <button onclick="closeChallengeModal()" class="ar-btn flex-1">Cancel</button>
@@ -1389,7 +1409,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function submitCreateChallenge(){
-          openChallengeModal(challengeCreatedHTML(generateChallengeCode()));
+          const questions = buildChallengeQuestionPool();
+          if (!questions.length) {
+            pushInAppNotification('No questions yet', 'Upload a resource to create a challenge.');
+            closeChallengeModal();
+            return;
+          }
+          const code = generateChallengeCode();
+          pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
+          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions);
+          openChallengeModal(challengeCreatedHTML(code));
         }
 
         function challengeCreatedHTML(code){
@@ -1407,7 +1436,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <button onclick="shareChallengeLink('${code}')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Share link</button>
               <button onclick="copyChallengeLink('${code}')" class="ar-btn flex-1">${Icon('link','w-4 h-4 inline-block mr-1 -mt-0.5')} Copy link</button>
             </div>
-            <button onclick="startChallengeNow()" class="ar-btn p w-full">Start Challenge Now</button></div>`;
+            <button onclick="startWaitingForChallengeFriend('${code}')" class="ar-btn p w-full">Wait for Friend &amp; Start</button></div>`;
         }
 
         // ---- Exam taking (mock test + challenge). Quiz board contexts keep their own UI ----
@@ -1436,15 +1465,15 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
               <div class="ar-top">
-                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="text-sm font-semibold" style="color:var(--sub);">Exit</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
+                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="text-sm font-semibold" style="color:#dc2626;">Exit</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
                 ${examMode === 'timed' ? `<div class="flex items-center gap-2">${examTimerHidden ? '' : `<span class="ar-timer" id="exam-timer-display">${formatExamTime(examTimeLeft)}</span>`}<button onclick="toggleExamTimerHidden()" class="ar-chip" style="padding:.3rem .7rem;">${examTimerHidden ? 'Show' : 'Hide'}</button></div>` : `<span class="ar-chip on">Self-paced</span>`}
               </div>
               <div class="ar-strip">${arNums()}</div>
               <div class="ar-take">
                 <div class="ar-card ar-fade" key="${examQIndex}">
                   <div class="flex items-center justify-between gap-2 mb-3">
-                    <span class="ar-h" style="margin:0;color:var(--pri);">Question ${examQIndex + 1} of ${total}${q.meta ? ' · ' + escapeHtml(q.meta) : ''}</span>
-                    <button onclick="toggleExamMark()" class="ar-chip ${examMarked[examQIndex] ? 'on' : ''}" style="${examMarked[examQIndex] ? 'color:#dc2626;border-color:#dc2626;background:rgba(220,38,38,.08);' : ''}">${Icon('bookmark','w-3.5 h-3.5 inline-block mr-1 -mt-0.5')}${examMarked[examQIndex] ? 'Marked' : 'Mark for review'}</button>
+                    <span class="ar-h" style="margin:0;color:var(--pri);">Question ${examQIndex + 1} of ${total}</span>
+                    <button onclick="toggleExamMark()" aria-label="${examMarked[examQIndex] ? 'Unmark for review' : 'Mark for review'}" class="ar-chip ${examMarked[examQIndex] ? 'on' : ''}" style="padding:.45rem .6rem;line-height:0;${examMarked[examQIndex] ? 'color:#dc2626;border-color:#dc2626;background:rgba(220,38,38,.08);' : ''}">${Icon('bookmark','w-4 h-4 inline-block')}</button>
                   </div>
                   <div class="ar-bar mb-4"><i style="width:${Math.round((examQIndex + 1) / total * 100)}%;background:linear-gradient(90deg,#4169e1,#1e90ff)"></i></div>
                   <div class="text-lg font-semibold leading-snug mb-5">${escapeHtml(q.text)}</div>
@@ -1495,8 +1524,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                 <div class="flex gap-2 mb-4">${tab('overview','Overview')}${tab('review','Review answers')}</div>
                 ${examResultTab === 'overview' ? examResultOverviewHTML() : examResultReviewHTML()}
               </div>
-            </div></div>
-            <div class="ar-root ar-foot"><div class="ar-foot-in" style="justify-content:stretch;">${examResultFooterHTML()}</div></div>`;
+              <div class="ar-end">${examResultFooterHTML()}</div>
+            </div></div>`;
         }
 
         function examResultOverviewHTML(){
