@@ -82,38 +82,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             </div>`;
         }
 
-        function challengeSetupHTML(){
-          return `
-            ${challengeSheetHeader('Set Up a Challenge')}
-            <div class="text-sm text-gray-500 mb-5">Pulls questions from all your uploaded resources. Pick a time limit, then share the code with your class.</div>
 
-            <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Time / Question</label>
-            <select id="challenge-time-input" class="w-full rounded-2xl px-4 py-3 text-base font-semibold text-gray-800 mb-5" style="background:rgba(65,105,225,0.12); border:1px solid rgba(65,105,225,0.25);">
-              ${challengeTimeOptions.map(t => `<option ${t === challengeConfig.timePerQ ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
 
-            <div class="flex gap-3">
-              <button onclick="closeChallengeModal()" class="tab-plain-btn flex-1 py-3.5 font-bold text-gray-700 text-center">Cancel</button>
-              <button onclick="submitCreateChallenge()" class="tab-plain-btn flex-1 py-3.5 font-bold text-center" style="color:${NAVY};">Create</button>
-            </div>`;
-        }
-
-        function submitCreateChallenge(){
-          challengeConfig.timePerQ = document.getElementById('challenge-time-input').value;
-          const code = generateChallengeCode();
-          openChallengeModal(challengeCreatedHTML(code));
-        }
-
-        function challengeCreatedHTML(code){
-          return `
-            ${challengeSheetHeader('Challenge created!')}
-            <div class="text-sm text-gray-500 mb-5">Share this code with whoever you want to challenge, then start whenever you're ready.</div>
-            <div class="rounded-2xl flex items-center justify-center gap-2 font-bold text-2xl tracking-wide mb-5" style="padding-top:7px;padding-bottom:7px;background:rgba(65,105,225,0.12); color:${NAVY};">
-              <span>${code}</span>
-              <button onclick="copyChallengeCode('${code}')" class="flex-shrink-0 p-1.5 rounded-full" style="color:${NAVY};background:rgba(65,105,225,0.14);">${Icon('copy','w-4 h-4')}</button>
-            </div>
-            <button onclick="startChallengeNow()" class="w-full rounded-2xl font-bold text-center" style="padding-top:5px;padding-bottom:5px;background:rgba(65,105,225,0.12); color:${NAVY};">Start Challenge Now</button>`;
-        }
 
         let pendingChallengeInvites = {};
         const CHALLENGE_INVITES_TABLE = 'challenge_invites';
@@ -424,19 +394,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `<button onclick="switchPracticeTestsTab('${key}')" class="flex-1 py-2.5 text-sm font-bold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.5);` : 'background:#f3f4f6;'}">${label}</button>`;
         }
 
-        function practiceTestsHTML(){
-          return `
-            <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Practice Tests', '20px', null, null, { right: true })}
-              <div class="px-5" style="margin-top:10px;">
-                <div class="flex gap-2 mb-4">
-                  ${practiceTestsTabBtn('test','Mock Test')}
-                  ${practiceTestsTabBtn('score','Score')}
-                </div>
-                ${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}
-              </div>
-            </div>`;
-        }
 
         function courseListRow(label, onclick, sub){
           return `
@@ -464,27 +421,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           `;
         }
 
-        function practiceTestsScorePane(){
-          if (!mockTestScoreHistory.length) {
-            return `
-              <div class="py-16 text-center text-gray-400 text-base">No completed mock tests yet.<br>Finish one to see your score here.</div>`;
-          }
-          const latest = mockTestScoreHistory[0];
-          const latestAccuracy = latest.total ? Math.round((latest.correct / latest.total) * 100) : 0;
-          const history = mockTestScoreHistory.slice(1, 21); 
-          return `
-            <div class="rounded-3xl p-6 text-center mb-5" style="background:rgba(65,105,225,0.06);">
-              <div class="text-sm font-bold uppercase tracking-wide mb-1" style="color:${NAVY};">${escapeHtml(latest.title)}</div>
-              <div class="text-5xl font-extrabold text-gray-900 my-3">${latest.correct}<span class="text-gray-300"> / </span>${latest.total}</div>
-              <div class="text-sm text-gray-500">${latestAccuracy}% accuracy</div>
-            </div>
-            ${history.length ? `
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Past Scores</div>
-              <div class="space-y-2.5">
-                ${history.map(scoreHistoryRowHTML).join('')}
-              </div>
-            ` : ''}`;
-        }
 
         function scoreHistoryRowHTML(r){
           const accuracy = r.total ? Math.round((r.correct / r.total) * 100) : 0;
@@ -802,58 +738,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             <div class="text-xs text-gray-400 mt-2">${Icon('bolt','w-3.5 h-3.5 inline-block mr-1 -mt-0.5')} Graded automatically against the marking scheme once you submit.</div>`;
         }
 
-        function examTakeHTML(){
-          if (examContext === 'weeklyQuiz' || examContext === 'dailyQuiz') {
-            return examCardOpenIndex === null ? weeklyQuizBoardHTML() : weeklyQuizCardHTML(examCardOpenIndex);
-          }
-          const q = examTest.questions[examQIndex];
-          const total = examTest.questions.length;
-          const selected = examAnswers[examQIndex];
-          return `
-            <div id="exam-scroll-container" class="flex-1 overflow-y-auto" style="padding-top:var(--top-safe-pad);">
-              <div class="px-5">
-                <div class="flex items-start justify-between mb-3">
-                  <button onclick="toggleExamDirections()" class="text-base font-bold text-gray-700 flex items-center gap-1">Directions ${Icon('chevronDown','w-3.5 h-3.5')}</button>
-                  <div class="flex flex-col items-center">
-                    ${examMode === 'timed' && !examTimerHidden ? `<div id="exam-timer-display" class="text-2xl font-bold" style="color:${NAVY};">${formatExamTime(examTimeLeft)}</div>` : ''}
-                    ${examMode === 'timed' ? `<button onclick="toggleExamTimerHidden()" class="text-xs font-semibold px-3 py-1 rounded-full border border-gray-200 text-gray-600 mt-2">${examTimerHidden ? 'Show' : 'Hide'}</button>` : ''}
-                  </div>
-                  <div style="width:64px;">${examContext === 'weeklyQuiz' && quizStake > 0 ? `<div class="flex items-center gap-1 font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:9999px;padding:0.25rem 0.5rem;font-size:0.65rem;">${Icon('coin','w-3 h-3')} ${quizStake}</div>` : ''}</div>
-                </div>
-                ${examDirectionsOpen ? `
-                  <div class="rounded-2xl p-4 mb-3 text-sm text-gray-600" style="background:rgba(65,105,225,0.08);">
-                    Answer every question to the best of your ability. You can mark questions for review and revisit them using Back before submitting.
-                  </div>` : ''}
-                <div class="rounded-2xl p-4 mb-4 flex items-start gap-2" style="background:rgba(220,38,38,0.08);">
-                  <span class="flex-shrink-0" style="color:#b91c1c;">${Icon('alertTriangle','w-5 h-5')}</span>
-                  <div class="text-sm font-semibold" style="color:#b91c1c;">Stay on this tab. Leaving the page ends the test and locks in your score.</div>
-                </div>
-
-                <div class="text-sm font-bold uppercase tracking-wide mb-2" style="color:${NAVY};">${q.meta}</div>
-                <div class="text-base text-gray-900 mb-4 leading-snug">${escapeHtml(q.text)}</div>
-              </div>
-
-              <div class="border-t border-dashed border-gray-200 my-2"></div>
-
-              <div class="px-5">
-                <div class="rounded-2xl px-4 py-3 mb-3 flex items-center justify-between" style="background:rgba(65,105,225,0.1);">
-                  <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm font-bold" style="background:rgba(30,144,255,0.5);">${examQIndex + 1}</div>
-                  <button onclick="toggleExamMark()" class="text-sm font-bold flex items-center gap-1.5" style="color:${examMarked[examQIndex] ? '#b45309' : NAVY};">${Icon('bookmark','w-4 h-4')} ${examMarked[examQIndex] ? 'Marked' : 'Mark for Review'}</button>
-                </div>
-
-                <div class="space-y-4 mb-6 quiz-options-grid">
-                  ${writtenAnswerInputHTML(q, examQIndex, selected)}
-                </div>
-              </div>
-            </div>
-            ${examQuestionPickerOpen ? `<div onclick="toggleExamQuestionPicker()" onwheel="toggleExamQuestionPicker()" ontouchmove="toggleExamQuestionPicker()" class="fixed inset-0 z-20"></div>${examQuestionGridHTML()}` : ''}
-            <div class="flex-shrink-0 border-t border-gray-100 px-5 py-3 flex items-center justify-between gap-2" style="padding-bottom:calc(env(safe-area-inset-bottom, 8px) + 10px);">
-              <button onclick="examExit()" class="text-sm font-semibold text-gray-500">Exit</button>
-              ${examContext === 'weeklyQuiz' ? '' : `<button onclick="toggleExamQuestionPicker()" class="font-bold text-white rounded-full flex-shrink-0 flex items-center gap-1" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);font-size:0.75rem;padding:0.4rem 0.75rem;">Question ${examQIndex + 1} of ${total} ${Icon('chevronDown','w-3 h-3')}</button>`}
-              <button onclick="examGoBack()" class="text-sm font-bold px-5 py-2.5 rounded-full border border-gray-200 text-gray-700 ${examQIndex === 0 ? 'opacity-40 pointer-events-none' : ''}">Back</button>
-              <button onclick="examGoNext(false)" class="text-sm font-bold px-5 py-2.5 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${examQIndex === total - 1 ? 'Submit' : 'Next'}</button>
-            </div>`;
-        }
 
         // ---- Weekly quiz board + flashcard-style questions ----
         function weeklyQuizTimerAndStakeHTML(onBack){
@@ -1103,25 +987,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         // ---- Exam-taking screen (navigation, answers, marking) ----
-        function examQuestionGridHTML(){
-          const total = examTest.questions.length;
-          let cells = '';
-          for (let i = 0; i < total; i++) {
-            const isCurrent = i === examQIndex;
-            const isAnswered = examAnswers[i] !== undefined;
-            const isMarked = !!examMarked[i];
-            let style;
-            if (isCurrent) style = `background:rgba(30,144,255,0.5);color:#fff;`;
-            else if (isMarked) style = 'background:rgba(180,83,9,0.12);color:#b45309;border:1px solid rgba(180,83,9,0.3);';
-            else if (isAnswered) style = `background:rgba(65,105,225,0.1);color:${NAVY};border:1px solid rgba(65,105,225,0.25);`;
-            else style = 'background:#fff;color:#374151;border:1px solid #e5e7eb;';
-            cells += `<button onclick="examJumpTo(${i})" class="font-bold text-sm" style="${style}border-radius:0.75rem;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;">${i + 1}</button>`;
-          }
-          return `
-            <div class="bg-white rounded-3xl border border-gray-100" style="position:absolute;left:1rem;right:1rem;z-index:30;bottom:78px;max-height:340px;overflow-y:auto;padding:1rem;box-shadow:0 10px 30px rgba(0,0,0,0.15);">
-              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:0.5rem;">${cells}</div>
-            </div>`;
-        }
 
         function toggleExamQuestionPicker(){
           examQuestionPickerOpen = !examQuestionPickerOpen;
@@ -1286,36 +1151,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           renderExamTake();
         }
 
-        function examResultHTML(){
-          const total = examTest.questions.length;
-          const correct = examScore();
-          const answered = Object.keys(examAnswers).length;
-          const isQuiz = examContext === 'dailyQuiz' || examContext === 'weeklyQuiz';
-          const isChallengeVsFriend = examContext === 'challenge' && !!activeChallengeCode;
-          return `
-            <div class="flex-1 overflow-y-auto" style="background:#fff;">
-              <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
-                <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between gap-4">
-                  <button onclick="${isQuiz ? "openOverlay('gamification')" : 'closeOverlay()'}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                  <div class="font-semibold text-lg font-display grad-text text-right truncate" style="min-width:0;">${escapeHtml(examTest.title)}</div>
-                </div>
-              </div>
-              <div class="px-5 pb-8">
-                <div class="text-center font-display" style="margin-top:10px;margin-bottom:1rem;font-size:4rem;line-height:1;font-weight:800;color:${total ? (Math.round((correct / total) * 100) >= 70 ? '#15803d' : '#b91c1c') : '#b91c1c'};">${correct}</div>
-                ${isQuiz ? '' : `<div class="text-center text-sm text-gray-500 mb-6">You answered ${answered} of ${total} questions. Your final score is locked in.</div>`}
-                ${isQuiz ? quizRewardBannerHTML() : ''}
-                ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}
-                <div class="flex gap-2 mb-5 bg-gray-100 rounded-2xl p-1">
-                  <button onclick="switchExamResultTab('overview')" class="flex-1 py-2.5 text-sm font-bold rounded-2xl ${examResultTab === 'overview' ? 'text-white' : 'text-gray-500'}" style="${examResultTab === 'overview' ? `background:rgba(30,144,255,0.5);` : ''}">Overview</button>
-                  <button onclick="switchExamResultTab('review')" class="flex-1 py-2.5 text-sm font-bold rounded-2xl ${examResultTab === 'review' ? 'text-white' : 'text-gray-500'}" style="${examResultTab === 'review' ? `background:rgba(30,144,255,0.5);` : ''}">Review Answers</button>
-                </div>
-                ${examResultTab === 'overview' ? examResultOverviewHTML() : examResultReviewHTML()}
-              </div>
-            </div>
-            <div class="flex-shrink-0 border-t border-gray-100 px-5 py-3 flex gap-2" style="padding-bottom:calc(env(safe-area-inset-bottom, 8px) + 10px);">
-              ${examResultFooterHTML()}
-            </div>`;
-        }
 
         function examResultFooterHTML(){
           if (examContext === 'dailyQuiz') {
@@ -1354,142 +1189,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             ${quizCoinResult ? liveMatchResultHTML() : ''}`;
         }
 
-        function liveMatchResultHTML(){
-          const opponent = quizOpponent || quizOpponentPool[0];
-          const total = examTest.questions.length;
-          const correct = examScore();
-          const won = quizCoinResult === 'win';
-          const headline = won ? 'You Won!' : `${escapeHtml(opponent.name)} Wins`;
-          const bg = won ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)';
-          const isFriend = opponent.id && quizFriends.some(f => f.id === opponent.id);
-          return `
-            <div class="rounded-3xl p-5 text-white mb-5" style="background:${bg};">
-              <div class="flex items-center justify-between mb-3">
-                <div class="font-bold text-lg font-display">${headline}</div>
-                ${Icon(won ? 'trophy' : 'block', 'w-6 h-6')}
-              </div>
-              <div class="flex items-center justify-between text-sm mb-4">
-                <div class="text-center flex-1">
-                  <div class="font-bold text-2xl font-display">${correct}/${total}</div>
-                  <div class="text-white/80 text-xs mt-0.5">You</div>
-                </div>
-                <div class="text-white/60 text-xs font-bold px-2">VS</div>
-                <div class="text-center flex-1">
-                  <div class="font-bold text-2xl font-display">${quizOpponentScore}/${total}</div>
-                  <div class="text-white/80 text-xs mt-0.5 truncate">${escapeHtml(opponent.name)}</div>
-                </div>
-              </div>
-              <div class="flex items-center justify-center gap-1.5 bg-white/15 rounded-2xl py-2.5 font-bold">
-                ${Icon('coin','w-4 h-4')} ${quizCoinDelta >= 0 ? '+' : ''}${quizCoinDelta} coins ${Icon('coin','w-4 h-4 opacity-0')}
-              </div>
-              <button onclick="quizAddFriendFromResult()" class="w-full flex items-center justify-center gap-2 font-bold text-center py-2.5 rounded-2xl mt-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}" style="background:rgba(255,255,255,0.18);color:#fff;">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>
-            </div>`;
-        }
 
         function quizAddFriendFromResult(){
           quizAddFriend(quizOpponent);
           renderExamTake();
         }
 
-        function challengeMatchResultHTML(){
-          const total = examTest.questions.length;
-          const correct = examScore();
-          if (challengeOpponentScore === null) {
-            return `
-              <div class="rounded-3xl p-5 mb-5 text-center" style="background:rgba(65,105,225,0.08);">
-                <div class="w-8 h-8 mx-auto mb-3" style="position:relative;">
-                  <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(65,105,225,0.15) 45%, rgba(65,105,225,0.15) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));animation:classroom-spin 0.9s linear infinite;"></div>
-                </div>
-                <div class="font-bold text-gray-800 mb-1">Waiting for your friend to finish…</div>
-                <div class="text-sm text-gray-500">Your score (${correct}/${total}) is locked in. We'll show who won as soon as they submit.</div>
-              </div>`;
-          }
-          const won = correct > challengeOpponentScore;
-          const tied = correct === challengeOpponentScore;
-          const headline = tied ? "It's a Tie!" : (won ? 'You Won!' : 'Your Friend Wins');
-          const bg = tied ? 'linear-gradient(135deg,#6b7280,#4b5563)' : (won ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)');
-          return `
-            <div class="rounded-3xl p-5 text-white mb-5" style="background:${bg};">
-              <div class="flex items-center justify-between mb-3">
-                <div class="font-bold text-lg font-display">${headline}</div>
-                ${Icon(tied ? 'flag' : (won ? 'trophy' : 'block'), 'w-6 h-6')}
-              </div>
-              <div class="flex items-center justify-between text-sm">
-                <div class="text-center flex-1">
-                  <div class="font-bold text-2xl font-display">${correct}/${total}</div>
-                  <div class="text-white/80 text-xs mt-0.5">You</div>
-                </div>
-                <div class="text-white/60 text-xs font-bold px-2">VS</div>
-                <div class="text-center flex-1">
-                  <div class="font-bold text-2xl font-display">${challengeOpponentScore}/${total}</div>
-                  <div class="text-white/80 text-xs mt-0.5">Your Friend</div>
-                </div>
-              </div>
-            </div>`;
-        }
 
-        function examResultOverviewHTML(){
-          const total = examTest.questions.length;
-          const correct = examScore();
-          let wrong = 0, skipped = 0, grading = 0;
-          examTest.questions.forEach((q, i) => {
-            if (examAnswers[i] === undefined) { skipped++; return; }
-            if (!isExamAnswerGraded(q, i)) { grading++; return; } 
-            if (!isExamAnswerCorrect(q, i)) wrong++;
-          });
-          const accuracy = total ? Math.round((correct / total) * 100) : 0;
-          const stat = (label, value, color) => `
-            <div class="rounded-2xl p-4 text-center" style="background:rgba(65,105,225,0.06);">
-              <div class="text-2xl font-extrabold" style="color:${color};">${value}</div>
-              <div class="text-xs font-semibold text-gray-500 mt-1 uppercase tracking-wide">${label}</div>
-            </div>`;
-          return `
-            ${grading ? `
-              <div class="rounded-2xl p-3 mb-4 text-center text-sm font-semibold flex items-center justify-center gap-2" style="background:rgba(30,144,255,0.1);color:${NAVY};">
-                ${Icon('bolt','w-4 h-4')} Grading ${grading} written answer${grading === 1 ? '' : 's'} against the marking scheme&hellip;
-              </div>` : ''}
-            <div class="grid grid-cols-2 gap-3">
-              ${stat('Correct', correct, '#15803d')}
-              ${stat('Incorrect', wrong, '#b91c1c')}
-              ${stat('Skipped', skipped, '#6b7280')}
-              ${stat('Accuracy', accuracy + '%', NAVY)}
-            </div>`;
-        }
 
-        function examResultReviewHTML(){
-          return examTest.questions.map((q, i) => {
-            const selected = examAnswers[i];
-            const isWritten = q.type === 'written';
-            const skipped = selected === undefined;
-            const graded = isExamAnswerGraded(q, i);
-            const isCorrect = !skipped && graded && isExamAnswerCorrect(q, i);
-            let badge, badgeText, answeredText;
-            if (skipped) {
-              badge = 'background:#f3f4f6;color:#6b7280;';
-              badgeText = 'Skipped';
-              answeredText = 'Skipped';
-            } else if (isWritten && !graded) {
-              badge = `background:rgba(65,105,225,0.1);color:${NAVY};`;
-              badgeText = 'Grading…';
-              answeredText = escapeHtml(selected);
-            } else {
-              badge = isCorrect ? 'background:rgba(21,128,61,0.12);color:#15803d;' : 'background:rgba(185,28,28,0.1);color:#b91c1c;';
-              badgeText = isCorrect ? 'Correct' : 'Incorrect';
-              answeredText = isWritten ? escapeHtml(selected) : escapeHtml(q.options[selected]);
-            }
-            const feedback = isWritten && graded && examWrittenGrades[i] ? examWrittenGrades[i].feedback : '';
-            return `
-              <div class="rounded-2xl border border-gray-100 p-4 mb-3">
-                <div class="flex items-start justify-between gap-2 mb-2">
-                  <div class="text-sm text-gray-900">${i + 1}. ${escapeHtml(q.text)}</div>
-                  <div class="flex-shrink-0 text-xs font-bold px-2 py-1 rounded-full" style="${badge}">${badgeText}</div>
-                </div>
-                <div class="text-xs text-gray-500 mb-1">Your answer: <span class="font-semibold text-gray-700">${answeredText}</span></div>
-                ${(!skipped && graded && !isCorrect) ? `<div class="text-xs text-gray-500">${isWritten ? 'Model answer' : 'Correct answer'}: <span class="font-semibold" style="color:#15803d;">${isWritten ? escapeHtml(q.answer || '') : escapeHtml(q.options[q.correct])}</span></div>` : ''}
-                ${feedback ? `<div class="text-xs text-gray-400 mt-1">${escapeHtml(feedback)}</div>` : ''}
-              </div>`;
-          }).join('');
-        }
 
         // ---- Exam exit confirmation modal ----
         function examExit(){
@@ -1518,3 +1225,371 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           renderExamTake();
         }
 
+        // =====================================================================
+        // ARENA REDESIGN: practice tests, challenges, exam taking, results & charts
+        // Responsive (mobile-first, two-pane on >=1024px). Charts are inline SVG (CSP-safe).
+        // =====================================================================
+        (function injectArenaCss(){
+          if (document.getElementById('ar-css')) return;
+          const s = document.createElement('style');
+          s.id = 'ar-css';
+          s.textContent = `
+          .ar-root{--bg:#f5f7fb;--card:#fff;--line:#e5e9f2;--tx:#0f172a;--sub:#64748b;--ok:#16a34a;--bad:#dc2626;--warn:#f59e0b;--pri:#1e90ff;--pri2:#4169e1;--soft:rgba(65,105,225,.08);color:var(--tx)}
+          body.dark-mode .ar-root{--bg:#121212;--card:#1e1e1e;--line:#33373f;--tx:#f2f2f2;--sub:#9aa3b2;--soft:rgba(30,144,255,.16)}
+          .ar-page{flex:1;overflow-y:auto;background:var(--bg)}
+          .ar-in{max-width:1080px;margin:0 auto;padding:0 20px 28px}
+          .ar-top{padding-top:var(--top-safe-pad);padding-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+          .ar-title{font-weight:700;font-size:1.05rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+          .ar-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}
+          .ar-h{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:12px}
+          .ar-grid{display:grid;gap:14px}
+          .ar-g2{grid-template-columns:1fr 1fr}
+          .ar-g4{grid-template-columns:1fr 1fr}
+          @media(min-width:1024px){.ar-foot{padding-left:32px;padding-right:32px}.ar-g4{grid-template-columns:repeat(4,1fr)}.ar-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.ar-in{padding:0 32px 36px}}
+          .ar-btn{border-radius:999px;font-weight:700;font-size:.85rem;padding:.7rem 1.2rem;text-align:center;border:1px solid var(--line);background:var(--card);color:var(--tx)}
+          .ar-btn.p{background:linear-gradient(135deg,var(--pri2),var(--pri));color:#fff;border:0;box-shadow:0 4px 14px rgba(65,105,225,.35)}
+          .ar-btn[disabled]{opacity:.4;pointer-events:none}
+          .ar-chip{border-radius:999px;padding:.45rem .9rem;font-size:.8rem;font-weight:700;border:1.5px solid var(--line);background:var(--card);color:var(--sub);white-space:nowrap}
+          .ar-chip.on{border-color:var(--pri);background:var(--soft);color:var(--pri)}
+          .ar-take{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+          .ar-side{display:none}
+          @media(min-width:1024px){.ar-take{grid-template-columns:minmax(0,1fr) 300px;align-items:start}.ar-side{display:block;position:sticky;top:12px}.ar-strip{display:none!important}}
+          .ar-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
+          .ar-strip::-webkit-scrollbar{display:none}
+          .ar-n{flex:0 0 auto;width:34px;height:34px;border-radius:10px;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;background:rgba(148,163,184,.18);color:var(--sub);border:0}
+          .ar-n.ans{background:var(--ok);color:#fff}.ar-n.mark{background:var(--bad);color:#fff}.ar-n.cur{background:var(--pri);color:#fff;box-shadow:0 0 0 3px rgba(30,144,255,.28)}
+          .ar-pal{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.ar-pal .ar-n{width:auto;aspect-ratio:1}
+          .ar-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);color:var(--tx);margin-bottom:10px;transition:border-color .15s,background .15s}
+          .ar-opt .l{flex:0 0 28px;height:28px;border-radius:9px;background:rgba(148,163,184,.18);font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center}
+          .ar-opt.on{border-color:var(--pri);background:var(--soft)}.ar-opt.on .l{background:var(--pri);color:#fff}
+          .ar-opt.ok{border-color:var(--ok);background:rgba(22,163,74,.1)}.ar-opt.ok .l{background:var(--ok);color:#fff}
+          .ar-opt.no{border-color:var(--bad);background:rgba(220,38,38,.08)}.ar-opt.no .l{background:var(--bad);color:#fff}
+          .ar-bar{height:10px;border-radius:99px;background:rgba(148,163,184,.2);overflow:hidden}.ar-bar>i{display:block;height:100%;border-radius:99px}
+          .ar-foot{flex-shrink:0;border-top:1px solid var(--line);background:var(--card);padding:10px 20px calc(env(safe-area-inset-bottom,8px) + 10px)}
+          .ar-foot-in{max-width:1080px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between}
+          .ar-timer{font-weight:800;font-variant-numeric:tabular-nums;color:var(--pri);background:var(--soft);border-radius:999px;padding:.35rem .8rem;font-size:.95rem}
+          .ar-pod{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:190px}
+          .ar-pod>div{flex:1;max-width:120px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;color:#fff;font-weight:800}
+          .ar-vs{border-radius:24px;padding:20px;color:#fff}
+          .ar-fade{animation:arIn .35s ease both}@keyframes arIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+          `;
+          document.head.appendChild(s);
+        })();
+
+        // ---- Chart helpers (inline SVG / CSS) ----
+        function arDonut(parts, big, small){
+          const R = 52, C = 2 * Math.PI * R, tot = parts.reduce((a, p) => a + p.v, 0);
+          let off = 0;
+          const segs = tot ? parts.filter(p => p.v > 0).map(p => {
+            const len = p.v / tot * C;
+            const el = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${p.c}" stroke-width="15" stroke-dasharray="${Math.max(len - 2, 0.5)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)" stroke-linecap="round"/>`;
+            off += len; return el;
+          }).join('') : '';
+          return `<svg viewBox="0 0 140 140" width="150" height="150" role="img" aria-label="${escapeHtml(big)} ${escapeHtml(small || '')}">
+            <circle cx="70" cy="70" r="${R}" fill="none" stroke="rgba(148,163,184,.22)" stroke-width="15"/>${segs}
+            <text x="70" y="70" text-anchor="middle" font-size="28" font-weight="800" fill="currentColor">${escapeHtml(big)}</text>
+            <text x="70" y="90" text-anchor="middle" font-size="10" font-weight="700" fill="#94a3b8">${escapeHtml(small || '')}</text></svg>`;
+        }
+
+        function arLine(vals, labels){
+          const W = 340, H = 150, px = 28, py = 14, n = vals.length;
+          if (!n) return '';
+          const x = i => n === 1 ? W / 2 : px + i * (W - px * 2) / (n - 1);
+          const y = v => H - py - (v / 100) * (H - py * 2);
+          const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+          const grid = [0, 50, 100].map(g => `<line x1="${px}" x2="${W - px}" y1="${y(g)}" y2="${y(g)}" stroke="rgba(148,163,184,.3)" stroke-dasharray="3 4"/><text x="${px - 6}" y="${y(g) + 3}" text-anchor="end" font-size="9" fill="#94a3b8">${g}</text>`).join('');
+          const dots = vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="#fff" stroke="#1e90ff" stroke-width="2.5"><title>${escapeHtml(labels[i] || '')}: ${v}%</title></circle>`).join('');
+          return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Accuracy trend">
+            <defs><linearGradient id="arLg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e90ff" stop-opacity=".25"/><stop offset="1" stop-color="#1e90ff" stop-opacity="0"/></linearGradient></defs>${grid}
+            ${n > 1 ? `<polygon points="${x(0)},${H - py} ${pts} ${x(n - 1)},${H - py}" fill="url(#arLg)"/><polyline points="${pts}" fill="none" stroke="#1e90ff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${dots}</svg>`;
+        }
+
+        function arBars(items){
+          return items.map(it => `
+            <div class="mb-3">
+              <div class="flex items-center justify-between gap-2 text-sm mb-1"><span class="truncate font-semibold">${escapeHtml(it.label)}</span><span style="color:var(--sub);font-weight:700;flex-shrink:0;">${it.text}</span></div>
+              <div class="ar-bar"><i style="width:${Math.max(0, Math.min(100, it.pct))}%;background:${it.color}"></i></div>
+            </div>`).join('');
+        }
+
+        function arStatTile(label, value, color){
+          return `<div class="ar-card" style="padding:14px;text-align:center;"><div style="font-size:1.7rem;font-weight:800;color:${color};line-height:1.1;">${value}</div><div class="ar-h" style="margin:6px 0 0;">${label}</div></div>`;
+        }
+
+        function arTopicStats(){
+          const m = {};
+          examTest.questions.forEach((q, i) => {
+            const k = q.meta || 'General';
+            m[k] = m[k] || { c: 0, n: 0 };
+            m[k].n++;
+            if (isExamAnswerCorrect(q, i)) m[k].c++;
+          });
+          return Object.keys(m).map(k => ({ name: k, c: m[k].c, n: m[k].n, pct: Math.round(m[k].c / m[k].n * 100) })).sort((a, b) => b.pct - a.pct);
+        }
+
+        function arBack(action){ return `<button onclick="${action}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`; }
+
+        // ---- Practice tests overlay ----
+        function practiceTestsHTML(){
+          return `
+            <div class="ar-root ar-page"><div class="ar-in">
+              <div class="ar-top">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
+              <div class="flex gap-2 mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
+              <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
+            </div></div>`;
+        }
+
+        function practiceTestsScorePane(){
+          const h = mockTestScoreHistory;
+          if (!h.length) return `<div class="ar-root ar-card text-center" style="padding:48px 20px;color:var(--sub);">No completed mock tests yet.<br>Finish one to see your progress here.</div>`;
+          const acc = r => r.total ? Math.round(r.correct / r.total * 100) : 0;
+          const recent = h.slice(0, 10).reverse();
+          const avg = Math.round(h.reduce((a, r) => a + acc(r), 0) / h.length);
+          const best = Math.max(...h.map(acc));
+          const last = h[0], prev = h[1];
+          const delta = prev ? acc(last) - acc(prev) : null;
+          return `<div class="ar-root">
+            <div class="ar-grid ar-g4 mb-3">
+              ${arStatTile('Latest', acc(last) + '%', acc(last) >= 70 ? '#16a34a' : '#dc2626')}
+              ${arStatTile('Average', avg + '%', '#1e90ff')}
+              ${arStatTile('Best', best + '%', '#f59e0b')}
+              ${arStatTile('Tests taken', h.length, '#4169e1')}
+            </div>
+            <div class="ar-cols">
+              <div class="ar-card mb-3">
+                <div class="ar-h">Accuracy trend · last ${recent.length}</div>
+                ${arLine(recent.map(acc), recent.map(r => r.title))}
+                ${delta === null ? '' : `<div class="text-sm mt-2" style="color:${delta >= 0 ? '#16a34a' : '#dc2626'};font-weight:700;">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta)} pts vs your previous test</div>`}
+              </div>
+              <div class="ar-card mb-3">
+                <div class="ar-h">Recent scores</div>
+                ${arBars(h.slice(0, 6).map(r => ({ label: r.title + ' · ' + formatScoreHistoryDate(r.date), pct: acc(r), text: r.correct + '/' + r.total, color: acc(r) >= 70 ? '#16a34a' : acc(r) >= 40 ? '#f59e0b' : '#dc2626' })))}
+              </div>
+            </div>
+            ${h.length > 6 ? `<div class="ar-h">Older</div><div class="space-y-2.5">${h.slice(6, 26).map(scoreHistoryRowHTML).join('')}</div>` : ''}
+          </div>`;
+        }
+
+        // ---- Challenge setup / lobby ----
+        function challengeSetupHTML(){
+          const q = Math.min(buildChallengeQuestionPool().length, 99);
+          return `
+            <div class="ar-root" style="color:var(--tx)">
+            ${challengeSheetHeader('Set Up a Challenge')}
+            <div class="text-sm text-gray-500 mb-4">Questions are pulled from all your uploaded resources (${q} ready). Pick a pace, then share the code with your class.</div>
+            <div class="ar-h">Time per question</div>
+            <div class="flex flex-wrap gap-2 mb-5">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" onclick="challengeConfig.timePerQ='${t}';openChallengeModal(challengeSetupHTML())">${t}</button>`).join('')}</div>
+            <div class="ar-card mb-5" style="padding:14px;background:var(--soft);border:0;">
+              <div class="flex items-center gap-2 text-sm font-semibold">${Icon('bolt','w-4 h-4')} ${challengeConfig.timePerQ === 'No limit' ? 'Relaxed round: take as long as you need.' : 'Fast round: unanswered questions move on after ' + challengeConfig.timePerQ + '.'}</div>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="closeChallengeModal()" class="ar-btn flex-1">Cancel</button>
+              <button onclick="submitCreateChallenge()" class="ar-btn p flex-1">Create</button>
+            </div></div>`;
+        }
+
+        function submitCreateChallenge(){
+          openChallengeModal(challengeCreatedHTML(generateChallengeCode()));
+        }
+
+        function challengeCreatedHTML(code){
+          return `
+            <div class="ar-root">
+            ${challengeSheetHeader('Challenge created!')}
+            <div class="text-sm text-gray-500 mb-4">Share this code with whoever you want to challenge, then start whenever you're ready.</div>
+            <div class="ar-card text-center mb-4" style="background:var(--soft);border:0;">
+              <div class="ar-h" style="margin-bottom:6px;">Challenge code</div>
+              <div class="flex items-center justify-center gap-2" style="font-size:2rem;font-weight:800;letter-spacing:.08em;color:var(--pri);"><span>${code}</span>
+                <button onclick="copyChallengeCode('${code}')" class="p-2 rounded-full" style="background:rgba(65,105,225,.14);color:var(--pri);">${Icon('copy','w-4 h-4')}</button></div>
+              <div class="text-xs mt-2" style="color:var(--sub);">${challengeConfig.timePerQ === 'No limit' ? 'No time limit' : challengeConfig.timePerQ + ' per question'}</div>
+            </div>
+            <div class="flex gap-3 mb-3">
+              <button onclick="shareChallengeLink('${code}')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Share link</button>
+              <button onclick="copyChallengeLink('${code}')" class="ar-btn flex-1">${Icon('link','w-4 h-4 inline-block mr-1 -mt-0.5')} Copy link</button>
+            </div>
+            <button onclick="startChallengeNow()" class="ar-btn p w-full">Start Challenge Now</button></div>`;
+        }
+
+        // ---- Exam taking (mock test + challenge). Quiz board contexts keep their own UI ----
+        function arPaletteState(i){
+          if (i === examQIndex) return 'cur';
+          if (examMarked[i]) return 'mark';
+          return examAnswers[i] !== undefined ? 'ans' : '';
+        }
+        function arNums(cls){
+          return examTest.questions.map((_, i) => `<button class="ar-n ${arPaletteState(i)}" onclick="examJumpTo(${i})" aria-label="Question ${i + 1}">${i + 1}</button>`).join('');
+        }
+
+        function examTakeHTML(){
+          if (examContext === 'weeklyQuiz' || examContext === 'dailyQuiz') {
+            return examCardOpenIndex === null ? weeklyQuizBoardHTML() : weeklyQuizCardHTML(examCardOpenIndex);
+          }
+          const q = examTest.questions[examQIndex];
+          const total = examTest.questions.length;
+          const sel = examAnswers[examQIndex];
+          const answered = Object.keys(examAnswers).length;
+          const marked = Object.keys(examMarked).filter(k => examMarked[k]).length;
+          const isChallenge = examContext === 'challenge';
+          const opts = q.type === 'written' ? writtenAnswerInputHTML(q, examQIndex, sel)
+            : q.options.map((o, i) => `<button onclick="selectExamOption(${i})" class="ar-opt ${sel === i ? 'on' : ''}"><span class="l">${String.fromCharCode(65 + i)}</span><span class="text-base">${escapeHtml(o)}</span></button>`).join('');
+          const legend = (c, t) => `<span class="inline-flex items-center gap-1.5 text-xs" style="color:var(--sub);font-weight:600;"><i style="width:10px;height:10px;border-radius:3px;background:${c};display:inline-block"></i>${t}</span>`;
+          return `
+            <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
+              <div class="ar-top">
+                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="text-sm font-semibold" style="color:var(--sub);">Exit</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
+                ${examMode === 'timed' ? `<div class="flex items-center gap-2">${examTimerHidden ? '' : `<span class="ar-timer" id="exam-timer-display">${formatExamTime(examTimeLeft)}</span>`}<button onclick="toggleExamTimerHidden()" class="ar-chip" style="padding:.3rem .7rem;">${examTimerHidden ? 'Show' : 'Hide'}</button></div>` : `<span class="ar-chip on">Self-paced</span>`}
+              </div>
+              <div class="ar-strip">${arNums()}</div>
+              <div class="ar-take">
+                <div class="ar-card ar-fade" key="${examQIndex}">
+                  <div class="flex items-center justify-between gap-2 mb-3">
+                    <span class="ar-h" style="margin:0;color:var(--pri);">Question ${examQIndex + 1} of ${total}${q.meta ? ' · ' + escapeHtml(q.meta) : ''}</span>
+                    <button onclick="toggleExamMark()" class="ar-chip ${examMarked[examQIndex] ? 'on' : ''}" style="${examMarked[examQIndex] ? 'color:#dc2626;border-color:#dc2626;background:rgba(220,38,38,.08);' : ''}">${Icon('bookmark','w-3.5 h-3.5 inline-block mr-1 -mt-0.5')}${examMarked[examQIndex] ? 'Marked' : 'Mark for review'}</button>
+                  </div>
+                  <div class="ar-bar mb-4"><i style="width:${Math.round((examQIndex + 1) / total * 100)}%;background:linear-gradient(90deg,#4169e1,#1e90ff)"></i></div>
+                  <div class="text-lg font-semibold leading-snug mb-5">${escapeHtml(q.text)}</div>
+                  ${opts}
+                  <div class="text-xs mt-1" style="color:#b91c1c;font-weight:600;">${Icon('alertTriangle','w-3.5 h-3.5 inline-block mr-1 -mt-0.5')}Stay on this tab. Leaving ends the ${isChallenge ? 'challenge' : 'test'} and locks in your score.</div>
+                </div>
+                <aside class="ar-side ar-card">
+                  <div class="ar-h">${isChallenge ? 'Challenge' : 'Mock test'} progress</div>
+                  <div class="flex items-center justify-between text-sm mb-1"><b>${answered}/${total}</b><span style="color:var(--sub)">answered</span></div>
+                  <div class="ar-bar mb-4"><i style="width:${Math.round(answered / total * 100)}%;background:var(--ok)"></i></div>
+                  <div class="ar-pal mb-4">${arNums()}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:12px;">${legend('#1e90ff','Current')}${legend('#16a34a','Answered')}${legend('#dc2626','Marked')}${legend('rgba(148,163,184,.5)','Not attempted')}</div>
+                  <div class="text-xs" style="color:var(--sub)">${marked} marked for review · ${total - answered} unanswered</div>
+                </aside>
+              </div>
+            </div>
+            </div>
+            <div class="ar-root ar-foot"><div class="ar-foot-in">
+              <button onclick="examGoBack()" class="ar-btn ${examQIndex === 0 ? 'opacity-40 pointer-events-none' : ''}">Back</button>
+              <span class="text-sm font-bold" style="color:var(--sub)">${examQIndex + 1} / ${total}</span>
+              <button onclick="examGoNext(false)" class="ar-btn p">${examQIndex === total - 1 ? 'Submit test' : 'Next'}</button>
+            </div></div>`;
+        }
+
+        // ---- Results ----
+        let examReviewFilter = 'all';
+        function setExamReviewFilter(f){ examReviewFilter = f; renderExamTake(true); }
+
+        function arOutcome(q, i){
+          if (examAnswers[i] === undefined) return 'skip';
+          if (!isExamAnswerGraded(q, i)) return 'grading';
+          return isExamAnswerCorrect(q, i) ? 'ok' : 'bad';
+        }
+
+        function examResultHTML(){
+          const total = examTest.questions.length;
+          const correct = examScore();
+          const pct = total ? Math.round(correct / total * 100) : 0;
+          const isQuiz = examContext === 'dailyQuiz' || examContext === 'weeklyQuiz';
+          const isChallengeVsFriend = examContext === 'challenge' && !!activeChallengeCode;
+          const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="ar-chip ${examResultTab === k ? 'on' : ''}" style="flex:1;padding:.6rem;">${l}</button>`;
+          return `
+            <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
+              <div class="ar-top">${arBack(isQuiz ? "openOverlay('gamification')" : 'closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
+              <div class="ar-fade">
+                ${isQuiz ? quizRewardBannerHTML() : ''}
+                ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}
+                <div class="flex gap-2 mb-4">${tab('overview','Overview')}${tab('review','Review answers')}</div>
+                ${examResultTab === 'overview' ? examResultOverviewHTML() : examResultReviewHTML()}
+              </div>
+            </div></div>
+            <div class="ar-root ar-foot"><div class="ar-foot-in" style="justify-content:stretch;">${examResultFooterHTML()}</div></div>`;
+        }
+
+        function examResultOverviewHTML(){
+          const qs = examTest.questions, total = qs.length, correct = examScore();
+          const c = { ok: 0, bad: 0, skip: 0, grading: 0 };
+          qs.forEach((q, i) => c[arOutcome(q, i)]++);
+          const pct = total ? Math.round(correct / total * 100) : 0;
+          const verdict = pct >= 85 ? 'Outstanding work' : pct >= 70 ? 'Solid performance' : pct >= 40 ? 'Getting there' : 'Keep practising';
+          const topics = arTopicStats();
+          const weakest = topics.length > 1 ? topics[topics.length - 1] : null;
+          const prev = examContext === 'test' ? mockTestScoreHistory[1] : null;
+          const hist = examContext === 'test' ? mockTestScoreHistory.slice(0, 8).reverse() : [];
+          return `
+            ${c.grading ? `<div class="ar-card mb-3 text-center text-sm font-semibold" style="background:var(--soft);border:0;">${Icon('bolt','w-4 h-4 inline-block mr-1 -mt-0.5')} Grading ${c.grading} written answer${c.grading === 1 ? '' : 's'}&hellip;</div>` : ''}
+            <div class="ar-card mb-3 flex items-center gap-5 flex-wrap justify-center">
+              ${arDonut([{ v: c.ok, c: '#16a34a' }, { v: c.bad, c: '#dc2626' }, { v: c.skip + c.grading, c: '#94a3b8' }], pct + '%', correct + ' / ' + total)}
+              <div style="min-width:180px;flex:1;">
+                <div class="text-xl font-bold mb-1">${verdict}</div>
+                <div class="text-sm mb-3" style="color:var(--sub)">You answered ${total - c.skip} of ${total} questions.${prev ? ` Previous test: ${prev.total ? Math.round(prev.correct / prev.total * 100) : 0}%.` : ''}</div>
+                ${weakest ? `<div class="text-sm" style="color:var(--sub)">Focus next on <b style="color:var(--tx)">${escapeHtml(weakest.name)}</b> (${weakest.pct}%).</div>` : ''}
+              </div>
+            </div>
+            <div class="ar-grid ar-g4 mb-3">${arStatTile('Correct', c.ok, '#16a34a')}${arStatTile('Incorrect', c.bad, '#dc2626')}${arStatTile('Skipped', c.skip, '#64748b')}${arStatTile('Accuracy', pct + '%', '#1e90ff')}</div>
+            <div class="ar-cols">
+              <div class="ar-card mb-3"><div class="ar-h">Score by topic</div>${arBars(topics.map(t => ({ label: t.name, pct: t.pct, text: t.c + '/' + t.n, color: t.pct >= 70 ? '#16a34a' : t.pct >= 40 ? '#f59e0b' : '#dc2626' })))}</div>
+              <div class="ar-card mb-3"><div class="ar-h">Question map</div>
+                <div class="ar-pal">${qs.map((q, i) => { const o = arOutcome(q, i); return `<button class="ar-n" style="${o === 'ok' ? 'background:#16a34a;color:#fff' : o === 'bad' ? 'background:#dc2626;color:#fff' : ''}" onclick="examReviewFilter='all';examResultTab='review';renderExamTake();setTimeout(()=>{const e=document.getElementById('ar-q-${i}');if(e)e.scrollIntoView({behavior:'smooth',block:'center'})},60)">${i + 1}</button>`; }).join('')}</div>
+                ${hist.length > 1 ? `<div class="ar-h" style="margin-top:16px;">Your trend</div>${arLine(hist.map(r => r.total ? Math.round(r.correct / r.total * 100) : 0), hist.map(r => r.title))}` : ''}
+              </div>
+            </div>`;
+        }
+
+        function examResultReviewHTML(){
+          const qs = examTest.questions;
+          const f = examReviewFilter;
+          const keep = (q, i) => f === 'all' || (f === 'bad' && arOutcome(q, i) === 'bad') || (f === 'skip' && arOutcome(q, i) === 'skip') || (f === 'mark' && examMarked[i]);
+          const chip = (k, l) => `<button class="ar-chip ${f === k ? 'on' : ''}" onclick="setExamReviewFilter('${k}')">${l}</button>`;
+          const cards = qs.map((q, i) => {
+            if (!keep(q, i)) return '';
+            const o = arOutcome(q, i), sel = examAnswers[i], written = q.type === 'written';
+            const badge = { ok: ['Correct', '#16a34a'], bad: ['Incorrect', '#dc2626'], skip: ['Skipped', '#64748b'], grading: ['Grading…', '#1e90ff'] }[o];
+            const fb = written && examWrittenGrades[i] ? examWrittenGrades[i].feedback : '';
+            const body = written
+              ? `<div class="text-sm mb-1" style="color:var(--sub)">Your answer: <b style="color:var(--tx)">${sel === undefined ? 'Skipped' : escapeHtml(sel)}</b></div>${o === 'bad' || o === 'skip' ? `<div class="text-sm" style="color:#16a34a">Model answer: <b>${escapeHtml(q.answer || '')}</b></div>` : ''}${fb ? `<div class="text-xs mt-1" style="color:var(--sub)">${escapeHtml(fb)}</div>` : ''}`
+              : q.options.map((opt, oi) => `<div class="ar-opt ${oi === q.correct ? 'ok' : (oi === sel ? 'no' : '')}" style="margin-bottom:8px;padding:10px 12px;"><span class="l">${String.fromCharCode(65 + oi)}</span><span class="text-sm flex-1">${escapeHtml(opt)}</span>${oi === q.correct ? Icon('check','w-4 h-4') : (oi === sel ? Icon('close','w-4 h-4') : '')}</div>`).join('');
+            return `<div class="ar-card mb-3" id="ar-q-${i}"><div class="flex items-start justify-between gap-2 mb-3"><div class="text-sm font-semibold">${i + 1}. ${escapeHtml(q.text)}</div><span class="flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full" style="background:${badge[1]}1f;color:${badge[1]}">${badge[0]}</span></div>${body}${examMarked[i] ? `<div class="text-xs mt-1" style="color:#dc2626;font-weight:700">Marked for review</div>` : ''}</div>`;
+          }).join('');
+          return `<div class="flex gap-2 mb-3 flex-wrap">${chip('all','All')}${chip('bad','Incorrect')}${chip('skip','Skipped')}${chip('mark','Marked')}</div>${cards || '<div class="ar-card text-center" style="color:var(--sub)">Nothing here. Nice.</div>'}`;
+        }
+
+        // ---- Winner / head-to-head cards ----
+        function arVsHTML(opts){
+          const { me, opp, total, oppName, bg, headline, icon, extra } = opts;
+          const sum = Math.max(me + opp, 1);
+          return `
+            <div class="ar-vs ar-fade mb-4" style="background:${bg};">
+              <div class="flex items-center justify-between mb-4"><div class="font-bold text-xl font-display">${headline}</div>${Icon(icon, 'w-7 h-7')}</div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="text-center flex-1"><div style="font-size:2.2rem;font-weight:800;line-height:1">${me}<span style="font-size:1rem;opacity:.7">/${total}</span></div><div class="text-xs opacity-80 mt-1">You</div></div>
+                <div class="text-xs font-bold opacity-70 px-2">VS</div>
+                <div class="text-center flex-1"><div style="font-size:2.2rem;font-weight:800;line-height:1">${opp}<span style="font-size:1rem;opacity:.7">/${total}</span></div><div class="text-xs opacity-80 mt-1 truncate">${escapeHtml(oppName)}</div></div>
+              </div>
+              <div style="display:flex;height:10px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.2)"><i style="width:${me / sum * 100}%;background:#fff"></i><i style="width:${opp / sum * 100}%;background:rgba(255,255,255,.45)"></i></div>
+              ${extra || ''}
+            </div>`;
+        }
+
+        function liveMatchResultHTML(){
+          const opponent = quizOpponent || quizOpponentPool[0];
+          const total = examTest.questions.length, correct = examScore();
+          const won = quizCoinResult === 'win';
+          const isFriend = opponent.id && quizFriends.some(f => f.id === opponent.id);
+          return arVsHTML({
+            me: correct, opp: quizOpponentScore, total, oppName: opponent.name, icon: won ? 'trophy' : 'block',
+            headline: won ? 'You Won!' : `${escapeHtml(opponent.name)} Wins`,
+            bg: won ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)',
+            extra: `<div class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 font-bold mt-4" style="background:rgba(255,255,255,.16)">${Icon('coin','w-4 h-4')} ${quizCoinDelta >= 0 ? '+' : ''}${quizCoinDelta} coins</div>
+              <button onclick="quizAddFriendFromResult()" class="w-full flex items-center justify-center gap-2 font-bold py-2.5 rounded-2xl mt-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}" style="background:rgba(255,255,255,.18);color:#fff;">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>`
+          });
+        }
+
+        function challengeMatchResultHTML(){
+          const total = examTest.questions.length, correct = examScore();
+          if (challengeOpponentScore === null) {
+            return `<div class="ar-card mb-4 text-center" style="background:var(--soft);border:0;">
+              <div class="font-bold mb-1">Waiting for your friend to finish…</div>
+              <div class="text-sm" style="color:var(--sub)">Your score (${correct}/${total}) is locked in. We'll reveal the winner as soon as they submit.</div>
+              <div class="ar-bar mt-3"><i style="width:40%;background:linear-gradient(90deg,#4169e1,#1e90ff);animation:arIn 1s ease infinite alternate"></i></div></div>`;
+          }
+          const won = correct > challengeOpponentScore, tied = correct === challengeOpponentScore;
+          return arVsHTML({
+            me: correct, opp: challengeOpponentScore, total, oppName: 'Your Friend',
+            headline: tied ? "It's a Tie!" : (won ? 'You Won!' : 'Your Friend Wins'), icon: tied ? 'flag' : (won ? 'trophy' : 'block'),
+            bg: tied ? 'linear-gradient(135deg,#6b7280,#4b5563)' : (won ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)')
+          });
+        }

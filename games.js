@@ -864,44 +864,49 @@ let userPoints = 0;
         }
 
         // ---- Leaderboard + achievements ----
-        function leaderboardHTML(){
-          const medalColors = ['#f59e0b', '#9ca3af', '#b45309'];
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${gamificationSubHeaderHTML('Leaderboard')}
-              <div class="p-5 space-y-4">
-                <div class="rounded-3xl p-5 text-white relative overflow-hidden" style="background:linear-gradient(135deg,#4338ca,#7c3aed,#c026d3);">
-                  <div class="text-xs font-semibold uppercase tracking-wide text-white/70 mb-3">This week's king of the Quiz</div>
-                  <div class="flex items-center gap-3">
-                    <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">${Icon('user','w-7 h-7')}</div>
-                    <div class="flex-1 min-w-0">
-                      <div class="font-bold text-lg font-display truncate">${getQuizChampion().name}${getQuizChampion().me ? ' (You)' : ''}</div>
-                      <div class="flex items-center gap-1.5 text-sm text-white/85">${Icon('gem','w-4 h-4')} ${getQuizChampion().pts.toLocaleString()} points</div>
-                    </div>
-                    ${Icon('crown','w-8 h-8 text-amber-300 flex-shrink-0')}
-                  </div>
-                </div>
 
-                <div class="bg-white rounded-3xl p-5 shadow-sm">
-                  <div class="text-lg font-bold text-[${NAVY}] font-display mb-3">Top players</div>
-                  <div class="divide-y divide-gray-100">
-                    ${leaderboard.map((p, i) => `
-                      <div class="flex items-center gap-3 py-3.5 ${p.me ? 'rounded-xl' : ''}" ${p.me ? `style="background:rgba(37,99,235,0.07);margin:0 -0.75rem;padding-left:0.75rem;padding-right:0.75rem;"` : ''}>
-                        <div class="w-7 flex-shrink-0 flex items-center justify-center font-bold text-sm" style="color:${i < 3 ? medalColors[i] : '#9ca3af'};">
-                          ${i < 3 ? Icon('trophy','w-5 h-5') : (i + 1)}
-                        </div>
-                        <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-[${NAVY}]">${Icon('user','w-4 h-4')}</div>
-                        <div class="flex-1 min-w-0">
-                          <div class="font-semibold text-sm truncate" style="color:${p.me ? NAVY : '#374151'};">${escapeHtml(p.name)}${p.me ? ' (You)' : ''}</div>
-                        </div>
-                        <div class="text-sm font-bold flex-shrink-0" style="color:#92720f;">${p.pts.toLocaleString()}</div>
-                      </div>
-                    `).join('')}
+        function leaderboardHTML(){
+          const top = leaderboard.slice(0, 3), max = Math.max(1, ...leaderboard.map(p => p.pts));
+          const cols = ['#f59e0b', '#94a3b8', '#b45309'], order = [1, 0, 2], heights = ['70%', '100%', '52%'];
+          const pod = order.filter(i => top[i]).map(i => `<div style="height:${heights[order.indexOf(i)]};background:linear-gradient(180deg,${cols[i]},${cols[i]}cc);">
+              ${i === 0 ? Icon('crown','w-6 h-6') : ''}<div style="font-size:1.4rem;">${i + 1}</div>
+              <div class="text-xs px-1 text-center" style="word-break:break-word;">${escapeHtml(top[i].name)}${top[i].me && top[i].name !== 'You' ? ' (You)' : ''}</div>
+              <div class="text-xs" style="opacity:.9">${top[i].pts.toLocaleString()}</div></div>`).join('');
+          const myIdx = leaderboard.findIndex(p => p.me);
+          return `
+            <div class="ar-root ar-page"><div class="ar-in">
+              ${gamificationSubHeaderHTML('Leaderboard')}
+              <div class="ar-cols">
+                <div>
+                  <div class="rounded-3xl p-5 text-white mb-3" style="background:linear-gradient(135deg,#4338ca,#7c3aed,#c026d3);">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-white/70 mb-3">This week's king of the Quiz</div>
+                    <div class="flex items-center gap-3">
+                      <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">${Icon('user','w-7 h-7')}</div>
+                      <div class="flex-1 min-w-0"><div class="font-bold text-lg font-display truncate">${escapeHtml(getQuizChampion().name)}${getQuizChampion().me && getQuizChampion().name !== 'You' ? ' (You)' : ''}</div>
+                        <div class="flex items-center gap-1.5 text-sm text-white/85">${Icon('gem','w-4 h-4')} ${getQuizChampion().pts.toLocaleString()} points</div></div>
+                      ${Icon('crown','w-8 h-8 text-amber-300 flex-shrink-0')}
+                    </div>
                   </div>
+                  <div class="ar-card mb-3"><div class="ar-h">Podium</div><div class="ar-pod">${pod || '<div style="color:var(--sub)">No players yet</div>'}</div>
+                    ${myIdx >= 0 ? `<div class="text-sm text-center mt-3" style="color:var(--sub)">You're <b style="color:var(--pri)">#${myIdx + 1}</b>${myIdx > 0 ? ` · ${(leaderboard[myIdx - 1].pts - leaderboard[myIdx].pts).toLocaleString()} pts behind #${myIdx}` : ' · top of the board'}</div>` : ''}</div>
+                </div>
+                <div class="ar-card mb-3">
+                  <div class="ar-h">Points chart · top ${Math.min(leaderboard.length, 10)}</div>
+                  ${arBars(leaderboard.slice(0, 10).map((p, i) => ({ label: (i + 1) + '. ' + p.name + (p.me && p.name !== 'You' ? ' (You)' : ''), pct: p.pts / max * 100, text: p.pts.toLocaleString(), color: p.me ? '#1e90ff' : (cols[i] || '#94a3b8') })))}
                 </div>
               </div>
-            </div>`;
+              <div class="ar-card">
+                <div class="ar-h">All players</div>
+                <div class="divide-y divide-gray-100">${leaderboard.map((p, i) => `
+                  <div class="flex items-center gap-3 py-3" ${p.me ? 'style="background:rgba(37,99,235,.07);margin:0 -.75rem;padding-left:.75rem;padding-right:.75rem;border-radius:12px;"' : ''}>
+                    <div class="w-7 text-center font-bold text-sm" style="color:${cols[i] || '#9ca3af'}">${i < 3 ? Icon('trophy','w-5 h-5') : i + 1}</div>
+                    <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
+                    <div class="flex-1 min-w-0 font-semibold text-sm truncate">${escapeHtml(p.name)}${p.me && p.name !== 'You' ? ' (You)' : ''}</div>
+                    <div class="text-sm font-bold" style="color:#92720f">${p.pts.toLocaleString()}</div></div>`).join('')}</div>
+              </div>
+            </div></div>`;
         }
+
 
         function achievementsHTML(){
           const badges = getBadges();
