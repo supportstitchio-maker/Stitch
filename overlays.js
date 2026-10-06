@@ -556,6 +556,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const wasAIClass = currentOverlayKind === 'aiClass';
           if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[currentOverlayKind]) resetStitchPageTitle();
           pauseAllOverlayMedia();
+          if (typeof stopMeetingJoinPreview === 'function') stopMeetingJoinPreview();
           currentOverlayKind = null;
           overlayReturnTo = null;
           updateUtilityNavActive();

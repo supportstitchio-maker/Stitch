@@ -6063,24 +6063,22 @@ try {
               </div>` : ''}
             </div>`;
           }
+          // Live lecture: same white panel as the scheduled one (no blue), title + "Live now" on the
+          // left, link + Join/Return on the right
           return `
-            <div class="rounded-3xl p-4 mb-3 shadow-sm ${isLive ? 'text-white' : 'bg-white'}" style="${isLive ? 'background:linear-gradient(135deg,#2563eb,#1d4ed8);' : ''}">
-              <div class="flex items-center gap-3">
-                <span class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${isLive ? 'cu-soft-btn' : 'bg-blue-50 text-[' + NAVY + ']'}">${Icon('video','w-5 h-5')}</span>
-                <div class="min-w-0 flex-1">
-                  <div class="font-semibold text-sm truncate">${escapeHtml(l.title)}</div>
-                  <div class="text-xs ${isLive ? 'text-white/80' : 'text-gray-400'}">${isLive ? 'Live now' : formatReminderDate(l.date) + ' · ' + formatTime12(l.time)}</div>
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white mb-3">
+              <div class="flex items-center gap-3 px-4 py-3 select-none">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(l.title)}</div>
+                  <div class="text-xs text-gray-500 truncate">Live now</div>
                 </div>
-                ${isLive
-                  ? `<div class="flex items-center gap-2 flex-shrink-0">
-                      <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full cu-soft-btn flex items-center justify-center flex-shrink-0">${Icon('link','w-4 h-4')}</button>
-                      ${isMineMinimized
-                        ? `<button onclick="resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Return</button>`
-                        : `<button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Join</button>`}
-                    </div>`
-                  : lectureCountdownSlotHTML(l, isTeacher)}
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('link','w-4 h-4')}</button>
+                  ${isMineMinimized
+                    ? `<button onclick="resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Return</button>`
+                    : `<button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Join</button>`}
+                </div>
               </div>
-              ${!isLive && isTeacher ? `<button onclick="cancelScheduledLecture('${l.id}')" class="text-xs font-semibold text-red-500 mt-2">Cancel class meeting</button>` : ''}
             </div>`;
         }
 
@@ -7847,7 +7845,7 @@ try {
                 <button onclick="${(isWhiteboard && isTeacher) ? 'toggleLectureWhiteboard()' : 'minimizeLecture()'}" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
                 <div class="cu-title">
                   <div class="cu-title-name">${escapeHtml(headerLabel)}</div>
-                  <div class="cu-status"><span class="cu-dot"></span><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
+                  <div class="cu-status"><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
                 </div>
                 ${!isDesktopLecture ? `
                 <button onclick="toggleLectureResourcesPanel()" title="Class Pad" class="cu-glass">

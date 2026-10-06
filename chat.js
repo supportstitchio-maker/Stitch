@@ -6583,7 +6583,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker }));
           }
           if (isMeetingCall) {
-            ctls.push(cuCtlHTML({ id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dots', label: 'More', on: !!meetingSheet }));
+            ctls.push(cuCtlHTML({ id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet }));
           } else {
             ctls.push(cuCtlHTML({ onclick: 'openAddToCall()', icon: 'personPlus', label: 'Add' }));
           }
@@ -6608,7 +6608,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (callState.statusOverride) {
             statusHTML = `<span class="cu-dot cu-dot-warn"></span>${escapeHtml(callState.statusOverride)}`;
           } else if (callState.connected) {
-            statusHTML = `<span class="cu-dot"></span>${(isMeetingCall || isGroup) ? `${peopleCount} in ${isMeetingCall ? 'meeting' : 'call'} · ` : ''}<span id="call-timer">${formatCallTime(callState.seconds)}</span>`;
+            statusHTML = `${(isMeetingCall || isGroup) ? `${peopleCount} in ${isMeetingCall ? 'meeting' : 'call'} · ` : ''}<span id="call-timer">${formatCallTime(callState.seconds)}</span>`;
           } else {
             statusHTML = `<span class="cu-dot cu-dot-warn"></span>${isVideo ? 'Video calling…' : 'Calling…'}`;
           }
@@ -6654,6 +6654,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let pendingMeetingError = null;   // 'not_found' | 'offline' | null
         let meetingJoinPollTimer = null;
         let meetingJoinCamOn = true;
+        let meetingJoinPreviewStream = null;
+        function stopMeetingJoinPreview(){
+          if (meetingJoinPreviewStream) {
+            try { meetingJoinPreviewStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            meetingJoinPreviewStream = null;
+          }
+        }
+        async function syncMeetingJoinPreview(){
+          const v = document.getElementById('mj-preview-video');
+          if (!v || currentOverlayKind !== 'meetingJoin') { stopMeetingJoinPreview(); return; }
+          if (!meetingJoinCamOn) { stopMeetingJoinPreview(); v.srcObject = null; return; }
+          if (!meetingJoinPreviewStream) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            try {
+              const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+              if (!meetingJoinCamOn || currentOverlayKind !== 'meetingJoin') { st.getTracks().forEach(t => t.stop()); return; }
+              meetingJoinPreviewStream = st;
+            } catch (e) { return; }
+          }
+          const cur = document.getElementById('mj-preview-video');
+          if (cur && cur.srcObject !== meetingJoinPreviewStream) { cur.srcObject = meetingJoinPreviewStream; try { cur.play(); } catch (e) {} }
+        }
         function toggleMeetingJoinCamera(){
           meetingJoinCamOn = !meetingJoinCamOn;
           const ov = document.getElementById('overlay');
@@ -7085,16 +7107,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
           if (m.state === 'live' || isAdmin) {
             const label = m.state === 'live' ? 'Join meeting' : 'Start meeting now';
-            const sub = m.state === 'live' ? 'Choose how you want to join.' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
+            const sub = m.state === 'live' ? '' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
             const camRow = `
-              <button onclick="toggleMeetingJoinCamera()" class="w-full max-w-xs flex items-center justify-between rounded-2xl px-4 py-3 mb-5" style="background:rgba(30,144,255,0.08);">
+              <button onclick="toggleMeetingJoinCamera()" class="w-full max-w-xs flex items-center justify-between rounded-2xl px-4 py-3 mb-4" style="background:rgba(30,144,255,0.08);">
                 <span class="text-sm font-semibold" style="color:${NAVY};">Camera</span>
                 <span style="width:46px;height:28px;border-radius:999px;position:relative;flex-shrink:0;transition:background .2s;background:${meetingJoinCamOn ? '#1e90ff' : '#c4c9d2'};">
                   <span style="position:absolute;top:3px;left:${meetingJoinCamOn ? '21px' : '3px'};width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);"></span>
                 </span>
               </button>`;
-            const headNoCam = m.kind === 'live' ? head.replace(/<div class="w-16 h-16[\s\S]*?<\/div>/, '') : head;
-            return shell(`${headNoCam}<div class="text-sm text-gray-500 mb-5 mt-1 leading-relaxed">${sub}</div>${camRow}${primary(label, 'joinPendingMeeting(meetingJoinCamOn)')}${closeBtn('Not now')}`);
+            const preview = `
+              <div class="w-full max-w-xs flex-1 min-h-0 rounded-3xl overflow-hidden relative my-4" style="background:#0f1115;">
+                <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
+                ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2" style="color:#9ca3af;">${Icon('video','w-8 h-8')}<div class="text-sm font-semibold">Camera is off</div></div>`}
+              </div>`;
+            setTimeout(syncMeetingJoinPreview, 0);
+            return `<div class="flex-1 flex flex-col items-center px-6 pb-6 text-center min-h-0" style="padding-top:var(--top-safe-pad);">
+              <div class="w-full flex items-center justify-start pt-3 pb-2">
+                <button onclick="closeOverlay()" title="Back" class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(0,0,0,0.06);">${IconBold('back','w-5 h-5')}</button>
+              </div>
+              <div class="text-xl font-bold font-display mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
+              ${hostLine ? `<div class="text-xs text-gray-400">${hostLine}</div>` : ''}
+              ${sub ? `<div class="text-sm text-gray-500 mt-2 leading-relaxed">${sub}</div>` : ''}
+              ${preview}
+              ${camRow}${primary(label, 'joinPendingMeeting(meetingJoinCamOn)')}
+            </div>`;
           }
           // Upcoming, regular guest: ask whether to be reminded
           const reminded = !!m.reminded;
@@ -7135,6 +7171,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         async function joinPendingMeeting(camOn){
           const info = pendingMeetingInfo;
           if (!info) return;
+          stopMeetingJoinPreview();
           const sb = getSupabaseClient();
           if (!sb) { openAppAlertModal("Couldn't join the meeting right now. Check your connection and try again."); return; }
           try {
