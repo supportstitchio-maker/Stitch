@@ -5428,13 +5428,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return !!(meta && meta.icon === 'users');
         }
 
-        async function startCall(id, type, answering){
+        async function startCall(id, type, answering, opts){
           if (!id) return;
           clearCallTimers();
           stopCallLocalStream();
           teardownCallSignaling();
           groupCallFullscreenId = null;
-          callState = { convoId: id, type, connected: false, seconds: 0, muted: false, speaker: false, camOff: false, mediaError: null, statusOverride: null, pendingRingTargets: null };
+          callState = { convoId: id, type, connected: false, seconds: 0, muted: false, speaker: false, camOff: !!(opts && opts.camOff), mediaError: null, statusOverride: null, pendingRingTargets: null };
           openOverlay('call');
           refreshConvoAvatarFromProfile(id);
 
@@ -5891,6 +5891,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!payload || payload.from === myCallPeerId) return;
           if (payload.to && payload.to !== myCallPeerId) return;
           if (payload.kind === 'meeting_end') { meetingHandleEndSignal(); return; }
+          if (payload.kind === 'meeting_reaction' || payload.kind === 'meeting_comment') { meetingReceiveExtra(payload); return; }
           if (payload.kind === 'join' || payload.kind === 'here') {
             const entry = callPeers[payload.from] || (callPeers[payload.from] = { pc: null, stream: null, role: null, pendingIce: [], remoteDescSet: false, userId: null, connected: false });
             entry.userId = payload.userId || entry.userId;
@@ -6306,9 +6307,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${isVideo ? `<button onclick="toggleCallControl('camOff')" id="call-secondary-btn" title="Camera" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.camOff ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('video','w-5 h-5')}</button>` : `<button onclick="toggleCallControl('speaker')" id="call-secondary-btn" title="Speaker" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.speaker ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('bell','w-5 h-5')}</button>`}
                   <button onclick="toggleCallControl('muted')" id="call-mute-btn" title="Mute" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.muted ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('mic','w-5 h-5')}</button>
                   <button onclick="endCall()" title="${isMeetingCall ? 'Leave meeting' : 'End call'}" class="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center">${Icon('phoneHangup','w-5 h-5')}</button>
-                  ${isMeetingCall && activeMeeting && activeMeeting.isAdmin ? `<button onclick="confirmEndMeetingForAll()" title="End for everyone" class="w-11 h-11 rounded-full bg-white flex items-center justify-center text-red-500 shadow-sm">${Icon('close','w-5 h-5')}</button>` : ''}
+                  ${isMeetingCall ? `<button onclick="toggleMeetingMenu()" id="meeting-more-btn" title="More" class="w-11 h-11 rounded-full bg-white flex items-center justify-center text-gray-700 shadow-sm">${Icon('dots','w-5 h-5')}</button>` : ''}
                 </div>
               </div>
+              ${isMeetingCall ? meetingOverlaysHTML() : ''}
             </div>`;
         }
 
@@ -6332,6 +6334,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let pendingMeetingInfo = null;    // get_meeting_by_code result (null while loading)
         let pendingMeetingError = null;   // 'not_found' | 'offline' | null
         let meetingJoinPollTimer = null;
+        let meetingJoinStep = 'info';     // 'info' | 'camera' (asks how to join before entering)
         let myUpcomingMeetings = null;    // list_my_meetings result for the "+" menu (null = loading)
         let activeMeeting = null;         // the meeting currently on the call screen
         let meetingEndTimer = null;
@@ -6519,6 +6522,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <span class="block text-sm font-semibold text-gray-800 truncate">${escapeHtml(p.name)}</span>
                   ${p.username ? `<span class="block text-xs text-gray-400 truncate">@${escapeHtml(p.username)}</span>` : ''}
                 </span>
+                <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="${on ? `background:${ROYAL};border:2px solid ${ROYAL};` : 'border:2px solid #d1d5db;'}">${on ? '<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : ''}</span>
               </button>`;
           }).join('');
         }
@@ -6686,6 +6690,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!pendingMeetingCode) return;
           pendingMeetingInfo = null;
           pendingMeetingError = null;
+          meetingJoinStep = 'info';
           openOverlay('meetingJoin');
           refreshPendingMeeting();
         }
@@ -6754,9 +6759,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">This meeting has ended.</div>${closeBtn('Close')}`);
           }
           if (m.state === 'live' || isAdmin) {
+            if (meetingJoinStep === 'camera') {
+              return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">How do you want to join?</div>
+                ${primary('Join with camera on', 'joinPendingMeeting(true)')}
+                <button onclick="joinPendingMeeting(false)" class="w-full max-w-xs font-semibold py-3 rounded-full mb-3" style="background:rgba(30,144,255,0.1);color:${NAVY};">Join with camera off</button>
+                <button onclick="setMeetingJoinStep('info')" class="text-sm font-semibold text-gray-400 mt-1">Back</button>`);
+            }
             const label = m.state === 'live' ? 'Join meeting' : 'Start meeting now';
             const sub = m.state === 'live' ? 'You can join with your camera and mic.' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
-            return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">${sub}</div>${primary(label, 'joinPendingMeeting()')}${closeBtn('Not now')}`);
+            return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">${sub}</div>${primary(label, "setMeetingJoinStep('camera')")}${closeBtn('Not now')}`);
           }
           // Upcoming, regular guest: ask whether to be reminded
           const reminded = !!m.reminded;
@@ -6787,7 +6798,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
         }
 
-        async function joinPendingMeeting(){
+        function setMeetingJoinStep(step){
+          meetingJoinStep = step;
+          const ov = document.getElementById('overlay');
+          if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
+        }
+
+        // camOn: true = join with the camera on, false = join with it off
+        async function joinPendingMeeting(camOn){
           const info = pendingMeetingInfo;
           if (!info) return;
           const sb = getSupabaseClient();
@@ -6798,6 +6816,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error) {
               if (/meeting_ended/.test(error.message || '')) {
                 pendingMeetingInfo = Object.assign({}, info, { state: 'ended' });
+                meetingJoinStep = 'info';
                 const ov = document.getElementById('overlay');
                 if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
                 return;
@@ -6805,7 +6824,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               throw error;
             }
             const m = normalizeMeeting(data);
-            openMeetingCall(m ? Object.assign({ status: 'ok' }, m) : info);
+            openMeetingCall(m ? Object.assign({ status: 'ok' }, m) : info, { camOff: camOn === false });
           } catch (e) {
             console.warn('join_meeting failed:', e);
             openAppAlertModal("Couldn't join the meeting. Please try again.");
@@ -6813,7 +6832,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Into the call screen ----
-        function openMeetingCall(info){
+        function openMeetingCall(info, opts){
           if (callState.convoId && !isMeetingConvo(callState.convoId)) {
             openAppAlertModal('Finish your current call before joining a meeting.');
             return;
@@ -6835,7 +6854,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           };
           pendingMeetingCode = null; pendingMeetingInfo = null;
           stopMeetingJoinPoll();
-          startCall(id, 'video', true);
+          startCall(id, 'video', true, opts);
         }
 
         // One hour hard stop -- never announced up front; the call simply wraps up.
@@ -6858,7 +6877,165 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (meetingEndTimer) { clearTimeout(meetingEndTimer); meetingEndTimer = null; }
           const id = activeMeeting ? 'meeting:' + activeMeeting.code : null;
           if (id && convoMeta[id]) delete convoMeta[id];
+          meetingSheet = ''; meetingFloatReactions = []; meetingFloatComments = []; meetingCommentFocused = false;
           activeMeeting = null;
+        }
+
+        // ---- In-meeting extras: reactions + messages, opened from the three-dots button ----
+        let meetingSheet = '';              // '' | 'menu' | 'reactions' | 'comment'
+        let meetingFloatReactions = [];
+        let meetingFloatComments = [];
+        const MEETING_REACTIONS = [
+          { icon: 'clap', label: 'Clap', color: '#f59e0b' },
+          { icon: 'thumbsUp', label: 'Like', color: '#2563eb' },
+          { icon: 'heart', label: 'Love', color: '#dc2626' },
+          { icon: 'laugh', label: 'Haha', color: '#f59e0b' },
+          { icon: 'wow', label: 'Wow', color: '#7c3aed' },
+          { icon: 'party', label: 'Celebrate', color: '#16a34a' },
+        ];
+
+        function meetingMyName(){
+          return (typeof profileData !== 'undefined' && profileData && profileData.name) || 'Someone';
+        }
+
+        function meetingReactionsFloatHTML(){
+          return meetingFloatReactions.map(r => `
+            <span class="lecture-reaction-float flex items-center gap-1.5 bg-white shadow-md rounded-full" style="padding:10px;">
+              <span class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#f9fafb;color:${r.color};">${Icon(r.icon, 'w-4 h-4')}</span>
+              <span class="text-xs font-semibold text-gray-700 truncate max-w-[130px]">${escapeHtml(r.name || '')}</span>
+            </span>`).join('');
+        }
+
+        function meetingCommentsFloatHTML(){
+          return meetingFloatComments.map(c => `
+            <span class="lecture-reaction-float flex items-start gap-1.5 bg-white shadow-md rounded-2xl" style="max-width:220px;padding:10px;animation-duration:6s;">
+              <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background:${NAVY};">${escapeHtml((c.name || '?').slice(0, 1).toUpperCase())}</span>
+              <span class="min-w-0">
+                <span class="block text-[11px] font-bold text-gray-900 truncate">${escapeHtml(c.name || '')}</span>
+                <span class="block text-xs text-gray-700 break-words">${escapeHtml(c.text || '')}</span>
+              </span>
+            </span>`).join('');
+        }
+
+        function meetingSheetHTML(){
+          if (!activeMeeting) return '';
+          const backdrop = `<div class="fixed inset-0 z-30" onclick="closeMeetingSheet()"></div>`;
+          if (meetingSheet === 'menu') {
+            const row = (icon, label, action, red) => `
+              <button onclick="${action}" class="w-full flex items-center gap-3 px-4 py-3 text-left ${red ? 'text-red-500' : 'text-gray-800'}">
+                ${Icon(icon, 'w-5 h-5')}<span class="text-sm font-semibold">${label}</span>
+              </button>`;
+            return `${backdrop}
+              <div class="fixed z-40 bg-white rounded-2xl shadow-lg overflow-hidden" style="bottom:128px;right:20px;min-width:230px;">
+                ${row('clap', 'Reactions', "setMeetingSheet('reactions')")}
+                ${row('comment', 'Send a message', "setMeetingSheet('comment')")}
+                ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
+              </div>`;
+          }
+          if (meetingSheet === 'reactions') {
+            return `${backdrop}
+              <div class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:128px;left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
+                ${MEETING_REACTIONS.map(r => `<button onclick="sendMeetingReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100" style="color:${r.color};">${Icon(r.icon, 'w-5 h-5')}</button>`).join('')}
+              </div>`;
+          }
+          if (meetingSheet === 'comment') {
+            return `${backdrop}
+              <div id="meeting-comment-sheet" class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:128px;left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
+                <input id="meeting-comment-input" type="text" placeholder="Type a message..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingComment();}" onfocus="meetingCommentFocus(true)" onblur="meetingCommentFocus(false)">
+                <button onclick="sendMeetingComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send', 'w-4 h-4')}</button>
+              </div>`;
+          }
+          return '';
+        }
+
+        // Floating reactions/messages + the sheets, drawn inside the call screen
+        function meetingOverlaysHTML(){
+          return `
+            <div id="meeting-reactions-float" class="fixed flex flex-col items-end gap-1 z-20" style="bottom:140px;right:14px;pointer-events:none;">${meetingReactionsFloatHTML()}</div>
+            <div id="meeting-comments-float" class="fixed flex flex-col items-start gap-1 z-20" style="bottom:140px;left:14px;pointer-events:none;max-width:220px;">${meetingCommentsFloatHTML()}</div>
+            <div id="meeting-sheets-region">${meetingSheetHTML()}</div>`;
+        }
+
+        function updateMeetingSheet(){
+          const el = document.getElementById('meeting-sheets-region');
+          if (el) el.innerHTML = meetingSheetHTML();
+          if (meetingSheet === 'comment') setTimeout(() => { const i = document.getElementById('meeting-comment-input'); if (i) i.focus(); }, 0);
+        }
+        function setMeetingSheet(name){ meetingSheet = name; updateMeetingSheet(); }
+        function closeMeetingSheet(){ setMeetingSheet(''); }
+        function toggleMeetingMenu(){ setMeetingSheet(meetingSheet === 'menu' ? '' : 'menu'); }
+
+        // Keep the message box above the on-screen keyboard
+        let meetingCommentFocused = false;
+        function meetingCommentFocus(on){ meetingCommentFocused = on; syncMeetingCommentInset(); }
+        function syncMeetingCommentInset(){
+          const sheet = document.getElementById('meeting-comment-sheet');
+          if (!sheet) return;
+          if (!meetingCommentFocused) { sheet.style.bottom = '128px'; return; }
+          const vv = window.visualViewport;
+          const inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+          sheet.style.bottom = (inset + 10) + 'px';
+        }
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', syncMeetingCommentInset);
+          window.visualViewport.addEventListener('scroll', syncMeetingCommentInset);
+        }
+
+        function addMeetingFloatReaction(id, icon, name){
+          const def = MEETING_REACTIONS.find(r => r.icon === icon);
+          if (!def) return;
+          meetingFloatReactions.push({ id, icon, name, color: def.color });
+          if (meetingFloatReactions.length > 6) meetingFloatReactions.shift();
+          const el = document.getElementById('meeting-reactions-float');
+          if (el) el.innerHTML = meetingReactionsFloatHTML();
+          setTimeout(() => {
+            meetingFloatReactions = meetingFloatReactions.filter(r => r.id !== id);
+            const el2 = document.getElementById('meeting-reactions-float');
+            if (el2) el2.innerHTML = meetingReactionsFloatHTML();
+          }, 2400);
+        }
+
+        function addMeetingFloatComment(id, text, name){
+          meetingFloatComments.push({ id, text, name });
+          if (meetingFloatComments.length > 4) meetingFloatComments.shift();
+          const el = document.getElementById('meeting-comments-float');
+          if (el) el.innerHTML = meetingCommentsFloatHTML();
+          setTimeout(() => {
+            meetingFloatComments = meetingFloatComments.filter(c => c.id !== id);
+            const el2 = document.getElementById('meeting-comments-float');
+            if (el2) el2.innerHTML = meetingCommentsFloatHTML();
+          }, 6000);
+        }
+
+        function sendMeetingReaction(icon){
+          if (!activeMeeting) return;
+          const id = 'r' + Date.now() + Math.random().toString(36).slice(2);
+          const name = meetingMyName();
+          addMeetingFloatReaction(id, icon, name);
+          sendCallSignal({ kind: 'meeting_reaction', id, icon, name });
+          closeMeetingSheet();
+        }
+
+        function sendMeetingComment(){
+          if (!activeMeeting) return;
+          const input = document.getElementById('meeting-comment-input');
+          const text = input ? input.value.trim().slice(0, 200) : '';
+          if (!text) return;
+          const id = 'c' + Date.now() + Math.random().toString(36).slice(2);
+          const name = meetingMyName();
+          addMeetingFloatComment(id, text, name);
+          sendCallSignal({ kind: 'meeting_comment', id, text, name });
+          meetingCommentFocused = false;
+          closeMeetingSheet();
+        }
+
+        // Signals from other people in the meeting (never echoed back to the sender)
+        function meetingReceiveExtra(payload){
+          if (!activeMeeting || !isMeetingConvo(callState.convoId)) return;
+          const id = String(payload.id || '').slice(0, 60) || ('x' + Date.now());
+          const name = String(payload.name || 'Someone').slice(0, 60);
+          if (payload.kind === 'meeting_reaction') addMeetingFloatReaction(id, String(payload.icon || ''), name);
+          else if (payload.kind === 'meeting_comment') addMeetingFloatComment(id, String(payload.text || '').slice(0, 200), name);
         }
 
         // Admins can end the meeting for everyone. The server decides who may; other people's
