@@ -7116,17 +7116,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 </span>
               </button>`;
             const preview = `
-              <div class="w-full max-w-xs flex-1 min-h-0 rounded-3xl overflow-hidden relative my-4" style="background:#0f1115;">
+              <div class="w-full max-w-xs flex-1 min-h-0 rounded-3xl overflow-hidden relative mt-4 mb-6" style="background:#0f1115;">
                 <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
                 ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2" style="color:#9ca3af;">${Icon('video','w-8 h-8')}<div class="text-sm font-semibold">Camera is off</div></div>`}
               </div>`;
             setTimeout(syncMeetingJoinPreview, 0);
             return `<div class="flex-1 flex flex-col items-center px-6 pb-6 text-center min-h-0" style="padding-top:var(--top-safe-pad);">
-              <div class="w-full flex items-center justify-start pt-3 pb-2">
-                <button onclick="closeOverlay()" title="Back" class="w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(0,0,0,0.06);">${IconBold('back','w-5 h-5')}</button>
+              <div class="w-full flex items-center gap-3 pt-3">
+                <button onclick="closeOverlay()" title="Back" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.06);">${IconBold('back','w-5 h-5')}</button>
+                <div class="flex-1 min-w-0 text-xl font-bold font-display truncate">${escapeHtml(m.title)}</div>
+                <div class="w-10 h-10 flex-shrink-0"></div>
               </div>
-              <div class="text-xl font-bold font-display mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
-              ${hostLine ? `<div class="text-xs text-gray-400">${hostLine}</div>` : ''}
+              ${hostLine ? `<div class="text-xs text-gray-400 mt-1">${hostLine}</div>` : ''}
               ${sub ? `<div class="text-sm text-gray-500 mt-2 leading-relaxed">${sub}</div>` : ''}
               ${preview}
               ${camRow}${primary(label, 'joinPendingMeeting(meetingJoinCamOn)')}
