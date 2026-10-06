@@ -1015,7 +1015,7 @@
           // all the way back to plain black
           const noBgFallback = `linear-gradient(135deg, ${NAVY}, ${ROYAL})`;
           return `
-            <div class="flex flex-col h-full" style="padding-top:var(--top-safe-pad);color:${fg};${item.mediaUrl ? 'background:#000;' : (item.bgStyle || ('background:' + noBgFallback + ';'))}">
+            <div id="story-viewer-screen" class="flex flex-col h-full" style="padding-top:var(--top-safe-pad);color:${fg};${item.mediaUrl ? 'background:#000;' : (item.bgStyle || ('background:' + noBgFallback + ';'))}">
               <div class="flex items-center justify-between px-4 flex-shrink-0">
                 <button onclick="storyTapNext()" class="flex items-center gap-2">
                   <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden" style="background:transparent;border-color:${fg}99;">${(s.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!s.mine && s.photo) ? `<img src="${s.photo}" class="w-full h-full object-cover">` : silhouetteIcon(icon, 'w-4 h-4 ' + (iconClass||''))}</div>
@@ -1047,7 +1047,7 @@
                   <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'prev')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;" aria-label="Previous glimpse"></button>
                   <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'next')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;" aria-label="Next glimpse"></button>
                 </div>
-                <div class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 12px);">
+                <div id="story-reply-bar" class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 12px);">
                   <input type="file" id="story-reply-file-input" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx" multiple class="hidden" onchange="handleStoryReplyFileSelect(event)">
                   <button onclick="document.getElementById('story-reply-file-input').click()" title="Attach a file" class="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-white" style="background:#1f2937;border:1px solid #374151;">${Icon('paperclip','w-4 h-4')}</button>
                   <textarea id="story-reply-input" rows="1" placeholder="Send message" oninput="handleStoryReplyTyping()" onfocus="pauseStoryTimer()" onblur="handleStoryReplyBlur()" class="flex-1 min-w-0 text-sm text-white placeholder-gray-300" style="background:#1f2937;border:1px solid #374151;outline:none;resize:none;padding:0.5rem 0.875rem;border-radius:9999px;max-height:6.5rem;overflow-y:auto;line-height:1.3;"></textarea>
@@ -1788,6 +1788,72 @@
           ov.style.paddingTop = '';
           ov.style.bottom = '0';
           loadGlimpseViewers(g);
+          // Images run the bar straight away; videos start it once their real length is known
+          if (!(g.mediaType === 'video' && glimpseDisplayUrl(g))) startMyGlimpseBar(g.id, MY_GLIMPSE_IMAGE_MS);
+        }
+
+        // ---- Progress bar on your own glimpse (same look as the WhatsApp status bar) ----
+        const MY_GLIMPSE_IMAGE_MS = 30000;
+        let myGlimpseBarTimer = null;
+        let myGlimpseBarId = null;
+        let myGlimpseBarDurationMs = 0;
+        let myGlimpseBarElapsedMs = 0;
+        let myGlimpseBarStartedAt = 0;
+        function clearMyGlimpseBar(){
+          if (myGlimpseBarTimer) { clearTimeout(myGlimpseBarTimer); myGlimpseBarTimer = null; }
+        }
+        function myGlimpseBarRun(){
+          clearMyGlimpseBar();
+          const fill = document.getElementById('my-glimpse-bar-fill-' + myGlimpseBarId);
+          if (!fill) return;
+          const remaining = Math.max(0, myGlimpseBarDurationMs - myGlimpseBarElapsedMs);
+          myGlimpseBarStartedAt = Date.now();
+          fill.style.transition = 'none';
+          fill.style.width = Math.min(100, (myGlimpseBarElapsedMs / myGlimpseBarDurationMs) * 100) + '%';
+          void fill.offsetWidth;
+          fill.style.transition = 'width ' + remaining + 'ms linear';
+          fill.style.width = '100%';
+          const id = myGlimpseBarId;
+          myGlimpseBarTimer = setTimeout(() => myGlimpseBarDone(id), remaining);
+        }
+        function startMyGlimpseBar(id, durationMs){
+          myGlimpseBarId = id;
+          myGlimpseBarDurationMs = Math.max(250, durationMs);
+          myGlimpseBarElapsedMs = 0;
+          myGlimpseBarRun();
+        }
+        function pauseMyGlimpseBar(){
+          if (!myGlimpseBarTimer) return;
+          clearMyGlimpseBar();
+          myGlimpseBarElapsedMs = Math.min(myGlimpseBarDurationMs, myGlimpseBarElapsedMs + (Date.now() - myGlimpseBarStartedAt));
+          const fill = document.getElementById('my-glimpse-bar-fill-' + myGlimpseBarId);
+          if (fill) { fill.style.transition = 'none'; fill.style.width = Math.min(100, (myGlimpseBarElapsedMs / myGlimpseBarDurationMs) * 100) + '%'; }
+        }
+        function resumeMyGlimpseBar(){
+          if (myGlimpseBarTimer || myGlimpseBarId === null) return;
+          myGlimpseBarRun();
+        }
+        function myGlimpseBarDone(id){
+          if (id !== myGlimpseBarId) return;
+          clearMyGlimpseBar();
+          // Only leave if this glimpse is still the one on screen
+          if (!document.getElementById('my-glimpse-bar-fill-' + id)) return;
+          myGlimpseBarId = null;
+          openMyGlimpses();
+        }
+        function myGlimpseVideoReady(video, id, s, e){
+          if (!glimpseVideoMayPlay(video)) { try { video.pause(); } catch (err) {} return; }
+          if (video.currentTime < s) { try { video.currentTime = s; } catch (err) {} }
+          const realDuration = (isFinite(video.duration) && video.duration > 0) ? video.duration : e;
+          const effectiveEnd = Math.min(e, realDuration);
+          video.dataset.glimpseEnd = String(effectiveEnd);
+          startMyGlimpseBar(id, (effectiveEnd - s) * 1000);
+        }
+        function myGlimpseVideoGuard(video, id, s, e){
+          if (!glimpseVideoMayPlay(video)) { try { video.pause(); } catch (err) {} return; }
+          if (video.currentTime < s) { video.currentTime = s; return; }
+          const ge = video.dataset.glimpseEnd ? Number(video.dataset.glimpseEnd) : e;
+          if (video.currentTime >= ge) { video.pause(); myGlimpseBarDone(id); }
         }
 
         async function loadGlimpseViewers(g){
@@ -1824,6 +1890,7 @@
 
         function toggleMyGlimpseViewers(id){
           myGlimpseViewersOpen = !myGlimpseViewersOpen;
+          if (myGlimpseViewersOpen) pauseMyGlimpseBar(); else resumeMyGlimpseBar();
           const g = myGlimpses.find(x => x.id === id);
           if (!g) return;
           const panelEl = document.getElementById('glimpse-viewers-panel-' + id);
@@ -1843,7 +1910,7 @@
               <div class="absolute inset-0 flex items-center justify-center ${viewUrl ? 'bg-black' : ''} pointer-events-none">
                 ${viewUrl ? `
                   ${g.mediaType === 'video'
-                    ? `<video id="my-glimpse-video-${g.id}" src="${viewUrl}" class="max-w-full max-h-full" autoplay playsinline onloadeddata="glimpseStartVideoWithSound(this)" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${myGlimpseVideoAttrs(g.trimStart, g.trimEnd)} onerror="glimpseMediaLoadError(this)"></video>`
+                    ? `<video id="my-glimpse-video-${g.id}" src="${viewUrl}" class="max-w-full max-h-full" autoplay playsinline onloadeddata="glimpseStartVideoWithSound(this)" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" ${myGlimpseVideoAttrs(g.trimStart, g.trimEnd, g.id)} onerror="glimpseMediaLoadError(this)"></video>`
                     : `<img src="${viewUrl}" class="max-w-full max-h-full object-contain" draggable="false" oncontextmenu="return false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" onerror="glimpseMediaLoadError(this)">`}
                 ` : `
                   <div class="px-8 text-center">
@@ -1853,7 +1920,12 @@
               </div>
               ${g.uploading ? `<div class="absolute inset-x-0 flex justify-center pointer-events-none" style="top:45%;z-index:15;"><div id="glimpse-upload-viewer-${g.id}" class="px-4 py-2 rounded-full text-sm font-semibold" style="background:rgba(0,0,0,0.6);color:#fff;">${glimpseUploadLabelText(g)}</div></div>` : ''}
               ${g.failed ? `<div class="absolute inset-x-0 flex justify-center" style="top:45%;z-index:15;"><button type="button" onclick="retryMyGlimpse(${g.id}); openMyGlimpses();" class="px-4 py-2 rounded-full text-sm font-semibold" style="background:rgba(0,0,0,0.6);color:#fff;">Couldn't post - tap to retry</button></div>` : ''}
-              <div class="relative flex items-center gap-3 px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);z-index:20;">
+              <div class="relative flex px-3 flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 0.5rem);padding-bottom:0.5rem;z-index:20;">
+                <div class="h-1 flex-1 rounded-full overflow-hidden" style="background:${fg === '#ffffff' ? 'rgba(255,255,255,0.3)' : 'rgba(10,37,64,0.2)'};">
+                  <div id="my-glimpse-bar-fill-${g.id}" class="h-full rounded-full" style="width:0%;background:${fg};"></div>
+                </div>
+              </div>
+              <div class="relative flex items-center gap-3 px-4 flex-shrink-0" style="z-index:20;">
                 <button onclick="openMyGlimpses()" class="flex-shrink-0" style="color:${fg};">${IconBold('back','w-5 h-5')}</button>
                 <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:${avatarBg};color:${fg};">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : silhouetteIcon(g.icon,'w-4 h-4')}</div>
                 <div class="min-w-0 flex-1">
@@ -1931,8 +2003,8 @@
         // (core.js), the same helper the chat screen uses.
         (function glimpseKeyboardAvoid(){
           const vv = window.visualViewport;
-          const ids = ['glimpse-media-caption-screen', 'glimpse-compose-screen'];
-          const barIds = { 'glimpse-media-caption-screen': 'glimpse-media-caption-bar', 'glimpse-compose-screen': 'glimpse-compose-bar' };
+          const ids = ['glimpse-media-caption-screen', 'glimpse-compose-screen', 'story-viewer-screen'];
+          const barIds = { 'glimpse-media-caption-screen': 'glimpse-media-caption-bar', 'glimpse-compose-screen': 'glimpse-compose-bar', 'story-viewer-screen': 'story-reply-bar' };
           const isGlimpseField = (el) => !!(el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && el.closest && el.closest('#' + ids.join(', #')));
           const apply = () => {
             const screens = ids.map(id => document.getElementById(id)).filter(Boolean);
@@ -1973,6 +2045,15 @@
           };
           if (document.getElementById('overlay')) watch(); else document.addEventListener('DOMContentLoaded', watch);
         })();
+
+        // Keep re-checking while a glimpse text box is focused: on some Android keyboards the resize /
+        // geometry events fire late or not at all, which left the box hidden behind the keyboard.
+        setInterval(() => {
+          const ae = document.activeElement;
+          if (ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName) && ae.closest && ae.closest('#glimpse-media-caption-screen, #glimpse-compose-screen, #story-viewer-screen') && window.__glimpseKbApply) {
+            window.__glimpseKbApply();
+          }
+        }, 250);
 
         // ---- Glimpse composer (text) ----
         function composeGlimpseText(){
@@ -2073,6 +2154,8 @@
         }
         function stopGlimpsePlayback(){
           clearStoryTimer();
+          clearMyGlimpseBar();
+          myGlimpseBarId = null;
           currentStoryId = null;
           storyPaused = false;
           const ov = document.getElementById('overlay');
@@ -2207,11 +2290,11 @@
         }
 
         // myGlimpseVideoAttrs: for viewing your own glimpse (myGlimpseViewerHTML)
-        function myGlimpseVideoAttrs(startSec, endSec){
+        function myGlimpseVideoAttrs(startSec, endSec, id){
           const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
           const requestedEnd = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
           const e = Math.min(requestedEnd, s + GLIMPSE_MAX_SECONDS);
-          return `onloadedmetadata="if(this.currentTime<${s}){this.currentTime=${s};} this.dataset.glimpseEnd=String(Math.min(${e}, (isFinite(this.duration)&&this.duration>0)?this.duration:${e}));" ontimeupdate="const ge=this.dataset.glimpseEnd?Number(this.dataset.glimpseEnd):${e}; if(this.currentTime<${s}){this.currentTime=${s};} else if(this.currentTime>=ge){this.pause();}"`;
+          return `onloadedmetadata="myGlimpseVideoReady(this,${id},${s},${e})" ontimeupdate="myGlimpseVideoGuard(this,${id},${s},${e})" onended="myGlimpseBarDone(${id})"`;
         }
 
         // Glimpse videos play with sound as soon as they open (there is no mute button)

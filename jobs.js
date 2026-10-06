@@ -1048,7 +1048,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           if (stage === 'bizwebsite') {
             return `
-              <input type="url" id="poster-app-input" autocomplete="off" ${enterNext} oninput="updatePosterAppField('businessWebsite', this.value)" placeholder="e.g. instagram.com/yourbusiness" value="${escapeHtml(d.businessWebsite || '')}" class="${fieldCls}">
+              <input type="url" id="poster-app-input" autocomplete="off" ${enterNext} oninput="updatePosterAppField('businessWebsite', this.value)" placeholder="e.g. yourbusiness.com" value="${escapeHtml(d.businessWebsite || '')}" class="${fieldCls}">
               ${skipLink}`;
           }
           if (stage === 'bizdesc') {

@@ -1394,7 +1394,7 @@ let userPoints = 0;
           if (stage === 'bizwebsite') {
             return `
               <div class="mb-2">
-                <input type="url" id="auth-bizwebsite-input" oninput="updatePosterAppField('businessWebsite', this.value)" placeholder="e.g. instagram.com/yourbusiness" value="${escapeHtml(d.businessWebsite || '')}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
+                <input type="url" id="auth-bizwebsite-input" oninput="updatePosterAppField('businessWebsite', this.value)" placeholder="e.g. yourbusiness.com" value="${escapeHtml(d.businessWebsite || '')}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none">
                 <a href="#" onclick="authPosterAppNext(); return false;" style="font-size:12px;color:#9ca3af;display:block;margin-top:10px;">Skip for now</a>
               </div>`;
           }

@@ -1968,7 +1968,7 @@ try {
               </div>
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Link</label>
-                <input type="text" value="${escapeHtml(d.url)}" oninput="updateCourseResourcePageField('url', this.value)" placeholder="Link (YouTube, direct file, etc.)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none" autocapitalize="none" autocorrect="off">
+                <input type="text" value="${escapeHtml(d.url)}" oninput="updateCourseResourcePageField('url', this.value)" placeholder="Link (video, direct file, etc.)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none" autocapitalize="none" autocorrect="off">
               </div>
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Duration <span class="normal-case font-medium text-gray-400">(optional)</span></label>

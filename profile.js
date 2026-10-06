@@ -907,7 +907,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function profileLinksAddRowHTML(){
           return `
             <div class="flex items-center gap-2 mb-3">
-              <input id="new-profile-link-input" type="text" value="${escapeHtml(newProfileLinkValue)}" oninput="newProfileLinkValue=this.value" placeholder="instagram.com/yourname" class="flex-1 min-w-0 text-[15px] border ${newProfileLinkError ? 'border-red-400' : 'border-gray-200'} bg-gray-50 rounded-2xl px-3 py-2.5" style="outline:none;">
+              <input id="new-profile-link-input" type="text" value="${escapeHtml(newProfileLinkValue)}" oninput="newProfileLinkValue=this.value" placeholder="yourwebsite.com/yourname" class="flex-1 min-w-0 text-[15px] border ${newProfileLinkError ? 'border-red-400' : 'border-gray-200'} bg-gray-50 rounded-2xl px-3 py-2.5" style="outline:none;">
               <button type="button" onclick="addProfileLink()" class="flex-shrink-0 px-3 py-2.5 rounded-full font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Add</button>
             </div>
             ${newProfileLinkError ? `<div class="text-xs font-medium text-red-500 -mt-2 mb-3 px-1">${newProfileLinkError}</div>` : ''}`;
