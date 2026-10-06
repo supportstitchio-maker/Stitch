@@ -385,7 +385,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="px-5 pb-3 flex items-center justify-between" style="padding-top:var(--top-safe-pad);">
               ${asOverlay
                 ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
-                : `<button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
+                : `<button onclick="openCreateMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
               <span id="profile-username-el" class="nm-wrap font-bold text-base font-display" style="flex:1;min-width:0;font-size:16px;">${profileUsernameHTML()}</span>
               <div class="flex items-center rounded-full" style="background:rgba(65,105,225,0.08)">
                 <button onclick="openOverlay('profileMenu')" class="w-8 h-8 flex items-center justify-center">${gradIcon(IconBold('settings','w-4 h-4'))}</button>

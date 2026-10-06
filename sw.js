@@ -123,15 +123,17 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
   const postId = data.postId;
+  const meetingCode = data.meetingCode;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsList) => {
       for (const client of clientsList) {
         if ('focus' in client) {
           if (postId != null) { try { client.postMessage({ type: 'open-post', postId }); } catch (e) {} }
+          if (meetingCode) { try { client.postMessage({ type: 'open-meeting', code: meetingCode }); } catch (e) {} }
           return client.focus();
         }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(postId != null ? '/?post=' + encodeURIComponent(postId) : '/');
+      if (self.clients.openWindow) return self.clients.openWindow(meetingCode ? '/?meeting=' + encodeURIComponent(meetingCode) : (postId != null ? '/?post=' + encodeURIComponent(postId) : '/'));
       return undefined;
     })
   );

@@ -1,4 +1,4 @@
-const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
+const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'newMeeting', 'meetingCreated', 'meetingJoin', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
         const overlayBackAction = {
           // Phone back on People / Class profile / My class report returns to the class page instead
           // of leaving the class
@@ -396,6 +396,14 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             ov.innerHTML = createPostHTML();
             if (!discoverPeopleLoaded) loadDiscoverPeople();
           }
+          else if (kind === 'createMenu') ov.innerHTML = createMenuHTML();
+          else if (kind === 'meetingKind') ov.innerHTML = meetingKindHTML();
+          else if (kind === 'newMeeting') {
+            ov.innerHTML = newMeetingHTML();
+            if (!discoverPeopleLoaded) { loadDiscoverPeople(); waitForMeetingPeople(); }
+          }
+          else if (kind === 'meetingCreated') ov.innerHTML = meetingCreatedHTML();
+          else if (kind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
           else if (kind === 'tagPeoplePicker') {
             ov.innerHTML = tagPeoplePickerHTML();
             if (!discoverPeopleLoaded) loadDiscoverPeople();
@@ -2925,6 +2933,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
             workId: opts.workId || null,
             route: opts.route || null,
             tab: opts.tab || null,
+            meetingCode: opts.meetingCode || null,
           });
           playNotifChime(opts.name || 'Stitch', opts.message || '');
           queueSaveUserState();
@@ -3089,6 +3098,13 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               classDetailTab = n.tab || 'stream';
               openOverlay('classDetail');
             }
+            return;
+          }
+          if (n.type === 'meeting_admin' && n.meetingCode) {
+            n.read = true;
+            queueSaveUserState();
+            closeOverlay();
+            openMeetingByCode(n.meetingCode);
             return;
           }
           if ((n.type === 'opportunity' || n.type === 'application_status' || n.type === 'application_message' || n.type === 'interview_scheduled') && n.jobId && typeof openJobDetail === 'function') {

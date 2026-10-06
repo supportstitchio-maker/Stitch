@@ -2008,6 +2008,7 @@ let userPoints = 0;
 
           if (typeof checkPendingChallengeLinkJoin === 'function') checkPendingChallengeLinkJoin();
           if (typeof checkPendingCollabLinkJoin === 'function') checkPendingCollabLinkJoin();
+          if (typeof checkPendingMeetingLink === 'function') checkPendingMeetingLink();
 
           // The tab bar stays locked until the Home skeleton has fully finished loading and the real
           // feed is on screen
