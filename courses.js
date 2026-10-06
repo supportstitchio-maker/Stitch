@@ -6820,29 +6820,43 @@ try {
 
         let lectureMinimized = false;
 
+        // Swap screens with a short crossfade instead of a hard cut, so minimising, resuming or
+        // leaving a class call doesn't flash (the video tiles are rebuilt on every swap).
+        function lectureSmoothSwap(fn){
+          const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!reduce && typeof document.startViewTransition === 'function') {
+            try { document.startViewTransition(() => { fn(); }); return; } catch (e) {}
+          }
+          fn();
+        }
+
         // Tapping "Back" during a live lecture used to call endLecture() outright
         function minimizeLecture(fromPopState){
           if (!liveLectureState.connected) { closeOverlay(fromPopState); return; }
           lectureMinimized = true;
           syncLectureBgAudio();
-          if (guestLectureMode) { if (fromPopState) overlayHistoryPushed = false; closeOverlay(); showLectureBanner(); return; }
-          currentClassId = liveLectureState.classId;
-          classDetailTab = 'stream';
-          // The browser already popped this overlay's history entry when the phone's back button was
-          // used
-          if (fromPopState) overlayHistoryPushed = false;
-          openOverlay('classDetail');
-          showLectureBanner();
+          lectureSmoothSwap(() => {
+            if (guestLectureMode) { if (fromPopState) overlayHistoryPushed = false; closeOverlay(); showLectureBanner(); return; }
+            currentClassId = liveLectureState.classId;
+            classDetailTab = 'stream';
+            // The browser already popped this overlay's history entry when the phone's back button was
+            // used
+            if (fromPopState) overlayHistoryPushed = false;
+            openOverlay('classDetail');
+            showLectureBanner();
+          });
         }
 
         function resumeLecture(){
           if (!liveLectureState.connected) return;
           lectureMinimized = false;
-          hideLectureBanner();
-          removeLectureBgAudio();
-          if (liveLectureState.classId) currentClassId = liveLectureState.classId;
-          openOverlay('lectureCall');
-          attachLectureMedia();
+          lectureSmoothSwap(() => {
+            hideLectureBanner();
+            removeLectureBgAudio();
+            if (liveLectureState.classId) currentClassId = liveLectureState.classId;
+            openOverlay('lectureCall');
+            attachLectureMedia();
+          });
         }
 
         // ---- Minimized class call: the same floating, draggable card the 1:1/group call uses
@@ -6907,9 +6921,12 @@ try {
         function showLectureBanner(){
           const banner = document.getElementById('call-minimized-banner');
           if (!banner) return;
-          banner.classList.remove('hidden');
-          if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
-          if (typeof applyCallBannerPos === 'function') applyCallBannerPos();
+          const inlineShown = !!document.getElementById('lecture-inline-panel');
+          banner.classList.toggle('hidden', inlineShown);
+          if (!inlineShown) {
+            if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
+            if (typeof applyCallBannerPos === 'function') applyCallBannerPos();
+          }
           ensureLectureBannerObserver();
           scheduleLectureBannerSync(60);
         }
@@ -7063,9 +7080,11 @@ try {
           lectureFloatingComments = [];
           lectureAttachments = [];
           pendingAutoOpenAttachmentId = null;
-          if (wasGuest) { closeOverlay(); return; }
-          classDetailTab = 'stream';
-          openOverlay('classDetail');
+          lectureSmoothSwap(() => {
+            if (wasGuest) { closeOverlay(); return; }
+            classDetailTab = 'stream';
+            openOverlay('classDetail');
+          });
         }
 
         const LECTURE_TILE_COLORS = ['bg-orange-500','bg-purple-500','bg-teal-500','bg-blue-500','bg-rose-500','bg-emerald-500','bg-indigo-500','bg-amber-500','bg-cyan-500','bg-pink-500'];
@@ -7086,7 +7105,7 @@ try {
             ${st.screenSharing ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
             ${st.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
             ${st.camOff && !st.screenSharing ? `<span class="cu-corner" style="right:${st.muted ? '40px' : '8px'};">${Icon('cameraOff','w-3.5 h-3.5')}</span>` : ''}
-            ${st.handRaised ? `<span class="cu-corner cu-hand" style="top:${st.screenSharing ? '40px' : '8px'};">${Icon('handRaised','w-3.5 h-3.5')}</span>` : ''}`;
+            ${st.handRaised ? `<span class="cu-corner cu-hand" style="top:${st.screenSharing ? '40px' : '8px'};">${cuEmoji('handRaised')}</span>` : ''}`;
         }
 
         function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass, spotlight){
@@ -7102,7 +7121,7 @@ try {
           return `
             ${p.sharingScreen ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
             ${p.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
-            ${p.handRaised ? `<span class="cu-corner cu-hand" style="top:${p.sharingScreen ? '40px' : '8px'};">${Icon('handRaised','w-3.5 h-3.5')}</span>` : ''}`;
+            ${p.handRaised ? `<span class="cu-corner cu-hand" style="top:${p.sharingScreen ? '40px' : '8px'};">${cuEmoji('handRaised')}</span>` : ''}`;
         }
 
         function updateLectureRemoteBadges(){
@@ -7910,7 +7929,7 @@ try {
           const grid = (onclick, icon, label, active) => `
             <button onclick="${onclick}" class="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-1">
               <span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="${active ? 'background:' + NAVY + ';' : 'background:var(--cu-soft);'}">
-                ${Icon(icon, `w-5 h-5 ${active ? 'text-white' : ''}`)}
+                ${cuEmoji(icon) ? `<span style="font-size:20px;line-height:1;">${cuEmoji(icon)}</span>` : Icon(icon, `w-5 h-5 ${active ? 'text-white' : ''}`)}
               </span>
               <span class="text-[10px] font-bold truncate" style="${active ? 'color:' + NAVY + ';' : ''}">${label}</span>
             </button>`;
@@ -7936,7 +7955,7 @@ try {
                 <span class="text-sm font-bold truncate" style="color:${NAVY};">Mute everyone</span>
               </button>` : ''}
               <div class="flex items-start justify-between gap-1">
-                ${grid("toggleLectureReactionsSheet()", 'heartOutline', 'Reactions', false)}
+                ${grid("toggleLectureReactionsSheet()", 'reactions', 'Reactions', false)}
                 ${grid("lectureAttachDocuments()", 'doc', 'PDF', false)}
                 ${grid("toggleLectureCommentSheet()", 'commentText', 'Comment', lectureCommentSheetOpen)}
                 ${grid(`shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}

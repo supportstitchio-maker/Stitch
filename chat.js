@@ -6132,13 +6132,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
 
         // Real emojis for in-call reactions (the icon key is still what is sent over the wire)
-        const CU_EMOJI = { clap: '\u{1F44F}', thumbsUp: '\u{1F44D}', heart: '\u2764\uFE0F', laugh: '\u{1F602}', wow: '\u{1F62E}', party: '\u{1F389}' };
+        const CU_EMOJI = { clap: '\u{1F44F}', thumbsUp: '\u{1F44D}', heart: '\u2764\uFE0F', laugh: '\u{1F602}', wow: '\u{1F62E}', party: '\u{1F389}', handRaised: '\u270B', reactions: '\u{1F60A}' };
         function cuEmoji(icon){ return CU_EMOJI[icon] || ''; }
 
         // Message box that rides on top of the on-screen keyboard. It is mounted on <body> so no
         // transformed/clipped parent can push it under the keyboard.
         let cuCommentTimer = null;
         function cuKeyboardInset(){
+          const bar = document.getElementById('cu-comment-bar');
+          const ae = document.activeElement;
+          const focused = !!(bar && ae && bar.contains(ae));
+          if (typeof getKeyboardInset === 'function') return getKeyboardInset(focused);
           const vv = window.visualViewport;
           return vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
         }
@@ -6147,6 +6151,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!bar) return;
           const inset = cuKeyboardInset();
           bar.style.bottom = inset + 'px';
+          bar.style.transition = 'bottom .12s ease-out';
           bar.style.paddingBottom = inset > 0 ? '10px' : 'calc(env(safe-area-inset-bottom,0px) + 12px)';
         }
         function cuMountCommentBar(o){
@@ -6170,7 +6175,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             window.visualViewport.addEventListener('resize', cuPlaceCommentBar);
             window.visualViewport.addEventListener('scroll', cuPlaceCommentBar);
           }
-          cuCommentTimer = setInterval(cuPlaceCommentBar, 120);
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', cuPlaceCommentBar);
+          const inp = document.getElementById(o.inputId);
+          if (inp) { inp.addEventListener('focus', cuPlaceCommentBar); inp.addEventListener('blur', () => setTimeout(cuPlaceCommentBar, 50)); }
+          cuCommentTimer = setInterval(cuPlaceCommentBar, 100);
           setTimeout(() => { const i = document.getElementById(o.inputId); if (i) i.focus(); cuPlaceCommentBar(); }, 60);
         }
         function cuUnmountCommentBar(){
@@ -6181,6 +6189,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             window.visualViewport.removeEventListener('resize', cuPlaceCommentBar);
             window.visualViewport.removeEventListener('scroll', cuPlaceCommentBar);
           }
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.removeEventListener('geometrychange', cuPlaceCommentBar);
         }
 
         // ---- Call screen markup (1:1, group and meeting) ----------------------------------
@@ -6195,6 +6204,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
             body{--cu-bg:#ffffff;--cu-fg:#111827;--cu-sub:rgba(17,24,39,.6);--cu-soft:rgba(17,24,39,.06);--cu-soft2:rgba(17,24,39,.12);--cu-line:rgba(17,24,39,.1);--cu-tile:#f3f4f6;--cu-sheet:#ffffff;--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
             body.dark-mode{--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:rgba(255,255,255,.65);--cu-soft:rgba(255,255,255,.1);--cu-soft2:rgba(255,255,255,.18);--cu-line:rgba(255,255,255,.12);--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
+            ::view-transition-old(root),::view-transition-new(root){animation-duration:.18s;animation-timing-function:ease-out;}
             .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
             .cu-float{background:var(--cu-sheet);color:var(--cu-fg);box-shadow:0 4px 14px rgba(0,0,0,.18);}
             .cu-float .cu-float-sub{color:var(--cu-fg);}
@@ -6204,8 +6214,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bsheet-row{width:100%;display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:14px;text-align:left;font-weight:600;font-size:15px;color:inherit;}
             .cu-bsheet-row:active{background:var(--cu-soft);}
             .cu-bsheet-row.red{color:#ef4444;}
-            .cu-emoji-row{display:flex;align-items:center;justify-content:space-around;gap:8px;padding:8px 6px 4px;}
-            .cu-emoji-btn{width:54px;height:54px;border-radius:50%;font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);flex-shrink:0;transition:transform .12s ease;}
+            .cu-emoji-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:10px 6px 6px;}
+            .cu-emoji-btn{width:100%;max-width:62px;aspect-ratio:1;margin:0 auto;border-radius:50%;font-size:clamp(24px,7.4vw,31px);line-height:1;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);transition:transform .12s ease;}
             .cu-emoji-btn:active{transform:scale(.88);}
             @keyframes cuSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
             @keyframes cuFade{from{opacity:0}to{opacity:1}}
@@ -6228,7 +6238,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-stage{flex:1 1 0%;min-height:0;position:relative;padding:8px 12px;display:flex;align-items:center;justify-content:center;}
             .cu-grid{width:100%;height:100%;display:grid;gap:10px;}
             .cu-tile{position:relative;overflow:hidden;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;text-align:left;border-radius:22px;background:var(--cu-tile);border:1px solid var(--cu-line);}
-            .cu-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+            .cu-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:transparent;}
             .cu-tile video.hidden{display:none;}
             .cu-tile[data-span="2"]{grid-column:span 2;}
             .cu-tile video.object-contain{object-fit:contain;}
@@ -6238,7 +6248,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-chip{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font-size:11.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
             .cu-corner{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);color:#fff;}
             .cu-corner.cu-mute{background:rgba(239,68,68,.92);}
-            .cu-corner.cu-hand{right:auto;left:8px;background:#1e90ff;}
+            .cu-corner.cu-hand{right:auto;left:8px;width:32px;height:32px;font-size:18px;line-height:1;background:var(--cu-sheet);box-shadow:0 2px 8px rgba(0,0,0,.25);}
             .cu-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(120,170,255,.38);animation:cuRing 2.6s ease-out infinite;}
             @keyframes cuRing{0%{transform:scale(.86);opacity:.9;}100%{transform:scale(1.65);opacity:0;}}
             .cu-voice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;width:100%;}
@@ -6309,7 +6319,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // One labelled round control. o: { id, onclick, icon, label, on, end, accent, title }
         function cuCtlInnerHTML(o){
-          return `<span class="cu-ctl-btn">${Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
+          return `<span class="cu-ctl-btn">${cuEmoji(o.icon) ? `<span style="font-size:26px;line-height:1;">${cuEmoji(o.icon)}</span>` : Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
         }
         function cuCtlClass(o){
           return 'cu-ctl' + (o.on ? ' on' : '') + (o.accent ? ' accent' : '') + (o.accept ? ' accept' : '') + (o.end ? ' end' : '');
@@ -6332,7 +6342,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <${tag} ${o.onclick ? `onclick="${o.onclick}"` : ''} class="cu-tile" style="${o.style || ''}">
               ${o.media || ''}
               ${!o.hasVideo ? `<div class="cu-avatar ${o.large ? 'cu-avatar-lg' : ''} ${o.bg || 'bg-blue-50'}">${o.avatar || ''}</div>` : ''}
-              ${o.hand ? `<span class="cu-corner cu-hand">${Icon('handRaised', 'w-3.5 h-3.5')}</span>` : ''}
+              ${o.hand ? `<span class="cu-corner cu-hand">${cuEmoji('handRaised')}</span>` : ''}
               ${o.muted ? `<span class="cu-corner cu-mute">${Icon('micOff', 'w-3.5 h-3.5')}</span>` : ''}
               ${o.name ? `<span class="cu-chip">${escapeHtml(o.name)}</span>` : ''}
               ${o.extra || ''}
@@ -7249,12 +7259,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (meetingSheet === 'menu') {
             const row = (icon, label, action, red) => `
               <button onclick="${action}" class="cu-bsheet-row ${red ? 'red' : ''}">
-                ${Icon(icon, 'w-5 h-5')}<span>${label}</span>
+                ${cuEmoji(icon) ? `<span style="font-size:22px;line-height:1;width:20px;text-align:center;">${cuEmoji(icon)}</span>` : Icon(icon, 'w-5 h-5')}<span>${label}</span>
               </button>`;
             return `${backdrop}
               <div class="cu-bsheet">
                 <div class="cu-bsheet-grab"></div>
-                ${row('clap', 'Reactions', "setMeetingSheet('reactions')")}
+                ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
                 ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
                 ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
