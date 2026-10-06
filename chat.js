@@ -6434,21 +6434,37 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         async function flipCallCamera(){
           if (!callLocalStream || callState.camOff) return;
           const next = callState.facing === 'environment' ? 'user' : 'environment';
+          const old = callLocalStream.getVideoTracks()[0];
+          // Most phones only let one app stream use the camera, so the old track is released first
+          if (old) { callLocalStream.removeTrack(old); old.stop(); }
+          let nt = null;
           try {
-            const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next } }, audio: false });
-            const nt = ns.getVideoTracks()[0];
-            if (!nt) return;
-            const old = callLocalStream.getVideoTracks()[0];
-            if (old) { callLocalStream.removeTrack(old); old.stop(); }
-            callLocalStream.addTrack(nt);
-            Object.values(callPeers).forEach(e => {
-              const sender = e.pc && e.pc.getSenders().find(x => x.track ? x.track.kind === 'video' : false) || (e.pc && e.pc.getSenders().find(x => !x.track));
-              if (sender) sender.replaceTrack(nt).catch(() => {});
-            });
-            callState.facing = next;
-            applyCallTrackStates();
-            attachCallLocalVideo();
-          } catch (err) { callToast("Couldn't switch camera"); }
+            const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: next } }, audio: false });
+            nt = ns.getVideoTracks()[0];
+          } catch (e1) {
+            try {
+              const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next }, audio: false });
+              nt = ns.getVideoTracks()[0];
+            } catch (e2) {
+              try {
+                const back = await navigator.mediaDevices.getUserMedia({ video: { facingMode: callState.facing === 'environment' ? 'environment' : 'user' }, audio: false });
+                nt = back.getVideoTracks()[0];
+              } catch (e3) { nt = null; }
+              callToast("Couldn't switch camera");
+              if (nt) { /* restored the previous camera */ } 
+              if (!nt) return;
+            }
+          }
+          if (!nt) return;
+          callLocalStream.addTrack(nt);
+          Object.values(callPeers).forEach(e => {
+            const sender = e.pc && e.pc.getSenders().find(x => x.track ? x.track.kind === 'video' : false);
+            if (sender) sender.replaceTrack(nt).catch(() => {});
+          });
+          if (nt.getSettings && nt.getSettings().facingMode) callState.facing = nt.getSettings().facingMode === 'environment' ? 'environment' : 'user';
+          else callState.facing = next;
+          applyCallTrackStates();
+          attachCallLocalVideo();
         }
 
         // ---- Speaking ring: green outline on whoever is talking (calls, meetings and lectures) ----
@@ -6861,7 +6877,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             ${meetingScreenHeader('Create something', 'closeOverlay()')}
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
               <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
-              ${meetingChoiceCard("openOverlay('create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
+              ${meetingChoiceCard("openOverlayFrom('createMenu','create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
               ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a call now or schedule one for later.', 'Share a link so anyone on Stitch can join.')}
               ${upcoming.length ? `
                 <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
@@ -7090,20 +7106,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const m = meetingCreated;
           if (!m) return '';
           const link = buildMeetingLink(m.code);
+          const pill = 'w-full max-w-sm font-semibold py-3 rounded-full text-sm font-display';
+          const grey = 'background:var(--cu-soft,#eef0f3);color:var(--cu-fg,#374151);border:1px solid var(--cu-line,#e2e8f0);';
           return `
-            <div class="flex-1 overflow-y-auto px-6 flex flex-col items-center text-center" style="padding-top:calc(var(--top-safe-pad) + 40px);">
-              <div class="w-16 h-16 rounded-full flex items-center justify-center mb-5" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('check', 'w-8 h-8')}</div>
-              <div class="text-2xl font-bold font-display mb-1">Meeting scheduled</div>
-              <div class="text-base font-semibold text-gray-800 mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
+            ${meetingScreenHeader('Meeting scheduled', 'closeOverlay()')}
+            <div class="flex-1 overflow-y-auto px-6 flex flex-col items-center text-center" style="padding-top:28px;">
+              <div class="text-base font-semibold mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
               <div class="text-sm text-gray-500 mb-6">${escapeHtml(meetingWhenText(m.starts_at))}</div>
               <div class="w-full max-w-sm rounded-2xl px-4 py-3 text-xs break-all text-left mb-3" style="background:var(--cu-soft,#f1f5f9);color:var(--cu-sub,#64748b);border:1px solid var(--cu-line,#e2e8f0);">${escapeHtml(link)}</div>
               <div class="w-full max-w-sm flex gap-3 mb-3">
-                <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm" style="background:rgba(30,144,255,0.1);color:${NAVY};">Copy link</button>
-                <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-white text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Share</button>
+                <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Copy link</button>
+                <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Share</button>
               </div>
-              <button onclick="addMeetingToCalendar()" class="w-full max-w-sm font-semibold py-3 rounded-full text-sm mb-3" style="background:rgba(30,144,255,0.1);color:${NAVY};">Add to calendar</button>
-              <div class="text-xs text-gray-400 mb-8 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
-              <button onclick="closeOverlay()" class="text-sm font-semibold text-gray-500">Done</button>
+              <button onclick="addMeetingToCalendar()" class="${pill} mb-4" style="${grey}">Add to calendar</button>
+              <div class="text-xs text-gray-400 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
             </div>`;
         }
 

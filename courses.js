@@ -6566,22 +6566,28 @@ try {
         async function flipLectureCamera(){
           if (!lectureLocalStream || liveLectureState.camOff || liveLectureState.screenSharing) return;
           const next = liveLectureState.facing === 'environment' ? 'user' : 'environment';
-          try {
-            const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next } }, audio: false });
-            const nt = ns.getVideoTracks()[0];
+          const old = lectureLocalStream.getVideoTracks()[0];
+          // Release the current camera first: phones usually can't open two cameras at once
+          if (old) { lectureLocalStream.removeTrack(old); old.stop(); }
+          let nt = null;
+          const tryGet = async c => { try { const ns = await navigator.mediaDevices.getUserMedia({ video: c, audio: false }); return ns.getVideoTracks()[0] || null; } catch (e) { return null; } };
+          nt = await tryGet({ facingMode: { exact: next } }) || await tryGet({ facingMode: next });
+          if (!nt) {
+            // Put the previous camera back so the tile doesn't go black
+            nt = await tryGet({ facingMode: liveLectureState.facing === 'environment' ? 'environment' : 'user' });
+            if (typeof pushInAppNotification === 'function') pushInAppNotification('Camera', "Couldn't switch cameras on this device.");
             if (!nt) return;
-            const old = lectureLocalStream.getVideoTracks()[0];
-            if (old) { lectureLocalStream.removeTrack(old); old.stop(); }
-            lectureLocalStream.addTrack(nt);
-            Object.values(lecturePeerConnections).forEach(pc => {
-              const sender = pc.getSenders().find(x => x.track && x.track.kind === 'video');
-              if (sender) sender.replaceTrack(nt).catch(() => {});
-            });
-            liveLectureState.facing = next;
-            if (typeof applyLectureTrackStates === 'function') applyLectureTrackStates();
-            const v = document.getElementById('lecture-local-video');
-            if (v) { v.srcObject = lectureLocalStream; v.style.transform = next === 'environment' ? 'none' : 'scaleX(-1)'; }
-          } catch (err) { /* camera switch unavailable on this device */ }
+          } else {
+            liveLectureState.facing = (nt.getSettings && nt.getSettings().facingMode === 'environment') ? 'environment' : (nt.getSettings && nt.getSettings().facingMode === 'user' ? 'user' : next);
+          }
+          lectureLocalStream.addTrack(nt);
+          Object.values(lecturePeerConnections).forEach(pc => {
+            const sender = pc.getSenders().find(x => x.track && x.track.kind === 'video');
+            if (sender) sender.replaceTrack(nt).catch(() => {});
+          });
+          if (typeof applyLectureTrackStates === 'function') applyLectureTrackStates();
+          const v = document.getElementById('lecture-local-video');
+          if (v) { v.srcObject = lectureLocalStream; v.style.transform = liveLectureState.facing === 'environment' ? 'none' : 'scaleX(-1)'; try { v.play(); } catch (e) {} }
         }
 
         function toggleLectureHand(){
