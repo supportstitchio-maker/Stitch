@@ -6317,8 +6317,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // MEETINGS -- standalone calls (not tied to a class or a group chat).
         // Create from the "+" button -> Live or Scheduled -> share the link. Anyone signed in
         // who opens the link lands on a join screen and then the normal call screen.
-        // Backend: meetings / meeting_admins / meeting_reminders tables + RPCs
-        // (see meetings-migration.sql). Calls reuse the same WebRTC-over-Supabase-broadcast
+        // Backend (live Supabase): meetings + meeting_members tables and the RPCs create_meeting,
+        // get_meeting_by_code, join_meeting, end_meeting, set_meeting_reminder, list_my_meetings.
+        // They return camelCase JSON and raise errors; normalizeMeeting() below converts that to the
+        // flat shape the screens use. Admin notifications, push and reminders are sent by the database
+        // (process_meeting_reminders runs every minute), so the app does not send them itself.
+        // Calls reuse the same WebRTC-over-Supabase-broadcast
         // signaling as group calls, on the channel `call:meeting:<code>`.
         // =====================================================================
         let meetingDraft = { kind: 'live', title: '', date: '', time: '', admins: [], search: '' };
@@ -6334,6 +6338,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function isMeetingConvo(id){
           return typeof id === 'string' && id.indexOf('meeting:') === 0;
+        }
+
+        // Converts the database's meeting JSON into the flat shape used by the screens below.
+        // Meetings last duration_min (60) minutes from their start; "state" is worked out here.
+        function normalizeMeeting(j){
+          if (!j || !j.code) return null;
+          const startMs = new Date(j.startsAt).getTime();
+          const endMs = startMs + (Number(j.durationMin) || 60) * 60000;
+          const now = Date.now();
+          let state;
+          if (j.status === 'ended' || now >= endMs) state = 'ended';
+          else if (j.status === 'live' || now >= startMs - 5 * 60000) state = 'live';   // joinable 5 min before a scheduled start
+          else state = 'upcoming';
+          const role = j.myRole || null;
+          return {
+            id: j.id, code: j.code, title: j.title, kind: j.kind,
+            starts_at: j.startsAt, ends_at: new Date(endMs).toISOString(), state,
+            host_id: j.hostId, host_name: j.hostName || j.hostUsername || null,
+            is_host: role === 'host', is_admin: role === 'host' || role === 'admin',
+            admin_ids: (j.admins || []).map(a => a.id),
+            reminded: !!j.remind,
+          };
         }
 
         function buildMeetingLink(code){
@@ -6364,21 +6390,42 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           loadMyUpcomingMeetings();
         }
 
+        // Header + cards share the look of the "New collaboration" screen
+        function meetingScreenHeader(title, backAction){
+          return `
+            <div class="px-5 pb-3 border-b border-gray-100 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
+              <div class="flex items-center gap-3">
+                <button onclick="${backAction}" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text" style="text-align:right;">${title}</div>
+              </div>
+            </div>`;
+        }
+
+        function meetingChoiceCard(onclick, title, desc, detail){
+          return `
+            <button onclick="${onclick}" class="collab-type-card w-full text-left rounded-2xl border border-gray-200 bg-white p-4 mb-3 block" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div class="font-display font-semibold text-[17px] text-gray-900">${title}</div>
+              <div class="text-sm text-gray-500 mt-0.5 leading-snug">${desc}</div>
+              ${detail ? `<p class="text-xs text-gray-400 mt-2 leading-relaxed">${detail}</p>` : ''}
+            </button>`;
+        }
+
         function createMenuHTML(){
           const upcoming = (myUpcomingMeetings || []);
           return `
-            <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
-              <div class="-mx-5">${overlayHeader('Create', 'var(--top-safe-pad)', 'closeOverlay()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
-              ${classworkCreateMenuOptionRow('edit', 'Create a post', 'Share a photo, video or thought with the community', "openOverlay('create')")}
-              ${classworkCreateMenuOptionRow('video', 'Create a meeting', 'Start a call now or schedule one for later', "openOverlay('meetingKind')", !upcoming.length)}
+            ${meetingScreenHeader('Create something', 'closeOverlay()')}
+            <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
+              <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
+              ${meetingChoiceCard("openOverlay('create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
+              ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a call now or schedule one for later.', 'Share a link so anyone on Stitch can join.')}
               ${upcoming.length ? `
-                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-1">Your meetings</div>
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
                 ${upcoming.map(m => `
-                  <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full flex items-center gap-4 py-3 text-left" style="border-bottom:1px solid rgba(0,0,0,0.07);">
-                    <span class="w-11 h-11 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(m.kind === 'live' ? 'video' : 'calendar', 'w-5 h-5')}</span>
+                  <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 mb-3 text-left" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <span class="flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(m.kind === 'live' ? 'video' : 'calendar', 'w-5 h-5')}</span>
                     <div class="min-w-0 flex-1">
                       <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(m.title)}</div>
-                      <div class="text-xs text-gray-400">${escapeHtml(meetingWhenText(m.starts_at))}${m.is_host ? '' : ' · Admin'}</div>
+                      <div class="text-xs text-gray-400">${escapeHtml(meetingWhenText(m.starts_at))}${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
                     </div>
                   </button>`).join('')}` : ''}
             </div>`;
@@ -6390,7 +6437,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           try {
             const { data, error } = await sb.rpc('list_my_meetings');
             if (error || !Array.isArray(data)) return;
-            myUpcomingMeetings = data;
+            // Meetings I host or administer, plus scheduled ones I asked to be reminded about
+            myUpcomingMeetings = data.map(normalizeMeeting)
+              .filter(m => m && m.state !== 'ended' && (m.is_admin || (m.kind === 'scheduled' && m.reminded)));
             if (currentOverlayKind === 'createMenu') {
               const ov = document.getElementById('overlay');
               if (ov) ov.innerHTML = createMenuHTML();
@@ -6401,10 +6450,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // ---- Step 2: Live or Scheduled ----
         function meetingKindHTML(){
           return `
-            <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
-              <div class="-mx-5">${overlayHeader('New meeting', 'var(--top-safe-pad)', "openOverlay('createMenu')", null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
-              ${classworkCreateMenuOptionRow('video', 'Live meeting', 'Start right now and share the link', "chooseMeetingKind('live')")}
-              ${classworkCreateMenuOptionRow('calendar', 'Scheduled meeting', 'Pick a date and time, people get a reminder', "chooseMeetingKind('scheduled')", true)}
+            ${meetingScreenHeader('New meeting', "openOverlay('createMenu')")}
+            <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
+              <div class="text-sm text-gray-500 mb-4">What kind of meeting do you want to create?</div>
+              ${meetingChoiceCard("chooseMeetingKind('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
+              ${meetingChoiceCard("chooseMeetingKind('scheduled')", 'Scheduled meeting', 'Pick a date and time.', 'People who open the link can ask for a reminder before it starts.')}
             </div>`;
         }
 
@@ -6417,8 +6467,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function newMeetingHTML(){
           const scheduled = meetingDraft.kind === 'scheduled';
           return `
+            ${meetingScreenHeader(scheduled ? 'Schedule meeting' : 'Live meeting', "openOverlay('meetingKind')")}
             <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
-              <div style="margin:-1.25rem -1.25rem 0;">${overlayHeader(scheduled ? 'Schedule meeting' : 'Live meeting', 'var(--top-safe-pad)', "openOverlay('meetingKind')", null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Meeting title</label>
               <input type="text" id="meeting-title-input" maxlength="120" value="${escapeHtml(meetingDraft.title)}" oninput="meetingDraft.title=this.value" placeholder="e.g. Physics revision session" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">
               ${scheduled ? `
@@ -6469,7 +6519,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <span class="block text-sm font-semibold text-gray-800 truncate">${escapeHtml(p.name)}</span>
                   ${p.username ? `<span class="block text-xs text-gray-400 truncate">@${escapeHtml(p.username)}</span>` : ''}
                 </span>
-                <span class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${on ? 'text-white' : 'border border-gray-300 text-transparent'}" style="${on ? `background:${NAVY};` : ''}">${Icon('check', 'w-3.5 h-3.5')}</span>
               </button>`;
           }).join('');
         }
@@ -6532,23 +6581,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           try {
             const { data, error } = await sb.rpc('create_meeting', {
               p_title: title,
+              p_description: null,
               p_kind: meetingDraft.kind,
               p_starts_at: startsAtIso,
+              p_duration_min: 60,
               p_admin_ids: meetingDraft.admins.map(a => a.id),
             });
-            if (error || !data || data.status !== 'ok') {
-              console.warn('create_meeting failed (has meetings-migration.sql been run?):', error || data);
-              openAppAlertModal("Couldn't create the meeting. Please try again.");
+            const created = error ? null : normalizeMeeting(data);
+            if (!created) {
+              console.warn('create_meeting failed:', error || data);
+              if (error && /start_must_be_in_future/.test(error.message || '')) openAppAlertModal('Please pick a time in the future.');
+              else openAppAlertModal("Couldn't create the meeting. Please try again.");
               return;
             }
-            const admins = meetingDraft.admins.slice();
-            meetingCreated = { code: data.code, title: data.title, kind: data.kind, starts_at: data.starts_at, ends_at: data.ends_at };
-            notifyMeetingAdmins(meetingCreated, admins);
-            if (data.kind === 'live') {
-              openMeetingCall({ code: data.code, title: data.title, starts_at: data.starts_at, ends_at: data.ends_at, is_host: true, is_admin: true, admin_ids: admins.map(a => a.id) });
+            meetingCreated = { code: created.code, title: created.title, kind: created.kind, starts_at: created.starts_at, ends_at: created.ends_at };
+            // Contributors are notified (in-app + push) by the database inside create_meeting.
+            if (created.kind === 'live') {
+              openMeetingCall(created);
               pushInAppNotification('Meeting link ready', 'Tap the link button on the call screen to share it.');
             } else {
-              meetingAddLocalReminder(meetingCreated);
               ensureNotificationPermission();
               openOverlay('meetingCreated');
             }
@@ -6559,24 +6610,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             meetingSubmitting = false;
             const b = document.getElementById('meeting-submit-btn');
             if (b) { b.disabled = false; b.style.opacity = ''; }
-          }
-        }
-
-        // Contributors get an in-app notification (and a push) telling them they are admins.
-        async function notifyMeetingAdmins(m, admins){
-          if (!admins || !admins.length) return;
-          const myName = (typeof profileData !== 'undefined' && profileData && profileData.name) || 'Someone';
-          const link = buildMeetingLink(m.code);
-          const when = m.kind === 'live' ? 'It is live now.' : 'It starts ' + meetingWhenText(m.starts_at) + '.';
-          const title = "You're an admin of a meeting";
-          const message = `${myName} added you as a contributor on "${m.title}". ${when}`;
-          for (const a of admins) {
-            try {
-              if (typeof notifyUserRemote === 'function') {
-                await notifyUserRemote(a.id, { type: 'meeting_admin', title, message, metadata: { code: m.code, link, title: m.title, startsAt: m.starts_at } });
-              }
-              sendPushTo(a.id, { title, body: message, tag: 'meeting-' + m.code, data: { meetingCode: m.code } });
-            } catch (e) { console.warn('Could not notify meeting admin:', e); }
           }
         }
 
@@ -6662,8 +6695,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!sb) return { status: 'offline' };
           try {
             const { data, error } = await sb.rpc('get_meeting_by_code', { p_code: code });
-            if (error || !data) return { status: 'offline' };
-            return data;
+            if (error) return { status: 'offline' };
+            const m = normalizeMeeting(data);      // null data = no such meeting
+            return m ? Object.assign({ status: 'ok' }, m) : { status: 'not_found' };
           } catch (e) { return { status: 'offline' }; }
         }
 
@@ -6739,38 +6773,43 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sb = getSupabaseClient();
           if (!sb) { openAppAlertModal("Couldn't save the reminder right now. Please try again."); return; }
           try {
-            const { data, error } = await sb.rpc('set_meeting_reminder', { p_code: m.code, p_on: !!on });
-            if (error || !data || data.status !== 'ok') throw (error || new Error('reminder failed'));
+            // The database sends the reminder (in-app + push) 10 minutes before the start.
+            const { data, error } = await sb.rpc('set_meeting_reminder', { p_code: m.code, p_minutes_before: on ? 10 : null });
+            if (error || !data) throw (error || new Error('reminder failed'));
           } catch (e) {
             console.warn('set_meeting_reminder failed:', e);
             openAppAlertModal("Couldn't save the reminder right now. Please try again.");
             return;
           }
-          if (on) { meetingAddLocalReminder(m); ensureNotificationPermission(); }
-          else meetingRemoveLocalReminder(m.code);
+          if (on) ensureNotificationPermission();
           m.reminded = !!on;
           const ov = document.getElementById('overlay');
           if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
         }
 
-        // Plugs into the existing study-reminder engine (fires a notification + push 10 min before).
-        function meetingAddLocalReminder(m){
-          if (typeof studyReminders === 'undefined' || !m || m.kind === 'live') return;
-          const { date, time } = meetingLocalDateParts(m.starts_at);
-          const rid = 'rem-meet-' + m.code;
-          studyReminders = studyReminders.filter(r => r.id !== rid);
-          studyReminders.push({ id: rid, title: 'Meeting: ' + m.title, type: 'Meeting', date, time, lead: 10, meetingCode: m.code });
-          if (typeof queueSaveUserState === 'function') queueSaveUserState();
-        }
-        function meetingRemoveLocalReminder(code){
-          if (typeof studyReminders === 'undefined') return;
-          studyReminders = studyReminders.filter(r => r.id !== 'rem-meet-' + code);
-          if (typeof queueSaveUserState === 'function') queueSaveUserState();
-        }
-
-        function joinPendingMeeting(){
-          if (!pendingMeetingInfo) return;
-          openMeetingCall(pendingMeetingInfo);
+        async function joinPendingMeeting(){
+          const info = pendingMeetingInfo;
+          if (!info) return;
+          const sb = getSupabaseClient();
+          if (!sb) { openAppAlertModal("Couldn't join the meeting right now. Check your connection and try again."); return; }
+          try {
+            // Registers me as a member (and opens a scheduled meeting early when an admin joins close to the start)
+            const { data, error } = await sb.rpc('join_meeting', { p_code: info.code });
+            if (error) {
+              if (/meeting_ended/.test(error.message || '')) {
+                pendingMeetingInfo = Object.assign({}, info, { state: 'ended' });
+                const ov = document.getElementById('overlay');
+                if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
+                return;
+              }
+              throw error;
+            }
+            const m = normalizeMeeting(data);
+            openMeetingCall(m ? Object.assign({ status: 'ok' }, m) : info);
+          } catch (e) {
+            console.warn('join_meeting failed:', e);
+            openAppAlertModal("Couldn't join the meeting. Please try again.");
+          }
         }
 
         // ---- Into the call screen ----
@@ -6787,6 +6826,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const id = 'meeting:' + info.code;
           convoMeta[id] = { icon: 'users', avatarBg: 'bg-blue-50', name: info.title, username: '', preview: '', members: [], isMeeting: true, meetingCode: info.code };
           activeMeeting = {
+            id: info.id,
             code: info.code,
             title: info.title,
             endsAt: new Date(info.ends_at).getTime(),
@@ -6832,8 +6872,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sb = getSupabaseClient();
           if (sb) {
             try {
-              const { data } = await sb.rpc('end_meeting', { p_code: activeMeeting.code });
-              if (data && data.status === 'ok') sendCallSignal({ kind: 'meeting_end' });
+              // Raises 'admin_only' for anyone who isn't the host or an admin
+              const { data, error } = await sb.rpc('end_meeting', { p_meeting: activeMeeting.id });
+              if (!error && data) sendCallSignal({ kind: 'meeting_end' });
             } catch (e) { console.warn('end_meeting failed:', e); }
           }
           endCall();

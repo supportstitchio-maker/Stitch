@@ -123,7 +123,8 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const data = event.notification.data || {};
   const postId = data.postId;
-  const meetingCode = data.meetingCode;
+  // Server-sent meeting pushes carry the code as data.code on meeting_admin / meeting_reminder notifications
+  const meetingCode = data.meetingCode || ((typeof data.type === 'string' && data.type.indexOf('meeting_') === 0 && data.code) ? data.code : null);
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsList) => {
       for (const client of clientsList) {

@@ -1701,6 +1701,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             opportunity_reported: 'flag',
             cancel_reason: 'flag',
             meeting_admin: 'video',
+            meeting_reminder: 'calendar',
           };
           // Update local poster status the instant the decision notification lands, so "Poster
           // application pending" reflects it right away instead of waiting on a reload
@@ -1726,7 +1727,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           addNotif({
             id: 'srv-notif-' + row.id,
             pinned: row.type === 'interview_scheduled',
-            source: row.type === 'meeting_admin' ? 'app' : 'career',
+            source: (row.type === 'meeting_admin' || row.type === 'meeting_reminder') ? 'app' : 'career',
             type: row.type || 'info',
             icon: iconByType[row.type] || 'bell',
             iconBg: 'bg-blue-50',

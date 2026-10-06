@@ -3100,7 +3100,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             }
             return;
           }
-          if (n.type === 'meeting_admin' && n.meetingCode) {
+          if ((n.type === 'meeting_admin' || n.type === 'meeting_reminder') && n.meetingCode) {
             n.read = true;
             queueSaveUserState();
             closeOverlay();
