@@ -3616,15 +3616,3 @@ body.dark-mode .fc-sum-left{ color:#9db4ff; }
         body.dark-mode .collab-type-card:active{ background:rgba(255,255,255,0.08); }
 
 
-/* ---- Flashcards: call-style pulsing circles in the bottom corners of the definition side.
-   Decline (left, red) and accept (right, green) pulse for 2 seconds each time the card is flipped. ---- */
-.fc-corner{ position:absolute; bottom:26px; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; pointer-events:none; opacity:0; z-index:3; }
-.fc-corner svg{ position:relative; z-index:2; }
-.fc-corner-no{ left:26px; background:#e5484d; --fc-ring:229,72,77; }
-.fc-corner-yes{ right:26px; background:#2fb560; --fc-ring:47,181,96; }
-.fc-corner::before, .fc-corner::after{ content:""; position:absolute; inset:0; border-radius:50%; background:rgba(var(--fc-ring),0.55); z-index:1; opacity:0; }
-.fc-flipper.is-flipped .fc-corner{ animation:fcCornerLife 2s ease-in-out forwards; }
-.fc-flipper.is-flipped .fc-corner::before{ animation:fcCornerRing 1s ease-out 2 both; }
-.fc-flipper.is-flipped .fc-corner::after{ animation:fcCornerRing 1s ease-out .5s 2 both; }
-@keyframes fcCornerLife{ 0%{opacity:0; transform:scale(.6)} 12%{opacity:1; transform:scale(1.08)} 20%{transform:scale(1)} 50%{transform:scale(1.07)} 70%{transform:scale(1)} 88%{opacity:1} 100%{opacity:0; transform:scale(.9)} }
-@keyframes fcCornerRing{ 0%{opacity:.75; transform:scale(1)} 100%{opacity:0; transform:scale(2)} }

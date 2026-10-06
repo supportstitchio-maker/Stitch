@@ -1170,7 +1170,6 @@ let studyFabMenuOpen = false;
                 <div class="fc-text ${fcTextSize(text)} ${isFront ? 'font-display' : ''}">${escapeHtml(text)}</div>
               </div>
               <div class="fc-face-foot">${isFront ? 'Tap to reveal' : 'Swipe it away when you are ready'}</div>
-              ${isFront ? '' : `<span class="fc-corner fc-corner-no" aria-hidden="true">${FC_ICONS.frown}</span><span class="fc-corner fc-corner-yes" aria-hidden="true">${FC_ICONS.smile}</span>`}
             </div>`;
         }
 
