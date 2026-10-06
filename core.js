@@ -2153,7 +2153,11 @@
           });
           attachTaskbarScrollHandler(screenEl);
           if (typeof setupPullToRefresh === 'function') setupPullToRefresh(screenEl);
-          screenEl.addEventListener('click', () => { toggleBottomNav(); }, { passive: true });
+          screenEl.addEventListener('click', (e) => {
+            // Tapping a post caption (to expand / fold it) must never push the taskbar away
+            if (e && e.target && e.target.closest && e.target.closest('.post-caption-wrap')) return;
+            toggleBottomNav();
+          }, { passive: true });
           const overlayEl = document.getElementById('overlay');
           if (overlayEl) overlayEl.addEventListener('click', () => { toggleBottomNav(); }, { passive: true });
           // Notice Board / Stitch Bot / Gamification keep the classroom nav bar and scroll inside
@@ -2187,6 +2191,9 @@
             if (!nav) return;
             const navHeight = nav.offsetHeight || 64;
             const st = Math.max(0, scrollEl.scrollTop);
+            // A caption growing / folding changes the page height, which makes the browser nudge
+            // the scroll position. That is not the person scrolling, so the taskbar stays put.
+            if (Date.now() < (window.__navFreezeUntil || 0)) { bottomNavLastScroll = st; return; }
             const delta = st - bottomNavLastScroll;
             bottomNavOffset = Math.min(navHeight, Math.max(0, bottomNavOffset + delta));
             applyBottomNavVisual(nav, bottomNavOffset / navHeight);

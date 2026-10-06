@@ -1923,30 +1923,54 @@
           openConversation(convo.id);
         }
 
-        // When the on-screen keyboard opens, shrink the glimpse typing screens to the visible area
-        // so the text box sits right on top of the keyboard and you can see what you type
+        // When the on-screen keyboard opens, shrink the glimpse typing screens to the area above it
+        // so the text box sits right on top of the keyboard and you can see what you type.
+        // The app runs with the keyboard OVERLAYING the page (viewport meta + VirtualKeyboard API),
+        // so visualViewport never shrinks; the keyboard height has to come from getKeyboardInset()
+        // (core.js), the same helper the chat screen uses.
         (function glimpseKeyboardAvoid(){
           const vv = window.visualViewport;
-          if (!vv) return;
           const ids = ['glimpse-media-caption-screen', 'glimpse-compose-screen'];
+          const barIds = { 'glimpse-media-caption-screen': 'glimpse-media-caption-bar', 'glimpse-compose-screen': 'glimpse-compose-bar' };
+          const isGlimpseField = (el) => !!(el && /^(INPUT|TEXTAREA)$/.test(el.tagName) && el.closest && el.closest('#' + ids.join(', #')));
           const apply = () => {
-            const keyboardUp = (window.innerHeight - vv.height) > 120;
-            ids.forEach(id => {
-              const r = document.getElementById(id);
-              if (!r) return;
-              if (keyboardUp) {
-                r.style.height = vv.height + 'px';
-                r.style.transform = 'translateY(' + vv.offsetTop + 'px)';
+            const screens = ids.map(id => document.getElementById(id)).filter(Boolean);
+            if (!screens.length) return;
+            const typing = isGlimpseField(document.activeElement);
+            let inset = 0;
+            if (typing && typeof getKeyboardInset === 'function') inset = getKeyboardInset(true) || 0;
+            // Re-check: getKeyboardInset() drops focus when the keyboard was closed with the back gesture
+            const up = inset > 50 && isGlimpseField(document.activeElement);
+            screens.forEach(r => {
+              const bar = document.getElementById(barIds[r.id]);
+              // Remember the bar's normal bottom padding so it can be put back when the keyboard goes
+              if (bar && bar.dataset.pb0 === undefined) bar.dataset.pb0 = bar.style.paddingBottom;
+              if (up) {
+                r.style.height = 'calc(100% - ' + inset + 'px)';
+                if (bar) bar.style.paddingBottom = '10px';
               } else {
                 r.style.height = '';
-                r.style.transform = '';
+                if (bar && bar.dataset.pb0 !== undefined) bar.style.paddingBottom = bar.dataset.pb0;
               }
             });
           };
-          vv.addEventListener('resize', apply);
-          vv.addEventListener('scroll', apply);
-          document.addEventListener('focusin', () => { setTimeout(apply, 60); setTimeout(apply, 300); });
+          window.__glimpseKbApply = apply;
+          const soon = () => { requestAnimationFrame(apply); [80, 200, 400, 700].forEach(ms => setTimeout(apply, ms)); };
+          if (vv) {
+            vv.addEventListener('resize', apply);
+            vv.addEventListener('scroll', apply);
+          }
+          window.addEventListener('resize', apply);
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', apply);
+          document.addEventListener('focusin', soon);
           document.addEventListener('focusout', () => setTimeout(apply, 120));
+          // The typing screens are re-rendered (opened, caption refreshed, ...): re-apply to the fresh element
+          const watch = () => {
+            const ov = document.getElementById('overlay');
+            if (!ov || !window.MutationObserver) return;
+            new MutationObserver(() => { if (ov.querySelector('#' + ids.join(', #'))) soon(); }).observe(ov, { childList: true });
+          };
+          if (document.getElementById('overlay')) watch(); else document.addEventListener('DOMContentLoaded', watch);
         })();
 
         // ---- Glimpse composer (text) ----
@@ -1982,7 +2006,7 @@
                   class="w-full bg-transparent text-center font-semibold"
                   style="font-size:${GLIMPSE_COMPOSE_FONT_SIZE}; font-family:${GLIMPSE_COMPOSE_FONTS[glimpseComposeFontIndex]}; line-height:1.4; color:${fg}; caret-color:${fg}; outline:none; resize:none;">${glimpseComposeText}</textarea>
               </div>
-              <div class="flex items-center px-4 flex-shrink-0" style="justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
+              <div id="glimpse-compose-bar" class="flex items-center px-4 flex-shrink-0" style="justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
                 <button id="glimpse-compose-send" onclick="submitGlimpseCompose()" class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:${hasText ? '#22c55e' : btnBg};">${Icon('send','w-5 h-5 text-white')}</button>
               </div>
             </div>`;
@@ -2373,7 +2397,7 @@
               <div class="relative flex items-center px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
                 <button onclick="cancelGlimpseMediaCaption()" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.45);">${IconBold('close','w-5 h-5')}</button>
               </div>
-              <div class="relative flex items-end gap-2 px-4" style="margin-top:auto;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
+              <div id="glimpse-media-caption-bar" class="relative flex items-end gap-2 px-4" style="margin-top:auto;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
                 <textarea id="glimpse-media-caption-input" oninput="handleGlimpseMediaCaptionInput()" placeholder="Add a caption..." rows="1"
                   class="flex-1 min-w-0 text-sm text-white placeholder-gray-300" style="background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.25);outline:none;resize:none;padding:0.65rem 1rem;border-radius:9999px;max-height:6.5rem;overflow-y:auto;line-height:1.3;">${escapeHtml(glimpseMediaCaptionText)}</textarea>
                 <button id="glimpse-media-caption-send" onclick="submitGlimpseMediaCaption()" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:${hasCaption ? '#22c55e' : '#ffffff'};box-shadow:0 2px 8px rgba(0,0,0,0.35);">${Icon('send', hasCaption ? 'w-5 h-5 text-white' : `w-5 h-5 text-[${NAVY}]`)}</button>
@@ -4935,6 +4959,8 @@
           if (!wrap) { expandedPostCaptions.add(id); return; }
           expandedPostCaptions.add(id);
           if (wrap.classList.contains('expanded')) return;
+          // Keep the taskbar still while the caption grows (see the scroll handler in core.js)
+          window.__navFreezeUntil = Date.now() + 1000;
           const startH = wrap.offsetHeight;
           wrap.style.height = startH + 'px';
           wrap.classList.add('expanded');
@@ -4946,6 +4972,7 @@
             wrap.removeEventListener('transitionend', onEnd);
             wrap.style.transition = '';
             wrap.style.height = '';
+            window.__navFreezeUntil = Date.now() + 300;
           };
           const onEnd = (e) => { if (e.target === wrap && e.propertyName === 'height') done(); };
           wrap.addEventListener('transitionend', onEnd);
@@ -4965,6 +4992,9 @@
           const startH = txt.scrollHeight;
           if (startH <= collapsedH + 2) return; // short caption, nothing to fold
           expandedPostCaptions.delete(id);
+          // Keep the taskbar still while the caption folds back (the page gets shorter, so the
+          // browser may shift the scroll position, which must not move the taskbar)
+          window.__navFreezeUntil = Date.now() + 1000;
           wrap.style.height = startH + 'px';
           void wrap.offsetHeight;
           wrap.style.transition = 'height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)';
@@ -4978,6 +5008,7 @@
             wrap.classList.remove('expanded');
             wrap.classList.add('has-more');
             wrap.setAttribute('data-cap-checked', '1');
+            window.__navFreezeUntil = Date.now() + 300;
           };
           const onEnd = (e) => { if (e.target === wrap && e.propertyName === 'height') done(); };
           wrap.addEventListener('transitionend', onEnd);

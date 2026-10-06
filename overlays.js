@@ -883,8 +883,8 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <button type="button" onclick="openTagPeoplePicker()" class="text-xs font-semibold flex items-center gap-1.5 mb-2" style="color:${ROYAL}">${Icon('users','w-4 h-4')} Tag people</button>
               <div id="compose-tagged-chips" class="flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}">${composeTaggedChipsHTML()}</div>
             </div>
-            <div id="create-post-footer" class="px-4 pt-4 border-t flex-shrink-0" style="padding-bottom:50px;">
-              <button id="post-submit-btn" onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="transition:transform .12s ease, opacity .15s ease;"background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Post</button>
+            <div id="create-post-footer" class="px-4 pt-4 border-t flex-shrink-0" style="padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));">
+              <button id="post-submit-btn" onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);transition:transform .12s ease, opacity .15s ease;">Post</button>
             </div>`;
         }
 
