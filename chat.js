@@ -5882,6 +5882,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (stateEntry) {
               stateEntry.muted = !!payload.muted;
               stateEntry.camOff = !!payload.camOff;
+              const wasHand = !!stateEntry.hand;
+              stateEntry.hand = !!payload.hand;
+              if (stateEntry.hand && !wasHand && stateEntry.userId) callToast(callMemberName(stateEntry.userId) + ' raised a hand');
               refreshCallStage();
             }
             return;
@@ -5906,10 +5909,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             entry.userId = payload.userId || entry.userId;
             if (payload.muted !== undefined) entry.muted = !!payload.muted;
             if (payload.camOff !== undefined) entry.camOff = !!payload.camOff;
+            if (payload.hand !== undefined) entry.hand = !!payload.hand;
             if (entry.userId && isMeetingConvo(callState.convoId)) meetingResolvePeer(entry.userId);
             if (payload.kind === 'join') {
               const myId = await getCurrentUserId();
-              sendCallSignal({ kind: 'here', userId: myId, to: payload.from, muted: !!callState.muted, camOff: !!callState.camOff });
+              sendCallSignal({ kind: 'here', userId: myId, to: payload.from, muted: !!callState.muted, camOff: !!callState.camOff, hand: !!callState.handRaised });
             }
             await maybeBecomeCallOfferer(payload.from);
             return;
@@ -5981,7 +5985,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function attachCallLocalVideo(){
           const v = document.getElementById('call-local-video');
-          if (v && callLocalStream) v.srcObject = callLocalStream;
+          if (v && callLocalStream) { v.srcObject = callLocalStream; v.style.transform = callState.facing === 'environment' ? 'none' : 'scaleX(-1)'; }
         }
         function attachCallRemoteVideo(){
           const peerIds = Object.keys(callPeers);
@@ -6202,8 +6206,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           st.id = 'call-ui-styles';
           st.textContent = `
 
-            body{--cu-bg:#ffffff;--cu-fg:#111827;--cu-sub:rgba(17,24,39,.6);--cu-soft:rgba(17,24,39,.06);--cu-soft2:rgba(17,24,39,.12);--cu-line:rgba(17,24,39,.1);--cu-tile:#f3f4f6;--cu-sheet:#ffffff;--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
-            body.dark-mode{--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:rgba(255,255,255,.65);--cu-soft:rgba(255,255,255,.1);--cu-soft2:rgba(255,255,255,.18);--cu-line:rgba(255,255,255,.12);--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
+            body{--cu-bg:#f8fafc;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e5eaf2;--cu-sheet:#ffffff;--cu-bar:#f1f3f6;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
+            body.dark-mode{--cu-bg:#0b0d12;--cu-fg:#f1f5f9;--cu-sub:#94a3b8;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#242a36;--cu-tile:#1a1f29;--cu-sheet:#161a22;--cu-bar:#161a22;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
             ::view-transition-old(root),::view-transition-new(root){animation-duration:.18s;animation-timing-function:ease-out;}
             .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
             .cu-float{background:var(--cu-sheet);color:var(--cu-fg);box-shadow:0 4px 14px rgba(0,0,0,.18);}
@@ -6214,6 +6218,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bsheet-row{width:100%;display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:14px;text-align:left;font-weight:600;font-size:15px;color:inherit;}
             .cu-bsheet-row:active{background:var(--cu-soft);}
             .cu-bsheet-row.red{color:#ef4444;}
+            .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline:3px solid #22c55e;outline-offset:-3px;}
+            .cu-flip{position:absolute;right:8px;bottom:8px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);color:#fff;z-index:3;cursor:pointer;}
+            .cu-bsheet-row{border-radius:0;border-bottom:1px solid var(--cu-line);padding:12px 4px;}
+            .cu-bsheet-row:last-child{border-bottom:0;}
+            .cu-bsheet-row > :first-child{width:38px !important;height:38px;flex-shrink:0;border-radius:12px;background:var(--cu-blue-soft);color:#1e90ff;display:flex;align-items:center;justify-content:center;padding:9px;font-size:20px !important;}
+            .cu-bsheet-row.red > :first-child{background:rgba(239,68,68,.12);color:#ef4444;}
+            .cu-bsheet-row small{display:block;font-size:12px;font-weight:500;color:var(--cu-sub);margin-top:2px;}
             .cu-emoji-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:10px 6px 6px;}
             .cu-emoji-btn{width:100%;max-width:62px;aspect-ratio:1;margin:0 auto;border-radius:50%;font-size:clamp(24px,7.4vw,31px);line-height:1;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);transition:transform .12s ease;}
             .cu-emoji-btn:active{transform:scale(.88);}
@@ -6253,13 +6264,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             @keyframes cuRing{0%{transform:scale(.86);opacity:.9;}100%{transform:scale(1.65);opacity:0;}}
             .cu-voice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;width:100%;}
             .cu-voice-avatar-wrap{position:relative;width:clamp(150px,46vw,200px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
-            .cu-voice-avatar{color:#6b7280;position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px var(--cu-soft2);}
+            .cu-voice-avatar{color:#6b7280;position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 14px rgba(30,144,255,.1),0 0 0 30px rgba(30,144,255,.05);}
             .cu-voice-name{font-size:22px;font-weight:700;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
             .cu-voice-sub{font-size:13px;color:var(--cu-sub);display:inline-flex;align-items:center;gap:6px;}
             .cu-pip{position:absolute;top:14px;right:14px;width:27%;max-width:130px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--cu-line);background:var(--cu-tile);display:flex;align-items:center;justify-content:center;}
             .cu-pip video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
             .cu-bar{flex-shrink:0;display:flex;justify-content:center;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 22px);position:relative;z-index:2;}
-            .cu-bar-inner{display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,2.4vw,16px);padding:11px 12px 9px;scrollbar-width:none;border-radius:32px;max-width:100%;overflow-x:auto;background:var(--cu-soft);border:1px solid var(--cu-line);}
+            .cu-bar-inner{display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,2.4vw,16px);padding:11px 12px 9px;scrollbar-width:none;border-radius:34px;max-width:100%;overflow-x:auto;background:var(--cu-bar);border:1px solid var(--cu-line);}
             .cu-ctl{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:52px;flex-shrink:0;color:var(--cu-fg);}
             .cu-ctl-btn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft2);color:var(--cu-fg);transition:transform .12s ease,background .15s ease,color .15s ease;}
             .cu-ctl:active .cu-ctl-btn{transform:scale(.92);}
@@ -6283,7 +6294,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function cuIncomingHTML(o){
           ensureCallUiStyles();
           return `
-            <div class="cu-screen" style="padding-top:var(--top-safe-pad);">
+            <div class="cu-screen" style="padding-top:var(--top-safe-pad);background:linear-gradient(180deg,var(--cu-blue-soft),var(--cu-bg) 60%);">
               <div class="cu-top">
                 <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
                 <div class="cu-title"><div class="cu-status" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
@@ -6339,7 +6350,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function cuTileHTML(o){
           const tag = o.onclick ? 'button' : 'div';
           return `
-            <${tag} ${o.onclick ? `onclick="${o.onclick}"` : ''} class="cu-tile" style="${o.style || ''}">
+            <${tag} ${o.onclick ? `onclick="${o.onclick}"` : ''} ${o.speakKey ? `data-speak="${o.speakKey}"` : ''} class="cu-tile" style="${o.style || ''}">
               ${o.media || ''}
               ${!o.hasVideo ? `<div class="cu-avatar ${o.large ? 'cu-avatar-lg' : ''} ${o.bg || 'bg-blue-50'}">${o.avatar || ''}</div>` : ''}
               ${o.hand ? `<span class="cu-corner cu-hand">${cuEmoji('handRaised')}</span>` : ''}
@@ -6410,8 +6421,89 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           refreshCallStage();
         }
 
+
+        // ---- Raise hand (meetings / group calls) ----
+        function toggleCallHand(){
+          callState.handRaised = !callState.handRaised;
+          broadcastMyCallState();
+          refreshCallStage();
+          callToast(callState.handRaised ? 'Hand raised' : 'Hand lowered');
+        }
+
+        // ---- Flip front/back camera (swaps the video track live, peers keep their connection) ----
+        async function flipCallCamera(){
+          if (!callLocalStream || callState.camOff) return;
+          const next = callState.facing === 'environment' ? 'user' : 'environment';
+          try {
+            const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next } }, audio: false });
+            const nt = ns.getVideoTracks()[0];
+            if (!nt) return;
+            const old = callLocalStream.getVideoTracks()[0];
+            if (old) { callLocalStream.removeTrack(old); old.stop(); }
+            callLocalStream.addTrack(nt);
+            Object.values(callPeers).forEach(e => {
+              const sender = e.pc && e.pc.getSenders().find(x => x.track ? x.track.kind === 'video' : false) || (e.pc && e.pc.getSenders().find(x => !x.track));
+              if (sender) sender.replaceTrack(nt).catch(() => {});
+            });
+            callState.facing = next;
+            applyCallTrackStates();
+            attachCallLocalVideo();
+          } catch (err) { callToast("Couldn't switch camera"); }
+        }
+
+        // ---- Speaking ring: green outline on whoever is talking (calls, meetings and lectures) ----
+        let cuAudioCtx = null;
+        const cuSpeakProbes = {};
+        const cuSpeakLast = {};
+        function cuSpeakLevel(key, stream){
+          if (!stream || !stream.getAudioTracks().length) return 0;
+          const id = key + ':' + stream.id;
+          let pr = cuSpeakProbes[id];
+          if (!pr) {
+            try {
+              const Ctx = window.AudioContext || window.webkitAudioContext;
+              if (!Ctx) return 0;
+              cuAudioCtx = cuAudioCtx || new Ctx();
+              if (cuAudioCtx.state === 'suspended') cuAudioCtx.resume().catch(() => {});
+              const an = cuAudioCtx.createAnalyser();
+              an.fftSize = 512;
+              cuAudioCtx.createMediaStreamSource(stream).connect(an);
+              pr = cuSpeakProbes[id] = { an, buf: new Uint8Array(an.fftSize), key };
+            } catch (e) { return 0; }
+          }
+          pr.an.getByteTimeDomainData(pr.buf);
+          let sum = 0;
+          for (let i = 0; i < pr.buf.length; i++) { const v = (pr.buf[i] - 128) / 128; sum += v * v; }
+          return Math.sqrt(sum / pr.buf.length);
+        }
+        function cuSpeakTick(){
+          const srcs = [];
+          if (typeof callState !== 'undefined' && callState && callState.convoId) {
+            if (callLocalStream) srcs.push(['local', callLocalStream, !!callState.muted]);
+            Object.keys(callPeers).forEach(pid => { const e = callPeers[pid]; if (e && e.stream) srcs.push([pid, e.stream, !!e.muted]); });
+          }
+          if (typeof liveLectureState !== 'undefined' && liveLectureState.connected) {
+            if (typeof lectureLocalStream !== 'undefined' && lectureLocalStream) srcs.push(['local', lectureLocalStream, !!liveLectureState.muted]);
+            if (typeof lectureRemoteStreams !== 'undefined') Object.keys(lectureRemoteStreams).forEach(pid => {
+              const p = (typeof lecturePresence !== 'undefined' && lecturePresence[pid]) || {};
+              srcs.push([pid, lectureRemoteStreams[pid], !!p.muted]);
+            });
+          }
+          const now = Date.now(), live = {};
+          srcs.forEach(([key, stream, muted]) => {
+            live[key + ':' + stream.id] = true;
+            if (!muted && cuSpeakLevel(key, stream) > 0.035) cuSpeakLast[key] = now;
+            if (muted) cuSpeakLast[key] = 0;
+          });
+          Object.keys(cuSpeakProbes).forEach(id => { if (!live[id]) delete cuSpeakProbes[id]; });
+          document.querySelectorAll('[data-speak]').forEach(el => {
+            el.classList.toggle('cu-speaking', now - (cuSpeakLast[el.getAttribute('data-speak')] || 0) < 600);
+          });
+        }
+        setInterval(cuSpeakTick, 250);
+
         function broadcastMyCallState(){
-          sendCallSignal({ kind: 'state', muted: !!callState.muted, camOff: !!callState.camOff });
+          sendCallSignal({ kind: 'state', muted: !!callState.muted, camOff: !!callState.camOff, hand: !!callState.handRaised });
         }
 
         function refreshCallStage(){
@@ -6437,6 +6529,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
           const entry = Object.values(callPeers)[0];
           const remoteStream = entry && entry.stream;
+          const speakKey = Object.keys(callPeers)[0] || '';
           const peerMuted = !!(entry && entry.muted);
           const peerCamOff = !!(entry && entry.camOff);
 
@@ -6445,13 +6538,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
             if (isVideo) {
               const pip = `
-                <div class="cu-pip">
+                <div class="cu-pip" data-speak="local">
+                  ${showLocalVideo ? `<span class="cu-flip" title="Flip camera" style="right:6px;bottom:6px;width:28px;height:28px;" onclick="event.stopPropagation();flipCallCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''}
                   <video id="call-local-video" autoplay playsinline muted class="${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
                   ${!showLocalVideo ? `<span class="text-white/70 text-[10px] font-semibold text-center px-2">${callState.mediaError ? escapeHtml(callState.mediaError) : 'Camera off'}</span>` : ''}
                   ${callState.muted ? `<span class="cu-corner cu-mute" style="top:6px;right:6px;width:22px;height:22px;">${Icon('micOff', 'w-3 h-3')}</span>` : ''}
                 </div>`;
               return `
-                <div class="cu-tile" style="width:100%;height:100%;border-radius:26px;">
+                <div class="cu-tile" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;">
                   <video id="call-remote-video" autoplay playsinline class="${showRemoteVideo ? '' : 'hidden'}"></video>
                   ${!showRemoteVideo ? `<div class="cu-avatar cu-avatar-lg ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-12 h-12')}</div>` : ''}
                   <span class="cu-chip" style="left:12px;top:12px;bottom:auto;">${escapeHtml(callDisplayName(meta))}${peerMuted ? ' · Muted' : ''}</span>
@@ -6474,7 +6568,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           // Ringing / connecting
           if (showLocalVideo) {
             return `
-              <div class="cu-tile" style="width:100%;height:100%;border-radius:26px;">
+              <div class="cu-tile" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;">
                 <video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>
                 <span class="cu-chip">You</span>
               </div>`;
@@ -6520,14 +6614,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               media: `<video id="call-remote-video-${e.peerId}" autoplay playsinline muted class="${hasVideo ? '' : 'hidden'}"></video>
                       <audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>`,
               hasVideo, avatar: avatarInnerHTML(m, 'w-8 h-8'), bg: m.avatarBg || 'bg-gray-100',
-              name: m.name, muted: !!e.muted
+              name: m.name, muted: !!e.muted, hand: !!e.hand, speakKey: e.peerId
             };
           }
           function localSpec(){
             return {
               media: showLocalVideo ? `<video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>` : '',
               hasVideo: !!showLocalVideo, avatar: myCallAvatarHTML('w-8 h-8 text-gray-500'), bg: 'bg-blue-100',
-              name: 'You', muted: !!callState.muted
+              name: 'You', muted: !!callState.muted, hand: !!callState.handRaised, speakKey: 'local',
+              extra: showLocalVideo ? `<span class="cu-flip" title="Flip camera" onclick="event.stopPropagation();flipCallCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''
             };
           }
 
@@ -6975,14 +7070,36 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="text-2xl font-bold font-display mb-1">Meeting scheduled</div>
               <div class="text-base font-semibold text-gray-800 mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
               <div class="text-sm text-gray-500 mb-6">${escapeHtml(meetingWhenText(m.starts_at))}</div>
-              <div class="w-full max-w-sm bg-gray-100 rounded-2xl px-4 py-3 text-xs text-gray-600 break-all text-left mb-3">${escapeHtml(link)}</div>
+              <div class="w-full max-w-sm rounded-2xl px-4 py-3 text-xs break-all text-left mb-3" style="background:var(--cu-soft,#f1f5f9);color:var(--cu-sub,#64748b);border:1px solid var(--cu-line,#e2e8f0);">${escapeHtml(link)}</div>
               <div class="w-full max-w-sm flex gap-3 mb-3">
                 <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm" style="background:rgba(30,144,255,0.1);color:${NAVY};">Copy link</button>
                 <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-white text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Share</button>
               </div>
+              <button onclick="addMeetingToCalendar()" class="w-full max-w-sm font-semibold py-3 rounded-full text-sm mb-3" style="background:rgba(30,144,255,0.1);color:${NAVY};">Add to calendar</button>
               <div class="text-xs text-gray-400 mb-8 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
               <button onclick="closeOverlay()" class="text-sm font-semibold text-gray-500">Done</button>
             </div>`;
+        }
+
+        function addMeetingToCalendar(){
+          const m = meetingCreated || pendingMeetingInfo;
+          if (!m || !m.starts_at) return;
+          const start = new Date(m.starts_at);
+          if (isNaN(start.getTime())) return;
+          const end = new Date(start.getTime() + 60 * 60 * 1000);
+          const f = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+          const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+          const link = buildMeetingLink(m.code);
+          const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Stitch//Meetings//EN','BEGIN:VEVENT',
+            'UID:' + (m.code || Date.now()) + '@stitch','DTSTAMP:' + f(new Date()),'DTSTART:' + f(start),'DTEND:' + f(end),
+            'SUMMARY:' + esc(m.title || 'Meeting'),'DESCRIPTION:' + esc('Join on Stitch: ' + link),'URL:' + link,
+            'BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:Meeting starting soon','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+          const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = (String(m.title || 'meeting').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'meeting') + '.ics';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         }
 
         function copyMeetingLink(code){
@@ -7078,9 +7195,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function meetingJoinHTML(){
-          const shell = inner => `<div class="flex-1 flex flex-col items-center justify-center px-8 text-center" style="padding-top:var(--top-safe-pad);">${inner}</div>`;
+          const shell = inner => `<div class="flex-1 flex flex-col items-center justify-center px-8 text-center relative" style="padding-top:var(--top-safe-pad);"><button onclick="closeOverlay()" title="Back" class="absolute w-10 h-10 rounded-full flex items-center justify-center" style="top:calc(var(--top-safe-pad) + 12px);left:16px;background:rgba(127,127,127,0.14);">${IconBold('back','w-5 h-5')}</button>${inner}</div>`;
           const iconBubble = name => `<div class="w-16 h-16 rounded-full flex items-center justify-center mb-5" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon(name, 'w-7 h-7')}</div>`;
-          const closeBtn = label => `<button onclick="closeOverlay()" class="text-sm font-semibold text-gray-400 mt-1">${label || 'Close'}</button>`;
+          const closeBtn = label => '';
           const primary = (label, action) => `<button onclick="${action}" class="w-full max-w-xs font-semibold py-3 rounded-full text-white mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${label}</button>`;
 
           if (pendingMeetingError === 'not_found') {
@@ -7304,6 +7421,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="cu-bsheet-grab"></div>
                 ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
                 ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
+                ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
+                ${(callState.type === 'video' && callLocalStream && !callState.camOff) ? `<button onclick="closeMeetingSheet();flipCallCamera()" class="cu-bsheet-row"><span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span><span>Flip camera</span></button>` : ''}
+                ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
                 ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
               </div>`;

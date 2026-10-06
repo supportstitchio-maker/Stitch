@@ -6493,12 +6493,12 @@ try {
         function guestLectureJoinHTML(){
           const name = (typeof profileData !== 'undefined' && profileData.name) || 'You';
           return `
-            <div class="flex-1 flex flex-col items-center justify-center px-8 text-center" style="padding-top:var(--top-safe-pad);">
+            <div class="flex-1 flex flex-col items-center justify-center px-8 text-center relative" style="padding-top:var(--top-safe-pad);">
+              <button onclick="cancelGuestLectureJoin()" title="Back" class="absolute w-10 h-10 rounded-full flex items-center justify-center" style="top:calc(var(--top-safe-pad) + 12px);left:16px;background:rgba(127,127,127,0.14);">${IconBold('back','w-5 h-5')}</button>
               <div class="w-16 h-16 rounded-full flex items-center justify-center mb-5" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('video','w-7 h-7')}</div>
               <div class="text-xl font-bold font-display mb-2">You're invited to a live lecture</div>
               <div class="text-sm text-gray-500 mb-6 leading-relaxed">Join as ${escapeHtml(name)}. You'll only join this lecture -- not the rest of the class, its roster, or its classwork.</div>
               <button onclick="submitGuestLectureJoin()" class="w-full max-w-xs font-semibold py-3 rounded-full text-white mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Join lecture</button>
-              <button onclick="cancelGuestLectureJoin()" class="text-sm font-semibold text-gray-400">Not now</button>
             </div>`;
         }
 
@@ -6554,6 +6554,27 @@ try {
           updateLectureLocalBadges();
           updateLectureControlBarButtons();
           updateLecturePresenceTrack();
+        }
+
+        async function flipLectureCamera(){
+          if (!lectureLocalStream || liveLectureState.camOff || liveLectureState.screenSharing) return;
+          const next = liveLectureState.facing === 'environment' ? 'user' : 'environment';
+          try {
+            const ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next } }, audio: false });
+            const nt = ns.getVideoTracks()[0];
+            if (!nt) return;
+            const old = lectureLocalStream.getVideoTracks()[0];
+            if (old) { lectureLocalStream.removeTrack(old); old.stop(); }
+            lectureLocalStream.addTrack(nt);
+            Object.values(lecturePeerConnections).forEach(pc => {
+              const sender = pc.getSenders().find(x => x.track && x.track.kind === 'video');
+              if (sender) sender.replaceTrack(nt).catch(() => {});
+            });
+            liveLectureState.facing = next;
+            if (typeof applyLectureTrackStates === 'function') applyLectureTrackStates();
+            const v = document.getElementById('lecture-local-video');
+            if (v) { v.srcObject = lectureLocalStream; v.style.transform = next === 'environment' ? 'none' : 'scaleX(-1)'; }
+          } catch (err) { /* camera switch unavailable on this device */ }
         }
 
         function toggleLectureHand(){
@@ -7093,7 +7114,7 @@ try {
           const showLocalVideo = isSharing || (lectureLocalStream && !liveLectureState.camOff && !liveLectureState.mediaError);
           // Screen share stays un-cropped (object-contain) so the whole shared screen is visible
           // instead of being cover-cropped like a face
-          if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full ${isSharing ? 'object-contain bg-black' : 'object-cover'}" style="${isSharing ? '' : 'transform:scaleX(-1);'}"></video>`;
+          if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full ${isSharing ? 'object-contain bg-black' : 'object-cover'}" style="${isSharing ? '' : (liveLectureState.facing === 'environment' ? '' : 'transform:scaleX(-1);')}"></video>`;
           return `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar bg-blue-100">${avatarMediaHTML(profileData.photo, 'user', 'w-8 h-8 text-gray-500')}</div></div>`;
         }
 
@@ -7101,14 +7122,15 @@ try {
           const st = liveLectureState;
           return `
             ${st.screenSharing ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
+            ${(!st.camOff && !st.screenSharing && lectureLocalStream && lectureLocalStream.getVideoTracks().length) ? `<span class="cu-flip" title="Flip camera" onclick="event.stopPropagation();flipLectureCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''}
             ${st.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
             ${st.camOff && !st.screenSharing ? `<span class="cu-corner" style="right:${st.muted ? '40px' : '8px'};">${Icon('cameraOff','w-3.5 h-3.5')}</span>` : ''}
             ${st.handRaised ? `<span class="cu-corner cu-hand" style="top:${st.screenSharing ? '40px' : '8px'};">${cuEmoji('handRaised')}</span>` : ''}`;
         }
 
-        function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass, spotlight){
+        function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass, spotlight, speakKey){
           return `
-            <div class="cu-tile" ${tileId ? `id="${tileId}"` : ''} style="width:100%;height:100%;${spotlight ? 'border-radius:22px;' : ''}">
+            <div class="cu-tile" ${speakKey ? `data-speak="${speakKey}"` : ''} ${tileId ? `id="${tileId}"` : ''} style="width:100%;height:100%;${spotlight ? 'border-radius:22px;' : ''}">
               ${videoInner}
               ${badgesInner || ''}
               <span class="cu-chip">${caption}</span>
@@ -7159,7 +7181,8 @@ try {
             iAmTeacher ? 'You · Host' : 'You',
             'lecture-local-tile',
             localSharing ? 'bg-black' : null,
-            spotlightId === 'local'
+            spotlightId === 'local',
+            'local'
           );
           const sortedPeerIds = peerIds.slice().sort((a, b) => {
             const ta = lecturePresence[a].isTeacher ? 1 : 0;
@@ -7177,7 +7200,7 @@ try {
               ${!showVideo ? `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar ${LECTURE_TILE_COLORS[i % LECTURE_TILE_COLORS.length]}"><span class="text-white font-bold text-2xl">${escapeHtml((p.name || '?').trim().charAt(0).toUpperCase())}</span></div></div>` : ''}`;
             const badgesInner = `<div id="lecture-remote-badges-${peerId}">${lectureRemoteBadgesHTML(p)}</div>`;
             const caption = `${escapeHtml(p.name)}${p.isTeacher ? ' · Host' : ''}`;
-            otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, null, isSpotlight);
+            otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, null, isSpotlight, peerId);
           });
 
           const mediaErr = liveLectureState.mediaError ? `<div class="cu-alert">${escapeHtml(liveLectureState.mediaError)}</div>` : '';
