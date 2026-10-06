@@ -1109,7 +1109,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'paidpay') {
             const row = (t) => `<li style="display:flex;gap:8px;"><span style="color:${NAVY};font-weight:700;">•</span><span>${t}</span></li>`;
             return `
-              <div style="background:#f9fafb;border:1.5px solid #cbd5e1;border-radius:16px;padding:14px 16px;">
+              <div style="padding:4px 2px;">
                 <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55;color:#4b5563;">
                   ${row(`Stitch keeps <b>${PAID_SELLER_SHARE_PCT}%</b> of every sale. You keep <b>${100 - PAID_SELLER_SHARE_PCT}%</b>. On a GH₵100 sale, that's GH₵${100 - PAID_SELLER_SHARE_PCT} for you.`)}
                   ${row(`Students pay online. Your earnings go into your Stitch wallet. ${PAID_SELLER_SCHEDULE_TEXT}`)}

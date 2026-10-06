@@ -901,7 +901,7 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
                 ${selectedMediaItems.map((item, i) => `
                   <div class="relative flex-shrink-0 w-full rounded-2xl overflow-hidden bg-black" style="scroll-snap-align:center;max-height:16rem;">
                     ${item.type === 'video'
-                      ? `<video src="${item.url}" controls class="w-full h-auto max-h-64" style="object-fit:contain;"></video>`
+                      ? `<video src="${item.url}" controls disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" class="w-full h-auto max-h-64" style="object-fit:contain;"></video>`
                       : `<img src="${item.url}" class="w-full h-auto max-h-64" style="object-fit:contain;">`}
                     <button type="button" onclick="event.stopPropagation(); removeSelectedMediaItem(${i})" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.55);">${IconBold('close','w-3.5 h-3.5')}</button>
                   </div>`).join('')}

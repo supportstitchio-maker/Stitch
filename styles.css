@@ -2040,8 +2040,13 @@
 .feed-video-wrap { cursor: pointer; }
 .feed-video-playbtn { transition: opacity 150ms ease; opacity: 1; }
 .feed-video-wrap video::-webkit-media-controls,
-.feed-video-wrap video::-webkit-media-controls-enclosure {
+.feed-video-wrap video::-webkit-media-controls-enclosure,
+[id^="post-"] video::-webkit-media-controls,
+[id^="post-"] video::-webkit-media-controls-enclosure,
+[id^="post-"] video::-webkit-media-controls-panel,
+[id^="post-"] video::-webkit-media-controls-overlay-play-button {
   display: none !important;
+  -webkit-appearance: none;
 }
 
 #post-feed-list {

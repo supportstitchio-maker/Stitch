@@ -1033,7 +1033,7 @@ let studyFabMenuOpen = false;
                 <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
-                  <div class="text-xs text-amber-600">Scanning with AI: building flashcards &amp; questions…</div>
+                  <div class="text-xs text-amber-600">Scanning with Stitch Bot: building flashcards &amp; questions…</div>
                 </div>
               </div>`;
           }

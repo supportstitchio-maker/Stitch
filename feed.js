@@ -2919,8 +2919,11 @@
           const originalClass = placeholder.dataset.originalClass || '';
           loadedEl.className = originalClass;
           if (isVideo) {
-            loadedEl.setAttribute('controls', '');
-            loadedEl.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen');
+            loadedEl.removeAttribute('controls');
+            loadedEl.controls = false;
+            loadedEl.setAttribute('disablePictureInPicture', '');
+            loadedEl.disablePictureInPicture = true;
+            loadedEl.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen noremoteplayback');
             loadedEl.setAttribute('playsinline', '');
             loadedEl.setAttribute('preload', 'metadata');
             loadedEl.muted = false;
@@ -3104,7 +3107,8 @@
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
-              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);z-index:16;">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+              ${scrubStripHtml(uid, true)}
               ${effectivePoster ? `<img src="${effectivePoster}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : ''}
             </div>`;
         }
@@ -3139,15 +3143,22 @@
           t = Math.max(0, Math.floor(t || 0));
           return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
         }
-        function scrubStripHtml(wrapId){
+        function scrubStripHtml(wrapId, inline){
+          const uiBottom = inline ? '14px' : 'calc(env(safe-area-inset-bottom, 0px) + 56px)';
+          // Feed posts: a shorter strip that still lets the page scroll up/down and still lets a tap
+          // open the post
+          const stripStyle = inline
+            ? 'position:absolute;left:0;right:0;bottom:0;height:64px;z-index:14;touch-action:pan-y;'
+            : 'position:absolute;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom, 0px) + 72px);z-index:14;touch-action:none;';
+          const flag = inline ? ',1' : '';
           return `
-            <div id="${wrapId}-scrub-ui" style="position:absolute;left:18px;right:18px;bottom:calc(env(safe-area-inset-bottom, 0px) + 56px);opacity:0;transition:opacity .15s ease;pointer-events:none;z-index:15;">
+            <div id="${wrapId}-scrub-ui" style="position:absolute;left:18px;right:18px;bottom:${uiBottom};opacity:0;transition:opacity .15s ease;pointer-events:none;z-index:15;">
               <div id="${wrapId}-scrub-time" style="color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,.7);font-variant-numeric:tabular-nums;">0:00 / 0:00</div>
               <div style="height:4px;border-radius:99px;background:rgba(255,255,255,.35);overflow:hidden;"><div id="${wrapId}-scrub-fill" style="height:100%;width:0%;background:#fff;border-radius:99px;"></div></div>
             </div>
-            <div style="position:absolute;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom, 0px) + 72px);z-index:14;touch-action:none;"
-              onclick="event.stopPropagation()"
-              ontouchstart="scrubTouchStart(event,'${wrapId}')" ontouchmove="scrubTouchMove(event,'${wrapId}')" ontouchend="scrubTouchEnd(event,'${wrapId}')" ontouchcancel="scrubTouchEnd(event,'${wrapId}')"></div>`;
+            <div style="${stripStyle}"
+              ${inline ? '' : 'onclick="event.stopPropagation()"'}
+              ontouchstart="scrubTouchStart(event,'${wrapId}'${flag})" ontouchmove="scrubTouchMove(event,'${wrapId}')" ontouchend="scrubTouchEnd(event,'${wrapId}')" ontouchcancel="scrubTouchEnd(event,'${wrapId}')"></div>`;
         }
         const scrubState = {};
         function scrubUpdateUi(wrapId, video){
@@ -3157,29 +3168,39 @@
           if (t) t.textContent = scrubFmt(video.currentTime) + ' / ' + scrubFmt(dur);
           if (f) f.style.width = (dur ? Math.min(100, video.currentTime / dur * 100) : 0) + '%';
         }
-        function scrubTouchStart(e, wrapId){
+        function scrubTouchStart(e, wrapId, inline){
           // Keep the post-to-post swipe and the tap-to-pause from also reacting to this touch
-          e.stopPropagation();
+          if (!inline) e.stopPropagation();
           const wrap = document.getElementById(wrapId);
           const video = wrap && wrap.querySelector('video');
           const t = e.touches && e.touches[0];
           if (!video || !t || !isFinite(video.duration) || !video.duration) return;
           clearTimeout((scrubState[wrapId] || {}).hideTimer);
-          scrubState[wrapId] = { startX: t.clientX, startTime: video.currentTime, wasPlaying: !video.paused, moved: false };
-          video.pause();
+          scrubState[wrapId] = { startX: t.clientX, startY: t.clientY, startTime: video.currentTime, wasPlaying: !video.paused, moved: false, inline: !!inline, cancelled: false };
+          // Feed posts only pause once the finger really swipes sideways (so a tap or a scroll is untouched)
+          if (!inline) video.pause();
         }
         function scrubTouchMove(e, wrapId){
-          e.stopPropagation();
           const st = scrubState[wrapId];
+          if (!st || st.cancelled) return;
+          if (!st.inline) e.stopPropagation();
           const wrap = document.getElementById(wrapId);
           const video = wrap && wrap.querySelector('video');
           const t = e.touches && e.touches[0];
-          if (!st || !video || !t) return;
-          if (e.cancelable) e.preventDefault();
+          if (!video || !t) return;
           const dx = t.clientX - st.startX;
+          if (st.inline && !st.moved) {
+            const dy = t.clientY - st.startY;
+            // Mostly vertical = the person is scrolling the feed: leave it alone
+            if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) { st.cancelled = true; return; }
+            if (Math.abs(dx) < 10) return;
+          }
+          e.stopPropagation();
+          if (e.cancelable) e.preventDefault();
           if (!st.moved && Math.abs(dx) < 4) return;
           if (!st.moved) {
             st.moved = true;
+            if (st.inline) video.pause();
             const ui = document.getElementById(wrapId + '-scrub-ui');
             if (ui) ui.style.opacity = '1';
           }
@@ -3190,12 +3211,18 @@
           scrubUpdateUi(wrapId, video);
         }
         function scrubTouchEnd(e, wrapId){
-          e.stopPropagation();
           const st = scrubState[wrapId];
+          if (!st) return;
+          if (!st.inline || st.moved) e.stopPropagation();
           const wrap = document.getElementById(wrapId);
           const video = wrap && wrap.querySelector('video');
-          if (!st) return;
-          if (video && st.wasPlaying && video.dataset.userPaused !== '1') video.play().catch(() => {});
+          if (st.moved && st.inline) {
+            // A swipe must not also count as a tap that opens the post
+            const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+            document.addEventListener('click', swallow, { capture: true, once: true });
+            setTimeout(() => document.removeEventListener('click', swallow, true), 400);
+          }
+          if (video && (st.moved || !st.inline) && st.wasPlaying && video.dataset.userPaused !== '1') video.play().catch(() => {});
           st.hideTimer = setTimeout(() => {
             const ui = document.getElementById(wrapId + '-scrub-ui');
             if (ui) ui.style.opacity = '0';
