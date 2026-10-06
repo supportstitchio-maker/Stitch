@@ -1085,7 +1085,6 @@ let studyFabMenuOpen = false;
           fcStartedAt = Date.now();
           fcRound = 1;
           fcStartRound(deck.cards.slice());
-          fcHintPending = true;
           document.getElementById('flashModal').classList.remove('hidden');
           renderFlashModal();
           fcStartTimer();
@@ -1171,6 +1170,7 @@ let studyFabMenuOpen = false;
                 <div class="fc-text ${fcTextSize(text)} ${isFront ? 'font-display' : ''}">${escapeHtml(text)}</div>
               </div>
               <div class="fc-face-foot">${isFront ? 'Tap to reveal' : 'Swipe it away when you are ready'}</div>
+              ${isFront ? '' : `<span class="fc-corner fc-corner-no" aria-hidden="true">${FC_ICONS.frown}</span><span class="fc-corner fc-corner-yes" aria-hidden="true">${FC_ICONS.smile}</span>`}
             </div>`;
         }
 
@@ -1221,58 +1221,6 @@ let studyFabMenuOpen = false;
               <button onclick="fcMark(true)" class="fc-act fc-act-yes" aria-label="Got it">${FC_ICONS.smile}</button>
             </div>`;
           fcBindDrag();
-          if (fcHintPending) { fcHintPending = false; fcShowGestureHint(); }
-        }
-
-        // 5-second animated 3D hand shown each time flashcards open: swipes along the bottom of the
-        // card right ("got it") then left ("again"), so the gestures are obvious
-        let fcHintPending = false, fcHintTimer = null;
-        function fcHandSvg(){
-          // Cartoon glove with a long pointing finger, rounded 3D palm, thumb lobe and cuff,
-          // shaded with gradients so it reads as a 3D hand. Fingertip is at about (95, 40).
-          return `<svg viewBox="0 0 360 360" width="112" height="112" aria-hidden="true" style="overflow:visible;">
-            <defs>
-              <radialGradient id="fcgPalm" cx="0.38" cy="0.3" r="0.85"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#f3f5f9"/><stop offset="1" stop-color="#bcc3d1"/></radialGradient>
-              <linearGradient id="fcgFing" x1="0" y1="0" x2="1" y2="0.4"><stop offset="0" stop-color="#ffffff"/><stop offset="0.6" stop-color="#f6f7fb"/><stop offset="1" stop-color="#b3bacb"/></linearGradient>
-              <linearGradient id="fcgCuff" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9ea7bc"/></linearGradient>
-              <linearGradient id="fcgShade" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#55607f" stop-opacity="0"/><stop offset="1" stop-color="#55607f" stop-opacity="0.38"/></linearGradient>
-            </defs>
-            <path d="M80 66 C74 38 106 30 120 52 L172 132 C198 124 228 134 250 150 C272 152 288 176 285 206 C282 238 264 260 240 270 C214 280 186 270 168 252 C154 256 134 250 128 232 C124 214 134 198 152 192 L104 108 C92 92 82 80 80 66 Z" fill="url(#fcgPalm)" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
-            <path d="M82 66 C78 42 104 36 116 54 L156 116 L124 128 C98 104 84 84 82 66 Z" fill="url(#fcgFing)"/>
-            <path d="M92 58 C94 46 104 44 108 52 L124 80 C112 74 96 70 92 58 Z" fill="#fff" opacity="0.9"/>
-            <path d="M150 196 C176 214 214 218 252 206 C270 234 252 262 238 268 C212 278 186 270 168 252 C154 256 134 250 128 232 C126 216 138 200 150 196 Z" fill="url(#fcgShade)"/>
-            <path d="M120 188 C108 196 108 222 124 232 C136 238 150 232 156 220" fill="none" stroke="#111" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M138 206 c8 -2 14 0 18 4" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>
-            <path d="M222 190 q10 18 10 40 M238 184 q12 18 12 42 M254 184 q10 14 8 34" fill="none" stroke="#a7afc2" stroke-width="4" stroke-linecap="round"/>
-            <g transform="rotate(-28 258 278)">
-              <rect x="226" y="256" width="66" height="46" rx="22" fill="url(#fcgCuff)" stroke="#111" stroke-width="5"/>
-              <path d="M240 296 c14 6 34 6 48 -2" fill="none" stroke="#8a93a9" stroke-width="4" stroke-linecap="round"/>
-            </g>
-          </svg>`;
-        }
-        function fcRemoveGestureHint(){
-          clearTimeout(fcHintTimer); fcHintTimer = null;
-          const h = document.getElementById('fcGestureHint');
-          if (h) h.remove();
-        }
-        function fcShowGestureHint(){
-          fcRemoveGestureHint();
-          const stack = document.querySelector('#flashModalContent .fc-stack');
-          const card = document.getElementById('fcCard');
-          if (!stack) return;
-          const hint = document.createElement('div');
-          hint.id = 'fcGestureHint';
-          hint.className = 'fc-hint';
-          hint.innerHTML = `
-            <div class="fc-hint-msgs">
-              <span class="fc-hint-msg fc-hint-m1">Swipe right if you know it</span>
-              <span class="fc-hint-msg fc-hint-m2">Swipe left to see it again</span>
-            </div>
-            <div class="fc-hint-anchor"><div class="fc-hint-shadow"></div><div class="fc-hint-hand">${fcHandSvg()}</div></div>`;
-          stack.appendChild(hint);
-          // Touching the card ends the demo straight away
-          if (card) card.addEventListener('pointerdown', fcRemoveGestureHint, { once: true });
-          fcHintTimer = setTimeout(fcRemoveGestureHint, 5000);
         }
 
         // Swipe handling. The card owns every touch on it (touch-action:none), so the browser can
