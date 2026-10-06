@@ -6866,14 +6866,34 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${upcoming.length ? `
                 <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
                 ${upcoming.map(m => `
-                  <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 mb-3 text-left" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                    <span class="flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(m.kind === 'live' ? 'video' : 'calendar', 'w-5 h-5')}</span>
-                    <div class="min-w-0 flex-1">
+                  <div class="w-full rounded-2xl border border-gray-200 bg-white mb-3 overflow-hidden" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full p-4 text-left">
                       <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(m.title)}</div>
                       <div class="text-xs text-gray-400">${escapeHtml(meetingWhenText(m.starts_at))}${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
-                    </div>
-                  </button>`).join('')}` : ''}
+                    </button>
+                    ${m.is_admin ? `<button onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')" class="w-full py-2.5 text-xs font-semibold border-t border-gray-100" style="color:#ef4444;">${m.state === 'live' ? 'End meeting' : 'Cancel meeting'}</button>` : ''}
+                  </div>`).join('')}` : ''}
             </div>`;
+        }
+
+        function confirmEndMeetingFromList(code){
+          const m = (myUpcomingMeetings || []).find(x => x.code === code);
+          if (!m) return;
+          const live = m.state === 'live';
+          openAppConfirmModal(live ? 'End this meeting?' : 'Cancel this meeting?', live ? 'Anyone in the call will be removed.' : 'It will no longer be available to join.', live ? 'End meeting' : 'Cancel meeting', async () => {
+            const sb = getSupabaseClient();
+            if (!sb) { openAppAlertModal("Couldn't reach the server. Check your connection and try again."); return; }
+            try {
+              const { error } = await sb.rpc('end_meeting', { p_meeting: m.id });
+              if (error) throw error;
+              myUpcomingMeetings = (myUpcomingMeetings || []).filter(x => x.code !== code);
+              if (currentOverlayKind === 'createMenu') { const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = createMenuHTML(); }
+              loadMyUpcomingMeetings();
+            } catch (e) {
+              console.warn('end_meeting failed:', e);
+              openAppAlertModal("Couldn't end the meeting. Please try again.");
+            }
+          }, 'phoneHangup');
         }
 
         async function loadMyUpcomingMeetings(){
@@ -7043,7 +7063,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             meetingCreated = { code: created.code, title: created.title, kind: created.kind, starts_at: created.starts_at, ends_at: created.ends_at };
             // Contributors are notified (in-app + push) by the database inside create_meeting.
             if (created.kind === 'live') {
-              openMeetingCall(created);
+              // Ask camera on/off before entering: same pre-join screen everyone else gets
+              pendingMeetingCode = created.code;
+              pendingMeetingInfo = Object.assign({ status: 'ok', is_host: true, is_admin: true }, created);
+              pendingMeetingError = null;
+              meetingJoinStep = 'info';
+              meetingJoinCamOn = true;
+              openOverlay('meetingJoin');
               pushInAppNotification('Meeting link ready', 'Tap the link button on the call screen to share it.');
             } else {
               ensureNotificationPermission();
@@ -7233,7 +7259,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 </span>
               </button>`;
             const preview = `
-              <div class="w-full max-w-xs flex-1 min-h-0 rounded-3xl overflow-hidden relative mt-4 mb-6" style="background:#0f1115;">
+              <div class="w-full rounded-3xl overflow-hidden relative" style="background:#0f1115;max-width:230px;aspect-ratio:3/4;flex:none;margin:auto 0;">
                 <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
                 ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2" style="color:#9ca3af;">${Icon('video','w-8 h-8')}<div class="text-sm font-semibold">Camera is off</div></div>`}
               </div>`;

@@ -6066,17 +6066,17 @@ try {
           // Live lecture: same white panel as the scheduled one (no blue), title + "Live now" on the
           // left, link + Join/Return on the right
           return `
-            <div class="call-min-card rounded-2xl overflow-hidden bg-white mb-3">
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white mb-3" role="button" onclick="${isMineMinimized ? 'resumeLecture()' : `joinLiveLecture('${l.id}')`}" onpointerdown="this.style.transform='scale(.98)'" onpointerup="this.style.transform=''" onpointerleave="this.style.transform=''" onpointercancel="this.style.transform=''" style="cursor:pointer;transition:transform .12s ease;-webkit-tap-highlight-color:rgba(30,144,255,.12);">
               <div class="flex items-center gap-3 px-4 py-3 select-none">
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(l.title)}</div>
                   <div class="text-xs text-gray-500 truncate">Live now</div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                  <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('link','w-4 h-4')}</button>
+                  <button onclick="event.stopPropagation();shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('link','w-4 h-4')}</button>
                   ${isMineMinimized
-                    ? `<button onclick="resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Return</button>`
-                    : `<button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Join</button>`}
+                    ? `<button onclick="event.stopPropagation();resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Return</button>`
+                    : `<button onclick="event.stopPropagation();joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Join</button>`}
                 </div>
               </div>
             </div>`;
@@ -6440,6 +6440,13 @@ try {
           lectureMinimized = false;
           openOverlay('lectureCall');
           joinLectureSignaling(lectureId);
+          if (joiningAsTeacher) {
+            setTimeout(() => {
+              if (liveLectureState.connected && liveLectureState.lectureId === lectureId && !Object.keys(lecturePresence).length) {
+                pushInAppNotification('No one else yet', 'No one else has joined this lecture yet. Invite them from the People tab.');
+              }
+            }, 2500);
+          }
 
           if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             try {
@@ -7154,7 +7161,7 @@ try {
         // Teacher-only: silence the whole room in one tap (students can unmute themselves again)
         function muteEveryoneInLecture(){
           if (!lectureIsTeacher()) return;
-          if (!Object.keys(lecturePresence).length) { callToast('No one else is in the lecture yet'); return; }
+          if (!Object.keys(lecturePresence).length) { pushInAppNotification('Lecture', 'No one else has joined this lecture yet.'); return; }
           broadcastLectureSignal({ type: 'mute-all' });
           Object.keys(lecturePresence).forEach(k => { lecturePresence[k].muted = true; });
           updateLectureRemoteBadges();
@@ -7224,8 +7231,7 @@ try {
           return `
             ${mediaErr}
             ${lectureAdminBarHTML()}
-            <div class="flex-1 min-h-0" style="padding:8px 12px;">${cuGridHTML(orderedTiles)}</div>
-            ${!peerIds.length ? `<div class="text-center text-xs pb-2 flex-shrink-0 leading-relaxed" style="color:rgba(255,255,255,.6);">No one else has joined this lecture yet.<br>Invite them from the People tab.</div>` : ''}`;
+            <div class="flex-1 min-h-0" style="padding:8px 12px;">${cuGridHTML(orderedTiles)}</div>`;
         }
 
         let lectureChannel = null;

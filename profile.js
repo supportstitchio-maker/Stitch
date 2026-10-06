@@ -664,8 +664,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="font-semibold text-sm text-gray-700 mb-3">${inLectureCall ? 'Class Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook')}</div>
             <div id="${prefix}-notebook-notes-list">${notebookNotesHTML()}</div>
             ${inLectureCall ? `
-            <div id="${prefix}-classpad-resources-list">${classPadResourcesHTML()}</div>
-            <div id="${prefix}-classpad-uploaded-list">${classPadUploadedResourcesHTML()}</div>` : ''}`;
+            <div id="${prefix}-classpad-resources-list">${classPadResourcesHTML()}</div>` : ''}`;
         }
 
         function rightPanelNotebookHTML(){
