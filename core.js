@@ -961,7 +961,17 @@
           classSchedule = Array.isArray(d.classSchedule) ? d.classSchedule : [];
           studyReminders = Array.isArray(d.studyReminders) ? d.studyReminders : [];
           // uploadedResources intentionally has no "local-only" carry-over here any more
-          uploadedResources = Array.isArray(d.uploadedResources) ? d.uploadedResources : [];
+          // Files uploaded in this session (they still hold the File object) that the server copy
+          // doesn't have yet must survive a state load, otherwise a load finishing right after an
+          // upload wipes the new resource from the list
+          {
+            const serverRes = Array.isArray(d.uploadedResources) ? d.uploadedResources : [];
+            const serverIds = new Set(serverRes.map(r => r && r.id));
+            const sessionRes = (typeof uploadedResources !== 'undefined' && Array.isArray(uploadedResources) ? uploadedResources : [])
+              .filter(r => r && r.file && !serverIds.has(r.id));
+            uploadedResources = sessionRes.concat(serverRes);
+            if (sessionRes.length && typeof queueSaveUserState === 'function') setTimeout(queueSaveUserState, 0);
+          }
           if (typeof reregisterUploadedResources === 'function') reregisterUploadedResources();
           // Glimpses that are uploading RIGHT NOW in this tab must survive a state reload
           const liveUploadingGlimpses = (typeof glimpsesUploadingNow !== 'undefined' && typeof myGlimpses !== 'undefined')

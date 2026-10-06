@@ -1418,8 +1418,15 @@
           const sb = getSupabaseClient();
           if (!sb) { remoteGlimpsesLoaded = true; return false; }
           try {
-            const { data: userRes } = await sb.auth.getUser();
-            const me = userRes && userRes.user;
+            const { data: userRes } = await sb.auth.getUser().catch(() => ({ data: null }));
+            let me = userRes && userRes.user;
+            // getUser() is a network call and can come back empty on a weak connection or while the
+            // session token refreshes. Without knowing who "me" is, my own glimpse would be treated
+            // as someone else's story and show up a second time (until the next refresh removed it)
+            if (!me && typeof getCachedAuthUser === 'function') { try { me = await getCachedAuthUser(); } catch (e) {} }
+            const meId = (me && me.id) || glimpseViewerUid();
+            if (!meId) { remoteGlimpsesLoaded = true; return false; }
+            const meObj = me || { id: meId };
             const cutoffIso = new Date(Date.now() - GLIMPSE_LIFETIME_MS).toISOString();
             const { data, error } = await sb.from(GLIMPSES_TABLE)
               .select('id, user_id, data, created_at')
@@ -1428,15 +1435,18 @@
             remoteGlimpsesLoaded = true;
             if (error || !data) return false;
             flushPendingGlimpseViews().catch(() => {});
-            if (me) {
+            if (meObj) {
               await flushPendingGlimpseSeen().catch(() => {});
-              await loadGlimpseSeenFromServer(me.id);
+              await loadGlimpseSeenFromServer(meObj.id);
               // Your own ring: grey again if this account already opened its newest glimpse.
               try { syncMyGlimpsesViewedFromStorage(); refreshStoryStrip(); } catch (e) {}
             }
-            try { reconcileMyGlimpsesWithServer(data, me); } catch (e) {}
+            try { reconcileMyGlimpsesWithServer(data, meObj); } catch (e) {}
 
-            const rows = data.filter(row => !me || row.user_id !== me.id);
+            // Other people's glimpses only: never my own account's rows, and never a row that is
+            // already one of my local glimpses (same id), whatever its user_id says
+            const myLocalIds = new Set(myGlimpses.map(g => String(g.id)));
+            const rows = data.filter(row => row.user_id !== meId && !myLocalIds.has(String(row.id)));
             const glimpseSig = st => String(st.id) + ':' + ((st.items || []).map(it => it.id).join('/'));
             const otherIdsBefore = stories.filter(s => !s.mine).map(glimpseSig).sort().join(',');
             if (!rows.length) {
@@ -1464,15 +1474,15 @@
                 newestId: (s.items && s.items.length) ? Math.max(...s.items.map(it => it.id || 0)) : 0,
               };
             });
-            const persistedViewed = loadPersistedViewedGlimpses(me && me.id);
+            const persistedViewed = loadPersistedViewedGlimpses(meId);
             // The in-memory/localStorage checks above only cover "already viewed earlier this browser
             // session/on this device"
             let myViewedGlimpseIds = new Set();
-            if (me) {
+            if (meId) {
               try {
                 const glimpseIds = rows.map(r => String(r.id));
                 const { data: myViews } = await sb.from(GLIMPSE_VIEWS_TABLE)
-                  .select('glimpse_id').eq('user_id', me.id).in('glimpse_id', glimpseIds);
+                  .select('glimpse_id').eq('user_id', meId).in('glimpse_id', glimpseIds);
                 (myViews || []).forEach(v => myViewedGlimpseIds.add(String(v.glimpse_id)));
               } catch (e) { /* best-effort -- the in-memory/localStorage checks still apply */ }
             }
@@ -1499,7 +1509,7 @@
                 mine: false,
               };
             });
-            stories = [...stories.filter(s => s.mine), ...remoteStories];
+            stories = [...stories.filter(s => s.mine), ...remoteStories.filter(st => String(st.otherUserId) !== String(meId))];
             reorderStoriesByViewed();
             const otherIdsAfter = remoteStories.map(glimpseSig).sort().join(',');
             return otherIdsAfter !== otherIdsBefore;
@@ -1594,6 +1604,16 @@
         function purgeExpiredGlimpses(){
           const cutoff = Date.now() - GLIMPSE_LIFETIME_MS;
           const before = myGlimpses.length;
+          // One entry per glimpse id. Racing loads (account data, server restore, retry) can briefly
+          // leave two copies; keep the one that is still uploading or already has its real link
+          const seenIds = new Map();
+          const score = x => (x.uploading ? 2 : 0) + ((x.mediaUrl && String(x.mediaUrl).indexOf('blob:') !== 0) ? 1 : 0);
+          myGlimpses.forEach(g => {
+            const k = String(g.id);
+            const prev = seenIds.get(k);
+            if (!prev || score(g) > score(prev)) seenIds.set(k, g);
+          });
+          if (seenIds.size !== myGlimpses.length) myGlimpses = myGlimpses.filter(g => seenIds.get(String(g.id)) === g);
           myGlimpses = myGlimpses.filter(g => (g.createdAt || g.id || 0) > cutoff);
           const changed = myGlimpses.length !== before;
           if (changed) queueSaveUserState();
@@ -1684,7 +1704,7 @@
             : (g.failed ? `<button type="button" onclick="retryMyGlimpse(${g.id})" aria-label="Tap to retry" title="Tap to retry" class="flex-shrink-0 flex items-center justify-center rounded-full" style="width:2.25rem;height:2.25rem;background:rgba(239,68,68,0.10);color:#ef4444;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg></button>` : '');
           return `
             <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-50 relative" id="glimpse-row-${g.id}">
-              <div class="rounded-full flex items-center justify-center text-white overflow-hidden flex-shrink-0" style="width:3.5rem;height:3.5rem;${g.bgStyle}">${thumb}</div>
+              <button type="button" onclick="viewMyGlimpse(${g.id})" aria-label="Open glimpse" class="rounded-full flex items-center justify-center text-white overflow-hidden flex-shrink-0" style="width:3.5rem;height:3.5rem;padding:0;border:0;${g.bgStyle}">${thumb}</button>
               <button onclick="viewMyGlimpse(${g.id})" class="flex-1 min-w-0 text-left">
                 <div class="text-[15px] font-semibold text-gray-800">${g.timeLabel}</div>
                 ${subLine}
@@ -1902,6 +1922,32 @@
           const convo = ensureConvoForPerson(name, icon, avatarBg);
           openConversation(convo.id);
         }
+
+        // When the on-screen keyboard opens, shrink the glimpse typing screens to the visible area
+        // so the text box sits right on top of the keyboard and you can see what you type
+        (function glimpseKeyboardAvoid(){
+          const vv = window.visualViewport;
+          if (!vv) return;
+          const ids = ['glimpse-media-caption-screen', 'glimpse-compose-screen'];
+          const apply = () => {
+            const keyboardUp = (window.innerHeight - vv.height) > 120;
+            ids.forEach(id => {
+              const r = document.getElementById(id);
+              if (!r) return;
+              if (keyboardUp) {
+                r.style.height = vv.height + 'px';
+                r.style.transform = 'translateY(' + vv.offsetTop + 'px)';
+              } else {
+                r.style.height = '';
+                r.style.transform = '';
+              }
+            });
+          };
+          vv.addEventListener('resize', apply);
+          vv.addEventListener('scroll', apply);
+          document.addEventListener('focusin', () => { setTimeout(apply, 60); setTimeout(apply, 300); });
+          document.addEventListener('focusout', () => setTimeout(apply, 120));
+        })();
 
         // ---- Glimpse composer (text) ----
         function composeGlimpseText(){
@@ -2313,7 +2359,7 @@
         function glimpseMediaCaptionHTML(){
           const hasCaption = glimpseMediaCaptionText.trim().length > 0;
           return `
-            <div class="flex flex-col h-full bg-black text-white relative">
+            <div id="glimpse-media-caption-screen" class="flex flex-col h-full bg-black text-white relative">
               <div class="absolute inset-0 overflow-hidden">
                 ${glimpseMediaPreviewType === 'video'
                   ? `<video src="${glimpseMediaPreviewUrl}" class="absolute inset-0 w-full h-full object-cover" style="filter:blur(35px) brightness(0.65) saturate(1.3);transform:scale(1.2);" autoplay playsinline muted loop ${glimpseVideoAttrs(glimpseMediaTrimStart, glimpseMediaTrimEnd)}></video>`
@@ -4906,6 +4952,38 @@
           setTimeout(done, 700);
         }
 
+        // Tapping the expanded caption folds it back to three lines
+        function collapsePostCaption(id, evt){
+          id = String(id);
+          // Taps on hashtags, mentions and links keep doing their own thing
+          if (evt && evt.target && evt.target.closest && evt.target.closest('a, button, [onclick]:not(.post-caption-text)')) return;
+          const wrap = document.getElementById('post-caption-' + id);
+          if (!wrap || !wrap.classList.contains('expanded')) return;
+          const txt = wrap.querySelector('.post-caption-text');
+          const lh = parseFloat(getComputedStyle(txt).lineHeight) || 18;
+          const collapsedH = Math.round(lh * 3);
+          const startH = txt.scrollHeight;
+          if (startH <= collapsedH + 2) return; // short caption, nothing to fold
+          expandedPostCaptions.delete(id);
+          wrap.style.height = startH + 'px';
+          void wrap.offsetHeight;
+          wrap.style.transition = 'height 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+          wrap.style.height = collapsedH + 'px';
+          let finished = false;
+          const done = () => {
+            if (finished) return; finished = true;
+            wrap.removeEventListener('transitionend', onEnd);
+            wrap.style.transition = '';
+            wrap.style.height = '';
+            wrap.classList.remove('expanded');
+            wrap.classList.add('has-more');
+            wrap.setAttribute('data-cap-checked', '1');
+          };
+          const onEnd = (e) => { if (e.target === wrap && e.propertyName === 'height') done(); };
+          wrap.addEventListener('transitionend', onEnd);
+          setTimeout(done, 550);
+        }
+
         // Shows the "more" button only on captions that really overflow two lines.
         function refreshPostCaptionMore(){
           document.querySelectorAll('.post-caption-wrap:not(.expanded):not([data-cap-checked])').forEach(wrap => {
@@ -4974,7 +5052,7 @@
               ${(post.body && post.body.trim()) || (post.isRepost && post.repostAuthorName && post.repostAuthorName !== post.name) ? `
               <div class="px-3.5 pt-1 text-[13px] leading-snug">
                 ${(post.body && post.body.trim()) ? `<div class="post-caption-wrap${expandedPostCaptions.has(String(post.id)) ? ' expanded' : ''}" id="post-caption-${post.id}">
-                  <div class="post-caption-text"><span>${renderPostBodyHtml(post)}</span></div>
+                  <div class="post-caption-text" onclick="collapsePostCaption('${post.id}', event)"><span>${renderPostBodyHtml(post)}</span></div>
                   <button type="button" class="post-caption-more" onclick="event.stopPropagation(); expandPostCaption('${post.id}')">more</button>
                 </div>` : ''}
                 ${post.isRepost && post.repostAuthorName && post.repostAuthorName !== post.name ? `<div class="text-[11px] text-gray-400 mt-0.5">Originally posted by ${escapeHtml(post.repostAuthorName)}</div>` : ''}

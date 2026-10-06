@@ -915,7 +915,7 @@ let studyFabMenuOpen = false;
             pushInAppNotification('Unsupported file', file.name + ': please upload a PDF, DOCX, or PPTX file.');
             return;
           }
-          const resource = { id: 'res' + (resourceIdCounter++), name: file.name, ext, status: 'processing', text: '', flashcards: [], questions: [], file, url: URL.createObjectURL(file), storageUrl: null, storageStatus: 'pending' };
+          const resource = { id: 'res' + Date.now().toString(36) + (resourceIdCounter++) + Math.random().toString(36).slice(2, 5), name: file.name, ext, status: 'processing', text: '', flashcards: [], questions: [], file, url: URL.createObjectURL(file), storageUrl: null, storageStatus: 'pending' };
           uploadedResources.unshift(resource);
           refreshResourcesUI();
           uploadResourceFileToStorage(file, resource.id).then(url => {

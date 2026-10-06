@@ -878,13 +878,13 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
               <div id="media-preview" class="mb-4">${mediaPreviewStripHTML()}</div>
               <input type="file" id="media-input" accept="image/*,video/*" multiple class="hidden" onchange="handleMediaSelect(event)">
               <div class="relative mb-2">
-                <textarea id="new-post-text" oninput="onComposeTextInput()" class="w-full h-24 p-4 border border-gray-200 rounded-2xl text-base" placeholder="Write a caption... Type @ to tag someone">${escapeHtml(captionDraft || '')}</textarea>
+                <textarea id="new-post-text" oninput="onComposeTextInput()" onfocus="composeAutoGrow(this)" rows="3" class="w-full p-4 border border-gray-200 rounded-2xl text-base" style="min-height:6rem;resize:none;overflow:hidden;display:block;" placeholder="Write a caption... Type @ to tag someone">${escapeHtml(captionDraft || '')}</textarea>
               </div>
               <button type="button" onclick="openTagPeoplePicker()" class="text-xs font-semibold flex items-center gap-1.5 mb-2" style="color:${ROYAL}">${Icon('users','w-4 h-4')} Tag people</button>
               <div id="compose-tagged-chips" class="flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}">${composeTaggedChipsHTML()}</div>
             </div>
             <div id="create-post-footer" class="px-4 pt-4 border-t flex-shrink-0" style="padding-bottom:50px;">
-              <button onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Post</button>
+              <button id="post-submit-btn" onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="transition:transform .12s ease, opacity .15s ease;"background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Post</button>
             </div>`;
         }
 
@@ -1324,9 +1324,26 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
           composeCaptionDraft = composeCaptionDraft + (needsSpaceBefore ? ' ' : '') + mention + ' ';
         }
 
+        // The caption box grows with what you type (up to ~45% of the screen, then scrolls)
+        function composeAutoGrow(ta){
+          if (!ta) return;
+          ta.style.height = 'auto';
+          const max = Math.round(window.innerHeight * 0.45);
+          const h = Math.max(96, ta.scrollHeight + 2);
+          ta.style.height = Math.min(h, max) + 'px';
+          ta.style.overflowY = h > max ? 'auto' : 'hidden';
+          // keep the line you're typing visible inside the scrolling page
+          const scroller = document.getElementById('create-post-scroll');
+          if (scroller && document.activeElement === ta) {
+            const r = ta.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+            if (r.bottom > sr.bottom) scroller.scrollTop += (r.bottom - sr.bottom) + 8;
+          }
+        }
+
         function onComposeTextInput(){
           const ta = document.getElementById('new-post-text');
           if (!ta) return;
+          composeAutoGrow(ta);
           const cursor = ta.selectionStart;
           const textBeforeCursor = ta.value.slice(0, cursor);
           if (!/(^|\s)@$/.test(textBeforeCursor)) return;
@@ -1346,7 +1363,30 @@ const overlayBackKinds = ['discover', 'create', 'tagPeoplePicker', 'aiClass', 'c
         // Guards against a single tap firing submitPost() more than once (e.g. a double-tap, or a
         // tap plus an Enter-key submit landing in the same event tick on a slow device) from
         let postSubmitInFlight = false;
+        // Gives the Post button instant feedback and ignores extra taps while it works
         function submitPost(){
+          const btn = document.getElementById('post-submit-btn');
+          if (btn && btn.dataset.busy === '1') return;
+          if (btn) {
+            btn.dataset.busy = '1';
+            btn.dataset.label = btn.textContent;
+            btn.textContent = 'Posting...';
+            btn.style.opacity = '.7';
+            btn.style.transform = 'scale(0.98)';
+            btn.style.pointerEvents = 'none';
+          }
+          submitPostCore();
+          // If nothing started (missing photo, offline, incomplete profile), hand the button back
+          if (!postSubmitInFlight && btn && document.body.contains(btn)) {
+            btn.dataset.busy = '0';
+            btn.textContent = btn.dataset.label || 'Post';
+            btn.style.opacity = '';
+            btn.style.transform = '';
+            btn.style.pointerEvents = '';
+          }
+        }
+
+        function submitPostCore(){
           if (postSubmitInFlight) return;
           if (!requireCompleteProfile()) return;
           if (!selectedMediaItems.length) { openAppAlertModal('Add a photo or video: the feed only shows posts with pictures or videos'); return; }
