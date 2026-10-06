@@ -349,7 +349,7 @@
             bot: `<g transform="translate(12,12) scale(1.15) translate(-12,-12)"><rect x="5" y="9" width="14" height="10" rx="3"/><rect x="10.25" y="3" width="3.5" height="4" rx="1.75"/><circle cx="12" cy="4.5" r="1.1"/><circle cx="9.2" cy="14" r="1.3" fill="white"/><circle cx="14.8" cy="14" r="1.3" fill="white"/><line x1="8.5" y1="17.2" x2="15.5" y2="17.2" stroke="white" stroke-width="1" stroke-linecap="round"/><rect x="2.3" y="12.5" width="1.8" height="3.5" rx="0.9"/><rect x="19.9" y="12.5" width="1.8" height="3.5" rx="0.9"/></g>`,
             camera: `<path fill-rule="evenodd" d="M9.344 3.07a24.66 24.66 0 015.312 0c.967.052 1.75.816 1.928 1.766l.157.837c.083.444.377.82.83.916A3.001 3.001 0 0121 9.5v8A2.5 2.5 0 0118.5 20h-13A2.5 2.5 0 013 17.5v-8a3.001 3.001 0 012.43-2.911c.452-.096.746-.472.828-.916l.158-.837c.178-.95.96-1.714 1.928-1.766zM12 16.5a4 4 0 100-8 4 4 0 000 8z" clip-rule="evenodd"/>`,
             handRaised: `<path d="M8 11.25V4.75a1.5 1.5 0 013 0v6M11 10.75V3.75a1.5 1.5 0 013 0v7M14 10.75V6a1.5 1.5 0 013 0v9.5a6 6 0 01-6 6h-.75a6 6 0 01-5.196-3l-2.06-3.567a1.6 1.6 0 012.732-1.65L8 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
-            cameraOff: `<path d="M9.344 3.07a24.66 24.66 0 015.312 0c.967.052 1.75.816 1.928 1.766l.157.837c.083.444.377.82.83.916A3.001 3.001 0 0121 9.5v8c0 .58-.156 1.123-.428 1.59l-11.66-11.66c.166-.312.27-.665.328-.98l.158-.837c.178-.95.96-1.714 1.928-1.766zM4.28 3.22a.75.75 0 00-1.06 1.06L6.02 7.08A3 3 0 003 9.5v8A2.5 2.5 0 005.5 20h13c.412 0 .8-.1 1.142-.278l1.078 1.078a.75.75 0 101.06-1.06L4.28 3.22zM12 8.5c.245 0 .484.023.716.067l3.717 3.717A4 4 0 0112 16.5a4 4 0 01-3.976-4.49l3.06 3.06A4.02 4.02 0 0012 15.5a3 3 0 001.487-.392L9.392 11.013A4 4 0 0112 8.5z"/>`,
+            cameraOff: `<path d="M4.5 5.5A2.5 2.5 0 002 8v8a2.5 2.5 0 002.5 2.5h9A2.5 2.5 0 0016 15.5v-1.35l4.05 2.5A1 1 0 0021.5 15.7V8.3a1 1 0 00-1.45-.9L16 9.9V8.5A2.5 2.5 0 0013.5 6h-9z"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>`,
             video: `<path d="M4.5 5.5A2.5 2.5 0 002 8v8a2.5 2.5 0 002.5 2.5h9A2.5 2.5 0 0016 15.5v-1.35l4.05 2.5A1 1 0 0021.5 15.7V8.3a1 1 0 00-1.45-.9L16 9.9V8.5A2.5 2.5 0 0013.5 6h-9z"/>`,
             photoTile: `<path fill-rule="evenodd" d="M3.75 4.5A2.25 2.25 0 001.5 6.75v10.5A2.25 2.25 0 003.75 19.5h16.5a2.25 2.25 0 002.25-2.25V6.75a2.25 2.25 0 00-2.25-2.25H3.75zM7.5 8.25a1.875 1.875 0 110 3.75 1.875 1.875 0 010-3.75zm5.53 2.397a.75.75 0 011.128-.06l3.712 3.713a.75.75 0 01-.53 1.28H6.66a.75.75 0 01-.505-1.305l3.06-2.782a.75.75 0 01.995-.006l1.06.95 1.75-1.79z" clip-rule="evenodd"/>`,
             videoTile: `<path d="M4 5.25A1.75 1.75 0 002.25 7v10A1.75 1.75 0 004 18.75h16A1.75 1.75 0 0021.75 17V7A1.75 1.75 0 0020 5.25H4zM5.5 7.5h1.75v1.5H5.5v-1.5zm11.25 0H18.5v1.5h-1.75v-1.5zM5.5 15v-1.5h1.75V15H5.5zm11.25 0v-1.5H18.5V15h-1.75zM8.75 7.75A1.25 1.25 0 0110 6.5h4A1.25 1.25 0 0115.25 7.75v8.5A1.25 1.25 0 0114 17.5h-4a1.25 1.25 0 01-1.25-1.25v-8.5z" fill="currentColor"/><path d="M11.1 9.65a.55.55 0 01.85-.46l2.1 1.35a.55.55 0 010 .92l-2.1 1.35a.55.55 0 01-.85-.46v-2.7z" fill="white"/>`,
@@ -429,7 +429,7 @@
             alertTriangle: `<path d="M12 9v3.75m0 3h.008v.008H12v-.008zM9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
             rocket: `<path d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 0014.63 6.63m.96 7.74a14.98 14.98 0 01-7.74.96m6.78-8.7a6 6 0 00-7.38 5.84H9.7m0 0a5.98 5.98 0 01-.94 3.14m.94-3.14a5.98 5.98 0 00-3.14.94m0 0a6.01 6.01 0 00-1.64 3.7 6.01 6.01 0 003.7-1.64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
             tap: `<path d="M8.25 12V6.75a1.5 1.5 0 013 0v3.75m0-.75V5.25a1.5 1.5 0 013 0v5.25m0-3.75v2.25a1.5 1.5 0 013 0v3.75m-9 .75v2.25a6 6 0 006 6 6 6 0 006-6v-2.25M8.25 12l-1.72-1.72a1.5 1.5 0 00-2.42 1.77l2.2 3.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
-            micOff: `<path d="M8.25 4.5a3.75 3.75 0 117.5 0v6.379l-7.319-7.32c.2-.036.404-.06.615-.06zM4.28 3.22a.75.75 0 00-1.06 1.06l17.5 17.5a.75.75 0 101.06-1.06l-3.093-3.093A6.72 6.72 0 0019.5 12.75v-1.5a.75.75 0 00-1.5 0v1.5c0 1.02-.26 1.978-.717 2.813l-1.096-1.096c.203-.53.313-1.106.313-1.717v-.879L8.25 9.62V4.5c0-.108.004-.215.012-.32l-3.982-3.96z"/><path d="M15.53 16.591a5.246 5.246 0 01-8.03-4.591v-1.5a.75.75 0 00-1.5 0v1.5a6.751 6.751 0 006 6.709v2.291h-3a.75.75 0 000 1.5h7.5a.75.75 0 000-1.5h-3v-2.291a6.72 6.72 0 002.594-.848l-1.064-1.064-.5-.5v-.706z"/>`,
+            micOff: `<path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z"/><path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>`,
             square: `<rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
             penTool: `<path d="M16.862 4.487a2.1 2.1 0 113.033 2.902L7.5 19.789l-4 1 1-4L16.862 4.487z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.3 7.05l2.65 2.65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`,
             circle: `<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
@@ -771,12 +771,16 @@
             fill.style.transition = 'none';
             fill.style.width = pct + '%';
           }
+          const pv = document.getElementById('story-video-' + currentItemIndex);
+          if (pv) { try { pv.pause(); } catch (e) {} }
         }
 
         function resumeCurrentStoryTimer(){
           if (!storyPaused) return;
           const s = stories.find(x => x.id === currentStoryId);
           if (s) resumeStoryTimer(s);
+          const rv = document.getElementById('story-video-' + currentItemIndex);
+          if (rv) { try { const p = rv.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
         }
 
         function clearStoryTimer(){
@@ -1050,8 +1054,8 @@
                 </div>
                 `}
                 <div class="absolute inset-0 flex">
-                  <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'prev')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;" aria-label="Previous glimpse"></button>
-                  <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'next')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;" aria-label="Next glimpse"></button>
+                  <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'prev')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" oncontextmenu="return false" aria-label="Previous glimpse"></button>
+                  <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'next')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" oncontextmenu="return false" aria-label="Next glimpse"></button>
                 </div>
                 <div id="story-reply-bar" class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 12px);">
                   <input type="file" id="story-reply-file-input" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx" multiple class="hidden" onchange="handleStoryReplyFileSelect(event)">
@@ -1767,6 +1771,7 @@
           }
           currentStoryId = null;
           currentItemIndex = 0;
+          myGlimpseViewingId = id;
           myGlimpseViewersOpen = false;
           myGlimpsesViewed = true;
           persistMyGlimpsesViewed();
@@ -1796,6 +1801,43 @@
           loadGlimpseViewers(g);
           // Images run the bar straight away; videos start it once their real length is known
           if (!(g.mediaType === 'video' && glimpseDisplayUrl(g))) startMyGlimpseBar(g.id, MY_GLIMPSE_IMAGE_MS);
+        }
+
+        // ---- Own glimpses: hold to pause, tap left = previous, tap right = next ----
+        let myGlimpseViewingId = null;
+        let myGlimpsePressAt = 0;
+        function myGlimpseVideoEl(){
+          return myGlimpseViewingId === null ? null : document.getElementById('my-glimpse-video-' + myGlimpseViewingId);
+        }
+        function myGlimpsePressStart(e){
+          if (e && e.cancelable) e.preventDefault();
+          myGlimpsePressAt = Date.now();
+          pauseMyGlimpseBar();
+          const v = myGlimpseVideoEl();
+          if (v) { try { v.pause(); } catch (err) {} }
+        }
+        function myGlimpseResumePlayback(){
+          const v = myGlimpseVideoEl();
+          if (v && myGlimpseBarId !== null) { try { const p = v.play(); if (p && p.catch) p.catch(() => {}); } catch (err) {} }
+          resumeMyGlimpseBar();
+        }
+        function myGlimpsePressEnd(e, dir){
+          if (e && e.cancelable) e.preventDefault();
+          if (Date.now() - myGlimpsePressAt < 250) myGlimpseStep(dir);
+          else myGlimpseResumePlayback();
+        }
+        function myGlimpsePressCancel(){
+          if (myGlimpsePressAt) myGlimpseResumePlayback();
+        }
+        function myGlimpseStep(dir){
+          myGlimpsePressAt = 0;
+          const i = myGlimpses.findIndex(x => x.id === myGlimpseViewingId);
+          if (i < 0) { openMyGlimpses(); return; }
+          for (let j = i + dir; j >= 0 && j < myGlimpses.length; j += dir) {
+            if (!myGlimpses[j].uploading) { viewMyGlimpse(myGlimpses[j].id); return; }
+          }
+          if (dir > 0) openMyGlimpses();      // nothing after the last one
+          else viewMyGlimpse(myGlimpses[i].id); // nothing before the first: replay it
         }
 
         // ---- Progress bar on your own glimpse (same look as the WhatsApp status bar) ----
@@ -1924,6 +1966,10 @@
                   </div>
                 `}
               </div>
+              <div class="absolute inset-0 flex" style="z-index:5;">
+                <button onpointerdown="myGlimpsePressStart(event)" onpointerup="myGlimpsePressEnd(event,-1)" onpointercancel="myGlimpsePressCancel()" onpointerleave="myGlimpsePressCancel()" oncontextmenu="return false" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" aria-label="Previous glimpse"></button>
+                <button onpointerdown="myGlimpsePressStart(event)" onpointerup="myGlimpsePressEnd(event,1)" onpointercancel="myGlimpsePressCancel()" onpointerleave="myGlimpsePressCancel()" oncontextmenu="return false" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" aria-label="Next glimpse"></button>
+              </div>
               ${g.uploading ? `<div class="absolute inset-x-0 flex justify-center pointer-events-none" style="top:45%;z-index:15;"><div id="glimpse-upload-viewer-${g.id}" class="px-4 py-2 rounded-full text-sm font-semibold" style="background:rgba(0,0,0,0.6);color:#fff;">${glimpseUploadLabelText(g)}</div></div>` : ''}
               ${g.failed ? `<div class="absolute inset-x-0 flex justify-center" style="top:45%;z-index:15;"><button type="button" onclick="retryMyGlimpse(${g.id}); openMyGlimpses();" class="px-4 py-2 rounded-full text-sm font-semibold" style="background:rgba(0,0,0,0.6);color:#fff;">Couldn't post - tap to retry</button></div>` : ''}
               <div class="relative flex px-3 flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 0.5rem);padding-bottom:0.5rem;z-index:20;">
@@ -1942,7 +1988,7 @@
               ${g.caption && viewUrl ? `
                 <div class="relative px-6 py-3 text-sm text-white text-center" style="margin-top:auto;background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);">${escapeHtml(g.caption)}</div>
               ` : ''}
-              <div id="glimpse-viewers-panel-${g.id}" class="absolute inset-0" style="pointer-events:none;">${glimpseViewersPanelHTML(g)}</div>
+              <div id="glimpse-viewers-panel-${g.id}" class="absolute inset-0" style="pointer-events:none;z-index:6;">${glimpseViewersPanelHTML(g)}</div>
             </div>`;
         }
 

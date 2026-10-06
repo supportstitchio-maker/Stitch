@@ -6066,14 +6066,14 @@ try {
           return `
             <div class="rounded-3xl p-4 mb-3 shadow-sm ${isLive ? 'text-white' : 'bg-white'}" style="${isLive ? 'background:linear-gradient(135deg,#2563eb,#1d4ed8);' : ''}">
               <div class="flex items-center gap-3">
-                <span class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${isLive ? 'bg-white/15 text-white' : 'bg-blue-50 text-[' + NAVY + ']'}">${Icon('video','w-5 h-5')}</span>
+                <span class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${isLive ? 'cu-soft-btn' : 'bg-blue-50 text-[' + NAVY + ']'}">${Icon('video','w-5 h-5')}</span>
                 <div class="min-w-0 flex-1">
                   <div class="font-semibold text-sm truncate">${escapeHtml(l.title)}</div>
                   <div class="text-xs ${isLive ? 'text-white/80' : 'text-gray-400'}">${isLive ? 'Live now' : formatReminderDate(l.date) + ' · ' + formatTime12(l.time)}</div>
                 </div>
                 ${isLive
                   ? `<div class="flex items-center gap-2 flex-shrink-0">
-                      <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full bg-white/15 text-white flex items-center justify-center flex-shrink-0">${Icon('link','w-4 h-4')}</button>
+                      <button onclick="shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full cu-soft-btn flex items-center justify-center flex-shrink-0">${Icon('link','w-4 h-4')}</button>
                       ${isMineMinimized
                         ? `<button onclick="resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Return</button>`
                         : `<button onclick="joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full bg-white text-[${NAVY}] flex-shrink-0">Join</button>`}
@@ -6428,6 +6428,7 @@ try {
           lectureMoreSheetOpen = false;
           lectureReactionsSheetOpen = false;
           lectureCommentSheetOpen = false;
+          cuUnmountCommentBar();
           lectureResourcesPanelOpen = false;
           lectureFloatingReactions = [];
           lectureFloatingComments = [];
@@ -6608,6 +6609,8 @@ try {
         function updateLectureSheetsRegion(){
           const el = document.getElementById('lecture-sheets-region');
           if (el) el.innerHTML = lectureSheetsRegionHTML(liveLectureState.view);
+          if (lectureCommentSheetOpen) cuMountCommentBar({ inputId: 'lecture-comment-input', placeholder: 'Type a comment...', onSend: 'sendLectureComment()', onClose: 'closeLectureSheets()' });
+          else cuUnmountCommentBar();
           updateLectureControlBarButtons();
         }
 
@@ -6673,9 +6676,9 @@ try {
         function lectureReactionsFloatHTML(){
           if (!lectureFloatingReactions.length) return '';
           return lectureFloatingReactions.map(r => `
-            <span class="lecture-reaction-float flex items-center gap-1.5 bg-white shadow-md rounded-full" style="padding:10px;">
-              <span class="${r.big ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center flex-shrink-0" style="${r.icon === 'handRaised' ? `background:${NAVY}1a;color:${NAVY};` : 'background:#f9fafb;color:#374151;'}">${Icon(r.icon, r.big ? 'w-5 h-5' : 'w-4 h-4')}</span>
-              <span class="text-xs font-semibold text-gray-700 truncate max-w-[130px]">${escapeHtml(r.name || '')}${r.icon === 'handRaised' ? ' raised a hand' : ''}</span>
+            <span class="lecture-reaction-float cu-float flex items-center gap-1.5 rounded-full" style="padding:8px 12px 8px 8px;">
+              ${cuEmoji(r.icon) ? `<span class="flex items-center justify-center flex-shrink-0" style="font-size:26px;line-height:1;width:32px;height:32px;">${cuEmoji(r.icon)}</span>` : `<span class="${r.big ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY}1a;color:${NAVY};">${Icon(r.icon, r.big ? 'w-5 h-5' : 'w-4 h-4')}</span>`}
+              <span class="text-xs font-semibold truncate max-w-[130px]">${escapeHtml(r.name || '')}${r.icon === 'handRaised' ? ' raised a hand' : ''}</span>
             </span>`).join('');
         }
 
@@ -6705,11 +6708,11 @@ try {
         function lectureCommentsFloatHTML(){
           if (!lectureFloatingComments.length) return '';
           return lectureFloatingComments.map(c => `
-            <span class="lecture-reaction-float flex items-start gap-1.5 bg-white shadow-md rounded-2xl" style="max-width:220px;padding:10px;">
+            <span class="lecture-reaction-float cu-float flex items-start gap-1.5 rounded-2xl" style="max-width:220px;padding:10px;">
               <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background:${NAVY};">${escapeHtml((c.name || '?').slice(0,1).toUpperCase())}</span>
               <span class="min-w-0">
-                <span class="block text-[11px] font-bold text-gray-900 truncate">${escapeHtml(c.name || '')}</span>
-                <span class="block text-xs text-gray-700 break-words">${escapeHtml(c.text || '')}</span>
+                <span class="block text-[11px] font-bold truncate">${escapeHtml(c.name || '')}</span>
+                <span class="block text-xs break-words" style="opacity:.8;">${escapeHtml(c.text || '')}</span>
               </span>
             </span>`).join('');
         }
@@ -7054,6 +7057,7 @@ try {
           lectureMoreSheetOpen = false;
           lectureReactionsSheetOpen = false;
           lectureCommentSheetOpen = false;
+          cuUnmountCommentBar();
           lectureResourcesPanelOpen = false;
           lectureFloatingReactions = [];
           lectureFloatingComments = [];
@@ -7774,9 +7778,9 @@ try {
                   <canvas id="lecture-slide-canvas" class="max-w-full max-h-full bg-white rounded-lg shadow"></canvas>
                 </div>
                 <div class="flex items-center justify-center gap-4 pb-2 flex-shrink-0">
-                  <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
+                  <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
                   <div class="text-sm font-semibold text-white">Slide ${lectureSlides.current} / ${lectureSlides.total}</div>
-                  <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
+                  <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
                 </div>
               </div>`;
           }
@@ -7790,9 +7794,9 @@ try {
                 </div>
               </div>
               <div class="flex items-center justify-center gap-4 pb-2 flex-shrink-0">
-                <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
+                <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
                 <div class="text-sm font-semibold text-white">Slide ${lectureSlides.current + 1} / ${lectureSlides.slides.length}</div>
-                <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full bg-white/15 text-white flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
+                <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
               </div>
             </div>`;
         }
@@ -7800,9 +7804,8 @@ try {
         // ---- Lecture bottom sheets (reactions/comments/more) ----
         function lectureSheetsRegionHTML(view){
           return `
-            ${(lectureReactionsSheetOpen || lectureMoreSheetOpen || lectureCommentSheetOpen) ? `<div onclick="closeLectureSheets()" class="absolute inset-0 z-20" style="background:rgba(10,15,25,0.25);"></div>` : ''}
+            ${(lectureReactionsSheetOpen || lectureMoreSheetOpen) ? `<div onclick="closeLectureSheets()" class="cu-backdrop"></div>` : ''}
             ${lectureReactionsSheetOpen ? lectureReactionsSheetHTML() : ''}
-            ${lectureCommentSheetOpen ? lectureCommentSheetHTML() : ''}
             ${lectureMoreSheetOpen ? lectureMoreSheetHTML(view) : ''}`;
         }
 
@@ -7855,9 +7858,11 @@ try {
             { icon: 'party', label: 'Celebrate', color: '#16a34a' },
           ];
           return `
-            <div class="absolute z-30 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
-              ${reactionIcons.map(r => `
-                <button onclick="sendLectureReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100" style="color:${r.color};">${Icon(r.icon,'w-5 h-5')}</button>`).join('')}
+            <div class="cu-bsheet">
+              <div class="cu-bsheet-grab"></div>
+              <div class="cu-emoji-row">
+                ${reactionIcons.map(r => `<button onclick="sendLectureReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="cu-emoji-btn">${cuEmoji(r.icon)}</button>`).join('')}
+              </div>
             </div>`;
         }
 
@@ -7904,29 +7909,29 @@ try {
         function lectureMoreSheetHTML(view){
           const grid = (onclick, icon, label, active) => `
             <button onclick="${onclick}" class="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-1">
-              <span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="${active ? 'background:' + NAVY + ';' : 'background:#f9fafb;'}">
-                ${Icon(icon, `w-5 h-5 ${active ? 'text-white' : 'text-gray-500'}`)}
+              <span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="${active ? 'background:' + NAVY + ';' : 'background:var(--cu-soft);'}">
+                ${Icon(icon, `w-5 h-5 ${active ? 'text-white' : ''}`)}
               </span>
-              <span class="text-[10px] font-bold ${active ? '' : 'text-gray-900'} truncate" style="${active ? 'color:' + NAVY + ';' : ''}">${label}</span>
+              <span class="text-[10px] font-bold truncate" style="${active ? 'color:' + NAVY + ';' : ''}">${label}</span>
             </button>`;
           const isTeacher = lectureIsTeacher();
           const isSharingScreen = !!liveLectureState.screenSharing;
           return `
-            <div class="absolute left-1/2 z-30 bg-white rounded-3xl shadow-lg p-4" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100vw - 60px),380px);">
+            <div class="cu-bsheet" style="padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 18px);"><div class="cu-bsheet-grab"></div>
               ${isTeacher ? `
               <div class="flex items-center gap-2.5 mb-4">
-                <button onclick="toggleLectureWhiteboard()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${view === 'whiteboard' ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;`}">
+                <button onclick="toggleLectureWhiteboard()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${view === 'whiteboard' ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
                   <span class="${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">${Icon('edit','w-5 h-5')}</span>
                   <span class="text-sm font-bold truncate ${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">Whiteboard</span>
                   ${view === 'whiteboard' ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${Icon('check','w-3 h-3 text-white')}</span>` : ''}
                 </button>
-                <button onclick="toggleLectureScreenShare()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${isSharingScreen ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;`}">
+                <button onclick="toggleLectureScreenShare()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${isSharingScreen ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
                   <span class="${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">${Icon('monitor','w-5 h-5')}</span>
                   <span class="text-sm font-bold truncate ${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">Share Screen</span>
                   ${isSharingScreen ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${Icon('check','w-3 h-3 text-white')}</span>` : ''}
                 </button>
               </div>
-              <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
+              <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);">
                 <span style="color:${NAVY};">${Icon('muteAll','w-5 h-5')}</span>
                 <span class="text-sm font-bold truncate" style="color:${NAVY};">Mute everyone</span>
               </button>` : ''}

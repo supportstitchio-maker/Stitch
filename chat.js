@@ -6130,6 +6130,59 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           returnToCallScreen();
         }
 
+
+        // Real emojis for in-call reactions (the icon key is still what is sent over the wire)
+        const CU_EMOJI = { clap: '\u{1F44F}', thumbsUp: '\u{1F44D}', heart: '\u2764\uFE0F', laugh: '\u{1F602}', wow: '\u{1F62E}', party: '\u{1F389}' };
+        function cuEmoji(icon){ return CU_EMOJI[icon] || ''; }
+
+        // Message box that rides on top of the on-screen keyboard. It is mounted on <body> so no
+        // transformed/clipped parent can push it under the keyboard.
+        let cuCommentTimer = null;
+        function cuKeyboardInset(){
+          const vv = window.visualViewport;
+          return vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+        }
+        function cuPlaceCommentBar(){
+          const bar = document.getElementById('cu-comment-bar');
+          if (!bar) return;
+          const inset = cuKeyboardInset();
+          bar.style.bottom = inset + 'px';
+          bar.style.paddingBottom = inset > 0 ? '10px' : 'calc(env(safe-area-inset-bottom,0px) + 12px)';
+        }
+        function cuMountCommentBar(o){
+          if (document.getElementById('cu-comment-wrap')) return;
+          const w = document.createElement('div');
+          w.id = 'cu-comment-wrap';
+          w.innerHTML = `
+            <div class="cu-backdrop" style="z-index:99980;" onclick="${o.onClose}"></div>
+            <div id="cu-comment-bar" class="cu-bsheet" style="z-index:99981;">
+              <div class="cu-bsheet-grab"></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:2px 6px 0;">
+                <input id="${o.inputId}" type="text" placeholder="${o.placeholder}" maxlength="200" enterkeyhint="send" autocomplete="off"
+                  style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();${o.onSend};}">
+                <button onclick="${o.onSend}" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1e90ff;">${Icon('send','w-5 h-5')}</button>
+              </div>
+            </div>`;
+          document.body.appendChild(w);
+          cuPlaceCommentBar();
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', cuPlaceCommentBar);
+            window.visualViewport.addEventListener('scroll', cuPlaceCommentBar);
+          }
+          cuCommentTimer = setInterval(cuPlaceCommentBar, 120);
+          setTimeout(() => { const i = document.getElementById(o.inputId); if (i) i.focus(); cuPlaceCommentBar(); }, 60);
+        }
+        function cuUnmountCommentBar(){
+          const w = document.getElementById('cu-comment-wrap');
+          if (w) w.remove();
+          if (cuCommentTimer) { clearInterval(cuCommentTimer); cuCommentTimer = null; }
+          if (window.visualViewport) {
+            window.visualViewport.removeEventListener('resize', cuPlaceCommentBar);
+            window.visualViewport.removeEventListener('scroll', cuPlaceCommentBar);
+          }
+        }
+
         // ---- Call screen markup (1:1, group and meeting) ----------------------------------
         // Shared look for every call screen (also used by class lectures in courses.js):
         // a deep-blue stage, glass top bar, rounded tiles with name chips + muted badges,
@@ -6139,31 +6192,48 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const st = document.createElement('style');
           st.id = 'call-ui-styles';
           st.textContent = `
-            .cu-screen{position:relative;display:flex;flex-direction:column;flex:1 1 0%;min-height:0;color:#fff;overflow:hidden;background:radial-gradient(120% 70% at 50% -10%,#1c3b8a 0%,#0d1a3d 42%,#070c1c 100%);}
+
+            body{--cu-bg:#ffffff;--cu-fg:#111827;--cu-sub:rgba(17,24,39,.6);--cu-soft:rgba(17,24,39,.06);--cu-soft2:rgba(17,24,39,.12);--cu-line:rgba(17,24,39,.1);--cu-tile:#f3f4f6;--cu-sheet:#ffffff;--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
+            body.dark-mode{--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:rgba(255,255,255,.65);--cu-soft:rgba(255,255,255,.1);--cu-soft2:rgba(255,255,255,.18);--cu-line:rgba(255,255,255,.12);--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
+            .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
+            .cu-float{background:var(--cu-sheet);color:var(--cu-fg);box-shadow:0 4px 14px rgba(0,0,0,.18);}
+            .cu-float .cu-float-sub{color:var(--cu-fg);}
+            .cu-backdrop{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.35);animation:cuFade .2s ease;}
+            .cu-bsheet{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:560px;margin:0 auto;background:var(--cu-sheet);color:var(--cu-fg);border-radius:24px 24px 0 0;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 16px);box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:cuSheetUp .26s cubic-bezier(.22,1,.36,1);}
+            .cu-bsheet-grab{width:40px;height:4px;border-radius:2px;background:var(--cu-soft2);margin:6px auto 8px;}
+            .cu-bsheet-row{width:100%;display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:14px;text-align:left;font-weight:600;font-size:15px;color:inherit;}
+            .cu-bsheet-row:active{background:var(--cu-soft);}
+            .cu-bsheet-row.red{color:#ef4444;}
+            .cu-emoji-row{display:flex;align-items:center;justify-content:space-around;gap:8px;padding:8px 6px 4px;}
+            .cu-emoji-btn{width:54px;height:54px;border-radius:50%;font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);flex-shrink:0;transition:transform .12s ease;}
+            .cu-emoji-btn:active{transform:scale(.88);}
+            @keyframes cuSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+            @keyframes cuFade{from{opacity:0}to{opacity:1}}
+            .cu-screen{position:relative;display:flex;flex-direction:column;flex:1 1 0%;min-height:0;color:var(--cu-fg);overflow:hidden;background:var(--cu-bg);}
             .cu-top{display:flex;align-items:center;gap:10px;padding:6px 14px 4px;flex-shrink:0;position:relative;z-index:2;}
-            .cu-glass{width:42px;height:42px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .12s ease,background .15s ease;position:relative;}
-            .cu-glass:active{transform:scale(.93);background:rgba(255,255,255,.2);}
+            .cu-glass{width:42px;height:42px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--cu-fg);background:var(--cu-soft);border:1px solid var(--cu-line);transition:transform .12s ease,background .15s ease;position:relative;}
+            .cu-glass:active{transform:scale(.93);background:var(--cu-soft2);}
             .cu-glass .cu-count{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
             .cu-title{flex:1;min-width:0;text-align:center;}
             .cu-title-name{font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-            .cu-status{display:inline-flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums;}
+            .cu-status{display:inline-flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:var(--cu-sub);font-variant-numeric:tabular-nums;}
             .cu-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:cuPulse 1.8s infinite;}
             .cu-dot-warn{background:#fbbf24;animation-name:cuPulseWarn;}
             @keyframes cuPulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%,100%{box-shadow:0 0 0 7px rgba(52,211,153,0);}}
             @keyframes cuPulseWarn{0%{box-shadow:0 0 0 0 rgba(251,191,36,.55);}70%,100%{box-shadow:0 0 0 7px rgba(251,191,36,0);}}
-            .cu-alert{margin:6px 14px 0;padding:8px 12px;border-radius:14px;background:rgba(251,191,36,.16);color:#fde68a;font-size:12px;font-weight:600;flex-shrink:0;}
+            .cu-alert{margin:6px 14px 0;padding:8px 12px;border-radius:14px;background:rgba(251,191,36,.16);color:var(--cu-alerttxt);font-size:12px;font-weight:600;flex-shrink:0;}
             .cu-adminbar{display:flex;justify-content:center;padding:6px 14px 0;flex-shrink:0;}
-            .cu-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;color:#fff;font-size:13px;font-weight:700;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .12s ease,background .15s ease;}
-            .cu-pill:active{transform:scale(.96);background:rgba(255,255,255,.22);}
+            .cu-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;color:var(--cu-fg);font-size:13px;font-weight:700;background:var(--cu-soft);border:1px solid var(--cu-line);transition:transform .12s ease,background .15s ease;}
+            .cu-pill:active{transform:scale(.96);background:var(--cu-soft2);}
             .cu-stage{flex:1 1 0%;min-height:0;position:relative;padding:8px 12px;display:flex;align-items:center;justify-content:center;}
             .cu-grid{width:100%;height:100%;display:grid;gap:10px;}
-            .cu-tile{position:relative;overflow:hidden;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;text-align:left;border-radius:22px;background:linear-gradient(160deg,#1b2d5a,#101a38);border:1px solid rgba(255,255,255,.07);}
+            .cu-tile{position:relative;overflow:hidden;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;text-align:left;border-radius:22px;background:var(--cu-tile);border:1px solid var(--cu-line);}
             .cu-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
             .cu-tile video.hidden{display:none;}
             .cu-tile[data-span="2"]{grid-column:span 2;}
             .cu-tile video.object-contain{object-fit:contain;}
             .cu-bar-inner::-webkit-scrollbar{display:none;}
-            .cu-avatar{color:#6b7280;width:clamp(52px,38%,96px);aspect-ratio:1;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,255,255,.12);}
+            .cu-avatar{color:#6b7280;width:clamp(52px,38%,96px);aspect-ratio:1;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--cu-soft2);}
             .cu-avatar.cu-avatar-lg{width:clamp(96px,34vw,150px);}
             .cu-chip{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font-size:11.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
             .cu-corner{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);color:#fff;}
@@ -6173,25 +6243,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             @keyframes cuRing{0%{transform:scale(.86);opacity:.9;}100%{transform:scale(1.65);opacity:0;}}
             .cu-voice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;width:100%;}
             .cu-voice-avatar-wrap{position:relative;width:clamp(150px,46vw,200px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
-            .cu-voice-avatar{color:#6b7280;position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(255,255,255,.12),0 20px 50px rgba(0,0,0,.45);}
+            .cu-voice-avatar{color:#6b7280;position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px var(--cu-soft2);}
             .cu-voice-name{font-size:22px;font-weight:700;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-            .cu-voice-sub{font-size:13px;color:rgba(255,255,255,.65);display:inline-flex;align-items:center;gap:6px;}
-            .cu-pip{position:absolute;top:14px;right:14px;width:27%;max-width:130px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);background:#0f1a36;display:flex;align-items:center;justify-content:center;}
+            .cu-voice-sub{font-size:13px;color:var(--cu-sub);display:inline-flex;align-items:center;gap:6px;}
+            .cu-pip{position:absolute;top:14px;right:14px;width:27%;max-width:130px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--cu-line);background:var(--cu-tile);display:flex;align-items:center;justify-content:center;}
             .cu-pip video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
             .cu-bar{flex-shrink:0;display:flex;justify-content:center;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 22px);position:relative;z-index:2;}
-            .cu-bar-inner{display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,2.4vw,16px);padding:11px 12px 9px;scrollbar-width:none;border-radius:32px;max-width:100%;overflow-x:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.13);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 40px rgba(0,0,0,.35);}
-            .cu-ctl{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:52px;flex-shrink:0;color:rgba(255,255,255,.82);}
-            .cu-ctl-btn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);color:#fff;transition:transform .12s ease,background .15s ease,color .15s ease;}
+            .cu-bar-inner{display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,2.4vw,16px);padding:11px 12px 9px;scrollbar-width:none;border-radius:32px;max-width:100%;overflow-x:auto;background:var(--cu-soft);border:1px solid var(--cu-line);}
+            .cu-ctl{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:52px;flex-shrink:0;color:var(--cu-fg);}
+            .cu-ctl-btn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft2);color:var(--cu-fg);transition:transform .12s ease,background .15s ease,color .15s ease;}
             .cu-ctl:active .cu-ctl-btn{transform:scale(.92);}
             .cu-ctl-label{font-size:10.5px;font-weight:600;line-height:1;white-space:nowrap;}
-            .cu-ctl.on .cu-ctl-btn{background:#fff;color:#0d1a3d;}
-            .cu-ctl.accent .cu-ctl-btn{background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;}
+            .cu-ctl.on .cu-ctl-btn{background:var(--cu-fg);color:var(--cu-bg);}
+            .cu-ctl.accent .cu-ctl-btn{background:#1e90ff;color:#fff;}
             .cu-ctl.end .cu-ctl-btn{background:#ef4444;color:#fff;box-shadow:0 6px 18px rgba(239,68,68,.45);}
-            .cu-ctl.end{color:#fecaca;}
+            .cu-ctl.end{color:var(--cu-endtxt);}
             .cu-ctl.accept .cu-ctl-btn{background:#22c55e;color:#fff;box-shadow:0 6px 18px rgba(34,197,94,.45);}
-            .cu-ctl.accept{color:#bbf7d0;}
-            .cu-sheet{background:#fff;color:#111827;}
-            .cu-paper{background:#fff;color:#1f2937;border-radius:22px;overflow:hidden;}
+            .cu-ctl.accept{color:var(--cu-accepttxt);}
+            .cu-sheet{background:var(--cu-sheet);color:var(--cu-fg);}
+            .cu-paper{background:var(--cu-sheet);color:var(--cu-fg);border-radius:22px;overflow:hidden;}
             .cu-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 72px);transform:translateX(-50%);z-index:99999;max-width:min(88vw,360px);padding:10px 16px;border-radius:999px;background:rgba(15,23,42,.95);color:#fff;font-size:13px;font-weight:600;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);pointer-events:none;animation:cuToast 3.2s ease forwards;}
             @keyframes cuToast{0%{opacity:0;transform:translate(-50%,-8px);}8%,86%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
           `;
@@ -6477,7 +6547,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (tileCount <= 1) {
             return cuTileHTML(Object.assign(localSpec(), {
               large: true, onclick: "openGroupCallFullscreen('local')", style: 'width:100%;height:100%;border-radius:26px;',
-              extra: `<div style="position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.75);">Waiting for others to join…</div>`
+              extra: `<div style="position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12.5px;color:var(--cu-sub);">Waiting for others to join…</div>`
             }));
           }
 
@@ -6488,7 +6558,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div style="width:100%;height:100%;display:flex;flex-direction:column;gap:8px;min-height:0;">
               <div style="flex:1 1 0%;min-height:0;">${cuGridHTML(tiles)}</div>
-              ${waitingCount > 0 ? `<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.6);flex-shrink:0;">Waiting on ${waitingCount} more member${waitingCount === 1 ? '' : 's'}…</div>` : ''}
+              ${waitingCount > 0 ? `<div style="text-align:center;font-size:12px;color:var(--cu-sub);flex-shrink:0;">Waiting on ${waitingCount} more member${waitingCount === 1 ? '' : 's'}…</div>` : ''}
             </div>`;
         }
 
@@ -6573,6 +6643,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let pendingMeetingInfo = null;    // get_meeting_by_code result (null while loading)
         let pendingMeetingError = null;   // 'not_found' | 'offline' | null
         let meetingJoinPollTimer = null;
+        let meetingJoinCamOn = true;
+        function toggleMeetingJoinCamera(){
+          meetingJoinCamOn = !meetingJoinCamOn;
+          const ov = document.getElementById('overlay');
+          if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
+        }
         let meetingJoinStep = 'info';     // 'info' | 'camera' (asks how to join before entering)
         let myUpcomingMeetings = null;    // list_my_meetings result for the "+" menu (null = loading)
         let activeMeeting = null;         // the meeting currently on the call screen
@@ -6998,15 +7074,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">This meeting has ended.</div>${closeBtn('Close')}`);
           }
           if (m.state === 'live' || isAdmin) {
-            if (meetingJoinStep === 'camera') {
-              return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">How do you want to join?</div>
-                ${primary('Join with camera on', 'joinPendingMeeting(true)')}
-                <button onclick="joinPendingMeeting(false)" class="w-full max-w-xs font-semibold py-3 rounded-full mb-3" style="background:rgba(30,144,255,0.1);color:${NAVY};">Join with camera off</button>
-                <button onclick="setMeetingJoinStep('info')" class="text-sm font-semibold text-gray-400 mt-1">Back</button>`);
-            }
             const label = m.state === 'live' ? 'Join meeting' : 'Start meeting now';
-            const sub = m.state === 'live' ? 'You can join with your camera and mic.' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
-            return shell(`${head}<div class="text-sm text-gray-500 mb-6 leading-relaxed">${sub}</div>${primary(label, "setMeetingJoinStep('camera')")}${closeBtn('Not now')}`);
+            const sub = m.state === 'live' ? 'Choose how you want to join.' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
+            const camRow = `
+              <button onclick="toggleMeetingJoinCamera()" class="w-full max-w-xs flex items-center justify-between rounded-2xl px-4 py-3 mb-5" style="background:rgba(30,144,255,0.08);">
+                <span class="text-sm font-semibold" style="color:${NAVY};">Camera</span>
+                <span style="width:46px;height:28px;border-radius:999px;position:relative;flex-shrink:0;transition:background .2s;background:${meetingJoinCamOn ? '#1e90ff' : '#c4c9d2'};">
+                  <span style="position:absolute;top:3px;left:${meetingJoinCamOn ? '21px' : '3px'};width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);"></span>
+                </span>
+              </button>`;
+            const headNoCam = m.kind === 'live' ? head.replace(/<div class="w-16 h-16[\s\S]*?<\/div>/, '') : head;
+            return shell(`${headNoCam}<div class="text-sm text-gray-500 mb-5 mt-1 leading-relaxed">${sub}</div>${camRow}${primary(label, 'joinPendingMeeting(meetingJoinCamOn)')}${closeBtn('Not now')}`);
           }
           // Upcoming, regular guest: ask whether to be reminded
           const reminded = !!m.reminded;
@@ -7125,6 +7203,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const id = activeMeeting ? 'meeting:' + activeMeeting.code : null;
           if (id && convoMeta[id]) delete convoMeta[id];
           meetingSheet = ''; meetingFloatReactions = []; meetingFloatComments = []; meetingCommentFocused = false;
+          cuUnmountCommentBar();
           activeMeeting = null;
         }
 
@@ -7147,33 +7226,34 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function meetingReactionsFloatHTML(){
           return meetingFloatReactions.map(r => `
-            <span class="lecture-reaction-float flex items-center gap-1.5 bg-white shadow-md rounded-full" style="padding:10px;">
-              <span class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#f9fafb;color:${r.color};">${Icon(r.icon, 'w-4 h-4')}</span>
-              <span class="text-xs font-semibold text-gray-700 truncate max-w-[130px]">${escapeHtml(r.name || '')}</span>
+            <span class="lecture-reaction-float cu-float flex items-center gap-1.5 rounded-full" style="padding:8px 12px 8px 8px;">
+              <span class="flex items-center justify-center flex-shrink-0" style="font-size:26px;line-height:1;width:32px;height:32px;">${cuEmoji(r.icon)}</span>
+              <span class="text-xs font-semibold truncate max-w-[130px]">${escapeHtml(r.name || '')}</span>
             </span>`).join('');
         }
 
         function meetingCommentsFloatHTML(){
           return meetingFloatComments.map(c => `
-            <span class="lecture-reaction-float flex items-start gap-1.5 bg-white shadow-md rounded-2xl" style="max-width:220px;padding:10px;animation-duration:6s;">
+            <span class="lecture-reaction-float cu-float flex items-start gap-1.5 rounded-2xl" style="max-width:220px;padding:10px;animation-duration:6s;">
               <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style="background:${NAVY};">${escapeHtml((c.name || '?').slice(0, 1).toUpperCase())}</span>
               <span class="min-w-0">
-                <span class="block text-[11px] font-bold text-gray-900 truncate">${escapeHtml(c.name || '')}</span>
-                <span class="block text-xs text-gray-700 break-words">${escapeHtml(c.text || '')}</span>
+                <span class="block text-[11px] font-bold truncate">${escapeHtml(c.name || '')}</span>
+                <span class="block text-xs break-words" style="opacity:.8;">${escapeHtml(c.text || '')}</span>
               </span>
             </span>`).join('');
         }
 
         function meetingSheetHTML(){
           if (!activeMeeting) return '';
-          const backdrop = `<div class="fixed inset-0 z-30" onclick="closeMeetingSheet()"></div>`;
+          const backdrop = `<div class="cu-backdrop" onclick="closeMeetingSheet()"></div>`;
           if (meetingSheet === 'menu') {
             const row = (icon, label, action, red) => `
-              <button onclick="${action}" class="w-full flex items-center gap-3 px-4 py-3 text-left ${red ? 'text-red-500' : 'text-gray-800'}">
-                ${Icon(icon, 'w-5 h-5')}<span class="text-sm font-semibold">${label}</span>
+              <button onclick="${action}" class="cu-bsheet-row ${red ? 'red' : ''}">
+                ${Icon(icon, 'w-5 h-5')}<span>${label}</span>
               </button>`;
             return `${backdrop}
-              <div class="fixed z-40 bg-white rounded-2xl shadow-lg overflow-hidden" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));right:20px;min-width:230px;">
+              <div class="cu-bsheet">
+                <div class="cu-bsheet-grab"></div>
                 ${row('clap', 'Reactions', "setMeetingSheet('reactions')")}
                 ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
                 ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
@@ -7182,15 +7262,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
           if (meetingSheet === 'reactions') {
             return `${backdrop}
-              <div class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
-                ${MEETING_REACTIONS.map(r => `<button onclick="sendMeetingReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100" style="color:${r.color};">${Icon(r.icon, 'w-5 h-5')}</button>`).join('')}
-              </div>`;
-          }
-          if (meetingSheet === 'comment') {
-            return `${backdrop}
-              <div id="meeting-comment-sheet" class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
-                <input id="meeting-comment-input" type="text" placeholder="Type a message..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingComment();}" onfocus="meetingCommentFocus(true)" onblur="meetingCommentFocus(false)">
-                <button onclick="sendMeetingComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send', 'w-4 h-4')}</button>
+              <div class="cu-bsheet">
+                <div class="cu-bsheet-grab"></div>
+                <div class="cu-emoji-row">
+                  ${MEETING_REACTIONS.map(r => `<button onclick="sendMeetingReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="cu-emoji-btn">${cuEmoji(r.icon)}</button>`).join('')}
+                </div>
               </div>`;
           }
           return '';
@@ -7207,7 +7283,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function updateMeetingSheet(){
           const el = document.getElementById('meeting-sheets-region');
           if (el) el.innerHTML = meetingSheetHTML();
-          if (meetingSheet === 'comment') setTimeout(() => { const i = document.getElementById('meeting-comment-input'); if (i) i.focus(); }, 0);
+          if (meetingSheet === 'comment') cuMountCommentBar({ inputId: 'meeting-comment-input', placeholder: 'Type a message...', onSend: 'sendMeetingComment()', onClose: 'closeMeetingSheet()' });
+          else cuUnmountCommentBar();
         }
         function setMeetingSheet(name){ meetingSheet = name; updateMeetingSheet(); }
         function closeMeetingSheet(){ setMeetingSheet(''); }
@@ -7217,16 +7294,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let meetingCommentFocused = false;
         function meetingCommentFocus(on){ meetingCommentFocused = on; syncMeetingCommentInset(); }
         function syncMeetingCommentInset(){
+          return;
           const sheet = document.getElementById('meeting-comment-sheet');
           if (!sheet) return;
           if (!meetingCommentFocused) { sheet.style.bottom = 'calc(132px + env(safe-area-inset-bottom,0px))'; return; }
           const vv = window.visualViewport;
           const inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
           sheet.style.bottom = (inset + 10) + 'px';
-        }
-        if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', syncMeetingCommentInset);
-          window.visualViewport.addEventListener('scroll', syncMeetingCommentInset);
         }
 
         function addMeetingFloatReaction(id, icon, name){
