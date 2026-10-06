@@ -3614,3 +3614,37 @@ body.dark-mode .fc-sum-left{ color:#9db4ff; }
           box-shadow:inset 0 2px 6px rgba(0,0,0,0.08);
         }
         body.dark-mode .collab-type-card:active{ background:rgba(255,255,255,0.08); }
+
+
+/* ---- Flashcards: 5-second tap + swipe demo ---- */
+.fc-hint{ position:absolute; inset:0; z-index:30; pointer-events:none; overflow:visible; }
+.fc-hint-msgs{ position:absolute; left:0; right:0; top:14%; display:flex; justify-content:center; }
+.fc-hint-msg{ position:absolute; top:0; padding:8px 16px; border-radius:9999px; background:rgba(10,37,64,0.88); color:#fff; font-size:13px; font-weight:700; white-space:nowrap; opacity:0; }
+.fc-hint-m1{ animation:fcHintM1 5s linear forwards; }
+.fc-hint-m2{ animation:fcHintM2 5s linear forwards; }
+.fc-hint-m3{ animation:fcHintM3 5s linear forwards; }
+@keyframes fcHintM1{ 0%{opacity:0} 5%{opacity:1} 36%{opacity:1} 40%{opacity:0} 100%{opacity:0} }
+@keyframes fcHintM2{ 0%,39%{opacity:0} 43%{opacity:1} 58%{opacity:1} 61%{opacity:0} 100%{opacity:0} }
+@keyframes fcHintM3{ 0%,61%{opacity:0} 65%{opacity:1} 82%{opacity:1} 87%{opacity:0} 100%{opacity:0} }
+.fc-hint-anchor{ position:absolute; left:50%; top:56%; width:0; height:0; opacity:0; animation:fcHintMove 5s ease-in-out forwards; }
+.fc-hint-hand{ position:absolute; left:-32px; top:-5px; transform-origin:32px 5px; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3)); animation:fcHintTap 5s ease-in-out forwards; }
+.fc-hint-ripple{ position:absolute; left:50%; top:56%; width:64px; height:64px; margin:-32px 0 0 -32px; border-radius:50%; background:rgba(65,105,225,0.35); border:2px solid rgba(65,105,225,0.7); opacity:0; animation:fcHintRipple 5s ease-out forwards; }
+@keyframes fcHintMove{
+  0%{opacity:0; transform:translate(0,16px)}
+  6%{opacity:1; transform:translate(0,0)}
+  38%{opacity:1; transform:translate(0,0)}
+  40%{opacity:0; transform:translate(-60px,0)}
+  42%{opacity:1; transform:translate(-60px,0)}
+  58%{opacity:1; transform:translate(90px,0)}
+  60%{opacity:0; transform:translate(90px,0)}
+  62%{opacity:0; transform:translate(60px,0)}
+  64%{opacity:1; transform:translate(60px,0)}
+  80%{opacity:1; transform:translate(-90px,0)}
+  86%{opacity:0; transform:translate(-90px,0)}
+  100%{opacity:0; transform:translate(-90px,0)}
+}
+@keyframes fcHintTap{ 0%,12%{transform:scale(1)} 15%{transform:scale(.84)} 19%{transform:scale(1)} 25%{transform:scale(1)} 28%{transform:scale(.84)} 32%,100%{transform:scale(1)} }
+@keyframes fcHintRipple{
+  0%,14%{opacity:0; transform:scale(.3)} 15%{opacity:.9; transform:scale(.3)} 22%{opacity:0; transform:scale(1.5)}
+  23%,27%{opacity:0; transform:scale(.3)} 28%{opacity:.9; transform:scale(.3)} 35%{opacity:0; transform:scale(1.5)} 100%{opacity:0}
+}

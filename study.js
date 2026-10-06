@@ -1085,6 +1085,7 @@ let studyFabMenuOpen = false;
           fcStartedAt = Date.now();
           fcRound = 1;
           fcStartRound(deck.cards.slice());
+          fcHintPending = true;
           document.getElementById('flashModal').classList.remove('hidden');
           renderFlashModal();
           fcStartTimer();
@@ -1220,6 +1221,43 @@ let studyFabMenuOpen = false;
               <button onclick="fcMark(true)" class="fc-act fc-act-yes" aria-label="Got it">${FC_ICONS.smile}</button>
             </div>`;
           fcBindDrag();
+          if (fcHintPending) { fcHintPending = false; fcShowGestureHint(); }
+        }
+
+        // 5-second animated hand shown each time flashcards open: taps the card, then swipes it
+        // right ("got it") and left ("again"), so the gestures are obvious
+        let fcHintPending = false, fcHintTimer = null;
+        function fcHandSvg(){
+          return `<svg viewBox="0 0 100 120" width="84" height="100" aria-hidden="true">
+            <path d="M30 56 V14 a8 8 0 0 1 16 0 V50 c4-3 12-2 14 3 c5-3 13-1 15 5 c5-1 12 3 12 10 V86 c0 16-12 28-28 28 H52 c-12 0-20-6-26-16 l-12-18 c-3-5 3-10 8-7 l10 8 z" fill="#fff" stroke="#111" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M60 55 v14 M75 61 v12" stroke="#111" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg>`;
+        }
+        function fcRemoveGestureHint(){
+          clearTimeout(fcHintTimer); fcHintTimer = null;
+          const h = document.getElementById('fcGestureHint');
+          if (h) h.remove();
+        }
+        function fcShowGestureHint(){
+          fcRemoveGestureHint();
+          const stack = document.querySelector('#flashModalContent .fc-stack');
+          const card = document.getElementById('fcCard');
+          if (!stack) return;
+          const hint = document.createElement('div');
+          hint.id = 'fcGestureHint';
+          hint.className = 'fc-hint';
+          hint.innerHTML = `
+            <div class="fc-hint-msgs">
+              <span class="fc-hint-msg fc-hint-m1">Tap the card to flip it</span>
+              <span class="fc-hint-msg fc-hint-m2">Swipe right if you know it</span>
+              <span class="fc-hint-msg fc-hint-m3">Swipe left to see it again</span>
+            </div>
+            <div class="fc-hint-ripple"></div>
+            <div class="fc-hint-anchor"><div class="fc-hint-hand">${fcHandSvg()}</div></div>`;
+          stack.appendChild(hint);
+          // Touching the card ends the demo straight away
+          if (card) card.addEventListener('pointerdown', fcRemoveGestureHint, { once: true });
+          fcHintTimer = setTimeout(fcRemoveGestureHint, 5000);
         }
 
         // Swipe handling. The card owns every touch on it (touch-action:none), so the browser can
