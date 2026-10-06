@@ -1279,6 +1279,25 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
 
+        let closingExamResult = false;
+        // Close spins for 2 seconds before the results screen actually closes
+        function closeExamResultWithSpinner(){
+          if (closingExamResult) return;
+          closingExamResult = true;
+          const btn = document.getElementById('exam-close-btn');
+          const again = document.getElementById('exam-again-btn');
+          if (again) { again.disabled = true; again.style.pointerEvents = 'none'; again.style.opacity = '0.7'; }
+          if (btn) {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = '<span style="width:15px;height:15px;border-radius:50%;border:2px solid rgba(10,37,64,0.25);border-top-color:currentColor;animation:classroom-spin .7s linear infinite;flex-shrink:0;"></span>Close';
+          }
+          setTimeout(function(){
+            closingExamResult = false;
+            closeOverlay();
+          }, 2000);
+        }
+
         function examResultFooterHTML(){
           if (examContext === 'dailyQuiz') {
             return `<button onclick="openOverlay('gamification')" class="sheet-pill">Back to Games</button>`;
@@ -1289,8 +1308,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <button onclick="openWeeklyQuizJoin()" class="sheet-pill">Play Again</button>`;
           }
           return `
-            <button onclick="closeOverlay()" class="sheet-pill">Close</button>
-            <button onclick="startMockTest(examMode)" class="sheet-pill">Practice Again</button>`;
+            <button id="exam-close-btn" onclick="closeExamResultWithSpinner()" class="sheet-pill" style="display:flex;align-items:center;justify-content:center;gap:8px;">Close</button>
+            <button id="exam-again-btn" onclick="startMockTest(examMode)" class="sheet-pill">Practice Again</button>`;
         }
 
         function quizRewardBannerHTML(){
@@ -1443,6 +1462,19 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <div class="flex items-center justify-between gap-2 text-sm mb-1"><span class="truncate font-semibold">${escapeHtml(it.label)}</span><span style="color:var(--sub);font-weight:700;flex-shrink:0;">${it.text}</span></div>
               <div class="ar-bar"><i style="width:${Math.max(0, Math.min(100, it.pct))}%;background:${it.color}"></i></div>
             </div>`).join('');
+        }
+
+        // Small ring + count + plain-language explanation, sitting directly on the page background
+        function arStatGraph(label, big, pct, color, text){
+          const R = 24, C = 2 * Math.PI * R, len = Math.max(0, Math.min(100, pct)) / 100 * C;
+          return `<div class=\"flex items-center gap-3\" style=\"padding:6px 0;\">
+            <svg viewBox=\"0 0 60 60\" width=\"60\" height=\"60\" style=\"flex-shrink:0;\" role=\"img\" aria-label=\"${escapeHtml(label)} ${escapeHtml(String(big))}\">
+              <circle cx=\"30\" cy=\"30\" r=\"${R}\" fill=\"none\" stroke=\"rgba(148,163,184,.22)\" stroke-width=\"7\"/>
+              ${len > 0 ? `<circle cx=\"30\" cy=\"30\" r=\"${R}\" fill=\"none\" stroke=\"${color}\" stroke-width=\"7\" stroke-linecap=\"round\" stroke-dasharray=\"${len} ${C}\" transform=\"rotate(-90 30 30)\"/>` : ''}
+              <text x=\"30\" y=\"34\" text-anchor=\"middle\" font-size=\"13\" font-weight=\"800\" fill=\"${color}\">${escapeHtml(String(big))}</text>
+            </svg>
+            <div style=\"min-width:0;\"><div class=\"text-sm font-bold\" style=\"color:${color};\">${label}</div><div class=\"text-[13px]\" style=\"color:var(--sub);line-height:1.35;\">${text}</div></div>
+          </div>`;
         }
 
         function arStatTile(label, value, color){
@@ -1691,10 +1723,19 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                 ${weakest ? `<div class="text-sm" style="color:var(--sub)">Focus next on <b style="color:var(--tx)">${escapeHtml(weakest.name)}</b> (${weakest.pct}%).</div>` : ''}
               </div>
             </div>
-            <div class="ar-grid ar-g4 mb-3">${arStatTile('Correct', c.ok, '#16a34a')}${arStatTile('Incorrect', c.bad, '#dc2626')}${arStatTile('Skipped', c.skip, '#64748b')}${arStatTile('Accuracy', pct + '%', '#1e90ff')}</div>
+            <div class="mb-5">
+              <div class="ar-h">How your answers broke down</div>
+              <div style="display:flex;height:14px;border-radius:99px;overflow:hidden;background:rgba(148,163,184,.2);margin-bottom:10px;" role="img" aria-label="Share of correct, incorrect and skipped questions">
+                ${[[c.ok,'#16a34a'],[c.bad,'#dc2626'],[c.skip + c.grading,'#94a3b8']].map(a => a[0] ? `<div style="width:${total ? a[0] / total * 100 : 0}%;background:${a[1]};"></div>` : '').join('')}
+              </div>
+              ${arStatGraph('Correct', c.ok, total ? c.ok / total * 100 : 0, '#16a34a', c.ok + ' of ' + total + ' question' + (total === 1 ? '' : 's') + ' answered right.')}
+              ${arStatGraph('Incorrect', c.bad, total ? c.bad / total * 100 : 0, '#dc2626', c.bad ? c.bad + ' answered wrong. Open Review answers to see why.' : 'No wrong answers. Nice.')}
+              ${arStatGraph('Skipped', c.skip, total ? c.skip / total * 100 : 0, '#64748b', c.skip ? c.skip + ' left blank. A skipped question can never score, so try an answer next time.' : 'You attempted every question.')}
+              ${arStatGraph('Accuracy', pct + '%', pct, '#1e90ff', 'You got ' + pct + '% of all questions right' + (total - c.skip > 0 && c.skip ? ' (' + Math.round(c.ok / (total - c.skip) * 100) + '% of the ones you answered).' : '.'))}
+            </div>
             <div class="ar-cols">
-              <div class="ar-card mb-3"><div class="ar-h">Score by topic</div>${arBars(topics.map(t => ({ label: t.name, pct: t.pct, text: t.c + '/' + t.n, color: t.pct >= 70 ? '#16a34a' : t.pct >= 40 ? '#f59e0b' : '#dc2626' })))}</div>
-              <div class="ar-card mb-3"><div class="ar-h">Question map</div>
+              <div class="mb-5"><div class="ar-h">Score by topic</div>${arBars(topics.map(t => ({ label: t.name, pct: t.pct, text: t.c + '/' + t.n, color: t.pct >= 70 ? '#16a34a' : t.pct >= 40 ? '#f59e0b' : '#dc2626' })))}</div>
+              <div class="mb-5"><div class="ar-h">Question map</div>
                 <div class="ar-pal">${qs.map((q, i) => { const o = arOutcome(q, i); return `<button class="ar-n" style="${o === 'ok' ? 'background:#16a34a;color:#fff' : o === 'bad' ? 'background:#dc2626;color:#fff' : ''}" onclick="examReviewFilter='all';examResultTab='review';renderExamTake();setTimeout(()=>{const e=document.getElementById('ar-q-${i}');if(e)e.scrollIntoView({behavior:'smooth',block:'center'})},60)">${i + 1}</button>`; }).join('')}</div>
                 ${hist.length > 1 ? `<div class="ar-h" style="margin-top:16px;">Your trend</div>${arLine(hist.map(r => r.total ? Math.round(r.correct / r.total * 100) : 0), hist.map(r => r.title))}` : ''}
               </div>

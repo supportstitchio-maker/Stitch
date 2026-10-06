@@ -3042,6 +3042,83 @@
           }
         }
 
+        // Picture-in-picture is switched off for every video as soon as it exists
+        document.addEventListener('loadedmetadata', function(e){
+          const v = e.target;
+          if (v && v.tagName === 'VIDEO') {
+            try { v.disablePictureInPicture = true; v.setAttribute('disablePictureInPicture', ''); } catch (err) {}
+          }
+        }, true);
+
+        // ---- Hidden scrub strip: swipe left/right along the bottom of a full-screen video to move
+        // back/forward. The time + progress bar only appear while the finger is actually swiping.
+        function scrubFmt(t){
+          t = Math.max(0, Math.floor(t || 0));
+          return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+        }
+        function scrubStripHtml(wrapId){
+          return `
+            <div id="${wrapId}-scrub-ui" style="position:absolute;left:18px;right:18px;bottom:calc(env(safe-area-inset-bottom, 0px) + 56px);opacity:0;transition:opacity .15s ease;pointer-events:none;z-index:15;">
+              <div id="${wrapId}-scrub-time" style="color:#fff;font-size:13px;font-weight:700;text-align:center;margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,.7);font-variant-numeric:tabular-nums;">0:00 / 0:00</div>
+              <div style="height:4px;border-radius:99px;background:rgba(255,255,255,.35);overflow:hidden;"><div id="${wrapId}-scrub-fill" style="height:100%;width:0%;background:#fff;border-radius:99px;"></div></div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom, 0px) + 72px);z-index:14;touch-action:none;"
+              onclick="event.stopPropagation()"
+              ontouchstart="scrubTouchStart(event,'${wrapId}')" ontouchmove="scrubTouchMove(event,'${wrapId}')" ontouchend="scrubTouchEnd(event,'${wrapId}')" ontouchcancel="scrubTouchEnd(event,'${wrapId}')"></div>`;
+        }
+        const scrubState = {};
+        function scrubUpdateUi(wrapId, video){
+          const dur = video.duration || 0;
+          const t = document.getElementById(wrapId + '-scrub-time');
+          const f = document.getElementById(wrapId + '-scrub-fill');
+          if (t) t.textContent = scrubFmt(video.currentTime) + ' / ' + scrubFmt(dur);
+          if (f) f.style.width = (dur ? Math.min(100, video.currentTime / dur * 100) : 0) + '%';
+        }
+        function scrubTouchStart(e, wrapId){
+          // Keep the post-to-post swipe and the tap-to-pause from also reacting to this touch
+          e.stopPropagation();
+          const wrap = document.getElementById(wrapId);
+          const video = wrap && wrap.querySelector('video');
+          const t = e.touches && e.touches[0];
+          if (!video || !t || !isFinite(video.duration) || !video.duration) return;
+          clearTimeout((scrubState[wrapId] || {}).hideTimer);
+          scrubState[wrapId] = { startX: t.clientX, startTime: video.currentTime, wasPlaying: !video.paused, moved: false };
+          video.pause();
+        }
+        function scrubTouchMove(e, wrapId){
+          e.stopPropagation();
+          const st = scrubState[wrapId];
+          const wrap = document.getElementById(wrapId);
+          const video = wrap && wrap.querySelector('video');
+          const t = e.touches && e.touches[0];
+          if (!st || !video || !t) return;
+          if (e.cancelable) e.preventDefault();
+          const dx = t.clientX - st.startX;
+          if (!st.moved && Math.abs(dx) < 4) return;
+          if (!st.moved) {
+            st.moved = true;
+            const ui = document.getElementById(wrapId + '-scrub-ui');
+            if (ui) ui.style.opacity = '1';
+          }
+          // A full-screen-width swipe covers up to 2 minutes of video (the whole clip if shorter)
+          const span = Math.min(video.duration, 120);
+          const w = window.innerWidth || 360;
+          video.currentTime = Math.max(0, Math.min(video.duration, st.startTime + dx / w * span));
+          scrubUpdateUi(wrapId, video);
+        }
+        function scrubTouchEnd(e, wrapId){
+          e.stopPropagation();
+          const st = scrubState[wrapId];
+          const wrap = document.getElementById(wrapId);
+          const video = wrap && wrap.querySelector('video');
+          if (!st) return;
+          if (video && st.wasPlaying && video.dataset.userPaused !== '1') video.play().catch(() => {});
+          st.hideTimer = setTimeout(() => {
+            const ui = document.getElementById(wrapId + '-scrub-ui');
+            if (ui) ui.style.opacity = '0';
+          }, 500);
+        }
+
         let feedVideoObserver = null;
         let feedVideoPreloadObserver = null;
         // Feed videos ship with preload="metadata" so posts nobody scrolls to never burn data
@@ -3144,7 +3221,7 @@
           const posterAttr = effectivePoster ? ` poster="${effectivePoster}"` : '';
           const posterPreload = effectivePoster ? `<img src="${effectivePoster}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : '';
           const media = it.type === 'video'
-            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)" onerror="feedMediaAutoRetry(this,'video')"></video><div class="feed-video-skeleton absolute inset-0" style="pointer-events:none;"></div>${posterPreload}</div>`
+            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} disablePictureInPicture class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)" onerror="feedMediaAutoRetry(this,'video')"></video><div class="feed-video-skeleton absolute inset-0" style="pointer-events:none;"></div>${posterPreload}</div>`
             : `<img decoding="async" src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="feedMediaAutoRetry(this,'image')">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">
@@ -5203,7 +5280,7 @@
           // anchorTop pins object-position to the top instead of the default center
           const objPos = anchorTop ? 'top' : 'center';
           if (media.type === 'video') {
-            return `<video src="${media.url}" class="absolute inset-0 w-full h-full" style="object-fit:contain;object-position:${objPos};background:#000;" ${extraImgAttrs || ''}></video>`;
+            return `<video src="${media.url}" disablePictureInPicture class="absolute inset-0 w-full h-full" style="object-fit:contain;object-position:${objPos};background:#000;" ${extraImgAttrs || ''}></video>`;
           }
           return `
             <div class="absolute inset-0" style="background-image:url('${media.url}');background-size:cover;background-position:center;filter:blur(28px) brightness(0.55);transform:scale(1.15);"></div>
@@ -5224,7 +5301,8 @@
                 <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;opacity:0;">
                   <div class="flex items-center justify-center rounded-full" style="width:4rem;height:4rem;background:rgba(0,0,0,0.45);">${Icon('play','w-7 h-7 text-white')}</div>
                 </div>
-                <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:50px;right:14px;width:2.5rem;height:2.5rem;background:rgba(0,0,0,0.45);">${Icon('volume','w-5 h-5 text-white')}</button>` : ''}
+                <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:calc(env(safe-area-inset-bottom, 0px) + 84px);right:14px;width:2.5rem;height:2.5rem;background:rgba(0,0,0,0.45);z-index:16;">${Icon('volume','w-5 h-5 text-white')}</button>
+                ${scrubStripHtml(uid)}` : ''}
               </div>
 
               <button onclick="event.stopPropagation(); overlayGoBack()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);">${IconBold('back','w-5 h-5 text-white')}</button>
@@ -5264,11 +5342,13 @@
           const items = postMediaItemsList(post);
           const item = items[index] || items[0] || null;
           const isVideo = !!item && item.type === 'video';
-          const videoAttrs = 'playsinline webkit-playsinline muted controls controlsList="nodownload noplaybackrate nofullscreen"';
+          const videoAttrs = 'playsinline webkit-playsinline muted loop disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" onloadedmetadata="this.play().catch(function(){})"';
+          const galUid = 'gvp' + post.id + '-' + index;
           return `
             <div class="relative w-full h-full bg-black overflow-hidden" id="gallery-post-${post.id}" ontouchstart="galleryTouchStart(event)" ontouchend="galleryTouchEnd(event, ${post.id}, ${index})">
-              <div class="absolute inset-0">
+              <div class="absolute inset-0 ${isVideo ? 'feed-video-wrap' : ''}" ${isVideo ? `id="${galUid}" onclick="(function(v){ if(v){ v.paused ? v.play().catch(function(){}) : v.pause(); } })(this.querySelector('video'))"` : ''}>
                 ${framedMediaLayerHtml(item, isVideo ? videoAttrs : '')}
+                ${isVideo ? scrubStripHtml(galUid) : ''}
               </div>
 
               ${items.length > 1 ? `
@@ -5608,10 +5688,26 @@
           ov.style.bottom = '0';
           ov.style.background = '#000';
           ov.innerHTML = commentSheetWrapperHTML(post);
+          commentSheetWatchPanel(post.id);
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeCommentSheet(fromPopState));
         }
 
+        // Keeps the post's picture/video centred in the space left above the comments panel,
+        // however far the panel is dragged up or down
+        let commentSheetResizeObs = null;
+        function commentSheetWatchPanel(postId){
+          if (commentSheetResizeObs) { commentSheetResizeObs.disconnect(); commentSheetResizeObs = null; }
+          const panel = document.getElementById('comment-sheet-panel-' + postId);
+          const media = document.getElementById('comment-sheet-media-' + postId);
+          if (!panel || !media || typeof ResizeObserver === 'undefined') return;
+          commentSheetResizeObs = new ResizeObserver(() => {
+            media.style.bottom = panel.getBoundingClientRect().height + 'px';
+          });
+          commentSheetResizeObs.observe(panel);
+        }
+
         function closeCommentSheet(fromPopState){
+          if (commentSheetResizeObs) { commentSheetResizeObs.disconnect(); commentSheetResizeObs = null; }
           commentUI.replyTo = null;
           if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
           const ov = document.getElementById('overlay');
@@ -5635,13 +5731,15 @@
         const COMMENT_SHEET_DEFAULT_VH = 58;
         const COMMENT_SHEET_MAX_VH = 100; // 100 = true full screen (like Instagram's expanded comments)
         const COMMENT_SHEET_MIN_VH = 30;
+        // Resting height when the sheet is sent down so the post stays visible above it
+        const COMMENT_SHEET_PEEK_VH = 16;
 
         function commentSheetWrapperHTML(post){
           const media = extractPostMedia(post);
           return `
             <div class="relative w-full h-full bg-black overflow-hidden" id="comment-sheet-root-${post.id}">
-              <div class="absolute inset-0" onclick="closeCommentSheet()">
-                ${framedMediaLayerHtml(media, media && media.type === 'video' ? 'playsinline webkit-playsinline loop disablePictureInPicture onloadedmetadata="commentSheetStartVideo(this)"' : '', true)}
+              <div id="comment-sheet-media-${post.id}" class="absolute left-0 right-0 top-0" style="bottom:${COMMENT_SHEET_DEFAULT_VH}vh;" onclick="closeCommentSheet()">
+                ${framedMediaLayerHtml(media, media && media.type === 'video' ? 'playsinline webkit-playsinline loop disablePictureInPicture onloadedmetadata="commentSheetStartVideo(this)"' : '', false)}
               </div>
               <button id="comment-sheet-back-${post.id}" onclick="event.stopPropagation(); closeCommentSheet()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);transition:opacity .2s ease;">${IconBold('back','w-5 h-5 text-white')}</button>
               <div id="comment-sheet-panel-${post.id}" class="absolute left-0 right-0 bottom-0 bg-white flex flex-col" style="height:${COMMENT_SHEET_DEFAULT_VH}vh;border-radius:22px 22px 0 0;overflow:hidden;transition:height .22s ease, border-radius .22s ease, padding-top .22s ease;">
@@ -5719,8 +5817,10 @@
           const rootH = root ? root.getBoundingClientRect().height : window.innerHeight;
           panel.style.transition = 'height .22s ease, border-radius .22s ease, padding-top .22s ease';
           const heightVh = (panel.getBoundingClientRect().height / rootH) * 100;
-          if (heightVh < COMMENT_SHEET_MIN_VH) {
-            closeCommentSheet();
+          if (heightVh < COMMENT_SHEET_MIN_VH + 8) {
+            // Sent down: rest at a low "peek" height so the post stays visible above
+            panel.style.height = COMMENT_SHEET_PEEK_VH + 'vh';
+            commentSheetApplyFull(postId, false);
             return;
           }
           const midpoint = (COMMENT_SHEET_DEFAULT_VH + COMMENT_SHEET_MAX_VH) / 2;
