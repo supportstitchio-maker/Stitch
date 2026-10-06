@@ -37,7 +37,8 @@
         // Single source of truth for "does this post belong in the home feed right now"
         function feedVisiblePosts(){
           return feedPosts.filter(p => {
-            if (!(p.mediaHtml || p.uploading)) return false;
+            // Posts with only a caption (no media) belong in the feed too, like they do on the profile
+            if (!(p.mediaHtml || p.uploading || (p.body && String(p.body).trim()))) return false;
             if (isVideoMediaHtml(p.mediaHtml) && isPostAuthorStranger(p) && !shouldSuggestStrangerVideo(p)) return false;
             return true;
           });
@@ -3014,13 +3015,13 @@
           const posterAttr = effectivePoster ? ` poster="${effectivePoster}"` : '';
           const skeleton = `<div class="feed-video-skeleton absolute inset-0" style="pointer-events:none;"></div>`;
           return `
-            <div class="relative feed-video-wrap" id="${uid}">
+            <div class="relative feed-video-wrap" id="${uid}" style="min-height:240px;background:#f3f4f6;">
               ${skeleton}
-              <video src="${url}"${posterAttr} crossorigin="anonymous" playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="feedMediaAutoRetry(this,'video')"></video>
+              <video src="${url}"${posterAttr} muted playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" style="min-height:240px;" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="feedMediaAutoRetry(this,'video')"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
-              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volume','w-4 h-4 text-white')}</button>
+              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);">${Icon('volumeOff','w-4 h-4 text-white')}</button>
               ${effectivePoster ? `<img src="${effectivePoster}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : ''}
             </div>`;
         }
@@ -3073,7 +3074,11 @@
               const wrap = video.closest('.feed-video-wrap');
               const btn = wrap && wrap.querySelector('.feed-video-playbtn');
               const ratio = entry.intersectionRatio;
-              if (ratio >= 0.6) {
+              // A tall video can never reach 60% of its own height on screen, so also count it as
+              // "in view" once it fills at least half of the visible area
+              const rb = entry.rootBounds;
+              const fillsView = !!(rb && rb.height && entry.intersectionRect.height >= rb.height * 0.5);
+              if (ratio >= 0.6 || fillsView) {
                 if (video.paused && video.dataset.userPaused !== '1') {
                   attemptFeedVideoPlay(video, btn);
                 }
@@ -3085,8 +3090,18 @@
                 delete video.dataset.userPaused;
               }
             });
-          }, { threshold: [0, 0.15, 0.6] });
-          videos.forEach(v => feedVideoObserver.observe(v));
+          }, { threshold: [0, 0.15, 0.3, 0.5, 0.6, 0.8, 1] });
+          videos.forEach(v => {
+            feedVideoObserver.observe(v);
+            // If the video finishes loading while already on screen, start it then
+            v.addEventListener('loadeddata', () => {
+              if (!v.paused || v.dataset.userPaused === '1') return;
+              const r = v.getBoundingClientRect();
+              const vh = window.innerHeight || document.documentElement.clientHeight;
+              const visible = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+              if (visible >= Math.min(r.height, vh) * 0.5) attemptFeedVideoPlay(v, v.closest('.feed-video-wrap') && v.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'));
+            }, { once: true });
+          });
         }
 
         function toggleFeedVideoMute(wrapId){
@@ -3129,7 +3144,7 @@
           const posterAttr = effectivePoster ? ` poster="${effectivePoster}"` : '';
           const posterPreload = effectivePoster ? `<img src="${effectivePoster}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : '';
           const media = it.type === 'video'
-            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} crossorigin="anonymous" class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)" onerror="feedMediaAutoRetry(this,'video')"></video><div class="feed-video-skeleton absolute inset-0" style="pointer-events:none;"></div>${posterPreload}</div>`
+            ? `<div class="relative w-full h-full feed-video-wrap"><video src="${it.url}"${posterAttr} class="absolute inset-0 w-full h-full object-cover" muted playsinline preload="metadata" onloadedmetadata="armFeedVideoThumbnail(this)" onerror="feedMediaAutoRetry(this,'video')"></video><div class="feed-video-skeleton absolute inset-0" style="pointer-events:none;"></div>${posterPreload}</div>`
             : `<img decoding="async" src="${it.url}" class="absolute inset-0 w-full h-full object-cover" onerror="feedMediaAutoRetry(this,'image')">`;
           return `
             <div class="relative overflow-hidden" style="${areaStyle}" onclick="event.stopPropagation(); openPostMediaGallery(postGridOwnerId(this), ${index})">

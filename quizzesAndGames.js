@@ -1516,6 +1516,24 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const note = document.getElementById('challenge-time-note');
           if (note) note.textContent = challengeTimeNote(t);
         }
+        let cancellingChallengeSetup = false;
+        // Shows a spinner on the Cancel button for 2 seconds, then closes the panel
+        function cancelChallengeSetupWithSpinner(){
+          if (cancellingChallengeSetup) return;
+          cancellingChallengeSetup = true;
+          const btn = document.getElementById('challenge-cancel-btn');
+          const create = document.getElementById('challenge-create-btn');
+          if (create) { create.disabled = true; create.style.pointerEvents = 'none'; create.style.opacity = '0.7'; }
+          if (btn) {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+            btn.innerHTML = '<span style="width:15px;height:15px;border-radius:50%;border:2px solid rgba(10,37,64,0.25);border-top-color:currentColor;animation:classroom-spin .7s linear infinite;flex-shrink:0;"></span>Cancel';
+          }
+          setTimeout(function(){
+            cancellingChallengeSetup = false;
+            closeChallengeModal();
+          }, 2000);
+        }
         function challengeSetupHTML(){
           const q = Math.min(buildChallengeQuestionPool().length, 99);
           return `
@@ -1525,11 +1543,11 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             <div class="ar-h">Time per question</div>
             <div class="ar-chips-row" id="challenge-time-row">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" data-t="${t}" onclick="setChallengeTimePill(this)">${t}</button>`).join('')}</div>
             <div class="ar-card mb-5" style="padding:14px;background:var(--soft);border:0;">
-              <div class="flex items-center gap-2 text-sm font-semibold">${Icon('bolt','w-4 h-4')} <span id="challenge-time-note">${challengeTimeNote(challengeConfig.timePerQ)}</span></div>
+              <div class="flex items-center gap-2 text-sm font-semibold"><span id="challenge-time-note">${challengeTimeNote(challengeConfig.timePerQ)}</span></div>
             </div>
             <div class="flex gap-3">
-              <button onclick="closeChallengeModal()" class="ar-btn flex-1">Cancel</button>
-              <button onclick="submitCreateChallenge()" class="ar-btn p flex-1">Create</button>
+              <button id="challenge-cancel-btn" onclick="cancelChallengeSetupWithSpinner()" class="ar-btn flex-1" style="display:flex;align-items:center;justify-content:center;gap:8px;">Cancel</button>
+              <button id="challenge-create-btn" onclick="submitCreateChallenge()" class="ar-btn p flex-1">Create</button>
             </div></div>`;
         }
 
