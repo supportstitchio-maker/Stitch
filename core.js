@@ -1280,12 +1280,27 @@
 
         const RESOURCE_STORAGE_BUCKET = 'resource-files';
 
+        // Some phones report an empty type for .docx/.pptx; the bucket only accepts these three types
+        function resourceMimeType(file){
+          const ext = String((file && file.name) || '').split('.').pop().toLowerCase();
+          const byExt = {
+            pdf: 'application/pdf',
+            docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          };
+          return byExt[ext] || file.type || 'application/octet-stream';
+        }
+
         async function uploadResourceFileToStorage(file, resourceId){
           const sb = getSupabaseClient();
           if (!sb) return null;
           try {
-            const path = `${resourceId}-${escapeHtml(file.name)}`;
-            const { error } = await sb.storage.from(RESOURCE_STORAGE_BUCKET).upload(path, file, { upsert: true });
+            // Storage keys can't safely hold quotes, ampersands or spaces, so use a clean file name
+            // (escapeHtml turned names like "Tom's notes & slides.pdf" into invalid keys)
+            const user = await getCachedAuthUser();
+            const safeName = String(file.name || 'file').replace(/[^A-Za-z0-9._-]+/g, '_').slice(-120);
+            const path = `${user ? user.id + '/' : ''}${resourceId}-${safeName}`;
+            const { error } = await sb.storage.from(RESOURCE_STORAGE_BUCKET).upload(path, file, { upsert: true, contentType: resourceMimeType(file) });
             if (error) { console.warn('Resource file upload failed:', error.message); return null; }
             const { data } = sb.storage.from(RESOURCE_STORAGE_BUCKET).getPublicUrl(path);
             return (data && data.publicUrl) || null;
