@@ -6657,7 +6657,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               .map(e => `<audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>`).join('');
             return `
               <div style="width:100%;height:100%;">
-                ${cuTileHTML(Object.assign(spec, { large: true, style: 'width:100%;height:100%;border-radius:26px;', extra: back }))}
+                ${cuTileHTML(Object.assign(spec, { large: true, style: 'width:100%;height:100%;border-radius:26px;', extra: (spec.extra || '') + back }))}
                 <div class="hidden">${otherSinks}</div>
               </div>`;
           }
@@ -6668,7 +6668,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (tileCount <= 1) {
             return cuTileHTML(Object.assign(localSpec(), {
               large: true, onclick: "openGroupCallFullscreen('local')", style: 'width:100%;height:100%;border-radius:26px;',
-              extra: `<div style="position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12.5px;color:var(--cu-sub);">Waiting for others to join…</div>`
+              extra: (localSpec().extra || '') + `<div style="position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12.5px;color:var(--cu-sub);">Waiting for others to join…</div>`
             }));
           }
 
@@ -6887,6 +6887,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                       <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(m.title)}</div>
                       <div class="text-xs text-gray-400">${escapeHtml(meetingWhenText(m.starts_at))}${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
                     </button>
+                    <div class="flex border-t border-gray-100">
+                      <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 py-2.5 text-xs font-semibold" style="color:${NAVY};">Copy link</button>
+                      <button onclick="shareMeetingLink('${escapeHtml(m.code)}', '${escapeHtml(m.title).replace(/'/g, '&#39;')}')" class="flex-1 py-2.5 text-xs font-semibold border-l border-gray-100" style="color:${NAVY};">Share</button>
+                    </div>
                     ${m.is_admin ? `<button onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')" class="w-full py-2.5 text-xs font-semibold border-t border-gray-100" style="color:#ef4444;">${m.state === 'live' ? 'End meeting' : 'Cancel meeting'}</button>` : ''}
                   </div>`).join('')}` : ''}
             </div>`;
@@ -7118,7 +7122,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Copy link</button>
                 <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Share</button>
               </div>
-              <button onclick="addMeetingToCalendar()" class="${pill} mb-4" style="${grey}">Add to calendar</button>
+              <button onclick="addMeetingToCalendar()" class="${pill} mt-6 mb-4 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Add to calendar</button>
               <div class="text-xs text-gray-400 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
             </div>`;
         }
@@ -7464,7 +7468,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
                 ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
                 ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
-                ${(callState.type === 'video' && callLocalStream && !callState.camOff) ? `<button onclick="closeMeetingSheet();flipCallCamera()" class="cu-bsheet-row"><span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span><span>Flip camera</span></button>` : ''}
                 ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
                 ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
