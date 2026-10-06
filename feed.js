@@ -435,6 +435,12 @@
             circle: `<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
             lineTool: `<line x1="5" y1="19" x2="19" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
             textT: `<path d="M4 5h16M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+            // Whiteboard text tool: a serif T sitting inside a text-box frame, so it reads as "add a text box" rather than a bare letter
+            textTool: `<path d="M4 8V6.5A2.5 2.5 0 016.5 4H8M16 4h1.5A2.5 2.5 0 0120 6.5V8M20 16v1.5a2.5 2.5 0 01-2.5 2.5H16M8 20H6.5A2.5 2.5 0 014 17.5V16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.4 10V8.4h7.2V10M12 8.4v7.2M10.4 15.6h3.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+            // Comment / send-a-message: a chat bubble holding two lines of text
+            commentText: `<path d="M6 4.5h12A2.5 2.5 0 0120.5 7v8a2.5 2.5 0 01-2.5 2.5h-5.3l-3.6 3a.6.6 0 01-.98-.46V17.5H6A2.5 2.5 0 013.5 15V7A2.5 2.5 0 016 4.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.8 9.4h8.4M7.8 12.8h5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
+            // Mute everyone: a mic with a slash and a small group-sound arc
+            muteAll: `<path d="M9.5 4.6a3 3 0 016 0v5.2L9.5 3.8v.8z"/><path d="M6.4 11.2v.8a5.6 5.6 0 009.4 4.1M18 11.2v.8c0 .5-.06.98-.17 1.45M12.5 18v2.5h3.2a.75.75 0 010 1.5H8.8a.75.75 0 010-1.5H12V18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.6 3.6l16.8 16.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>`,
             eraser: `<rect x="5" y="11" width="14" height="7" rx="1.5" transform="rotate(-20 12 12)" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
             undo: `<path d="M8 7L4 11l4 4M4 11h9a6 6 0 110 12h-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
             monitor: `<rect x="2.5" y="4" width="19" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,

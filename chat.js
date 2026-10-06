@@ -3433,33 +3433,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function incomingCallHTML(){
           const info = incomingCallInfo || {};
           const isVideo = info.type === 'video';
-          return `
-            <div class="flex-1 flex flex-col bg-white text-gray-900" style="padding-top:var(--top-safe-pad);">
-              <div class="flex items-center justify-between px-5 flex-shrink-0">
-                <button onclick="declineIncomingCall()" title="Back" class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 min-w-0 text-center px-2">
-                  <div class="text-sm font-semibold text-gray-500 tracking-wide uppercase font-display">Incoming ${isVideo ? 'Video' : 'Voice'} Call</div>
-                </div>
-                <div class="w-11 h-11 flex-shrink-0"></div>
-              </div>
-              <div style="flex:0 0 20%;"></div>
-              <div class="flex flex-col items-center px-6 text-center">
-                <div class="rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mb-4 shadow-lg" style="width:9rem;height:9rem;">${avatarInnerHTML({ photo: info.callerPhoto, icon: 'user' }, 'w-16 h-16 text-gray-400')}</div>
-                <div class="text-2xl font-bold font-display mb-1">${escapeHtml(info.callerName || 'Someone')}</div>
-                <div class="text-base text-gray-500">is calling${info.groupName ? ` in "${escapeHtml(info.groupName)}"` : ''}\u2026</div>
-              </div>
-              <div style="flex:1;"></div>
-              <div class="flex-shrink-0 flex items-center justify-center" style="gap:64px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 32px);">
-                <button onclick="declineIncomingCall()" title="Decline" class="flex flex-col items-center gap-2">
-                  <div class="call-decline-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('phoneHangup','w-6 h-6 text-white')}</div>
-                  <div class="text-xs text-gray-600">Decline</div>
-                </button>
-                <button onclick="acceptIncomingCall()" title="Accept" class="flex flex-col items-center gap-2">
-                  <div class="call-accept-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon(isVideo ? 'video' : 'phoneOutline','w-6 h-6 text-white')}</div>
-                  <div class="text-xs text-gray-600">Accept</div>
-                </button>
-              </div>
-            </div>`;
+          return cuIncomingHTML({
+            kicker: `Incoming ${isVideo ? 'video' : 'voice'} call`,
+            name: info.callerName || 'Someone',
+            sub: info.groupName ? `is calling in "${info.groupName}"\u2026` : 'is calling\u2026',
+            avatar: avatarInnerHTML({ photo: info.callerPhoto, icon: 'user' }, 'w-16 h-16 text-gray-400'),
+            declineAction: 'declineIncomingCall()',
+            acceptAction: 'acceptIncomingCall()',
+            acceptIcon: isVideo ? 'video' : 'phoneOutline',
+            acceptLabel: 'Accept'
+          });
         }
 
         // ---- Opening/reading a conversation thread ----
@@ -5408,6 +5391,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let callPeers = {};
         let callChannel = null;
         let myCallPeerId = null;
+        let myCallUserId = null;
 
         const RTC_ICE_SERVERS = {
           iceServers: [
@@ -5868,10 +5852,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         async function joinCallSignaling(convoId, sb){
           myCallPeerId = newCallPeerId();
           const myId = await getCurrentUserId();
+          myCallUserId = myId;
           callChannel = sb.channel(`call:${convoId}`, { config: { broadcast: { self: false } } });
           callChannel.on('broadcast', { event: 'signal' }, ({ payload }) => handleCallSignal(payload));
           callChannel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') sendCallSignal({ kind: 'join', userId: myId });
+            if (status === 'SUBSCRIBED') sendCallSignal({ kind: 'join', userId: myId, muted: !!callState.muted, camOff: !!callState.camOff });
           });
         }
 
@@ -5892,13 +5877,39 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (payload.to && payload.to !== myCallPeerId) return;
           if (payload.kind === 'meeting_end') { meetingHandleEndSignal(); return; }
           if (payload.kind === 'meeting_reaction' || payload.kind === 'meeting_comment') { meetingReceiveExtra(payload); return; }
+          if (payload.kind === 'state') {
+            const stateEntry = callPeers[payload.from];
+            if (stateEntry) {
+              stateEntry.muted = !!payload.muted;
+              stateEntry.camOff = !!payload.camOff;
+              refreshCallStage();
+            }
+            return;
+          }
+          if (payload.kind === 'mute_all') {
+            // Only honoured when it comes from someone who really is an admin of this call
+            const sender = callPeers[payload.from];
+            const senderId = sender && sender.userId;
+            if (!senderId || senderId !== payload.userId || callAdminUserIds().indexOf(senderId) === -1) return;
+            if (!callState.muted) {
+              callState.muted = true;
+              applyCallTrackStates();
+              broadcastMyCallState();
+              refreshCallControls();
+              if (isGroupCallConvo(callState.convoId)) refreshCallStage();
+              callToast(callMemberName(senderId) + ' muted everyone');
+            }
+            return;
+          }
           if (payload.kind === 'join' || payload.kind === 'here') {
-            const entry = callPeers[payload.from] || (callPeers[payload.from] = { pc: null, stream: null, role: null, pendingIce: [], remoteDescSet: false, userId: null, connected: false });
+            const entry = callPeers[payload.from] || (callPeers[payload.from] = { pc: null, stream: null, role: null, pendingIce: [], remoteDescSet: false, userId: null, connected: false, muted: false, camOff: false });
             entry.userId = payload.userId || entry.userId;
+            if (payload.muted !== undefined) entry.muted = !!payload.muted;
+            if (payload.camOff !== undefined) entry.camOff = !!payload.camOff;
             if (entry.userId && isMeetingConvo(callState.convoId)) meetingResolvePeer(entry.userId);
             if (payload.kind === 'join') {
               const myId = await getCurrentUserId();
-              sendCallSignal({ kind: 'here', userId: myId, to: payload.from });
+              sendCallSignal({ kind: 'here', userId: myId, to: payload.from, muted: !!callState.muted, camOff: !!callState.camOff });
             }
             await maybeBecomeCallOfferer(payload.from);
             return;
@@ -5965,6 +5976,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           });
           callPeers = {};
           myCallPeerId = null;
+          myCallUserId = null;
         }
 
         function attachCallLocalVideo(){
@@ -6067,22 +6079,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function toggleCallControl(key){
           callState[key] = !callState[key];
           applyCallTrackStates();
-          if (key === 'camOff') {
-            const stage = document.getElementById('call-stage-wrap');
-            if (stage) stage.innerHTML = callStageHTML();
-            attachCallLocalVideo();
-            attachCallRemoteVideo();
-          }
-          const secondaryBtn = document.getElementById('call-secondary-btn');
-          if (secondaryBtn) {
-            if (callState.type === 'video') {
-              secondaryBtn.className = `w-9 h-9 rounded-full flex items-center justify-center ${callState.camOff ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}`;
-            } else {
-              secondaryBtn.className = `w-9 h-9 rounded-full flex items-center justify-center ${callState.speaker ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}`;
-            }
-          }
-          const muteBtn = document.getElementById('call-mute-btn');
-          if (muteBtn) muteBtn.className = `w-9 h-9 rounded-full flex items-center justify-center ${callState.muted ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}`;
+          if (key === 'muted' || key === 'camOff') broadcastMyCallState();
+          // Group tiles show a muted badge on your own tile, so they re-render on mute too
+          if (key === 'camOff' || (key === 'muted' && isGroupCallConvo(callState.convoId))) refreshCallStage();
+          refreshCallControls();
         }
 
         function openAddToCall(){
@@ -6130,7 +6130,224 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           returnToCallScreen();
         }
 
-        // ---- Call screen markup (1:1 and group) ----
+        // ---- Call screen markup (1:1, group and meeting) ----------------------------------
+        // Shared look for every call screen (also used by class lectures in courses.js):
+        // a deep-blue stage, glass top bar, rounded tiles with name chips + muted badges,
+        // and a floating labelled control bar.
+        function ensureCallUiStyles(){
+          if (document.getElementById('call-ui-styles')) return;
+          const st = document.createElement('style');
+          st.id = 'call-ui-styles';
+          st.textContent = `
+            .cu-screen{position:relative;display:flex;flex-direction:column;flex:1 1 0%;min-height:0;color:#fff;overflow:hidden;background:radial-gradient(120% 70% at 50% -10%,#1c3b8a 0%,#0d1a3d 42%,#070c1c 100%);}
+            .cu-top{display:flex;align-items:center;gap:10px;padding:6px 14px 4px;flex-shrink:0;position:relative;z-index:2;}
+            .cu-glass{width:42px;height:42px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .12s ease,background .15s ease;position:relative;}
+            .cu-glass:active{transform:scale(.93);background:rgba(255,255,255,.2);}
+            .cu-glass .cu-count{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+            .cu-title{flex:1;min-width:0;text-align:center;}
+            .cu-title-name{font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .cu-status{display:inline-flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums;}
+            .cu-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:cuPulse 1.8s infinite;}
+            .cu-dot-warn{background:#fbbf24;animation-name:cuPulseWarn;}
+            @keyframes cuPulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%,100%{box-shadow:0 0 0 7px rgba(52,211,153,0);}}
+            @keyframes cuPulseWarn{0%{box-shadow:0 0 0 0 rgba(251,191,36,.55);}70%,100%{box-shadow:0 0 0 7px rgba(251,191,36,0);}}
+            .cu-alert{margin:6px 14px 0;padding:8px 12px;border-radius:14px;background:rgba(251,191,36,.16);color:#fde68a;font-size:12px;font-weight:600;flex-shrink:0;}
+            .cu-adminbar{display:flex;justify-content:center;padding:6px 14px 0;flex-shrink:0;}
+            .cu-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;color:#fff;font-size:13px;font-weight:700;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:transform .12s ease,background .15s ease;}
+            .cu-pill:active{transform:scale(.96);background:rgba(255,255,255,.22);}
+            .cu-stage{flex:1 1 0%;min-height:0;position:relative;padding:8px 12px;display:flex;align-items:center;justify-content:center;}
+            .cu-grid{width:100%;height:100%;display:grid;gap:10px;}
+            .cu-tile{position:relative;overflow:hidden;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;text-align:left;border-radius:22px;background:linear-gradient(160deg,#1b2d5a,#101a38);border:1px solid rgba(255,255,255,.07);}
+            .cu-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+            .cu-tile video.hidden{display:none;}
+            .cu-tile[data-span="2"]{grid-column:span 2;}
+            .cu-tile video.object-contain{object-fit:contain;}
+            .cu-bar-inner::-webkit-scrollbar{display:none;}
+            .cu-avatar{color:#6b7280;width:clamp(52px,38%,96px);aspect-ratio:1;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px rgba(255,255,255,.12);}
+            .cu-avatar.cu-avatar-lg{width:clamp(96px,34vw,150px);}
+            .cu-chip{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font-size:11.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            .cu-corner{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);color:#fff;}
+            .cu-corner.cu-mute{background:rgba(239,68,68,.92);}
+            .cu-corner.cu-hand{right:auto;left:8px;background:#1e90ff;}
+            .cu-ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(120,170,255,.38);animation:cuRing 2.6s ease-out infinite;}
+            @keyframes cuRing{0%{transform:scale(.86);opacity:.9;}100%{transform:scale(1.65);opacity:0;}}
+            .cu-voice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;width:100%;}
+            .cu-voice-avatar-wrap{position:relative;width:clamp(150px,46vw,200px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+            .cu-voice-avatar{color:#6b7280;position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px rgba(255,255,255,.12),0 20px 50px rgba(0,0,0,.45);}
+            .cu-voice-name{font-size:22px;font-weight:700;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .cu-voice-sub{font-size:13px;color:rgba(255,255,255,.65);display:inline-flex;align-items:center;gap:6px;}
+            .cu-pip{position:absolute;top:14px;right:14px;width:27%;max-width:130px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);background:#0f1a36;display:flex;align-items:center;justify-content:center;}
+            .cu-pip video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+            .cu-bar{flex-shrink:0;display:flex;justify-content:center;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 22px);position:relative;z-index:2;}
+            .cu-bar-inner{display:flex;align-items:flex-start;justify-content:center;gap:clamp(6px,2.4vw,16px);padding:11px 12px 9px;scrollbar-width:none;border-radius:32px;max-width:100%;overflow-x:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.13);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 14px 40px rgba(0,0,0,.35);}
+            .cu-ctl{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:52px;flex-shrink:0;color:rgba(255,255,255,.82);}
+            .cu-ctl-btn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);color:#fff;transition:transform .12s ease,background .15s ease,color .15s ease;}
+            .cu-ctl:active .cu-ctl-btn{transform:scale(.92);}
+            .cu-ctl-label{font-size:10.5px;font-weight:600;line-height:1;white-space:nowrap;}
+            .cu-ctl.on .cu-ctl-btn{background:#fff;color:#0d1a3d;}
+            .cu-ctl.accent .cu-ctl-btn{background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;}
+            .cu-ctl.end .cu-ctl-btn{background:#ef4444;color:#fff;box-shadow:0 6px 18px rgba(239,68,68,.45);}
+            .cu-ctl.end{color:#fecaca;}
+            .cu-ctl.accept .cu-ctl-btn{background:#22c55e;color:#fff;box-shadow:0 6px 18px rgba(34,197,94,.45);}
+            .cu-ctl.accept{color:#bbf7d0;}
+            .cu-sheet{background:#fff;color:#111827;}
+            .cu-paper{background:#fff;color:#1f2937;border-radius:22px;overflow:hidden;}
+            .cu-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 72px);transform:translateX(-50%);z-index:99999;max-width:min(88vw,360px);padding:10px 16px;border-radius:999px;background:rgba(15,23,42,.95);color:#fff;font-size:13px;font-weight:600;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);pointer-events:none;animation:cuToast 3.2s ease forwards;}
+            @keyframes cuToast{0%{opacity:0;transform:translate(-50%,-8px);}8%,86%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
+          `;
+          document.head.appendChild(st);
+        }
+
+        // Ringing screen shared by incoming calls and incoming class lectures.
+        // o: { kicker, name, sub, avatar, declineAction, acceptAction, acceptIcon, acceptLabel }
+        function cuIncomingHTML(o){
+          ensureCallUiStyles();
+          return `
+            <div class="cu-screen" style="padding-top:var(--top-safe-pad);">
+              <div class="cu-top">
+                <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
+                <div class="cu-title"><div class="cu-status" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
+                <div style="width:42px;height:42px;flex-shrink:0;"></div>
+              </div>
+              <div class="cu-stage">
+                <div class="cu-voice">
+                  <div class="cu-voice-avatar-wrap">
+                    <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
+                    <div class="cu-voice-avatar bg-blue-50">${o.avatar}</div>
+                  </div>
+                  <div class="cu-voice-name">${escapeHtml(o.name)}</div>
+                  <div class="cu-voice-sub" style="max-width:86%;white-space:normal;">${escapeHtml(o.sub)}</div>
+                </div>
+              </div>
+              <div class="cu-bar">
+                <div class="cu-bar-inner" style="gap:56px;padding:14px 30px 12px;">
+                  ${cuCtlHTML({ onclick: o.declineAction, icon: 'phoneHangup', label: 'Decline', end: true })}
+                  ${cuCtlHTML({ onclick: o.acceptAction, icon: o.acceptIcon, label: o.acceptLabel, accept: true })}
+                </div>
+              </div>
+            </div>`;
+        }
+
+        function callToast(text){
+          ensureCallUiStyles();
+          const el = document.createElement('div');
+          el.className = 'cu-toast';
+          el.textContent = text;
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 3300);
+        }
+
+        // One labelled round control. o: { id, onclick, icon, label, on, end, accent, title }
+        function cuCtlInnerHTML(o){
+          return `<span class="cu-ctl-btn">${Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
+        }
+        function cuCtlClass(o){
+          return 'cu-ctl' + (o.on ? ' on' : '') + (o.accent ? ' accent' : '') + (o.accept ? ' accept' : '') + (o.end ? ' end' : '');
+        }
+        function cuCtlHTML(o){
+          return `<button ${o.id ? `id="${o.id}"` : ''} onclick="${o.onclick}" title="${escapeHtml(o.title || o.label || '')}" class="${cuCtlClass(o)}">${cuCtlInnerHTML(o)}</button>`;
+        }
+        function cuPatchCtl(id, o){
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.className = cuCtlClass(o);
+          el.title = o.title || o.label || '';
+          el.innerHTML = cuCtlInnerHTML(o);
+        }
+
+        // One participant tile. o: { media, hasVideo, avatar, bg, name, muted, hand, onclick, style, extra, large }
+        function cuTileHTML(o){
+          const tag = o.onclick ? 'button' : 'div';
+          return `
+            <${tag} ${o.onclick ? `onclick="${o.onclick}"` : ''} class="cu-tile" style="${o.style || ''}">
+              ${o.media || ''}
+              ${!o.hasVideo ? `<div class="cu-avatar ${o.large ? 'cu-avatar-lg' : ''} ${o.bg || 'bg-blue-50'}">${o.avatar || ''}</div>` : ''}
+              ${o.hand ? `<span class="cu-corner cu-hand">${Icon('handRaised', 'w-3.5 h-3.5')}</span>` : ''}
+              ${o.muted ? `<span class="cu-corner cu-mute">${Icon('micOff', 'w-3.5 h-3.5')}</span>` : ''}
+              ${o.name ? `<span class="cu-chip">${escapeHtml(o.name)}</span>` : ''}
+              ${o.extra || ''}
+            </${tag}>`;
+        }
+
+        // Rows/columns for n tiles (portrait phones get tall single columns for 2 people)
+        function cuGridLayout(n){
+          const wide = window.innerWidth >= 700;
+          if (n <= 1) return { cols: 1, rows: 1 };
+          if (n === 2) return wide ? { cols: 2, rows: 1 } : { cols: 1, rows: 2 };
+          if (n <= 4) return { cols: 2, rows: 2 };
+          if (n <= 6) return wide ? { cols: 3, rows: 2 } : { cols: 2, rows: 3 };
+          const cols = wide ? 4 : 3;
+          return { cols, rows: Math.ceil(n / cols), scroll: true };
+        }
+
+        function cuGridHTML(tiles){
+          const lay = cuGridLayout(tiles.length);
+          const style = lay.scroll
+            ? `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-auto-rows:minmax(130px,1fr);overflow-y:auto;align-content:start;`
+            : `grid-template-columns:repeat(${lay.cols},minmax(0,1fr));grid-template-rows:repeat(${lay.rows},minmax(0,1fr));`;
+          const spanLast = !lay.scroll && lay.cols === 2 && tiles.length % 2 === 1;
+          return `<div class="cu-grid" style="${style}">${tiles.map((t, i) => (spanLast && i === tiles.length - 1) ? t.replace('class="cu-tile"', 'class="cu-tile" data-span="2"') : t).join('')}</div>`;
+        }
+
+        function myCallAvatarHTML(sizeCls){
+          const photo = (typeof profileData !== 'undefined' && profileData) ? profileData.photo : null;
+          return avatarMediaHTML(photo, 'user', sizeCls || 'w-8 h-8 text-gray-500');
+        }
+
+        // ---- Admin tools: who can mute everyone, and the signal itself ----
+        // Meetings: the host + admins. Group calls: the person who created the collaboration.
+        // 1:1 calls have no admin.
+        function callCanMuteAll(){
+          const id = callState.convoId;
+          if (!id) return false;
+          if (isMeetingConvo(id)) return !!(activeMeeting && activeMeeting.isAdmin);
+          const meta = convoMeta[id];
+          if (!meta || meta.icon !== 'users') return false;
+          return meta.createdBy === 'me' || isMe(meta.createdBy);
+        }
+
+        function callAdminUserIds(){
+          const id = callState.convoId;
+          if (!id) return [];
+          if (isMeetingConvo(id)) return (activeMeeting && activeMeeting.adminIds) || [];
+          const meta = convoMeta[id];
+          return (meta && meta.createdBy && meta.createdBy !== 'me') ? [meta.createdBy] : [];
+        }
+
+        function callMemberName(userId){
+          const meta = convoMeta[callState.convoId] || {};
+          const m = (meta.members || []).find(x => x.otherUserId === userId);
+          return (m && m.name) || 'An admin';
+        }
+
+        function muteEveryoneInCall(){
+          if (!callCanMuteAll()) return;
+          const others = Object.values(callPeers).filter(e => e.connected);
+          if (!others.length) { callToast('No one else is in the call yet'); return; }
+          sendCallSignal({ kind: 'mute_all', userId: myCallUserId });
+          others.forEach(e => { e.muted = true; });
+          callToast('Muted everyone');
+          refreshCallStage();
+        }
+
+        function broadcastMyCallState(){
+          sendCallSignal({ kind: 'state', muted: !!callState.muted, camOff: !!callState.camOff });
+        }
+
+        function refreshCallStage(){
+          const stage = document.getElementById('call-stage-wrap');
+          if (!stage) return;
+          stage.innerHTML = callStageHTML();
+          attachCallLocalVideo();
+          attachCallRemoteVideo();
+        }
+
+        function refreshCallControls(){
+          const bar = document.getElementById('call-controls-bar');
+          if (bar) bar.innerHTML = callControlsHTML();
+        }
+
+        // ---- Stage (1:1 and group) ----
         function callStageHTML(){
           const meta = convoMeta[callState.convoId] || { icon: 'user', avatarBg: 'bg-gray-100', name: 'Unknown' };
           const isVideo = callState.type === 'video';
@@ -6138,40 +6355,58 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
           if (isGroupCallConvo(callState.convoId)) return groupCallStageHTML(meta, isVideo, showLocalVideo);
 
+          const entry = Object.values(callPeers)[0];
+          const remoteStream = entry && entry.stream;
+          const peerMuted = !!(entry && entry.muted);
+          const peerCamOff = !!(entry && entry.camOff);
+
           if (callState.connected) {
-            const soleEntry = Object.values(callPeers)[0];
-            const remoteCallStream = soleEntry && soleEntry.stream;
-            const showRemoteVideo = isVideo && remoteCallStream && remoteCallStream.getVideoTracks().some(t => t.enabled);
+            const showRemoteVideo = isVideo && remoteStream && remoteStream.getVideoTracks().length > 0 && !peerCamOff;
 
             if (isVideo) {
+              const pip = `
+                <div class="cu-pip">
+                  <video id="call-local-video" autoplay playsinline muted class="${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
+                  ${!showLocalVideo ? `<span class="text-white/70 text-[10px] font-semibold text-center px-2">${callState.mediaError ? escapeHtml(callState.mediaError) : 'Camera off'}</span>` : ''}
+                  ${callState.muted ? `<span class="cu-corner cu-mute" style="top:6px;right:6px;width:22px;height:22px;">${Icon('micOff', 'w-3 h-3')}</span>` : ''}
+                </div>`;
               return `
-                <div class="w-full h-full rounded-2xl overflow-hidden bg-black relative">
-                  <video id="call-remote-video" autoplay playsinline class="w-full h-full object-cover ${showRemoteVideo ? '' : 'hidden'}"></video>
-                  ${!showRemoteVideo ? `<div class="w-full h-full flex items-center justify-center ${meta.avatarBg} overflow-hidden">${avatarInnerHTML(meta,'w-24 h-24')}</div>` : ''}
-                  <div class="absolute top-3 left-3 text-[11px] font-bold uppercase tracking-wide text-white/85 bg-black/40 rounded-full px-2.5 py-1 truncate max-w-[70%]">${escapeHtml(callDisplayName(meta))}</div>
-                  <div class="absolute rounded-2xl overflow-hidden bg-black shadow-lg" style="top:12px;right:12px;width:26%;aspect-ratio:3/4;">
-                    <video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover ${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
-                    ${!showLocalVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-800 text-white/60 text-[10px] font-semibold text-center px-1">${callState.mediaError ? escapeHtml(callState.mediaError) : 'Camera off'}</div>` : ''}
-                  </div>
+                <div class="cu-tile" style="width:100%;height:100%;border-radius:26px;">
+                  <video id="call-remote-video" autoplay playsinline class="${showRemoteVideo ? '' : 'hidden'}"></video>
+                  ${!showRemoteVideo ? `<div class="cu-avatar cu-avatar-lg ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-12 h-12')}</div>` : ''}
+                  <span class="cu-chip" style="left:12px;top:12px;bottom:auto;">${escapeHtml(callDisplayName(meta))}${peerMuted ? ' · Muted' : ''}</span>
+                  ${pip}
                 </div>`;
             }
 
-            // Bounded (not w-full h-full): an audio call has no video to fill the frame with, so
-            // stretching this to the full call-stage-wrap height made it a tall, narrow sliver on
-            // wide/tall viewports (e.g. a laptop browser window)
             return `
-              <div class="rounded-2xl overflow-hidden bg-black relative flex items-center justify-center mx-auto" style="width:100%;max-width:22rem;aspect-ratio:1;max-height:70vh;">
-                <div class="w-full h-full flex items-center justify-center ${meta.avatarBg} overflow-hidden">${avatarInnerHTML(meta,'w-24 h-24')}</div>
+              <div class="cu-voice">
+                <div class="cu-voice-avatar-wrap">
+                  <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
+                  <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-16 h-16')}</div>
+                </div>
+                <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
+                <div class="cu-voice-sub">${peerMuted ? `${Icon('micOff', 'w-3.5 h-3.5')} Muted` : 'Voice call'}</div>
                 <audio id="call-remote-audio" autoplay playsinline class="hidden"></audio>
               </div>`;
           }
 
-          return showLocalVideo
-            ? `<div class="w-full h-full rounded-2xl overflow-hidden bg-black relative">
-                 <video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover" style="transform:scaleX(-1);"></video>
-                 <div class="absolute bottom-2 left-2 text-[10px] font-bold uppercase tracking-wide text-white/80 bg-black/40 rounded-full px-2 py-1">You</div>
-               </div>`
-            : `<div class="${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="width:14rem;height:14rem;">${avatarInnerHTML(meta,'w-24 h-24')}</div>`;
+          // Ringing / connecting
+          if (showLocalVideo) {
+            return `
+              <div class="cu-tile" style="width:100%;height:100%;border-radius:26px;">
+                <video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>
+                <span class="cu-chip">You</span>
+              </div>`;
+          }
+          return `
+            <div class="cu-voice">
+              <div class="cu-voice-avatar-wrap">
+                <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
+                <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-16 h-16')}</div>
+              </div>
+              <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
+            </div>`;
         }
 
         // Which participant (if any) is pinned full screen inside a group call
@@ -6179,18 +6414,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function openGroupCallFullscreen(id){
           groupCallFullscreenId = id;
-          const stage = document.getElementById('call-stage-wrap');
-          if (stage) stage.innerHTML = callStageHTML();
-          attachCallLocalVideo();
-          attachCallRemoteVideo();
+          refreshCallStage();
         }
 
         function closeGroupCallFullscreen(){
           groupCallFullscreenId = null;
-          const stage = document.getElementById('call-stage-wrap');
-          if (stage) stage.innerHTML = callStageHTML();
-          attachCallLocalVideo();
-          attachCallRemoteVideo();
+          refreshCallStage();
         }
 
         function groupCallStageHTML(meta, isVideo, showLocalVideo){
@@ -6203,6 +6432,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return others.find(m => m.otherUserId === userId) || { name: 'Someone', avatarBg: 'bg-gray-100', icon: 'user' };
           }
 
+          function remoteSpec(e){
+            const m = memberFor(e.userId);
+            const hasVideo = isVideo && e.stream.getVideoTracks().length > 0 && !e.camOff;
+            return {
+              // The <audio> element carries the sound, so the video element stays muted (no doubled audio)
+              media: `<video id="call-remote-video-${e.peerId}" autoplay playsinline muted class="${hasVideo ? '' : 'hidden'}"></video>
+                      <audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>`,
+              hasVideo, avatar: avatarInnerHTML(m, 'w-8 h-8'), bg: m.avatarBg || 'bg-gray-100',
+              name: m.name, muted: !!e.muted
+            };
+          }
+          function localSpec(){
+            return {
+              media: showLocalVideo ? `<video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>` : '',
+              hasVideo: !!showLocalVideo, avatar: myCallAvatarHTML('w-8 h-8 text-gray-500'), bg: 'bg-blue-100',
+              name: 'You', muted: !!callState.muted
+            };
+          }
+
           // Whoever was pinned full screen may have since left the call -- fall back to the grid.
           if (groupCallFullscreenId && groupCallFullscreenId !== 'local' && !connected.some(e => e.peerId === groupCallFullscreenId)) {
             groupCallFullscreenId = null;
@@ -6211,18 +6459,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (groupCallFullscreenId) {
             const isLocalPinned = groupCallFullscreenId === 'local';
             const pinnedEntry = isLocalPinned ? null : connected.find(e => e.peerId === groupCallFullscreenId);
-            const pinnedMember = isLocalPinned ? null : memberFor(pinnedEntry.userId);
-            const pinnedHasVideo = isLocalPinned ? showLocalVideo : (isVideo && pinnedEntry.stream.getVideoTracks().some(t => t.enabled));
-            const pinnedName = isLocalPinned ? 'You' : escapeHtml(pinnedMember.name);
+            const spec = isLocalPinned ? localSpec() : remoteSpec(pinnedEntry);
+            const back = `<button onclick="closeGroupCallFullscreen()" title="Back to grid" class="cu-glass" style="position:absolute;top:10px;left:10px;width:38px;height:38px;">${IconBold('back', 'w-5 h-5')}</button>`;
+            // Everyone else's audio must keep playing while one person is pinned
+            const otherSinks = connected.filter(e => e.peerId !== groupCallFullscreenId)
+              .map(e => `<audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>`).join('');
             return `
-              <div class="w-full h-full rounded-2xl overflow-hidden bg-black relative">
-                ${isLocalPinned
-                  ? `<video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover ${pinnedHasVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>`
-                  : `<video id="call-remote-video-${groupCallFullscreenId}" autoplay playsinline class="w-full h-full object-cover ${pinnedHasVideo ? '' : 'hidden'}"></video>
-                     <audio id="call-remote-audio-${groupCallFullscreenId}" autoplay playsinline class="hidden"></audio>`}
-                ${!pinnedHasVideo ? `<div class="w-full h-full flex items-center justify-center ${isLocalPinned ? 'bg-blue-100' : (pinnedMember.avatarBg || 'bg-gray-100')} overflow-hidden">${isLocalPinned ? avatarMediaHTML(typeof profileData !== 'undefined' ? profileData.photo : null, 'user', 'w-16 h-16 text-gray-500') : avatarInnerHTML(pinnedMember,'w-16 h-16')}</div>` : ''}
-                <button onclick="closeGroupCallFullscreen()" class="absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.45);">${IconBold('back','w-5 h-5')}</button>
-                <div class="absolute top-3 left-14 text-[11px] font-bold uppercase tracking-wide text-white/85 bg-black/40 rounded-full px-2.5 py-1 truncate max-w-[50%]">${pinnedName}</div>
+              <div style="width:100%;height:100%;">
+                ${cuTileHTML(Object.assign(spec, { large: true, style: 'width:100%;height:100%;border-radius:26px;', extra: back }))}
+                <div class="hidden">${otherSinks}</div>
               </div>`;
           }
 
@@ -6230,86 +6475,80 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
           // Nobody else has joined yet
           if (tileCount <= 1) {
-            return `
-              <button onclick="openGroupCallFullscreen('local')" class="w-full h-full block text-left">
-                <div class="w-full h-full rounded-2xl overflow-hidden bg-black relative">
-                  ${showLocalVideo
-                    ? `<video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover" style="transform:scaleX(-1);"></video>`
-                    : `<div class="w-full h-full flex items-center justify-center bg-blue-100 overflow-hidden">${avatarMediaHTML(typeof profileData !== 'undefined' ? profileData.photo : null, 'user', 'w-16 h-16 text-gray-500')}</div>`}
-                  <div class="absolute bottom-3 left-3 text-[11px] font-bold uppercase tracking-wide text-white/85 bg-black/40 rounded-full px-2.5 py-1">You</div>
-                  <div class="absolute inset-x-0 bottom-3 text-center text-xs text-white/70">Waiting for others to join…</div>
-                </div>
-              </button>`;
+            return cuTileHTML(Object.assign(localSpec(), {
+              large: true, onclick: "openGroupCallFullscreen('local')", style: 'width:100%;height:100%;border-radius:26px;',
+              extra: `<div style="position:absolute;left:0;right:0;top:16px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.75);">Waiting for others to join…</div>`
+            }));
           }
 
-          const cols = tileCount <= 4 ? 2 : 3;
-
-          const localTile = `
-            <button onclick="openGroupCallFullscreen('local')" class="flex flex-col items-center gap-1 min-w-0 text-left">
-              <div class="w-full rounded-xl overflow-hidden bg-black flex items-center justify-center" style="aspect-ratio:1;">
-                ${showLocalVideo
-                  ? `<video id="call-local-video" autoplay playsinline muted class="w-full h-full object-cover" style="transform:scaleX(-1);"></video>`
-                  : `<div class="w-full h-full bg-blue-100 flex items-center justify-center overflow-hidden">${avatarMediaHTML(typeof profileData !== 'undefined' ? profileData.photo : null, 'user', 'w-8 h-8 text-gray-500')}</div>`}
-              </div>
-              <div class="text-[11px] font-semibold text-gray-600 truncate max-w-full">You</div>
-            </button>`;
-
-          const remoteTiles = connected.map(e => {
-            const m = memberFor(e.userId);
-            const hasVideo = isVideo && e.stream.getVideoTracks().some(t => t.enabled);
-            return `
-              <button onclick="openGroupCallFullscreen('${e.peerId}')" class="flex flex-col items-center gap-1 min-w-0 text-left">
-                <div class="w-full rounded-xl overflow-hidden bg-black flex items-center justify-center" style="aspect-ratio:1;">
-                  <video id="call-remote-video-${e.peerId}" autoplay playsinline class="w-full h-full object-cover ${hasVideo ? '' : 'hidden'}"></video>
-                  <audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>
-                  ${!hasVideo ? `<div class="w-full h-full ${m.avatarBg || 'bg-gray-100'} flex items-center justify-center overflow-hidden">${avatarInnerHTML(m,'w-8 h-8')}</div>` : ''}
-                </div>
-                <div class="text-[11px] font-semibold text-gray-600 truncate max-w-full">${escapeHtml(m.name)}</div>
-              </button>`;
-          }).join('');
+          const tiles = [cuTileHTML(Object.assign(localSpec(), { onclick: "openGroupCallFullscreen('local')" }))]
+            .concat(connected.map(e => cuTileHTML(Object.assign(remoteSpec(e), { onclick: `openGroupCallFullscreen('${e.peerId}')` }))));
 
           const waitingCount = others.length - connected.length;
           return `
-            <div class="w-full h-full overflow-y-auto">
-              <div class="grid gap-3" style="grid-template-columns:repeat(${cols}, minmax(0, 1fr));">
-                ${localTile}${remoteTiles}
-              </div>
-              ${waitingCount > 0 ? `<div class="text-center text-xs text-gray-400 mt-3">Waiting on ${waitingCount} more member${waitingCount === 1 ? '' : 's'}…</div>` : ''}
+            <div style="width:100%;height:100%;display:flex;flex-direction:column;gap:8px;min-height:0;">
+              <div style="flex:1 1 0%;min-height:0;">${cuGridHTML(tiles)}</div>
+              ${waitingCount > 0 ? `<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.6);flex-shrink:0;">Waiting on ${waitingCount} more member${waitingCount === 1 ? '' : 's'}…</div>` : ''}
             </div>`;
         }
 
+        function callControlsHTML(){
+          const isVideo = callState.type === 'video';
+          const isMeetingCall = isMeetingConvo(callState.convoId);
+          const ctls = [];
+          ctls.push(cuCtlHTML({ id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted }));
+          if (isVideo) {
+            ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('camOff')", icon: callState.camOff ? 'cameraOff' : 'video', label: callState.camOff ? 'Start video' : 'Camera', on: callState.camOff }));
+          } else {
+            ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker }));
+          }
+          if (isMeetingCall) {
+            ctls.push(cuCtlHTML({ id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dots', label: 'More', on: !!meetingSheet }));
+          } else {
+            ctls.push(cuCtlHTML({ onclick: 'openAddToCall()', icon: 'personPlus', label: 'Add' }));
+          }
+          ctls.push(cuCtlHTML({ onclick: 'endCall()', icon: 'phoneHangup', label: isMeetingCall ? 'Leave' : 'End', end: true, title: isMeetingCall ? 'Leave meeting' : 'End call' }));
+          return `<div class="cu-bar-inner">${ctls.join('')}</div>`;
+        }
+
+        function callAdminBarHTML(){
+          if (!callState.connected || !callCanMuteAll()) return '';
+          if (!Object.values(callPeers).some(e => e.connected)) return '';
+          return `<div id="call-admin-bar" class="cu-adminbar"><button onclick="muteEveryoneInCall()" class="cu-pill">${Icon('muteAll', 'w-4 h-4')}<span>Mute everyone</span></button></div>`;
+        }
+
         function callHTML(){
+          ensureCallUiStyles();
           const meta = convoMeta[callState.convoId] || { icon: 'user', avatarBg: 'bg-gray-100', name: 'Unknown' };
           const isVideo = callState.type === 'video';
           const isGroup = isGroupCallConvo(callState.convoId);
           const isMeetingCall = isMeetingConvo(callState.convoId);
-          const meetingPeopleCount = Object.values(callPeers).filter(e => e.connected).length + 1;
-          const statusText = callState.statusOverride
-            ? escapeHtml(callState.statusOverride)
-            : (callState.connected ? `${isMeetingCall ? meetingPeopleCount + ' in meeting · ' : ''}<span id="call-timer">${formatCallTime(callState.seconds)}</span>` : (isVideo ? 'Video calling…' : 'Calling…'));
+          const peopleCount = Object.values(callPeers).filter(e => e.connected).length + 1;
+          let statusHTML;
+          if (callState.statusOverride) {
+            statusHTML = `<span class="cu-dot cu-dot-warn"></span>${escapeHtml(callState.statusOverride)}`;
+          } else if (callState.connected) {
+            statusHTML = `<span class="cu-dot"></span>${(isMeetingCall || isGroup) ? `${peopleCount} in ${isMeetingCall ? 'meeting' : 'call'} · ` : ''}<span id="call-timer">${formatCallTime(callState.seconds)}</span>`;
+          } else {
+            statusHTML = `<span class="cu-dot cu-dot-warn"></span>${isVideo ? 'Video calling…' : 'Calling…'}`;
+          }
+          const headRight = isMeetingCall
+            ? `<button onclick="shareActiveMeetingLink()" title="Share meeting link" class="cu-glass">${Icon('link', 'w-5 h-5')}</button>`
+            : `<div style="width:42px;height:42px;flex-shrink:0;"></div>`;
           return `
-            <div id="call-screen" class="flex-1 flex flex-col text-gray-800" style="padding-top:var(--top-safe-pad);background:#ffffff;overflow-y:auto;">
-              <div id="call-header" class="flex items-center justify-between px-5 flex-shrink-0">
-                <button onclick="minimizeCall()" title="Back" class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 min-w-0 text-center px-2">
-                  <div id="call-display-name" class="text-lg font-bold font-display truncate" style="color:#1E90FF;">${escapeHtml(callDisplayName(meta))}</div>
-                  <div class="text-sm text-gray-500">${statusText}</div>
+            <div id="call-screen" class="cu-screen" style="padding-top:var(--top-safe-pad);">
+              <div id="call-header" class="cu-top">
+                <button onclick="minimizeCall()" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
+                <div class="cu-title">
+                  <div id="call-display-name" class="cu-title-name">${escapeHtml(callDisplayName(meta))}</div>
+                  <div class="cu-status">${statusHTML}</div>
                 </div>
-                <div class="w-11 h-11 flex-shrink-0"></div>
+                ${headRight}
               </div>
-              ${callState.mediaError && isVideo ? `<div class="mx-5 mt-3 px-3 py-2 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">${callState.mediaError}</div>` : ''}
-              <div class="flex-1 min-h-0 flex items-center justify-center px-6 py-4" id="call-stage-wrap">
-                ${callStageHTML()}
-              </div>
-              <div id="call-controls-bar" class="flex-shrink-0 pt-4 flex justify-center" style="padding-bottom:50px;">
-                <div class="flex items-center gap-3 rounded-full py-2.5 px-3 shadow-md" style="background:#f2f2f2;">
-                  <button onclick="${isMeetingCall ? 'shareActiveMeetingLink()' : 'openAddToCall()'}" title="${isMeetingCall ? 'Share meeting link' : 'Add to call'}" class="w-11 h-11 rounded-full bg-white flex items-center justify-center text-gray-700 shadow-sm">${Icon(isMeetingCall ? 'link' : 'personPlus','w-5 h-5')}</button>
-                  ${isVideo ? `<button onclick="toggleCallControl('camOff')" id="call-secondary-btn" title="Camera" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.camOff ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('video','w-5 h-5')}</button>` : `<button onclick="toggleCallControl('speaker')" id="call-secondary-btn" title="Speaker" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.speaker ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('bell','w-5 h-5')}</button>`}
-                  <button onclick="toggleCallControl('muted')" id="call-mute-btn" title="Mute" class="w-11 h-11 rounded-full flex items-center justify-center ${callState.muted ? 'bg-[' + NAVY + '] text-white' : 'bg-white text-gray-700 shadow-sm'}">${Icon('mic','w-5 h-5')}</button>
-                  <button onclick="endCall()" title="${isMeetingCall ? 'Leave meeting' : 'End call'}" class="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center">${Icon('phoneHangup','w-5 h-5')}</button>
-                  ${isMeetingCall ? `<button onclick="toggleMeetingMenu()" id="meeting-more-btn" title="More" class="w-11 h-11 rounded-full bg-white flex items-center justify-center text-gray-700 shadow-sm">${Icon('dots','w-5 h-5')}</button>` : ''}
-                </div>
-              </div>
+              ${callState.mediaError && isVideo ? `<div class="cu-alert">${escapeHtml(callState.mediaError)}</div>` : ''}
+              ${callAdminBarHTML()}
+              <div class="cu-stage" id="call-stage-wrap">${callStageHTML()}</div>
+              <div id="call-controls-bar" class="cu-bar">${callControlsHTML()}</div>
               ${isMeetingCall ? meetingOverlaysHTML() : ''}
             </div>`;
         }
@@ -6851,7 +7090,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             endsAt: new Date(info.ends_at).getTime(),
             isAdmin: !!(info.is_host || info.is_admin),
             isHost: !!info.is_host,
+            // Used to check that a "mute everyone" signal really came from the host or an admin
+            adminIds: [info.host_id].concat(info.admin_ids || []).filter(Boolean),
           };
+          const adminLookupCode = info.code;
+          fetchMeetingByCode(adminLookupCode).then(res => {
+            if (res && res.status === 'ok' && activeMeeting && activeMeeting.code === adminLookupCode) {
+              activeMeeting.adminIds = [res.host_id].concat(res.admin_ids || []).filter(Boolean);
+            }
+          });
           pendingMeetingCode = null; pendingMeetingInfo = null;
           stopMeetingJoinPoll();
           startCall(id, 'video', true, opts);
@@ -6926,21 +7173,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${Icon(icon, 'w-5 h-5')}<span class="text-sm font-semibold">${label}</span>
               </button>`;
             return `${backdrop}
-              <div class="fixed z-40 bg-white rounded-2xl shadow-lg overflow-hidden" style="bottom:128px;right:20px;min-width:230px;">
+              <div class="fixed z-40 bg-white rounded-2xl shadow-lg overflow-hidden" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));right:20px;min-width:230px;">
                 ${row('clap', 'Reactions', "setMeetingSheet('reactions')")}
-                ${row('comment', 'Send a message', "setMeetingSheet('comment')")}
+                ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
+                ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
               </div>`;
           }
           if (meetingSheet === 'reactions') {
             return `${backdrop}
-              <div class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:128px;left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
+              <div class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
                 ${MEETING_REACTIONS.map(r => `<button onclick="sendMeetingReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100" style="color:${r.color};">${Icon(r.icon, 'w-5 h-5')}</button>`).join('')}
               </div>`;
           }
           if (meetingSheet === 'comment') {
             return `${backdrop}
-              <div id="meeting-comment-sheet" class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:128px;left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
+              <div id="meeting-comment-sheet" class="fixed z-40 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:calc(132px + env(safe-area-inset-bottom,0px));left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
                 <input id="meeting-comment-input" type="text" placeholder="Type a message..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingComment();}" onfocus="meetingCommentFocus(true)" onblur="meetingCommentFocus(false)">
                 <button onclick="sendMeetingComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send', 'w-4 h-4')}</button>
               </div>`;
@@ -6951,8 +7199,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // Floating reactions/messages + the sheets, drawn inside the call screen
         function meetingOverlaysHTML(){
           return `
-            <div id="meeting-reactions-float" class="fixed flex flex-col items-end gap-1 z-20" style="bottom:140px;right:14px;pointer-events:none;">${meetingReactionsFloatHTML()}</div>
-            <div id="meeting-comments-float" class="fixed flex flex-col items-start gap-1 z-20" style="bottom:140px;left:14px;pointer-events:none;max-width:220px;">${meetingCommentsFloatHTML()}</div>
+            <div id="meeting-reactions-float" class="fixed flex flex-col items-end gap-1 z-20" style="bottom:calc(150px + env(safe-area-inset-bottom,0px));right:14px;pointer-events:none;">${meetingReactionsFloatHTML()}</div>
+            <div id="meeting-comments-float" class="fixed flex flex-col items-start gap-1 z-20" style="bottom:calc(150px + env(safe-area-inset-bottom,0px));left:14px;pointer-events:none;max-width:220px;">${meetingCommentsFloatHTML()}</div>
             <div id="meeting-sheets-region">${meetingSheetHTML()}</div>`;
         }
 
@@ -6971,7 +7219,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function syncMeetingCommentInset(){
           const sheet = document.getElementById('meeting-comment-sheet');
           if (!sheet) return;
-          if (!meetingCommentFocused) { sheet.style.bottom = '128px'; return; }
+          if (!meetingCommentFocused) { sheet.style.bottom = 'calc(132px + env(safe-area-inset-bottom,0px))'; return; }
           const vv = window.visualViewport;
           const inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
           sheet.style.bottom = (inset + 10) + 'px';

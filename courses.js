@@ -6388,33 +6388,16 @@ try {
         function incomingLectureCallHTML(){
           const info = incomingLectureCallInfo || {};
           const lecture = info.lecture || {};
-          return `
-            <div class="flex-1 flex flex-col bg-white text-gray-900" style="padding-top:var(--top-safe-pad);">
-              <div class="flex items-center justify-between px-5 flex-shrink-0">
-                <button onclick="declineIncomingLectureCall()" title="Back" class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 min-w-0 text-center px-2">
-                  <div class="text-sm font-semibold text-gray-500 tracking-wide uppercase font-display">Incoming Lecture</div>
-                </div>
-                <div class="w-11 h-11 flex-shrink-0"></div>
-              </div>
-              <div style="flex:0 0 20%;"></div>
-              <div class="flex flex-col items-center px-6 text-center">
-                <div class="rounded-full overflow-hidden bg-gray-100 flex items-center justify-center mb-4 shadow-lg" style="width:9rem;height:9rem;">${info.callerPhoto ? `<img src="${escapeHtml(info.callerPhoto)}" class="w-full h-full object-cover">` : Icon('video','w-14 h-14 text-gray-400')}</div>
-                <div class="text-2xl font-bold font-display mb-1">${escapeHtml(info.className || 'Class Lecture')}</div>
-                <div class="text-base text-gray-500">${escapeHtml(info.callerName || 'Your teacher')} started "${escapeHtml(lecture.title || 'Live Lecture')}"</div>
-              </div>
-              <div style="flex:1;"></div>
-              <div class="flex-shrink-0 flex items-center justify-center" style="gap:64px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 32px);">
-                <button onclick="declineIncomingLectureCall()" title="Decline" class="flex flex-col items-center gap-2">
-                  <div class="call-decline-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('phoneHangup','w-6 h-6 text-white')}</div>
-                  <div class="text-xs text-gray-600">Decline</div>
-                </button>
-                <button onclick="acceptIncomingLectureCall()" title="Join lecture" class="flex flex-col items-center gap-2">
-                  <div class="call-accept-icon-btn rounded-full flex items-center justify-center" style="width:56px;height:56px;">${Icon('video','w-6 h-6 text-white')}</div>
-                  <div class="text-xs text-gray-600">Join</div>
-                </button>
-              </div>
-            </div>`;
+          return cuIncomingHTML({
+            kicker: 'Incoming lecture',
+            name: info.className || 'Class Lecture',
+            sub: `${info.callerName || 'Your teacher'} started "${lecture.title || 'Live Lecture'}"`,
+            avatar: info.callerPhoto ? `<img src="${escapeHtml(info.callerPhoto)}" class="w-full h-full object-cover">` : Icon('video', 'w-14 h-14 text-gray-400'),
+            declineAction: 'declineIncomingLectureCall()',
+            acceptAction: 'acceptIncomingLectureCall()',
+            acceptIcon: 'video',
+            acceptLabel: 'Join'
+          });
         }
 
         async function joinLiveLecture(id){
@@ -6596,28 +6579,30 @@ try {
           if (el) el.innerHTML = lectureLocalBadgesHTML();
         }
 
+        // The five call controls, shared by the first render and by in-place updates
+        function lectureCtlSpecs(){
+          const st = liveLectureState;
+          const isTeacher = lectureIsTeacher();
+          return {
+            mute: { id: 'lecture-mute-btn', onclick: "toggleLectureControl('muted')", icon: st.muted ? 'micOff' : 'mic', label: st.muted ? 'Unmute' : 'Mute', on: !!st.muted },
+            cam: { id: 'lecture-cam-btn', onclick: "toggleLectureControl('camOff')", icon: st.camOff ? 'cameraOff' : 'video', label: st.camOff ? 'Start video' : 'Camera', on: !!st.camOff },
+            hand: { id: 'lecture-hand-btn', onclick: 'toggleLectureHand()', icon: 'handRaised', label: st.handRaised ? 'Lower' : 'Raise', on: !!st.handRaised, title: 'Raise hand' },
+            more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!lectureMoreSheetOpen },
+            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End lecture' : 'Leave' },
+          };
+        }
+
+        function lectureControlsHTML(){
+          const c = lectureCtlSpecs();
+          return `<div class="cu-bar-inner">${[c.mute, c.cam, c.hand, c.more, c.end].map(cuCtlHTML).join('')}</div>`;
+        }
+
         function updateLectureControlBarButtons(){
-          const inactiveControlClass = 'bg-white text-gray-600 shadow-sm';
-          const activeControlClass = 'bg-blue-600 text-white';
-          const camBtn = document.getElementById('lecture-cam-btn');
-          if (camBtn) {
-            camBtn.className = `w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.camOff ? activeControlClass : inactiveControlClass}`;
-            camBtn.title = liveLectureState.camOff ? 'Turn camera on' : 'Turn camera off';
-            camBtn.innerHTML = Icon(liveLectureState.camOff ? 'cameraOff' : 'video','w-5 h-5');
-          }
-          const muteBtn = document.getElementById('lecture-mute-btn');
-          if (muteBtn) {
-            muteBtn.className = `w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.muted ? activeControlClass : inactiveControlClass}`;
-            muteBtn.title = liveLectureState.muted ? 'Unmute' : 'Mute';
-            muteBtn.innerHTML = Icon(liveLectureState.muted ? 'micOff' : 'mic','w-5 h-5');
-          }
-          const handBtn = document.getElementById('lecture-hand-btn');
-          if (handBtn) {
-            handBtn.className = `w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.handRaised ? 'text-white' : inactiveControlClass}`;
-            handBtn.style.background = liveLectureState.handRaised ? NAVY : '';
-          }
-          const moreBtn = document.getElementById('lecture-more-btn');
-          if (moreBtn) moreBtn.className = `w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${lectureMoreSheetOpen ? activeControlClass : inactiveControlClass}`;
+          const c = lectureCtlSpecs();
+          cuPatchCtl('lecture-mute-btn', c.mute);
+          cuPatchCtl('lecture-cam-btn', c.cam);
+          cuPatchCtl('lecture-hand-btn', c.hand);
+          cuPatchCtl('lecture-more-btn', c.more);
         }
 
         function updateLectureSheetsRegion(){
@@ -7088,33 +7073,32 @@ try {
           // Screen share stays un-cropped (object-contain) so the whole shared screen is visible
           // instead of being cover-cropped like a face
           if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full ${isSharing ? 'object-contain bg-black' : 'object-cover'}" style="${isSharing ? '' : 'transform:scaleX(-1);'}"></video>`;
-          return `<div class="w-full h-full flex items-center justify-center bg-gray-700 overflow-hidden">${avatarMediaHTML(profileData.photo, 'user', 'w-10 h-10 text-white/70')}</div>`;
+          return `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar bg-blue-100">${avatarMediaHTML(profileData.photo, 'user', 'w-8 h-8 text-gray-500')}</div></div>`;
         }
 
         function lectureLocalBadgesHTML(){
+          const st = liveLectureState;
           return `
-            ${liveLectureState.screenSharing ? `<div class="absolute bottom-1.5 left-1.5 right-1.5 rounded-full bg-black/55 flex items-center justify-center gap-1 text-white text-[10px] font-bold py-1">${Icon('monitor','w-3 h-3')} Presenting</div>` : ''}
-            ${liveLectureState.muted ? `<div class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white">${Icon('micOff','w-3.5 h-3.5')}</div>` : ''}
-            ${liveLectureState.camOff && !liveLectureState.screenSharing ? `<div class="absolute top-1.5 ${liveLectureState.muted ? 'right-8' : 'right-1.5'} w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white">${Icon('cameraOff','w-3.5 h-3.5')}</div>` : ''}
-            ${liveLectureState.handRaised ? `<div class="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white">${Icon('handRaised','w-3.5 h-3.5')}</div>` : ''}`;
+            ${st.screenSharing ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
+            ${st.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
+            ${st.camOff && !st.screenSharing ? `<span class="cu-corner" style="right:${st.muted ? '40px' : '8px'};">${Icon('cameraOff','w-3.5 h-3.5')}</span>` : ''}
+            ${st.handRaised ? `<span class="cu-corner cu-hand" style="top:${st.screenSharing ? '40px' : '8px'};">${Icon('handRaised','w-3.5 h-3.5')}</span>` : ''}`;
         }
 
         function lectureTileWrapperHTML(videoInner, badgesInner, caption, tileId, bgClass, spotlight){
           return `
-            <div class="flex flex-col min-w-0 flex-shrink-0 ${spotlight ? 'w-full h-full' : ''}">
-              <div class="relative rounded-2xl overflow-hidden ${bgClass || 'bg-gray-800'}" style="${spotlight ? 'width:100%;height:100%;' : 'aspect-ratio:4/3;'}" ${tileId ? `id="${tileId}"` : ''}>
-                ${videoInner}
-                ${badgesInner || ''}
-              </div>
-              <div class="mt-1 text-xs font-semibold text-gray-700 truncate text-center">${caption}</div>
+            <div class="cu-tile" ${tileId ? `id="${tileId}"` : ''} style="width:100%;height:100%;${spotlight ? 'border-radius:22px;' : ''}">
+              ${videoInner}
+              ${badgesInner || ''}
+              <span class="cu-chip">${caption}</span>
             </div>`;
         }
 
         function lectureRemoteBadgesHTML(p){
           return `
-            ${p.sharingScreen ? `<div class="absolute bottom-1.5 left-1.5 right-1.5 rounded-full bg-black/55 flex items-center justify-center gap-1 text-white text-[10px] font-bold py-1">${Icon('monitor','w-3 h-3')} Presenting</div>` : ''}
-            ${p.muted ? `<div class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center text-white">${Icon('micOff','w-3.5 h-3.5')}</div>` : ''}
-            ${p.handRaised ? `<div class="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/40 flex items-center justify-center text-white">${Icon('handRaised','w-3.5 h-3.5')}</div>` : ''}`;
+            ${p.sharingScreen ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
+            ${p.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
+            ${p.handRaised ? `<span class="cu-corner cu-hand" style="top:${p.sharingScreen ? '40px' : '8px'};">${Icon('handRaised','w-3.5 h-3.5')}</span>` : ''}`;
         }
 
         function updateLectureRemoteBadges(){
@@ -7124,8 +7108,22 @@ try {
           });
         }
 
+        // Teacher-only: silence the whole room in one tap (students can unmute themselves again)
+        function muteEveryoneInLecture(){
+          if (!lectureIsTeacher()) return;
+          if (!Object.keys(lecturePresence).length) { callToast('No one else is in the lecture yet'); return; }
+          broadcastLectureSignal({ type: 'mute-all' });
+          Object.keys(lecturePresence).forEach(k => { lecturePresence[k].muted = true; });
+          updateLectureRemoteBadges();
+          callToast('Muted everyone');
+        }
+
+        function lectureAdminBarHTML(){
+          if (!lectureIsTeacher() || !Object.keys(lecturePresence).length) return '';
+          return `<div class="cu-adminbar" style="padding-top:2px;"><button onclick="muteEveryoneInLecture()" class="cu-pill">${Icon('muteAll','w-4 h-4')}<span>Mute everyone</span></button></div>`;
+        }
+
         function lectureGridHTML(){
-          const isDesktopLecture = window.innerWidth >= 1024;
           const iAmTeacher = lectureIsTeacher();
           const peerIds = Object.keys(lecturePresence);
           // Whoever is presenting (me or a peer) takes over the stage below instead of sitting in an
@@ -7155,35 +7153,35 @@ try {
             const isSpotlight = spotlightId === peerId;
             const videoInner = `
               <video id="lecture-remote-video-${peerId}" autoplay playsinline class="w-full h-full ${isSpotlight ? 'object-contain' : 'object-cover'} ${showVideo ? '' : 'hidden'}"></video>
-              ${!showVideo ? `<div class="w-full h-full flex items-center justify-center"><span class="text-white font-bold text-2xl">${escapeHtml((p.name || '?').trim().charAt(0).toUpperCase())}</span></div>` : ''}`;
+              ${!showVideo ? `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar ${LECTURE_TILE_COLORS[i % LECTURE_TILE_COLORS.length]}"><span class="text-white font-bold text-2xl">${escapeHtml((p.name || '?').trim().charAt(0).toUpperCase())}</span></div></div>` : ''}`;
             const badgesInner = `<div id="lecture-remote-badges-${peerId}">${lectureRemoteBadgesHTML(p)}</div>`;
             const caption = `${escapeHtml(p.name)}${p.isTeacher ? ' · Host' : ''}`;
-            const bgClass = showVideo ? (isSpotlight ? 'bg-black' : 'bg-gray-800') : LECTURE_TILE_COLORS[i % LECTURE_TILE_COLORS.length];
-            otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, bgClass, isSpotlight);
+            otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, null, isSpotlight);
           });
-          const otherTiles = sortedPeerIds.map(id => otherTileHTML[id]).join('');
+
+          const mediaErr = liveLectureState.mediaError ? `<div class="cu-alert">${escapeHtml(liveLectureState.mediaError)}</div>` : '';
 
           if (spotlightId) {
             const spotlightTile = spotlightId === 'local' ? localTile : otherTileHTML[spotlightId];
             const stripIds = spotlightId === 'local' ? sortedPeerIds : ['local', ...sortedPeerIds.filter(id => id !== spotlightId)];
-            const stripTiles = stripIds.map(id => id === 'local' ? localTile : otherTileHTML[id]).join('');
+            const stripTiles = stripIds.map(id => `<div style="width:124px;height:100%;flex-shrink:0;">${id === 'local' ? localTile : otherTileHTML[id]}</div>`).join('');
             return `
-              ${liveLectureState.mediaError ? `<div class="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">${escapeHtml(liveLectureState.mediaError)}</div>` : ''}
-              <div class="flex-1 min-h-0 flex flex-col p-3 gap-2">
+              ${mediaErr}
+              ${lectureAdminBarHTML()}
+              <div class="flex-1 min-h-0 flex flex-col gap-2" style="padding:8px 12px;">
                 <div class="flex-1 min-h-0">${spotlightTile}</div>
                 ${stripTiles ? `<div class="flex gap-2 overflow-x-auto flex-shrink-0" style="height:92px;">${stripTiles}</div>` : ''}
               </div>`;
           }
 
-          const orderedTiles = iAmTeacher ? (localTile + otherTiles) : (otherTiles + localTile);
-          const gridClass = isDesktopLecture
-            ? 'grid gap-3 p-4 overflow-hidden flex-1 content-start justify-center'
-            : 'grid grid-cols-2 gap-2.5 p-3 overflow-hidden flex-1 content-start';
-          const gridStyle = isDesktopLecture ? 'grid-template-columns:repeat(auto-fill,minmax(150px,190px));' : '';
+          const orderedTiles = iAmTeacher
+            ? [localTile].concat(sortedPeerIds.map(id => otherTileHTML[id]))
+            : sortedPeerIds.map(id => otherTileHTML[id]).concat([localTile]);
           return `
-            ${liveLectureState.mediaError ? `<div class="mx-4 mt-2 px-3 py-2 rounded-xl bg-amber-100 text-amber-700 text-xs font-semibold flex-shrink-0">${escapeHtml(liveLectureState.mediaError)}</div>` : ''}
-            <div class="${gridClass}" style="${gridStyle}">${orderedTiles}</div>
-            ${!peerIds.length ? `<div class="text-center text-xs text-gray-400 pb-2 flex-shrink-0 leading-relaxed">No one else has joined this lecture yet.<br>Invite them from the People tab.</div>` : ''}`;
+            ${mediaErr}
+            ${lectureAdminBarHTML()}
+            <div class="flex-1 min-h-0" style="padding:8px 12px;">${cuGridHTML(orderedTiles)}</div>
+            ${!peerIds.length ? `<div class="text-center text-xs pb-2 flex-shrink-0 leading-relaxed" style="color:rgba(255,255,255,.6);">No one else has joined this lecture yet.<br>Invite them from the People tab.</div>` : ''}`;
         }
 
         let lectureChannel = null;
@@ -7360,6 +7358,22 @@ try {
             addLectureFloatingComment(payload.id, payload.text, payload.name);
             return;
           }
+          if (payload.type === 'mute-all') {
+            // Only the teacher's mute-all counts
+            const sender = lecturePresence[payload.from];
+            if (lectureIsTeacher() || !sender || !sender.isTeacher) return;
+            if (!liveLectureState.muted) {
+              liveLectureState.muted = true;
+              applyLectureTrackStates();
+              updateLectureLocalBadges();
+              updateLectureControlBarButtons();
+              updateLecturePresenceTrack();
+              updateLectureInlinePanel();
+              if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
+              callToast('Your teacher muted everyone');
+            }
+            return;
+          }
           if (payload.type === 'screen-share') {
             const peerId = payload.from;
             if (peerId && lecturePresence[peerId]) {
@@ -7430,7 +7444,7 @@ try {
 
         // ---- Lecture whiteboard: tools, drawing, undo/clear ----
         function wbToolIcon(t){
-          return { pen: 'penTool', square: 'square', circle: 'circle', line: 'lineTool', text: 'textT', eraser: 'eraser' }[t] || 'penTool';
+          return { pen: 'penTool', square: 'square', circle: 'circle', line: 'lineTool', text: 'textTool', eraser: 'eraser' }[t] || 'penTool';
         }
 
         const WB_TOOL_LABELS = { pen: 'Pen (freehand)', square: 'Square', circle: 'Circle', line: 'Line', text: 'Text', eraser: 'Eraser' };
@@ -7438,11 +7452,11 @@ try {
         function lectureWhiteboardHTML(){
           const isTeacher = lectureIsTeacher();
           return `
-            <div class="flex-1 flex flex-col bg-white min-h-0">
+            <div class="flex-1 flex flex-col bg-white min-h-0" style="margin:0 10px 10px;border-radius:22px;overflow:hidden;color:#1f2937;">
               ${isTeacher ? `
               <div class="flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200 overflow-x-auto flex-shrink-0">
                 ${['pen','square','circle','line','text','eraser'].map(t => `
-                  <button onclick="wbSetTool('${t}')" title="${WB_TOOL_LABELS[t]}" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="${whiteboardTool === t ? `background:${NAVY};color:#ffffff;box-shadow:0 0 0 2px ${NAVY}55;` : 'background:#f3f4f6;color:#4b5563;'}">${Icon(wbToolIcon(t),'w-4 h-4')}</button>`).join('')}
+                  <button onclick="wbSetTool('${t}')" title="${WB_TOOL_LABELS[t]}" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="${whiteboardTool === t ? `background:${NAVY};color:#ffffff;box-shadow:0 0 0 2px ${NAVY}55;` : 'background:#f3f4f6;color:#4b5563;'}">${Icon(wbToolIcon(t), t === 'text' ? 'w-5 h-5' : 'w-4 h-4')}</button>`).join('')}
                 <div class="w-px h-6 bg-gray-200 flex-shrink-0 mx-1"></div>
                 ${WHITEBOARD_COLORS.map(c => `
                   <button onclick="wbSetColor('${c}')" class="w-6 h-6 rounded-full flex-shrink-0" style="background:${c};${whiteboardColor === c ? `box-shadow:0 0 0 2px #fff, 0 0 0 4px ${NAVY};` : ''}"></button>`).join('')}
@@ -7793,35 +7807,31 @@ try {
         }
 
         function lectureCallHTML(){
+          ensureCallUiStyles();
           const cls = myClasses.find(c => c.id === liveLectureState.classId);
           const isTeacher = cls && cls.role === 'teacher';
           const view = liveLectureState.view;
           const isWhiteboard = view === 'whiteboard';
           const headerLabel = view === 'whiteboard' ? 'Whiteboard' : (view === 'slides' ? (lectureSlides ? lectureSlides.fileName : 'Present') : (cls ? cls.name : 'Lecture'));
           const stageHTML = view === 'whiteboard' ? lectureWhiteboardHTML() : (view === 'slides' ? lectureSlidesHTML() : lectureGridHTML());
-          const controlBarBg = 'rgba(10,37,64,0.035)';
-          const inactiveControlClass = 'bg-white text-gray-600 shadow-sm';
-          const activeControlClass = 'bg-blue-600 text-white';
           const resourceCount = lectureAttachments.length + (whiteboardAttachment ? 1 : 0);
           const isDesktopLecture = window.innerWidth >= 1024;
           return `
-            <div id="lecture-call-screen" class="flex-1 flex flex-col text-gray-800" style="padding-top:var(--top-safe-pad);background:#ffffff;">
+            <div id="lecture-call-screen" class="cu-screen" style="padding-top:var(--top-safe-pad);">
               <input type="file" id="lecture-slide-input" accept=".pdf,.pptx" class="hidden" onchange="handleLectureSlideFile(event)">
               <input type="file" id="lecture-doc-input" accept=".pdf" class="hidden" onchange="handleLectureDocAttach(event)">
               <input type="file" id="lecture-media-input" accept="image/*,video/*" class="hidden" onchange="handleLectureMediaAttach(event)">
-              <div class="flex items-center px-3 flex-shrink-0 mb-2 relative">
-                <button onclick="${(isWhiteboard && isTeacher) ? 'toggleLectureWhiteboard()' : 'minimizeLecture()'}" title="Back" class="absolute left-3 w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white text-gray-700 shadow-sm border border-gray-200">${Icon('back','w-4 h-4')}</button>
-                <div class="flex-1 min-w-0 text-center px-2">
-                  <div class="text-lg font-bold font-display truncate text-gray-800">${escapeHtml(headerLabel)}</div>
-                  <div class="text-sm text-gray-500"><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
+              <div class="cu-top">
+                <button onclick="${(isWhiteboard && isTeacher) ? 'toggleLectureWhiteboard()' : 'minimizeLecture()'}" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
+                <div class="cu-title">
+                  <div class="cu-title-name">${escapeHtml(headerLabel)}</div>
+                  <div class="cu-status"><span class="cu-dot"></span><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
                 </div>
-                <div class="absolute right-3 flex items-center gap-2 flex-shrink-0">
-                  ${!isDesktopLecture ? `
-                  <button onclick="toggleLectureResourcesPanel()" title="Class Pad" class="relative w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white text-gray-700 shadow-sm border border-gray-200">
-                    ${Icon('doc','w-4 h-4')}
-                    ${resourceCount ? `<span class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${resourceCount}</span>` : ''}
-                  </button>` : ''}
-                </div>
+                ${!isDesktopLecture ? `
+                <button onclick="toggleLectureResourcesPanel()" title="Class Pad" class="cu-glass">
+                  ${Icon('doc','w-5 h-5')}
+                  ${resourceCount ? `<span class="cu-count">${resourceCount}</span>` : ''}
+                </button>` : `<div style="width:42px;height:42px;flex-shrink:0;"></div>`}
               </div>
               <div class="flex-1 flex flex-col min-h-0 relative">
                 <div id="lecture-stage-content" class="flex-1 flex flex-col min-h-0 w-full">${stageHTML}</div>
@@ -7830,16 +7840,7 @@ try {
                 <div id="lecture-preview-region" class="absolute inset-0 z-20" style="${lecturePreview ? '' : 'pointer-events:none;'}">${lecturePreview ? lecturePreviewHTML() : ''}</div>
                 <div id="lecture-resources-panel-region" class="absolute inset-0" style="overflow:hidden;pointer-events:none;${isDesktopLecture ? 'display:none;' : ''}">${isDesktopLecture ? '' : lectureResourcesPanelHTML(resourceCount)}</div>
               </div>
-              ${!isWhiteboard ? `
-              <div class="flex-shrink-0 pt-3 flex justify-center relative" style="padding-bottom:20px;">
-                <div class="flex items-center gap-3 rounded-full py-2.5 px-3 shadow-sm overflow-x-auto" style="background:${controlBarBg};">
-                  <button onclick="toggleLectureControl('camOff')" id="lecture-cam-btn" title="${liveLectureState.camOff ? 'Turn camera on' : 'Turn camera off'}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.camOff ? activeControlClass : inactiveControlClass}">${Icon(liveLectureState.camOff ? 'cameraOff' : 'video','w-5 h-5')}</button>
-                  <button onclick="toggleLectureControl('muted')" id="lecture-mute-btn" title="${liveLectureState.muted ? 'Unmute' : 'Mute'}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.muted ? activeControlClass : inactiveControlClass}">${Icon(liveLectureState.muted ? 'micOff' : 'mic','w-5 h-5')}</button>
-                  <button onclick="toggleLectureHand()" id="lecture-hand-btn" title="Raise hand" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${liveLectureState.handRaised ? 'text-white' : inactiveControlClass}" style="${liveLectureState.handRaised ? 'background:' + NAVY + ';' : ''}">${Icon('handRaised','w-5 h-5')}</button>
-                  <button onclick="toggleLectureMoreSheet()" id="lecture-more-btn" title="More" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${lectureMoreSheetOpen ? activeControlClass : inactiveControlClass}">${Icon('dashesShortRight','w-6 h-6')}</button>
-                  <button onclick="endLecture()" title="${isTeacher ? 'End lecture' : 'Leave'}" class="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0">${Icon('phoneHangup','w-5 h-5')}</button>
-                </div>
-              </div>` : ''}
+              ${!isWhiteboard ? `<div id="lecture-controls-bar" class="cu-bar">${lectureControlsHTML()}</div>` : ''}
               <div id="lecture-sheets-region">${lectureSheetsRegionHTML(view)}</div>
             </div>`;
         }
@@ -7854,7 +7855,7 @@ try {
             { icon: 'party', label: 'Celebrate', color: '#16a34a' },
           ];
           return `
-            <div class="absolute z-30 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:94px;left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
+            <div class="absolute z-30 flex items-center gap-2 rounded-full shadow-lg bg-white overflow-x-auto" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));left:10px;right:10px;width:fit-content;max-width:calc(100% - 20px);margin:0 auto;padding:10px;">
               ${reactionIcons.map(r => `
                 <button onclick="sendLectureReaction('${r.icon}')" title="${escapeHtml(r.label)}" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100" style="color:${r.color};">${Icon(r.icon,'w-5 h-5')}</button>`).join('')}
             </div>`;
@@ -7864,7 +7865,7 @@ try {
           // Fixed (not absolute) so its position is computed against the real viewport rather than
           // the lecture screen's inner wrapper
           return `
-            <div id="lecture-comment-sheet" class="fixed z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:94px;left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
+            <div id="lecture-comment-sheet" class="fixed z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
               <input id="lecture-comment-input" type="text" placeholder="Type a comment..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLectureComment();}" onfocus="handleLectureCommentFocus()" onblur="handleLectureCommentBlur()">
               <button onclick="sendLectureComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
             </div>`;
@@ -7874,7 +7875,7 @@ try {
         function syncLectureCommentKeyboardInset(){
           const sheet = document.getElementById('lecture-comment-sheet');
           if (!sheet) return;
-          if (!lectureCommentInputFocused) { sheet.style.bottom = '94px'; return; }
+          if (!lectureCommentInputFocused) { sheet.style.bottom = 'calc(124px + env(safe-area-inset-bottom,0px))'; return; }
           const vv = window.visualViewport;
           const keyboardInset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
           sheet.style.bottom = (keyboardInset + 10) + 'px';
@@ -7911,7 +7912,7 @@ try {
           const isTeacher = lectureIsTeacher();
           const isSharingScreen = !!liveLectureState.screenSharing;
           return `
-            <div class="absolute left-1/2 z-30 bg-white rounded-3xl shadow-lg p-4" style="bottom:94px;transform:translateX(-50%);width:min(calc(100vw - 60px),380px);">
+            <div class="absolute left-1/2 z-30 bg-white rounded-3xl shadow-lg p-4" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(calc(100vw - 60px),380px);">
               ${isTeacher ? `
               <div class="flex items-center gap-2.5 mb-4">
                 <button onclick="toggleLectureWhiteboard()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${view === 'whiteboard' ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;`}">
@@ -7924,11 +7925,15 @@ try {
                   <span class="text-sm font-bold truncate ${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">Share Screen</span>
                   ${isSharingScreen ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${Icon('check','w-3 h-3 text-white')}</span>` : ''}
                 </button>
-              </div>` : ''}
+              </div>
+              <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
+                <span style="color:${NAVY};">${Icon('muteAll','w-5 h-5')}</span>
+                <span class="text-sm font-bold truncate" style="color:${NAVY};">Mute everyone</span>
+              </button>` : ''}
               <div class="flex items-start justify-between gap-1">
                 ${grid("toggleLectureReactionsSheet()", 'heartOutline', 'Reactions', false)}
                 ${grid("lectureAttachDocuments()", 'doc', 'PDF', false)}
-                ${grid("toggleLectureCommentSheet()", 'textT', 'Comment', lectureCommentSheetOpen)}
+                ${grid("toggleLectureCommentSheet()", 'commentText', 'Comment', lectureCommentSheetOpen)}
                 ${grid(`shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}
               </div>
             </div>`;
