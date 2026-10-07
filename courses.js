@@ -1570,7 +1570,7 @@ try {
               </div>` : ''}
             ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : `
               <div class="flex flex-col items-center justify-center text-center px-3" style="min-height:calc(100dvh - 400px);">
-                <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}]" style="margin-bottom:20px;">${Icon('book','w-9 h-9')}</div>
+                <div class="w-20 h-20 flex items-center justify-center text-[${NAVY}]" style="margin-bottom:20px;">${Icon('book','w-9 h-9')}</div>
                 <div class="text-base font-semibold text-gray-600">No courses yet</div>
                 <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Structured, self-paced courses will show up here once one is published.</div>
               </div>`}`;
@@ -5976,14 +5976,53 @@ try {
           const totalClasswork = cls.classwork.length;
           const totalAnnouncements = cls.announcements.length;
           const totalCoTeachers = (cls.coTeachers || []).length;
+          const A = classAnalytics(cls);
+          const C = CLS_COLORS;
+          // One white card per topic: a title, the running total, and a graph
+          const card = (title, total, sub, tab, graph) => `
+            <div onclick="classDetailSwitchTab('${tab}')" class="bg-white rounded-3xl p-5 shadow-sm cursor-pointer" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:${sub ? '2px' : '12px'};">
+                <div class="font-semibold text-base text-gray-800">${title}</div>
+                <div class="font-bold font-display" style="font-size:24px;line-height:1;color:${C.sky};">${total}</div>
+              </div>
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 14px;">${sub}</div>` : ''}
+              ${graph}
+            </div>`;
+
+          const studentsGraph = classPieHTML([
+            { label: 'Joined', value: A.joined.length, color: C.sky },
+            { label: 'Invited, not joined', value: A.invited.length, color: C.amber },
+            { label: 'Join requests', value: A.requests, color: C.purple },
+          ], 'Nobody has joined yet.');
+
+          const classworkGraph = totalClasswork
+            ? classBarsHTML([
+                { label: 'Assign.', value: A.byType.assignment, color: C.sky },
+                { label: 'Quiz', value: A.byType.quiz, color: C.purple },
+                { label: 'Question', value: A.byType.question, color: C.cyan },
+                { label: 'Poll', value: A.byType.poll, color: C.amber },
+                { label: 'Material', value: A.byType.material, color: C.green },
+              ])
+            : classNoDataHTML('Nothing has been posted yet.', 'bars');
+
+          const W = (typeof classWeeklyData === 'function') ? classWeeklyData(cls) : null;
+          const announcementsGraph = (W && typeof insightsBarChartHTML === 'function' && totalAnnouncements)
+            ? insightsBarChartHTML(W.labels, W.ann, C.pink)
+            : classNoDataHTML('No announcements yet.', 'bars');
+
+          const peopleGraph = classPieHTML([
+            { label: 'Students', value: totalStudents, color: C.sky },
+            { label: 'Co-teachers', value: totalCoTeachers, color: C.purple },
+            { label: 'Class owner', value: 1, color: C.green },
+          ], 'No people yet.');
+
           return `
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Overview</div>
-            <div class="grid grid-cols-2 gap-4 mb-5">
-              ${statCard('users','Students', String(totalStudents), 'bg-blue-50', "classDetailSwitchTab('people')")}
-              ${statCard('doc','Classwork', String(totalClasswork), 'bg-amber-100', "classDetailSwitchTab('classwork')")}
-              ${statCard('comment','Announcements', String(totalAnnouncements), 'bg-rose-100', "classDetailSwitchTab('stream')")}
-              ${statCard('personPlus','Co-teachers', String(totalCoTeachers), 'bg-purple-100', "classDetailSwitchTab('people')")}
-            </div>`;
+            ${card('Students', totalStudents, 'Who has joined and who is still to join', 'people', studentsGraph)}
+            ${card('Classwork', totalClasswork, 'What you have posted, by type', 'classwork', classworkGraph)}
+            ${card('Announcements', totalAnnouncements, 'Posted in the last 8 weeks', 'stream', announcementsGraph)}
+            ${card('Co-teachers', totalCoTeachers, 'Teaching team compared with students', 'people', peopleGraph)}
+          `;
         }
 
         // ---- Class stream tab (announcements + comments) ----
@@ -6044,7 +6083,7 @@ try {
                 ${streamAnnouncementCommentsHTML(a)}
               </div>`).join('') : `
               <div class="flex flex-col items-center text-center py-10">
-                <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('comment','w-9 h-9')}</div>
+                <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('comment','w-9 h-9')}</div>
                 <div class="font-bold text-gray-700 mb-1">This is where you can talk to your class</div>
                 <div class="text-sm text-gray-400 leading-relaxed">Use the stream to share announcements, post assignments, and respond to questions</div>
               </div>`}`;
@@ -8744,7 +8783,7 @@ try {
                   </div>
                 </div>`).join('') : `
                 <div class="flex flex-col items-center text-center py-16">
-                  <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${NotifIcon('bell','w-9 h-9')}</div>
+                  <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${NotifIcon('bell','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">Nothing new yet</div>
                   <div class="text-sm text-gray-400 leading-relaxed">Announcements, lectures, and due dates from this class will show up here.</div>
                 </div>`}
@@ -8858,7 +8897,7 @@ try {
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 mt-6">Assignments &amp; Quizzes</div>
             ${work.length ? work.map(row).join('') : `
               <div class="flex flex-col items-center text-center py-10">
-                <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
+                <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
                 <div class="font-bold text-gray-700 mb-1">${isTeacher ? 'Assign work to your class' : 'No assignments yet'}</div>
                 <div class="text-sm text-gray-400 leading-relaxed">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork' : 'Assignments and quizzes from your teacher will show up here.'}</div>
               </div>`}
@@ -9380,7 +9419,7 @@ try {
                 <div class="pill-bleed flex items-center gap-2 overflow-x-auto pb-1 mb-5">
                   ${w.attachments.map(a => `
                     <button onclick="openClassworkFile('${escapeHtml(a.url)}')" title="Open ${escapeHtml(a.name)}" class="flex items-center gap-1.5 bg-white rounded-full pl-1 pr-3 py-1 flex-shrink-0 shadow-sm">
-                      <span class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon('doc','w-3.5 h-3.5')}</span>
+                      <span class="w-6 h-6 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon('doc','w-3.5 h-3.5')}</span>
                       <span class="text-xs font-semibold text-gray-700 truncate" style="max-width:140px;">${escapeHtml(a.name)}</span>
                     </button>`).join('')}
                 </div>` : ''}
@@ -9400,7 +9439,7 @@ try {
             if (!studentIds.length) {
               return `
                 <div class="flex flex-col items-center text-center py-10">
-                  <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
+                  <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">No submissions yet</div>
                   <div class="text-sm text-gray-400 leading-relaxed">You'll be able to grade each student's work here once they turn it in.</div>
                 </div>`;
@@ -9499,7 +9538,7 @@ try {
             if (!studentIds.length) {
               return `
                 <div class="flex flex-col items-center text-center py-10">
-                  <div class="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('edit','w-9 h-9')}</div>
+                  <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('edit','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">No submissions yet</div>
                   <div class="text-sm text-gray-400 leading-relaxed">Scores will show up here once a student takes this quiz.</div>
                 </div>`;
@@ -10242,7 +10281,7 @@ try {
         function reminderRow(r){
           return `
             <div class="bg-white rounded-3xl p-4 flex items-center gap-3 mb-3 shadow-sm">
-              <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('bell','w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('bell','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <div class="font-semibold text-base truncate">${escapeHtml(r.title)}</div>
