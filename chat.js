@@ -7159,9 +7159,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
-        function shareMeetingLink(code, title){
+        function meetingShareName(code, title){
+          if (title) return title;
+          if (meetingCreated && meetingCreated.code === code && meetingCreated.title) return meetingCreated.title;
+          const up = (typeof myUpcomingMeetings !== 'undefined' && myUpcomingMeetings || []).find(x => x.code === code);
+          if (up && up.title) return up.title;
+          if (activeMeeting && activeMeeting.code === code && activeMeeting.title) return activeMeeting.title;
+          return 'a meeting';
+        }
+
+        function meetingShareText(code, title){
+          return `Join "${meetingShareName(code, title)}" on Stitch: ${buildMeetingLink(code)}`;
+        }
+
+        // Native OS share sheet (used in-call, and by the "Share" option in the sheet below)
+        function shareMeetingNative(code, title){
           const link = buildMeetingLink(code);
-          const name = title || (meetingCreated && meetingCreated.code === code && meetingCreated.title) || (activeMeeting && activeMeeting.code === code && activeMeeting.title) || 'a meeting';
+          const name = meetingShareName(code, title);
           if (navigator.share) {
             navigator.share({ title: name, text: `Join "${name}" on Stitch`, url: link }).catch(() => {});
           } else {
@@ -7169,8 +7183,158 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
+        // ---- Share a meeting: in-app people picker + external options ----
+        let meetingShareSelected = new Set();
+        let meetingShareCode = '';
+        let meetingShareTitle = '';
+
+        function shareMeetingLink(code, title){
+          meetingShareSelected = new Set();
+          meetingShareCode = code;
+          meetingShareTitle = meetingShareName(code, title);
+          if (typeof pauseAllOverlayMedia === 'function') pauseAllOverlayMedia();
+          const ov = document.getElementById('overlay');
+          if (!ov) { shareMeetingNative(code, title); return; }
+          shareSheetReturnHTML = (!ov.classList.contains('hidden')) ? ov.innerHTML : null;
+          ov.classList.remove('hidden');
+          ov.style.top = OVERLAY_TOP;
+          ov.style.paddingTop = '';
+          ov.style.bottom = '0';
+          ov.style.background = 'rgba(8,15,28,0.55)';
+          ov.innerHTML = meetingShareSheetHTML();
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeShareSheet(fromPopState));
+        }
+
+        function meetingShareSheetHTML(){
+          const contacts = shareContactsList();
+          const code = escapeHtml(meetingShareCode);
+          return `
+            <div class="w-full h-full flex flex-col justify-end" onclick="if (event.target === this) closeShareSheet();">
+              <div class="w-full bg-white flex flex-col share-sheet-panel" style="max-height:82vh;border-radius:22px 22px 0 0;overflow:hidden;" onclick="event.stopPropagation();">
+                <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0"><div class="w-9 h-1.5 rounded-full bg-gray-300"></div></div>
+                <div class="flex-shrink-0 w-full">
+                  <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between">
+                    <div class="font-semibold text-lg font-display truncate" style="color:${NAVY};">Share meeting</div>
+                    <button onclick="closeShareSheet()" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
+                  </div>
+                  <div class="max-w-2xl mx-auto px-5 pb-4">
+                    <div class="relative">
+                      <div class="text-gray-400" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);">${Icon('search','w-4 h-4')}</div>
+                      <input id="meeting-share-search" oninput="filterMeetingShareContacts()" placeholder="Search" class="w-full bg-gray-100 rounded-full text-sm" style="outline:none;padding:0.625rem 1rem 0.625rem 2.5rem;"/>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex-1 overflow-y-hidden">
+                  <div class="max-w-2xl mx-auto px-5">
+                    <div id="meeting-share-grid" class="pill-bleed flex overflow-x-auto no-scrollbar" style="gap:16px;scroll-snap-type:x proximity;padding-top:2px;padding-bottom:8px;">
+                      ${contacts.map(c => meetingShareContactCell(c)).join('')}
+                    </div>
+                    <div id="meeting-share-empty" class="${contacts.length ? 'hidden ' : ''}text-center text-sm text-gray-400 py-10">${contacts.length ? 'No matches' : 'No connections yet'}</div>
+                  </div>
+                </div>
+                <div class="share-sheet-actions flex-shrink-0 w-full border-t border-gray-100" style="background:#fafafa;">
+                  <div class="share-sheet-actions-row flex items-start no-scrollbar" style="gap:22px;padding:16px 20px calc(env(safe-area-inset-bottom, 12px) + 16px) 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                    <div id="meeting-share-action">${meetingShareActionHTML()}</div>
+                    ${shareExternalOption('send','Share', `shareMeetingNativeFromSheet()`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
+                    ${shareExternalOption('link','Copy link', `copyMeetingLinkFromSheet()`, '#eef0f4', NAVY)}
+                    ${shareWhatsAppOption(`shareMeetingVia('whatsapp')`)}
+                    ${shareMessagesOption(`shareMeetingVia('sms')`)}
+                    ${shareGmailOption(`shareMeetingVia('gmail')`)}
+                    ${shareOutlookOption(`shareMeetingVia('outlook')`)}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        function meetingShareContactCell(c){
+          const selected = meetingShareSelected.has(c.id);
+          return `
+            <button id="meeting-share-cell-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleMeetingShareContact('${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
+              <div class="relative">
+                <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
+                <div id="meeting-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+              </div>
+              <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
+            </button>`;
+        }
+
+        function toggleMeetingShareContact(id){
+          if (meetingShareSelected.has(id)) meetingShareSelected.delete(id); else meetingShareSelected.add(id);
+          const on = meetingShareSelected.has(id);
+          const badge = document.getElementById('meeting-share-check-' + id);
+          if (badge) {
+            badge.classList.toggle('hidden', !on);
+            const avatar = badge.previousElementSibling;
+            if (avatar) avatar.style.boxShadow = on ? `0 0 0 2.5px ${ROYAL}` : '';
+          }
+          const action = document.getElementById('meeting-share-action');
+          if (action) action.innerHTML = meetingShareActionHTML();
+        }
+
+        function meetingShareActionHTML(){
+          const count = meetingShareSelected.size;
+          if (!count) return '';
+          return `
+            <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
+              <button onclick="sendMeetingToSelectedContacts()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+                ${Icon('send','w-4 h-4')}
+                <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
+              </button>
+              <div class="text-[11px] text-gray-600 font-medium text-center leading-tight">Send</div>
+            </div>`;
+        }
+
+        function filterMeetingShareContacts(){
+          const input = document.getElementById('meeting-share-search');
+          const q = input ? input.value.trim().toLowerCase() : '';
+          const grid = document.getElementById('meeting-share-grid');
+          const empty = document.getElementById('meeting-share-empty');
+          if (!grid) return;
+          let visible = 0;
+          Array.from(grid.children).forEach(cell => {
+            const match = !q || cell.dataset.name.includes(q);
+            cell.classList.toggle('hidden', !match);
+            if (match) visible++;
+          });
+          if (empty) { empty.textContent = 'No matches'; empty.classList.toggle('hidden', visible !== 0 || !grid.children.length); }
+        }
+
+        function sendMeetingToSelectedContacts(){
+          if (!meetingShareSelected.size) return;
+          const text = meetingShareText(meetingShareCode, meetingShareTitle);
+          const ids = Array.from(meetingShareSelected);
+          ids.forEach(id => deliverSharedMessage(id, text, { previewText: `Shared a meeting: "${meetingShareTitle}"` }));
+          closeShareSheet();
+          openAppAlertModal(ids.length === 1 ? 'Sent' : `Sent to ${ids.length} people`);
+        }
+
+        function shareMeetingNativeFromSheet(){
+          const code = meetingShareCode, title = meetingShareTitle;
+          closeShareSheet();
+          shareMeetingNative(code, title);
+        }
+
+        function copyMeetingLinkFromSheet(){
+          const code = meetingShareCode;
+          closeShareSheet();
+          copyMeetingLink(code);
+        }
+
+        function shareMeetingVia(kind){
+          const text = meetingShareText(meetingShareCode, meetingShareTitle);
+          const subject = `Join "${meetingShareTitle}" on Stitch`;
+          let url;
+          if (kind === 'whatsapp') url = 'https://wa.me/?text=' + encodeURIComponent(text);
+          else if (kind === 'sms') url = 'sms:?&body=' + encodeURIComponent(text);
+          else if (kind === 'gmail') url = 'https://mail.google.com/mail/?view=cm&fs=1&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+          else url = 'https://outlook.live.com/mail/0/deeplink/compose?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+          closeShareSheet();
+          if (kind === 'sms') window.location.href = url; else window.open(url, '_blank');
+        }
+
         function shareActiveMeetingLink(){
-          if (activeMeeting) shareMeetingLink(activeMeeting.code, activeMeeting.title);
+          if (activeMeeting) shareMeetingNative(activeMeeting.code, activeMeeting.title);
         }
 
         // ---- Opening a meeting link / a tapped meeting ----
