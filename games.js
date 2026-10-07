@@ -1267,6 +1267,8 @@ let userPoints = 0;
         function authShowCompleteProfile(){
           // A first-time account: its first Home open skips the shimmer skeleton (see renderFeed).
           window.__stitchFreshSignup = true;
+          // Never leave the "Signing you in" skeleton cover up in front of onboarding
+          try { hideAuthTransitionLoading(true); } catch (e) {}
           authForgetPendingVerify();
           authHideAllPanels();
           document.getElementById('auth-panel-complete-profile').classList.add('active');
@@ -2862,12 +2864,23 @@ let userPoints = 0;
             const created = Date.parse(u.created_at || '');
             const last = Date.parse(u.last_sign_in_at || '');
             const looksNew = isFinite(created) && isFinite(last) && Math.abs(last - created) < 60000;
+            const knownReturning = !!(u.id && localStorage.getItem('stitchOnboarded:' + u.id) === '1');
             document.documentElement.classList.remove('oauth-returning');
             if (looksNew && u.email) {
               window.__stitchOAuthShownProfile = true;
               authShowCompleteProfile();
-            } else if (u.email) {
+            } else if (u.email && knownReturning) {
               showAuthTransitionLoading('Signing you in', 'user', true);
+            } else if (u.email) {
+              // Unsure (e.g. a new device, or someone retrying an unfinished sign-up): ask first so a
+              // new account never sees the skeleton before onboarding
+              const needs = await authCheckNeedsProfileSetup();
+              if (needs === true) {
+                window.__stitchOAuthShownProfile = true;
+                authShowCompleteProfile();
+              } else if (needs === false) {
+                showAuthTransitionLoading('Signing you in', 'user', true);
+              }
             }
           } catch (e) {}
         }
@@ -2877,6 +2890,14 @@ let userPoints = 0;
           const earlyLanding = document.getElementById('landing-page');
           if (earlyLanding) earlyLanding.classList.add('landing-hidden');
           dismissSplash(true);
+          // Returning account on this device: put the skeleton up this instant so the redirect never
+          // shows a blank white page. A new sign-up gets nothing here and goes straight to onboarding
+          try {
+            const earlyUid = window.__stitchOAuthUid;
+            if (earlyUid && localStorage.getItem('stitchOnboarded:' + earlyUid) === '1') {
+              showAuthTransitionLoading('Signing you in', 'user', true);
+            }
+          } catch (e) {}
           // Decide right now (no waiting for window.onload / landing images) where this person
           // belongs, straight from the session that is already in the URL / local storage
           try { authFastRouteOAuthReturn(); } catch (e) {}
@@ -2905,5 +2926,10 @@ let userPoints = 0;
             loadRemotePosts().catch(e => console.error(e))
               .then(() => loadPostInteractions().catch(e => console.error(e))),
           ]);
-          await renderApp();
+          // Only build the app shell here when the person is already inside the app. During a Google/Apple
+          // return it is built by authEnterApp(); mounting it here put the Home skeleton on screen
+          // ahead of the onboarding screens
+          const gateNow = document.getElementById('auth-gate');
+          const gateStillUp = !!(gateNow && !gateNow.classList.contains('auth-hidden'));
+          if (!(window.__stitchFreshOAuthReturn === true && gateStillUp)) await renderApp();
         };

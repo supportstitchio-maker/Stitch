@@ -4736,7 +4736,7 @@ try {
           openOverlay('classDetail');
           const cls = myClasses.find(c => c.id === id);
           if (cls) { loadClassTeacherProfile(cls); loadClassStudentProfiles(cls); }
-          classMsgThread = null; classMsgDraft = '';
+          classMsgThread = null; classMsgDraft = ''; classMsgFromPeople = false;
           loadClassMessages(id); subscribeClassMessages(id);
         }
 
@@ -5468,6 +5468,7 @@ try {
           if (!cls) return;
           if (!classMsgMyId) { try { const me = await getCachedAuthUser(); if (me) classMsgMyId = me.id; } catch (e) {} }
           classMsgThread = null;
+          classMsgFromPeople = false;
           classDetailSwitchTab('messages');
         }
         function openClassMsgThread(studentId){
@@ -5478,8 +5479,29 @@ try {
           classMsgAfterRender();
           classMsgMarkRead(currentClassId, studentId);
         }
+        let classMsgFromPeople = false;   // thread was opened by tapping a student on the People tab
+        async function openClassMsgFromPeople(studentId){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          if (!cls || cls.role !== 'teacher' || !studentId) return;
+          if (!classMsgMyId) { try { const me = await getCachedAuthUser(); if (me) classMsgMyId = me.id; } catch (e) {} }
+          classMsgFromPeople = true;
+          classMsgThread = studentId;
+          classMsgDraft = '';
+          classDetailSwitchTab('messages');
+          classMsgAfterRender();
+          classMsgMarkRead(currentClassId, studentId);
+        }
         function classMsgBack(){
           const cls = myClasses.find(c => c.id === currentClassId);
+          if (classMsgFromPeople) {
+            classMsgFromPeople = false;
+            classMsgThread = null;
+            classMsgDraft = '';
+            classDetailTab = 'people';
+            const ov = document.getElementById('overlay');
+            if (ov) ov.innerHTML = classDetailHTML();
+            return;
+          }
           if (cls && cls.role === 'teacher' && classMsgThread) {
             classMsgThread = null;
             classMsgDraft = '';
@@ -9683,8 +9705,10 @@ try {
                   <div class="text-gray-400">No other students yet.</div>
                 </div>`;
                 }
-                return roster.map((s, i) => `
-                <div class="flex items-center gap-4 py-4 ${i < roster.length - 1 ? 'border-b border-gray-100' : ''}">
+                return roster.map((s, i) => {
+                const canMsg = isTeacher && s.id && !s.pending;
+                return `
+                <div ${canMsg ? `onclick="openClassMsgFromPeople('${s.id}')" role="button" tabindex="0" style="cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,0.05);"` : ''} class="flex items-center gap-4 py-4 ${i < roster.length - 1 ? 'border-b border-gray-100' : ''}">
                   <span class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classStudentAvatarHTML(s,'w-6 h-6')}</span>
                   <div class="min-w-0 flex-1">
                     <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(s.name)}</div>
@@ -9695,7 +9719,8 @@ try {
                         : `<div class="text-xs text-gray-400 mt-0.5 truncate">${s.email}</div>`)}
                   </div>
                   ${(isTeacher && s.pending) ? `<button onclick="cancelStudentInvite('${cls.id}', ${s._studentIndex})" class="text-xs font-semibold text-gray-400 flex-shrink-0">Cancel</button>` : ''}
-                </div>`).join('');
+                  ${canMsg ? `<span class="flex-shrink-0 text-gray-300">${Icon('comment','w-5 h-5')}</span>` : ''}
+                </div>`;}).join('');
               })()}
             </div>`;
         }
