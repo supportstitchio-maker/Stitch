@@ -2880,6 +2880,9 @@ let userPoints = 0;
           // Decide right now (no waiting for window.onload / landing images) where this person
           // belongs, straight from the session that is already in the URL / local storage
           try { authFastRouteOAuthReturn(); } catch (e) {}
+        } else if (window.__stitchSkipSplash) {
+          // Not the first open (or returning from a sign-in / verification link): no splash
+          dismissSplash(true);
         } else {
           const openedViaLink = !!(window.location.search || window.location.hash);
           setTimeout(dismissSplash, openedViaLink ? 1000 : 5550);

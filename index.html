@@ -99,8 +99,23 @@
           window.__stitchFreshOAuthReturn = /access_token|provider_token/.test(h);
           if (window.__stitchFreshOAuthReturn) document.documentElement.classList.add('oauth-returning');
         } catch (e) { window.__stitchFreshOAuthReturn = false; }
+        // Splash animation plays only the very first time the app is opened on this device.
+        // It is also skipped on any return from Google/Apple sign-in or an email-verification
+        // link, because those reload the page. Decided here, before first paint, so the logo
+        // never flashes while games.js is still downloading.
+        try {
+          var seen = false;
+          try { seen = localStorage.getItem('stitchSplashSeen') === '1'; } catch (e) {}
+          var qs = (window.location.hash || '') + (window.location.search || '');
+          var authReturn = window.__stitchFreshOAuthReturn ||
+            /access_token|provider_token|token_hash|[?&#]code=|type=(signup|magiclink|recovery|email|invite)/.test(qs);
+          window.__stitchSkipSplash = seen || authReturn;
+          if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
+          try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
+        } catch (e) { window.__stitchSkipSplash = false; }
       })();
     </script>
+    <style>html.no-splash #app-splash{display:none !important;}</style>
     <!-- Critical CSS: inlined so it applies immediately, before the external styles.css request
        even resolves -->
     <style>
