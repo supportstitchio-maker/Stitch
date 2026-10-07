@@ -85,7 +85,7 @@
     </script>
     <!-- Google/Apple sign-in return: the provider sends the person back to this page with the
        session tokens in the URL hash -->
-    <style>html.oauth-returning #landing-page{display:none !important;} html.oauth-returning #auth-gate{visibility:hidden;}</style>
+    <style>html.oauth-returning #landing-page{display:none !important;} html.oauth-returning #auth-gate{visibility:hidden;} html.oauth-returning.oauth-onboarding #auth-gate{visibility:visible;}</style>
     <!-- LANDING PAGE TEMPORARILY HIDDEN. The markup, styles and scripts are all still in place:
          to bring it back, delete this <style> block (or set the rule below to display:block). -->
     <style id="landing-temporarily-hidden">
@@ -185,55 +185,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- Resource-scanning libraries: extract text from uploaded PDF / DOCX / PPTX files client-
-       side -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Cropper.js: drag-to-reposition / pinch-or-slider-to-zoom cropping UI for the profile
-       photo crop step (see photoCropModal / cropper.js usage in profile.js) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-    <!-- KaTeX: renders the math in Stitch Bot replies. -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-    <!-- Mermaid: renders the simple diagrams (flowcharts, timelines, etc.) Stitch Bot can now
-       draw -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-    <!-- Supabase client: used both to reach the ai-proxy Edge Function and, via Realtime
-       broadcast channels, as the signaling layer for real WebRTC voice/video calls (see
-       startCall/RTC_* below) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <!-- Sentry: error/performance monitoring -->
-    <script src="https://browser.sentry-cdn.com/8.9.2/bundle.tracing.min.js" crossorigin="anonymous"></script>
-    <script>
-      const SENTRY_DSN = 'https://6863efe52fe1583922385c2041626990@o4511841032470528.ingest.de.sentry.io/4511841079525456';
-      if (window.Sentry && SENTRY_DSN && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
-        Sentry.init({
-          dsn: SENTRY_DSN,
-          integrations: [Sentry.browserTracingIntegration()],
-          tracesSampleRate: 0.2,
-          environment: (location.protocol === 'file:' || location.hostname === 'localhost') ? 'development' : 'production',
-        });
-      }
-      // Safe no-op wrapper so the rest of the app can call
-      // Sentry.captureException/captureMessage even when Sentry hasn't loaded (e.g. offline, ad-
-      // blocker, or DSN not configured yet) without needing an `if (window.Sentry)` check at
-      window.reportError = function(err, context){
-        try {
-          console.error('[reportError]', err, context || '');
-          if (window.Sentry && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
-            Sentry.captureException(err instanceof Error ? err : new Error(String(err)), context ? { extra: context } : undefined);
-          }
-        } catch (e) { /* never let error reporting itself throw */ }
-      };
-    </script>
-    <script>
-      if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
-    </script>
     <!-- Capacitor (native iOS/Android app wrapper) detection: runs synchronously, before
        styles.css is even requested, so there's no flash of the wrong top spacing -->
     <script>
@@ -447,6 +398,43 @@
        cover: shown the instant Sign Out / Delete Account is confirmed (see authSignOut /
        authDeleteAccount in games.js) -->
     <div id="auth-transition-loading" class="hidden"></div>
+    <script>
+      // OAuth (Google/Apple) return: paint the right screen on the very first frame, before any of the
+      // app scripts have downloaded, so there is never a blank page. A returning account gets the
+      // Home skeleton; a new account goes straight to the "Almost there" profile screen.
+      (function(){
+        try {
+          if (window.__stitchFreshOAuthReturn !== true) return;
+          var uid = window.__stitchOAuthUid, known = false;
+          try { known = !!(uid && localStorage.getItem('stitchOnboarded:' + uid) === '1'); } catch (e) {}
+          if (known) {
+            var el = document.getElementById('auth-transition-loading');
+            if (!el) return;
+            var story = '', i;
+            for (i = 0; i < 5; i++) story += '<div class="skel-story-wrap"><div class="skel-story-circle"><div class="skel-story skel-avatar skel-shimmer"></div>' + (i === 0 ? '<div class="skel-story-badge skel-avatar skel-shimmer"></div>' : '') + '</div></div>';
+            var post = '<div class="skel-post"><div class="skel-post-head"><div class="skel-post-avatar skel-avatar skel-shimmer"></div><div class="skel-post-headlines"><div class="skel-line skel-shimmer" style="width:38%;"></div><div class="skel-line skel-shimmer" style="width:24%;"></div></div></div><div class="skel-post-line skel-line skel-shimmer" style="width:100%;"></div><div class="skel-post-line skel-line skel-shimmer" style="width:80%;"></div></div>';
+            el.innerHTML = '<div class="px-5 pb-5 feed-skeleton-marker" style="padding-top:var(--top-safe-pad);"><div class="-mx-5 mb-6 border-b border-gray-100"><div class="px-5"><div class="skel-story-row">' + story + '</div></div></div><div>' + post + post + post + '</div></div>';
+            el.classList.add('skeleton-mode');
+            el.classList.remove('hidden');
+          } else {
+            var panel = document.getElementById('auth-panel-complete-profile');
+            var gate = document.getElementById('auth-gate');
+            if (!panel || !gate) return;
+            var all = gate.querySelectorAll('.auth-panel');
+            for (i = 0; i < all.length; i++) all[i].classList.remove('active');
+            panel.classList.add('active');
+            gate.classList.add('auth-compact-mode');
+            var t = document.getElementById('authHeadTitle'), sub = document.getElementById('authHeadSub'), eb = document.getElementById('authEyebrow');
+            if (t) t.textContent = 'Almost there';
+            if (sub) sub.textContent = "Let's set up your profile";
+            if (eb) eb.textContent = 'ONE LAST STEP';
+            var back = document.getElementById('authBackToLandingBtn');
+            if (back) back.style.display = 'none';
+            document.documentElement.classList.add('oauth-onboarding');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- ================================================================ Landing page: the
        marketing/splash-screen page shown right after the opening app-splash animation finishes
@@ -813,6 +801,58 @@
     <!-- The ?v=... on each script below is a cache-buster, nothing more -->
     <!-- Analytics (PostHog): vendored + pinned (posthog-js 1.435.8). Must load BEFORE core.js so the
          network hook is installed before the Supabase client is created. Fill in the key in analytics.js -->
+    <!-- Third-party libraries: loaded here (after the page markup) instead of in <head> so they no longer
+       block the first paint. Without this, the page stayed blank while ~7 CDN scripts downloaded,
+       which showed up as a blank screen after a Google/Apple sign-in redirect. Order is unchanged. -->
+    <!-- Resource-scanning libraries: extract text from uploaded PDF / DOCX / PPTX files client-
+       side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Cropper.js: drag-to-reposition / pinch-or-slider-to-zoom cropping UI for the profile
+       photo crop step (see photoCropModal / cropper.js usage in profile.js) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <!-- KaTeX: renders the math in Stitch Bot replies. -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <!-- Mermaid: renders the simple diagrams (flowcharts, timelines, etc.) Stitch Bot can now
+       draw -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <!-- Supabase client: used both to reach the ai-proxy Edge Function and, via Realtime
+       broadcast channels, as the signaling layer for real WebRTC voice/video calls (see
+       startCall/RTC_* below) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <!-- Sentry: error/performance monitoring -->
+    <script src="https://browser.sentry-cdn.com/8.9.2/bundle.tracing.min.js" crossorigin="anonymous"></script>
+    <script>
+      const SENTRY_DSN = 'https://6863efe52fe1583922385c2041626990@o4511841032470528.ingest.de.sentry.io/4511841079525456';
+      if (window.Sentry && SENTRY_DSN && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
+        Sentry.init({
+          dsn: SENTRY_DSN,
+          integrations: [Sentry.browserTracingIntegration()],
+          tracesSampleRate: 0.2,
+          environment: (location.protocol === 'file:' || location.hostname === 'localhost') ? 'development' : 'production',
+        });
+      }
+      // Safe no-op wrapper so the rest of the app can call
+      // Sentry.captureException/captureMessage even when Sentry hasn't loaded (e.g. offline, ad-
+      // blocker, or DSN not configured yet) without needing an `if (window.Sentry)` check at
+      window.reportError = function(err, context){
+        try {
+          console.error('[reportError]', err, context || '');
+          if (window.Sentry && SENTRY_DSN !== 'YOUR_SENTRY_DSN') {
+            Sentry.captureException(err instanceof Error ? err : new Error(String(err)), context ? { extra: context } : undefined);
+          }
+        } catch (e) { /* never let error reporting itself throw */ }
+      };
+    </script>
+    <script>
+      if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
     <script src="analytics.js?v=20261004a"></script>
     <script src="core.js?v=20261006d"></script>
