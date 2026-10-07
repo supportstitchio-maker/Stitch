@@ -4736,6 +4736,8 @@ try {
           openOverlay('classDetail');
           const cls = myClasses.find(c => c.id === id);
           if (cls) { loadClassTeacherProfile(cls); loadClassStudentProfiles(cls); }
+          classMsgThread = null; classMsgDraft = '';
+          loadClassMessages(id); subscribeClassMessages(id);
         }
 
         async function leaveCurrentClass(){
@@ -4813,7 +4815,7 @@ try {
               <div class="px-5">
                 <div class="class-color-card rounded-3xl p-5 text-white relative overflow-hidden mb-4" style="${cls.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}min-height:104px;">
                   ${cls.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${classCardMotifs[classCardIndex(cls) % classCardMotifs.length]}</svg>`}
-                  <div class="text-xl font-bold font-display mb-1 truncate pr-4 relative">${escapeHtml(cls.name)}</div>
+                  <div class="nm-wrap nm-left text-xl font-bold font-display mb-1 relative"><span class="nm-inner">${escapeHtml(cls.name)}</span></div>
                   <div class="flex items-center justify-between gap-3 mb-3 relative">
                     <div class="text-sm text-white/85 truncate">${cls.section ? escapeHtml(cls.section) : ''}</div>
                     ${classFeeLabel(cls) ? `<div class="text-sm font-bold text-white/95 flex-shrink-0">${classFeeLabel(cls)}</div>` : ''}
@@ -4843,7 +4845,7 @@ try {
         }
 
         // ---- Class sub-pages: People, Class profile (teacher) and My class report (student) ----
-        const CLASS_SUBPAGES = ['people', 'profile', 'report'];
+        const CLASS_SUBPAGES = ['people', 'profile', 'report', 'messages'];
         let classDetailPrevTab = 'stream';
         const CLS_COLORS = { blue:'#4169e1', sky:'#1e90ff', green:'#10b981', amber:'#f59e0b', red:'#ef4444', purple:'#8b5cf6', cyan:'#06b6d4', pink:'#ec4899', gray:'#9ca3af' };
 
@@ -5257,6 +5259,7 @@ try {
 
         function classSubPageHTML(cls){
           const isTeacher = cls.role === 'teacher';
+          if (classDetailTab === 'messages') { setTimeout(classMsgAfterRender, 0); return classMessagesPageHTML(cls); }
           let tab = classDetailTab;
           if (tab === 'profile' && !isTeacher) tab = 'report';
           if (tab === 'report' && isTeacher) tab = 'profile';
@@ -5268,7 +5271,7 @@ try {
               <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:${hasFooter ? 0 : 50}px;">
                 ${overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
                 <div class="px-5">
-                  ${hasFooter ? `<div class="text-sm text-gray-400 text-center" style="margin-bottom:14px;">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
+                  ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
                   ${hasFooter ? `
                   <button id="class-report-dl-btn" type="button" onclick="downloadClassReport()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>${isTeacher ? 'Download class report' : 'Download my report'}</span></button>
@@ -5276,6 +5279,254 @@ try {
                 </div>
               </div>
             </div>`;
+        }
+
+        // ---- Class messaging: teacher <-> student 1:1 text threads inside a class ----
+        // Rows live in the class_messages table (row-level security: a student only sees their own
+        // thread with the teacher, the class owner sees every thread in their class). Everything is
+        // saved server-side, so threads are back whenever either person returns.
+        let classMsgs = {};            // classId -> [rows], oldest first
+        let classMsgThread = null;     // teacher only: student id of the open thread (null = list)
+        let classMsgDraft = '';
+        let classMsgChannel = null;
+        let classMsgChannelFor = null;
+        let classMsgMyId = null;
+
+        function classMsgUnreadIn(classId, studentId){
+          return (classMsgs[classId] || []).filter(m => m.sender_id !== classMsgMyId && !m.read && (!studentId || m.student_id === studentId)).length;
+        }
+        function classMsgUnreadTotal(){
+          return classMsgUnreadIn(currentClassId);
+        }
+        async function loadClassMessages(classId){
+          const sb = getSupabaseClient();
+          if (!sb || !classId) return;
+          try {
+            const me = await getCachedAuthUser();
+            if (!me) return;
+            classMsgMyId = me.id;
+            const { data, error } = await sb.from('class_messages').select('*').eq('class_id', classId).order('created_at', { ascending: true }).limit(2000);
+            if (error || !data) return;
+            classMsgs[classId] = data;
+            if (currentClassId === classId && classDetailTab === 'messages') classMsgRefresh();
+          } catch (e) { console.warn('Loading class messages failed:', e); }
+        }
+        async function subscribeClassMessages(classId){
+          const sb = getSupabaseClient();
+          if (!sb || !classId || classMsgChannelFor === classId) return;
+          if (classMsgChannel) { try { sb.removeChannel(classMsgChannel); } catch (e) {} classMsgChannel = null; }
+          classMsgChannelFor = classId;
+          classMsgChannel = sb.channel('class-messages:' + classId)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_messages', filter: 'class_id=eq.' + classId }, (payload) => classMsgIncoming(payload && payload.new))
+            .subscribe();
+        }
+        function classMsgIncoming(row){
+          if (!row || !row.id) return;
+          const list = classMsgs[row.class_id] || (classMsgs[row.class_id] = []);
+          if (list.some(m => m.id === row.id)) return;
+          // Replace our own optimistic copy instead of showing the message twice
+          const pend = list.findIndex(m => m._pending && m.sender_id === row.sender_id && m.text === row.text);
+          if (pend !== -1) list[pend] = row; else list.push(row);
+          const viewing = currentClassId === row.class_id && classDetailTab === 'messages' && currentOverlayKind === 'classDetail';
+          const cls = myClasses.find(c => c.id === row.class_id);
+          const threadOpen = viewing && cls && (cls.role !== 'teacher' || classMsgThread === row.student_id);
+          if (row.sender_id !== classMsgMyId && threadOpen) classMsgMarkRead(row.class_id, row.student_id);
+          if (viewing) classMsgRefresh();
+        }
+        async function classMsgMarkRead(classId, studentId){
+          const list = classMsgs[classId] || [];
+          let changed = false;
+          list.forEach(m => { if (m.student_id === studentId && m.sender_id !== classMsgMyId && !m.read) { m.read = true; changed = true; } });
+          if (!changed) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try { await sb.rpc('mark_class_thread_read', { p_class: classId, p_student: studentId }); } catch (e) {}
+        }
+        function classMsgTimeLabel(iso){
+          const d = new Date(iso); if (isNaN(d)) return '';
+          const t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          const now = new Date();
+          if (d.toDateString() === now.toDateString()) return t;
+          return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ' + t;
+        }
+        function classMsgDayLabel(iso){
+          const d = new Date(iso); const now = new Date();
+          if (d.toDateString() === now.toDateString()) return 'Today';
+          const y = new Date(now); y.setDate(now.getDate() - 1);
+          if (d.toDateString() === y.toDateString()) return 'Yesterday';
+          return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function classMsgLogHTML(cls, studentId){
+          const list = (classMsgs[cls.id] || []).filter(m => m.student_id === studentId);
+          if (!list.length) {
+            const isT = cls.role === 'teacher';
+            return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('comment','w-8 h-8')}<div class="mt-3">${isT ? 'No messages yet. Say hi to start the conversation.' : 'No messages yet. Your teacher can text you here, and you can reply.'}</div></div>`;
+          }
+          let lastDay = '';
+          return list.map(m => {
+            const mine = m.sender_id === classMsgMyId;
+            const day = classMsgDayLabel(m.created_at);
+            const sep = day !== lastDay ? `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${day}</div></div>` : '';
+            lastDay = day;
+            const bubble = mine
+              ? `<div class="text-white px-4 py-2.5 text-sm whitespace-pre-wrap" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;word-break:break-word;">${escapeHtml(m.text)}</div>`
+              : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700 whitespace-pre-wrap" style="border-radius:20px 20px 20px 0;word-break:break-word;">${escapeHtml(m.text)}</div>`;
+            const foot = `<div class="text-[10px] text-gray-400 mt-1 px-1">${m._pending ? 'Sending...' : classMsgTimeLabel(m.created_at)}</div>`;
+            return sep + `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="flex flex-col ${mine ? 'items-end' : 'items-start'}" style="max-width:75%;">${bubble}${foot}</div></div>`;
+          }).join('');
+        }
+
+        function classMsgListHTML(cls){
+          const roster = classRosterList(cls).filter(s => s.id && !s.pending);
+          const rows = roster.map(s => {
+            const msgs = (classMsgs[cls.id] || []).filter(m => m.student_id === s.id);
+            const last = msgs[msgs.length - 1];
+            return { s, last, unread: classMsgUnreadIn(cls.id, s.id), t: last ? Date.parse(last.created_at) : 0, name: classStudentName(cls, s) };
+          }).sort((a, b) => (b.t - a.t) || a.name.localeCompare(b.name));
+          if (!rows.length) return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('users','w-8 h-8')}<div class="mt-3">No students have joined this class yet. Once they do, you can text them here.</div></div>`;
+          return rows.map(r => `
+            <button onclick="openClassMsgThread('${r.s.id}')" class="w-full flex items-center gap-3 py-3 text-left border-b border-gray-100">
+              <span class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classStudentAvatarHTML(r.s, 'w-5 h-5')}</span>
+              <span class="flex-1 min-w-0">
+                <span class="block font-semibold text-sm text-gray-800 truncate">${escapeHtml(r.name)}</span>
+                <span class="block text-xs ${r.unread ? 'text-gray-700 font-semibold' : 'text-gray-400'} truncate">${r.last ? (r.last.sender_id === classMsgMyId ? 'You: ' : '') + escapeHtml(r.last.text) : 'Tap to send a message'}</span>
+              </span>
+              <span class="flex flex-col items-end gap-1 flex-shrink-0">
+                ${r.last ? `<span class="text-[10px] text-gray-400">${formatNotifTime(r.t)}</span>` : ''}
+                ${r.unread ? `<span class="min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style="background:${ROYAL};">${r.unread}</span>` : ''}
+              </span>
+            </button>`).join('');
+        }
+
+        function classMessagesPageHTML(cls){
+          const isTeacher = cls.role === 'teacher';
+          const studentId = isTeacher ? classMsgThread : classMsgMyId;
+          const inThread = !!studentId;
+          let title = 'Messages';
+          if (inThread) {
+            if (isTeacher) {
+              const s = classRosterList(cls).find(x => x.id === studentId);
+              title = s ? classStudentName(cls, s) : 'Student';
+            } else title = classTeacherDisplayName(cls);
+          }
+          const header = overlayHeader(`<span class="nm-wrap nm-left" style="display:block;max-width:60vw;"><span class="nm-inner">${escapeHtml(title)}</span></span>`, 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: inThread ? 'text-xl' : 'text-3xl' });
+          if (!inThread) {
+            return `
+              <div class="flex-1 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:50px;">
+                  ${header}
+                  <div class="px-5">
+                    <div class="nm-wrap text-sm text-gray-400" style="margin-bottom:10px;"><span class="nm-inner">${escapeHtml(cls.name)}</span></div>
+                    <div id="cm-list">${classMsgListHTML(cls)}</div>
+                  </div>
+                </div>
+              </div>`;
+          }
+          return `
+            <div class="flex-1 flex flex-col overflow-hidden" style="min-height:0;">
+              <div class="flex-shrink-0">${header}</div>
+              <div id="cm-log" class="flex-1 overflow-y-auto no-scrollbar px-5 pb-3 flex flex-col gap-3" style="min-height:0;">${classMsgLogHTML(cls, studentId)}</div>
+              <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:max(20px, env(safe-area-inset-bottom));">
+                <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
+                  <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea pl-2" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
+                  <button onclick="sendClassMessage()" title="Send" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        function classMsgScrollBottom(){
+          const el = document.getElementById('cm-log');
+          if (el) el.scrollTop = el.scrollHeight;
+        }
+        // Repaint just the message area so a half-typed reply never gets wiped by an incoming text
+        function classMsgRefresh(){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          if (!cls || classDetailTab !== 'messages') return;
+          const log = document.getElementById('cm-log');
+          const list = document.getElementById('cm-list');
+          if (log) {
+            const studentId = cls.role === 'teacher' ? classMsgThread : classMsgMyId;
+            const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+            log.innerHTML = classMsgLogHTML(cls, studentId);
+            if (nearBottom) classMsgScrollBottom();
+          } else if (list) {
+            list.innerHTML = classMsgListHTML(cls);
+          } else {
+            const ov = document.getElementById('overlay');
+            if (ov) ov.innerHTML = classDetailHTML();
+          }
+        }
+        function classMsgAfterRender(){
+          classMsgScrollBottom();
+          const inp = document.getElementById('cm-input');
+          if (inp && typeof autoGrowConvoInput === 'function') autoGrowConvoInput(inp);
+        }
+        async function openClassMessages(){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          if (!cls) return;
+          if (!classMsgMyId) { try { const me = await getCachedAuthUser(); if (me) classMsgMyId = me.id; } catch (e) {} }
+          classMsgThread = null;
+          classDetailSwitchTab('messages');
+        }
+        function openClassMsgThread(studentId){
+          classMsgThread = studentId;
+          classMsgDraft = '';
+          const ov = document.getElementById('overlay');
+          if (ov) ov.innerHTML = classDetailHTML();
+          classMsgAfterRender();
+          classMsgMarkRead(currentClassId, studentId);
+        }
+        function classMsgBack(){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          if (cls && cls.role === 'teacher' && classMsgThread) {
+            classMsgThread = null;
+            classMsgDraft = '';
+            const ov = document.getElementById('overlay');
+            if (ov) ov.innerHTML = classDetailHTML();
+            return;
+          }
+          classMsgThread = null;
+          classMsgDraft = '';
+          classSubPageBack();
+        }
+        async function sendClassMessage(){
+          const cls = myClasses.find(c => c.id === currentClassId);
+          const inp = document.getElementById('cm-input');
+          if (!cls || !inp) return;
+          const text = inp.value.trim();
+          if (!text) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          const me = await getCachedAuthUser();
+          if (!me) return;
+          classMsgMyId = me.id;
+          const studentId = cls.role === 'teacher' ? classMsgThread : me.id;
+          if (!studentId) return;
+          inp.value = ''; classMsgDraft = '';
+          if (typeof autoGrowConvoInput === 'function') autoGrowConvoInput(inp);
+          const tmp = { id: 'tmp-' + Date.now(), class_id: cls.id, student_id: studentId, sender_id: me.id, text, created_at: new Date().toISOString(), read: false, _pending: true };
+          (classMsgs[cls.id] || (classMsgs[cls.id] = [])).push(tmp);
+          classMsgRefresh(); classMsgScrollBottom();
+          try {
+            const { data, error } = await sb.from('class_messages').insert({ class_id: cls.id, student_id: studentId, sender_id: me.id, text }).select().single();
+            if (error) throw error;
+            const list = classMsgs[cls.id];
+            const exists = list.some(m => m.id === data.id);
+            const i = list.indexOf(tmp);
+            if (exists) { if (i !== -1) list.splice(i, 1); } else if (i !== -1) list[i] = data;
+            classMsgRefresh();
+            const recipient = cls.role === 'teacher' ? studentId : cls.teacherId;
+            try { sendPushTo(recipient, { title: (profileData && profileData.name || 'Class message') + ' · ' + cls.name, body: text.slice(0, 120), tag: 'class-msg-' + cls.id, data: { kind: 'classMessage', classId: cls.id } }); } catch (e) {}
+          } catch (e) {
+            console.warn('Sending class message failed:', e);
+            const list = classMsgs[cls.id] || [];
+            const i = list.indexOf(tmp); if (i !== -1) list.splice(i, 1);
+            classMsgRefresh();
+            inp.value = text; classMsgDraft = text;
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("That message couldn't be sent. Please try again.");
+          }
         }
 
         // ---- Downloadable class report (PDF with grades, ranking and graphs) ----

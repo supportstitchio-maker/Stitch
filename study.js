@@ -128,7 +128,7 @@ let studyFabMenuOpen = false;
               <div onclick="openClassDetailWithLoading('${c.id}')" class="class-color-card ${i % 2 ? 'class-tone-b' : 'class-tone-a'} rounded-3xl p-5 text-white relative overflow-hidden mb-3 cursor-pointer" style="${c.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${c.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(c)}min-height:104px;">
                 ${c.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${motif}</svg>`}
                 <div class="flex items-center justify-between gap-2 mb-1 relative">
-                  <div class="text-xl font-bold font-display truncate pr-4">${escapeHtml(c.name)}</div>
+                  <div class="nm-wrap nm-left text-xl font-bold font-display" style="flex:1;min-width:0;"><span class="nm-inner">${escapeHtml(c.name)}</span></div>
                   <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full flex-shrink-0 bg-white/20">${c.role === 'teacher' ? 'Teaching' : 'Enrolled'}</span>
                 </div>
                 ${(c.section || classFeeLabel(c)) ? `<div class="flex items-center justify-between gap-3 relative">

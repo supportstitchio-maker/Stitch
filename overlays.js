@@ -788,6 +788,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const rows = [
             { onclick: "toggleClassDetailMenu(); openOverlayFrom('classDetail', 'classNotifications')", icon: 'bell', label: 'Notifications' },
             { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('people')", icon: 'users', label: 'People' },
+            { onclick: "toggleClassDetailMenu(); openClassMessages()", icon: 'comment', label: 'Messages' + (typeof classMsgUnreadTotal === 'function' && classMsgUnreadTotal() ? ' (' + classMsgUnreadTotal() + ')' : '') },
             isTeacher
               ? { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('profile')", icon: 'chart', label: 'Class profile' }
               : { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('report')", icon: 'doc', label: 'My class report' }
@@ -805,7 +806,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="w-full px-5 relative" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 10px);">
               <div class="flex items-center justify-between">
                 <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" title="Leave classroom" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${escapeHtml(title)}</h1>
+                <h1 class="nm-wrap text-base font-bold font-display absolute left-1/2 -translate-x-1/2" style="max-width:60%;"><span class="nm-inner grad-text">${escapeHtml(title)}</span></h1>
                 <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
               </div>
               ${classDetailMenuOpen ? classDetailMenuDropdown(isTeacher) : ''}
@@ -3680,6 +3681,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
   const st = document.createElement('style');
   st.textContent = `
     .nm-wrap{overflow:hidden;white-space:nowrap;text-align:center;display:block}
+    .nm-wrap.nm-left{text-align:left}
     .nm-inner{display:inline-block;white-space:nowrap;will-change:transform}
     .nm-inner.nm-run{animation:nmSlide var(--nm-t,8s) ease-in-out infinite alternate}
     @keyframes nmSlide{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--nm-d,0px))}}
