@@ -1276,7 +1276,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : key === 'general' ? generalUnreadCount()
               : count;
             return `
-              <button onclick="inboxFilterTab('${key}')" class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
+              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
                 ${label}${effectiveCount ? `<span class="rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center" style="min-width:1rem;height:1rem;padding:0 0.25rem;">${effectiveCount}</span>` : ''}
               </button>
             `;
@@ -1300,6 +1300,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
+        // Puts the filter pills back where they were, then nudges the selected pill fully into view
+        // (e.g. tapping "Requests" at the right edge no longer jumps the row back to the start).
+        function restoreInboxPillScroll(prevLeft){
+          const row = document.getElementById('inbox-filterbar-row');
+          if (!row) return;
+          if (prevLeft != null) row.scrollLeft = prevLeft;
+          const active = row.querySelector('[data-pill-active="1"]');
+          if (!active) return;
+          const rowRect = row.getBoundingClientRect();
+          const pillRect = active.getBoundingClientRect();
+          const pad = 20;
+          if (pillRect.right > rowRect.right - pad) row.scrollLeft += pillRect.right - rowRect.right + pad;
+          else if (pillRect.left < rowRect.left + pad) row.scrollLeft -= rowRect.left - pillRect.left + pad;
+        }
+
         function renderInboxTab(){
           dedupeSentRequestConvos();
           // Background updates (realtime messages, request loaders, state sync) call this at any
@@ -1308,6 +1323,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           syncAllConvoPreviewsFromMessages();
           const prevInboxScreenEl = document.getElementById('screen');
           const prevInboxScrollTop = prevInboxScreenEl ? prevInboxScreenEl.scrollTop : 0;
+          // Remember how far the filter pills were scrolled so a re-render doesn't snap them back to "General"
+          const prevPillRowEl = document.getElementById('inbox-filterbar-row');
+          const prevPillScrollLeft = prevPillRowEl ? prevPillRowEl.scrollLeft : null;
           document.getElementById('screen').innerHTML = `
             <div id="inbox-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               ${inboxTitlebarRowHTML()}
@@ -1331,6 +1349,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>
             <div class="divide-y" id="inbox-list">${inboxContent()}</div>`;
           stickBarsStack(['inbox-titlebar','inbox-searchbar','inbox-filterbar']);
+          restoreInboxPillScroll(prevPillScrollLeft);
           if (prevInboxScrollTop) {
             const restoredScreenEl = document.getElementById('screen');
             if (restoredScreenEl) {
