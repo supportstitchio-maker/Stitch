@@ -11,7 +11,7 @@ let studyFabMenuOpen = false;
           const onScroll = () => {
             if (armed && Math.abs(scrollEl.scrollTop - anchor) > 4) {
               cleanup();
-              toggleStudyFabMenu();
+              closeStudyFabMenu();
             }
           };
           function cleanup(){
@@ -21,6 +21,14 @@ let studyFabMenuOpen = false;
           }
           scrollEl.addEventListener('scroll', onScroll, { passive: true });
           studyFabScrollCleanup = cleanup;
+        }
+
+        // Close-only: a drag on the dim backdrop fires touchmove many times, and the backdrop
+        // keeps receiving those events after it has been removed, so a plain toggle would flip
+        // the menu open and shut (and re-render the page) over and over while scrolling.
+        function closeStudyFabMenu(){
+          if (!studyFabMenuOpen) return;
+          toggleStudyFabMenu();
         }
 
         function toggleStudyFabMenu(){
@@ -36,7 +44,7 @@ let studyFabMenuOpen = false;
           return `
             <div id="study-fab-wrap">
               ${studyFabMenuOpen ? `
-                <div onclick="toggleStudyFabMenu()" onwheel="toggleStudyFabMenu()" ontouchmove="toggleStudyFabMenu()" class="fixed inset-0 z-30" style="background:rgba(10,15,25,0.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
+                <div onclick="closeStudyFabMenu()" onwheel="closeStudyFabMenu()" ontouchmove="closeStudyFabMenu()" class="fixed inset-0 z-30" style="background:rgba(10,15,25,0.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
                 <div id="study-fab-menu" class="fixed w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-30" style="right:1.25rem;bottom:8.5rem;">
                   <button onclick="toggleStudyFabMenu(); openJoinClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('users','w-4 h-4')} Join class</button>
                   <button onclick="toggleStudyFabMenu(); openCreateClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('plus','w-4 h-4')} Create class</button>
@@ -224,7 +232,7 @@ let studyFabMenuOpen = false;
         function studyCard(icon,title,sub,onclick){
           return `
             <div onclick="${onclick}" class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 cursor-pointer shadow-sm">
-              <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
               <div class="flex-1">
                 <div class="font-semibold text-sm">${title}</div>
                 <div class="text-xs text-gray-500">${sub}</div>
@@ -236,7 +244,7 @@ let studyFabMenuOpen = false;
         function studyCardStatic(icon,title,sub){
           return `
             <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
-              <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
               <div class="flex-1">
                 <div class="font-semibold text-sm">${title}</div>
                 <div class="text-xs text-gray-500">${sub}</div>
@@ -247,7 +255,7 @@ let studyFabMenuOpen = false;
         function plannerRow(icon,title,sub,onclick){
           return `
             <div onclick="${onclick}" class="border border-gray-200 rounded-3xl p-4 flex items-center gap-4 mb-3 cursor-pointer">
-              <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(icon,'w-6 h-6')}</div>
               <div class="flex-1">
                 <div class="font-semibold text-sm">${title}</div>
                 <div class="text-xs text-gray-500">${sub}</div>
@@ -259,7 +267,7 @@ let studyFabMenuOpen = false;
         function statCard(icon,label,count,bg,onclick){
           return `
             <div ${onclick ? `onclick="${onclick}"` : ''} class="bg-white rounded-3xl p-5 flex flex-col items-center text-center shadow-sm ${onclick ? 'cursor-pointer' : ''}">
-              <div class="w-12 h-12 ${bg} rounded-2xl flex items-center justify-center text-gray-600 mb-3">${Icon(icon,'w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 mb-3">${Icon(icon,'w-6 h-6')}</div>
               <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">${label}</div>
               <div class="text-2xl font-bold text-[${NAVY}]">${count}</div>
             </div>`;
@@ -1030,7 +1038,7 @@ let studyFabMenuOpen = false;
           if (r.status === 'processing') {
             return `
               <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
-                <div class="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+                <div class="w-12 h-12 flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-amber-600">Scanning with Stitch Bot: building flashcards &amp; questions…</div>
@@ -1040,7 +1048,7 @@ let studyFabMenuOpen = false;
           if (r.status === 'error') {
             return `
               <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
-                <div class="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-500 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+                <div class="w-12 h-12 flex items-center justify-center text-red-500 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-red-500 truncate">${r.error}</div>
@@ -1053,7 +1061,7 @@ let studyFabMenuOpen = false;
           const action = hasQuestions ? `openMockTestForCourse('${r.courseName}')` : '';
           return `
             <div ${action ? `onclick="${action}"` : ''} class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 ${action ? 'cursor-pointer' : ''} shadow-sm">
-              <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                 <div class="text-xs text-gray-500">${r.flashcards.length} flashcards · ${r.questions.length} practice questions</div>
