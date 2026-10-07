@@ -3371,6 +3371,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function acceptIncomingCall(){
           if (!incomingCallInfo) return;
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           stopIncomingCallRingtone();
           clearTimeout(incomingCallRingTimeout); incomingCallRingTimeout = null;
           const { convoId, type } = incomingCallInfo;
@@ -5417,6 +5418,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         async function startCall(id, type, answering, opts){
           if (!id) return;
+          // No Internet: the call screen never opens, the person just gets the notification
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           clearCallTimers();
           stopCallLocalStream();
           teardownCallSignaling();

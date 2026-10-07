@@ -66,6 +66,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function openChallengeSetupModal(){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           if (!courseBank.length) {
             openChallengeModal(challengeEmptyStateHTML());
             return;
@@ -193,6 +194,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function openInviteFriendModal(){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           const questions = buildChallengeQuestionPool();
           if (!questions.length) {
             pushInAppNotification('No questions yet', 'Upload a resource before inviting a friend.');
@@ -289,6 +291,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function sendChallengeToSelected(code, from){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           if (!challengeSendSelected.size) return;
           const invite = pendingChallengeInvites[code];
           const attachment = {
@@ -307,6 +310,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // Friend taps the card in chat
         function openChallengeFromChat(code){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           code = String(code || '').trim().toUpperCase();
           if (!code) return;
           if (pendingChallengeInvites[code] || (typeof waitingForChallengeFriendCode !== 'undefined' && waitingForChallengeFriendCode === code)) {
@@ -372,6 +376,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function openJoinChallengeCodeModal(){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           openChallengeModal(joinChallengeCodeHTML());
         }
 
@@ -393,6 +398,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         async function joinChallengeByCode(code){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return false;
           const invite = pendingChallengeInvites[code];
           if (invite) {
             invite.joined = true;
@@ -439,6 +445,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function startChallengeNow(){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           const questions = buildChallengeQuestionPool();
           if (!questions.length) {
             pushInAppNotification('No questions yet', 'Upload a resource to start a challenge.');
@@ -1581,6 +1588,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function submitCreateChallenge(){
+          if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           const questions = buildChallengeQuestionPool();
           if (!questions.length) {
             pushInAppNotification('No questions yet', 'Upload a resource to create a challenge.');

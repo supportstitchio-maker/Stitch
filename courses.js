@@ -1028,6 +1028,13 @@ try {
           msg.text = newText;
           aiChatMessages = aiChatMessages.slice(0, id + 1);
           aiEditingMessageId = null;
+          if (typeof isDeviceOffline === 'function' && isDeviceOffline()) {
+            aiChatMessages.push({ role:'bot', text: "I'm unable to reply to you at the moment" });
+            refreshAIChatLog(true);
+            if (typeof notifyNeedsInternet === 'function') notifyNeedsInternet();
+            if (typeof queueSaveUserState === 'function') queueSaveUserState();
+            return;
+          }
           const thinkingMsg = { role:'bot', text: '···' };
           aiChatMessages.push(thinkingMsg);
           refreshAIChatLog(true);
@@ -1102,6 +1109,22 @@ try {
           const text = (preset !== undefined ? preset : (inputEl ? inputEl.value : '')).trim();
           const attachments = pendingAIAttachments;
           if (!text && !attachments.length) return;
+          if (typeof isDeviceOffline === 'function' && isDeviceOffline()) {
+            // Offline: the message still sends, but Stitch Bot can only say it can't reply. No credit is used.
+            aiChatMessages.push({ role:'user', text, attachments, voice: !!viaVoice });
+            aiChatMessages.push({ role:'bot', text: "I'm unable to reply to you at the moment" });
+            persistAIChatAttachments(attachments);
+            pendingAIAttachments = [];
+            if (inputEl) { inputEl.value = ''; }
+            resetAIChatInputHeight();
+            if (typeof syncAIClassKeyboardInset === 'function') syncAIClassKeyboardInset();
+            refreshAIChatLog(true);
+            const offStrip = document.getElementById('ai-attach-strip');
+            if (offStrip) offStrip.innerHTML = aiAttachStripHTML();
+            if (typeof notifyNeedsInternet === 'function') notifyNeedsInternet();
+            if (typeof queueSaveUserState === 'function') queueSaveUserState();
+            return;
+          }
           if (typeof canSendAIPrompt === 'function' && !canSendAIPrompt()) {
             const window = (typeof aiPromptLimitWindowHit === 'function') ? aiPromptLimitWindowHit() : 'daily';
             const windowMsg = window === 'monthly'
@@ -1338,7 +1361,7 @@ try {
             const reply = await callClaude(system, prompt, 'chat', imagePayload);
             if (!reply) {
               window.reportError(new Error('callClaude returned an empty reply'), { call: 'getAIResponse', task: 'chat' });
-              return { text: ackLine + "Sorry, that request failed. Please try again in a moment." };
+              return { text: ackLine + ((typeof isDeviceOffline === 'function' && isDeviceOffline()) ? "I'm unable to reply to you at the moment" : "Sorry, that request failed. Please try again in a moment.") };
             }
             return { text: ackLine + reply };
           } catch (err) {
@@ -1351,7 +1374,7 @@ try {
             } else {
               console.warn('AI request failed:', msg || err);
             }
-            return { text: ackLine + "Sorry, that request failed. Please try again in a moment." };
+            return { text: ackLine + ((typeof isDeviceOffline === 'function' && isDeviceOffline()) ? "I'm unable to reply to you at the moment" : "Sorry, that request failed. Please try again in a moment.") };
           }
         }
 

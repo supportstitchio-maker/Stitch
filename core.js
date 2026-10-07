@@ -2707,6 +2707,28 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---- Offline handling ----
+// Calls, Challenge Arena and Stitch Bot need the Internet. Practice questions and flashcards keep working offline.
+const NEEDS_INTERNET_MSG = 'Connect to the Internet to be able to use this service';
+function isDeviceOffline(){
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+// Puts the message in the notification panel (and a quick toast), without spamming on every tap.
+function notifyNeedsInternet(){
+  try {
+    if (typeof addNotif === 'function') {
+      addNotif({ id: 'needs-internet-' + Math.floor(Date.now() / 60000), type: 'info', icon: 'bell', iconBg: 'bg-blue-50', iconClass: 'text-blue-600', name: 'No Internet connection', message: NEEDS_INTERNET_MSG });
+    }
+  } catch (e) {}
+  try {
+    if (typeof pushInAppNotification === 'function') pushInAppNotification('No Internet connection', NEEDS_INTERNET_MSG);
+  } catch (e) {}
+}
+// Returns true (and notifies) when offline, so callers can simply `if (blockIfOffline()) return;`
+function blockIfOffline(){
+  if (!isDeviceOffline()) return false;
+  notifyNeedsInternet();
+  return true;
+}
 let offlineWasDown = false;
 let offlineRealCheckBusy = false;
 async function pingReachable(){
