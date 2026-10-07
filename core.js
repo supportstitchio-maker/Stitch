@@ -1748,7 +1748,7 @@
     <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
-    <button onclick="morphPlusIcon('dnav-create-icon');openCreateMenu()" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
+    <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
     <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
     <div class="dside-divider"></div>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
@@ -1794,7 +1794,7 @@
         <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:48px;width:auto;object-fit:contain;">
       </div>
       <div class="flex items-center gap-5" id="topbar-icons">
-        <button onclick="morphPlusIcon('topbar-create-icon');openCreateMenu()" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon(IconBold('plus','w-6 h-6'))}</span></button>
+        <button onclick="morphPlusIcon('topbar-create-icon');openOverlay('create')" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon(IconBold('plus','w-6 h-6'))}</span></button>
         <button onclick="openOverlay('notifications')" class="relative hover:text-blue-300">${gradIcon(Icon('bell','w-6 h-6'))}${unreadNotifCount() ? `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${unreadNotifCount()}</span>` : ''}</button>
       </div>
     </div>

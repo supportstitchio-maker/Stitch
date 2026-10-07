@@ -1,4 +1,4 @@
-const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
+const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['meetings','Meetings',0],['requests','Requests',3]];
         let selectMode = false;
         let selectedConvos = new Set();
         let inboxMenuOpen = false;
@@ -1569,6 +1569,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function inboxFilterTab(key){
+          // "Meetings" is not an inbox list: it opens the meetings page (create + your meetings)
+          if (key === 'meetings') { openCreateMenu(); return; }
           inboxFilter = key;
           inboxViewFilter = 'all';
           renderInboxTab();
@@ -6320,6 +6322,31 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        // ---- Initials avatars (used whenever a person has no photo or their camera is off) ----
+        function userInitials(name){
+          const parts = String(name || '').replace(/^@/, '').trim().split(/\s+/).filter(Boolean);
+          if (!parts.length) return '';
+          const first = Array.from(parts[0])[0] || '';
+          const last = parts.length > 1 ? (Array.from(parts[parts.length - 1])[0] || '') : '';
+          return (first + last).toUpperCase();
+        }
+        function initialsBadgeHTML(initials, sizeCls){
+          const m = /w-(\d+(?:\.\d+)?)/.exec(sizeCls || '');
+          const px = Math.round((m ? parseFloat(m[1]) * 4 : 48) * 0.42);
+          return `<span style="font-weight:700;font-size:${px}px;line-height:1;letter-spacing:.02em;color:#4b5563;">${escapeHtml(initials)}</span>`;
+        }
+        // Photo if there is one, otherwise the person's initials, otherwise the plain silhouette
+        function callAvatarFor(c, sizeCls){
+          if (c && c.photo) return avatarInnerHTML(c, sizeCls);
+          const nm = callDisplayName(c);
+          const ini = (nm && nm !== 'Unknown' && nm !== 'Someone') ? userInitials(nm) : '';
+          return ini ? initialsBadgeHTML(ini, sizeCls) : avatarInnerHTML(c, sizeCls);
+        }
+        function myCallInitials(){
+          const nm = (typeof profileData !== 'undefined' && profileData) ? ((profileData.name || '').trim() || (profileData.username || '').trim()) : '';
+          return userInitials(nm);
+        }
+
         function callToast(text){
           ensureCallUiStyles();
           const el = document.createElement('div');
@@ -6383,6 +6410,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function myCallAvatarHTML(sizeCls){
           const photo = (typeof profileData !== 'undefined' && profileData) ? profileData.photo : null;
+          if (!photo && myCallInitials()) return initialsBadgeHTML(myCallInitials(), sizeCls || 'w-8 h-8');
           return avatarMediaHTML(photo, 'user', sizeCls || 'w-8 h-8 text-gray-500');
         }
 
@@ -6415,7 +6443,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function muteEveryoneInCall(){
           if (!callCanMuteAll()) return;
           const others = Object.values(callPeers).filter(e => e.connected);
-          if (!others.length) { callToast('No one else is in the call yet'); return; }
+          if (!others.length) {
+            const mCode = (isMeetingConvo(callState.convoId) && activeMeeting) ? activeMeeting.code : null;
+            addNotif({ type: 'info', icon: 'users', name: 'Stitch', message: 'No one else is in the call yet', convoId: mCode ? null : callState.convoId, meetingCode: mCode });
+            return;
+          }
           sendCallSignal({ kind: 'mute_all', userId: myCallUserId });
           others.forEach(e => { e.muted = true; });
           callToast('Muted everyone');
@@ -6558,14 +6590,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="cu-pip" data-speak="local">
                   ${showLocalVideo ? `<span class="cu-flip" title="Flip camera" style="right:6px;bottom:6px;width:28px;height:28px;" onclick="event.stopPropagation();flipCallCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''}
                   <video id="call-local-video" autoplay playsinline muted class="${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
-                  ${!showLocalVideo ? `<span class="text-white/70 text-[10px] font-semibold text-center px-2">${callState.mediaError ? escapeHtml(callState.mediaError) : 'Camera off'}</span>` : ''}
+                  ${!showLocalVideo ? (callState.mediaError ? `<span class="text-white/70 text-[10px] font-semibold text-center px-2">${escapeHtml(callState.mediaError)}</span>` : `<span class="cu-avatar ${'bg-blue-100'}" style="width:56%;">${myCallAvatarHTML('w-12 h-12')}</span>`) : ''}
                   ${callState.muted ? `<span class="cu-corner cu-mute" style="top:6px;right:6px;width:22px;height:22px;">${Icon('micOff', 'w-3 h-3')}</span>` : ''}
                 </div>`;
               return `
                 <div class="cu-tile" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;">
                   <video id="call-remote-video" autoplay playsinline class="${showRemoteVideo ? '' : 'hidden'}"></video>
-                  ${!showRemoteVideo ? `<div class="cu-avatar cu-avatar-lg ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-12 h-12')}</div>` : ''}
-                  <span class="cu-chip" style="left:12px;top:12px;bottom:auto;">${escapeHtml(callDisplayName(meta))}${peerMuted ? ' · Muted' : ''}</span>
+                  ${!showRemoteVideo ? `<div class="cu-avatar cu-avatar-lg ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-12 h-12')}</div>` : ''}
+                  ${entry ? `<span class="cu-chip" style="left:12px;top:12px;bottom:auto;">${escapeHtml(callDisplayName(meta))}${peerMuted ? ' · Muted' : ''}</span>` : ''}
                   ${pip}
                 </div>`;
             }
@@ -6574,7 +6606,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="cu-voice">
                 <div class="cu-voice-avatar-wrap">
                   <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
-                  <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-16 h-16')}</div>
+                  <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-16 h-16')}</div>
                 </div>
                 <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
                 <div class="cu-voice-sub">${peerMuted ? `${Icon('micOff', 'w-3.5 h-3.5')} Muted` : 'Voice call'}</div>
@@ -6594,7 +6626,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="cu-voice">
               <div class="cu-voice-avatar-wrap">
                 <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
-                <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${avatarInnerHTML(meta, 'w-16 h-16')}</div>
+                <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-16 h-16')}</div>
               </div>
               <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
             </div>`;
@@ -6630,14 +6662,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               // The <audio> element carries the sound, so the video element stays muted (no doubled audio)
               media: `<video id="call-remote-video-${e.peerId}" autoplay playsinline muted class="${hasVideo ? '' : 'hidden'}"></video>
                       <audio id="call-remote-audio-${e.peerId}" autoplay playsinline class="hidden"></audio>`,
-              hasVideo, avatar: avatarInnerHTML(m, 'w-8 h-8'), bg: m.avatarBg || 'bg-gray-100',
+              hasVideo, avatar: callAvatarFor(m, 'w-12 h-12'), bg: m.avatarBg || 'bg-gray-100',
               name: m.name, muted: !!e.muted, hand: !!e.hand, speakKey: e.peerId
             };
           }
           function localSpec(){
             return {
               media: showLocalVideo ? `<video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>` : '',
-              hasVideo: !!showLocalVideo, avatar: myCallAvatarHTML('w-8 h-8 text-gray-500'), bg: 'bg-blue-100',
+              hasVideo: !!showLocalVideo, avatar: myCallAvatarHTML('w-12 h-12 text-gray-500'), bg: 'bg-blue-100',
               name: 'You', muted: !!callState.muted, hand: !!callState.handRaised, speakKey: 'local',
               extra: showLocalVideo ? `<span class="cu-flip" title="Flip camera" onclick="event.stopPropagation();flipCallCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''
             };
@@ -6718,11 +6750,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const peopleCount = Object.values(callPeers).filter(e => e.connected).length + 1;
           let statusHTML;
           if (callState.statusOverride) {
-            statusHTML = `<span class="cu-dot cu-dot-warn"></span>${escapeHtml(callState.statusOverride)}`;
+            statusHTML = `${escapeHtml(callState.statusOverride)}`;
           } else if (callState.connected) {
             statusHTML = `${(isMeetingCall || isGroup) ? `${peopleCount} in ${isMeetingCall ? 'meeting' : 'call'} · ` : ''}<span id="call-timer">${formatCallTime(callState.seconds)}</span>`;
           } else {
-            statusHTML = `<span class="cu-dot cu-dot-warn"></span>${isVideo ? 'Video calling…' : 'Calling…'}`;
+            statusHTML = `${isVideo ? 'Video calling…' : 'Calling…'}`;
           }
           const headRight = isMeetingCall
             ? `<button onclick="shareActiveMeetingLink()" title="Share meeting link" class="cu-glass">${Icon('link', 'w-5 h-5')}</button>`
@@ -6879,7 +6911,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             ${meetingScreenHeader('Create something', 'closeOverlay()')}
             <div class="px-5" style="padding-top:20px;padding-bottom:24px;">
               <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
-              ${meetingChoiceCard("openOverlayFrom('createMenu','create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
+              ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a live call or schedule one for later.', 'Share the link so anyone can join you.')}
               ${upcoming.length ? `
                 <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
                 ${upcoming.map(m => `
@@ -7447,7 +7479,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const preview = `
               <div class="w-full rounded-3xl overflow-hidden relative" style="background:#0f1115;max-width:230px;aspect-ratio:3/4;flex:none;margin:auto 0;">
                 <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
-                ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2" style="color:#9ca3af;">${Icon('video','w-8 h-8')}<div class="text-sm font-semibold">Camera is off</div></div>`}
+                ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-3" style="color:#9ca3af;"><div class="flex items-center justify-center overflow-hidden" style="width:96px;height:96px;border-radius:50%;background:#e5e7eb;">${myCallAvatarHTML('w-24 h-24')}</div><div class="text-sm font-semibold">Camera is off</div></div>`}
               </div>`;
             setTimeout(syncMeetingJoinPreview, 0);
             return `<div class="flex-1 flex flex-col items-center px-6 pb-6 text-center min-h-0" style="padding-top:var(--top-safe-pad);">
