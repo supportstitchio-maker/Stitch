@@ -89,7 +89,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="inbox-filter-dropdown" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
               <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
               ${row("closeInboxFilterMenuDom();openOverlay('newMessage')", 'edit', 'New', false)}
-              ${row("closeInboxFilterMenuDom();openOverlay('meetingKind')", 'video', 'Create meeting', false)}
+              ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
               ${row("toggleInboxViewFilter('pinned')", 'pin', 'Pinned', inboxViewFilter === 'pinned')}
             </div>`;
@@ -6879,6 +6879,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Step 1: "+" -> Post or Meeting ----
+        // "New meeting" goes back to the Meetings page when it was opened from there,
+        // otherwise (opened from the inbox menu) back to the page you were on.
+        let meetingKindFromMeetings = false;
+        function meetingKindBack(){
+          if (meetingKindFromMeetings) openCreateMenu(); else closeOverlay();
+        }
         function openCreateMenu(){
           openOverlay('createMenu');
           loadMyUpcomingMeetings();
@@ -6911,7 +6917,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             ${meetingScreenHeader('Create something', 'closeOverlay()')}
             <div class="px-5" style="padding-top:20px;padding-bottom:24px;">
               <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
-              ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a live call or schedule one for later.', 'Share the link so anyone can join you.')}
+              ${meetingChoiceCard("meetingKindFromMeetings=true;openOverlay('meetingKind')", 'Create a meeting', 'Start a live call or schedule one for later.', 'Share the link so anyone can join you.')}
               ${upcoming.length ? `
                 <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
                 ${upcoming.map(m => `
@@ -6969,7 +6975,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // ---- Step 2: Live or Scheduled ----
         function meetingKindHTML(){
           return `
-            ${meetingScreenHeader('New meeting', 'closeOverlay()')}
+            ${meetingScreenHeader('New meeting', 'meetingKindBack()')}
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
               <div class="text-sm text-gray-500 mb-4">What kind of meeting do you want to create?</div>
               ${meetingChoiceCard("chooseMeetingKind('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
@@ -7004,7 +7010,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 </div>` : ''}
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Contributors <span class="font-normal text-gray-400">(optional)</span></label>
               <div class="text-xs text-gray-400 mb-2 leading-relaxed">Contributors are admins of this meeting. They get a notification and can end the meeting for everyone.</div>
-              <div id="meeting-admin-chips" class="flex flex-wrap gap-2 ${meetingDraft.admins.length ? 'mb-2' : 'hidden'}">${meetingAdminChipsHTML()}</div>
+              <div id="meeting-admin-chips" class="flex flex-wrap gap-x-3 gap-y-3 ${meetingDraft.admins.length ? 'mt-3 mb-5' : 'hidden'}">${meetingAdminChipsHTML()}</div>
               <input type="text" id="meeting-admin-search" value="${escapeHtml(meetingDraft.search)}" oninput="onMeetingAdminSearch(this.value)" placeholder="Search people to add" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
               <div id="meeting-admin-list" class="rounded-2xl overflow-y-auto no-scrollbar" style="max-height:15rem;">${meetingAdminListHTML()}</div>
             </div>
@@ -7015,7 +7021,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function meetingAdminChipsHTML(){
           return meetingDraft.admins.map(a => `
-            <span class="inline-flex items-center gap-1.5 bg-blue-50 text-[${NAVY}] text-xs font-semibold rounded-full pl-3 pr-2 py-1.5">
+            <span class="inline-flex items-center gap-2 bg-blue-50 text-[${NAVY}] text-xs font-semibold rounded-full pl-4 pr-3 py-2.5">
               ${escapeHtml(a.name)}
               <button onclick="toggleMeetingAdmin('${escapeHtml(String(a.id))}')" class="flex items-center" title="Remove">${Icon('close', 'w-3.5 h-3.5')}</button>
             </span>`).join('');
@@ -7074,7 +7080,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             meetingDraft.admins.push({ id: p.id, name: p.name || p.username || 'Stitch member' });
           }
           const chips = document.getElementById('meeting-admin-chips');
-          if (chips) { chips.innerHTML = meetingAdminChipsHTML(); chips.classList.toggle('hidden', !meetingDraft.admins.length); chips.classList.toggle('mb-2', !!meetingDraft.admins.length); }
+          if (chips) { chips.innerHTML = meetingAdminChipsHTML(); chips.classList.toggle('hidden', !meetingDraft.admins.length); chips.classList.toggle('mb-5', !!meetingDraft.admins.length); chips.classList.toggle('mt-3', !!meetingDraft.admins.length); }
           const list = document.getElementById('meeting-admin-list');
           if (list) list.innerHTML = meetingAdminListHTML();
         }
@@ -7147,7 +7153,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const pill = 'w-full max-w-sm font-semibold py-3 rounded-full text-sm font-display';
           const grey = 'background:var(--cu-soft,#eef0f3);color:var(--cu-fg,#374151);border:1px solid var(--cu-line,#e2e8f0);';
           return `
-            ${meetingScreenHeader('Meeting scheduled', 'closeOverlay()')}
+            ${meetingScreenHeader('Meeting scheduled', 'openCreateMenu()')}
             <div class="flex-1 overflow-y-auto px-6 flex flex-col items-center text-center" style="padding-top:28px;">
               <div class="text-base font-semibold mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
               <div class="text-sm text-gray-500 mb-6">${escapeHtml(meetingWhenText(m.starts_at))}</div>
@@ -7168,18 +7174,36 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (isNaN(start.getTime())) return;
           const end = new Date(start.getTime() + 60 * 60 * 1000);
           const f = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-          const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
           const link = buildMeetingLink(m.code);
-          const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Stitch//Meetings//EN','BEGIN:VEVENT',
-            'UID:' + (m.code || Date.now()) + '@stitch','DTSTAMP:' + f(new Date()),'DTSTART:' + f(start),'DTEND:' + f(end),
-            'SUMMARY:' + esc(m.title || 'Meeting'),'DESCRIPTION:' + esc('Join on Stitch: ' + link),'URL:' + link,
-            'BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:Meeting starting soon','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
-          const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = (String(m.title || 'meeting').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'meeting') + '.ics';
-          document.body.appendChild(a); a.click(); a.remove();
-          setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+          const title = m.title || 'Meeting';
+          const details = 'Join on Stitch: ' + link;
+          const enc = encodeURIComponent;
+          const ua = navigator.userAgent || '';
+          const isAndroid = /Android/i.test(ua);
+          const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const gcal = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + enc(title)
+            + '&dates=' + f(start) + '/' + f(end) + '&details=' + enc(details) + '&location=' + enc(link);
+
+          if (isAndroid) {
+            // Opens the phone's own calendar on a pre-filled new event (nothing is downloaded);
+            // falls back to Google Calendar if no calendar app answers.
+            window.location.href = 'intent:#Intent;action=android.intent.action.INSERT;type=vnd.android.cursor.dir/event;'
+              + 'S.title=' + enc(title) + ';S.description=' + enc(details) + ';S.eventLocation=' + enc(link) + ';'
+              + 'l.beginTime=' + start.getTime() + ';l.endTime=' + end.getTime() + ';'
+              + 'S.browser_fallback_url=' + enc(gcal) + ';end';
+            return;
+          }
+          if (isIOS) {
+            // Safari shows the native "Add to Calendar" sheet for a calendar file opened in the page
+            const esc = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+            const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Stitch//Meetings//EN','BEGIN:VEVENT',
+              'UID:' + (m.code || Date.now()) + '@stitch','DTSTAMP:' + f(new Date()),'DTSTART:' + f(start),'DTEND:' + f(end),
+              'SUMMARY:' + esc(title),'DESCRIPTION:' + esc(details),'URL:' + link,
+              'BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:Meeting starting soon','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+            window.location.href = 'data:text/calendar;charset=utf-8,' + enc(ics);
+            return;
+          }
+          window.open(gcal, '_blank', 'noopener');
         }
 
         function copyMeetingLink(code){

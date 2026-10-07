@@ -1,5 +1,12 @@
 const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'newMeeting', 'meetingCreated', 'meetingJoin', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
         const overlayBackAction = {
+          // Phone back on the meeting pages steps back one page instead of leaving to the inbox
+          meetingKind: (fromPopState) => {
+            if (typeof meetingKindFromMeetings !== 'undefined' && meetingKindFromMeetings) { if (fromPopState) overlayHistoryPushed = false; openCreateMenu(); return; }
+            closeOverlay(fromPopState);
+          },
+          meetingCreated: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openCreateMenu(); },
+          newMeeting: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openOverlay('meetingKind'); },
           // Phone back on People / Class profile / My class report returns to the class page instead
           // of leaving the class
           classDetail: (fromPopState) => {
