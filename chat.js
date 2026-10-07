@@ -89,6 +89,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="inbox-filter-dropdown" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
               <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
               ${row("closeInboxFilterMenuDom();openOverlay('newMessage')", 'edit', 'New', false)}
+              ${row("closeInboxFilterMenuDom();openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
               ${row("toggleInboxViewFilter('pinned')", 'pin', 'Pinned', inboxViewFilter === 'pinned')}
             </div>`;
@@ -6879,7 +6880,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="px-5" style="padding-top:20px;padding-bottom:24px;">
               <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
               ${meetingChoiceCard("openOverlayFrom('createMenu','create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
-              ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a call now or schedule one for later.', 'Share a link so anyone on Stitch can join.')}
               ${upcoming.length ? `
                 <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
                 ${upcoming.map(m => `
@@ -6937,7 +6937,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // ---- Step 2: Live or Scheduled ----
         function meetingKindHTML(){
           return `
-            ${meetingScreenHeader('New meeting', "openOverlay('createMenu')")}
+            ${meetingScreenHeader('New meeting', 'closeOverlay()')}
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
               <div class="text-sm text-gray-500 mb-4">What kind of meeting do you want to create?</div>
               ${meetingChoiceCard("chooseMeetingKind('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
