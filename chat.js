@@ -1329,7 +1329,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           document.getElementById('screen').innerHTML = `
             <div id="inbox-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               ${inboxTitlebarRowHTML()}
-              ${inboxMenuOpen ? `<div onclick="toggleInboxActionsMenu()" onwheel="toggleInboxActionsMenu()" ontouchmove="toggleInboxActionsMenu()" class="fixed inset-0 z-10"></div>${notifActionsDropdownHTML('handleInboxAction')}` : ''}
+              ${inboxMenuOpen ? `<div onclick="closeInboxActionsMenu()" onwheel="closeInboxActionsMenu()" ontouchmove="closeInboxActionsMenu()" class="fixed inset-0 z-10"></div>${notifActionsDropdownHTML('handleInboxAction')}` : ''}
             </div>
             <div id="inbox-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
               ${inboxSearchActive ? `
@@ -1379,6 +1379,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           selectedConvos.clear();
           renderInboxTab();
         }
+
+        // Close-only, so repeated touchmove/wheel events from a scroll can't flip the menu back open
+        function closeInboxActionsMenu(){ if (inboxMenuOpen) toggleInboxActionsMenu(); }
 
         function toggleInboxActionsMenu(){
           inboxMenuOpen = !inboxMenuOpen;
@@ -3760,19 +3763,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="flex-1 overflow-y-auto p-5">
               ${section('Media', images, f => `
                 <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('camera','w-5 h-5')}</div>
+                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('camera','w-5 h-5')}</div>
                   <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
                   ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
                 </button>`, `No photos or videos shared with ${escapeHtml(meta.name)} yet.`)}
               ${section('Docs', docs, f => `
                 <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('file','w-5 h-5')}</div>
+                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('file','w-5 h-5')}</div>
                   <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
                   ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
                 </button>`, `No documents shared with ${escapeHtml(meta.name)} yet.`)}
               ${section('Links', links, u => `
                 <button onclick="openExternalUrl('${escapeHtml(u).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 rounded-xl bg-blue-50 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('link','w-5 h-5')}</div>
+                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('link','w-5 h-5')}</div>
                   <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${u}</div>
                   ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
                 </button>`, `No links shared with ${escapeHtml(meta.name)} yet.`)}
