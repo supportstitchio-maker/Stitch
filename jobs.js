@@ -3713,7 +3713,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const applyLabel = isCourse ? 'Enroll' : (isWebsiteJob ? 'Go to website' : 'Apply');
           const detailRow = (icon, label, value) => `
             <div class="flex items-center gap-3 py-2.5 ${label === 'Type' ? '' : 'border-t border-gray-100'}">
-              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(icon,'w-4 h-4')}</div>
+              <div class="w-8 h-8 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(icon,'w-4 h-4')}</div>
               <div class="flex-1 min-w-0 flex items-center justify-between gap-3">
                 <span class="text-xs text-gray-400">${label}</span>
                 <span class="text-sm font-semibold text-gray-800 text-right">${value}</span>
