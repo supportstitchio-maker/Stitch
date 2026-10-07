@@ -6874,8 +6874,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function createMenuHTML(){
           const upcoming = (myUpcomingMeetings || []);
           return `
+            <div class="flex-1 overflow-y-auto">
             ${meetingScreenHeader('Create something', 'closeOverlay()')}
-            <div class="flex-1 overflow-y-auto px-5" style="padding-top:20px;">
+            <div class="px-5" style="padding-top:20px;padding-bottom:24px;">
               <div class="text-sm text-gray-500 mb-4">What would you like to create?</div>
               ${meetingChoiceCard("openOverlayFrom('createMenu','create')", 'Create a post', 'Share a photo, video or thought with the community.', 'Add photos or video, tag people and post it to your feed.')}
               ${meetingChoiceCard("openOverlay('meetingKind')", 'Create a meeting', 'Start a call now or schedule one for later.', 'Share a link so anyone on Stitch can join.')}
@@ -6893,6 +6894,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     </div>
                     ${m.is_admin ? `<button onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')" class="w-full py-2.5 text-xs font-semibold border-t border-gray-100" style="color:#ef4444;">${m.state === 'live' ? 'End meeting' : 'Cancel meeting'}</button>` : ''}
                   </div>`).join('')}` : ''}
+            </div>
             </div>`;
         }
 
