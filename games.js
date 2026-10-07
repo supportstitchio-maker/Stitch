@@ -2800,6 +2800,7 @@ let userPoints = 0;
           }
           // Google/Apple OAuth redirects back to this same URL, which is a fresh page load
           if (freshOAuthRedirect) {
+            window.__stitchAuthRouted = true;
             // No white "Signing you in" cover any more: a first-time sign-up goes straight to the
             // profile screen (see authFastRouteOAuthReturn), and a returning account gets the real app
             // shell
@@ -2856,6 +2857,9 @@ let userPoints = 0;
         async function authFastRouteOAuthReturn(){
           const sb = getSupabaseClient();
           if (!sb) return;
+          // Tells the first-frame script in index.html (which asks the database whether this account
+          // already has a profile) to stand down once this routing has made its own decision, so it can
+          // never paint a skeleton / onboarding screen over the real one
           try {
             const { data } = await sb.auth.getSession();
             const session = data && data.session;
@@ -2883,6 +2887,7 @@ let userPoints = 0;
               }
             }
           } catch (e) {}
+          window.__stitchAuthRouted = true;
         }
         const freshOAuthReturn = /access_token|provider_token/.test(window.location.hash || '');
         if (freshOAuthReturn) {

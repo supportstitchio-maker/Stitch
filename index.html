@@ -405,18 +405,32 @@
       (function(){
         try {
           if (window.__stitchFreshOAuthReturn !== true) return;
-          var uid = window.__stitchOAuthUid, known = false;
+          var uid = window.__stitchOAuthUid, known = false, i;
           try { known = !!(uid && localStorage.getItem('stitchOnboarded:' + uid) === '1'); } catch (e) {}
-          if (known) {
+          // Existing accounts that have no "onboarded" flag on this device (older accounts, a new
+          // phone/browser, cleared storage) used to fall into the else-branch below and flash the
+          // "Almost there" onboarding screen. Their saved sign-in token carries the same flag when it
+          // was ever set on the account, so check that too.
+          if (!known) {
+            try {
+              var tk = /access_token=([^&]+)/.exec(window.location.hash || '');
+              if (tk) {
+                var pl = JSON.parse(atob(tk[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                if (pl && pl.user_metadata && pl.user_metadata.stitch_onboarded) known = true;
+              }
+            } catch (e) {}
+          }
+          function showReturningSkeleton() {
             var el = document.getElementById('auth-transition-loading');
             if (!el) return;
-            var story = '', i;
+            var story = '';
             for (i = 0; i < 5; i++) story += '<div class="skel-story-wrap"><div class="skel-story-circle"><div class="skel-story skel-avatar skel-shimmer"></div>' + (i === 0 ? '<div class="skel-story-badge skel-avatar skel-shimmer"></div>' : '') + '</div></div>';
             var post = '<div class="skel-post"><div class="skel-post-head"><div class="skel-post-avatar skel-avatar skel-shimmer"></div><div class="skel-post-headlines"><div class="skel-line skel-shimmer" style="width:38%;"></div><div class="skel-line skel-shimmer" style="width:24%;"></div></div></div><div class="skel-post-line skel-line skel-shimmer" style="width:100%;"></div><div class="skel-post-line skel-line skel-shimmer" style="width:80%;"></div></div>';
             el.innerHTML = '<div class="px-5 pb-5 feed-skeleton-marker" style="padding-top:var(--top-safe-pad);"><div class="-mx-5 mb-6 border-b border-gray-100"><div class="px-5"><div class="skel-story-row">' + story + '</div></div></div><div>' + post + post + post + '</div></div>';
             el.classList.add('skeleton-mode');
             el.classList.remove('hidden');
-          } else {
+          }
+          function showNewAccountOnboarding() {
             var panel = document.getElementById('auth-panel-complete-profile');
             var gate = document.getElementById('auth-gate');
             if (!panel || !gate) return;
@@ -432,6 +446,32 @@
             if (back) back.style.display = 'none';
             document.documentElement.classList.add('oauth-onboarding');
           }
+          if (known) { showReturningSkeleton(); return; }
+          // Not sure yet: do NOT guess "new account". Leave the plain white page up (the auth gate is
+          // hidden while oauth-returning) and ask the database right now whether this account already
+          // has a finished profile. Existing account -> only the Home skeleton. Brand-new account ->
+          // straight to onboarding. If the check fails or is slow, paint nothing and let games.js decide.
+          var tokM = /access_token=([^&]+)/.exec(window.location.hash || '');
+          if (!uid || !tokM) return;
+          var settled = false;
+          function settle(fn) {
+            if (settled || window.__stitchAuthRouted) { settled = true; return; }
+            settled = true;
+            try { fn(); } catch (e) {}
+          }
+          var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+          var timer = setTimeout(function () { settled = true; if (ctl) { try { ctl.abort(); } catch (e) {} } }, 4000);
+          fetch('https://ljhitfxfnbvxovdkboyw.supabase.co/rest/v1/public_profiles?select=user_id,username,deleted&user_id=eq.' + encodeURIComponent(uid) + '&limit=1', {
+            headers: { 'apikey': 'sb_publishable_EXPx9UJ1VdFyGZniFIoJjw_lhVRGsj7', 'Authorization': 'Bearer ' + tokM[1] },
+            signal: ctl ? ctl.signal : undefined
+          }).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('profile check failed')); })
+            .then(function (rows) {
+              clearTimeout(timer);
+              var row = (rows && rows.length) ? rows[0] : null;
+              var done = !!(row && row.deleted !== true && typeof row.username === 'string' && row.username.trim() !== '');
+              settle(done ? showReturningSkeleton : showNewAccountOnboarding);
+            })
+            .catch(function () { clearTimeout(timer); });
         } catch (e) {}
       })();
     </script>
