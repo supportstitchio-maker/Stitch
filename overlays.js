@@ -2451,6 +2451,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         let personProfileMenuOpen = false;
+        // Close-only, so repeated touchmove/wheel events from a scroll can't flip the menu back open
+        function closePersonProfileMenu(){ if (personProfileMenuOpen) togglePersonProfileMenu(); }
+
         function togglePersonProfileMenu(){
           personProfileMenuOpen = !personProfileMenuOpen;
           // Patch just the action row (Connect/Message/... pills) in place instead of re-rendering
@@ -2498,7 +2501,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div id="person-profile-action-row" class="flex items-center gap-2 mb-4 relative">
               ${pills}
               <button onclick="togglePersonProfileMenu()" aria-label="More" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="border:1.5px solid #d1d5db;color:#374151;">${IconBold('dots','w-5 h-5')}</button>
-              ${personProfileMenuOpen ? `<div onclick="togglePersonProfileMenu()" onwheel="togglePersonProfileMenu()" ontouchmove="togglePersonProfileMenu()" class="fixed inset-0 z-10"></div>${personProfileDropdownMenuHTML(p)}` : ''}
+              ${personProfileMenuOpen ? `<div onclick="closePersonProfileMenu()" onwheel="closePersonProfileMenu()" ontouchmove="closePersonProfileMenu()" class="fixed inset-0 z-10"></div>${personProfileDropdownMenuHTML(p)}` : ''}
             </div>`;
         }
 
