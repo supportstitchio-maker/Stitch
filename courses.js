@@ -6710,7 +6710,7 @@ try {
           return lectureFloatingReactions.map(r => `
             <span class="lecture-reaction-float cu-float flex items-center gap-1.5 rounded-full" style="padding:8px 12px 8px 8px;">
               ${cuEmoji(r.icon) ? `<span class="flex items-center justify-center flex-shrink-0" style="font-size:26px;line-height:1;width:32px;height:32px;">${cuEmoji(r.icon)}</span>` : `<span class="${r.big ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY}1a;color:${NAVY};">${Icon(r.icon, r.big ? 'w-5 h-5' : 'w-4 h-4')}</span>`}
-              <span class="text-xs font-semibold truncate max-w-[130px]">${escapeHtml(r.name || '')}${r.icon === 'handRaised' ? ' raised a hand' : ''}</span>
+              <span class="text-xs font-semibold truncate max-w-[200px]">${escapeHtml(r.name || '')}</span>
             </span>`).join('');
         }
 

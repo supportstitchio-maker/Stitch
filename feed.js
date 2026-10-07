@@ -5468,6 +5468,10 @@
               </div>
 
               <button onclick="event.stopPropagation(); overlayGoBack()" class="absolute z-20 flex items-center justify-center rounded-full" style="top:calc(env(safe-area-inset-top, 12px) + 12px);left:14px;width:2.25rem;height:2.25rem;background:rgba(0,0,0,0.35);">${IconBold('back','w-5 h-5 text-white')}</button>
+              ${(post.body || '').trim() ? `
+              <div class="vpd-caption absolute left-0 right-0 z-20" onclick="event.stopPropagation()" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation()" style="bottom:0;padding:48px ${isVideo ? '68px' : '16px'} calc(env(safe-area-inset-bottom, 0px) + ${isVideo ? '84px' : '20px'}) 16px;background:linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0));pointer-events:none;">
+                <div class="no-scrollbar" style="max-height:26vh;overflow-y:auto;pointer-events:auto;color:#fff;font-size:14px;line-height:1.45;text-shadow:0 1px 3px rgba(0,0,0,0.6);white-space:pre-wrap;word-break:break-word;">${captionHtml}</div>
+              </div>` : ''}
             </div>`;
         }
 

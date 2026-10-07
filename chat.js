@@ -5887,7 +5887,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               stateEntry.camOff = !!payload.camOff;
               const wasHand = !!stateEntry.hand;
               stateEntry.hand = !!payload.hand;
-              if (stateEntry.hand && !wasHand && stateEntry.userId) callToast(callMemberName(stateEntry.userId) + ' raised a hand');
+              if (stateEntry.hand && !wasHand && stateEntry.userId) callToast(callMemberName(stateEntry.userId));
               refreshCallStage();
             }
             return;
@@ -6860,6 +6860,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return window.location.origin + window.location.pathname + '?meeting=' + encodeURIComponent(code);
         }
 
+        // Live countdown shown on the "Your meetings" cards instead of the date
+        function meetingCountdownText(iso){
+          const t = new Date(iso).getTime();
+          if (!isFinite(t)) return meetingWhenText(iso);
+          let s = Math.floor((t - Date.now()) / 1000);
+          if (s <= 0) return 'Starting now';
+          const d = Math.floor(s / 86400); s -= d * 86400;
+          const h = Math.floor(s / 3600); s -= h * 3600;
+          const m = Math.floor(s / 60); s -= m * 60;
+          const p = n => String(n).padStart(2, '0');
+          return 'Starts in ' + (d ? d + 'd ' : '') + p(h) + ':' + p(m) + ':' + p(s);
+        }
+        let meetingCountdownTimer = null;
+        function startMeetingCountdownTicker(){
+          if (meetingCountdownTimer) return;
+          meetingCountdownTimer = setInterval(() => {
+            const els = document.querySelectorAll('[data-meeting-countdown]');
+            if (!els.length) { clearInterval(meetingCountdownTimer); meetingCountdownTimer = null; return; }
+            els.forEach(el => { el.textContent = meetingCountdownText(el.getAttribute('data-meeting-countdown')); });
+          }, 1000);
+        }
+
         function meetingWhenText(iso){
           const d = new Date(iso);
           if (isNaN(d)) return '';
@@ -6912,6 +6934,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function createMenuHTML(){
           const upcoming = (myUpcomingMeetings || []);
+          if (upcoming.length) setTimeout(startMeetingCountdownTicker, 0);
           return `
             <div class="flex-1 overflow-y-auto">
             ${meetingScreenHeader('Create something', 'closeOverlay()')}
@@ -6924,7 +6947,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="w-full rounded-2xl border border-gray-200 bg-white mb-3 overflow-hidden" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
                     <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full p-4 text-left">
                       <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(m.title)}</div>
-                      <div class="text-xs text-gray-400">${escapeHtml(meetingWhenText(m.starts_at))}${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
+                      <div class="text-xs text-gray-400"><span data-meeting-countdown="${escapeHtml(m.starts_at)}" style="font-variant-numeric:tabular-nums;">${escapeHtml(meetingCountdownText(m.starts_at))}</span>${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
                     </button>
                     <div class="flex border-t border-gray-100">
                       <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 py-2.5 text-xs font-semibold" style="color:${NAVY};">Copy link</button>

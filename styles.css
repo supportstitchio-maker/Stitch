@@ -3643,3 +3643,7 @@ input[type="time"]{
   padding-right:2.75rem !important; min-height:3rem; position:relative;
 }
 input[type="time"]::-webkit-calendar-picker-indicator{ opacity:0; position:absolute; right:0; width:100%; height:100%; margin:0; }
+
+/* Mock test footer buttons (Back / Next / Submit) and the class-call title use the Colmeak font */
+.ar-foot .ar-btn{font-family:'Colmeak','Montserrat',sans-serif !important;}
+#lecture-call-screen .cu-title-name{font-family:'Colmeak','Montserrat',sans-serif !important;}
