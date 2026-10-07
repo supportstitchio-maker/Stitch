@@ -6953,7 +6953,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               console.warn('end_meeting failed:', e);
               openAppAlertModal("Couldn't end the meeting. Please try again.");
             }
-          }, 'phoneHangup');
+          }, 'phoneHangup', 'Back');
         }
 
         async function loadMyUpcomingMeetings(){
@@ -7028,6 +7028,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function meetingAdminListHTML(){
+          if (!(meetingDraft.search || '').trim().replace(/^@/, '')) return '';
           if (!discoverPeopleLoaded) return `<div class="text-center text-gray-400 text-sm py-6">Loading people...</div>`;
           const q = (meetingDraft.search || '').trim().toLowerCase().replace(/^@/, '');
           let list = discoverPeople.filter(p => (p.username || '').trim() || (p.name || '').trim());
@@ -7150,20 +7151,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const m = meetingCreated;
           if (!m) return '';
           const link = buildMeetingLink(m.code);
-          const pill = 'w-full max-w-sm font-semibold py-3 rounded-full text-sm font-display';
           const grey = 'background:var(--cu-soft,#eef0f3);color:var(--cu-fg,#374151);border:1px solid var(--cu-line,#e2e8f0);';
           return `
             ${meetingScreenHeader('Meeting scheduled', 'openCreateMenu()')}
             <div class="flex-1 overflow-y-auto px-6 flex flex-col items-center text-center" style="padding-top:28px;">
               <div class="text-base font-semibold mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
               <div class="text-sm text-gray-500 mb-6">${escapeHtml(meetingWhenText(m.starts_at))}</div>
-              <div class="w-full max-w-sm rounded-2xl px-4 py-3 text-xs break-all text-left mb-3" style="background:var(--cu-soft,#f1f5f9);color:var(--cu-sub,#64748b);border:1px solid var(--cu-line,#e2e8f0);">${escapeHtml(link)}</div>
-              <div class="w-full max-w-sm flex gap-3 mb-3">
+              <div class="w-full max-w-sm rounded-2xl px-4 py-3 text-xs break-all text-left mb-4" style="background:var(--cu-soft,#f1f5f9);color:var(--cu-sub,#64748b);border:1px solid var(--cu-line,#e2e8f0);">${escapeHtml(link)}</div>
+              <div class="text-xs text-gray-400 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
+            </div>
+            <div class="flex-shrink-0 px-6 flex justify-center" style="padding-top:12px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
+              <div class="w-full max-w-sm flex gap-3">
                 <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Copy link</button>
                 <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Share</button>
               </div>
-              <button onclick="addMeetingToCalendar()" class="${pill} mt-6 mb-4 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Add to calendar</button>
-              <div class="text-xs text-gray-400 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
             </div>`;
         }
 
