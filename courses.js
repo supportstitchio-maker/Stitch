@@ -5384,7 +5384,7 @@ try {
             const last = msgs[msgs.length - 1];
             return { s, last, unread: classMsgUnreadIn(cls.id, s.id), t: last ? Date.parse(last.created_at) : 0, name: classStudentName(cls, s) };
           }).sort((a, b) => (b.t - a.t) || a.name.localeCompare(b.name));
-          if (!rows.length) return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('users','w-8 h-8')}<div class="mt-3">No students have joined this class yet. Once they do, you can text them here.</div></div>`;
+          if (!rows.length) return `<div class="flex flex-col items-center text-center text-gray-400 text-sm px-6" style="padding-top:36px;padding-bottom:48px;">${Icon('users','w-8 h-8')}<div class="mt-3">No students have joined this class yet. Once they do, you can text them here.</div></div>`;
           return rows.map(r => `
             <button onclick="openClassMsgThread('${r.s.id}')" class="w-full flex items-center gap-3 py-3 text-left border-b border-gray-100">
               <span class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classStudentAvatarHTML(r.s, 'w-5 h-5')}</span>
@@ -9695,12 +9695,12 @@ try {
                 const roster = classRosterList(cls);
                 if (!roster.length) {
                   return isTeacher ? `
-                <div class="flex flex-col items-center text-center py-10">
+                <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
                   <div class="text-gray-400 mb-5">Invite students to your class</div>
                   <button onclick="openInviteStudentsOverlay()" class="font-semibold text-sm px-8 py-2.5 rounded-2xl" style="color:${NAVY};background:rgba(30,144,255,0.12);margin-bottom:10px;">Invite</button>
                 </div>` : `
-                <div class="flex flex-col items-center text-center py-10">
+                <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
                   <div class="text-gray-400">No other students yet.</div>
                 </div>`;
