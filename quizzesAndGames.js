@@ -1369,9 +1369,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             if (examContext === 'weeklyQuiz' && quizStake > 0) {
               msg.textContent = `Leaving now forfeits the match: you'll lose your ${quizStake} coin stake and your opponent wins.`;
             } else {
-              const total = examTest ? examTest.questions.length : 0;
-              const correct = examTest ? examScore() : 0;
-              msg.textContent = `Your current score is ${correct}/${total}. Leaving now ends the test and locks in this score.`;
+              msg.textContent = `Leaving now ends the test and locks in your current progress. Your score won't be shown until the test is complete.`;
             }
           }
           if (modal) modal.classList.remove('hidden');
