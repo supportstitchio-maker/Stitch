@@ -157,6 +157,7 @@ let studyFabMenuOpen = false;
             openClassDetail(id);
             return;
           }
+          { const _c = myClasses.find(x => x.id === id); classSkeletonRole = (_c && _c.role === 'student') ? 'student' : 'teacher'; }
           runClassActionLoading('Preparing class', 'folder', () => {
             preparedClassIds.add(id);
             openClassDetail(id);

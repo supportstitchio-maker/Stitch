@@ -58,6 +58,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function renderJobMarket(){
           const prevCareerScreenEl = document.getElementById('screen');
           const prevCareerScrollTop = prevCareerScreenEl ? prevCareerScreenEl.scrollTop : 0;
+          const prevTabsScroller = document.getElementById('career-tabs-scroller');
+          const prevTabsLeft = prevTabsScroller ? prevTabsScroller.scrollLeft : 0;
           document.getElementById('screen').innerHTML = `
             <div id="career-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               <div class="relative flex items-center justify-between">
@@ -79,6 +81,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               restoredScreenEl.scrollTop = prevCareerScrollTop;
             }
           }
+          const restoredTabs = document.getElementById('career-tabs-scroller');
+          if (restoredTabs && prevTabsLeft) restoredTabs.scrollLeft = prevTabsLeft;
           scrollActiveCareerTabIntoView();
         }
 
@@ -117,7 +121,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function careerMenuRowHTML(onclick, icon, label, cls){
           return `
             <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0" style="${(cls && /text-red/.test(cls)) ? 'color:#ef4444;' : ''}">${Icon(icon,'w-6 h-6')}</span>
+              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${(cls && /text-red/.test(cls)) ? Icon(icon,'w-6 h-6').replace('<svg ', '<svg style="color:#ef4444;" ') : Icon(icon,'w-6 h-6')}</span>
               <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${label}</span>
             </button>`;
         }
@@ -2473,7 +2477,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function jobsSubTab(k){
           jobsSub = k;
           const filterbar = document.getElementById('career-filterbar');
-          if (filterbar) filterbar.innerHTML = careerFilterPillsHTML();
+          if (filterbar) {
+            const oldScroller = document.getElementById('career-tabs-scroller');
+            const keepLeft = oldScroller ? oldScroller.scrollLeft : 0;
+            filterbar.innerHTML = careerFilterPillsHTML();
+            const newScroller = document.getElementById('career-tabs-scroller');
+            if (newScroller) newScroller.scrollLeft = keepLeft;
+          }
           const jobsContentEl = document.getElementById('jobs-content');
           if (jobsContentEl) jobsContentEl.innerHTML = jobsContent();
           scrollActiveCareerTabIntoView();

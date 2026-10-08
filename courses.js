@@ -4095,7 +4095,7 @@ try {
           if (!btn) return;
           btn.disabled = busy;
           btn.style.opacity = busy ? '0.7' : '';
-          btn.innerHTML = busy ? classActionBtnSpinnerHTML(NAVY, 'Joining...') : 'Join Class';
+          btn.innerHTML = busy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Class';
         }
 
         // ---- Join/Create classroom flow ----
@@ -4120,11 +4120,7 @@ try {
           newClassDraft.paymentEnabled = (mode === 'paid');
           newClassDraft.joinPolicy = (mode === 'approved') ? 'approved' : 'open';
           const el = document.getElementById('create-class-entrance');
-          const strip = el && el.querySelector('.entrance-swipe');
-          const keep = strip ? strip.scrollLeft : 0;
           if (el) el.outerHTML = newClassEntranceHTML();
-          const strip2 = document.querySelector('#create-class-entrance .entrance-swipe');
-          if (strip2) strip2.scrollLeft = keep;
         }
         function updateNewClassPaymentField(field, value){
           newClassDraft[field] = value;
@@ -4140,11 +4136,11 @@ try {
           if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance' });
           return `
             <div id="create-class-entrance" class="mb-5">
-              <label class="text-xs font-semibold text-gray-500 mb-2 block text-center">Entrance</label>
-              <div class="entrance-swipe no-scrollbar" style="display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:2px 16px;scroll-padding:0 16px;">
-                ${options.map(o => `<button onclick="setNewClassEntrance('${o.key}')" class="px-3 py-3 rounded-2xl text-xs font-semibold text-center class-choice-pill ${mode===o.key ? 'is-selected' : ''}" style="flex:0 0 72%;scroll-snap-align:center;">${o.label}</button>`).join('')}
+              <label class="text-xs font-semibold text-gray-500 mb-1 block text-center">Entrance</label>
+              <div class="text-center text-[11px] text-gray-400 mb-3">Select one</div>
+              <div class="auth-intent-row" style="justify-content:center;padding:4px 2px 8px;">
+                ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}"><span>${o.label}</span></button>`).join('')}
               </div>
-              ${options.length > 1 ? `<div class="text-center text-[11px] text-gray-400 mt-2">Swipe to see more options</div>` : ''}
               ${mode === 'paid' ? `
                 <div class="flex gap-2 mt-3">
                   <input type="number" min="1" step="1" oninput="updateNewClassPaymentField('paymentAmount', this.value)" value="${escapeHtml(d.paymentAmount)}" placeholder="Amount" class="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm">
@@ -4219,7 +4215,7 @@ try {
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Class Code</label>
               <input type="text" id="join-code-input" placeholder="e.g. ECN4821" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase">
               <div class="text-xs text-gray-400 mb-5 leading-relaxed">Use a class code with 6-8 letters or numbers, and no spaces or symbols.</div>
-              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3 rounded-2xl border flex items-center justify-center" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML(NAVY, 'Joining...') : 'Join Class'}</button>
+              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3.5 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Class'}</button>
             </div>`;
         }
 
@@ -4244,7 +4240,7 @@ try {
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Description (optional)</label>
               <textarea id="create-description-input" rows="3" placeholder="What's this class about?" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none"></textarea>
               ${newClassEntranceHTML()}
-              <button onclick="submitCreateClassroom()" class="w-full font-semibold py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">Create Class</button>
+              <button onclick="submitCreateClassroom()" class="w-full font-semibold py-3.5 rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;">Create Class</button>
             </div>
            </div>`;
         }
@@ -4258,34 +4254,42 @@ try {
           return `<span style="display:inline-flex;align-items:center;gap:8px;">${spinner}${label ? `<span>${escapeHtml(label)}</span>` : ''}</span>`;
         }
 
-        function classDetailSkeletonMarkup(){
+        let classSkeletonRole = 'teacher';
+        function classDetailSkeletonMarkup(text){
+          const isTeacher = text === 'Creating class' ? true : text === 'Adding you to class' ? false : classSkeletonRole !== 'student';
+          const white = 'background:rgba(255,255,255,.55);';
+          const card = `<div class="sk" style="height:112px;border-radius:24px;margin-bottom:12px;"></div>`;
           return `
-            <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing class">
-              <div class="sk-wrap">
-                <div class="sk-row" style="justify-content:space-between;margin-bottom:20px;">
-                  <div class="sk sk-round" style="width:28px;height:28px;"></div>
-                  <div class="sk" style="width:150px;height:18px;"></div>
-                  <div class="sk sk-round" style="width:28px;height:28px;"></div>
+            <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing class" style="overflow:hidden;">
+              <div style="padding-top:var(--top-safe-pad, 20px);padding-bottom:calc(0.75rem + 10px);position:relative;" class="px-5">
+                <div class="sk-row" style="justify-content:space-between;height:32px;">
+                  <div class="sk" style="width:22px;height:22px;border-radius:6px;"></div>
+                  <div class="sk" style="width:150px;height:18px;position:absolute;left:50%;transform:translateX(-50%);"></div>
+                  <div class="sk" style="width:24px;height:18px;border-radius:6px;"></div>
                 </div>
-                <div class="sk sk-card" style="height:198px;margin-bottom:16px;"></div>
-                <div class="sk-row" style="gap:12px;margin-bottom:20px;">
-                  <div class="sk sk-round" style="flex:1;height:58px;"></div>
-                  <div class="sk sk-round" style="flex:1;height:58px;"></div>
+              </div>
+              <div class="px-5">
+                <div class="sk" style="height:132px;border-radius:24px;margin-bottom:16px;position:relative;">
+                  <div style="position:absolute;left:20px;top:20px;width:55%;height:20px;border-radius:8px;${white}"></div>
+                  <div style="position:absolute;left:20px;top:52px;width:30%;height:14px;border-radius:8px;${white}"></div>
+                  <div style="position:absolute;left:20px;bottom:18px;width:42%;height:26px;border-radius:9999px;${white}"></div>
                 </div>
-                <div class="sk-row" style="gap:10px;margin-bottom:18px;">
-                  <div class="sk sk-round" style="width:84px;height:34px;"></div>
-                  <div class="sk sk-round" style="width:96px;height:34px;"></div>
-                  <div class="sk sk-round" style="width:90px;height:34px;"></div>
+                ${isTeacher ? `
+                <div class="sk-row" style="gap:8px;margin-bottom:16px;">
+                  <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
+                  <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
+                </div>` : ''}
+                <div style="display:flex;gap:4px;margin-bottom:12px;background:#f3f4f6;border-radius:16px;padding:4px;">
+                  <div class="sk" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
+                  <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:56px;height:12px;"></div></div>
                 </div>
-                <div class="sk sk-card" style="height:92px;margin-bottom:12px;"></div>
-                <div class="sk sk-card" style="height:92px;margin-bottom:12px;"></div>
-                <div class="sk sk-card" style="height:92px;"></div>
+                ${card}${card}${card}
               </div>
             </div>`;
         }
 
         function classActionLoadingMarkup(text, iconName){
-          if (['Preparing class','Creating class','Adding you to class'].includes(text)) return classDetailSkeletonMarkup();
+          if (['Preparing class','Creating class','Adding you to class'].includes(text)) return classDetailSkeletonMarkup(text);
           return `
             <div id="class-action-loading-overlay" class="classroom-slide-cover flex flex-col items-center justify-center">
               <div style="position:relative;width:84px;height:84px;">
@@ -9991,7 +9995,7 @@ try {
 
               ${cls.role === 'teacher'
                 ? `<button onclick="confirmDeleteCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
-                    ${IconBold('trash','w-3.5 h-3.5')} Delete class
+                    ${Icon('trash','w-3.5 h-3.5')} Delete class
                   </button>`
                 : `<button onclick="confirmLeaveCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
                     ${IconBold('back','w-3.5 h-3.5')} Leave class

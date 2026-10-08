@@ -743,7 +743,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function classMenuSheetHTML(toggleFnName, rows){
           const rowHtml = rows.map(r => `
             <button onclick="${r.onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${r.cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0" style="${(r.cls && /text-red/.test(r.cls)) ? 'color:#ef4444;' : ''}">${Icon(r.icon,'w-6 h-6')}</span>
+              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${(r.cls && /text-red/.test(r.cls)) ? Icon(r.icon,'w-6 h-6').replace('<svg ', '<svg style="color:#ef4444;" ') : Icon(r.icon,'w-6 h-6')}</span>
               <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${r.label}</span>
             </button>`).join('');
           return `
