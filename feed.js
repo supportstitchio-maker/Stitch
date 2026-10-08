@@ -333,6 +333,10 @@
 
         // ---- SVG icon library ----
         function Icon(type, cls){
+          if (type === 'money' || type === 'moneyOutline' || type === 'phoneMoneyOutline' || type === 'walletOutline') {
+            // Silhouette stack of notes in shades of black, drawn inline (no image file needed)
+            return `<svg class="${cls || ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g transform="rotate(-10 12 12)"><rect x="2.6" y="14.6" width="18.8" height="6.4" rx="1.7" fill="#262626"/><rect x="2.6" y="11" width="18.8" height="6.4" rx="1.7" fill="#3d3d3d"/><rect x="2.6" y="7.2" width="18.8" height="6.6" rx="1.7" fill="#595959"/><circle cx="12" cy="10.5" r="1.9" fill="#2b2b2b"/><circle cx="5.9" cy="10.5" r=".7" fill="#2b2b2b"/><circle cx="18.1" cy="10.5" r=".7" fill="#2b2b2b"/><rect x="9.4" y="5.6" width="5.2" height="16.6" rx="1.1" fill="#0b0b0b"/></g></svg>`;
+          }
           const paths = {
             home: `<path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 11-1.06 1.06l-.97-.97v7.63a2.25 2.25 0 01-2.25 2.25h-3a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-1.5a.75.75 0 00-.75.75v4.5a.75.75 0 01-.75.75h-3a2.25 2.25 0 01-2.25-2.25V12.6l-.97.97a.75.75 0 11-1.06-1.06l8.69-8.69z"/>`,
             search: `<path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clip-rule="evenodd"/>`,

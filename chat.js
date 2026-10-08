@@ -7439,7 +7439,181 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function shareActiveMeetingLink(){
-          if (activeMeeting) shareMeetingNative(activeMeeting.code, activeMeeting.title);
+          if (!activeMeeting) return;
+          openCallShareSheet({ kind: 'meeting', link: buildMeetingLink(activeMeeting.code), title: meetingShareName(activeMeeting.code, activeMeeting.title) });
+        }
+
+        // ---- In-call share sheet: send a call/session link to your Stitch chats (or out of the app) ----
+        // Mounted as its own layer above the call, so the live call / session underneath is never
+        // torn down or re-rendered.
+        let callShareState = { link: '', text: '', title: '', kind: 'meeting', selected: new Set() };
+
+        function openCallShareSheet(opts){
+          opts = opts || {};
+          const kind = opts.kind === 'session' ? 'session' : 'meeting';
+          const title = opts.title || (kind === 'session' ? 'Live session' : 'Meeting');
+          callShareState = {
+            link: opts.link || '',
+            title,
+            kind,
+            text: kind === 'session'
+              ? `Join the live session "${title}" on Stitch: ${opts.link}`
+              : `Join "${title}" on Stitch: ${opts.link}`,
+            selected: new Set(),
+          };
+          closeCallShareSheet(true);
+          const layer = document.createElement('div');
+          layer.id = 'call-share-layer';
+          layer.style.cssText = 'position:fixed;inset:0;z-index:100000;';
+          layer.innerHTML = callShareSheetHTML();
+          document.body.appendChild(layer);
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeCallShareSheet(fromPopState));
+        }
+
+        function closeCallShareSheet(fromPopState){
+          const layer = document.getElementById('call-share-layer');
+          if (!layer) return;
+          layer.remove();
+          if (fromPopState !== true && typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
+        }
+
+        function callShareSheetHTML(){
+          const contacts = shareContactsList();
+          const label = callShareState.kind === 'session' ? 'Share session' : 'Share meeting';
+          return `
+            <div class="w-full h-full flex flex-col justify-end" style="background:rgba(8,15,28,0.55);" onclick="if (event.target === this) closeCallShareSheet();">
+              <div class="w-full bg-white flex flex-col share-sheet-panel" style="max-height:82vh;border-radius:22px 22px 0 0;overflow:hidden;" onclick="event.stopPropagation();">
+                <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0"><div class="w-9 h-1.5 rounded-full bg-gray-300"></div></div>
+                <div class="flex-shrink-0 w-full">
+                  <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between">
+                    <div class="font-semibold text-lg font-display truncate" style="color:${NAVY};">${label}</div>
+                    <button onclick="closeCallShareSheet()" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
+                  </div>
+                  <div class="max-w-2xl mx-auto px-5 pb-4">
+                    <div class="relative">
+                      <div class="text-gray-400" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);">${Icon('search','w-4 h-4')}</div>
+                      <input id="call-share-search" oninput="filterCallShareContacts()" placeholder="Search your chats" class="w-full bg-gray-100 rounded-full text-sm" style="outline:none;padding:0.625rem 1rem 0.625rem 2.5rem;"/>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex-1 overflow-y-hidden">
+                  <div class="max-w-2xl mx-auto px-5">
+                    <div id="call-share-grid" class="pill-bleed flex overflow-x-auto no-scrollbar" style="gap:16px;scroll-snap-type:x proximity;padding-top:2px;padding-bottom:8px;">
+                      ${contacts.map(c => callShareContactCell(c)).join('')}
+                    </div>
+                    <div id="call-share-empty" class="${contacts.length ? 'hidden ' : ''}text-center text-sm text-gray-400 py-10">${contacts.length ? 'No matches' : 'No chats yet'}</div>
+                  </div>
+                </div>
+                <div class="share-sheet-actions flex-shrink-0 w-full border-t border-gray-100" style="background:#fafafa;">
+                  <div class="share-sheet-actions-row flex items-start no-scrollbar" style="gap:22px;padding:16px 20px calc(env(safe-area-inset-bottom, 12px) + 16px) 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                    <div id="call-share-action">${callShareActionHTML()}</div>
+                    ${shareExternalOption('send','Share', `callShareNative()`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
+                    ${shareExternalOption('link','Copy link', `callShareCopy()`, '#eef0f4', NAVY)}
+                    ${shareWhatsAppOption(`callShareVia('whatsapp')`)}
+                    ${shareMessagesOption(`callShareVia('sms')`)}
+                    ${shareGmailOption(`callShareVia('gmail')`)}
+                    ${shareOutlookOption(`callShareVia('outlook')`)}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        function callShareContactCell(c){
+          const selected = callShareState.selected.has(c.id);
+          return `
+            <button id="call-share-cell-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleCallShareContact('${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
+              <div class="relative">
+                <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
+                <div id="call-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+              </div>
+              <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
+            </button>`;
+        }
+
+        function toggleCallShareContact(id){
+          const sel = callShareState.selected;
+          if (sel.has(id)) sel.delete(id); else sel.add(id);
+          const on = sel.has(id);
+          const badge = document.getElementById('call-share-check-' + id);
+          if (badge) {
+            badge.classList.toggle('hidden', !on);
+            const avatar = badge.previousElementSibling;
+            if (avatar) avatar.style.boxShadow = on ? `0 0 0 2.5px ${ROYAL}` : '';
+          }
+          const action = document.getElementById('call-share-action');
+          if (action) action.innerHTML = callShareActionHTML();
+        }
+
+        function callShareActionHTML(){
+          const count = callShareState.selected.size;
+          if (!count) return '';
+          return `
+            <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
+              <button onclick="sendCallShareToSelected()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+                ${Icon('send','w-4 h-4')}
+                <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
+              </button>
+              <div class="text-[11px] text-gray-600 font-medium text-center leading-tight">Send</div>
+            </div>`;
+        }
+
+        function filterCallShareContacts(){
+          const input = document.getElementById('call-share-search');
+          const q = input ? input.value.trim().toLowerCase() : '';
+          const grid = document.getElementById('call-share-grid');
+          const empty = document.getElementById('call-share-empty');
+          if (!grid) return;
+          let visible = 0;
+          Array.from(grid.children).forEach(cell => {
+            const match = !q || cell.dataset.name.includes(q);
+            cell.classList.toggle('hidden', !match);
+            if (match) visible++;
+          });
+          if (empty) { empty.textContent = 'No matches'; empty.classList.toggle('hidden', visible !== 0 || !grid.children.length); }
+        }
+
+        function sendCallShareToSelected(){
+          const st = callShareState;
+          if (!st.selected.size) return;
+          const ids = Array.from(st.selected);
+          const preview = st.kind === 'session' ? `Shared a live session: "${st.title}"` : `Shared a meeting: "${st.title}"`;
+          ids.forEach(id => deliverSharedMessage(id, st.text, { previewText: preview }));
+          closeCallShareSheet();
+          if (typeof pushInAppNotification === 'function') pushInAppNotification('Sent', ids.length === 1 ? 'Link sent to 1 chat.' : `Link sent to ${ids.length} chats.`);
+        }
+
+        function callShareNative(){
+          const st = callShareState;
+          closeCallShareSheet();
+          if (navigator.share) {
+            navigator.share({ title: st.title, text: `Join "${st.title}" on Stitch`, url: st.link }).catch(() => {});
+          } else {
+            copyTextToClipboardSimple(st.link);
+          }
+        }
+
+        function copyTextToClipboardSimple(text){
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+          if (typeof pushInAppNotification === 'function') pushInAppNotification('Link copied', 'Link copied to your clipboard.');
+        }
+
+        function callShareCopy(){
+          const link = callShareState.link;
+          closeCallShareSheet();
+          copyTextToClipboardSimple(link);
+        }
+
+        function callShareVia(kind){
+          const st = callShareState;
+          const subject = `Join "${st.title}" on Stitch`;
+          let url;
+          if (kind === 'whatsapp') url = 'https://wa.me/?text=' + encodeURIComponent(st.text);
+          else if (kind === 'sms') url = 'sms:?&body=' + encodeURIComponent(st.text);
+          else if (kind === 'gmail') url = 'https://mail.google.com/mail/?view=cm&fs=1&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(st.text);
+          else url = 'https://outlook.live.com/mail/0/deeplink/compose?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(st.text);
+          closeCallShareSheet();
+          if (kind === 'sms') window.location.href = url; else window.open(url, '_blank');
         }
 
         // ---- Opening a meeting link / a tapped meeting ----
@@ -7738,6 +7912,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
                 ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
                 ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
+                ${activeMeeting.code ? row('send', 'Share invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
                 ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
                 ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}

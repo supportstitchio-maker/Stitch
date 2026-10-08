@@ -6479,6 +6479,11 @@ try {
 
         function shareLectureLink(classId, lectureId){
           const link = buildLectureInviteLink(classId, lectureId);
+          if (typeof openCallShareSheet === 'function') {
+            const cls = (typeof myClasses !== 'undefined' && myClasses.find(c => c.id === classId)) || null;
+            openCallShareSheet({ kind: 'session', link, title: (cls && cls.name) || 'Live session' });
+            return;
+          }
           if (navigator.share) {
             navigator.share({ title: 'Join this session', text: "Join this live session on Stitch -- you don't need to join the space.", url: link }).catch(() => {});
           } else {
@@ -8374,7 +8379,7 @@ try {
                 ${grid("toggleLectureReactionsSheet()", 'reactions', 'Reactions', false)}
                 ${grid("lectureAttachDocuments()", 'doc', 'PDF', false)}
                 ${grid("toggleLectureCommentSheet()", 'commentText', 'Comment', lectureCommentSheetOpen)}
-                ${grid(`shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}
+                ${grid(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}
               </div>
             </div>`;
         }
@@ -8959,7 +8964,7 @@ try {
         function classworkCreateMenuOptionRow(icon, label, sub, onclick, isLast){
           return `
             <button onclick="${onclick}" class="w-full flex items-center gap-4 py-4 text-left" style="${isLast ? '' : 'border-bottom:1px solid rgba(0,0,0,0.07);'}">
-              <span class="w-11 h-11 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon(icon,'w-5 h-5')}</span>
+              <span class="w-11 h-11 flex items-center justify-center text-gray-400 flex-shrink-0">${Icon(icon,'w-5 h-5')}</span>
               <div class="min-w-0">
                 <div class="font-semibold text-sm text-gray-800">${label}</div>
                 <div class="text-xs text-gray-400">${sub}</div>

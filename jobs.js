@@ -913,7 +913,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         const PAID_SELLER_MIN_PLAN_WORDS = 15;
         // The paid-seller questions, in order
         const PAID_SELLER_STAGES = ['paidtype', 'paidplan', 'paidprice', 'paidpay', 'paidpayout', 'paidconfirm'];
-        const PAID_TYPE_OPTIONS = [['courses', 'Paid courses', 'coin'], ['meetings', 'Paid live spaces / meetings', 'video'], ['both', 'Both', 'grid']];
+        const PAID_TYPE_OPTIONS = [['courses', 'Paid courses', 'money'], ['meetings', 'Paid live spaces / meetings', 'video'], ['both', 'Both', 'grid']];
         const PAID_PRICE_OPTIONS = [['under50', 'Under GH₵50', 'tagOutline'], ['50-200', 'GH₵50 – 200', 'tagOutline'], ['200-500', 'GH₵200 – 500', 'tagOutline'], ['500plus', 'GH₵500+', 'tagOutline'], ['unsure', 'Not sure yet', 'helpCircleOutline']];
         const PAID_PAYOUT_OPTIONS = [['momo', 'Mobile money', 'phoneMoneyOutline'], ['bank', 'Bank account', 'bankOutline']];
         function paidOptionLabel(list, key){ const hit = list.find(([k]) => k === key); return hit ? hit[1] : ''; }
@@ -8521,7 +8521,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <div onclick="closeAdminMenu()" class="ai-history-drawer-backdrop"></div>
             <div class="ai-history-drawer">
               <div class="flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);padding-bottom:14px;">
-                <h1 class="text-lg font-bold font-display grad-text">Menu</h1>
+                <h1 class="text-lg font-bold font-display grad-text">Admin dashboard</h1>
                 <button onclick="closeAdminMenu()" aria-label="Close menu" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               </div>
               <div class="px-3 pb-2 flex-shrink-0">
