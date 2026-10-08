@@ -1490,7 +1490,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-bar{height:10px;border-radius:99px;background:rgba(148,163,184,.2);overflow:hidden}.ar-bar>i{display:block;height:100%;border-radius:99px}
           .ar-end{display:flex;gap:10px;align-items:center;margin-top:20px;padding-bottom:calc(env(safe-area-inset-bottom,8px) + 12px)}
           .ar-end .sheet-pill{flex:1;padding:.75rem 0;font-size:.85rem;border-radius:9999px;text-align:center}
-          .ar-chips-row{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none;margin-bottom:20px;padding:2px 0}
+          .ar-chips-row{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -4px 8px;padding:6px 4px 14px}
           .ar-chips-row::-webkit-scrollbar{display:none}
           .ar-chips-row .ar-chip{flex:0 0 auto}
           .ar-foot{flex-shrink:0;border-top:1px solid var(--line);background:var(--card);padding:10px 20px calc(env(safe-area-inset-bottom,8px) + 10px)}
@@ -1499,6 +1499,17 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-pod{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:190px}
           .ar-pod>div{flex:1;max-width:120px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;color:#fff;font-weight:800}
           .ar-vs{border-radius:24px;padding:20px;color:#fff}
+          .ar-flat > div{border:0 !important;background:transparent !important;box-shadow:none !important;padding-left:0 !important;padding-right:0 !important}
+          .ar-gcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 12px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+          .ar-gcard .ar-h{margin:0 0 8px}
+          .ar-gcap{font-size:.74rem;font-weight:700;line-height:1.3;margin-top:8px;color:var(--sub)}
+          .ar-garc{animation:arGrow .9s cubic-bezier(.22,.8,.3,1) both}
+          @keyframes arGrow{from{stroke-dasharray:0 100}}
+          .ar-gbar{transform-box:fill-box;transform-origin:bottom;animation:arBarUp .7s cubic-bezier(.22,.8,.3,1) both}
+          @keyframes arBarUp{from{transform:scaleY(0)}}
+          .ar-gdot{animation:arDot .35s ease-out both}
+          @keyframes arDot{from{opacity:0;transform:scale(.3)}}
+          @media (prefers-reduced-motion:reduce){.ar-garc,.ar-gbar,.ar-gdot{animation:none}}
           .ar-fade{animation:arIn .35s ease both}@keyframes arIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
           `;
           document.head.appendChild(s);
@@ -1553,6 +1564,50 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           </div>`;
         }
 
+        // ---- Score & Progress graph cards (Latest / Average / Best / Tests taken) ----
+        function arGraphCard(label, graph, caption, capColor){
+          return `<div class="ar-gcard"><div class="ar-h">${label}</div>${graph}<div class="ar-gcap" style="${capColor ? 'color:' + capColor + ';' : ''}">${caption}</div></div>`;
+        }
+        // Full ring: Latest score
+        function arRingGraph(pct, color){
+          const p = Math.max(0, Math.min(100, pct));
+          return `<svg viewBox="0 0 100 100" width="104" height="104" role="img" aria-label="${p}%">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(148,163,184,.22)" stroke-width="10"/>
+            ${p > 0 ? `<circle class="ar-garc" cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="${p} 100" transform="rotate(-90 50 50)"/>` : ''}
+            <text x="50" y="58" text-anchor="middle" font-size="24" font-weight="800" fill="${color}">${p}%</text></svg>`;
+        }
+        // Half-circle gauge: Average score
+        function arArcGraph(pct, color){
+          const p = Math.max(0, Math.min(100, pct));
+          const d = 'M 10 58 A 40 40 0 0 1 90 58';
+          return `<svg viewBox="0 0 100 66" width="116" height="77" role="img" aria-label="${p}%">
+            <path d="${d}" fill="none" stroke="rgba(148,163,184,.22)" stroke-width="10" stroke-linecap="round" pathLength="100"/>
+            ${p > 0 ? `<path class="ar-garc" d="${d}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round" pathLength="100" stroke-dasharray="${p} 100"/>` : ''}
+            <text x="50" y="55" text-anchor="middle" font-size="22" font-weight="800" fill="${color}">${p}%</text></svg>`;
+        }
+        // Column chart of recent scores with the best one highlighted: Best score
+        function arBestBarsGraph(vals, bestIdx, color, bigText, bestPct){
+          const n = vals.length, W = 100, bw = Math.min(8, (W - 2 * (n - 1)) / n), gap = n > 1 ? (W - bw * n) / (n - 1) : 0;
+          const bars = vals.map((v, i) => {
+            const h = Math.max(2, v / 100 * 34), x = n > 1 ? i * (bw + gap) : (W - bw) / 2;
+            return `<rect class="ar-gbar" x="${x.toFixed(1)}" y="${(60 - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="${color}" fill-opacity="${i === bestIdx ? 1 : 0.3}" style="animation-delay:${(i * 0.04).toFixed(2)}s"/>`;
+          }).join('');
+          return `<svg viewBox="0 0 100 64" width="116" height="74" role="img" aria-label="${escapeHtml(bigText)}">
+            <text x="50" y="17" text-anchor="middle" font-size="20" font-weight="800" fill="${color}">${escapeHtml(bigText)}</text>
+            <line x1="0" x2="100" y1="${(60 - bestPct / 100 * 34).toFixed(1)}" y2="${(60 - bestPct / 100 * 34).toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="3 3" stroke-opacity=".75"/>${bars}</svg>`;
+        }
+        // One dot per test, coloured by how it went: Tests taken
+        function arTestDotsGraph(accs, color, bigText){
+          const MAX = 20, shown = accs.slice(0, MAX).reverse(), per = 10, rows = Math.ceil(shown.length / per);
+          const dots = shown.map((a, i) => {
+            const c = a >= 70 ? '#16a34a' : a >= 40 ? '#f59e0b' : '#dc2626';
+            const cx = 5 + (i % per) * 10, cy = 36 + Math.floor(i / per) * 11;
+            return `<circle class="ar-gdot" cx="${cx}" cy="${cy}" r="3.6" fill="${c}" style="animation-delay:${(i * 0.03).toFixed(2)}s"/>`;
+          }).join('');
+          return `<svg viewBox="0 0 100 ${36 + Math.max(rows, 1) * 11}" width="116" height="${Math.round((36 + Math.max(rows, 1) * 11) * 1.16)}" role="img" aria-label="${escapeHtml(bigText)} tests">
+            <text x="50" y="22" text-anchor="middle" font-size="22" font-weight="800" fill="${color}">${escapeHtml(bigText)}</text>${dots}</svg>`;
+        }
+
         function arStatTile(label, value, color){
           return `<div class="ar-card" style="padding:14px;text-align:center;"><div style="font-size:1.7rem;font-weight:800;color:${color};line-height:1.1;">${value}</div><div class="ar-h" style="margin:6px 0 0;">${label}</div></div>`;
         }
@@ -1591,23 +1646,23 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const delta = prev ? acc(last) - acc(prev) : null;
           return `<div class="ar-root">
             <div class="ar-grid ar-g4 mb-3">
-              ${arStatTile('Latest', acc(last) + '%', acc(last) >= 70 ? '#16a34a' : '#dc2626')}
-              ${arStatTile('Average', avg + '%', '#1e90ff')}
-              ${arStatTile('Best', best + '%', '#f59e0b')}
-              ${arStatTile('Tests taken', h.length, '#4169e1')}
+              ${arGraphCard('Latest', arRingGraph(acc(last), acc(last) >= 70 ? '#16a34a' : '#dc2626'), delta === null ? 'Your first test' : (delta >= 0 ? '▲ ' : '▼ ') + Math.abs(delta) + ' pts vs previous', delta === null ? '' : (delta >= 0 ? '#16a34a' : '#dc2626'))}
+              ${arGraphCard('Average', arArcGraph(avg, '#1e90ff'), 'Across ' + h.length + ' test' + (h.length === 1 ? '' : 's'))}
+              ${arGraphCard('Best', arBestBarsGraph(recent.map(acc), recent.map(acc).lastIndexOf(best), '#f59e0b', best + '%', best), recent.map(acc).includes(best) ? 'Best of your last ' + recent.length : 'Set earlier, still your record')}
+              ${arGraphCard('Tests taken', arTestDotsGraph(h.map(acc), '#4169e1', String(h.length)), h.filter(r => acc(r) >= 70).length + ' passed · ' + h.filter(r => acc(r) < 70).length + ' to improve')}
             </div>
             <div class="ar-cols">
-              <div class="ar-card mb-3">
+              <div class="mb-6">
                 <div class="ar-h">Accuracy trend · last ${recent.length}</div>
                 ${arLine(recent.map(acc), recent.map(r => r.title))}
                 ${delta === null ? '' : `<div class="text-sm mt-2" style="color:${delta >= 0 ? '#16a34a' : '#dc2626'};font-weight:700;">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta)} pts vs your previous test</div>`}
               </div>
-              <div class="ar-card mb-3">
+              <div class="mb-6">
                 <div class="ar-h">Recent scores</div>
                 ${arBars(h.slice(0, 6).map(r => ({ label: r.title + ' · ' + formatScoreHistoryDate(r.date), pct: acc(r), text: r.correct + '/' + r.total, color: acc(r) >= 70 ? '#16a34a' : acc(r) >= 40 ? '#f59e0b' : '#dc2626' })))}
               </div>
             </div>
-            ${h.length > 6 ? `<div class="ar-h">Older</div><div class="space-y-2.5">${h.slice(6, 26).map(scoreHistoryRowHTML).join('')}</div>` : ''}
+            ${h.length > 6 ? `<div class="ar-h">Older</div><div class="ar-flat space-y-2.5">${h.slice(6, 26).map(scoreHistoryRowHTML).join('')}</div>` : ''}
           </div>`;
         }
 
@@ -1749,7 +1804,20 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // ---- Results ----
         let examReviewFilter = 'all';
-        function setExamReviewFilter(f){ examReviewFilter = f; renderExamTake(true); }
+        // Switches the Review answers pills without rebuilding the page: only the pill highlight and
+        // the list of cards change, and the row of pills stays exactly where it was on screen.
+        function setExamReviewFilter(f){
+          if (f === examReviewFilter) return;
+          examReviewFilter = f;
+          const row = document.getElementById('exam-review-pills');
+          const list = document.getElementById('exam-review-list');
+          if (!row || !list || examStage !== 'result' || examResultTab !== 'review') { renderExamTake(true); return; }
+          row.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', b.getAttribute('data-k') === f));
+          const sc = document.getElementById('exam-scroll-container');
+          const before = row.getBoundingClientRect().top;
+          list.innerHTML = examReviewCardsHTML();
+          if (sc) sc.scrollTop += row.getBoundingClientRect().top - before;
+        }
 
         function arOutcome(q, i){
           if (examAnswers[i] === undefined) return 'skip';
@@ -1816,11 +1884,12 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             </div>`;
         }
 
-        function examResultReviewHTML(){
+        // Cards for the current filter. Kept separate so switching pills can swap just this list
+        // in place (no full re-render, so no blink, no replayed fade-in and no scroll jump).
+        function examReviewCardsHTML(){
           const qs = examTest.questions;
           const f = examReviewFilter;
           const keep = (q, i) => f === 'all' || (f === 'bad' && arOutcome(q, i) === 'bad') || (f === 'skip' && arOutcome(q, i) === 'skip') || (f === 'mark' && examMarked[i]);
-          const chip = (k, l) => `<button class="ar-chip ${f === k ? 'on' : ''}" onclick="setExamReviewFilter('${k}')">${l}</button>`;
           const cards = qs.map((q, i) => {
             if (!keep(q, i)) return '';
             const o = arOutcome(q, i), sel = examAnswers[i], written = q.type === 'written';
@@ -1831,7 +1900,13 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               : q.options.map((opt, oi) => `<div class="ar-opt ${oi === q.correct ? 'ok' : (oi === sel ? 'no' : '')}" style="margin-bottom:10px;padding:12px 14px;"><span class="l">${String.fromCharCode(65 + oi)}</span><span class="text-sm flex-1">${escapeHtml(opt)}</span></div>`).join('');
             return `<div class="ar-card mb-3" id="ar-q-${i}"><div class="flex items-start justify-between gap-4 mb-4"><div class="text-sm font-semibold" style="min-width:0;line-height:1.45;">${i + 1}. ${escapeHtml(q.text)}</div><span class="flex-shrink-0 text-xs font-bold rounded-full" style="padding:6px 14px;margin-top:-2px;white-space:nowrap;background:${badge[1]}1f;color:${badge[1]}">${badge[0]}</span></div>${body}${examMarked[i] ? `<div class="text-xs mt-1" style="color:#dc2626;font-weight:700">Marked for review</div>` : ''}</div>`;
           }).join('');
-          return `<div class="flex gap-2 mb-3 flex-wrap">${chip('all','All')}${chip('bad','Incorrect')}${chip('skip','Skipped')}${chip('mark','Marked')}</div>${cards || '<div class="ar-card text-center" style="color:var(--sub)">Nothing here. Nice.</div>'}`;
+          return cards || '<div class="ar-card text-center" style="color:var(--sub)">Nothing here. Nice.</div>';
+        }
+
+        function examResultReviewHTML(){
+          const f = examReviewFilter;
+          const chip = (k, l) => `<button data-k="${k}" class="filter-pill nowrap-pill ${f === k ? 'on' : ''}" style="padding:10px 17px;" onclick="setExamReviewFilter('${k}')">${l}</button>`;
+          return `<div id="exam-review-pills" class="flex gap-2 mb-3 flex-wrap" style="padding:4px 2px 10px;margin:0 -2px 4px;">${chip('all','All')}${chip('bad','Incorrect')}${chip('skip','Skipped')}${chip('mark','Marked')}</div><div id="exam-review-list">${examReviewCardsHTML()}</div>`;
         }
 
         // ---- Winner / head-to-head cards ----

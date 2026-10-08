@@ -4735,63 +4735,107 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="text-sm text-gray-700" style="padding-top:2px;">${t}</div>
             </div>`).join('')}</div>`;
         }
-        function careerIntroTrendHTML(isFirst){
-          const W = 200, H = 76;
-          const stages = ['Applied', 'Review', 'Interview', 'Offer'];
-          const pts = isFirst
-            ? [[6,62],[40,52],[72,56],[104,36],[136,40],[168,18],[194,10]]
-            : stages.map((_, i) => [14 + i * 57, 40 - i * 6]);
-          const line = pts.map(p => p.join(',')).join(' ');
-          const last = pts[pts.length - 1];
-          const grad = `<linearGradient id="cit-g" x1="0" x2="1"><stop offset="0" stop-color="${NAVY}"/><stop offset="1" stop-color="${ROYAL}"/></linearGradient>`;
+        // Hero art for the two intro pages. Everything is drawn from the app's own icon set and
+        // brand blues (no emojis, no image files), and animates once when the page opens.
+        function careerIntroStylesHTML(){
+          return `<style>
+            @keyframes ciScan{0%{top:14%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:84%;opacity:0}}
+            @keyframes ciRise{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+            @keyframes ciRing{to{stroke-dashoffset:0}}
+            @keyframes ciFill{to{width:var(--ci-fill)}}
+            @keyframes ciPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+            @keyframes ciPulse{0%{box-shadow:0 0 0 0 rgba(30,144,255,.45)}100%{box-shadow:0 0 0 10px rgba(30,144,255,0)}}
+            .ci-hero{position:relative;height:236px;border-radius:28px;overflow:hidden;background:linear-gradient(160deg,rgba(30,144,255,.12),rgba(65,105,225,.10));box-shadow:inset 0 0 0 1px rgba(65,105,225,.14);}
+            .ci-card{position:absolute;background:var(--pill-fill,#fff);color:var(--pill-text,#1f2937);border-radius:18px;box-shadow:0 8px 22px rgba(30,80,200,.16);animation:ciRise .5s ease-out both;}
+            .ci-line{height:6px;border-radius:9999px;background:rgba(128,128,128,.28);}
+            .ci-chip{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 12px 7px 8px;border-radius:9999px;background:var(--pill-fill,#fff);color:var(--pill-text,#1f2937);font-size:12.5px;font-weight:600;box-shadow:0 2px 10px rgba(30,80,200,.14);}
+            .ci-tick{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;background:${NAVY};color:#fff;}
+            @media (prefers-reduced-motion:reduce){.ci-hero *{animation-duration:.01s !important;animation-delay:0s !important;}}
+          </style>`;
+        }
+        function careerIntroTickHTML(){ return `<span class="ci-tick">${Icon('check','w-3 h-3')}</span>`; }
+        function careerIntroChipsHTML(items){
+          return `<div class="flex flex-col items-start" style="gap:9px;margin-top:20px;">${items.map(t => `<span class="ci-chip">${careerIntroTickHTML()}${t}</span>`).join('')}</div>`;
+        }
+        function careerIntroMatchCardHTML(pct, title, meta, top, right, width, delay, color){
           return `
-            <style>@keyframes citDraw{to{stroke-dashoffset:0}}@keyframes citPop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}@keyframes citPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(3.2);opacity:0}}@keyframes citDash{to{stroke-dashoffset:-16}}</style>
-            <svg viewBox="0 0 ${W} ${isFirst ? H : H + 16}" width="100%" aria-hidden="true" style="overflow:visible;display:block;">
-              <defs>${grad}</defs>
-              <line x1="0" y1="${H - 4}" x2="${W}" y2="${H - 4}" stroke="rgba(128,128,128,0.3)" stroke-width="1.5" stroke-dasharray="4 4" style="animation:citDash 1.2s linear infinite;"/>
-              <polyline points="${line}" fill="none" stroke="url(#cit-g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="100" style="stroke-dasharray:100;stroke-dashoffset:100;animation:citDraw 1.8s ease-out .2s forwards;"/>
-              ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${i === pts.length - 1 ? 5.5 : 4}" fill="${i === pts.length - 1 ? ROYAL : '#fff'}" stroke="${ROYAL}" stroke-width="2.5" style="opacity:0;transform-box:fill-box;transform-origin:center;animation:citPop .35s ease-out ${(0.3 + i * (1.6 / pts.length)).toFixed(2)}s forwards;"/>`).join('')}
-              <circle cx="${last[0]}" cy="${last[1]}" r="5.5" fill="none" stroke="${ROYAL}" stroke-width="2" style="transform-box:fill-box;transform-origin:center;animation:citPulse 1.8s ease-out 2.2s infinite;"/>
-              ${isFirst ? '' : pts.map((p, i) => `<text x="${p[0]}" y="${H + 10}" text-anchor="middle" font-size="9" fill="#9ca3af">${stages[i]}</text>`).join('')}
-            </svg>`;
+            <div class="ci-card flex items-center" style="top:${top}px;right:${right}px;width:${width}px;padding:9px 12px;gap:10px;animation-delay:${delay}s;">
+              <div class="relative flex-shrink-0 flex items-center justify-center" style="width:40px;height:40px;">
+                <svg viewBox="0 0 40 40" width="40" height="40" style="position:absolute;inset:0;transform:rotate(-90deg);" aria-hidden="true">
+                  <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(128,128,128,.25)" stroke-width="4"/>
+                  <circle cx="20" cy="20" r="16" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" pathLength="100" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};animation:ciRing 1.1s ease-out ${delay + 0.2}s backwards;"/>
+                </svg>
+                <span style="font-size:11px;font-weight:800;color:${color};">${pct}%</span>
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold truncate" style="font-size:12px;">${title}</div>
+                <div class="truncate" style="font-size:11px;opacity:.6;">${meta}</div>
+              </div>
+            </div>`;
+        }
+        function careerIntroHeroMatchHTML(){
+          return `
+            <div class="ci-hero">
+              <div class="ci-card" style="left:12px;top:22px;width:92px;height:150px;padding:11px;transform:rotate(-5deg);animation-name:none;">
+                <div class="flex items-center justify-center" style="width:30px;height:30px;border-radius:9999px;background:rgba(30,144,255,.14);color:${NAVY};margin-bottom:10px;">${Icon('user','w-4 h-4')}</div>
+                <div class="ci-line" style="width:82%;"></div>
+                <div class="ci-line" style="margin-top:7px;"></div>
+                <div class="ci-line" style="margin-top:7px;width:62%;"></div>
+                <div class="ci-line" style="margin-top:16px;"></div>
+                <div class="ci-line" style="margin-top:7px;width:72%;"></div>
+                <div class="ci-line" style="margin-top:7px;width:50%;"></div>
+                <div style="position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${NAVY},transparent);box-shadow:0 0 12px ${NAVY};animation:ciScan 2.4s ease-in-out .3s infinite;"></div>
+              </div>
+              <span class="ci-chip" style="position:absolute;left:16px;bottom:14px;animation:ciRise .5s ease-out .2s both;">${careerIntroTickHTML()}CV scanned</span>
+              ${careerIntroMatchCardHTML(92, 'UI Designer', 'Accra · Full-time', 18, 10, 188, 0.35, NAVY)}
+              ${careerIntroMatchCardHTML(86, 'UX Researcher', 'Remote', 86, 26, 188, 0.6, ROYAL)}
+              ${careerIntroMatchCardHTML(74, 'Brand Intern', 'Kumasi', 154, 6, 188, 0.85, '#6b8fe8')}
+            </div>`;
+        }
+        function careerIntroHeroApplyHTML(){
+          const steps = [['Matched', true], ['Applied', true], ['Review', false], ['Interview', false]];
+          return `
+            <div class="ci-hero">
+              <div class="ci-card flex items-center" style="left:18px;right:18px;top:20px;padding:11px 12px;gap:11px;animation-delay:.1s;">
+                <div class="flex-shrink-0 flex items-center justify-center" style="width:38px;height:38px;border-radius:12px;background:rgba(30,144,255,.14);color:${NAVY};">${Icon('briefcase','w-5 h-5')}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold truncate" style="font-size:13px;">Product Designer</div>
+                  <div style="font-size:11px;opacity:.6;">92% match</div>
+                </div>
+                <span class="inline-flex items-center font-bold" style="gap:5px;padding:5px 10px 5px 7px;border-radius:9999px;background:rgba(22,163,74,.14);color:#16a34a;font-size:11px;animation:ciPop .4s ease-out 1.2s both;">${Icon('check','w-3 h-3')}Applied</span>
+              </div>
+              <div style="position:absolute;left:36px;right:36px;top:112px;height:3px;border-radius:9999px;background:rgba(128,128,128,.3);">
+                <div style="--ci-fill:33.3%;height:100%;width:0;border-radius:9999px;background:linear-gradient(90deg,${NAVY},${ROYAL});animation:ciFill 1s ease-out .7s forwards;"></div>
+              </div>
+              <div class="flex justify-between" style="position:absolute;left:18px;right:18px;top:98px;">
+                ${steps.map((s, i) => `
+                  <div class="flex flex-col items-center" style="width:64px;">
+                    <span class="flex items-center justify-center" style="width:30px;height:30px;border-radius:9999px;${s[1] ? `background:${NAVY};color:#fff;` : `background:var(--pill-fill,#fff);border:2px solid ${i === 2 ? NAVY : 'rgba(128,128,128,.4)'};`}${i === 2 ? 'animation:ciPulse 1.6s ease-out 1.8s infinite;' : ''}">${s[1] ? Icon('check','w-4 h-4') : ''}</span>
+                    <span style="margin-top:7px;font-size:10.5px;font-weight:600;opacity:${s[1] ? 0.9 : 0.5};">${s[0]}</span>
+                  </div>`).join('')}
+              </div>
+              <span class="ci-chip" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);white-space:nowrap;animation:ciRise .5s ease-out 1.4s both;"><span class="ci-tick">${Icon('home','w-3 h-3')}</span>A true homebody</span>
+            </div>`;
         }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
-          const iconSvg = isFirst ? `<svg width="84" height="84" viewBox="130 110 240 280" fill="${ROYAL}" aria-hidden="true">
-              <defs>
-                <mask id="intro-docs-back" maskUnits="userSpaceOnUse" x="100" y="80" width="300" height="340"><rect x="100" y="80" width="300" height="340" fill="#fff"/><rect x="188" y="122" width="167" height="228" rx="26" fill="#000" stroke="#000" stroke-width="30"/></mask>
-                <mask id="intro-docs-front" maskUnits="userSpaceOnUse" x="100" y="80" width="300" height="340"><rect x="100" y="80" width="300" height="340" fill="#fff"/><rect x="266" y="90" width="110" height="118" fill="#000"/><g stroke="#000" stroke-width="16" stroke-linecap="round"><path d="M230 197H250"/><path d="M230 243H310"/><path d="M230 285H310"/></g></mask>
-              </defs>
-              <rect x="147" y="158" width="171" height="222" rx="28" mask="url(#intro-docs-back)"/>
-              <rect x="188" y="122" width="167" height="228" rx="26" mask="url(#intro-docs-front)"/>
-              <path d="M286 130L348 192H304Q286 192 286 174Z" stroke="${ROYAL}" stroke-width="8" stroke-linejoin="round"/>
-            </svg>` : `<svg width="84" height="84" viewBox="205 165 330 405" fill="${ROYAL}" aria-hidden="true">
-              <defs>
-                <mask id="intro-clip-board" maskUnits="userSpaceOnUse" x="180" y="150" width="380" height="440"><rect x="180" y="150" width="380" height="440" fill="#fff"/><rect x="252" y="190" width="236" height="112" rx="42" fill="#000"/><g fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round"><path d="M278 358L298 380L344 336" stroke-width="18"/><path d="M372 367H458M345 430H458M345 493H458" stroke-width="26"/></g><circle cx="305" cy="431" r="13" fill="#000"/><circle cx="305" cy="493" r="13" fill="#000"/></mask>
-                <mask id="intro-clip-top" maskUnits="userSpaceOnUse" x="180" y="150" width="380" height="440"><rect x="180" y="150" width="380" height="440" fill="#fff"/><circle cx="369" cy="229" r="13" fill="#000"/></mask>
-              </defs>
-              <rect x="218" y="242" width="302" height="314" rx="46" mask="url(#intro-clip-board)"/>
-              <g mask="url(#intro-clip-top)"><rect x="268" y="203" width="200" height="78" rx="24"/><path d="M322 206Q330 180 369 180Q408 180 416 206Z"/></g>
-            </svg>`;
           const title = isFirst ? 'Stitch Bot finds your matches' : 'Stitch Bot can apply for you';
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
             : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem. It's a homebody and will not wander off to other websites.";
-          const bullets = isFirst
-            ? ['Reads your CV and your preferences', 'Scores every posted opportunity for your fit', 'Tells you which ones to prioritize']
-            : ['Applies to your matches on your behalf', 'Stays in the Stitch ecosystem (a total homebody)', 'You can cancel your subscription any time'];
+          const chips = isFirst
+            ? ['Reads your CV and preferences', 'Scores every posted opportunity', 'Tells you which to prioritize']
+            : ['Applies to your matches for you', 'Stays inside Stitch', 'Cancel any time'];
           return `
+            ${careerIntroStylesHTML()}
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:44px;padding-bottom:20px;">
+            <div class="px-5" style="padding-top:26px;padding-bottom:20px;">
               <div class="max-w-2xl mx-auto">
-                <div class="flex items-center" style="gap:18px;margin-bottom:26px;">
-                  <div class="flex-shrink-0 flex items-center justify-center" style="width:84px;height:84px;">${iconSvg}</div>
-                  <div class="flex-1 min-w-0">${careerIntroTrendHTML(isFirst)}</div>
-                </div>
-                <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:8px;">${title}</h2>
+                ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
+                <h2 class="text-2xl font-bold font-display grad-text" style="margin-top:24px;margin-bottom:8px;">${title}</h2>
                 <div class="text-sm text-gray-500">${sub}</div>
-                ${careerIntroBulletsHTML(bullets)}
+                ${careerIntroChipsHTML(chips)}
               </div>
             </div>
             </div>
@@ -4831,6 +4875,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             'Cancel any time',
           ];
           return `
+            <div class="apply-bg-overlay" aria-hidden="true"></div>
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:30px;padding-bottom:max(28px, env(safe-area-inset-bottom));">
