@@ -4144,7 +4144,7 @@ try {
             { key:'free', label:'Free for everyone', icon:'users' },
             { key:'approved', label:'Approve each member', icon:'shield' },
           ];
-          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance', icon:'coin' });
+          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance', icon:'phoneMoneyOutline' });
           return `
             <div id="create-class-entrance" class="mb-5">
               <label class="text-xs font-semibold text-gray-500 mb-1 block text-center">Entrance</label>
@@ -8721,7 +8721,7 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           return `
             <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
-<div style="margin:-1.25rem -1.25rem 0;">${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div style="margin:-1.25rem -1.25rem 0;">${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               <div class="text-sm text-gray-500 mb-5">Set up an upcoming session for ${cls ? cls.name : 'your space'}; members will see it in the Stream and can join when it's live.</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Session title</label>
               <input type="text" id="lecture-title-input" placeholder="e.g. Chapter 4: Market Structures" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">

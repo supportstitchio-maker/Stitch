@@ -1770,6 +1770,38 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         // (before isConnectionRequestPendingTo below has anything local to check against) can't
         // race its way into two pending rows to the same person
         const connectionRequestSendsInFlight = new Set();
+        // Adds a request I just sent to the Requests > Sent list right away
+        function addOptimisticSentRequest(toUserId, message){
+          let p = null;
+          try {
+            p = (typeof discoverPeople !== 'undefined' && discoverPeople.find(x => x.id === toUserId))
+              || (typeof viewedProfile !== 'undefined' && viewedProfile && viewedProfile.id === toUserId ? viewedProfile : null);
+            if (!p && typeof feedPosts !== 'undefined' && Array.isArray(feedPosts)) {
+              const fp = feedPosts.find(x => x.authorId === toUserId);
+              if (fp) p = { name: fp.author || fp.authorName, username: fp.authorUsername, photo: fp.authorPhoto };
+            }
+          } catch (e) {}
+          const tmpId = 'pending-' + toUserId;
+          const msg = (message || '').trim();
+          const entry = {
+            id: tmpId,
+            optimistic: true,
+            connectionRequestId: null,
+            otherUserId: toUserId,
+            icon: 'user',
+            avatarBg: 'bg-blue-50',
+            name: (p && (p.name || p.username)) || 'Stitch member',
+            username: (p && p.username) || '',
+            photo: (p && p.photo) || null,
+            preview: msg ? `You: "${msg}"` : '',
+            time: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+          };
+          sentRequestConvos.unshift(entry);
+          convoMeta[tmpId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: entry.username, photo: entry.photo, preview: 'Request sent', otherUserId: toUserId };
+          renderInboxTab();
+          return entry;
+        }
+
         async function sendConnectionRequestTo(toUserId, message){
           // Guard against duplicate requests / duplicate network rows: if we're already connected to
           // this person, or already have a request pending to them (per our local, server-synced
@@ -1780,12 +1812,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           // Flip every Connect tag for this person to Pending right away, rather than only the one
           // the request was sent from
           setConnectionTagEverywhere(toUserId, true);
+          // Show it in Messaging > Requests > Sent immediately, before the server round-trip
+          const optimisticEntry = addOptimisticSentRequest(toUserId, message);
+          const dropOptimistic = () => {
+            const i = sentRequestConvos.indexOf(optimisticEntry);
+            if (i !== -1) { sentRequestConvos.splice(i, 1); delete convoMeta[optimisticEntry.id]; renderInboxTab(); }
+          };
           const sb = getSupabaseClient();
-          if (!sb) { setConnectionTagEverywhere(toUserId, false); connectionRequestSendsInFlight.delete(toUserId); return false; }
+          if (!sb) { dropOptimistic(); setConnectionTagEverywhere(toUserId, false); connectionRequestSendsInFlight.delete(toUserId); return false; }
           try {
             const { data: userRes } = await sb.auth.getUser();
             const me = userRes && userRes.user;
-            if (!me) { setConnectionTagEverywhere(toUserId, false); return false; }
+            if (!me) { dropOptimistic(); setConnectionTagEverywhere(toUserId, false); return false; }
             // Save this account's name/username/photo BEFORE the request goes out, so the person
             // receiving it sees the real name instead of "Stitch member" (waits at most 4s)
             if (typeof syncPublicProfile === 'function') {
@@ -1799,16 +1837,24 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               .eq('to_user', toUserId)
               .eq('status', 'pending')
               .maybeSingle();
-            if (existing) return true;
+            if (existing) { optimisticEntry.optimistic = false; optimisticEntry.connectionRequestId = existing.id; optimisticEntry.id = existing.id; return true; }
+            const newReqId = 'req' + Date.now() + Math.random().toString(36).slice(2,6);
             const { error } = await sb.from(CONNECTION_REQUESTS_TABLE).insert({
-              id: 'req' + Date.now() + Math.random().toString(36).slice(2,6),
+              id: newReqId,
               from_user: me.id,
               to_user: toUserId,
               status: 'pending',
               message: (message || '').trim() || null,
             });
-            if (error) { console.warn('sendConnectionRequestTo failed:', error); setConnectionTagEverywhere(toUserId, false); }
+            if (error) { console.warn('sendConnectionRequestTo failed:', error); dropOptimistic(); setConnectionTagEverywhere(toUserId, false); }
             else if (typeof loadMyPendingOutgoingRequests === 'function') {
+              // Promote the optimistic row to the real one so the reloader doesn't duplicate or drop it
+              delete convoMeta[optimisticEntry.id];
+              optimisticEntry.optimistic = false;
+              optimisticEntry.connectionRequestId = newReqId;
+              optimisticEntry.id = newReqId;
+              convoMeta[newReqId] = { icon: optimisticEntry.icon, avatarBg: optimisticEntry.avatarBg, name: optimisticEntry.name, username: optimisticEntry.username, photo: optimisticEntry.photo, preview: 'Request sent', otherUserId: toUserId };
+              queueSaveUserState();
               await loadMyPendingOutgoingRequests();
               if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates();
             }
@@ -1816,7 +1862,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             // recipient looks at the request
             if (!error && typeof syncPublicProfile === 'function') { syncPublicProfile().catch(() => {}); }
             return !error;
-          } catch (e) { console.warn('sendConnectionRequestTo threw:', e); setConnectionTagEverywhere(toUserId, false); return false; }
+          } catch (e) { console.warn('sendConnectionRequestTo threw:', e); dropOptimistic(); setConnectionTagEverywhere(toUserId, false); return false; }
           finally { connectionRequestSendsInFlight.delete(toUserId); }
         }
 

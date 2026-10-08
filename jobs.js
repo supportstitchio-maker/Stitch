@@ -1111,7 +1111,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               <div id="poster-app-paidplan-counter" class="text-right" style="font-size:11px;margin-top:4px;color:${ok ? '#16a34a' : '#e11d48'};">${wc}/${PAID_SELLER_MIN_PLAN_WORDS} words minimum</div>`;
           }
           if (stage === 'paidpay') {
-            const row = (t) => `<li style="display:flex;gap:8px;"><span style="color:${NAVY};font-weight:700;">•</span><span>${t}</span></li>`;
+            const row = (t) => `<li style="display:flex;"><span>${t}</span></li>`;
             return `
               <div style="padding:4px 2px;">
                 <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.55;color:#4b5563;">

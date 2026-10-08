@@ -2190,6 +2190,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const removedAuthorIds = [];
             for (let i = sentRequestConvos.length - 1; i >= 0; i--) {
               const c = sentRequestConvos[i];
+              if (c.optimistic) continue;
               if (!stillPendingIds.has(c.connectionRequestId)) {
                 removedAuthorIds.push(c.otherUserId);
                 sentRequestConvos.splice(i, 1);
