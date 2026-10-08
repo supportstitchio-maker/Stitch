@@ -88,7 +88,7 @@ let studyFabMenuOpen = false;
             </div>
             ${classroomAreaTab === 'classes' && hasClasses && (studySub === 'exams' || studySub === 'resources') ? studyFabHTML() : ''}`;
           const classroomNav = document.getElementById('classroom-nav');
-          if (classroomNav) classroomNav.style.display = classroomAreaTab === 'courses' ? 'none' : '';
+          if (classroomNav) classroomNav.style.display = '';
           updateClassroomNav();
         }
 
@@ -136,7 +136,7 @@ let studyFabMenuOpen = false;
               <div onclick="openClassDetailWithLoading('${c.id}')" class="class-color-card ${i % 2 ? 'class-tone-b' : 'class-tone-a'} rounded-3xl p-5 text-white relative overflow-hidden mb-3 cursor-pointer" style="${c.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${c.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(c)}min-height:104px;">
                 ${c.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${motif}</svg>`}
                 <div class="flex items-center justify-between gap-2 mb-1 relative">
-                  <div class="nm-wrap nm-left text-xl font-bold font-display" style="flex:1;min-width:0;"><span class="nm-inner">${escapeHtml(c.name)}</span></div>
+                  <div class="nm-wrap nm-left text-base font-bold font-display" style="flex:1;min-width:0;"><span class="nm-inner">${escapeHtml(c.name)}</span></div>
                   <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full flex-shrink-0 bg-white/20">${c.role === 'teacher' ? 'Moderating' : 'Member'}</span>
                 </div>
                 ${(c.section || classFeeLabel(c)) ? `<div class="flex items-center justify-between gap-3 relative">
@@ -170,7 +170,7 @@ let studyFabMenuOpen = false;
               ${image ? `<img src="${image}" alt="" class="absolute study-feature-card-img" style="right:-1rem;top:50%;transform:translateY(-50%);width:14rem;height:14rem;opacity:0.22;object-fit:contain;object-position:right center;pointer-events:none;user-select:none;-webkit-user-select:none;">` : ''}
               <div class="relative">
                 <div class="flex items-center gap-1.5 text-xs uppercase tracking-wide font-bold mb-2" style="color:${NAVY};opacity:0.75;">${Icon(icon,'w-3.5 h-3.5')} ${eyebrow}</div>
-                <div class="text-xl font-bold mb-2 text-[${NAVY}]">${title}</div>
+                <div class="text-base font-bold mb-2 text-[${NAVY}]">${title}</div>
                 <div class="text-sm mb-4 text-gray-500">${sub}</div>
                 ${actionsHtml}
               </div>
@@ -182,7 +182,7 @@ let studyFabMenuOpen = false;
             <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
               <div class="flex items-center gap-2 mb-1">
                 ${Icon('calendar','w-6 h-6 text-['+NAVY+']')}
-                <div class="text-lg font-bold text-[${NAVY}]">Study Planner</div>
+                <div class="text-base font-bold text-[${NAVY}]">Study Planner</div>
               </div>
               <div class="text-xs font-bold text-amber-600 mb-4">Timetable &amp; reminders</div>
               ${plannerRow('calendar','Set Timetable','Add your weekly schedule', "openOverlay('studyTimetable')")}
@@ -190,7 +190,7 @@ let studyFabMenuOpen = false;
             </div>
             <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
               <div class="flex items-center justify-between mb-4">
-                <div class="text-lg font-bold text-[${NAVY}]">Upload a resource</div>
+                <div class="text-base font-bold text-[${NAVY}]">Upload a resource</div>
               </div>
               <input type="file" id="resource-file-input" accept=".pdf,.docx,.pptx" multiple class="hidden" onchange="handleResourceFileSelect(event)">
               <div onclick="document.getElementById('resource-file-input').click()"
@@ -269,12 +269,13 @@ let studyFabMenuOpen = false;
             <div ${onclick ? `onclick="${onclick}"` : ''} class="bg-white rounded-3xl p-5 flex flex-col items-center text-center shadow-sm ${onclick ? 'cursor-pointer' : ''}">
               <div class="w-12 h-12 flex items-center justify-center text-gray-600 mb-3">${Icon(icon,'w-6 h-6')}</div>
               <div class="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1">${label}</div>
-              <div class="text-2xl font-bold text-[${NAVY}]">${count}</div>
+              <div class="text-lg font-bold text-[${NAVY}]">${count}</div>
             </div>`;
         }
 
         function studySubTab(key){
           studySub = key;
+          if (classroomAreaTab === 'courses') { classroomAreaTab = 'classes'; classroomAreaTabSlideDir = 'right'; courseCardMenuOpenId = null; }
           const ov = document.getElementById('overlay');
           if (ov && !ov.classList.contains('hidden')) closeOverlay();
           renderStudy();

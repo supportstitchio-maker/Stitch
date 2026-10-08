@@ -2296,7 +2296,7 @@
           let activeId = null;
           if (currentOverlayKind === 'aiClass') activeId = 'cnav-ai';
           else if (currentOverlayKind === 'classAnnouncements') activeId = 'cnav-notif';
-          else activeId = ids[studySub];
+          else activeId = (typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'courses') ? null : ids[studySub];
           if (activeId) {
             const el = document.getElementById(activeId);
             if (el) el.className = `flex-1 flex flex-col items-center justify-center nav-flat-item text-[${NAVY}]`;

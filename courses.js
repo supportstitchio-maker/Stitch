@@ -90,6 +90,7 @@ try {
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = aiClassHTML();
           renderPendingMermaidDiagrams();
+          syncAIClassKeyboardInset();
         }
 
         function closeAIChatHistory(){
@@ -99,6 +100,7 @@ try {
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = aiClassHTML();
           renderPendingMermaidDiagrams();
+          syncAIClassKeyboardInset();
         }
 
         function clearAIChat(){
@@ -108,6 +110,7 @@ try {
           const ov = document.getElementById('overlay');
           if (ov && ov.classList.contains('hidden') === false) ov.innerHTML = aiClassHTML();
           renderPendingMermaidDiagrams();
+          syncAIClassKeyboardInset();
           if (rightPanelMode === 'aihistory') renderRightPanelBody();
           if (typeof queueSaveUserState === 'function') queueSaveUserState();
         }
@@ -122,6 +125,7 @@ try {
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = aiClassHTML();
           renderPendingMermaidDiagrams();
+          syncAIClassKeyboardInset();
           if (rightPanelMode === 'aihistory') renderRightPanelBody();
           if (typeof queueSaveUserState === 'function') queueSaveUserState();
         }
@@ -132,6 +136,7 @@ try {
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = aiClassHTML();
           renderPendingMermaidDiagrams();
+          syncAIClassKeyboardInset();
           if (typeof startAIRobotAnimation === 'function') startAIRobotAnimation();
           if (rightPanelMode === 'aihistory') renderRightPanelBody();
           if (typeof queueSaveUserState === 'function') queueSaveUserState();
@@ -430,14 +435,20 @@ try {
           const ov = document.getElementById('overlay');
           if (!ov || ov.classList.contains('hidden')) return;
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind !== 'aiClass') return;
-          const navH = typeof activeNavBarHeight === 'function' ? activeNavBarHeight() : 0;
           const composerWrap = document.getElementById('ai-composer-wrap');
           const classroomNavEl = document.getElementById('classroom-nav');
+          // History drawer open: the task bar stays hidden and the page runs to the bottom edge
+          if (aiChatHistoryOpen && !aiChatInputFocused) {
+            if (classroomNavEl) classroomNavEl.style.display = 'none';
+            ov.style.bottom = '0';
+            return;
+          }
+          if (!aiChatInputFocused && classroomNavEl) classroomNavEl.style.display = '';
+          const navH = typeof activeNavBarHeight === 'function' ? activeNavBarHeight() : 0;
           if (typeof setConvoKbFiller === 'function') setConvoKbFiller(!!aiChatInputFocused);
           if (!aiChatInputFocused) {
             ov.style.bottom = navH + 'px';
             if (composerWrap) composerWrap.style.paddingBottom = '20px';
-            if (classroomNavEl) classroomNavEl.style.display = '';
             return;
           }
           const keyboardInset = getKeyboardInset(true);
@@ -1596,7 +1607,7 @@ try {
                                     ${enrolled ? `<span class="text-[10px] font-bold uppercase text-emerald-500 flex-shrink-0">Enrolled</span>` : ''}
                 </div>
               </div>
-              <div class="text-lg font-bold font-display mb-1 text-gray-800">${escapeHtml(c.title)}</div>
+              <div class="text-base font-bold font-display mb-1 text-gray-800">${escapeHtml(c.title)}</div>
               <div class="text-xs text-gray-400">${c.modules.length} module${c.modules.length === 1 ? '' : 's'} · ${total} lesson${total === 1 ? '' : 's'}${enrolled ? ` · ${pct}% complete` : ''}</div>
             </div>`;
         }
@@ -1673,7 +1684,7 @@ try {
               <div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
 <div class="-mx-5">${overlayHeader('Enroll', '20px', `openOverlay('courseDetail')`)}</div>
                 ${courseCoverOf(c) ? `<img src="${courseCoverOf(c)}" class="w-full rounded-3xl mb-4 object-cover" style="height:180px;margin-top:10px;" alt="">` : ''}
-                <div class="text-lg font-bold font-display mb-1" style="color:#1E90FF;">${escapeHtml(c.title)}</div>
+                <div class="text-base font-bold font-display mb-1" style="color:#1E90FF;">${escapeHtml(c.title)}</div>
                 <div class="text-sm text-gray-500 leading-relaxed mb-5">Fill this in and accept the course terms to unlock all modules and start learning.</div>
 
                 <div class="mb-4">
