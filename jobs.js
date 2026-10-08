@@ -3286,23 +3286,30 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         async function openApplicantDocument(jobId, applicantId, key){
           const doc = getApplicantDoc(jobId, applicantId, key);
           if (!doc) return;
-          if (!doc.url && !doc.path && !doc.dataUrl) {
-            const found = await resolveApplicantDocUrl(jobId, applicantId, doc);
-            if (found) { window.open(found, '_blank', 'noopener'); return; }
-          }
-          if (doc.url || doc.path) {
-            // Signed link works whether the bucket is public or private.
-            const signed = (typeof getApplicationDocumentSignedUrl === 'function') ? await getApplicationDocumentSignedUrl(doc.path || doc.url) : null;
-            if (!signed && !doc.url) { openAppAlertModal("Couldn't open this file. It may not have finished uploading - ask the applicant to re-submit it."); return; }
-            window.open(signed || doc.url, '_blank', 'noopener');
-            return;
-          }
-          if (doc.dataUrl) {
-            try { window.open(URL.createObjectURL(jobDocInlineBlob(doc.dataUrl)), '_blank'); }
-            catch (e) { openAppAlertModal('Could not open this file.'); }
-            return;
-          }
-          openAppAlertModal("This file didn't upload, so it isn't available. Ask the applicant to re-submit it.");
+          // Open the tab straight away (inside the tap) so mobile browsers don't block it after the
+          // async work below
+          const w = window.open('', '_blank');
+          const go = (u) => { if (w) w.location.href = u; else window.location.href = u; };
+          const fail = (msg) => { if (w) w.close(); openAppAlertModal(msg); };
+          try {
+            if (!doc.url && !doc.path && !doc.dataUrl) {
+              const found = await resolveApplicantDocUrl(jobId, applicantId, doc);
+              if (found) { go(found); return; }
+            }
+            if (doc.url || doc.path) {
+              // Signed link works whether the bucket is public or private.
+              const signed = (typeof getApplicationDocumentSignedUrl === 'function') ? await getApplicationDocumentSignedUrl(doc.path || doc.url) : null;
+              if (!signed && !doc.url) { fail("Couldn't open this file. It may not have finished uploading - ask the applicant to re-submit it."); return; }
+              go(signed || doc.url);
+              return;
+            }
+            if (doc.dataUrl) {
+              try { go(URL.createObjectURL(jobDocInlineBlob(doc.dataUrl))); }
+              catch (e) { fail('Could not open this file.'); }
+              return;
+            }
+            fail("This file didn't upload, so it isn't available. Ask the applicant to re-submit it.");
+          } catch (e) { fail('Could not open this file.'); }
         }
 
         // Saves an attached document to the poster's device.
@@ -6708,7 +6715,30 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const p = careerBotEnsure(); if (!p) return null;
           if (docId === 'resume') return p.resumeFileName ? { fileName: p.resumeFileName, url: p.resumeDataUrl || '' } : null;
           if (docId === 'applicationLetter' || docId === 'coverLetter') return careerBotDocList('openLetter')[0] || null;
-          return careerBotDocList(docId)[0] || null;
+          return careerBotRequiredList(docId)[0] || null;
+        }
+        // Poster-typed documents ("custom:Recommendation letter") have no slot of their own, so match
+        // them to the closest section in the person's vault by name; anything unrecognised falls back
+        // to "Other documents"
+        function careerBotSlotForCustom(id){
+          const label = String(typeof oppDocLabel === 'function' ? oppDocLabel(id) : id).toLowerCase();
+          const rules = [
+            [/recommend|referee|reference/, 'reference'],
+            [/degree|diploma|qualification/, 'degree'],
+            [/certificat/, 'certificate'],
+            [/writing sample|work sample|sample/, 'writingSample'],
+            [/licen[cs]e|registration|membership/, 'license'],
+            [/transcript|result/, 'transcript'],
+            [/portfolio/, 'portfolio'],
+            [/\bid\b|passport|identity|national/, 'idDocument'],
+            [/cover|application letter|motivation/, 'openLetter'],
+          ];
+          for (const [re, slot] of rules) if (re.test(label) && careerBotDocList(slot).length) return slot;
+          return 'otherDocument';
+        }
+        function careerBotRequiredList(id){
+          if (String(id).indexOf(OPP_CUSTOM_DOC_PREFIX) === 0) return careerBotDocList(careerBotSlotForCustom(id));
+          return careerBotDocList(id);
         }
         function careerBotMissingFor(job){
           const needed = ['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume'));
@@ -6775,7 +6805,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           // The first file in a section answers the post's request
           (job.requiredDocs || []).forEach(id => {
             if (documents[id]) return;
-            const list = careerBotDocList(id);
+            const list = careerBotRequiredList(id);
             if (list.length) { documents[id] = careerBotRec(list[0]); list.slice(1).forEach(d => additionalDocuments.push(careerBotRec(d))); }
           });
           if (prefs.extras === 'all') CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).forEach(sl => careerBotDocList(sl.id).forEach(d => additionalDocuments.push(careerBotRec(d))));
