@@ -600,20 +600,25 @@ let studyFabMenuOpen = false;
             'theories, common mix-ups students actually make) -- never an obviously-wrong filler option. Every ' +
             'option must be a short phrase, number, or single term (typically 1-5 words, matching how real exam ' +
             'answer choices read), never a full sentence restating the question. ' +
-            'About a third of the questions -- whichever genuinely suit it, never forced onto material that ' +
-            'doesn\'t -- should instead be "type":"written": a typed-answer question with no options, used for ' +
-            'either (a) a self-contained worked calculation with real numbers and one computable correct value ' +
-            '(e.g. "A sample of n=25 has a mean of 40 and a standard deviation of 5. What is the standard error?"), ' +
-            'or (b) a "define this term" / "name this concept" question with a single correct term or short phrase ' +
-            'as the answer. Never use "written" for a question whose real answer is a long explanation or essay -- ' +
-            'only ones with one clear, checkable correct answer. Every "written" question needs "answer" (the ' +
-            'ideal short answer -- the resolved number for a calculation, or the term/phrase for a ' +
-            'definition/name question) and "keywords" (2-5 strings: for a calculation, the key numbers/units that ' +
-            'must appear; for a definition/term, the essential words or synonyms an acceptable answer must ' +
-            'contain) -- these are the marking scheme a grader (human or AI) checks a typed answer against. ' +
+            'About 40% of the questions -- whichever genuinely suit the material, never forced onto material that ' +
+            'doesn\'t -- should instead be "type":"written": a typed-answer question with no options. Give each a ' +
+            '"kind": ' +
+            '"calc" (maths/worked calculation with real numbers and one computable value, e.g. "A sample of n=25 has a mean ' +
+            'of 40 and SD of 5. What is the standard error?"; give "workings" = the short steps/formula); ' +
+            '"fill" (fill in the blank: the stem contains "______" where one number, term or short phrase belongs, e.g. ' +
+            '"The standard error equals the SD divided by the ______ of n."); ' +
+            '"define" (a "What is...?" or "Define..." question whose answer is a short definition or term); ' +
+            '"explain" (an "In your own words, ...", "How does...", "Why...", or "When is/does..." question answered in 1-2 sentences); ' +
+            '"logic" (a short reasoning/logic question where the student must reach a conclusion and justify it). ' +
+            'Use a spread of these kinds across the set. Never make a "written" question whose real answer is a long essay. ' +
+            'Every "written" question needs "answer" (the ideal answer: the resolved value for calc/fill, a one or two ' +
+            'sentence model answer for define/explain/logic) and "keywords" (2-6 strings: the key numbers/units for calc, ' +
+            'the missing term and its synonyms for fill, and the essential words/ideas an acceptable define/explain/logic answer ' +
+            'must contain) -- this is the marking scheme an AI grader checks the student\'s typed answer against for ' +
+            'keywords, workings, sense and meaning. ' +
             'Respond with ONLY raw JSON (no markdown fences, no commentary) matching exactly this schema: ' +
-            '{"flashcards":[{"term":"string","def":"string"}],"questions":[{"text":"string","type":"mcq","options":["string","string","string","string"],"correct":0},{"text":"string","type":"written","answer":"string","keywords":["string","string"]}]}. ' +
-            'Produce 6 to 10 flashcards and 5 to 8 questions total, mixing both question types as described above.';
+            '{"flashcards":[{"term":"string","def":"string"}],"questions":[{"text":"string","type":"mcq","options":["string","string","string","string"],"correct":0},{"text":"string","type":"written","kind":"calc|fill|define|explain|logic","answer":"string","keywords":["string","string"],"workings":"string (calc only, else omit)"}]}. ' +
+            'Produce 6 to 10 flashcards and 6 to 10 questions total, mixing multiple-choice and the written kinds as described above.';
           const user = 'Resource name: ' + resourceName + '\n\nExtracted text:\n"""' + trimmed + '"""';
           const raw = await callClaude(system, user, 'materials');
           const cleaned = raw.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
@@ -625,7 +630,7 @@ let studyFabMenuOpen = false;
               if (q.type === 'written') return typeof q.answer === 'string' && q.answer.trim();
               return Array.isArray(q.options) && q.options.length === 4 && typeof q.correct === 'number';
             }).map(q => q.type === 'written'
-              ? { text: q.text, type: 'written', answer: q.answer, keywords: Array.isArray(q.keywords) ? q.keywords : [] }
+              ? { text: q.text, type: 'written', kind: ['calc','fill','define','explain','logic'].indexOf(q.kind) > -1 ? q.kind : undefined, answer: q.answer, keywords: Array.isArray(q.keywords) ? q.keywords : [], workings: typeof q.workings === 'string' ? q.workings : '' }
               : { text: q.text, type: 'mcq', options: q.options, correct: q.correct })
           };
         }
@@ -859,7 +864,7 @@ let studyFabMenuOpen = false;
           courseBank.push({
             name,
             questions: resource.questions.map(q => q.type === 'written'
-              ? { text: q.text, type: 'written', answer: q.answer, keywords: q.keywords || [] }
+              ? { text: q.text, type: 'written', kind: q.kind, answer: q.answer, keywords: q.keywords || [], workings: q.workings || '' }
               : { text: q.text, type: 'mcq', options: q.options, correct: q.correct })
           });
           selectedCourseNames.add(name);
