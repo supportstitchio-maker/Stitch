@@ -7784,7 +7784,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               `}
 
               <div class="text-center mt-2" style="padding-bottom:10px;">
-                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta inline-flex items-center justify-center text-white font-semibold text-center rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:10px 22px;font-size:13px;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
+                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);transition:transform .12s ease, opacity .15s ease;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
               </div>
             </div>
             </div>`;
