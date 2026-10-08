@@ -7777,7 +7777,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                   <div class="text-xs text-gray-400 mb-2">Need something that isn't listed? Type its name and add it. Applicants will see it and have to attach it.</div>
                   <div class="flex gap-2" style="padding:2px 2px 4px;">
                     <input type="text" id="opp-custom-doc-input" maxlength="40" autocomplete="off" placeholder="e.g. Recommendation letter" value="${escapeHtml(newOppCustomDocText)}" oninput="newOppCustomDocText = this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewOppCustomDoc();}" class="flex-1 min-w-0 bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
-                    <button onclick="addNewOppCustomDoc()" class="auth-intent-chip on flex-shrink-0" style="justify-content:center;padding:0 18px;">${Icon('plus','w-4 h-4')} Add</button>
+                    <button onclick="addNewOppCustomDoc()" class="auth-intent-chip flex-shrink-0" style="justify-content:center;padding:0 28px;">${Icon('plus','w-4 h-4')} Add</button>
                   </div>
                   </div>
                 </div>`}

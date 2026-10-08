@@ -3335,20 +3335,21 @@ html.dark-mode .outline-pill.on, body.dark-mode .outline-pill.on{ --pill-text:#6
 .filter-pill{
   display:inline-flex; align-items:center; gap:6px;
   padding:10px 15px; border-radius:9999px;
-  background:var(--pill-fill); color:var(--pill-text);
+  background:#fff; color:#1f2937;
   font-size:13px; font-weight:600; line-height:1.2;
-  border:1.5px solid var(--pill-line);
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  border:1.5px solid transparent;
+  box-shadow:0 2px 10px rgba(15,23,42,0.10);
   cursor:pointer; -webkit-tap-highlight-color:transparent;
-  transition:border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease;
+  transition:border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease, box-shadow .15s ease;
 }
 .filter-pill:active{ transform:scale(0.96); }
 .filter-pill.on{
-  background:var(--pill-on-fill); border-color:var(--pill-on); color:var(--pill-on);
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  background:#eef6ff; border-color:#1e90ff; color:#1e90ff;
+  box-shadow:0 3px 12px rgba(30,144,255,0.22);
 }
-html.dark-mode .filter-pill, body.dark-mode .filter-pill{ box-shadow:0 2px 8px rgba(0,0,0,0.5); }
-html.dark-mode .filter-pill.on, body.dark-mode .filter-pill.on{ color:#60a5fa; border-color:#1e90ff; }
+html.dark-mode .filter-pill, body.dark-mode .filter-pill{ background:#1e1e1e; color:#e5e7eb; box-shadow:0 2px 10px rgba(0,0,0,0.5); }
+html.dark-mode .filter-pill.on, body.dark-mode .filter-pill.on{ background:rgba(30,144,255,0.16); color:#60a5fa; border-color:#1e90ff; box-shadow:0 3px 12px rgba(30,144,255,0.22); }
+.filter-pill.nowrap-pill{ white-space:nowrap; padding-left:10px; padding-right:10px; gap:5px; }
 
 
 /* ---- Onboarding Continue button, busy state ("Let's gooo!!!" + spinner) ---- */

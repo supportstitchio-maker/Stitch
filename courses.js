@@ -6265,8 +6265,8 @@ try {
         function lectureActionPillsHTML(){
           return `
             <div class="flex gap-2 mb-4">
-              <button onclick="startLiveLectureNow()" class="filter-pill flex-1 justify-center">${Icon('video','w-4 h-4')} Start Session</button>
-              <button onclick="openScheduleLectureOverlay()" class="filter-pill flex-1 justify-center">${Icon('calendar','w-4 h-4')} Schedule Session</button>
+              <button onclick="startLiveLectureNow()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('video','w-4 h-4')} Start Session</button>
+              <button onclick="openScheduleLectureOverlay()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('calendar','w-4 h-4')} Schedule Session</button>
             </div>`;
         }
 
