@@ -4130,16 +4130,16 @@ try {
           const d = newClassDraft;
           const mode = newClassEntranceMode();
           const options = [
-            { key:'free', label:'Free for everyone' },
-            { key:'approved', label:'Approve each member' },
+            { key:'free', label:'Free for everyone', icon:'users' },
+            { key:'approved', label:'Approve each member', icon:'shield' },
           ];
-          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance' });
+          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance', icon:'coin' });
           return `
             <div id="create-class-entrance" class="mb-5">
               <label class="text-xs font-semibold text-gray-500 mb-1 block text-center">Entrance</label>
               <div class="text-center text-[11px] text-gray-400 mb-3">Select one</div>
-              <div class="auth-intent-row" style="justify-content:center;padding:4px 2px 8px;">
-                ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}"><span>${o.label}</span></button>`).join('')}
+              <div class="auth-intent-row" style="flex-direction:column;align-items:stretch;gap:10px;padding:4px 2px 8px;">
+                ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}" style="width:100%;justify-content:center;padding:13px 16px;">${Icon(o.icon,'w-4 h-4')}<span>${o.label}</span></button>`).join('')}
               </div>
               ${mode === 'paid' ? `
                 <div class="flex gap-2 mt-3">
@@ -4215,7 +4215,7 @@ try {
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Space Code</label>
               <input type="text" id="join-code-input" placeholder="e.g. ECN4821" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase">
               <div class="text-xs text-gray-400 mb-5 leading-relaxed">Use a space code with 6-8 letters or numbers, and no spaces or symbols.</div>
-              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3.5 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Space'}</button>
+              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="pill-cta w-full inline-flex items-center justify-center gap-2 text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Space'}</button>
             </div>`;
         }
 
@@ -4240,7 +4240,7 @@ try {
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Description (optional)</label>
               <textarea id="create-description-input" rows="3" placeholder="What's this space about?" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none"></textarea>
               ${newClassEntranceHTML()}
-              <button onclick="submitCreateClassroom()" class="w-full font-semibold py-3.5 rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;">Create Space</button>
+              <button onclick="submitCreateClassroom()" class="pill-cta w-full inline-flex items-center justify-center gap-2 text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;color:#ffffff;">Create Space</button>
             </div>
            </div>`;
         }
