@@ -1642,9 +1642,34 @@
         }
 
         // ---- Nav profile icon + unread badge counts ----
+        // Photos are preloaded + decoded first, so users never see one painting in half-way;
+        // until then the plain silhouette stays put and swaps once the real photo is ready
+        const __photoReady = new Set(), __photoPending = new Set(), __photoFailed = new Set();
+        function photoIsReady(url){
+          if (!url) return false;
+          if (__photoReady.has(url)) return true;
+          if (__photoFailed.has(url) || __photoPending.has(url)) return false;
+          __photoPending.add(url);
+          const finish = ok => {
+            __photoPending.delete(url);
+            if (!ok) { __photoFailed.add(url); return; }
+            __photoReady.add(url);
+            try { updateNavProfileIcon(); } catch (e) {}
+            try {
+              const el = document.getElementById('profile-photo-el');
+              if (el && typeof profilePhotoButtonHTML === 'function') el.outerHTML = profilePhotoButtonHTML();
+            } catch (e) {}
+          };
+          const im = new Image();
+          im.onload = () => { (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => finish(true)); };
+          im.onerror = () => finish(false);
+          im.src = url;
+          return false;
+        }
         function navProfileIconHTML(cls, outline){
           cls = cls || 'w-6 h-6';
-          const photo = (typeof profileData !== 'undefined' && profileData) ? profileData.photo : null;
+          const rawPhoto = (typeof profileData !== 'undefined' && profileData) ? profileData.photo : null;
+          const photo = photoIsReady(rawPhoto) ? rawPhoto : null;
           // Same broken-image fallback as profilePhotoButtonHTML in profile.js: if the photo fails
           // to load, drop back to the plain silhouette instead of a broken-image icon
           return photo

@@ -371,7 +371,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           // If a photo URL is set but fails to load (e.g. it was never actually finished uploading,
           // or points at something that's since been removed), fall back to the plain silhouette
           // placeholder instead of leaving the browser's own broken-image glyph on screen
-          const hasPhoto = !!profileData.photo;
+          const hasPhoto = !!profileData.photo && photoIsReady(profileData.photo);
           const media = hasPhoto
             ? `<img src="${profileData.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                <div class="w-full h-full items-center justify-center" style="display:none;">${Icon('user','w-9 h-9')}</div>`

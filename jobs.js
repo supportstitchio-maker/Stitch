@@ -8461,7 +8461,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="relative flex items-center justify-center">
                   <button onclick="overlayGoBack()" aria-label="Back" class="absolute flex items-center" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                   <div class="font-semibold text-lg font-display grad-text text-center" style="font-size:20px;">Admin Dashboard</div>
-                  <button onclick="openAdminMenu()" aria-label="Menu" class="absolute flex items-center" style="right:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('dashes','w-6 h-6'))}</button>
+                  <button onclick="openAdminMenu()" aria-label="Menu" class="absolute flex items-center" style="right:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('dashesShortRight','w-6 h-6'))}</button>
                 </div>
               </div>
             </div>`;
@@ -8512,9 +8512,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           switchAdminDashboardTab(key);
         }
         function adminMenuHTML(){
+          const lineStyle = 'border-bottom:1px solid rgba(10,37,64,0.07);';
           const rows = adminDashboardTabs().map(([key, label]) => {
             const on = adminDashboardTab === key;
-            return `<button onclick="adminMenuPick('${key}')" class="w-full text-left px-3 py-3 rounded-xl text-sm menu-item-pill ${on ? 'font-bold' : 'text-gray-700'}" style="${on ? `background:rgba(10,37,64,0.08);color:${NAVY};` : ''}">${label}</button>`;
+            return `<button onclick="adminMenuPick('${key}')" class="w-full text-left px-3 py-3 text-sm ${on ? 'font-bold' : 'text-gray-700'}" style="${lineStyle}${on ? `color:${NAVY};` : ''}">${label}</button>`;
           }).join('');
           return `
             <div onclick="closeAdminMenu()" class="ai-history-drawer-backdrop"></div>
@@ -8524,11 +8525,24 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <button onclick="closeAdminMenu()" aria-label="Close menu" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               </div>
               <div class="px-3 pb-2 flex-shrink-0">
-                <button onclick="adminMenuPostUpdate()" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold" style="background:rgba(30,144,255,0.10);color:${NAVY};">${Icon('plus','w-4 h-4')} Post an update</button>
+                <button onclick="adminMenuPostUpdate()" class="w-full flex items-center gap-2 px-3 py-3 text-sm font-bold" style="border-bottom:1px solid rgba(10,37,64,0.07);color:${NAVY};">${Icon('plus','w-4 h-4')} Post an update</button>
               </div>
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pb-1 flex-shrink-0">Sections</div>
               <div class="flex-1 overflow-y-auto px-3 pb-4 no-scrollbar">${rows}</div>
             </div>`;
+        }
+
+        // Live listings split (users vs admins): donut with the total in the middle, plus a bar per count
+        function adminListingsChartHTML(total, byUsers, byAdmins){
+          const segs = [
+            { label: 'By users', n: byUsers, color: '#1e90ff' },
+            { label: 'By admins', n: byAdmins, color: '#4f46e5' }
+          ];
+          const max = Math.max(1, total);
+          const bars = careerBarRowHTML('Live listings', total, max, '#059669', total)
+            + careerBarRowHTML('By users', byUsers, max, '#1e90ff', byUsers)
+            + careerBarRowHTML('By admins', byAdmins, max, '#4f46e5', byAdmins);
+          return chartCardHTML('Live listings', '', `<div class="flex items-center gap-4"><div class="flex-shrink-0">${careerDonutSVG(segs, total, 'live listings')}</div><div class="flex-1 min-w-0" style="margin-bottom:-10px;">${bars}</div></div>`);
         }
 
         function adminDashboardHTML(){
@@ -8541,20 +8555,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <div class="flex-1 relative overflow-hidden flex flex-col">
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div style="margin:0 -1.25rem;">${adminDashboardHeaderHTML()}</div>
-              <div class="grid grid-cols-3 gap-2 mb-5" style="margin-top:calc(20px - 0.75rem);">
-                <div class="bg-white rounded-2xl p-3 text-center shadow-sm">
-                  <div class="text-xl font-bold" style="color:${NAVY};">${allJobsList.length}</div>
-                  <div class="text-[10px] text-gray-400">Live listings</div>
-                </div>
-                <div class="bg-white rounded-2xl p-3 text-center shadow-sm">
-                  <div class="text-xl font-bold" style="color:${NAVY};">${userPostedCount}</div>
-                  <div class="text-[10px] text-gray-400">By users</div>
-                </div>
-                <div class="bg-white rounded-2xl p-3 text-center shadow-sm">
-                  <div class="text-xl font-bold" style="color:${NAVY};">${adminPostedCount}</div>
-                  <div class="text-[10px] text-gray-400">By admins</div>
-                </div>
-              </div>
+              <div style="margin-top:calc(20px - 0.75rem);">${adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
               <div id="admin-tab-body">${adminBodyHTML()}</div>
             </div>
             <div id="admin-menu-slot">${adminMenuOpen ? adminMenuHTML() : ''}</div>
