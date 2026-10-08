@@ -704,8 +704,8 @@
             font-size: 0.9rem !important;
           }
           .career-tab-pill {
-            padding: 0.9rem 1.75rem !important;
-            font-size: 1.1rem !important;
+            padding: 0.8rem 1.5rem !important;
+            font-size: 1rem !important;
           }
           #career-titlebar h1 {
             font-size: 1.65rem !important;
@@ -3666,3 +3666,39 @@ body:has(#exam-loading-overlay) #study-fab-menu,
 body:has(#exam-scroll-container) #study-fab-wrap,
 body:has(#exam-scroll-container) #study-fab-btn,
 body:has(#exam-scroll-container) #study-fab-menu { display:none !important; }
+
+/* ===== Segmented nav bar: white tray, raised dodger-blue to royal-blue active pill ===== */
+.seg-bar{
+  display:flex; align-items:center; gap:6px; padding:7px; box-sizing:border-box;
+  background:#fff; border-radius:18px;
+  box-shadow:0 2px 12px rgba(15,23,42,0.07), inset 0 0 0 1px rgba(15,23,42,0.03);
+}
+.seg-bar.seg-scroll{ overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; scroll-padding:0 12px; }
+.seg-bar.seg-scroll::-webkit-scrollbar{ display:none; }
+.seg-btn{
+  flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:0.75rem 1rem; border:0; border-radius:14px; cursor:pointer;
+  background:transparent; color:#6b7280; font-size:0.875rem; font-weight:600; line-height:1.2;
+  white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
+  transition:background .2s ease, color .2s ease, box-shadow .2s ease, transform .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.seg-scroll .seg-btn{ flex:0 0 auto; padding:0.75rem 1.25rem; }
+.seg-btn:active{ transform:scale(0.97); }
+.seg-btn.on{
+  color:#fff;
+  background:linear-gradient(135deg,#1e90ff 0%,#4169e1 100%);
+  box-shadow:0 8px 16px rgba(65,105,225,0.38), 0 2px 4px rgba(30,144,255,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+body.dark-mode .seg-bar, html.dark-mode .seg-bar{ background:#1e1e1e; box-shadow:0 2px 12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05); }
+body.dark-mode .seg-btn, html.dark-mode .seg-btn{ color:#9ca3af; }
+body.dark-mode .seg-btn.on, html.dark-mode .seg-btn.on{ color:#fff; box-shadow:0 8px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.2); }
+
+/* Scrollable bars (Messaging, Career): smooth, snapping scroll + unread badge */
+.seg-bar.seg-scroll{ scroll-snap-type:x proximity; scroll-behavior:smooth; }
+.seg-bar.seg-scroll .seg-btn{ scroll-snap-align:center; }
+.seg-badge{
+  min-width:1rem; height:1rem; padding:0 .28rem; border-radius:999px; font-size:9px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center; background:#ef4444; color:#fff;
+}
+.seg-btn.on .seg-badge{ background:#fff; color:#4169e1; }

@@ -4855,7 +4855,7 @@ try {
           const active = classDetailTab === key;
           // min-w-0 + truncate: without these, a button's intrinsic content width (min-width:auto is
           // the flexbox default) can force the row wider than its container once all four tabs are
-          return `<button onclick="classDetailSwitchTab('${key}')" class="flex-1 min-w-0 truncate py-2.5 text-sm font-bold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.5);` : 'background:#f3f4f6;'}">${label}</button>`;
+          return `<button onclick="classDetailSwitchTab('${key}')" class="seg-btn ${active ? 'on' : ''}">${label}</button>`;
         }
 
         function confirmDeleteCurrentClass(){
@@ -4902,7 +4902,7 @@ try {
                 </button>` : ''}
                 ${cls.role !== 'teacher' ? reportClassButtonHTML(cls.isCourse ? 'course' : 'class', cls.id, cls.name) : ''}
                 ${cls.role === 'teacher' ? lectureActionPillsHTML() : ''}
-                <div class="flex gap-1 mb-3 bg-gray-100 rounded-2xl p-1">
+                <div class="seg-bar mb-3">
                   ${showAdminDashboard ? classDetailTabBtn('dashboard','Dashboard') : ''}
                   ${classDetailTabBtn('stream','Stream')}
                   ${classDetailTabBtn('classwork','Tasks')}

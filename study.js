@@ -68,9 +68,9 @@ let studyFabMenuOpen = false;
               <div class="flex items-center gap-2 mb-4">
                 <h1 class="text-3xl font-bold font-display grad-text truncate">Workspace</h1>
               </div>`}
-              <div class="classroom-toggle-wrap flex gap-1 mb-5 bg-gray-100 rounded-2xl p-1">
-                <button onclick="setClassroomAreaTab('classes')" class="classroom-toggle-pill flex-1 py-2.5 text-sm font-bold ${classroomAreaTab === 'classes' ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${classroomAreaTab === 'classes' ? `background:rgba(30,144,255,0.5);` : 'background:transparent;'}">My Spaces</button>
-                <button onclick="setClassroomAreaTab('courses')" class="classroom-toggle-pill flex-1 py-2.5 text-sm font-bold ${classroomAreaTab === 'courses' ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${classroomAreaTab === 'courses' ? `background:rgba(30,144,255,0.5);` : 'background:transparent;'}">Courses</button>
+              <div class="classroom-toggle-wrap seg-bar mb-5">
+                <button onclick="setClassroomAreaTab('classes')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'classes' ? 'on' : ''}">My Spaces</button>
+                <button onclick="setClassroomAreaTab('courses')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'courses' ? 'on' : ''}">Courses</button>
               </div>
               <div class="classroom-tab-panel ${classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right'}">
               ${classroomAreaTab === 'courses' ? coursesHomeHTML() : `

@@ -1276,8 +1276,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : key === 'general' ? generalUnreadCount()
               : count;
             return `
-              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
-                ${label}${effectiveCount ? `<span class="rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center" style="min-width:1rem;height:1rem;padding:0 0.25rem;">${effectiveCount}</span>` : ''}
+              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="seg-btn ${inboxFilter===key ? 'on' : ''}">
+                ${label}${effectiveCount ? `<span class="seg-badge">${effectiveCount}</span>` : ''}
               </button>
             `;
           }).join('');
@@ -1345,7 +1345,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               `}
             </div>
             <div id="inbox-filterbar" class="sticky z-10 bg-gray-50 px-5 pb-3 border-b border-gray-100">
-              <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" id="inbox-filterbar-row">${inboxFilterBarRowHTML()}</div>
+              <div class="seg-bar seg-scroll" id="inbox-filterbar-row">${inboxFilterBarRowHTML()}</div>
             </div>
             <div class="divide-y" id="inbox-list">${inboxContent()}</div>`;
           stickBarsStack(['inbox-titlebar','inbox-searchbar','inbox-filterbar']);

@@ -498,7 +498,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function practiceTestsTabBtn(key, label){
           const active = practiceTestsTab === key;
-          return `<button onclick="switchPracticeTestsTab('${key}')" class="flex-1 py-2.5 text-sm font-bold ${active ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${active ? `background:rgba(30,144,255,0.5);` : 'background:#f3f4f6;'}">${label}</button>`;
+          return `<button onclick="switchPracticeTestsTab('${key}')" class="seg-btn ${active ? 'on' : ''}">${label}</button>`;
         }
 
 
@@ -1575,7 +1575,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root ar-page"><div class="ar-in">
               <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
-              <div class="flex gap-2 mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
+              <div class="seg-bar mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
               <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
             </div></div>`;
         }
@@ -1763,14 +1763,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const pct = total ? Math.round(correct / total * 100) : 0;
           const isQuiz = examContext === 'dailyQuiz' || examContext === 'weeklyQuiz';
           const isChallengeVsFriend = examContext === 'challenge' && !!activeChallengeCode;
-          const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="ar-chip ${examResultTab === k ? 'on' : ''}" style="flex:1;padding:.6rem;">${l}</button>`;
+          const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="seg-btn ${examResultTab === k ? 'on' : ''}">${l}</button>`;
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
               <div class="ar-top" style="justify-content:flex-start;">${arBack(isQuiz ? "openOverlay('gamification')" : 'closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
               <div class="ar-fade">
                 ${isQuiz ? quizRewardBannerHTML() : ''}
                 ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}
-                <div class="flex gap-2 mb-4">${tab('overview','Overview')}${tab('review','Review answers')}</div>
+                <div class="seg-bar mb-4">${tab('overview','Overview')}${tab('review','Review answers')}</div>
                 ${examResultTab === 'overview' ? examResultOverviewHTML() : examResultReviewHTML()}
               </div>
               <div class="ar-end">${examResultFooterHTML()}</div>

@@ -42,9 +42,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function careerFilterPillsHTML(){
           return `
-            <div id="career-tabs-scroller" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            <div id="career-tabs-scroller" class="seg-bar seg-scroll">
               ${jobsTabs.map(([key,label]) => `
-                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="career-tab-pill flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${jobsSub===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${jobsSub===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>
+                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="seg-btn career-tab-pill ${jobsSub===key ? 'on' : ''}">${label}</button>
               `).join('')}
             </div>`;
         }
