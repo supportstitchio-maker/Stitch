@@ -4751,6 +4751,7 @@ try {
             classTeacherProfiles[cls.teacherId] = {
               name: (data && (data.name || data.username)) || '',
               photo: (data && data.photo) || null,
+              bio: (data && data.bio) || '',
             };
             const ov = document.getElementById('overlay');
             if (ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id) ov.innerHTML = classDetailHTML();
@@ -4766,6 +4767,11 @@ try {
 
         // ---- Student roster photos (People tab) ----
         let classStudentProfiles = {};
+        function classBioLineHTML(bio){
+          const b = (bio || '').trim();
+          if (!b) return '';
+          return `<div class="text-xs text-gray-500 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">${escapeHtml(b)}</div>`;
+        }
         async function loadClassStudentProfiles(cls){
           if (!cls) return;
           // Include cls.members too, not just cls.students
@@ -4776,9 +4782,9 @@ try {
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,photo').in('user_id', ids);
+            const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,photo,bio').in('user_id', ids);
             (data || []).forEach(p => {
-              classStudentProfiles[p.user_id] = { name: p.name || '', photo: p.photo || null };
+              classStudentProfiles[p.user_id] = { name: p.name || '', photo: p.photo || null, bio: p.bio || '' };
             });
             ids.forEach(id => { if (!classStudentProfiles[id]) classStudentProfiles[id] = {}; });
             const ov = document.getElementById('overlay');
@@ -5334,7 +5340,7 @@ try {
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:${hasFooter ? 0 : 50}px;">
-                ${overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
+                ${overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}
                 <div class="px-5">
                   ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
@@ -5475,7 +5481,7 @@ try {
               title = s ? classStudentName(cls, s) : 'Member';
             } else title = classTeacherDisplayName(cls);
           }
-          const header = overlayHeader(`<span class="nm-wrap nm-left" style="display:block;max-width:60vw;"><span class="nm-inner">${escapeHtml(title)}</span></span>`, 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: inThread ? 'text-xl' : 'text-3xl' });
+          const header = overlayHeader(`<span class="nm-wrap nm-left" style="display:block;max-width:60vw;"><span class="nm-inner">${escapeHtml(title)}</span></span>`, 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: 'text-xl' });
           if (!inThread) {
             return `
               <div class="flex-1 flex flex-col overflow-hidden">
@@ -8812,7 +8818,7 @@ try {
 <div style="padding-top:20px;" class="pb-3">
                 <div class="flex items-center justify-start">
                   <button onclick="overlayGoBack()" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                  <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Notifications</h1>
+                  <h1 class="text-xl font-bold font-display grad-text truncate ml-3">Notifications</h1>
                 </div>
               </div>
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3" style="margin-top:10px;">${escapeHtml(cls.name)}</div>
@@ -9742,6 +9748,7 @@ try {
             roster.push({
               id,
               name: (profile && profile.name) || 'Space member',
+              bio: (profile && profile.bio) || '',
               email: '',
               enrolled: true,
               _studentIndex: -1,
@@ -9756,13 +9763,16 @@ try {
           const isTeacher = cls.role === 'teacher';
           return `
             <div class="flex items-center justify-between mb-3">
-              <div class="text-xl font-bold text-[${NAVY}] font-display">Moderators</div>
+              <div class="text-lg font-bold text-[${NAVY}] font-display">Moderators</div>
               ${isTeacher ? `<button onclick="openInviteCoTeacherOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
             </div>
             <div class="border-t border-gray-100 mb-5">
               <div class="flex items-center gap-4 py-4 ${(isTeacher && coTeachers.length) ? 'border-b border-gray-100' : ''}">
                 <span class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-6 h-6')}</span>
-                <div class="font-semibold text-sm text-gray-800">${classTeacherDisplayName(cls)}</div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
+                  ${classBioLineHTML(cls.role === 'teacher' ? profileData.bio : (classTeacherProfiles[cls.teacherId] || {}).bio)}
+                </div>
               </div>
               ${isTeacher ? coTeachers.map((t, i) => `
                 <div class="flex items-center gap-4 py-4 ${i < coTeachers.length - 1 ? 'border-b border-gray-100' : ''}">
@@ -9776,7 +9786,7 @@ try {
             </div>
             ${(isTeacher && cls.joinPolicy === 'approved' && cls.pendingRequests && cls.pendingRequests.length) ? `
               <div class="flex items-center justify-between mb-3">
-                <div class="text-xl font-bold text-[${NAVY}] font-display">Join requests</div>
+                <div class="text-lg font-bold text-[${NAVY}] font-display">Join requests</div>
               </div>
               <div class="border-t border-gray-100 mb-5">
                 ${cls.pendingRequests.map((r, i) => `
@@ -9791,7 +9801,7 @@ try {
                   </div>`).join('')}
               </div>` : ''}
             <div class="flex items-center justify-between mb-3">
-              <div class="text-xl font-bold text-[${NAVY}] font-display">Members${(() => { const n = classRosterList(cls).length; return n ? ` <span class="text-sm font-semibold text-gray-400">(${n}${cls.paymentEnabled ? ' enrolled' : ''})</span>` : ''; })()}</div>
+              <div class="text-lg font-bold text-[${NAVY}] font-display">Members${(() => { const n = classRosterList(cls).length; return n ? ` <span class="text-sm font-semibold text-gray-400">(${n}${cls.paymentEnabled ? ' enrolled' : ''})</span>` : ''; })()}</div>
               ${isTeacher ? `<button onclick="openInviteStudentsOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
             </div>
             <div class="border-t border-gray-100">
@@ -9816,6 +9826,7 @@ try {
                   <span class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classStudentAvatarHTML(s,'w-6 h-6')}</span>
                   <div class="min-w-0 flex-1">
                     <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(s.name)}</div>
+                    ${classBioLineHTML(s.bio || (s.id && classStudentProfiles[s.id] && classStudentProfiles[s.id].bio))}
                     ${s.pending
                       ? `<div class="text-xs text-gray-400 mt-0.5">Invite pending &middot; must enroll to get access</div>`
                       : (s.enrolled
@@ -9840,7 +9851,7 @@ try {
           const canInvite = inviteCoTeacherDraft.trim().length > 0;
           return `
             <div class="flex-1 overflow-y-auto px-5 pb-8">
-<div class="-mx-5">${overlayHeader('Invite co-moderator', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Invite co-moderator', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email address</label>
               <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl mt-4 '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
               <div class="text-xs text-gray-400 leading-relaxed mb-4">They'll be added as a co-moderator for this space once invited.</div>
@@ -9915,7 +9926,7 @@ try {
           const d = editClassDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Edit space', '20px', "openOverlay('classDetail')", null, { right: true, titleSize: 'text-3xl' })}
+            ${overlayHeader('Edit space', '20px', "openOverlay('classDetail')", null, { right: true, titleSize: 'text-xl' })}
             <div class="px-5" style="padding-top:20px;padding-bottom:40px;">
               <div class="flex flex-col items-center mb-6">
                 <button onclick="triggerClassPhotoUpload('editClass')" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${cls.photo ? `background-image:url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}">
@@ -10070,7 +10081,7 @@ try {
           const canInvite = inviteEmailsDraft.trim().length > 0;
           return `
             <div class="flex-1 overflow-y-auto px-5 pb-8">
-<div class="-mx-5">${overlayHeader('Invite members', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Invite members', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               ${cls && cls.code ? `<div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-3">
                 <div class="min-w-0 text-gray-700">
                   <div class="font-semibold">Space code</div>
