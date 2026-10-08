@@ -684,26 +684,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const titleClass = opts.titleClass ? (' ' + opts.titleClass) : '';
           const pbClass = opts.pb ? '' : ' pb-3';
           const pbStyle = opts.pb ? ` style="padding-bottom:${opts.pb};"` : '';
-          if (opts.right) {
-            return `
-              <div class="flex-shrink-0 w-full"${padStyle}>
-                <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center justify-between gap-4"${pbStyle}>
-                  <button onclick="${backAction || 'overlayGoBack()'}" class="flex items-center flex-shrink-0">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
-                  <div class="font-semibold ${titleSize} font-display grad-text text-right${titleClass}" style="min-width:0;">${title}</div>
-                </div>
-              </div>`;
-          }
-          if (opts.center) {
-            return `
-              <div class="flex-shrink-0 w-full"${padStyle}>
-                <div class="max-w-2xl mx-auto px-5${pbClass}"${pbStyle}>
-                  <div class="relative flex items-center justify-center">
-                    <button onclick="${backAction || 'overlayGoBack()'}" class="absolute flex items-center" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
-                    <div class="font-semibold ${titleSize} font-display grad-text text-center${titleClass}">${title}</div>
-                  </div>
-                </div>
-              </div>`;
-          }
+          // Back-only headers are always left-aligned (opts.right / opts.center are ignored)
           return `
             <div class="flex-shrink-0 w-full"${padStyle}>
               <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center gap-4"${pbStyle}>
@@ -2659,10 +2640,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         // so nobody lands on a half-filled profile ("Loading profile...", "..." network count)
         function personProfileSkeletonHTML(){
           return `
-            <div class="px-5 pb-3 flex items-center justify-between relative" style="padding-top:var(--top-safe-pad);">
+            <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div class="skel-line skel-shimmer" style="width:110px;height:16px;"></div>
-              <div class="w-10 h-10"></div>
             </div>
             <div class="flex-1 overflow-y-auto">
               <div class="p-5">
@@ -2705,10 +2685,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           // The header (back arrow + username) lives INSIDE the scrolling area so the whole profile
           return `
             <div class="flex-1 overflow-y-auto">
-            <div class="px-5 pb-3 flex items-center justify-between relative" style="padding-top:var(--top-safe-pad);">
+            <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <span class="nm-wrap font-bold font-display" style="flex:1;min-width:0;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
-              <div class="w-10 h-10"></div>
+              <span class="nm-wrap nm-left font-bold font-display" style="flex:1;min-width:0;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
             </div>
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">

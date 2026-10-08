@@ -4489,7 +4489,7 @@ try {
             <div class="w-full px-5 pb-3 relative flex-shrink-0" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="cancelClassPaymentConfirm()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:12px;text-align:right;max-width:60%;">Entrance Fee</h1>
+                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="text-align:left;max-width:80%;">Entrance Fee</h1>
               </div>
             </div>
 </div>
@@ -8799,7 +8799,7 @@ try {
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
 <div style="padding-top:20px;" class="pb-3">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-start">
                   <button onclick="overlayGoBack()" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                   <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Notifications</h1>
                 </div>

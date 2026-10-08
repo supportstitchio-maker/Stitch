@@ -1008,9 +1008,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             : Icon('user','w-8 h-8');
           return `
             <div class="mb-5">
-              <div class="flex items-center justify-between gap-3 pb-1">
+              <div class="flex items-center gap-3 pb-1">
                 <button onclick="discardEditProfileChanges()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <div class="font-semibold text-lg font-display grad-text text-right">Edit Profile</div>
+                <div class="font-semibold text-lg font-display grad-text text-left">Edit Profile</div>
               </div>
               <div class="text-sm text-gray-500 text-left mt-1">Update how your profile appears on Stitch.</div>
             </div>

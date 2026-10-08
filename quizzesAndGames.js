@@ -1574,7 +1574,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function practiceTestsHTML(){
           return `
             <div class="ar-root ar-page"><div class="ar-in">
-              <div class="ar-top">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
+              <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
               <div class="flex gap-2 mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
               <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
             </div></div>`;
@@ -1766,7 +1766,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="ar-chip ${examResultTab === k ? 'on' : ''}" style="flex:1;padding:.6rem;">${l}</button>`;
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
-              <div class="ar-top">${arBack(isQuiz ? "openOverlay('gamification')" : 'closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
+              <div class="ar-top" style="justify-content:flex-start;">${arBack(isQuiz ? "openOverlay('gamification')" : 'closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
               <div class="ar-fade">
                 ${isQuiz ? quizRewardBannerHTML() : ''}
                 ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}
