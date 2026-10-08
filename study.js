@@ -62,7 +62,7 @@ let studyFabMenuOpen = false;
             <div class="px-5" style="padding-top:var(--top-safe-pad);padding-bottom:50px;">
               ${(classroomAreaTab === 'courses' || (classroomAreaTab === 'classes' && (studySub === 'resources' || studySub === 'exams'))) ? `
               <div class="flex items-center justify-between mb-4">
-                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Workspace</span></button>
+                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave</span></button>
                 <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Workspace</h1>
               </div>` : `
               <div class="flex items-center gap-2 mb-4">

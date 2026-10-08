@@ -8953,7 +8953,7 @@ try {
         function classworkCreateMenuHTML(){
           return `
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
-<div class="-mx-5">${overlayHeader('Create', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Create', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { center: true, pb: '20px' })}</div>
               ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
               ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
               ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
@@ -9127,7 +9127,7 @@ try {
           const showScoring = classworkDraftType !== 'material';
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader(label, '20px', 'openClassworkCreateMenu()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader(label, '20px', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
               <input type="text" id="classwork-title-input" oninput="const b=document.getElementById('classwork-create-btn'); if(b){const c=this.value.trim().length>0; b.disabled=!c; b.className='w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <textarea id="classwork-instructions-input" placeholder="Instructions (optional)" rows="4" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               ${showScoring ? `
@@ -9271,7 +9271,7 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('Quiz', '20px', 'openClassworkCreateMenu()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Quiz', '20px', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
               <input type="text" id="quiz-title-input" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <textarea id="quiz-instructions-input" placeholder="Instructions (optional)" rows="3" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               <div class="grid grid-cols-2 gap-3 mb-6">
@@ -9359,7 +9359,7 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('Poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
               <input type="text" id="poll-title-input" placeholder="Ask a question" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Options</div>
               <div id="poll-options-container">${pollOptionRowHTML(0)}${pollOptionRowHTML(1)}</div>
@@ -9438,7 +9438,7 @@ try {
                   <button onclick="toggleClassworkDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
                   ${classworkDetailMenuOpen ? classMenuSheetHTML('toggleClassworkDetailMenu', [{ onclick: 'deleteCurrentClasswork()', icon: 'trash', label: 'Delete', cls: 'text-red-500' }]) : ''}
                 </div>
-              </div>` : overlayHeader(classworkTypeLabel(w.type), 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
+              </div>` : overlayHeader(classworkTypeLabel(w.type), 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { center: true, pb: '20px' })}
 </div>
                 <div class="text-xl font-bold text-gray-800 mb-1">${escapeHtml(w.title)}</div>
                 <div class="text-xs text-gray-400 mb-4 flex items-center gap-2 flex-wrap">

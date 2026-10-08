@@ -2861,7 +2861,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             </div>` : '';
           return `
             <div class="flex-1 overflow-y-auto px-5 flex flex-col" style="padding-bottom:50px;">
-              <div class="flex-shrink-0" style="margin:0 -1.25rem 10px;">${overlayHeader('Dashboard', '20px', null, null, { right: true })}</div>
+              <div class="flex-shrink-0" style="margin:0 -1.25rem 10px;">${overlayHeader('Dashboard', '20px', null, null, { center: true })}</div>
               <div class="max-w-2xl mx-auto w-full flex flex-col flex-1">
                 ${pills}
                 ${body}
@@ -3733,8 +3733,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div class="flex-1 overflow-y-auto">
             ${canManage
-              ? menuOverlayHeader('Opportunity', jobDetailMenuOpen, 'toggleJobDetailMenu', jobDetailMenuDropdownHTML(job), {titleRight: true, titleSize: 'text-lg'})
-              : overlayHeader('Opportunity', '20px', null, null, { right: true })}
+              ? menuOverlayHeader('Opportunity', jobDetailMenuOpen, 'toggleJobDetailMenu', jobDetailMenuDropdownHTML(job), {titleSize: 'text-lg'})
+              : overlayHeader('Opportunity', '20px', null, null, { center: true })}
             <div class="px-5" style="padding-top:20px;padding-bottom:50px;">
               ${(job.coverImage || (job.courseId && (allCourses.find(x => x.id === job.courseId) || {}).photo)) ? `<img src="${job.coverImage || (allCourses.find(x => x.id === job.courseId) || {}).photo}" class="w-full rounded-3xl mb-4 object-cover" style="height:180px;" alt="">` : ''}
               <div class="flex items-center gap-4 mb-5">
@@ -4759,7 +4759,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             : ['Applies to your matches on your behalf', 'Stays in the Stitch ecosystem (a total homebody)', 'You can cancel your subscription any time'];
           return `
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:44px;padding-bottom:20px;">
               <div class="max-w-2xl mx-auto">
                 <div class="flex items-center" style="gap:18px;margin-bottom:26px;">
@@ -4809,7 +4809,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           ];
           return `
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:30px;padding-bottom:max(28px, env(safe-area-inset-bottom));">
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
@@ -5121,7 +5121,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </div>`;
         }
         function careerSubPageHeaderHTML(title){
-          return overlayHeader(title, '20px', 'careerBackToAutoApply()', null, { right: true });
+          return overlayHeader(title, '20px', 'careerBackToAutoApply()', null, { center: true });
         }
         function careerBackToAutoApply(){ openOverlayFrom('careerMatches', 'careerAutoApply'); }
         function careerAutoMenuInnerHTML(){
@@ -5746,7 +5746,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerCancelReasonHTML(){
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
-              ${overlayHeader('Why did you cancel?', '20px', 'careerCancelSkip()', null, { right: true })}
+              ${overlayHeader('Why did you cancel?', '20px', 'careerCancelSkip()', null, { center: true })}
               <div class="px-5" style="padding-top:18px;">
                 <div class="text-sm text-gray-500 text-center" style="margin-bottom:18px;">We're sorry to see you go. Pick the closest reason. It takes a few seconds and helps us improve.</div>
                 ${CAREER_CANCEL_GROUPS.map(g => `
@@ -5780,7 +5780,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const d = careerCancelDraft;
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:20px;">
-              ${overlayHeader('Tell us more', '20px', 'overlayGoBack()', null, { right: true })}
+              ${overlayHeader('Tell us more', '20px', 'overlayGoBack()', null, { center: true })}
               <div class="px-5" style="padding-top:18px;">
                 <div class="text-xs font-semibold text-gray-400" style="margin-bottom:10px;">${escapeHtml(d.label)}</div>
                 <div class="text-base font-semibold text-gray-800" style="margin-bottom:10px;">${escapeHtml(d.ask)}</div>
@@ -6041,7 +6041,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           }
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
-              ${overlayHeader('Manage subscription', '20px', 'overlayGoBack()', null, { right: true })}
+              ${overlayHeader('Manage subscription', '20px', 'overlayGoBack()', null, { center: true })}
               <div class="px-5" style="padding-top:20px;">${body}${bottomBar}</div>
             </div>`;
         }
@@ -6076,7 +6076,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const saved = allExploreCards().filter(c => c.saved && !c.isCatalogCourse);
           return `
             <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
-              ${overlayHeader('Saved', '20px', 'overlayGoBack()', null, { right: true })}
+              ${overlayHeader('Saved', '20px', 'overlayGoBack()', null, { center: true })}
               <div class="px-5" style="padding-top:20px;">
                 ${saved.length ? saved.map(jobCard).join('') : `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm shadow-sm">Nothing saved yet. Tap the bookmark on a card to keep it here.</div>`}
               </div>
@@ -6132,7 +6132,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${bg}
             <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {right:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="w-full px-5" style="margin-top:10px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
@@ -7625,7 +7625,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${bg}
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { right: true, pb: '10px' })}
+            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true, pb: '10px' })}
             <div class="px-5" style="padding-bottom:50px;">
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover picture (optional)</label>
@@ -8136,7 +8136,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           else actions = `<div class="flex gap-2"><button onclick="reviewPosterApplication('${app.user_id}','denied')" class="flex-1 px-3 py-3 rounded-2xl text-sm font-semibold bg-gray-100 text-gray-600">Deny</button><button onclick="reviewPosterApplication('${app.user_id}','approved')" class="flex-1 px-3 py-3 rounded-2xl text-sm font-semibold text-white" style="background:${NAVY};">Approve</button></div>`;
           return `
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
-              <div style="margin:0 -1.25rem;">${overlayHeader('Creator details', '20px', 'closeAdminPosterDetail()', null, {right:true, pb: '10px'})}</div>
+              <div style="margin:0 -1.25rem;">${overlayHeader('Creator details', '20px', 'closeAdminPosterDetail()', null, {center:true, pb: '10px'})}</div>
               <div class="flex items-center gap-4 pt-4 pb-5">
                 <div class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${p.photo ? `<img src="${escapeHtml(p.photo)}" class="w-full h-full object-cover">` : Icon('user','w-9 h-9')}</div>
                 <div class="flex-1 min-w-0">
@@ -8657,7 +8657,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const trackedApplications = appliedJobs.filter(j => j.type !== 'Course');
           return `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-            ${overlayHeader('Analytics', '20px', null, null, { right: true })}
+            ${overlayHeader('Analytics', '20px', null, null, { center: true })}
             <div class="p-5 space-y-4">
               <div class="rounded-3xl p-5 text-white stat-hero-pill" style="background:linear-gradient(135deg,${ROYAL},${NAVY});">
                 <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">Applications sent</div>
@@ -9615,7 +9615,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const dlBtnClass = 'myact-dl-circle';
           return `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-            ${overlayHeader('My Activity', '20px', null, null, { right: true })}
+            ${overlayHeader('My Activity', '20px', null, null, { center: true })}
             <div class="p-5 space-y-4">
 
               <div class="rounded-3xl p-5 text-white stat-hero-pill" style="background:linear-gradient(135deg,${ROYAL},${NAVY});position:relative;overflow:hidden;">

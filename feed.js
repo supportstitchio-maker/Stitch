@@ -1678,9 +1678,9 @@
         function myGlimpsesHTML(){
           return `
             <div class="flex flex-col h-full bg-white relative" data-my-glimpses-root="1">
-              <div class="flex items-center justify-between gap-4 px-5 pb-4 border-b border-gray-100 flex-shrink-0 bg-white" style="padding-top:var(--top-safe-pad);">
+              <div class="flex items-center justify-start gap-4 px-5 pb-4 border-b border-gray-100 flex-shrink-0 bg-white" style="padding-top:var(--top-safe-pad);">
                 <button onclick="closeOverlay()" class="flex items-center flex-shrink-0" style="color:${NAVY};">${IconBold('close','w-5 h-5')}</button>
-                <div class="text-xl font-bold font-display text-right" style="color:${NAVY};min-width:0;">My glimpse</div>
+                <div class="text-xl font-bold font-display text-left" style="color:${NAVY};min-width:0;">My glimpse</div>
               </div>
               <div class="flex-1 overflow-y-auto flex flex-col">
                 ${myGlimpses.length === 0 ? '' : myGlimpses.map(myGlimpseRow).join('')}
@@ -5669,7 +5669,7 @@
           }
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar" id="post-feed-list">
-              <div class="bg-white" style="padding-bottom:20px;">${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null, { right: true })}</div>
+              <div class="bg-white" style="padding-bottom:20px;">${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null)}</div>
               ${items.length
                 ? `<div class="px-5 space-y-3">${items.map(feedPost).join('')}</div>`
                 : '<div class="text-center text-gray-400 text-sm py-10">Nothing here yet.</div>'}

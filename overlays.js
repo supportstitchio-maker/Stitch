@@ -890,7 +890,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function createPostHTML(captionDraft){
           const hasMedia = selectedMediaItems.length > 0;
           return `
-            ${overlayHeader('New post', '20px', null, 'close', { right: true })}
+            ${overlayHeader('New post', '20px', null, 'close')}
             <div id="create-post-scroll" class="p-5 flex-1 overflow-y-auto no-scrollbar">
               <div id="media-preview" class="mb-4">${mediaPreviewStripHTML()}</div>
               <input type="file" id="media-input" accept="image/*,video/*" multiple class="hidden" onchange="handleMediaSelect(event)">
