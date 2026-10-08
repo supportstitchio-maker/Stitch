@@ -44,7 +44,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div id="career-tabs-scroller" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1">
               ${jobsTabs.map(([key,label]) => `
-                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="career-tab-pill flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${jobsSub===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${jobsSub===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>
+                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="career-tab-pill filter-pill flex-shrink-0 ${jobsSub===key ? 'on' : ''}">${label}</button>
               `).join('')}
             </div>`;
         }
@@ -2857,7 +2857,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             : receiptsBodyHTML();
           const pills = tabs.length > 1 ? `
             <div class="pill-bleed flex flex-shrink-0 gap-2 overflow-x-auto no-scrollbar pb-1 mb-4" style="justify-content:safe center;">
-              ${tabs.map(([k, label]) => `<button onclick="setDashboardTab('${k}')" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${dashboardTab === k ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${dashboardTab === k ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>`).join('')}
+              ${tabs.map(([k, label]) => `<button onclick="setDashboardTab('${k}')" class="filter-pill flex-shrink-0 ${dashboardTab === k ? 'on' : ''}">${label}</button>`).join('')}
             </div>` : '';
           return `
             <div class="flex-1 overflow-y-auto px-5 flex flex-col" style="padding-bottom:50px;">
@@ -3885,7 +3885,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           { id: 'portfolio', label: 'Portfolio', accept: '.pdf,.doc,.docx' },
           { id: 'idDocument', label: 'ID document', accept: '.pdf,.jpg,.jpeg,.png' },
         ];
-        const OPP_DOC_ICONS = { resume:'file', applicationLetter:'mail', coverLetter:'edit', transcript:'graduate', portfolio:'folder', idDocument:'shield' };
+        const OPP_DOC_ICONS = { resume:'file', applicationLetter:'mail', coverLetter:'edit', transcript:'graduate', portfolio:'folder', idDocument:'idCard' };
         // Documents the poster types themselves are stored in requiredDocs as 'custom:<label>', so the
         // saved shape stays a plain array of strings and every existing lookup keeps working.
         const OPP_CUSTOM_DOC_PREFIX = 'custom:';
@@ -7353,11 +7353,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         const OPP_GENDER_ICONS = { any:'users', male:'user', female:'user' };
         // applyMethod 'inapp' (the default) means applications go straight to the poster and
         // admins inside Stitch
-        let newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'inapp', email:'', website:'', requiredDocs:[], gender:'any', priceType:'free', price:'', coverImage:'' };
+        let newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'' };
         let newOppEditingId = null;
 
         function resetNewOppDraft(){
-          newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'inapp', email:'', website:'', requiredDocs:[], gender:'any', priceType:'free', price:'', coverImage:'' };
+          newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'' };
         }
 
         function rerenderPostOpportunity(){
@@ -7527,6 +7527,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             // Stitch
             const applyMethod = isCourse ? 'inapp' : (d.applyMethod || 'inapp');
             const applyViaWebsite = !isCourse && applyMethod === 'website';
+            if (!d.type) { openAppAlertModal('Please choose a type for this listing.'); return; }
+            if (!d.mode) { openAppAlertModal('Please choose where this takes place (On-site, Online, ...).'); return; }
             if (!d.title.trim() || !d.description.trim()) {
               openAppAlertModal('Please add at least a title and a description.');
               return;
@@ -7554,6 +7556,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               openAppAlertModal('Please enter a valid email address (e.g. you@example.com).');
               return;
             }
+            if (isCourse && !d.priceType) { openAppAlertModal('Please choose whether enrollment is free or paid.'); return; }
             if (isCourse && d.priceType === 'paid' && !d.price.trim()) {
               openAppAlertModal('Please add the enrollment fee amount, or switch this to a free course.');
               return;
@@ -7702,7 +7705,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="text-xs text-gray-400 mb-2">Used to match this listing with the right people in Match with CV.</div>
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${[['any','Everyone'],['male','Men'],['female','Women']].map(([g,l]) => `
-                    <button onclick="setNewOppGender('${g}')" class="auth-intent-chip ${(newOppDraft.gender||'any')===g ? 'on' : ''}">${Icon(OPP_GENDER_ICONS[g],'w-4 h-4')}<span>${l}</span></button>
+                    <button onclick="setNewOppGender('${g}')" class="auth-intent-chip ${newOppDraft.gender===g ? 'on' : ''}">${Icon(OPP_GENDER_ICONS[g],'w-4 h-4')}<span>${l}</span></button>
                   `).join('')}
                 </div>
               </div>
@@ -7751,7 +7754,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Apply via</label>
                   <div class="text-xs text-gray-400 mb-2">By default, applications go straight to you right here in Stitch -- no email needed. Choose Website instead if you'd rather applicants apply on your own site.</div>
                   <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
-                    <button onclick="setNewOppApplyMethod('inapp')" class="auth-intent-chip ${newOppDraft.applyMethod!=='website' ? 'on' : ''}">${Icon('phone','w-4 h-4')}<span>In-app</span></button>
+                    <button onclick="setNewOppApplyMethod('inapp')" class="auth-intent-chip ${newOppDraft.applyMethod==='inapp' ? 'on' : ''}">${Icon('phone','w-4 h-4')}<span>In-app</span></button>
                     <button onclick="setNewOppApplyMethod('website')" class="auth-intent-chip ${newOppDraft.applyMethod==='website' ? 'on' : ''}">${Icon('monitor','w-4 h-4')}<span>Website</span></button>
                   </div>
                   ${newOppDraft.applyMethod === 'website'
@@ -7781,7 +7784,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               `}
 
               <div class="text-center mt-2" style="padding-bottom:10px;">
-                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
+                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta inline-flex items-center justify-center text-white font-semibold text-center rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:10px 22px;font-size:13px;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
               </div>
             </div>
             </div>`;

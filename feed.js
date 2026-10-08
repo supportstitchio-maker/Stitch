@@ -420,6 +420,7 @@
             flag: `<path d="M5 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 4.5h11l-2.2 3.75L16 12H5" fill="currentColor" stroke="none"/>`,
             download: `<path d="M12 3v10m0 0l4-4m-4 4l-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
             shield: `<path d="M12 2l7 3v5.5c0 5-3 8.7-7 10.5-4-1.8-7-5.5-7-10.5V5l7-3z"/>`,
+            idCard: `<path fill-rule="evenodd" d="M4.5 5h15A2.5 2.5 0 0122 7.5v9a2.5 2.5 0 01-2.5 2.5h-15A2.5 2.5 0 012 16.5v-9A2.5 2.5 0 014.5 5zM8 8.2a2 2 0 100 4 2 2 0 000-4zM4.8 16.2c0-1.6 1.7-2.6 3.2-2.6s3.2 1 3.2 2.6v.3H4.8v-.3zM13 9h5.5v1.4H13V9zm0 3h5.5v1.4H13V12z" clip-rule="evenodd"/>`,
             gift: `<rect x="4" y="9.5" width="16" height="10" rx="1"/><rect x="2.5" y="6" width="19" height="4" rx="1"/><rect x="11.1" y="6" width="1.8" height="13.5" fill="white"/><path d="M12 6c-1-3.2-5.2-3-5.2 0h5.2zm0 0c1-3.2 5.2-3 5.2 0H12z"/>`,
             logout: `<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
             theme: `<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 3a9 9 0 000 18V3z"/>`,

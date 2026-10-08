@@ -3330,6 +3330,27 @@ html.dark-mode .outline-pill.is-selected, body.dark-mode .outline-pill.is-select
 html.dark-mode .outline-pill.on, body.dark-mode .outline-pill.on{ --pill-text:#60a5fa; color:#60a5fa !important; box-shadow:0 3px 12px rgba(30,144,255,0.22) !important; }
 
 
+/* ---- Messaging + Career Space filter pills: same look as the option chips (grey fill, grey outline,
+   soft shadow; selected = blue outline, tinted fill, blue text) but WITHOUT the blue glow ---- */
+.filter-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:10px 15px; border-radius:9999px;
+  background:var(--pill-fill); color:var(--pill-text);
+  font-size:13px; font-weight:600; line-height:1.2;
+  border:1.5px solid var(--pill-line);
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:border-color .15s ease, background .15s ease, color .15s ease, transform .1s ease;
+}
+.filter-pill:active{ transform:scale(0.96); }
+.filter-pill.on{
+  background:var(--pill-on-fill); border-color:var(--pill-on); color:var(--pill-on);
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+html.dark-mode .filter-pill, body.dark-mode .filter-pill{ box-shadow:0 2px 8px rgba(0,0,0,0.5); }
+html.dark-mode .filter-pill.on, body.dark-mode .filter-pill.on{ color:#60a5fa; border-color:#1e90ff; }
+
+
 /* ---- Onboarding Continue button, busy state ("Let's gooo!!!" + spinner) ---- */
 .auth-cta.auth-cta-busy{ display:inline-flex; align-items:center; justify-content:center; gap:10px; pointer-events:none; opacity:.92; }
 .auth-cta-spinner{

@@ -1276,7 +1276,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : key === 'general' ? generalUnreadCount()
               : count;
             return `
-              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
+              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="filter-pill flex-shrink-0 ${inboxFilter===key ? 'on' : ''}">
                 ${label}${effectiveCount ? `<span class="rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center" style="min-width:1rem;height:1rem;padding:0 0.25rem;">${effectiveCount}</span>` : ''}
               </button>
             `;

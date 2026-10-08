@@ -314,7 +314,7 @@
                 ${upcoming.length ? `
                   <div class="text-[11px] text-gray-400 mb-4 px-1">${upcoming.slice(0, 3).map(x => `${ghs(x.creator_net)} on ${creatorDate(x.release_at)}`).join(' · ')}</div>` : '<div class="mb-4"></div>'}
                 <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
-                  ${tabs.map(([k, label]) => `<button onclick="setWalletTab('${k}')" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${walletTab === k ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${walletTab === k ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>`).join('')}
+                  ${tabs.map(([k, label]) => `<button onclick="setWalletTab('${k}')" class="filter-pill flex-shrink-0 ${walletTab === k ? 'on' : ''}">${label}</button>`).join('')}
                 </div>
                 ${body}`;
         }

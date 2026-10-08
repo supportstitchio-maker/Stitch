@@ -1575,7 +1575,7 @@ try {
           return `
             ${isAdmin ? `
               <div class="flex gap-2 mb-5">
-                <button onclick="openNewCourse()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
+                <button onclick="openNewCourse()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="font-family:'Colmeak','Montserrat',sans-serif;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
                   ${Icon('plus','w-4 h-4')} Create a Course
                 </button>
               </div>` : ''}
@@ -6265,8 +6265,8 @@ try {
         function lectureActionPillsHTML(){
           return `
             <div class="flex gap-2 mb-4">
-              <button onclick="startLiveLectureNow()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('video','w-4 h-4')} Start Session</button>
-              <button onclick="openScheduleLectureOverlay()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('calendar','w-4 h-4')} Schedule Session</button>
+              <button onclick="startLiveLectureNow()" class="filter-pill flex-1 justify-center">${Icon('video','w-4 h-4')} Start Session</button>
+              <button onclick="openScheduleLectureOverlay()" class="filter-pill flex-1 justify-center">${Icon('calendar','w-4 h-4')} Schedule Session</button>
             </div>`;
         }
 
