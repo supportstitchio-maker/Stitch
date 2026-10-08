@@ -7748,6 +7748,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         let adminDetailUserId = null;
         // "Post an update" lives on its own page, opened from the + in the dashboard header.
         let adminComposeOpen = false;
+        // Side menu (three dashes in the header) holding Post an update and every dashboard section
+        let adminMenuOpen = false;
         let adminComposeDraft = { title: '', message: '' };
         // Newer moderation columns (see poster-moderation.sql)
         let ADMIN_NEW_COLS = ', poster_email, poster_frozen_at, poster_blocked_at, poster_moderation_note';
@@ -7773,6 +7775,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           adminDashboardTab = 'applications';
           adminDetailUserId = null;
           adminComposeOpen = false;
+          adminMenuOpen = false;
           adminComposeDraft = { title: '', message: '' };
           adminHistoryLoaded = false;
           adminHistoryItems = [];
@@ -7851,13 +7854,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function refreshAdminDashboardDom(){
           if (currentOverlayKind !== 'adminDashboard') return;
           if (adminComposeOpen) return; // don't redraw (and drop focus) while an update is being written
-          const pills = document.getElementById('admin-tab-pills');
           const body = document.getElementById('admin-tab-body');
-          if (pills && body) {
-            const left = pills.scrollLeft;
-            pills.innerHTML = adminDashboardTabPillsInnerHTML();
-            pills.scrollLeft = left;
+          if (body) {
             body.innerHTML = adminBodyHTML();
+            if (adminMenuOpen) renderAdminMenu();
             return;
           }
           const ov = document.getElementById('overlay');
@@ -7868,14 +7868,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           adminDashboardTab = tab;
           adminExpandedReviewedId = null;
           refreshAdminDashboardDom();
-          // Nudge the tapped pill fully into view (only scrolls the pill row, not the page).
-          const pills = document.getElementById('admin-tab-pills');
-          const btn = pills && pills.querySelector(`[data-admin-tab="${tab}"]`);
-          if (pills && btn) {
-            const l = btn.offsetLeft, r = l + btn.offsetWidth;
-            if (l < pills.scrollLeft) pills.scrollTo({ left: Math.max(0, l - 12), behavior: 'smooth' });
-            else if (r > pills.scrollLeft + pills.clientWidth) pills.scrollTo({ left: r - pills.clientWidth + 12, behavior: 'smooth' });
-          }
           if (['approved','declined','frozen','blocked','log'].includes(tab) && !adminHistoryLoaded && !adminHistoryLoading) loadAdminHistoryData();
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab) && !adminCreatorData.loaded && !adminCreatorData.loading) loadAdminCreatorData();
         }
@@ -8260,19 +8252,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           } catch (e) { console.warn('Reviewing report threw an error:', e); }
         }
 
-        function adminDashboardTabPillsInnerHTML(){
+        function adminDashboardTabs(){
           const approvedCount = adminReviewedApplications.filter(x => x.poster_status === 'approved').length;
           const declinedCount = adminReviewedApplications.filter(x => x.poster_status === 'denied').length;
           const frozenCount = adminReviewedApplications.filter(x => x.poster_status === 'frozen').length;
           const blockedCount = adminReviewedApplications.filter(x => x.poster_status === 'blocked').length;
           const tabs = [['applications', `Pending${adminPosterApplications.length ? ` (${adminPosterApplications.length})` : ''}`], ['approved', `Approved${adminHistoryLoaded ? ` (${approvedCount})` : ''}`], ['declined', `Declined${adminHistoryLoaded ? ` (${declinedCount})` : ''}`], ['frozen', `Frozen${adminHistoryLoaded ? ` (${frozenCount})` : ''}`], ['blocked', `Blocked${adminHistoryLoaded ? ` (${blockedCount})` : ''}`], ['reports', `Reports${adminOpenReports.length ? ` (${adminOpenReports.length})` : ''}`], ['log', 'Report log']].concat(typeof creatorAdminTabs === 'function' ? creatorAdminTabs() : []).concat([['mydashboard', 'My Dashboard']]);
-          return tabs.map(([key, label]) => `
-                <button data-admin-tab="${key}" onclick="${key === 'mydashboard' ? 'openDashboardFromAdmin()' : `switchAdminDashboardTab('${key}')`}" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${adminDashboardTab===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${adminDashboardTab===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>
-              `).join('') + '<span class="flex-shrink-0" style="width:0.75rem;" aria-hidden="true"></span>';
-        }
-        function adminDashboardTabPillsHTML(){
-          return `
-            <div id="admin-tab-pills" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4" style="margin-left:-1.25rem;margin-right:-1.25rem;padding-left:1.25rem;padding-right:1.25rem;">${adminDashboardTabPillsInnerHTML()}</div>`;
+          return tabs;
         }
 
         // Guesses whether a poster-application attachment URL is an image (shown as an actual
@@ -8475,7 +8461,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="relative flex items-center justify-center">
                   <button onclick="overlayGoBack()" aria-label="Back" class="absolute flex items-center" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                   <div class="font-semibold text-lg font-display grad-text text-center" style="font-size:20px;">Admin Dashboard</div>
-                  <button onclick="openAdminCompose()" aria-label="Post an update" class="absolute flex items-center" style="right:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('plus','w-6 h-6'))}</button>
+                  <button onclick="openAdminMenu()" aria-label="Menu" class="absolute flex items-center" style="right:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('dashes','w-6 h-6'))}</button>
                 </div>
               </div>
             </div>`;
@@ -8512,6 +8498,39 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </div>`;
         }
 
+        function openAdminMenu(){ adminMenuOpen = true; renderAdminMenu(); }
+        function closeAdminMenu(){ adminMenuOpen = false; renderAdminMenu(); }
+        function renderAdminMenu(){
+          const slot = document.getElementById('admin-menu-slot');
+          if (slot) slot.innerHTML = adminMenuOpen ? adminMenuHTML() : '';
+        }
+        function adminMenuPostUpdate(){ adminMenuOpen = false; openAdminCompose(); }
+        function adminMenuPick(key){
+          adminMenuOpen = false;
+          if (key === 'mydashboard') { openDashboardFromAdmin(); return; }
+          renderAdminMenu();
+          switchAdminDashboardTab(key);
+        }
+        function adminMenuHTML(){
+          const rows = adminDashboardTabs().map(([key, label]) => {
+            const on = adminDashboardTab === key;
+            return `<button onclick="adminMenuPick('${key}')" class="w-full text-left px-3 py-3 rounded-xl text-sm menu-item-pill ${on ? 'font-bold' : 'text-gray-700'}" style="${on ? `background:rgba(10,37,64,0.08);color:${NAVY};` : ''}">${label}</button>`;
+          }).join('');
+          return `
+            <div onclick="closeAdminMenu()" class="ai-history-drawer-backdrop"></div>
+            <div class="ai-history-drawer">
+              <div class="flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);padding-bottom:14px;">
+                <h1 class="text-lg font-bold font-display grad-text">Menu</h1>
+                <button onclick="closeAdminMenu()" aria-label="Close menu" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              </div>
+              <div class="px-3 pb-2 flex-shrink-0">
+                <button onclick="adminMenuPostUpdate()" class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold" style="background:rgba(30,144,255,0.10);color:${NAVY};">${Icon('plus','w-4 h-4')} Post an update</button>
+              </div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pb-1 flex-shrink-0">Sections</div>
+              <div class="flex-1 overflow-y-auto px-3 pb-4 no-scrollbar">${rows}</div>
+            </div>`;
+        }
+
         function adminDashboardHTML(){
           if (adminComposeOpen) return adminComposeHTML();
           if (adminDetailUserId) { const d = adminPosterDetailHTML(); if (d) return d; }
@@ -8519,6 +8538,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const userPostedCount = allJobsList.filter(j => j.createdByRole === 'user').length;
           const adminPostedCount = allJobsList.length - userPostedCount;
           return `
+            <div class="flex-1 relative overflow-hidden flex flex-col">
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div style="margin:0 -1.25rem;">${adminDashboardHeaderHTML()}</div>
               <div class="grid grid-cols-3 gap-2 mb-5" style="margin-top:calc(20px - 0.75rem);">
@@ -8535,8 +8555,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                   <div class="text-[10px] text-gray-400">By admins</div>
                 </div>
               </div>
-              ${adminDashboardTabPillsHTML()}
               <div id="admin-tab-body">${adminBodyHTML()}</div>
+            </div>
+            <div id="admin-menu-slot">${adminMenuOpen ? adminMenuHTML() : ''}</div>
             </div>`;
         }
 
