@@ -46,8 +46,8 @@ let studyFabMenuOpen = false;
               ${studyFabMenuOpen ? `
                 <div onclick="closeStudyFabMenu()" onwheel="closeStudyFabMenu()" ontouchmove="closeStudyFabMenu()" class="fixed inset-0 z-30" style="background:rgba(10,15,25,0.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
                 <div id="study-fab-menu" class="fixed w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-30" style="right:1.25rem;bottom:8.5rem;">
-                  <button onclick="toggleStudyFabMenu(); openJoinClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('users','w-4 h-4')} Join class</button>
-                  <button onclick="toggleStudyFabMenu(); openCreateClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('plus','w-4 h-4')} Create class</button>
+                  <button onclick="toggleStudyFabMenu(); openJoinClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('users','w-4 h-4')} Join space</button>
+                  <button onclick="toggleStudyFabMenu(); openCreateClassroom();" class="w-full flex items-center gap-3 text-left px-4 py-2.5 text-sm font-semibold text-gray-700">${Icon('plus','w-4 h-4')} Create space</button>
                 </div>` : ''}
               <button id="study-fab-btn" onclick="toggleStudyFabMenu()" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:5.25rem;width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">
                 <span id="study-fab-icon" class="plus-morph-icon${studyFabMenuOpen ? '' : ' is-plus'}">${IconBold('plus','w-5 h-5')}</span>
@@ -62,14 +62,14 @@ let studyFabMenuOpen = false;
             <div class="px-5" style="padding-top:var(--top-safe-pad);padding-bottom:50px;">
               ${(classroomAreaTab === 'courses' || (classroomAreaTab === 'classes' && (studySub === 'resources' || studySub === 'exams'))) ? `
               <div class="flex items-center justify-between mb-4">
-                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Classroom</span></button>
-                <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Classroom</h1>
+                <button onclick="openLeaveClassModal()" class="study-leave-classroom-btn flex items-center gap-1 flex-shrink-0 text-red-500">${IconBold('back','w-4 h-4 study-leave-classroom-icon')}<span class="font-bold text-xs study-leave-classroom-label">Leave Workspace</span></button>
+                <h1 class="text-3xl font-bold font-display grad-text truncate ml-3">Workspace</h1>
               </div>` : `
               <div class="flex items-center gap-2 mb-4">
-                <h1 class="text-3xl font-bold font-display grad-text truncate">Classroom</h1>
+                <h1 class="text-3xl font-bold font-display grad-text truncate">Workspace</h1>
               </div>`}
               <div class="classroom-toggle-wrap flex gap-1 mb-5 bg-gray-100 rounded-2xl p-1">
-                <button onclick="setClassroomAreaTab('classes')" class="classroom-toggle-pill flex-1 py-2.5 text-sm font-bold ${classroomAreaTab === 'classes' ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${classroomAreaTab === 'classes' ? `background:rgba(30,144,255,0.5);` : 'background:transparent;'}">My Classes</button>
+                <button onclick="setClassroomAreaTab('classes')" class="classroom-toggle-pill flex-1 py-2.5 text-sm font-bold ${classroomAreaTab === 'classes' ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${classroomAreaTab === 'classes' ? `background:rgba(30,144,255,0.5);` : 'background:transparent;'}">My Spaces</button>
                 <button onclick="setClassroomAreaTab('courses')" class="classroom-toggle-pill flex-1 py-2.5 text-sm font-bold ${classroomAreaTab === 'courses' ? 'text-white' : 'text-gray-500'}" style="border-radius:0.75rem;${classroomAreaTab === 'courses' ? `background:rgba(30,144,255,0.5);` : 'background:transparent;'}">Courses</button>
               </div>
               <div class="classroom-tab-panel ${classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right'}">
@@ -77,10 +77,10 @@ let studyFabMenuOpen = false;
                 ${hasClasses ? myClassesListHTML() : `
                 <div class="flex gap-2 mb-5">
                   <button onclick="openJoinClassroom()" class="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">
-                    ${Icon('users','w-4 h-4')} Join a Class
+                    ${Icon('users','w-4 h-4')} Join a Space
                   </button>
                   <button onclick="openCreateClassroom()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
-                    ${Icon('plus','w-4 h-4')} Create a Class
+                    ${Icon('plus','w-4 h-4')} Create a Space
                   </button>
                 </div>`}
                 <div id="study-content">${studyContent()}</div>`}
@@ -129,7 +129,7 @@ let studyFabMenuOpen = false;
         function myClassesListHTML(){
           if (!myClasses.length) return '';
           return `
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">My Classes</div>
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">My Spaces</div>
             ${myClasses.map((c, i) => {
               const motif = classCardMotifs[classCardMotifIndex(c, i) % classCardMotifs.length];
               return `
@@ -137,7 +137,7 @@ let studyFabMenuOpen = false;
                 ${c.photo ? '' : `<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="absolute inset-0 w-full h-full" style="opacity:0.16;">${motif}</svg>`}
                 <div class="flex items-center justify-between gap-2 mb-1 relative">
                   <div class="nm-wrap nm-left text-xl font-bold font-display" style="flex:1;min-width:0;"><span class="nm-inner">${escapeHtml(c.name)}</span></div>
-                  <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full flex-shrink-0 bg-white/20">${c.role === 'teacher' ? 'Teaching' : 'Enrolled'}</span>
+                  <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full flex-shrink-0 bg-white/20">${c.role === 'teacher' ? 'Moderating' : 'Member'}</span>
                 </div>
                 ${(c.section || classFeeLabel(c)) ? `<div class="flex items-center justify-between gap-3 relative">
                   <div class="text-sm text-white/85 truncate">${c.section ? escapeHtml(c.section) : ''}</div>
@@ -158,7 +158,7 @@ let studyFabMenuOpen = false;
             return;
           }
           { const _c = myClasses.find(x => x.id === id); classSkeletonRole = (_c && _c.role === 'student') ? 'student' : 'teacher'; }
-          runClassActionLoading('Preparing class', 'folder', () => {
+          runClassActionLoading('Preparing space', 'folder', () => {
             preparedClassIds.add(id);
             openClassDetail(id);
           });
@@ -185,7 +185,7 @@ let studyFabMenuOpen = false;
                 <div class="text-lg font-bold text-[${NAVY}]">Study Planner</div>
               </div>
               <div class="text-xs font-bold text-amber-600 mb-4">Timetable &amp; reminders</div>
-              ${plannerRow('calendar','Set Timetable','Add your weekly class schedule', "openOverlay('studyTimetable')")}
+              ${plannerRow('calendar','Set Timetable','Add your weekly schedule', "openOverlay('studyTimetable')")}
               ${plannerRow('clock','Set Reminders','Add exams, deadlines, or study sessions', "openOverlay('studyReminders')")}
             </div>
             <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">

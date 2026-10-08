@@ -1588,7 +1588,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root" style="color:var(--tx)">
             ${challengeSheetHeader('Set Up a Challenge')}
-            <div class="text-sm text-gray-500 mb-4">Questions are pulled from all your uploaded resources (${q} ready). Pick a pace, then share the code with your class.</div>
+            <div class="text-sm text-gray-500 mb-4">Questions are pulled from all your uploaded resources (${q} ready). Pick a pace, then share the code with your space.</div>
             <div class="ar-h">Time per question</div>
             <div class="ar-chips-row" id="challenge-time-row">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" data-t="${t}" onclick="setChallengeTimePill(this)">${t}</button>`).join('')}</div>
             <div class="flex gap-3" style="margin-top:20px;">

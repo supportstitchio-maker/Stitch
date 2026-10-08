@@ -1686,7 +1686,7 @@ try {
                 </div>
 
                 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 leading-relaxed mb-5">
-                  By enrolling you agree to complete coursework honestly, follow ${escapeHtml(stitchOrgName(c.org))}'s classroom guidelines, and understand your progress may be visible to the course's organizers. You can end your enrollment at any time from the course page.
+                  By enrolling you agree to complete coursework honestly, follow ${escapeHtml(stitchOrgName(c.org))}'s community guidelines, and understand your progress may be visible to the course's organizers. You can end your enrollment at any time from the course page.
                 </div>
 
                 <button onclick="toggleCourseEnrollAgree()" class="w-full flex items-start gap-3 bg-white rounded-2xl p-4 mb-6 shadow-sm border ${d.agreed ? 'border-transparent' : 'border-gray-200'}" style="${d.agreed ? `background:rgba(30,144,255,0.06);border-color:${NAVY};` : ''}">
@@ -3866,7 +3866,7 @@ try {
                 icon: 'flag',
                 iconBg: 'bg-blue-50',
                 iconClass: 'text-blue-600',
-                name: updated.name || 'Your class',
+                name: updated.name || 'Your space',
                 message: a.text ? `New announcement in ${updated.name}: "${a.text.slice(0, 80)}"` : `New announcement in ${updated.name}`,
                 classId: updated.id,
               });
@@ -3880,7 +3880,7 @@ try {
                 icon: classworkTypeIcon(w.type),
                 iconBg: 'bg-blue-50',
                 iconClass: 'text-blue-600',
-                name: updated.name || 'Your class',
+                name: updated.name || 'Your space',
                 message: `New ${classworkTypeLabel(w.type).toLowerCase()} in ${updated.name}: "${w.title}"`,
                 classId: updated.id,
                 workId: w.id,
@@ -3899,7 +3899,7 @@ try {
                 icon: 'personPlus',
                 iconBg: 'bg-blue-50',
                 iconClass: 'text-blue-600',
-                name: updated.name || 'Your class',
+                name: updated.name || 'Your space',
                 message: `${r.name || 'Someone'} wants to join ${updated.name} -- tap to approve`,
                 classId: updated.id,
                 tab: 'people',
@@ -3917,8 +3917,8 @@ try {
                 icon: 'users',
                 iconBg: 'bg-emerald-50',
                 iconClass: 'text-emerald-600',
-                name: updated.name || 'Your class',
-                message: `${(profile && profile.name) || 'A new student'} just ${updated.paymentEnabled ? 'paid the entrance fee and enrolled in' : 'enrolled in'} ${updated.name}`,
+                name: updated.name || 'Your space',
+                message: `${(profile && profile.name) || 'A new member'} just ${updated.paymentEnabled ? 'paid the entrance fee and enrolled in' : 'enrolled in'} ${updated.name}`,
                 classId: updated.id,
                 tab: 'people',
               });
@@ -3948,11 +3948,11 @@ try {
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classDetail' && currentClassId === deletedId) {
             currentClassId = null;
             closeOverlay();
-            openAppAlertModal('This class was deleted by its teacher.');
+            openAppAlertModal('This space was deleted by its moderator.');
           } else if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classSettings' && currentClassId === deletedId) {
             currentClassId = null;
             closeOverlay();
-            openAppAlertModal('This class was deleted by its teacher.');
+            openAppAlertModal('This space was deleted by its moderator.');
           }
           if (typeof currentTab !== 'undefined' && currentTab === 2 && typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'classes') {
             const studyContentEl = document.getElementById('study-content');
@@ -4081,7 +4081,7 @@ try {
           if (Array.isArray(data.classwork)) data.classwork = data.classwork.map(w => { const { submissions, quizSubmissions, ...rest } = w; return rest; });
           try {
             await sb.from(CLASSES_TABLE).update({ data, updated_at: new Date().toISOString() }).eq('id', cls.id);
-          } catch (e) { console.warn('Saving class failed (will retry on next change):', e); }
+          } catch (e) { console.warn('Saving space failed (will retry on next change):', e); }
         }
         let myClasses = []; 
         let currentClassId = null;
@@ -4095,7 +4095,7 @@ try {
           if (!btn) return;
           btn.disabled = busy;
           btn.style.opacity = busy ? '0.7' : '';
-          btn.innerHTML = busy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Class';
+          btn.innerHTML = busy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Space';
         }
 
         // ---- Join/Create classroom flow ----
@@ -4131,7 +4131,7 @@ try {
           const mode = newClassEntranceMode();
           const options = [
             { key:'free', label:'Free for everyone' },
-            { key:'approved', label:'Approve each student' },
+            { key:'approved', label:'Approve each member' },
           ];
           if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance' });
           return `
@@ -4148,7 +4148,7 @@ try {
                     ${['GHS','NGN','USD','ZAR','KES'].map(c => `<option value="${c}" ${d.paymentCurrency===c ? 'selected' : ''}>${c}</option>`).join('')}
                   </select>
                 </div>
-                <div class="text-xs text-gray-400 mt-2">Students pay this online before they get access.</div>
+                <div class="text-xs text-gray-400 mt-2">Members pay this online before they get access.</div>
               ` : ''}
             </div>`;
         }
@@ -4177,13 +4177,13 @@ try {
               textarea.select();
               document.execCommand('copy');
               document.body.removeChild(textarea);
-              openAppAlertModal('Class code copied: ' + code);
+              openAppAlertModal('Space code copied: ' + code);
             } catch (err) {
-              openAppAlertModal('Class code: ' + code);
+              openAppAlertModal('Space code: ' + code);
             }
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => openAppAlertModal('Class code copied: ' + code)).catch(legacyCopy);
+            navigator.clipboard.writeText(code).then(() => openAppAlertModal('Space code copied: ' + code)).catch(legacyCopy);
           } else {
             legacyCopy();
           }
@@ -4196,7 +4196,7 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Class</h1>
+                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Space</h1>
                 <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
               </div>
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
@@ -4211,11 +4211,11 @@ try {
                   <div class="text-xs text-gray-500 truncate">${escapeHtml((typeof currentUserEmail !== 'undefined' && currentUserEmail) || '')}</div>
                 </div>
               </div>
-              <div class="text-sm text-gray-500 mb-5">Ask your teacher or classmate for the class code, then enter it here.</div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Class Code</label>
+              <div class="text-sm text-gray-500 mb-5">Ask a moderator or fellow member for the space code, then enter it here.</div>
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Space Code</label>
               <input type="text" id="join-code-input" placeholder="e.g. ECN4821" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-2 tracking-widest uppercase">
-              <div class="text-xs text-gray-400 mb-5 leading-relaxed">Use a class code with 6-8 letters or numbers, and no spaces or symbols.</div>
-              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3.5 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Class'}</button>
+              <div class="text-xs text-gray-400 mb-5 leading-relaxed">Use a space code with 6-8 letters or numbers, and no spaces or symbols.</div>
+              <button id="join-class-btn" onclick="submitJoinClassroom()" ${joinClassBtnBusy ? 'disabled' : ''} class="w-full font-semibold py-3.5 rounded-full flex items-center justify-center" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;${joinClassBtnBusy ? 'opacity:0.7;' : ''}">${joinClassBtnBusy ? classActionBtnSpinnerHTML('#ffffff', 'Joining...') : 'Join Space'}</button>
             </div>`;
         }
 
@@ -4225,22 +4225,22 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Class</h1>
+                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Space</h1>
                 <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
               </div>
               ${createClassMenuOpen ? createClassDropdownMenu() : ''}
             </div>
             <div class="p-4" style="padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 64px);">
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Class Name (required)</label>
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Space Name (required)</label>
               <input type="text" id="create-name-input" placeholder="e.g. Macro I - Section B" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Section</label>
               <input type="text" id="create-section-input" placeholder="e.g. Section B" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Subject</label>
               <input type="text" id="create-subject-input" placeholder="e.g. Biology" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Description (optional)</label>
-              <textarea id="create-description-input" rows="3" placeholder="What's this class about?" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none"></textarea>
+              <textarea id="create-description-input" rows="3" placeholder="What's this space about?" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none"></textarea>
               ${newClassEntranceHTML()}
-              <button onclick="submitCreateClassroom()" class="w-full font-semibold py-3.5 rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;">Create Class</button>
+              <button onclick="submitCreateClassroom()" class="w-full font-semibold py-3.5 rounded-full" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);color:#ffffff;">Create Space</button>
             </div>
            </div>`;
         }
@@ -4256,11 +4256,11 @@ try {
 
         let classSkeletonRole = 'teacher';
         function classDetailSkeletonMarkup(text){
-          const isTeacher = text === 'Creating class' ? true : text === 'Adding you to class' ? false : classSkeletonRole !== 'student';
+          const isTeacher = text === 'Creating space' ? true : text === 'Adding you to space' ? false : classSkeletonRole !== 'student';
           const white = 'background:rgba(255,255,255,.55);';
           const card = `<div class="sk" style="height:112px;border-radius:24px;margin-bottom:12px;"></div>`;
           return `
-            <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing class" style="overflow:hidden;">
+            <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing space" style="overflow:hidden;">
               <div style="padding-top:var(--top-safe-pad, 20px);padding-bottom:calc(0.75rem + 10px);position:relative;" class="px-5">
                 <div class="sk-row" style="justify-content:space-between;height:32px;">
                   <div class="sk" style="width:22px;height:22px;border-radius:6px;"></div>
@@ -4289,7 +4289,7 @@ try {
         }
 
         function classActionLoadingMarkup(text, iconName){
-          if (['Preparing class','Creating class','Adding you to class'].includes(text)) return classDetailSkeletonMarkup(text);
+          if (['Preparing space','Creating space','Adding you to space'].includes(text)) return classDetailSkeletonMarkup(text);
           return `
             <div id="class-action-loading-overlay" class="classroom-slide-cover flex flex-col items-center justify-center">
               <div style="position:relative;width:84px;height:84px;">
@@ -4330,7 +4330,7 @@ try {
               window.reportError && window.reportError(err, { call: 'runClassActionLoading:onDone' });
               if (myToken !== classActionLoadToken) return;
               closeOverlay();
-              openAppAlertModal((err && err.message) || "Something went wrong loading that class. Please try again.");
+              openAppAlertModal((err && err.message) || "Something went wrong loading that space. Please try again.");
               return;
             }
             if (myToken !== classActionLoadToken) return;
@@ -4359,16 +4359,16 @@ try {
         async function submitJoinClassroom(){
           if (joinClassBtnBusy) return;
           const code = document.getElementById('join-code-input').value.trim().toUpperCase();
-          if (!code) { openAppAlertModal('Enter a class code to join'); return; }
+          if (!code) { openAppAlertModal('Enter a space code to join'); return; }
           const sb = getSupabaseClient();
-          if (!sb) { openAppAlertModal('Sign-in backend is not configured yet -- classes can\'t be joined.'); return; }
+          if (!sb) { openAppAlertModal('Sign-in backend is not configured yet -- spaces can\'t be joined.'); return; }
           setJoinClassBtnBusy(true);
           let userRes, me;
           try {
             ({ data: userRes } = await sb.auth.getUser());
             me = userRes && userRes.user;
           } catch (e) { me = null; }
-          if (!me) { setJoinClassBtnBusy(false); openAppAlertModal('Please sign in again to join a class.'); return; }
+          if (!me) { setJoinClassBtnBusy(false); openAppAlertModal('Please sign in again to join a space.'); return; }
           let result, error;
           try {
             ({ data: result, error } = await sb.rpc('join_class_by_code', {
@@ -4379,10 +4379,10 @@ try {
             }));
           } catch (e) { error = e; }
           if (Array.isArray(result)) result = result[0];
-          if (error || !result) { setJoinClassBtnBusy(false); openAppAlertModal("We couldn't find that class. Check the code and try again."); return; }
+          if (error || !result) { setJoinClassBtnBusy(false); openAppAlertModal("We couldn't find that space. Check the code and try again."); return; }
 
-          if (result.status === 'not_found') { setJoinClassBtnBusy(false); openAppAlertModal("We couldn't find that class. Check the code and try again."); return; }
-          if (result.status === 'pending') { setJoinClassBtnBusy(false); openAppAlertModal("Request sent -- the teacher needs to approve you before you can enter this class."); return; }
+          if (result.status === 'not_found') { setJoinClassBtnBusy(false); openAppAlertModal("We couldn't find that space. Check the code and try again."); return; }
+          if (result.status === 'pending') { setJoinClassBtnBusy(false); openAppAlertModal("Request sent -- the moderator needs to approve you before you can enter this space."); return; }
           if (result.status === 'payment_required') {
             setJoinClassBtnBusy(false);
             pendingClassPaymentCode = code;
@@ -4394,7 +4394,7 @@ try {
             const found = classRowToLocal(result.class, me.id);
             const existingIdx = myClasses.findIndex(c => c.id === found.id);
             if (existingIdx !== -1) myClasses[existingIdx] = found; else myClasses.push(found);
-            runClassActionLoading('Adding you to class', 'users', async () => {
+            runClassActionLoading('Adding you to space', 'users', async () => {
               // The RPC's own returned row is enough to open the class right away (above), but it can be
               // a beat ahead of the row Postgres will actually let us SELECT as a newly-added member
               // (RLS only starts allowing full reads once the membership insert has truly
@@ -4408,7 +4408,7 @@ try {
                     if (idx !== -1) myClasses[idx] = fresh; else myClasses.push(fresh);
                   }
                 }
-              } catch (e) { console.warn('Refetching newly-joined class failed (falling back to RPC snapshot):', e); }
+              } catch (e) { console.warn('Refetching newly-joined space failed (falling back to RPC snapshot):', e); }
               // This already played the class's one-time "getting it ready" animation, so opening it
               // again later this session shouldn't repeat it
               if (typeof preparedClassIds !== 'undefined') preparedClassIds.add(found.id);
@@ -4417,7 +4417,7 @@ try {
             return;
           }
           setJoinClassBtnBusy(false);
-          openAppAlertModal("Something went wrong joining that class. Please try again.");
+          openAppAlertModal("Something went wrong joining that space. Please try again.");
         }
 
         // ---- Paid class entrance (Paystack) ----
@@ -4462,7 +4462,7 @@ try {
           pendingClassPayment = {
             code: pendingClassPaymentCode,
             classId: result.classId,
-            className: cached.name || result.className || cls.name || 'This class',
+            className: cached.name || result.className || cls.name || 'This space',
             amount: result.amount,
             currency: result.currency || cached.paymentCurrency || cls.paymentCurrency || 'GHS',
             section: cached.section || cls.section || result.section || '',
@@ -4503,10 +4503,10 @@ try {
               </div>
               ${p.description ? `<div class="bg-gray-50 border border-gray-100 rounded-2xl p-4 mb-6"><div class="text-sm text-gray-600 leading-relaxed">${escapeHtml(p.description)}</div></div>` : ''}
               <div class="mt-auto flex flex-col gap-2">
-                <div class="text-sm text-gray-500 text-center mb-1">This class charges a one-time entrance fee before you can join</div>
+                <div class="text-sm text-gray-500 text-center mb-1">This space charges a one-time entrance fee before you can join</div>
                 <button id="confirm-class-payment-btn" onclick="confirmClassPayment()" class="w-full font-semibold py-3 rounded-2xl text-white flex items-center justify-center" style="background:${NAVY};">Continue to Pay ${classPaymentFeeLabel(p)}</button>
                 <button onclick="cancelClassPaymentConfirm()" class="w-full font-semibold py-3 rounded-2xl text-gray-500 bg-gray-100">Cancel</button>
-                <button onclick="openReportClass('class','${escapeForJsAttr(p.classId)}','${escapeForJsAttr(p.className)}')" class="text-[11px] font-semibold text-gray-400 mt-2 inline-flex items-center justify-center gap-1">${Icon('flag','w-3 h-3')} Report this class</button>
+                <button onclick="openReportClass('class','${escapeForJsAttr(p.classId)}','${escapeForJsAttr(p.className)}')" class="text-[11px] font-semibold text-gray-400 mt-2 inline-flex items-center justify-center gap-1">${Icon('flag','w-3 h-3')} Report this space</button>
               </div>
             </div>`;
         }
@@ -4534,7 +4534,7 @@ try {
           if (!pendingClassPayment || classPaymentBusy) return;
           const p = pendingClassPayment;
           if (!p.amount || p.amount <= 0) {
-            openAppAlertModal("This class's entrance fee isn't set up correctly. Please contact the teacher.", 'Payment unavailable');
+            openAppAlertModal("This space's entrance fee isn't set up correctly. Please contact the moderator.", 'Payment unavailable');
             return;
           }
           const btn = document.getElementById('confirm-class-payment-btn');
@@ -4549,7 +4549,7 @@ try {
           if (fresh.notRequired) {
             pendingClassPayment = null;
             overlayGoBack();
-            openAppAlertModal(fresh.status === 'pending' ? 'Your request is with the teacher.' : 'This class no longer needs payment from you.', 'Entrance Fee');
+            openAppAlertModal(fresh.status === 'pending' ? 'Your request is with the moderator.' : 'This space no longer needs payment from you.', 'Entrance Fee');
             return;
           }
           if (Number(fresh.amount) !== Number(p.amount) || fresh.currency !== p.currency) {
@@ -4579,7 +4579,7 @@ try {
           const amount = p && p.classId === classId ? Number(p.amount) : 0;
           const currency = p && p.currency;
           if (!amount || amount <= 0) {
-            openAppAlertModal("This class's entrance fee isn't set up correctly. Please contact the teacher.", 'Payment unavailable');
+            openAppAlertModal("This space's entrance fee isn't set up correctly. Please contact the moderator.", 'Payment unavailable');
             resetClassPaymentConfirmBtn();
             return;
           }
@@ -4642,10 +4642,10 @@ try {
             if (typeof preparedClassIds !== 'undefined') preparedClassIds.add(found.id);
             if (opts.silent) {
               // The person isn't sitting in a loading screen waiting for this
-              openAppAlertModal(`You're in! ${found.name || opts.className || 'The class'} has been added to your classes.`, 'Payment confirmed');
+              openAppAlertModal(`You're in! ${found.name || opts.className || 'The space'} has been added to your spaces.`, 'Payment confirmed');
               if (typeof renderApp === 'function') { try { renderApp(); } catch (e) {} }
             } else {
-              runClassActionLoading('Adding you to class', 'users', () => { openClassDetail(found.id); });
+              runClassActionLoading('Adding you to space', 'users', () => { openClassDetail(found.id); });
             }
           } catch (err) {
             // A bare "Failed to fetch" (or not being able to read a session yet, right after launch)
@@ -4684,12 +4684,12 @@ try {
           const subject = document.getElementById('create-subject-input').value.trim();
           const descriptionEl = document.getElementById('create-description-input');
           const description = descriptionEl ? descriptionEl.value.trim() : '';
-          if (!name) { openAppAlertModal('Enter a class name'); return; }
+          if (!name) { openAppAlertModal('Enter a space name'); return; }
           const sb = getSupabaseClient();
-          if (!sb) { openAppAlertModal('Sign-in backend is not configured yet -- classes can\'t be created.'); return; }
+          if (!sb) { openAppAlertModal('Sign-in backend is not configured yet -- spaces can\'t be created.'); return; }
           const { data: userRes } = await sb.auth.getUser();
           const me = userRes && userRes.user;
-          if (!me) { openAppAlertModal('Please sign in again to create a class.'); return; }
+          if (!me) { openAppAlertModal('Please sign in again to create a space.'); return; }
           const id = 'class-' + Date.now();
           const code = generateClassCode();
           const colorIndex = Math.floor(Math.random() * classCardPalette.length);
@@ -4706,12 +4706,12 @@ try {
             paymentCurrency: newClassDraft.paymentCurrency || 'GHS',
             pendingRequests: [],
           };
-          runClassActionLoading('Creating class', 'plus', async () => {
+          runClassActionLoading('Creating space', 'plus', async () => {
             const { error } = await sb.from(CLASSES_TABLE).insert({ id, code, teacher_id: me.id, members: [], data: classData });
             if (error) {
-              console.error('Create class error:', error);
+              console.error('Create space error:', error);
               closeOverlay();
-              openAppAlertModal("Couldn't create the class -- try again.");
+              openAppAlertModal("Couldn't create the space -- try again.");
               return;
             }
             myClasses.push(Object.assign({}, classData, { id, code, teacherId: me.id, role: 'teacher' }));
@@ -4808,7 +4808,7 @@ try {
             } else {
               await sb.rpc('leave_class', { p_id: idToRemove });
             }
-          } catch (e) { console.warn('Removing class failed:', e); }
+          } catch (e) { console.warn('Removing space failed:', e); }
         }
 
         function cancelCourseEnrollment(){
@@ -4844,12 +4844,12 @@ try {
         function confirmDeleteCurrentClass(){
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
-          openLeaveClassModal(leaveCurrentClass, `Delete ${cls.name}?`, `This permanently deletes the class for you and every student in it, along with its stream, classwork, and materials. This can't be undone.`, 'trash');
+          openLeaveClassModal(leaveCurrentClass, `Delete ${cls.name}?`, `This permanently deletes the space for you and every member in it, along with its stream, tasks, and materials. This can't be undone.`, 'trash');
         }
         function confirmLeaveCurrentClass(){
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
-          openLeaveClassModal(leaveCurrentClass, `Leave ${cls.name}?`, `You'll be removed from this classroom and its materials until you rejoin.`);
+          openLeaveClassModal(leaveCurrentClass, `Leave ${cls.name}?`, `You'll be removed from this space and its materials until you rejoin.`);
         }
         function confirmCancelCourseEnrollment(){
           const cls = myClasses.find(c => c.id === currentClassId);
@@ -4888,7 +4888,7 @@ try {
                 <div class="flex gap-1 mb-3 bg-gray-100 rounded-2xl p-1">
                   ${showAdminDashboard ? classDetailTabBtn('dashboard','Dashboard') : ''}
                   ${classDetailTabBtn('stream','Stream')}
-                  ${classDetailTabBtn('classwork','Classwork')}
+                  ${classDetailTabBtn('classwork','Tasks')}
                 </div>
                 ${classDetailTab === 'dashboard' && showAdminDashboard ? classDashboardTabHTML(cls) : ''}
                 ${classDetailTab === 'stream' ? classStreamTabHTML(cls) : ''}
@@ -4911,8 +4911,8 @@ try {
 
         function classStudentName(cls, s){
           const p = s && s.id ? classStudentProfiles[s.id] : null;
-          const own = s && s.name && s.name !== 'Class member' ? s.name : '';
-          return own || (p && p.name) || 'Student';
+          const own = s && s.name && s.name !== 'Space member' ? s.name : '';
+          return own || (p && p.name) || 'Member';
         }
         function classRound1(n){ return Math.round(n * 10) / 10; }
         function classGradeLetter(p){ return p >= 80 ? 'A' : p >= 70 ? 'B' : p >= 60 ? 'C' : p >= 50 ? 'D' : 'F'; }
@@ -5137,20 +5137,20 @@ try {
           }));
           const top = A.ranked.slice(0, 5);
           const weekly = (X.W && typeof insightsBarChartHTML === 'function' && typeof insightsLineChartHTML === 'function')
-            ? classSectionHTML('Class activity', 'Announcements posted, last 8 weeks',
+            ? classSectionHTML('Space activity', 'Announcements posted, last 8 weeks',
                 insightsBarChartHTML(X.W.labels, X.W.ann, CLS_COLORS.blue)
                 + `<div class="font-semibold text-xs text-gray-600" style="margin:18px 0 8px;">Call minutes per week</div>`
                 + insightsLineChartHTML(X.W.labels, [{ name: 'Call minutes', color: CLS_COLORS.green, values: X.W.calls, area: true }]))
             : '';
           return `
-            ${classSectionHTML('Who joined', 'Students in the class compared with people still to join',
+            ${classSectionHTML('Who joined', 'Members in the space compared with people still to join',
               classPieHTML([
                 { label: 'Joined', value: A.joined.length, color: CLS_COLORS.sky },
                 { label: 'Invited, not joined', value: A.invited.length, color: CLS_COLORS.amber },
                 { label: 'Join requests', value: A.requests, color: CLS_COLORS.purple },
               ], 'Nobody has joined yet.'))}
             ${weekly}
-            ${classSectionHTML('Classwork', 'What you have posted so far',
+            ${classSectionHTML('Tasks', 'What you have posted so far',
               classBarsHTML([
                 { label: 'Assign.', value: A.byType.assignment, color: CLS_COLORS.sky },
                 { label: 'Quiz', value: A.byType.quiz, color: CLS_COLORS.purple },
@@ -5158,40 +5158,40 @@ try {
                 { label: 'Poll', value: A.byType.poll, color: CLS_COLORS.amber },
                 { label: 'Material', value: A.byType.material, color: CLS_COLORS.green },
               ]))}
-            ${classSectionHTML('Handed in vs missing', 'Turn-ins across every student and every assignment or quiz',
+            ${classSectionHTML('Handed in vs missing', 'Turn-ins across every member and every assignment or quiz',
               classPieHTML([
                 { label: 'Handed in', value: A.done, color: CLS_COLORS.green },
                 { label: 'Missing', value: Math.max(0, A.possible - A.done), color: CLS_COLORS.amber },
               ], 'Nothing to hand in yet.'))}
-            ${classSectionHTML('Interactions', 'How students are engaging with the class',
+            ${classSectionHTML('Interactions', 'How members are engaging with the space',
               classBarsHTML([
                 { label: 'Comments', value: A.comments, color: CLS_COLORS.sky },
                 { label: 'Turn-ins', value: A.submissions, color: CLS_COLORS.green },
                 { label: 'Quiz tries', value: A.quizAttempts, color: CLS_COLORS.purple },
                 { label: 'Votes', value: A.pollVotes, color: CLS_COLORS.amber },
               ]))}
-            ${classSectionHTML('Calls', 'Live lectures and calls in this class',
+            ${classSectionHTML('Calls', 'Live sessions and calls in this space',
               classTilesHTML([
                 { v: A.callLog.length, l: 'Calls held', c: CLS_COLORS.green },
                 { v: classFmtDuration(A.callSeconds), l: 'Total call time', c: CLS_COLORS.sky },
                 { v: A.upcoming, l: 'Scheduled', c: CLS_COLORS.amber },
                 { v: A.live, l: 'Live now', c: CLS_COLORS.red },
               ]) + (callBars.length ? `<div class="text-xs text-gray-400" style="margin-bottom:10px;">Minutes per call (latest ${callBars.length})</div>${classBarsHTML(callBars)}` : classNoDataHTML('Calls you end will show up here.', 'line')))}
-            ${classSectionHTML('Class performance', 'Based on graded assignments and quizzes',
+            ${classSectionHTML('Space performance', 'Based on graded assignments and quizzes',
               classTilesHTML([
-                { v: A.average !== null ? A.average + '%' : '--', l: 'Class average', c: CLS_COLORS.sky },
+                { v: A.average !== null ? A.average + '%' : '--', l: 'Space average', c: CLS_COLORS.sky },
                 { v: A.completion !== null ? A.completion + '%' : '--', l: 'Work handed in', c: CLS_COLORS.green },
               ]) + (A.ranked.length
-                ? `<div class="text-xs text-gray-400" style="margin-bottom:10px;">Students per grade</div>${classBarsHTML(['A', 'B', 'C', 'D', 'F'].map(g => ({ label: g, value: A.dist[g], color: gradeColors[g] })))}`
+                ? `<div class="text-xs text-gray-400" style="margin-bottom:10px;">Members per grade</div>${classBarsHTML(['A', 'B', 'C', 'D', 'F'].map(g => ({ label: g, value: A.dist[g], color: gradeColors[g] })))}`
                 : classNoDataHTML('Grades will appear once you score some work.', 'bars')))}
-            ${classSectionHTML('Every student, plotted', 'Each dot is a student: higher means a better average. The gold dot is the top student.',
-              typeof actScatterHTML === 'function' ? actScatterHTML(X.pts, { xLeft: 'Lowest', xRight: 'Highest', empty: 'Students will be plotted here once they have graded work.', legend: '' }) : classNoDataHTML('Not available.'))}
-            ${A.perItem.length ? classSectionHTML('Average score by classwork', null, classHBarsHTML(A.perItem.slice(0, 12).map(i => ({ label: i.title, value: i.avg, display: i.avg + '%', color: CLS_COLORS.sky })))) : ''}
+            ${classSectionHTML('Every member, plotted', 'Each dot is a member: higher means a better average. The gold dot is the top member.',
+              typeof actScatterHTML === 'function' ? actScatterHTML(X.pts, { xLeft: 'Lowest', xRight: 'Highest', empty: 'Members will be plotted here once they have graded work.', legend: '' }) : classNoDataHTML('Not available.'))}
+            ${A.perItem.length ? classSectionHTML('Average score by task', null, classHBarsHTML(A.perItem.slice(0, 12).map(i => ({ label: i.title, value: i.avg, display: i.avg + '%', color: CLS_COLORS.sky })))) : ''}
             ${X.typeRows.length > 1 ? classSectionHTML('Average by kind of work', 'Quizzes, questions and assignments compared', classHBarsHTML(X.typeRows)) : ''}
-            ${classSectionHTML('Top of the class', 'Highest overall average',
+            ${classSectionHTML('Top performers', 'Highest overall average',
               top.length ? classHBarsHTML(top.map((r, i) => ({ rank: i + 1, label: r.name, value: r.overall, display: r.overall + '%', color: i === 0 ? CLS_COLORS.amber : CLS_COLORS.sky })))
                 : classNoDataHTML('Nobody has a graded score yet.'))}
-            ${X.attention.length ? classSectionHTML('Worth a check-in', 'Students under 60% or with nothing handed in',
+            ${X.attention.length ? classSectionHTML('Worth a check-in', 'Members under 60% or with nothing handed in',
               X.attention.map((r, idx) => `
                 <div class="flex items-center justify-between gap-3 py-3" style="${idx < X.attention.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.07);' : ''}">
                   <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(r.name)}</div>
@@ -5199,7 +5199,7 @@ try {
                 </div>`).join('')) : ''}
             ${X.poll ? classSectionHTML('Latest poll', escapeHtml(X.poll.title || 'Poll') + ' &middot; ' + X.pollTotal + ' vote' + (X.pollTotal === 1 ? '' : 's'),
               X.pollTotal ? classHBarsHTML(X.pollRows) : classNoDataHTML('No votes yet.')) : ''}
-            <div class="text-xs text-gray-400" style="margin-bottom:8px;">The downloadable report also lists every student with their grades and ranking.</div>`;
+            <div class="text-xs text-gray-400" style="margin-bottom:8px;">The downloadable report also lists every member with their grades and ranking.</div>`;
         }
 
         function classMyReportBodyHTML(cls){
@@ -5208,15 +5208,15 @@ try {
           const X = classStudentExtras(cls, R, A);
           const compare = [];
           if (R.overall !== null) compare.push({ label: 'You', value: R.overall, display: R.overall + '%', color: CLS_COLORS.sky });
-          if (A.average !== null) compare.push({ label: 'Class average', value: A.average, display: A.average + '%', color: CLS_COLORS.gray });
+          if (A.average !== null) compare.push({ label: 'Space average', value: A.average, display: A.average + '%', color: CLS_COLORS.gray });
           const lineChart = (X.recent.length >= 2 && typeof insightsLineChartHTML === 'function')
-            ? classSectionHTML('Me and the class, item by item', 'Items in order, oldest to newest',
+            ? classSectionHTML('Me and the space, item by item', 'Items in order, oldest to newest',
                 insightsLineChartHTML(X.recent.map((_, i) => String(i + 1)), [
                   { name: 'Me', color: CLS_COLORS.sky, values: X.recent.map(i => i.percent), area: true },
-                  { name: 'Class average', color: CLS_COLORS.gray, values: X.recent.map(i => i.classAvg != null ? i.classAvg : 0) },
+                  { name: 'Space average', color: CLS_COLORS.gray, values: X.recent.map(i => i.classAvg != null ? i.classAvg : 0) },
                 ])) : '';
           return `
-            ${classSectionHTML('Where I stand', 'Compared with the rest of the class',
+            ${classSectionHTML('Where I stand', 'Compared with the rest of the space',
               classTilesHTML([
                 { v: X.rank ? X.rank + ' of ' + A.ranked.length : '--', l: 'My rank', c: CLS_COLORS.amber },
                 { v: R.overall !== null ? classGradeLetter(R.overall) : '--', l: 'My grade', c: CLS_COLORS.sky },
@@ -5232,7 +5232,7 @@ try {
               X.scored.length ? classBarsHTML(X.scored.slice(-8).map(i => ({ label: i.title, value: i.percent, display: i.percent + '%', color: CLS_COLORS.sky })), { max: 100 }) : classNoDataHTML('Your graded work will show up here.'))}
             ${lineChart}
             ${classSectionHTML('What I have handed in', 'By kind of work', classPieHTML(X.typeSlices, 'Nothing handed in yet.'))}
-            ${compare.length > 1 ? classSectionHTML('Me and the class', null, classHBarsHTML(compare)) : ''}
+            ${compare.length > 1 ? classSectionHTML('Me and the space', null, classHBarsHTML(compare)) : ''}
             ${X.todo.length ? classSectionHTML('Still to do', 'Not handed in yet',
               X.todo.map((i, idx) => `
                 <div class="flex items-center justify-between gap-3 py-3" style="${idx < X.todo.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.07);' : ''}">
@@ -5242,7 +5242,7 @@ try {
                   </div>
                   <div class="text-sm font-bold flex-shrink-0" style="color:${CLS_COLORS.amber};">To do</div>
                 </div>`).join('')) : ''}
-            ${classSectionHTML('My classwork', null, R.items.length ? R.items.map((i, idx) => `
+            ${classSectionHTML('My tasks', null, R.items.length ? R.items.map((i, idx) => `
               <div class="flex items-center justify-between gap-3 py-3" style="${idx < R.items.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.07);' : ''}">
                 <div class="min-w-0">
                   <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(i.title)}</div>
@@ -5265,19 +5265,19 @@ try {
             return `<i title="${classRound1(pct)}%" style="height:${Math.max(6, pct)}%;flex:0 0 calc((100% - 42px) / 8);"></i>`;
           }).join('');
           return `<div class="myact-hero-bars" role="img" aria-label="${isTeacher ? 'Average score per item' : 'My score per item'}" style="opacity:.75;">${bars}</div>
-            <div class="text-[11px] text-blue-100" style="margin-top:8px;">${isTeacher ? 'Class average per item' : 'My score per item'}, latest ${vals.length}</div>`;
+            <div class="text-[11px] text-blue-100" style="margin-top:8px;">${isTeacher ? 'Space average per item' : 'My score per item'}, latest ${vals.length}</div>`;
         }
         function classHeroHTML(stats, isTeacher, series){
           return `
             <div class="rounded-3xl p-5 text-white stat-hero-pill" style="background:linear-gradient(135deg,${ROYAL},${NAVY});position:relative;overflow:hidden;">
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">${isTeacher ? 'Your class at a glance' : 'Your progress at a glance'}</div>
+                  <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">${isTeacher ? 'Your space at a glance' : 'Your progress at a glance'}</div>
                   <div class="flex gap-5" style="margin-top:12px;">
                     ${stats.map(t => `<div><div class="text-2xl font-bold font-display" style="line-height:1;">${t.v}</div><div class="text-[11px] text-blue-100">${t.l}</div></div>`).join('')}
                   </div>
                 </div>
-                <button type="button" onclick="downloadClassReport()" aria-label="${isTeacher ? 'Download class report' : 'Download my report'}" class="myact-dl-circle class-report-dl">${Icon('download','w-5 h-5')}</button>
+                <button type="button" onclick="downloadClassReport()" aria-label="${isTeacher ? 'Download space report' : 'Download my report'}" class="myact-dl-circle class-report-dl">${Icon('download','w-5 h-5')}</button>
               </div>
               ${classHeroBarsHTML(series, isTeacher)}
             </div>`;
@@ -5289,12 +5289,12 @@ try {
           if (tab === 'profile') {
             const A = classAnalytics(cls);
             return classHeroHTML([
-              { v: A.joined.length, l: 'Students' },
-              { v: A.work.length, l: 'Classwork' },
+              { v: A.joined.length, l: 'Members' },
+              { v: A.work.length, l: 'Tasks' },
               { v: A.interactions, l: 'Interactions' },
             ], true, A.perItem.map(i => i.avg)) + `<div style="height:16px;"></div>` + classPanelsHTML([
               { v: A.callLog.length, l: 'Calls held', c: CLS_COLORS.green },
-              { v: A.average !== null ? A.average + '%' : '--', l: 'Class average', c: CLS_COLORS.sky },
+              { v: A.average !== null ? A.average + '%' : '--', l: 'Space average', c: CLS_COLORS.sky },
               { v: A.completion !== null ? A.completion + '%' : '--', l: 'Handed in', c: CLS_COLORS.amber },
             ]);
           }
@@ -5305,7 +5305,7 @@ try {
             { v: R.submitted + '/' + R.total, l: 'Handed in' },
             { v: R.graded, l: 'Graded' },
           ], false, R.items.filter(i => i.percent !== null).map(i => i.percent)) + `<div style="height:16px;"></div>` + classPanelsHTML([
-            { v: A.average !== null ? A.average + '%' : '--', l: 'Class average', c: CLS_COLORS.gray },
+            { v: A.average !== null ? A.average + '%' : '--', l: 'Space average', c: CLS_COLORS.gray },
             { v: R.submitted, l: 'Handed in', c: CLS_COLORS.green },
             { v: Math.max(0, R.total - R.submitted), l: 'Still to do', c: CLS_COLORS.amber },
           ]);
@@ -5317,7 +5317,7 @@ try {
           let tab = classDetailTab;
           if (tab === 'profile' && !isTeacher) tab = 'report';
           if (tab === 'report' && isTeacher) tab = 'profile';
-          const title = tab === 'people' ? 'People' : (tab === 'profile' ? 'Class profile' : 'Class report');
+          const title = tab === 'people' ? 'People' : (tab === 'profile' ? 'Space profile' : 'Space report');
           const body = tab === 'people' ? classPeopleTabHTML(cls) : (tab === 'profile' ? classProfileBodyHTML(cls) : classMyReportBodyHTML(cls));
           const hasFooter = tab !== 'people';
           return `
@@ -5328,7 +5328,7 @@ try {
                   ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
                   ${hasFooter ? `
-                  <button id="class-report-dl-btn" type="button" onclick="downloadClassReport()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>${isTeacher ? 'Download class report' : 'Download my report'}</span></button>
+                  <button id="class-report-dl-btn" type="button" onclick="downloadClassReport()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>${isTeacher ? 'Download space report' : 'Download my report'}</span></button>
                   <div class="text-[11px] text-gray-400 text-center" style="padding:10px 0 max(24px, env(safe-area-inset-bottom));">Saves this report as a PDF on your device.</div>` : ''}
                 </div>
               </div>
@@ -5363,7 +5363,7 @@ try {
             if (error || !data) return;
             classMsgs[classId] = data;
             if (currentClassId === classId && classDetailTab === 'messages') classMsgRefresh();
-          } catch (e) { console.warn('Loading class messages failed:', e); }
+          } catch (e) { console.warn('Loading space messages failed:', e); }
         }
         async function subscribeClassMessages(classId){
           const sb = getSupabaseClient();
@@ -5415,7 +5415,7 @@ try {
           const list = (classMsgs[cls.id] || []).filter(m => m.student_id === studentId);
           if (!list.length) {
             const isT = cls.role === 'teacher';
-            return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('comment','w-8 h-8')}<div class="mt-3">${isT ? 'No messages yet. Say hi to start the conversation.' : 'No messages yet. Your teacher can text you here, and you can reply.'}</div></div>`;
+            return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('comment','w-8 h-8')}<div class="mt-3">${isT ? 'No messages yet. Say hi to start the conversation.' : 'No messages yet. Your moderator can text you here, and you can reply.'}</div></div>`;
           }
           let lastDay = '';
           return list.map(m => {
@@ -5438,7 +5438,7 @@ try {
             const last = msgs[msgs.length - 1];
             return { s, last, unread: classMsgUnreadIn(cls.id, s.id), t: last ? Date.parse(last.created_at) : 0, name: classStudentName(cls, s) };
           }).sort((a, b) => (b.t - a.t) || a.name.localeCompare(b.name));
-          if (!rows.length) return `<div class="flex flex-col items-center text-center text-gray-400 text-sm px-6" style="padding-top:36px;padding-bottom:48px;">${Icon('users','w-8 h-8')}<div class="mt-3">No students have joined this class yet. Once they do, you can text them here.</div></div>`;
+          if (!rows.length) return `<div class="flex flex-col items-center text-center text-gray-400 text-sm px-6" style="padding-top:36px;padding-bottom:48px;">${Icon('users','w-8 h-8')}<div class="mt-3">No members have joined this space yet. Once they do, you can text them here.</div></div>`;
           return rows.map(r => `
             <button onclick="openClassMsgThread('${r.s.id}')" class="w-full flex items-center gap-3 py-3 text-left border-b border-gray-100">
               <span class="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classStudentAvatarHTML(r.s, 'w-5 h-5')}</span>
@@ -5461,7 +5461,7 @@ try {
           if (inThread) {
             if (isTeacher) {
               const s = classRosterList(cls).find(x => x.id === studentId);
-              title = s ? classStudentName(cls, s) : 'Student';
+              title = s ? classStudentName(cls, s) : 'Member';
             } else title = classTeacherDisplayName(cls);
           }
           const header = overlayHeader(`<span class="nm-wrap nm-left" style="display:block;max-width:60vw;"><span class="nm-inner">${escapeHtml(title)}</span></span>`, 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: inThread ? 'text-xl' : 'text-3xl' });
@@ -5594,9 +5594,9 @@ try {
             if (exists) { if (i !== -1) list.splice(i, 1); } else if (i !== -1) list[i] = data;
             classMsgRefresh();
             const recipient = cls.role === 'teacher' ? studentId : cls.teacherId;
-            try { sendPushTo(recipient, { title: (profileData && profileData.name || 'Class message') + ' · ' + cls.name, body: text.slice(0, 120), tag: 'class-msg-' + cls.id, data: { kind: 'classMessage', classId: cls.id } }); } catch (e) {}
+            try { sendPushTo(recipient, { title: (profileData && profileData.name || 'Space message') + ' · ' + cls.name, body: text.slice(0, 120), tag: 'class-msg-' + cls.id, data: { kind: 'classMessage', classId: cls.id } }); } catch (e) {}
           } catch (e) {
-            console.warn('Sending class message failed:', e);
+            console.warn('Sending space message failed:', e);
             const list = classMsgs[cls.id] || [];
             const i = list.indexOf(tmp); if (i !== -1) list.splice(i, 1);
             classMsgRefresh();
@@ -5625,7 +5625,7 @@ try {
             await prog.finish();
           } catch (e) {
             prog.stop();
-            console.warn('Class report PDF failed:', e);
+            console.warn('Space report PDF failed:', e);
             if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't prepare your PDF. Check your connection and try again.");
           } finally {
             // the shared download helper puts the buttons back
@@ -5687,13 +5687,13 @@ try {
           // charts ----
           const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
           const intro = isTeacher
-            ? (`This Class Report is a summary of how ${cls.name} is going on Stitch: who has joined, the classwork you have posted, how students are scoring, who is handing work in, and how much the class talks and meets. `
-              + `${cls.name} has ${plural(A.joined.length, 'student')} who have joined and ${plural(A.work.length, 'piece')} of classwork`
-              + (A.average !== null ? `, with a class average of ${A.average}%${A.ranked.length ? ' and ' + A.ranked[0].name + ' at the top with ' + A.ranked[0].overall + '%' : ''}. ` : ', and nothing has been graded yet. ')
-              + `This document is a snapshot saved on the date above, so every number reflects the class at that moment and will change as you keep teaching.`)
-            : (`This Class Report is a summary of your own results in ${cls.name} on Stitch: what you have handed in, how you scored on each item, and how you compare with the rest of the class. `
+            ? (`This Space Report is a summary of how ${cls.name} is going on Stitch: who has joined, the tasks you have posted, how members are scoring, who is handing work in, and how much the space talks and meets. `
+              + `${cls.name} has ${plural(A.joined.length, 'member')} who have joined and ${plural(A.work.length, 'piece')} of work`
+              + (A.average !== null ? `, with a space average of ${A.average}%${A.ranked.length ? ' and ' + A.ranked[0].name + ' at the top with ' + A.ranked[0].overall + '%' : ''}. ` : ', and nothing has been graded yet. ')
+              + `This document is a snapshot saved on the date above, so every number reflects the space at that moment and will change as you keep moderating.`)
+            : (`This Space Report is a summary of your own results in ${cls.name} on Stitch: what you have handed in, how you scored on each item, and how you compare with the rest of the space. `
               + `You have handed in ${R.submitted} of ${R.total} assignment${R.total === 1 ? '' : 's'} and quizzes`
-              + (R.overall !== null ? `, with an overall score of ${R.overall}%${A.average !== null ? ' against a class average of ' + A.average + '%' : ''}. ` : ', and nothing has been graded yet. ')
+              + (R.overall !== null ? `, with an overall score of ${R.overall}%${A.average !== null ? ' against a space average of ' + A.average + '%' : ''}. ` : ', and nothing has been graded yet. ')
               + `This document is a snapshot saved on the date above, so every number reflects your results at that moment.`);
           color('#4b5563'); font(9, false);
           const introLines = doc.splitTextToSize(txt(intro), CW);
@@ -5827,13 +5827,13 @@ try {
           const gc = { A: C.green, B: C.sky, C: C.amber, D: '#f97316', F: C.red };
           if (isTeacher) {
             tiles([
-              { v: A.joined.length, l: 'Students joined', c: C.sky },
-              { v: A.average !== null ? A.average + '%' : '--', l: 'Class average', c: C.green },
+              { v: A.joined.length, l: 'Members joined', c: C.sky },
+              { v: A.average !== null ? A.average + '%' : '--', l: 'Space average', c: C.green },
               { v: A.completion !== null ? A.completion + '%' : '--', l: 'Work handed in', c: C.amber },
-              { v: A.work.length, l: 'Classwork posted', c: C.purple },
+              { v: A.work.length, l: 'Tasks posted', c: C.purple },
             ]);
 
-            section(C.sky, 'Who joined', 'Students in the class compared with people still to join', 50);
+            section(C.sky, 'Who joined', 'Members in the space compared with people still to join', 50);
             pie([
               { label: 'Joined', value: A.joined.length, color: C.sky },
               { label: 'Invited, not joined', value: A.invited.length, color: C.amber },
@@ -5841,13 +5841,13 @@ try {
             ], 'Nobody has joined yet.');
 
             if (X.W) {
-              section(C.blue, 'Class activity', 'Announcements and calls, last 8 weeks', 90);
+              section(C.blue, 'Space activity', 'Announcements and calls, last 8 weeks', 90);
               bars(X.W.labels.map((l, i) => ({ label: l, value: X.W.ann[i], color: C.blue })), 32);
               sub2('Call minutes per week');
               lines(X.W.labels, [{ name: 'Call minutes', color: C.green, values: X.W.calls }], 30);
             }
 
-            section(C.amber, 'Classwork posted', 'What has been posted so far', 60);
+            section(C.amber, 'Tasks posted', 'What has been posted so far', 60);
             bars([
               { label: 'Assign.', value: A.byType.assignment, color: C.sky },
               { label: 'Quiz', value: A.byType.quiz, color: C.purple },
@@ -5856,13 +5856,13 @@ try {
               { label: 'Material', value: A.byType.material, color: C.green },
             ], 32);
 
-            section(C.green, 'Handed in vs missing', 'Turn-ins across every student and every assignment or quiz', 50);
+            section(C.green, 'Handed in vs missing', 'Turn-ins across every member and every assignment or quiz', 50);
             pie([
               { label: 'Handed in', value: A.done, color: C.green },
               { label: 'Missing', value: Math.max(0, A.possible - A.done), color: C.amber },
             ], 'Nothing to hand in yet.');
 
-            section(C.amber, 'Who is topping the class', 'Ranked by overall average on graded assignments and quizzes', 40);
+            section(C.amber, 'Who is leading the space', 'Ranked by overall average on graded assignments and quizzes', 40);
             if (!A.ranked.length) empty('Nobody has a graded score yet.');
             else {
               const medal = ['#f59e0b', '#9ca3af', '#b45309'];
@@ -5877,10 +5877,10 @@ try {
               y += 3;
             }
 
-            section(C.blue, 'Grades by student', 'Every student, highest first', 40);
+            section(C.blue, 'Grades by member', 'Every member, highest first', 40);
             const tableRows = A.ranked.map((r, i) => ({ rank: i + 1, name: r.name, avg: r.overall + '%', grade: classGradeLetter(r.overall), done: r.submitted + '/' + r.total, _top: i === 0 }))
               .concat(A.unranked.map(r => ({ rank: '-', name: r.name, avg: '--', grade: '-', done: r.submitted + '/' + r.total })));
-            if (!tableRows.length) empty('No students have joined yet.');
+            if (!tableRows.length) empty('No members have joined yet.');
             else table([
               { k: 'rank', h: 'RANK', x: M, w: 14 },
               { k: 'name', h: 'STUDENT', x: M + 14, w: CW - 14 - 70 },
@@ -5889,13 +5889,13 @@ try {
               { k: 'done', h: 'HANDED IN', x: M + CW - 24, w: 24, align: 'right' },
             ], tableRows);
 
-            section(C.purple, 'Grade distribution', 'Students per grade (A 80+, B 70+, C 60+, D 50+, F below 50)', 60);
+            section(C.purple, 'Grade distribution', 'Members per grade (A 80+, B 70+, C 60+, D 50+, F below 50)', 60);
             bars(['A', 'B', 'C', 'D', 'F'].map(g => ({ label: g, value: A.dist[g], color: gc[g] })), 32);
-            sub2('Every student, plotted (higher = better average, gold = top student)');
-            scatter(X.pts, 'Lowest', 'Highest', 'Students will be plotted here once they have graded work.');
+            sub2('Every member, plotted (higher = better average, gold = top member)');
+            scatter(X.pts, 'Lowest', 'Highest', 'Members will be plotted here once they have graded work.');
 
             if (A.perItem.length) {
-              section(C.sky, 'Average score by classwork', null, 40);
+              section(C.sky, 'Average score by task', null, 40);
               hbars(A.perItem.slice(0, 20).map(i => ({ label: i.title, value: i.avg, display: i.avg + '%', color: C.sky })));
             }
             if (X.typeRows.length > 1) {
@@ -5903,7 +5903,7 @@ try {
               hbars(X.typeRows);
             }
 
-            section(C.red, 'Interactions', 'How students engaged with the class', 60);
+            section(C.red, 'Interactions', 'How members engaged with the space', 60);
             bars([
               { label: 'Comments', value: A.comments, color: C.sky },
               { label: 'Turn-ins', value: A.submissions, color: C.green },
@@ -5911,7 +5911,7 @@ try {
               { label: 'Poll votes', value: A.pollVotes, color: C.amber },
             ], 32);
 
-            section(C.green, 'Calls', 'Live lectures and calls', 40);
+            section(C.green, 'Calls', 'Live sessions and calls', 40);
             tiles([
               { v: A.callLog.length, l: 'Calls held', c: C.green },
               { v: classFmtDuration(A.callSeconds), l: 'Total call time', c: C.sky },
@@ -5919,7 +5919,7 @@ try {
             ]);
 
             if (X.attention.length) {
-              section(C.red, 'Worth a check-in', 'Students under 60% or with nothing handed in', 40);
+              section(C.red, 'Worth a check-in', 'Members under 60% or with nothing handed in', 40);
               listRows(X.attention.map(r => ({ title: r.name, right: r.note })), C.red);
             }
             if (X.poll) {
@@ -5929,12 +5929,12 @@ try {
           } else {
             tiles([
               { v: R.overall !== null ? R.overall + '%' : '--', l: 'My overall score', c: C.sky },
-              { v: A.average !== null ? A.average + '%' : '--', l: 'Class average', c: C.gray },
+              { v: A.average !== null ? A.average + '%' : '--', l: 'Space average', c: C.gray },
               { v: R.submitted + '/' + R.total, l: 'Work handed in', c: C.green },
               { v: R.graded, l: 'Items graded', c: C.purple },
             ]);
 
-            section(C.amber, 'Where I stand', 'Compared with the rest of the class', 40);
+            section(C.amber, 'Where I stand', 'Compared with the rest of the space', 40);
             tiles([
               { v: S.rank ? S.rank + ' of ' + A.ranked.length : '--', l: 'My rank', c: C.amber },
               { v: R.overall !== null ? classGradeLetter(R.overall) : '--', l: 'My grade', c: C.sky },
@@ -5953,10 +5953,10 @@ try {
             else bars(S.scored.slice(-10).map(i => ({ label: i.title, value: i.percent, display: i.percent + '%', color: C.sky })), 34, 100);
 
             if (S.recent.length >= 2) {
-              section(C.blue, 'Me and the class, item by item', 'Items in order, oldest to newest', 60);
+              section(C.blue, 'Me and the space, item by item', 'Items in order, oldest to newest', 60);
               lines(S.recent.map((_, i) => String(i + 1)), [
                 { name: 'Me', color: C.sky, values: S.recent.map(i => i.percent) },
-                { name: 'Class average', color: C.gray, values: S.recent.map(i => i.classAvg != null ? i.classAvg : 0) },
+                { name: 'Space average', color: C.gray, values: S.recent.map(i => i.classAvg != null ? i.classAvg : 0) },
               ], 34);
             }
 
@@ -5964,8 +5964,8 @@ try {
             pie(S.typeSlices, 'Nothing handed in yet.');
 
             if (R.overall !== null && A.average !== null) {
-              section(C.cyan, 'Me and the class', null, 30);
-              hbars([{ label: 'You', value: R.overall, display: R.overall + '%', color: C.sky }, { label: 'Class average', value: A.average, display: A.average + '%', color: C.gray }]);
+              section(C.cyan, 'Me and the space', null, 30);
+              hbars([{ label: 'You', value: R.overall, display: R.overall + '%', color: C.sky }, { label: 'Space average', value: A.average, display: A.average + '%', color: C.gray }]);
             }
 
             if (S.todo.length) {
@@ -5973,7 +5973,7 @@ try {
               listRows(S.todo.map(i => ({ title: i.title, sub: i.type + (i.due ? '  -  Due ' + i.due : ''), right: 'To do' })), C.amber);
             }
 
-            section(C.red, 'My classwork', 'Every assignment and quiz', 40);
+            section(C.red, 'My tasks', 'Every assignment and quiz', 40);
             if (!R.items.length) empty('Nothing has been assigned yet.');
             else table([
               { k: 'title', h: 'TITLE', x: M, w: CW - 90 },
@@ -5992,13 +5992,13 @@ try {
             try {
               const LW = 12, LH = LW * 204 / 500;
               doc.addImage('data:image/png;base64,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', 'PNG', M, PH - 9 - 0.95 - LH * 0.52, LW, LH, 'stitch-logo', 'FAST');
-              doc.text('-  Class Report', M + LW + 1.5, PH - 9);
+              doc.text('-  Space Report', M + LW + 1.5, PH - 9);
             } catch (e) {
-              doc.text('Stitch  -  Class Report', M, PH - 9);
+              doc.text('Stitch  -  Space Report', M, PH - 9);
             }
             doc.text('Page ' + i + ' of ' + pages, PW - M, PH - 9, { align: 'right' });
           }
-          const slug = txt(cls.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'class';
+          const slug = txt(cls.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'space';
           doc.save((isTeacher ? 'class-report-' : 'my-class-report-') + slug + '-' + new Date().toISOString().slice(0, 10) + '.pdf');
         }
 
@@ -6042,17 +6042,17 @@ try {
             : classNoDataHTML('No announcements yet.', 'bars');
 
           const peopleGraph = classPieHTML([
-            { label: 'Students', value: totalStudents, color: C.sky },
-            { label: 'Co-teachers', value: totalCoTeachers, color: C.purple },
-            { label: 'Class owner', value: 1, color: C.green },
+            { label: 'Members', value: totalStudents, color: C.sky },
+            { label: 'Co-moderators', value: totalCoTeachers, color: C.purple },
+            { label: 'Space owner', value: 1, color: C.green },
           ], 'No people yet.');
 
           return `
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Overview</div>
-            ${card('Students', totalStudents, 'Who has joined and who is still to join', 'people', studentsGraph)}
-            ${card('Classwork', totalClasswork, 'What you have posted, by type', 'classwork', classworkGraph)}
+            ${card('Members', totalStudents, 'Who has joined and who is still to join', 'people', studentsGraph)}
+            ${card('Tasks', totalClasswork, 'What you have posted, by type', 'classwork', classworkGraph)}
             ${card('Announcements', totalAnnouncements, 'Posted in the last 8 weeks', 'stream', announcementsGraph)}
-            ${card('Co-teachers', totalCoTeachers, 'Teaching team compared with students', 'people', peopleGraph)}
+            ${card('Co-moderators', totalCoTeachers, 'Moderating team compared with members', 'people', peopleGraph)}
           `;
         }
 
@@ -6115,7 +6115,7 @@ try {
               </div>`).join('') : `
               <div class="flex flex-col items-center text-center py-10">
                 <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('comment','w-9 h-9')}</div>
-                <div class="font-bold text-gray-700 mb-1">This is where you can talk to your class</div>
+                <div class="font-bold text-gray-700 mb-1">This is where you can talk to your space</div>
                 <div class="text-sm text-gray-400 leading-relaxed">Use the stream to share announcements, post assignments, and respond to questions</div>
               </div>`}`;
         }
@@ -6145,7 +6145,7 @@ try {
           return `
             <div class="border-t border-gray-100 pt-3">
               ${comments.length ? `
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Class comments</div>
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Space comments</div>
                 <div class="space-y-2.5 mb-3">
                   ${comments.map(c => `
                     <div class="flex items-start gap-2.5">
@@ -6157,7 +6157,7 @@ try {
                     </div>`).join('')}
                 </div>` : ''}
               <div class="flex items-end gap-2">
-                <textarea id="stream-comment-input-${a.id}" placeholder="Add class comment" rows="1" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); addStreamComment('${a.id}'); }" class="flex-1 min-w-0 bg-gray-100 rounded-3xl px-4 py-2 text-sm resize-none overflow-hidden" style="max-height:140px;"></textarea>
+                <textarea id="stream-comment-input-${a.id}" placeholder="Add space comment" rows="1" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); addStreamComment('${a.id}'); }" class="flex-1 min-w-0 bg-gray-100 rounded-3xl px-4 py-2 text-sm resize-none overflow-hidden" style="max-height:140px;"></textarea>
                 <button onclick="addStreamComment('${a.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
               </div>
             </div>`;
@@ -6204,7 +6204,7 @@ try {
           const a = (cls.announcements || []).find(x => x.id === announcementId);
           if (!a) return;
           deleteAnnouncementPendingId = announcementId;
-          openLeaveClassModal(confirmDeleteClassAnnouncement, 'Delete this announcement?', 'This will remove it from the class stream for everyone. This cannot be undone.', 'trash');
+          openLeaveClassModal(confirmDeleteClassAnnouncement, 'Delete this announcement?', 'This will remove it from the space stream for everyone. This cannot be undone.', 'trash');
         }
         function confirmDeleteClassAnnouncement(){
           const cls = myClasses.find(c => c.id === currentClassId);
@@ -6248,8 +6248,8 @@ try {
         function lectureActionPillsHTML(){
           return `
             <div class="flex gap-2 mb-4">
-              <button onclick="startLiveLectureNow()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('video','w-4 h-4')} Start Lecture</button>
-              <button onclick="openScheduleLectureOverlay()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('calendar','w-4 h-4')} Schedule Lecture</button>
+              <button onclick="startLiveLectureNow()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('video','w-4 h-4')} Start Session</button>
+              <button onclick="openScheduleLectureOverlay()" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-white border border-gray-300">${Icon('calendar','w-4 h-4')} Schedule Session</button>
             </div>`;
         }
 
@@ -6301,7 +6301,7 @@ try {
         function lectureCountdownSlotHTML(l, isTeacher){
           const left = lectureStartMs(l) - Date.now();
           if (left < -LECTURE_AUTO_START_GRACE_MS) {
-            return isTeacher ? `<button onclick="startScheduledLectureNow('${l.id}')" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Start now</button>` : `<span class="text-xs font-semibold text-gray-400 flex-shrink-0">Waiting for teacher</span>`;
+            return isTeacher ? `<button onclick="startScheduledLectureNow('${l.id}')" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Start now</button>` : `<span class="text-xs font-semibold text-gray-400 flex-shrink-0">Waiting for moderator</span>`;
           }
           return lectureCountdownPillHTML(l);
         }
@@ -6310,7 +6310,7 @@ try {
         function lectureAlertKey(lid, ms){ return 'stitchLecAlert:' + lid + ':' + ms; }
         function fireLectureAlert(cls, l, label){
           const title = 'Call starts in ' + label;
-          const body = (l.title || 'Lecture') + ' · ' + cls.name;
+          const body = (l.title || 'Session') + ' · ' + cls.name;
           if ('Notification' in window && Notification.permission === 'granted') {
             try { new Notification(title, { body, tag: 'lecture-countdown-' + l.id }); } catch (e) {}
           }
@@ -6347,8 +6347,8 @@ try {
                   icon: 'video',
                   iconBg: 'bg-amber-50',
                   iconClass: 'text-amber-600',
-                  name: cls.name || 'Your class',
-                  message: `Your scheduled meeting "${l.title || 'Lecture'}" (${formatReminderDate(l.date)} at ${formatTime12(l.time)}) was removed because nobody joined it within a day.`,
+                  name: cls.name || 'Your space',
+                  message: `Your scheduled meeting "${l.title || 'Session'}" (${formatReminderDate(l.date)} at ${formatTime12(l.time)}) was removed because nobody joined it within a day.`,
                   classId: cls.id,
                 });
               }
@@ -6362,7 +6362,7 @@ try {
             const one = removed.length === 1;
             const title = one ? 'Scheduled meeting removed' : removed.length + ' scheduled meetings removed';
             const body = one
-              ? `"${removed[0].l.title || 'Lecture'}" in ${removed[0].cls.name} was removed because nobody joined it within a day.`
+              ? `"${removed[0].l.title || 'Session'}" in ${removed[0].cls.name} was removed because nobody joined it within a day.`
               : 'They were removed because nobody joined them within a day.';
             if ('Notification' in window && Notification.permission === 'granted') {
               try { new Notification(title, { body, tag: 'lecture-expired' }); } catch (e) {}
@@ -6425,7 +6425,7 @@ try {
                 ${lectureCountdownSlotHTML(l, isTeacher)}
               </div>
               ${isTeacher ? `<div class="call-min-actions flex items-center border-t border-gray-100">
-                <button onclick="cancelScheduledLecture('${l.id}')" class="flex-1 py-2.5 text-xs font-semibold text-red-500" style="color:#ef4444;">Cancel class meeting</button>
+                <button onclick="cancelScheduledLecture('${l.id}')" class="flex-1 py-2.5 text-xs font-semibold text-red-500" style="color:#ef4444;">Cancel meeting</button>
               </div>` : ''}
             </div>`;
           }
@@ -6439,7 +6439,7 @@ try {
                   <div class="text-xs text-gray-500 truncate">Live now</div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                  <button onclick="event.stopPropagation();shareLectureLink('${currentClassId}','${l.id}')" title="Share lecture link" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('link','w-4 h-4')}</button>
+                  <button onclick="event.stopPropagation();shareLectureLink('${currentClassId}','${l.id}')" title="Share session link" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('link','w-4 h-4')}</button>
                   ${isMineMinimized
                     ? `<button onclick="event.stopPropagation();resumeLecture()" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Return</button>`
                     : `<button onclick="event.stopPropagation();joinLiveLecture('${l.id}')" class="text-xs font-bold px-3 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Join</button>`}
@@ -6457,13 +6457,13 @@ try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(link).catch(() => {});
           }
-          pushInAppNotification('Link copied', 'Lecture link copied to your clipboard.');
+          pushInAppNotification('Link copied', 'Session link copied to your clipboard.');
         }
 
         function shareLectureLink(classId, lectureId){
           const link = buildLectureInviteLink(classId, lectureId);
           if (navigator.share) {
-            navigator.share({ title: 'Join this lecture', text: "Join this live lecture on Stitch -- you don't need to join the class.", url: link }).catch(() => {});
+            navigator.share({ title: 'Join this session', text: "Join this live session on Stitch -- you don't need to join the space.", url: link }).catch(() => {});
           } else {
             copyLectureLink(classId, lectureId);
           }
@@ -6600,7 +6600,7 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
           if (!cls.lectures) cls.lectures = [];
-          const lecture = { id: 'lec-' + Date.now(), title: cls.name + ' · Live Lecture', date: '', time: '', status: 'live' };
+          const lecture = { id: 'lec-' + Date.now(), title: cls.name + ' · Live Session', date: '', time: '', status: 'live' };
           cls.lectures.unshift(lecture);
           queueSaveClassRemote(cls);
           ringClassMembersForLecture(cls, lecture);
@@ -6655,15 +6655,15 @@ try {
           const members = Array.isArray(cls.members) ? cls.members : [];
           if (!members.length) return; 
           const myId = await getCurrentUserId();
-          const callerName = (typeof profileData !== 'undefined' && profileData.name) || 'Your teacher';
+          const callerName = (typeof profileData !== 'undefined' && profileData.name) || 'Your moderator';
           const callerPhoto = (typeof profileData !== 'undefined' && profileData.photo) || null;
           const lecturePayload = { id: lecture.id, title: lecture.title, date: lecture.date, time: lecture.time };
           members.forEach(uid => {
             if (!uid || uid === myId) return;
             broadcastLectureRingToUser(uid, { classId: cls.id, className: cls.name, lecture: lecturePayload, callerName, callerPhoto });
             sendPushTo(uid, {
-              title: `${callerName} started a lecture in ${cls.name}`,
-              body: lecture.title || 'Live lecture',
+              title: `${callerName} started a session in ${cls.name}`,
+              body: lecture.title || 'Live session',
               tag: 'lecture-' + lecture.id,
               data: { kind: 'lecture', classId: cls.id, lectureId: lecture.id },
             });
@@ -6687,8 +6687,8 @@ try {
               icon: 'video',
               iconBg: 'bg-blue-50',
               iconClass: 'text-blue-600',
-              name: payload.className || 'Your class',
-              message: `${payload.callerName || 'Your teacher'} started "${payload.lecture.title || 'Live Lecture'}"`,
+              name: payload.className || 'Your space',
+              message: `${payload.callerName || 'Your moderator'} started "${payload.lecture.title || 'Live Session'}"`,
               classId: payload.classId,
             });
           }
@@ -6717,7 +6717,7 @@ try {
           if (!cls) {
             // Don't dead-end here: fetch the class live and join right away, so being mid-way through
             // something else
-            runClassActionLoading('Joining lecture', 'video', async () => {
+            runClassActionLoading('Joining session', 'video', async () => {
               const fetched = await fetchClassByIdRemote(classId);
               if (fetched) {
                 const existingIdx = myClasses.findIndex(c => c.id === fetched.id);
@@ -6729,7 +6729,7 @@ try {
                 currentClassId = classId;
                 joinLiveLecture(lecture.id);
               } else {
-                throw new Error("Couldn't join that class right now. Please check your connection and try again.");
+                throw new Error("Couldn't join that space right now. Please check your connection and try again.");
               }
             });
             return;
@@ -6753,9 +6753,9 @@ try {
           const info = incomingLectureCallInfo || {};
           const lecture = info.lecture || {};
           return cuIncomingHTML({
-            kicker: 'Incoming lecture',
-            name: info.className || 'Class Lecture',
-            sub: `${info.callerName || 'Your teacher'} started "${lecture.title || 'Live Lecture'}"`,
+            kicker: 'Incoming session',
+            name: info.className || 'Space Session',
+            sub: `${info.callerName || 'Your moderator'} started "${lecture.title || 'Live Session'}"`,
             avatar: info.callerPhoto ? `<img src="${escapeHtml(info.callerPhoto)}" class="w-full h-full object-cover">` : Icon('video', 'w-14 h-14 text-gray-400'),
             declineAction: 'declineIncomingLectureCall()',
             acceptAction: 'acceptIncomingLectureCall()',
@@ -6809,7 +6809,7 @@ try {
           if (joiningAsTeacher) {
             setTimeout(() => {
               if (liveLectureState.connected && liveLectureState.lectureId === lectureId && !Object.keys(lecturePresence).length) {
-                pushInAppNotification('No one else yet', 'No one else has joined this lecture yet. Invite them from the People tab.');
+                pushInAppNotification('No one else yet', 'No one else has joined this session yet. Invite them from the People tab.');
               }
             }, 2500);
           }
@@ -6869,9 +6869,9 @@ try {
             <div class="flex-1 flex flex-col items-center justify-center px-8 text-center relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="cancelGuestLectureJoin()" title="Back" class="absolute w-10 h-10 rounded-full flex items-center justify-center" style="top:calc(var(--top-safe-pad) + 12px);left:16px;background:rgba(127,127,127,0.14);">${IconBold('back','w-5 h-5')}</button>
               <div class="w-16 h-16 rounded-full flex items-center justify-center mb-5" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('video','w-7 h-7')}</div>
-              <div class="text-xl font-bold font-display mb-2">You're invited to a live lecture</div>
-              <div class="text-sm text-gray-500 mb-6 leading-relaxed">Join as ${escapeHtml(name)}. You'll only join this lecture -- not the rest of the class, its roster, or its classwork.</div>
-              <button onclick="submitGuestLectureJoin()" class="w-full max-w-xs font-semibold py-3 rounded-full text-white mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Join lecture</button>
+              <div class="text-xl font-bold font-display mb-2">You're invited to a live session</div>
+              <div class="text-sm text-gray-500 mb-6 leading-relaxed">Join as ${escapeHtml(name)}. You'll only join this session -- not the rest of the space, its roster, or its tasks.</div>
+              <button onclick="submitGuestLectureJoin()" class="w-full max-w-xs font-semibold py-3 rounded-full text-white mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Join session</button>
             </div>`;
         }
 
@@ -6970,7 +6970,7 @@ try {
 
         function updateLecturePresenceTrack(){
           if (!lectureChannel || !myLecturePeerId) return;
-          lectureChannel.track({ name: (profileData && profileData.name) || 'Student', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: liveLectureState.handRaised, isTeacher: lectureIsTeacher() });
+          lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: liveLectureState.handRaised, isTeacher: lectureIsTeacher() });
         }
 
         function updateLectureLocalBadges(){
@@ -6987,7 +6987,7 @@ try {
             cam: { id: 'lecture-cam-btn', onclick: "toggleLectureControl('camOff')", icon: st.camOff ? 'cameraOff' : 'video', label: st.camOff ? 'Start video' : 'Camera', on: !!st.camOff },
             hand: { id: 'lecture-hand-btn', onclick: 'toggleLectureHand()', icon: 'handRaised', label: st.handRaised ? 'Lower' : 'Raise', on: !!st.handRaised, title: 'Raise hand' },
             more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!lectureMoreSheetOpen },
-            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End lecture' : 'Leave' },
+            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End session' : 'Leave' },
           };
         }
 
@@ -7265,8 +7265,8 @@ try {
             <div id="lecture-inline-panel" class="call-min-card rounded-2xl overflow-hidden bg-white mb-3">
               <div onclick="resumeLecture()" class="flex items-center gap-3 px-4 py-3 select-none cursor-pointer">
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(l.title || 'Live class')}</div>
-                  <div class="text-xs text-gray-500 truncate">Class in progress &middot; <span id="lecture-inline-timer">${formatCallTime(liveLectureState.seconds)}</span></div>
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(l.title || 'Live session')}</div>
+                  <div class="text-xs text-gray-500 truncate">Session in progress &middot; <span id="lecture-inline-timer">${formatCallTime(liveLectureState.seconds)}</span></div>
                 </div>
                 <button onclick="event.stopPropagation();lectureBannerToggleMute()" id="lecture-inline-mute-btn" title="Mute" class="call-min-mute-btn w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0">${Icon(muted ? 'micOff' : 'mic','w-4 h-4')}</button>
                 <button onclick="event.stopPropagation();endLecture()" title="End call" class="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0">${Icon('phoneHangup','w-4 h-4')}</button>
@@ -7395,9 +7395,9 @@ try {
           const list = document.getElementById('lectureAddList');
           if (!modal || !list) return;
           modal.classList.remove('hidden');
-          list.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">Loading class members...</div>';
+          list.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">Loading space members...</div>';
           const ids = lectureAddCandidateIds();
-          if (!ids.length) { list.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">No one else has joined this class yet.</div>'; return; }
+          if (!ids.length) { list.innerHTML = '<div class="text-sm text-gray-400 text-center py-6">No one else has joined this space yet.</div>'; return; }
           let profiles = {};
           const sb = getSupabaseClient();
           try {
@@ -7408,7 +7408,7 @@ try {
           } catch (e) {}
           list.innerHTML = ids.map(uid => {
             const pr = profiles[uid] || {};
-            const name = pr.name || pr.username || 'Class member';
+            const name = pr.name || pr.username || 'Space member';
             const done = lectureAddRinged.has(uid);
             return `<div class="flex items-center gap-3 py-2">
               <div class="w-10 h-10 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0">${avatarMediaHTML(pr.photo || null, 'user', 'w-5 h-5')}</div>
@@ -7425,10 +7425,10 @@ try {
           const cls = myClasses.find(c => c.id === liveLectureState.classId);
           if (!cls || !uid) return;
           if (!lectureAddCandidateIds().includes(uid)) return;
-          const l = (cls.lectures || []).find(x => x.id === liveLectureState.lectureId) || { id: liveLectureState.lectureId, title: 'Live class' };
+          const l = (cls.lectures || []).find(x => x.id === liveLectureState.lectureId) || { id: liveLectureState.lectureId, title: 'Live session' };
           const callerName = (profileData && profileData.name) || 'Someone';
           broadcastLectureRingToUser(uid, { classId: cls.id, className: cls.name, lecture: { id: l.id, title: l.title, date: l.date, time: l.time }, callerName, callerPhoto: (profileData && profileData.photo) || null });
-          try { sendPushTo(uid, { title: `${callerName} added you to a class call in ${cls.name}`, body: l.title || 'Live class', tag: 'lecture-' + l.id, data: { kind: 'lecture', classId: cls.id, lectureId: l.id } }); } catch (e) {}
+          try { sendPushTo(uid, { title: `${callerName} added you to a space call in ${cls.name}`, body: l.title || 'Live session', tag: 'lecture-' + l.id, data: { kind: 'lecture', classId: cls.id, lectureId: l.id } }); } catch (e) {}
           lectureAddRinged.add(uid);
           const btn = document.getElementById('lecture-add-btn-' + uid);
           if (btn) { btn.textContent = 'Invited'; btn.disabled = true; btn.style.background = '#9ca3af'; }
@@ -7455,7 +7455,7 @@ try {
           if (cls && (isTeacher || remoteEnded)) {
             if (isTeacher) {
               const endedLec = (cls.lectures || []).find(l => l.id === liveLectureState.lectureId);
-              cls.callLog = (cls.callLog || []).concat([{ id: liveLectureState.lectureId, title: (endedLec && endedLec.title) || 'Live class', endedAt: Date.now(), seconds: liveLectureState.seconds || 0 }]).slice(-200);
+              cls.callLog = (cls.callLog || []).concat([{ id: liveLectureState.lectureId, title: (endedLec && endedLec.title) || 'Live session', endedAt: Date.now(), seconds: liveLectureState.seconds || 0 }]).slice(-200);
             }
             cls.lectures = (cls.lectures || []).filter(l => l.id !== liveLectureState.lectureId);
             if (isTeacher) queueSaveClassRemote(cls);
@@ -7533,7 +7533,7 @@ try {
         // Teacher-only: silence the whole room in one tap (students can unmute themselves again)
         function muteEveryoneInLecture(){
           if (!lectureIsTeacher()) return;
-          if (!Object.keys(lecturePresence).length) { pushInAppNotification('Lecture', 'No one else has joined this lecture yet.'); return; }
+          if (!Object.keys(lecturePresence).length) { pushInAppNotification('Session', 'No one else has joined this session yet.'); return; }
           broadcastLectureSignal({ type: 'mute-all' });
           Object.keys(lecturePresence).forEach(k => { lecturePresence[k].muted = true; });
           updateLectureRemoteBadges();
@@ -7633,7 +7633,7 @@ try {
           lectureChannel.on('presence', { event: 'sync' }, () => syncLecturePresence());
           lectureChannel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-              lectureChannel.track({ name: (profileData && profileData.name) || 'Student', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: false, isTeacher: lectureIsTeacher() });
+              lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: false, isTeacher: lectureIsTeacher() });
             }
           });
         }
@@ -7648,7 +7648,7 @@ try {
             const meta = (state[key] && state[key][0]) || {};
             seen.add(key);
             if (!lecturePresence[key]) newlyJoined.push(key);
-            lecturePresence[key] = { name: meta.name || 'Student', photo: meta.photo || null, muted: !!meta.muted, camOff: !!meta.camOff, handRaised: !!meta.handRaised, isTeacher: !!meta.isTeacher };
+            lecturePresence[key] = { name: meta.name || 'Member', photo: meta.photo || null, muted: !!meta.muted, camOff: !!meta.camOff, handRaised: !!meta.handRaised, isTeacher: !!meta.isTeacher };
             ensureLecturePeerConnection(key);
           });
           let anyoneLeft = false;
@@ -7792,7 +7792,7 @@ try {
               updateLecturePresenceTrack();
               updateLectureInlinePanel();
               if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
-              callToast('Your teacher muted everyone');
+              callToast('Your moderator muted everyone');
             }
             return;
           }
@@ -7806,7 +7806,7 @@ try {
           }
           if (payload.type === 'end') {
             endLecture(true);
-            openAppAlertModal('Your teacher ended the lecture.');
+            openAppAlertModal('Your moderator ended the session.');
             return;
           }
           if (lectureIsTeacher()) return; 
@@ -7890,7 +7890,7 @@ try {
                 <input type="file" id="wb-attach-input" accept=".pdf,.pptx" class="hidden" onchange="handleWbAttachFile(event)">
               </div>` : `
               <div class="flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
-                <span class="text-xs font-semibold text-gray-400">Your teacher is presenting the whiteboard</span>
+                <span class="text-xs font-semibold text-gray-400">Your moderator is presenting the whiteboard</span>
               </div>`}
               <div id="lecture-whiteboard-stage" class="flex-1 relative bg-white overflow-hidden">
                 <canvas id="lecture-whiteboard-canvas" class="absolute inset-0 w-full h-full" style="touch-action:${isTeacher ? 'none' : 'auto'};"></canvas>
@@ -8185,7 +8185,7 @@ try {
             return `
               <div class="flex-1 flex flex-col items-center justify-center text-white/70 px-8 text-center gap-3">
                 ${Icon('monitor','w-10 h-10')}
-                <div class="text-sm">Present a PDF or PowerPoint to the class</div>
+                <div class="text-sm">Present a PDF or PowerPoint to the space</div>
                 <button onclick="toggleLecturePresent()" class="text-sm font-bold px-4 py-2 rounded-full bg-white text-[${NAVY}]">Choose file</button>
               </div>`;
           }
@@ -8233,7 +8233,7 @@ try {
           const isTeacher = cls && cls.role === 'teacher';
           const view = liveLectureState.view;
           const isWhiteboard = view === 'whiteboard';
-          const headerLabel = view === 'whiteboard' ? 'Whiteboard' : (view === 'slides' ? (lectureSlides ? lectureSlides.fileName : 'Present') : (cls ? cls.name : 'Lecture'));
+          const headerLabel = view === 'whiteboard' ? 'Whiteboard' : (view === 'slides' ? (lectureSlides ? lectureSlides.fileName : 'Present') : (cls ? cls.name : 'Session'));
           const stageHTML = view === 'whiteboard' ? lectureWhiteboardHTML() : (view === 'slides' ? lectureSlidesHTML() : lectureGridHTML());
           const resourceCount = lectureAttachments.length + (whiteboardAttachment ? 1 : 0);
           const isDesktopLecture = window.innerWidth >= 1024;
@@ -8249,7 +8249,7 @@ try {
                   <div class="cu-status"><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
                 </div>
                 ${!isDesktopLecture ? `
-                <button onclick="toggleLectureResourcesPanel()" title="Class Pad" class="cu-glass">
+                <button onclick="toggleLectureResourcesPanel()" title="Space Pad" class="cu-glass">
                   ${Icon('doc','w-5 h-5')}
                   ${resourceCount ? `<span class="cu-count">${resourceCount}</span>` : ''}
                 </button>` : `<div style="width:42px;height:42px;flex-shrink:0;"></div>`}
@@ -8452,7 +8452,7 @@ try {
                     </span>
                   </button>
                   <button onclick="${a.isWhiteboard ? 'wbRemoveAttachment()' : `removeLectureAttachment('${a.id}')`}" title="Remove" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-gray-400">${Icon('close','w-3.5 h-3.5')}</button>
-                </div>`).join('') : `<div class="text-gray-400 text-sm text-center py-6">Files shared into this class will show up here.</div>`}
+                </div>`).join('') : `<div class="text-gray-400 text-sm text-center py-6">Files shared into this space will show up here.</div>`}
             </div>`;
         }
 
@@ -8496,7 +8496,7 @@ try {
             ${open ? `<div onclick="toggleLectureResourcesPanel()" class="absolute inset-0 z-30" style="background:rgba(10,15,25,0.25);pointer-events:auto;"></div>` : ''}
             <div class="absolute top-0 right-0 bottom-0 z-40 bg-white shadow-lg flex flex-col transition-transform" style="width:min(80vw,300px);transform:translateX(${open ? '0' : '100%'});pointer-events:auto;">
               <div class="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-gray-100">
-                <div class="text-sm font-bold text-gray-800">Class Pad</div>
+                <div class="text-sm font-bold text-gray-800">Space Pad</div>
                 <button onclick="toggleLectureResourcesPanel()" title="Close" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-600">${Icon('close','w-4 h-4')}</button>
               </div>
               <div class="flex-1 overflow-y-auto p-3">
@@ -8700,8 +8700,8 @@ try {
           return `
             <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
 <div style="margin:-1.25rem -1.25rem 0;">${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
-              <div class="text-sm text-gray-500 mb-5">Set up an upcoming lecture for ${cls ? cls.name : 'your class'}; students will see it in the Stream and can join when it's live.</div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Lecture title</label>
+              <div class="text-sm text-gray-500 mb-5">Set up an upcoming session for ${cls ? cls.name : 'your space'}; members will see it in the Stream and can join when it's live.</div>
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Session title</label>
               <input type="text" id="lecture-title-input" placeholder="e.g. Chapter 4: Market Structures" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">
               <div class="grid grid-cols-2 gap-3 mb-6">
                 <div>
@@ -8716,7 +8716,7 @@ try {
               </div>
             </div>
             <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitScheduleLecture()" class="w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Schedule Lecture</button>
+              <button onclick="submitScheduleLecture()" class="w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Schedule Session</button>
             </div>`;
         }
 
@@ -8728,7 +8728,7 @@ try {
           const time = document.getElementById('lecture-time-input').value;
           if (!title || !dateTyped || !time) { openAppAlertModal('Please fill in the title, date, and time.'); return; }
           const dateParsed = parseTypedDateDDMMYYYY(dateTyped);
-          if (dateParsed.error || !dateParsed.iso) { openAppAlertModal(dateParsed.error || 'Please enter the lecture date as DD/MM/YYYY.'); return; }
+          if (dateParsed.error || !dateParsed.iso) { openAppAlertModal(dateParsed.error || 'Please enter the session date as DD/MM/YYYY.'); return; }
           const date = dateParsed.iso;
           if (!cls.lectures) cls.lectures = [];
           const lecture = { id: 'lec-' + Date.now(), title, date, time, status: 'scheduled' };
@@ -8746,17 +8746,17 @@ try {
           const timeLabel = formatTime12(lecture.time);
           const members = Array.isArray(cls.members) ? cls.members : [];
           const myId = await getCurrentUserId();
-          const teacherName = (typeof profileData !== 'undefined' && profileData.name) || 'Your teacher';
+          const teacherName = (typeof profileData !== 'undefined' && profileData.name) || 'Your moderator';
           members.forEach(uid => {
             if (!uid || uid === myId) return;
             sendPushTo(uid, {
-              title: `New lecture scheduled in ${cls.name}`,
+              title: `New session scheduled in ${cls.name}`,
               body: `${teacherName} scheduled "${lecture.title}" for ${dateLabel} at ${timeLabel}.`,
               tag: 'lecture-scheduled-' + lecture.id,
               data: { kind: 'lecture-scheduled', classId: cls.id, lectureId: lecture.id },
             });
           });
-          pushInAppNotification('Lecture scheduled', `${lecture.title} · ${dateLabel} at ${timeLabel}. Students have been notified.`);
+          pushInAppNotification('Session scheduled', `${lecture.title} · ${dateLabel} at ${timeLabel}. Members have been notified.`);
         }
 
         // ---- Classroom notifications tab ----
@@ -8773,7 +8773,7 @@ try {
             items.push({
               sortKey: l.status === 'live' ? '0' : ('1' + l.date + l.time),
               icon: 'video', iconBg: 'bg-blue-50', iconClass: 'text-[' + NAVY + ']',
-              title: l.status === 'live' ? 'Live lecture' : 'Upcoming lecture',
+              title: l.status === 'live' ? 'Live session' : 'Upcoming session',
               body: l.title + (l.status === 'live' ? ' is live now' : ' · ' + formatReminderDate(l.date) + ' at ' + formatTime12(l.time))
             });
           });
@@ -8816,7 +8816,7 @@ try {
                 <div class="flex flex-col items-center text-center py-16">
                   <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${NotifIcon('bell','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">Nothing new yet</div>
-                  <div class="text-sm text-gray-400 leading-relaxed">Announcements, lectures, and due dates from this class will show up here.</div>
+                  <div class="text-sm text-gray-400 leading-relaxed">Announcements, sessions, and due dates from this space will show up here.</div>
                 </div>`}
             </div>`;
         }
@@ -8852,7 +8852,7 @@ try {
         }
         function classworkSubmitterName(cls, studentId){
           const s = (cls.students || []).find(s => s.id === studentId);
-          return (s && s.name) || 'Student';
+          return (s && s.name) || 'Member';
         }
 
         function classworkStatusBadge(w, isTeacher){
@@ -8905,14 +8905,14 @@ try {
           if (isTeacher && !cls.classwork.length) {
             return `
               <div class="text-center mb-4">
-                <div class="font-bold text-gray-700 mb-1">Assign work to your class</div>
-                <div class="text-sm text-gray-400 leading-relaxed">Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork</div>
+                <div class="font-bold text-gray-700 mb-1">Assign work to your space</div>
+                <div class="text-sm text-gray-400 leading-relaxed">Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:0;padding:0 4px;">
-                ${classworkCreateMenuOptionRow('doc','Assignment','Students turn in work, you score & remark it', "openNewAssignmentOverlay()")}
+                ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
                 ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
-                ${classworkCreateMenuOptionRow('help','Question','Post a question for the class to answer', "openNewQuestionOverlay()")}
-                ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the class', "openNewPollOverlay()")}
+                ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
+                ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the space', "openNewPollOverlay()")}
                 ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()", true)}
               </div>
               ${createFab}`;
@@ -8922,15 +8922,15 @@ try {
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Course Materials</div>
             ${materials.length ? materials.map(row).join('') : `
               <div class="py-4 mb-3 text-sm text-gray-400">
-                ${isTeacher ? 'Share slides, notes, or readings with your class.' : "Your teacher hasn't uploaded any course materials yet."}
+                ${isTeacher ? 'Share slides, notes, or readings with your space.' : "Your moderator hasn't uploaded any course materials yet."}
               </div>`}
 
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 mt-6">Assignments &amp; Quizzes</div>
             ${work.length ? work.map(row).join('') : `
               <div class="flex flex-col items-center text-center py-10">
                 <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
-                <div class="font-bold text-gray-700 mb-1">${isTeacher ? 'Assign work to your class' : 'No assignments yet'}</div>
-                <div class="text-sm text-gray-400 leading-relaxed">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Classwork' : 'Assignments and quizzes from your teacher will show up here.'}</div>
+                <div class="font-bold text-gray-700 mb-1">${isTeacher ? 'Assign work to your space' : 'No assignments yet'}</div>
+                <div class="text-sm text-gray-400 leading-relaxed">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks' : 'Assignments and quizzes from your moderator will show up here.'}</div>
               </div>`}
             ${isTeacher ? `<div style="height:60px;"></div>${createFab}` : ''}`;
         }
@@ -8954,10 +8954,10 @@ try {
           return `
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
 <div class="-mx-5">${overlayHeader('Create', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
-              ${classworkCreateMenuOptionRow('doc','Assignment','Students turn in work, you score & remark it', "openNewAssignmentOverlay()")}
+              ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
               ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
-              ${classworkCreateMenuOptionRow('help','Question','Post a question for the class to answer', "openNewQuestionOverlay()")}
-              ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the class', "openNewPollOverlay()")}
+              ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
+              ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the space', "openNewPollOverlay()")}
               ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()", true)}
             </div>`;
         }
@@ -9056,7 +9056,7 @@ try {
               </div>
             </div>
 </div>
-              <textarea id="announcement-text-input" oninput="announcementDraft=this.value; const b=document.getElementById('announcement-create-btn'); if(b){const c=announcementDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Announce something to your class" rows="6" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-6">${announcementDraft}</textarea>
+              <textarea id="announcement-text-input" oninput="announcementDraft=this.value; const b=document.getElementById('announcement-create-btn'); if(b){const c=announcementDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Announce something to your space" rows="6" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-6">${announcementDraft}</textarea>
               <input type="file" id="announcement-attach-input" multiple class="hidden" onchange="handleAnnouncementAttachFile(event)">
               <button onclick="document.getElementById('announcement-attach-input').click()" class="flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
               <div id="announcement-attach-strip" class="mt-3">${announcementAttachStripHTML()}</div>
@@ -9472,7 +9472,7 @@ try {
                 <div class="flex flex-col items-center text-center py-10">
                   <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">No submissions yet</div>
-                  <div class="text-sm text-gray-400 leading-relaxed">You'll be able to grade each student's work here once they turn it in.</div>
+                  <div class="text-sm text-gray-400 leading-relaxed">You'll be able to grade each member's work here once they turn it in.</div>
                 </div>`;
             }
             return studentIds.map(sid => {
@@ -9571,7 +9571,7 @@ try {
                 <div class="flex flex-col items-center text-center py-10">
                   <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('edit','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">No submissions yet</div>
-                  <div class="text-sm text-gray-400 leading-relaxed">Scores will show up here once a student takes this quiz.</div>
+                  <div class="text-sm text-gray-400 leading-relaxed">Scores will show up here once a member takes this quiz.</div>
                 </div>`;
             }
             return studentIds.map(sid => {
@@ -9730,7 +9730,7 @@ try {
             const profile = classStudentProfiles[id];
             roster.push({
               id,
-              name: (profile && profile.name) || 'Class member',
+              name: (profile && profile.name) || 'Space member',
               email: '',
               enrolled: true,
               _studentIndex: -1,
@@ -9745,7 +9745,7 @@ try {
           const isTeacher = cls.role === 'teacher';
           return `
             <div class="flex items-center justify-between mb-3">
-              <div class="text-xl font-bold text-[${NAVY}] font-display">Teachers</div>
+              <div class="text-xl font-bold text-[${NAVY}] font-display">Moderators</div>
               ${isTeacher ? `<button onclick="openInviteCoTeacherOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
             </div>
             <div class="border-t border-gray-100 mb-5">
@@ -9780,7 +9780,7 @@ try {
                   </div>`).join('')}
               </div>` : ''}
             <div class="flex items-center justify-between mb-3">
-              <div class="text-xl font-bold text-[${NAVY}] font-display">Students${(() => { const n = classRosterList(cls).length; return n ? ` <span class="text-sm font-semibold text-gray-400">(${n}${cls.paymentEnabled ? ' enrolled' : ''})</span>` : ''; })()}</div>
+              <div class="text-xl font-bold text-[${NAVY}] font-display">Members${(() => { const n = classRosterList(cls).length; return n ? ` <span class="text-sm font-semibold text-gray-400">(${n}${cls.paymentEnabled ? ' enrolled' : ''})</span>` : ''; })()}</div>
               ${isTeacher ? `<button onclick="openInviteStudentsOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
             </div>
             <div class="border-t border-gray-100">
@@ -9790,12 +9790,12 @@ try {
                   return isTeacher ? `
                 <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
-                  <div class="text-gray-400 mb-5">Invite students to your class</div>
+                  <div class="text-gray-400 mb-5">Invite members to your space</div>
                   <button onclick="openInviteStudentsOverlay()" class="font-semibold text-sm px-8 py-2.5 rounded-2xl" style="color:${NAVY};background:rgba(30,144,255,0.12);margin-bottom:10px;">Invite</button>
                 </div>` : `
                 <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
-                  <div class="text-gray-400">No other students yet.</div>
+                  <div class="text-gray-400">No other members yet.</div>
                 </div>`;
                 }
                 return roster.map((s, i) => {
@@ -9829,10 +9829,10 @@ try {
           const canInvite = inviteCoTeacherDraft.trim().length > 0;
           return `
             <div class="flex-1 overflow-y-auto px-5 pb-8">
-<div class="-mx-5">${overlayHeader('Invite co-teacher', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Invite co-moderator', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email address</label>
               <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl mt-4 '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
-              <div class="text-xs text-gray-400 leading-relaxed mb-4">They'll be added as a co-teacher for this class once invited.</div>
+              <div class="text-xs text-gray-400 leading-relaxed mb-4">They'll be added as a co-moderator for this space once invited.</div>
               <button id="coteacher-submit-btn" onclick="submitInviteCoTeacher()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl mt-4 ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
             </div>`;
         }
@@ -9904,23 +9904,23 @@ try {
           const d = editClassDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Edit class', '20px', "openOverlay('classDetail')", null, { right: true, titleSize: 'text-3xl' })}
+            ${overlayHeader('Edit space', '20px', "openOverlay('classDetail')", null, { right: true, titleSize: 'text-3xl' })}
             <div class="px-5" style="padding-top:20px;padding-bottom:40px;">
               <div class="flex flex-col items-center mb-6">
                 <button onclick="triggerClassPhotoUpload('editClass')" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${cls.photo ? `background-image:url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}">
                   ${cls.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('book','w-9 h-9')}</div>`}
                   <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-[${NAVY}]" style="margin:4px;">${Icon('camera','w-4 h-4')}</div>
                 </button>
-                <button onclick="triggerClassPhotoUpload('editClass')" class="text-sm font-semibold" style="color:${NAVY};">Change class photo</button>
+                <button onclick="triggerClassPhotoUpload('editClass')" class="text-sm font-semibold" style="color:${NAVY};">Change space photo</button>
               </div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Class Name (required)</label>
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Space Name (required)</label>
               <input type="text" id="edit-class-name" value="${escapeHtml(d.name)}" oninput="editClassDraft.name=this.value" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Section</label>
               <input type="text" id="edit-class-section" value="${escapeHtml(d.section)}" oninput="editClassDraft.section=this.value" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Subject</label>
               <input type="text" id="edit-class-subject" value="${escapeHtml(d.subject)}" oninput="editClassDraft.subject=this.value" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Description</label>
-              <textarea id="edit-class-description" rows="4" oninput="editClassDraft.description=this.value" placeholder="What's this class about?" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none">${escapeHtml(d.description)}</textarea>
+              <textarea id="edit-class-description" rows="4" oninput="editClassDraft.description=this.value" placeholder="What's this space about?" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5 resize-none">${escapeHtml(d.description)}</textarea>
               <button id="edit-class-save-btn" onclick="saveEditedClass()" class="w-full font-semibold text-sm py-3 rounded-2xl text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Save changes</button>
             </div>
             </div>`;
@@ -9930,7 +9930,7 @@ try {
           const d = editClassDraft;
           if (!cls || !d) return;
           const name = (d.name || '').trim();
-          if (!name) { openAppAlertModal('Enter a class name'); return; }
+          if (!name) { openAppAlertModal('Enter a space name'); return; }
           const btn = document.getElementById('edit-class-save-btn');
           if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; btn.textContent = 'Saving...'; }
           cls.name = name;
@@ -9964,7 +9964,7 @@ try {
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center gap-4 text-[${NAVY}]">
                 <button onclick="openOverlay('classDetail')">${IconBold('back','w-5 h-5')}</button>
-                <div class="font-semibold text-lg font-display">Class settings</div>
+                <div class="font-semibold text-lg font-display">Space settings</div>
               </div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 pb-8">
@@ -9973,10 +9973,10 @@ try {
                   ${cls.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('book','w-9 h-9')}</div>`}
                   <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-[${NAVY}]" style="margin:4px;">${Icon('camera','w-4 h-4')}</div>
                 </button>
-                <button onclick="triggerClassPhotoUpload()" class="text-sm font-semibold" style="color:${NAVY};">Change class photo</button>
+                <button onclick="triggerClassPhotoUpload()" class="text-sm font-semibold" style="color:${NAVY};">Change space photo</button>
               </div>
 
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Class name</label>
+              <label class="text-xs font-semibold text-gray-500 mb-1 block">Space name</label>
               <input type="text" id="class-settings-name-input" value="${escapeHtml(cls.name)}" oninput="updateClassName(this.value)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
 
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Section</label>
@@ -9984,10 +9984,10 @@ try {
 
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notifications</div>
               <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-6">
-                ${notificationSettingsRow('bell','bg-amber-100','text-amber-600','Class notifications','Get notified about announcements and classwork', cls.notificationsEnabled, "toggleClassNotifications()")}
+                ${notificationSettingsRow('bell','bg-amber-100','text-amber-600','Space notifications','Get notified about announcements and tasks', cls.notificationsEnabled, "toggleClassNotifications()")}
               </div>
 
-              ${cls.code ? `<div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Class code</div>
+              ${cls.code ? `<div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Space code</div>
               <div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-6">
                 <div class="text-lg font-bold tracking-widest text-[${NAVY}]">${cls.code}</div>
                 <button onclick="copyClassCode('${cls.code}')" class="font-semibold text-sm" style="color:${NAVY};">Copy code</button>
@@ -9995,10 +9995,10 @@ try {
 
               ${cls.role === 'teacher'
                 ? `<button onclick="confirmDeleteCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
-                    ${Icon('trash','w-3.5 h-3.5')} Delete class
+                    ${Icon('trash','w-3.5 h-3.5')} Delete space
                   </button>`
                 : `<button onclick="confirmLeaveCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
-                    ${IconBold('back','w-3.5 h-3.5')} Leave class
+                    ${IconBold('back','w-3.5 h-3.5')} Leave space
                   </button>`}
             </div>`;
         }
@@ -10059,10 +10059,10 @@ try {
           const canInvite = inviteEmailsDraft.trim().length > 0;
           return `
             <div class="flex-1 overflow-y-auto px-5 pb-8">
-<div class="-mx-5">${overlayHeader('Invite students', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+<div class="-mx-5">${overlayHeader('Invite members', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
               ${cls && cls.code ? `<div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-3">
                 <div class="min-w-0 text-gray-700">
-                  <div class="font-semibold">Class code</div>
+                  <div class="font-semibold">Space code</div>
                   <div class="text-lg font-bold tracking-widest text-[${NAVY}]">${cls.code}</div>
                 </div>
                 <button onclick="copyClassCode('${cls.code}')" class="font-semibold text-sm flex-shrink-0" style="color:${NAVY};">Copy code</button>
@@ -10070,7 +10070,7 @@ try {
               <div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-6">
                 <div class="flex items-center gap-2 min-w-0 text-gray-700">
                   ${Icon('link','w-5 h-5 flex-shrink-0')}
-                  <span class="font-semibold truncate">Class invite</span>
+                  <span class="font-semibold truncate">Space invite</span>
                 </div>
                 <div class="flex items-center gap-4 flex-shrink-0">
                   <button onclick="shareClassInviteLink()" class="font-semibold text-sm" style="color:${NAVY};">Share</button>
@@ -10079,7 +10079,7 @@ try {
               </div>` : ''}
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email addresses</label>
               <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl mt-4 '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. ama@example.com, kojo@example.com" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
-              <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple addresses with commas, or just share the class code above so students can join themselves.' : 'Separate multiple addresses with commas.'}</div>
+              <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple addresses with commas, or just share the space code above so members can join themselves.' : 'Separate multiple addresses with commas.'}</div>
               <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl mt-4 ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
             </div>`;
         }
@@ -10101,7 +10101,7 @@ try {
         function shareClassInviteLink(){
           const link = classInviteLink();
           if (navigator.share) {
-            navigator.share({ title: 'Join my class', text: 'Join my class on Stitch', url: link }).catch(() => {});
+            navigator.share({ title: 'Join my space', text: 'Join my space on Stitch', url: link }).catch(() => {});
           } else {
             openAppAlertModal('Invite link: ' + link);
           }
@@ -10155,10 +10155,10 @@ try {
             <div class="flex-1 overflow-y-auto no-scrollbar">
             ${overlayHeader('Study Timetable', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
             <div class="px-5 pb-10">
-              <div class="text-base text-gray-500 mb-5">Your weekly schedule, all in one place; we'll notify you before each class starts.</div>
+              <div class="text-base text-gray-500 mb-5">Your weekly schedule, all in one place; we'll notify you before each session starts.</div>
 
               <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm">
-                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Entry · Schedule a Class</div>
+                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Entry · Schedule a Session</div>
                 <label class="text-sm font-semibold text-gray-500 mb-1 block">Day</label>
                 <select id="class-day-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
                   <option value="">(Select day)</option>
@@ -10186,7 +10186,7 @@ try {
                   <option value="30">30 minutes before</option>
                   <option value="60">1 hour before</option>
                 </select>
-                <button onclick="submitClassSchedule()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Class</button>
+                <button onclick="submitClassSchedule()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Session</button>
               </div>
 
               ${upcoming ? `
@@ -10208,9 +10208,9 @@ try {
             <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
               <div class="flex items-center justify-between mb-3">
                 <div class="font-bold text-lg text-[${NAVY}]">${day}</div>
-                <div class="text-sm font-bold text-gray-400">${classes.length} class${classes.length===1?'':'es'}</div>
+                <div class="text-sm font-bold text-gray-400">${classes.length} session${classes.length===1?'':'s'}</div>
               </div>
-              ${classes.length === 0 ? `<div class="text-base text-gray-400 text-center py-3">No classes, free day</div>` : classes.map(c => `
+              ${classes.length === 0 ? `<div class="text-base text-gray-400 text-center py-3">No sessions, free day</div>` : classes.map(c => `
                 <div class="flex items-center justify-between bg-amber-50 rounded-2xl px-4 py-3 mb-2">
                   <div class="min-w-0">
                     <div class="text-sm font-bold text-amber-700">${formatTime12(c.start)} - ${formatTime12(c.end)}</div>
@@ -10406,13 +10406,13 @@ try {
               const leadKey = 'cls-lead-' + c.id + '-' + dateTag;
               if (diffMin <= lead && diffMin > lead - 1.5 && !notifiedKeys.has(leadKey)) {
                 notifiedKeys.add(leadKey);
-                fireStudyNotification('Upcoming class', c.subject + ' starts at ' + formatTime12(c.start) + (c.room ? ' · ' + c.room : ''));
+                fireStudyNotification('Upcoming session', c.subject + ' starts at ' + formatTime12(c.start) + (c.room ? ' · ' + c.room : ''));
               }
             }
             const nowKey = 'cls-now-' + c.id + '-' + dateTag;
             if (diffMin <= 0 && diffMin > -1.5 && !notifiedKeys.has(nowKey)) {
               notifiedKeys.add(nowKey);
-              fireStudyNotification('Class starting now', c.subject + ' is starting now' + (c.room ? ' · ' + c.room : ''));
+              fireStudyNotification('Session starting now', c.subject + ' is starting now' + (c.room ? ' · ' + c.room : ''));
             }
           });
           studyReminders.forEach(r => {
@@ -10449,7 +10449,7 @@ try {
               const key = 'lec-' + l.id;
               if (diffMin <= 10 && diffMin > 8.5 && !notifiedKeys.has(key)) {
                 notifiedKeys.add(key);
-                fireStudyNotification('Upcoming lecture', l.title + ' starts at ' + formatTime12(l.time) + ' · ' + cls.name);
+                fireStudyNotification('Upcoming session', l.title + ' starts at ' + formatTime12(l.time) + ' · ' + cls.name);
               }
             });
             (cls.classwork || []).forEach(w => {

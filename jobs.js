@@ -153,9 +153,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           // First-time applicants (haven't applied to post yet) don't see this at all
           if (currentUserPosterStatus !== 'pending' && currentUserPosterStatus !== 'approved') return '';
           if (currentUserPaidSellerRequested) {
-            return careerMenuRowHTML("closeCareerMenuThen(() => openPaidSellerApplicationForm())", 'clock', 'Paid classes request pending', 'text-gray-400');
+            return careerMenuRowHTML("closeCareerMenuThen(() => openPaidSellerApplicationForm())", 'clock', 'Paid spaces request pending', 'text-gray-400');
           }
-          return careerMenuRowHTML("closeCareerMenuThen(() => openPaidSellerApplicationForm())", 'plus', 'Add course & paid classes');
+          return careerMenuRowHTML("closeCareerMenuThen(() => openPaidSellerApplicationForm())", 'plus', 'Add course & paid spaces');
         }
 
         // Shared with refreshPosterStatusUI() below, which swaps this back in live if the sheet
@@ -851,8 +851,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // Reached from "Add course & paid classes" in the Career Space menu, which only shows once
         // someone has applied to post (pending or approved) without ticking the paid-courses box
         function openPaidSellerApplicationForm(){
-          if (isCurrentUserAdmin()) { openAppAlertModal('Admins can already create paid classes and courses.'); return; }
-          if (currentUserPaidSellerRequested) { openAppAlertModal(`Your request to sell paid courses and classes is with an admin -- you'll hear back within ${PAID_SELLER_APPROVAL_HOURS} hours.`); return; }
+          if (isCurrentUserAdmin()) { openAppAlertModal('Admins can already create paid spaces and courses.'); return; }
+          if (currentUserPaidSellerRequested) { openAppAlertModal(`Your request to sell paid courses and spaces is with an admin -- you'll hear back within ${PAID_SELLER_APPROVAL_HOURS} hours.`); return; }
           resetPosterAppDraft();
           posterAppDraft.intent = 'post';
           posterAppDraft.sellPaid = true;
@@ -913,7 +913,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         const PAID_SELLER_MIN_PLAN_WORDS = 15;
         // The paid-seller questions, in order
         const PAID_SELLER_STAGES = ['paidtype', 'paidplan', 'paidprice', 'paidpay', 'paidpayout', 'paidconfirm'];
-        const PAID_TYPE_OPTIONS = [['courses', 'Paid courses', 'coin'], ['meetings', 'Paid live classes / meetings', 'video'], ['both', 'Both', 'grid']];
+        const PAID_TYPE_OPTIONS = [['courses', 'Paid courses', 'coin'], ['meetings', 'Paid live spaces / meetings', 'video'], ['both', 'Both', 'grid']];
         const PAID_PRICE_OPTIONS = [['under50', 'Under GH₵50', 'tagOutline'], ['50-200', 'GH₵50 – 200', 'tagOutline'], ['200-500', 'GH₵200 – 500', 'tagOutline'], ['500plus', 'GH₵500+', 'tagOutline'], ['unsure', 'Not sure yet', 'helpCircleOutline']];
         const PAID_PAYOUT_OPTIONS = [['momo', 'Mobile money', 'phoneMoneyOutline'], ['bank', 'Bank account', 'bankOutline']];
         function paidOptionLabel(list, key){ const hit = list.find(([k]) => k === key); return hit ? hit[1] : ''; }
@@ -952,7 +952,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
         let posterAppStageIdx = 0;
         function posterAppHeaderTitle(){
-          return posterAppPaidOnlyApproved() ? 'Paid courses & classes' : 'Apply to post';
+          return posterAppPaidOnlyApproved() ? 'Paid courses & spaces' : 'Apply to post';
         }
         function setPosterAppSellPaid(checked){
           posterAppDraft.sellPaid = !!checked;
@@ -1012,7 +1012,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'iddoc') return 'Submit a government-issued ID from any country';
           if (stage === 'selfie') return "A quick live selfie so we can confirm it's really you";
           if (stage === 'paidchoice') return 'Will you also be posting paid courses and paid meetings?';
-          if (stage === 'paidtype') return 'Are you selling courses, paid live classes or meetings, or both?';
+          if (stage === 'paidtype') return 'Are you selling courses, paid live spaces or meetings, or both?';
           if (stage === 'paidplan') return 'Tell us exactly what you will post';
           if (stage === 'paidprice') return 'Roughly what will most of your listings cost?';
           if (stage === 'paidpay') return 'Payment plan and withdrawals';
@@ -1026,9 +1026,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'bizdoc') return 'Helps admins verify faster -- a registration certificate, permit, receipt, or anything else that shows your business is real.';
           if (stage === 'iddoc') return "National ID, passport, driver's license, etc. -- any country.";
           if (stage === 'selfie') return "We automatically check that this is a live photo and that it matches your ID -- an admin still reviews everything.";
-          if (stage === 'paidchoice') return 'Tick the box if yes. If not, you can apply later from \"Add course & paid classes\" in the Career Space menu.';
+          if (stage === 'paidchoice') return 'Tick the box if yes. If not, you can apply later from \"Add course & paid spaces\" in the Career Space menu.';
           if (stage === 'paidplan') return `What topics will you teach, who is it for, and what will students walk away with? At least ${PAID_SELLER_MIN_PLAN_WORDS} words.`;
-          if (stage === 'paidprice') return 'Just a ballpark -- you set the real price on each course or class, and you can change it later.';
+          if (stage === 'paidprice') return 'Just a ballpark -- you set the real price on each course or space, and you can change it later.';
           if (stage === 'paidpayout') return "You'll add the actual mobile money number or bank details later, when you make your first withdrawal. Nothing to enter now.";
           return '';
         }
@@ -1119,7 +1119,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   ${row(`Students pay online. Your earnings go into your Stitch wallet. ${PAID_SELLER_SCHEDULE_TEXT}`)}
                   ${row(`The minimum withdrawal is <b>${PAID_SELLER_MIN_WITHDRAWAL}</b>.`)}
                   ${row(`Withdrawals are reviewed and <b>approved within ${PAID_SELLER_APPROVAL_HOURS} hours</b>, then sent to your mobile money or bank account.`)}
-                  ${row(`If a class is reported, Stitch can pause it and hold payouts while we look into it.`)}
+                  ${row(`If a space is reported, Stitch can pause it and hold payouts while we look into it.`)}
                 </ul>
               </div>`;
           }
@@ -1328,7 +1328,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             await savePaidSellerAnswers(sb, user);
             notifyAllAdminsRemote({
               type: 'paid_seller_application',
-              title: 'New paid courses & classes request',
+              title: 'New paid courses & spaces request',
               message: `${(typeof profileData !== 'undefined' && profileData.name) || 'A user'} wants to sell paid courses and meetings. Selling: ${paidOptionLabel(PAID_TYPE_OPTIONS, posterAppDraft.paidType) || 'n/a'}. Plan: ${(posterAppDraft.paidPlan || '').trim().slice(0, 200)}`,
             });
             return true;
@@ -1365,7 +1365,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           closeOverlay();
           openAppAlertModal(
             paidOnlyApproved
-              ? `Thanks! Your request to sell paid courses and classes is with an admin -- you'll receive an update within ${PAID_SELLER_APPROVAL_HOURS} hours.`
+              ? `Thanks! Your request to sell paid courses and spaces is with an admin -- you'll receive an update within ${PAID_SELLER_APPROVAL_HOURS} hours.`
               : posterAppDraft.intent === 'post'
                 ? "Thanks! Your application is with an admin for review -- you'll receive an update within 72 hours."
                 : "You're all set to explore Career Space."
@@ -9275,7 +9275,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
           // ---- one short paragraph about this section and this document, before the numbers and
           // charts ----
-          const intro = 'My Activity is your personal summary of how you use Stitch: the posts you share and the reactions and comments they earn, who views your profile and Glimpses, your classes, opportunities and network, your payments, and the time you spend in the app. '
+          const intro = 'My Activity is your personal summary of how you use Stitch: the posts you share and the reactions and comments they earn, who views your profile and Glimpses, your spaces, opportunities and network, your payments, and the time you spend in the app. '
             + 'This document is a snapshot saved on the date above, so every number reflects your account at that moment and will change as you keep using Stitch. '
             + 'The tiles and charts that follow turn those numbers into pictures, so you can see at a glance what your audience responds to and where to focus next.';
           color('#4b5563'); font(9, false);
@@ -9422,11 +9422,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           lines(wk.labels, [{ name: 'Profile views', color: C.pink, values: wV }]);
 
           // ---- classes ----
-          section(C.green, 'Classes', 'Created vs joined', 55);
-          pie([{ label: 'Created', value: A.classesCreated, color: C.blue }, { label: 'Joined', value: A.classesJoined, color: C.green }], 'Create or join a class and it shows up here.');
+          section(C.green, 'Spaces', 'Created vs joined', 55);
+          pie([{ label: 'Created', value: A.classesCreated, color: C.blue }, { label: 'Joined', value: A.classesJoined, color: C.green }], 'Create or join a space and it shows up here.');
           if (myClasses.length) {
             font(9, false);
-            myClasses.forEach(c => { ensure(6); fill(c.role === 'teacher' ? C.blue : C.green); doc.circle(M + 1.5, y + 0.8, 1.2, 'F'); color('#374151'); doc.text(clip(c.name || c.title || 'Class', CW - 40), M + 6, y + 2); color('#9ca3af'); doc.text(c.role === 'teacher' ? 'Created' : 'Joined', M + CW, y + 2, { align: 'right' }); y += 6; });
+            myClasses.forEach(c => { ensure(6); fill(c.role === 'teacher' ? C.blue : C.green); doc.circle(M + 1.5, y + 0.8, 1.2, 'F'); color('#374151'); doc.text(clip(c.name || c.title || 'Space', CW - 40), M + 6, y + 2); color('#9ca3af'); doc.text(c.role === 'teacher' ? 'Created' : 'Joined', M + CW, y + 2, { align: 'right' }); y += 6; });
             y += 3;
           }
 
@@ -9469,7 +9469,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           } else empty('Chat with people and the ones you talk to most show up here.');
 
           // ---- payments ----
-          section(C.green, 'Payments and receipts', A.pays.length ? A.pays.length + ' purchase' + (A.pays.length === 1 ? '' : 's') + '  -  ' + money(A.spent) + ' spent' : 'Paid classes and courses', 60);
+          section(C.green, 'Payments and receipts', A.pays.length ? A.pays.length + ' purchase' + (A.pays.length === 1 ? '' : 's') + '  -  ' + money(A.spent) + ' spent' : 'Paid spaces and courses', 60);
           if (A.pays.length) {
             pie([
               { label: 'Paid', value: A.pays.filter(r => A.PAID.includes(r.status)).length, color: C.green },
@@ -9488,7 +9488,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               color('#9ca3af'); font(7.5, false); doc.text(txt((typeof creatorDate === 'function' ? creatorDate(r.paid_at) : '') + '  -  ' + (r.status || '') + (r.paystack_reference ? '  -  Ref ' + r.paystack_reference : '')), M, y + 7);
               y += 11;
             });
-          } else empty(A.paymentsMissing ? 'Receipts are not set up yet.' : 'No purchases yet. Receipts for paid classes show up here.');
+          } else empty(A.paymentsMissing ? 'Receipts are not set up yet.' : 'No purchases yet. Receipts for paid spaces show up here.');
 
           // ---- screen time ----
           section(C.purple, 'Screen time', 'Time spent in Stitch on this device, last 7 days', 80);
@@ -9664,10 +9664,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 ${insightsLineChartHTML(wk.labels, [{ name: 'Profile views', color: ACT_COLORS.pink, values: wViews, area: true }])}
                 ${A.viewsMissing ? `<div class="text-[11px] text-gray-400" style="margin-top:8px;">Profile views start counting once view tracking is switched on for your account.</div>` : ''}`)}
 
-              ${actSectionHTML(ACT_COLORS.green, 'Classes', 'Created vs joined', actPieHTML([
+              ${actSectionHTML(ACT_COLORS.green, 'Spaces', 'Created vs joined', actPieHTML([
                 { label: 'Created', value: A.classesCreated, color: ACT_COLORS.blue },
                 { label: 'Joined', value: A.classesJoined, color: ACT_COLORS.green },
-              ], 'Create or join a class and it shows up here.'))}
+              ], 'Create or join a space and it shows up here.'))}
 
               ${actSectionHTML(ACT_COLORS.amber, 'Opportunities', 'What you posted, interacted with and how your applications went', `
                 <div class="text-xs font-semibold text-gray-600" style="margin-bottom:8px;">Posted vs interacted with</div>
@@ -9695,13 +9695,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="text-xs font-semibold text-gray-600" style="margin:18px 0 10px;">Most interaction</div>
                 ${chatList}`)}
 
-              ${actSectionHTML(ACT_COLORS.green, 'Payments & receipts', A.pays.length ? `${A.pays.length} purchase${A.pays.length === 1 ? '' : 's'} &middot; ${ghs(A.spent)} spent` : 'Paid classes and courses', A.pays.length ? `
+              ${actSectionHTML(ACT_COLORS.green, 'Payments & receipts', A.pays.length ? `${A.pays.length} purchase${A.pays.length === 1 ? '' : 's'} &middot; ${ghs(A.spent)} spent` : 'Paid spaces and courses', A.pays.length ? `
                 ${actPieHTML(payStatusPie)}
                 <div class="text-xs font-semibold text-gray-600" style="margin:18px 0 8px;">Purchases over time (higher = bigger amount)</div>
                 ${actScatterHTML(payPts.map(p => ({ ...p, x: p.x })), { xLeft: 'First purchase', xRight: 'Latest', yMax: ghs(Math.max(...A.pays.map(r => Number(r.gross_amount || 0)))), legend: '' })}
                 <div style="margin-top:14px;">${receiptsPreview}</div>
                 <button onclick="overlayReturnTo='profileAnalytics';openReceipts()" class="w-full text-center text-xs font-semibold" style="padding-top:10px;color:${ROYAL};">View all receipts</button>`
-                : `<div class="text-xs text-gray-400">${A.paymentsMissing ? 'Receipts are not set up yet.' : (myActivityData === null ? 'Loading...' : 'No purchases yet. Receipts for paid classes show up here.')}</div>`, true)}
+                : `<div class="text-xs text-gray-400">${A.paymentsMissing ? 'Receipts are not set up yet.' : (myActivityData === null ? 'Loading...' : 'No purchases yet. Receipts for paid spaces show up here.')}</div>`, true)}
 
               ${actSectionHTML(ACT_COLORS.purple, 'Screen time', 'Time spent in Stitch on this device, last 7 days', `
                 <div class="flex gap-3" style="margin-bottom:12px;">

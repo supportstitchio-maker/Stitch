@@ -34,7 +34,7 @@
           if (cls) return cls.name;
           const course = (typeof allCourses !== 'undefined') ? allCourses.find(c => c.id === id) : null;
           if (course) return course.title;
-          return type === 'course' ? 'Course' : 'Class';
+          return type === 'course' ? 'Course' : 'Space';
         }
         async function creatorPeopleByIds(ids){
           const out = {};
@@ -127,7 +127,7 @@
 
         function openCreatorWallet(){
           if (!canCurrentUserSellPaid() && currentUserCreatorStatus !== 'suspended') {
-            openAppAlertModal('The Wallet is for approved creators. Apply from Career Space → Add course & paid classes.', 'Wallet');
+            openAppAlertModal('The Wallet is for approved creators. Apply from Career Space → Add course & paid spaces.', 'Wallet');
             return;
           }
           walletTab = 'students';
@@ -212,7 +212,7 @@
 
         function walletStudentsHTML(){
           const paid = walletState.payments.filter(x => x.status === 'paid');
-          if (!paid.length) return creatorEmpty('No students yet. When someone pays to join one of your classes, they appear here.');
+          if (!paid.length) return creatorEmpty('No students yet. When someone pays to join one of your spaces, they appear here.');
           const groups = {};
           paid.forEach(x => { (groups[x.product_type + ':' + x.product_id] = groups[x.product_type + ':' + x.product_id] || []).push(x); });
           return Object.keys(groups).map(k => {
@@ -482,7 +482,7 @@
               product_type: d.productType, product_id: d.productId, reporter_id: uid, reason: d.reason, details: (d.details || '').trim().slice(0, 1000), status: 'open',
             });
             if (error) throw error;
-            notifyAllAdminsRemote({ type: 'class_reported', title: 'Class reported', message: `"${d.productName || 'A class'}" was reported (${d.reason}). Review it on the Admin Dashboard.` });
+            notifyAllAdminsRemote({ type: 'class_reported', title: 'Space reported', message: `"${d.productName || 'A space'}" was reported (${d.reason}). Review it on the Admin Dashboard.` });
             reportClassBusy = false;
             overlayGoBack();
             openAppAlertModal('Thanks. An admin will take a look.', 'Report sent');
@@ -558,7 +558,7 @@
           const rows = receiptsState.rows;
           const body = receiptsState.loading && !receiptsState.loaded ? `<div class="text-center text-gray-400 text-sm py-8">Loading…</div>`
             : receiptsState.missing ? creatorEmpty('Receipts are not set up yet.')
-            : !rows.length ? creatorEmpty('No purchases yet. Receipts for paid classes show up here.')
+            : !rows.length ? creatorEmpty('No purchases yet. Receipts for paid spaces show up here.')
             : rows.map(r => `
               <div class="${creatorCard} p-4 mb-3">
                 <div class="flex items-center justify-between mb-1">
@@ -603,7 +603,7 @@
           const pendingPayouts = d.payouts.filter(p => p.status === 'pending_approval').length;
           const openReports = d.reports.filter(r => r.status === 'open' || r.status === 'reviewing').length;
           const n = x => x ? ` (${x})` : '';
-          return [['creators', 'Creators' + n(pendingApps)], ['payouts', 'Payouts' + n(pendingPayouts)], ['classreports', 'Class reports' + n(openReports)], ['payments', 'Payments'], ['money', 'Money'], ['cancellations', 'Cancellations' + n(d.cancels.filter(c => c.status === 'new').length)], ['audit', 'Audit log']];
+          return [['creators', 'Creators' + n(pendingApps)], ['payouts', 'Payouts' + n(pendingPayouts)], ['classreports', 'Space reports' + n(openReports)], ['payments', 'Payments'], ['money', 'Money'], ['cancellations', 'Cancellations' + n(d.cancels.filter(c => c.status === 'new').length)], ['audit', 'Audit log']];
         }
 
         async function loadAdminCreatorData(){
@@ -661,11 +661,11 @@
           const btn = (cls, onclick, label) => `<button onclick="${onclick}" class="flex-1 py-2 rounded-full text-xs font-semibold ${cls}">${label}</button>`;
           const out = [];
           if (c.status === 'pending' || !c.status) {
-            out.push(btn('text-white', `adminDo('approve_creator',{userId:'${uid}'},'Approve this creator?','They can create paid classes and earn ${creatorShareLabel()} of each sale.','Approve')" style="${creatorNavyBtn}`, 'Approve'));
+            out.push(btn('text-white', `adminDo('approve_creator',{userId:'${uid}'},'Approve this creator?','They can create paid spaces and earn ${creatorShareLabel()} of each sale.','Approve')" style="${creatorNavyBtn}`, 'Approve'));
             out.push(btn('bg-gray-100 text-gray-600', `adminDo('reject_creator',{userId:'${uid}'},'Reject this application?','They are told it was not approved.','Reject')`, 'Reject'));
           } else if (c.status === 'approved') {
             out.push(btn('bg-amber-50 text-amber-700', `adminDo('${c.payouts_held ? 'release_payouts' : 'hold_payouts'}',{userId:'${uid}'},'${c.payouts_held ? 'Release payouts?' : 'Hold payouts?'}','${c.payouts_held ? 'They can withdraw again.' : 'They cannot withdraw until you release them.'}','${c.payouts_held ? 'Release' : 'Hold'}')`, c.payouts_held ? 'Release payouts' : 'Hold payouts'));
-            out.push(btn('bg-red-50 text-red-500', `adminDo('suspend_creator',{userId:'${uid}'},'Suspend this creator?','Their classes stop selling and they cannot withdraw.','Suspend')`, 'Suspend'));
+            out.push(btn('bg-red-50 text-red-500', `adminDo('suspend_creator',{userId:'${uid}'},'Suspend this creator?','Their spaces stop selling and they cannot withdraw.','Suspend')`, 'Suspend'));
           } else if (c.status === 'suspended') {
             out.push(btn('text-white', `adminDo('reinstate_creator',{userId:'${uid}'},'Reinstate this creator?','They can sell and withdraw again.','Reinstate')" style="${creatorNavyBtn}`, 'Reinstate'));
           }
@@ -679,7 +679,7 @@
             try {
               const sb = getSupabaseClient();
               const { data } = await sb.from(CLASSES_TABLE).select('id, data').eq('teacher_id', uid).limit(100);
-              adminCreatorOpenClasses[uid] = (data || []).map(r => ({ id: r.id, name: (r.data && r.data.name) || 'Class', paused: !!(r.data && r.data.isPaused) }));
+              adminCreatorOpenClasses[uid] = (data || []).map(r => ({ id: r.id, name: (r.data && r.data.name) || 'Space', paused: !!(r.data && r.data.isPaused) }));
             } catch (e) { adminCreatorOpenClasses[uid] = []; }
             refreshAdminDashboardDom();
           }
@@ -711,10 +711,10 @@
                     <div><div class="text-[10px] text-gray-400">Pending</div><div class="font-semibold">${ghs(b.pending)}</div></div>
                     <div><div class="text-[10px] text-gray-400">Lifetime</div><div class="font-semibold">${ghs(b.lifetime)}</div></div>
                   </div>
-                  <div class="font-semibold text-gray-500 mb-1">Classes</div>
+                  <div class="font-semibold text-gray-500 mb-1">Spaces</div>
                   ${classes === undefined ? '<div class="text-gray-400 mb-2">Loading…</div>' : classes.length ? classes.map(k => `
                     <div class="flex items-center justify-between py-1.5"><span class="truncate pr-2">${escapeHtml(k.name)}${k.paused ? ' <span class="text-red-500">(paused)</span>' : ''}</span>
-                      <button onclick="adminDo('${k.paused ? 'unpause_class' : 'pause_class'}',{classId:'${escapeForJsAttr(k.id)}'},'${k.paused ? 'Resume this class?' : 'Pause this class?'}','${k.paused ? 'It can be joined and bought again.' : 'It stops selling until you resume it.'}','${k.paused ? 'Resume' : 'Pause'}')" class="text-xs font-semibold flex-shrink-0" style="color:${ROYAL};">${k.paused ? 'Resume' : 'Pause'}</button></div>`).join('') : '<div class="text-gray-400 mb-2">No classes yet.</div>'}
+                      <button onclick="adminDo('${k.paused ? 'unpause_class' : 'pause_class'}',{classId:'${escapeForJsAttr(k.id)}'},'${k.paused ? 'Resume this space?' : 'Pause this space?'}','${k.paused ? 'It can be joined and bought again.' : 'It stops selling until you resume it.'}','${k.paused ? 'Resume' : 'Pause'}')" class="text-xs font-semibold flex-shrink-0" style="color:${ROYAL};">${k.paused ? 'Resume' : 'Pause'}</button></div>`).join('') : '<div class="text-gray-400 mb-2">No spaces yet.</div>'}
                   <div class="font-semibold text-gray-500 mt-3 mb-1">Recent payments</div>
                   ${sales.slice(0, 5).map(p => `<div class="flex justify-between py-1"><span class="truncate pr-2">${escapeHtml(personName(d.people, p.buyer_id))} · ${creatorDate(p.paid_at)}</span><span class="font-semibold flex-shrink-0">${ghs(p.gross_amount)}</span></div>`).join('') || '<div class="text-gray-400">No sales yet.</div>'}
                 </div>` : ''}
@@ -798,7 +798,7 @@
               <div class="text-[11px] text-gray-400 mt-1">${escapeHtml(r.reason)} · reported by ${escapeHtml(personName(d.people, r.reporter_id))} · ${creatorDate(r.created_at)}</div>
               ${r.details ? `<div class="text-xs text-gray-600 mt-2 whitespace-pre-line">${escapeHtml(r.details)}</div>` : ''}
               ${open ? `<div class="flex gap-2 mt-3 flex-wrap">
-                ${act('bg-amber-50 text-amber-700', `adminDo('pause_class',{classId:'${escapeForJsAttr(r.product_id)}',reportId:'${id}'},'Pause this class?','It stops selling until you resume it.','Pause')`, 'Pause class')}
+                ${act('bg-amber-50 text-amber-700', `adminDo('pause_class',{classId:'${escapeForJsAttr(r.product_id)}',reportId:'${id}'},'Pause this space?','It stops selling until you resume it.','Pause')`, 'Pause space')}
                 ${creatorId ? act('bg-amber-50 text-amber-700', `adminDo('hold_payouts',{userId:'${escapeForJsAttr(creatorId)}',reportId:'${id}'},'Hold this creator\\'s payouts?','They cannot withdraw until you release them.','Hold')`, 'Hold payouts') : ''}
                 ${act('bg-gray-100 text-gray-600', `adminDo('dismiss_report',{reportId:'${id}'})`, 'Dismiss')}
               </div>` : ''}
@@ -806,7 +806,7 @@
         }
         function adminClassReportsTabHTML(){
           const rows = adminCreatorData.reports;
-          if (!rows.length) return creatorEmpty('No class reports.');
+          if (!rows.length) return creatorEmpty('No space reports.');
           const open = rows.filter(r => r.status === 'open' || r.status === 'reviewing');
           const closed = rows.filter(r => !(r.status === 'open' || r.status === 'reviewing')).slice(0, 30);
           return (open.length ? open.map(adminClassReportCardHTML).join('') : creatorEmpty('No open reports.')) +
@@ -835,7 +835,7 @@
             </div>`).join('');
         }
         function adminPaymentsTabHTML(){
-          return `<input type="search" value="${escapeHtml(adminPaymentSearch)}" oninput="setAdminPaymentSearch(this.value)" placeholder="Search by name, class or reference" class="w-full mb-3 px-4 py-2.5 rounded-2xl bg-gray-100 text-sm outline-none">
+          return `<input type="search" value="${escapeHtml(adminPaymentSearch)}" oninput="setAdminPaymentSearch(this.value)" placeholder="Search by name, space or reference" class="w-full mb-3 px-4 py-2.5 rounded-2xl bg-gray-100 text-sm outline-none">
             <div id="admin-payments-list">${adminPaymentsListHTML()}</div>`;
         }
 
@@ -907,7 +907,7 @@
               chartColumnsCardHTML('Withdrawal requests per week', chartTimeline(d.payouts, p => p.requested_at, p => mu(p.amount), 8, 7), '#4f46e5', chartCompact, 'Amount in GH₵, last 8 weeks');
           }
           if (tab === 'classreports') {
-            return chartDonutCardHTML('Class reports by status', chartCountBy(d.reports, r => String(r.status || 'open').replace(/^./, ch => ch.toUpperCase())), d.reports.length, 'reports');
+            return chartDonutCardHTML('Space reports by status', chartCountBy(d.reports, r => String(r.status || 'open').replace(/^./, ch => ch.toUpperCase())), d.reports.length, 'reports');
           }
           if (tab === 'payments') {
             return chartColumnsCardHTML('Sales per day', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 14, 1), '#1e90ff', money, 'GH₵, last 14 days') +
@@ -931,7 +931,7 @@
         function creatorAdminBodyHTML(tab){
           const d = adminCreatorData;
           if (d.loading && !d.loaded) return `<div class="text-center text-gray-400 text-sm py-8">Loading…</div>`;
-          const note = d.missing.length ? `<div class="bg-amber-50 text-amber-700 text-xs rounded-2xl p-3 mb-3">Not set up yet: ${d.missing.map(m => m.replace('classreports', 'class reports')).join(', ')}.</div>` : '';
+          const note = d.missing.length ? `<div class="bg-amber-50 text-amber-700 text-xs rounded-2xl p-3 mb-3">Not set up yet: ${d.missing.map(m => m.replace('classreports', 'space reports')).join(', ')}.</div>` : '';
           const body = tab === 'creators' ? adminCreatorsTabHTML()
             : tab === 'payouts' ? adminPayoutsTabHTML()
             : tab === 'classreports' ? adminClassReportsTabHTML()

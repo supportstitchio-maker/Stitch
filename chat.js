@@ -5719,10 +5719,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof lectureBannerActive === 'function' && lectureBannerActive() && !callMinimized) {
             const cls = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === liveLectureState.classId) : null;
             const nm = document.getElementById('call-minimized-name');
-            if (nm) nm.textContent = (cls && cls.name) || 'Class call';
+            if (nm) nm.textContent = (cls && cls.name) || 'Space call';
             const tm = document.getElementById('call-minimized-timer');
             if (tm) tm.textContent = formatCallTime(liveLectureState.seconds);
-            if (labelEl) labelEl.textContent = 'Class in progress';
+            if (labelEl) labelEl.textContent = 'Session in progress';
             if (msgBtn) msgBtn.style.display = 'none';
             const mb = document.getElementById('call-minimized-mute-btn');
             if (mb) mb.innerHTML = Icon(liveLectureState.muted ? 'micOff' : 'mic', 'w-4 h-4');
@@ -5787,9 +5787,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const titleEl = document.getElementById('callNotesModalTitle');
             const ta = document.getElementById('callNotesTextarea');
             const hint = document.getElementById('callNotesSavedHint');
-            if (titleEl) titleEl.textContent = `Notes · ${(cls && cls.name) || 'Class'}`;
+            if (titleEl) titleEl.textContent = `Notes · ${(cls && cls.name) || 'Space'}`;
             if (ta) ta.value = lectureNoteText();
-            if (hint) hint.textContent = 'Saved to your classroom Notebook';
+            if (hint) hint.textContent = 'Saved to your space Notebook';
             if (modal) modal.classList.remove('hidden');
             requestAnimationFrame(() => { if (ta) ta.focus(); });
             return;
@@ -5828,7 +5828,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             callNotesSaveTimer = setTimeout(() => {
               queueSaveUserState();
               const h2 = document.getElementById('callNotesSavedHint');
-              if (h2) h2.textContent = 'Saved to your classroom Notebook';
+              if (h2) h2.textContent = 'Saved to your space Notebook';
             }, 500);
             return;
           }

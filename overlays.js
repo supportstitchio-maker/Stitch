@@ -790,14 +790,14 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('people')", icon: 'users', label: 'People' },
             { onclick: "toggleClassDetailMenu(); openClassMessages()", icon: 'comment', label: 'Messages' + (typeof classMsgUnreadTotal === 'function' && classMsgUnreadTotal() ? ' (' + classMsgUnreadTotal() + ')' : '') },
             isTeacher
-              ? { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('profile')", icon: 'chart', label: 'Class profile' }
-              : { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('report')", icon: 'doc', label: 'My class report' }
+              ? { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('profile')", icon: 'chart', label: 'Space profile' }
+              : { onclick: "toggleClassDetailMenu(); classDetailSwitchTab('report')", icon: 'doc', label: 'My space report' }
           ];
           if (isTeacher) {
-            rows.push({ onclick: 'toggleClassDetailMenu(); openEditClass()', icon: 'edit', label: 'Edit class' });
-            rows.push({ onclick: 'toggleClassDetailMenu(); confirmDeleteCurrentClass()', icon: 'trash', label: 'Delete class', cls: 'text-red-500' });
+            rows.push({ onclick: 'toggleClassDetailMenu(); openEditClass()', icon: 'edit', label: 'Edit space' });
+            rows.push({ onclick: 'toggleClassDetailMenu(); confirmDeleteCurrentClass()', icon: 'trash', label: 'Delete space', cls: 'text-red-500' });
           } else {
-            rows.push({ onclick: 'toggleClassDetailMenu(); confirmLeaveCurrentClass()', icon: 'back', label: 'Leave class', cls: 'text-red-500' });
+            rows.push({ onclick: 'toggleClassDetailMenu(); confirmLeaveCurrentClass()', icon: 'back', label: 'Leave space', cls: 'text-red-500' });
           }
           return classMenuSheetHTML('toggleClassDetailMenu', rows);
         }
@@ -805,7 +805,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return `
             <div class="w-full px-5 relative" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 10px);">
               <div class="flex items-center justify-between">
-                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this class?', 'You can come back to this class anytime from Classroom.')" title="Leave classroom" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this space?', 'You can come back to this space anytime from Workspace.')" title="Leave space" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <h1 class="nm-wrap text-base font-bold font-display absolute left-1/2 -translate-x-1/2" style="max-width:60%;"><span class="nm-inner grad-text">${escapeHtml(title)}</span></h1>
                 <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
               </div>
@@ -823,7 +823,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function joinClassDropdownMenu(){
           return classMenuSheetHTML('toggleJoinClassMenu', [
             { onclick: 'pasteJoinClassCode()', icon: 'clip', label: 'Paste code from clipboard' },
-            { onclick: 'showJoinClassHelp()', icon: 'help', label: 'How do I get a class code?' }
+            { onclick: 'showJoinClassHelp()', icon: 'help', label: 'How do I get a space code?' }
           ]);
         }
 
@@ -840,7 +840,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           try {
             const text = await navigator.clipboard.readText();
             if (input && text) input.value = text.trim().toUpperCase();
-            if (!text) openAppAlertModal('Your clipboard is empty. Copy a class code first, then try again.');
+            if (!text) openAppAlertModal('Your clipboard is empty. Copy a space code first, then try again.');
           } catch (e) {
             openAppAlertModal("Couldn't read your clipboard. You may need to allow clipboard access, or just type the code in manually.");
           }
@@ -848,7 +848,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function showJoinClassHelp(){
           toggleJoinClassMenu();
-          openAppAlertModal('Ask your teacher or a classmate already in the class for the class code. It\'s usually 6-8 letters or numbers, shown at the top of the class in their app.');
+          openAppAlertModal('Ask a moderator or a fellow member already in the space for the space code. It\'s usually 6-8 letters or numbers, shown at the top of the space in their app.');
         }
 
         function resetCreateClassForm(){
@@ -859,7 +859,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function showCreateClassHelp(){
           toggleCreateClassMenu();
-          openAppAlertModal('Class Name: what students will see (required).\nSection: an optional label like "Section B" if you teach more than one group.\nSubject: an optional label like "Biology" to help students find the class.');
+          openAppAlertModal('Space Name: what members will see (required).\nSection: an optional label like "Section B" if you teach more than one group.\nSubject: an optional label like "Biology" to help members find the space.');
         }
 
         let selectedMediaItems = [];
@@ -3555,7 +3555,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             time: (typeof formatNotifTime === 'function' && n.createdAt) ? formatNotifTime(n.createdAt) : '',
             body: n.body || n.message || '',
             openFn: isCancel ? 'openAdminCancellations()' : (canOpen ? `openNotifTarget('${n.id}')` : ''),
-            openLabel: isCancel ? 'See cancellations' : 'Open class'
+            openLabel: isCancel ? 'See cancellations' : 'Open space'
           });
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classAnnouncements') renderClassAnnouncementsTab();
         }
@@ -3571,7 +3571,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
               ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left', sheetToggle: 'toggleNoticeBoardMenu' }), { hideBack: true, shortDashes: true, titleLeft: true, titleSize: 'text-3xl', menuLeft: true, flipMenuIcon: true })}
               <div class="p-5">
-                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No class announcements yet.</div>'}</div>
+                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
               </div>
             </div>`;
           attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), noticeBoardMenuOpen, 'toggleNoticeBoardMenu');

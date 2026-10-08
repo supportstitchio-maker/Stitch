@@ -1526,11 +1526,11 @@
           try {
             const path = `${attachmentId}-${escapeHtml(file.name)}`;
             const { error } = await sb.storage.from(CLASSWORK_STORAGE_BUCKET).upload(path, file, { upsert: true });
-            if (error) { console.warn('Classwork file upload failed:', error.message); return null; }
+            if (error) { console.warn('Tasks file upload failed:', error.message); return null; }
             const { data } = sb.storage.from(CLASSWORK_STORAGE_BUCKET).getPublicUrl(path);
             return (data && data.publicUrl) || null;
           } catch (err) {
-            console.warn('Classwork file upload failed:', err);
+            console.warn('Tasks file upload failed:', err);
             return null;
           }
         }
@@ -1745,7 +1745,7 @@
     <div id="dnav-main-list">
     <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Classroom</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
@@ -1755,8 +1755,8 @@
     <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dnav-4"><span id="dnav-4-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
     </div>
-    <!-- Classroom sub-nav: only shown (in place of the main tabs above)
-         while Classroom is the active tab. The rest of the app isn't
+    <!-- Workspace sub-nav: only shown (in place of the main tabs above)
+         while Workspace is the active tab. The rest of the app isn't
          reachable from the rail while this is showing -- clicking the
          Stitch logo (always visible above) is the way back to Home. -->
     <div id="dnav-classroom-list">
@@ -1771,7 +1771,7 @@
   </div>
   <!-- Desktop-only right panel: Telegram-style info column pinned to the
        right edge. Its content swaps between Profile, Discover, the
-       Classroom notebook, and an opened file depending on what triggered
+       Workspace notebook, and an opened file depending on what triggered
        it (see openRightPanel below), instead of each of those taking
        over the whole content column the way they do on phone. -->
   <div id="desktop-right-panel">
@@ -1808,7 +1808,7 @@
   <!-- Content -->
   <div id="screen" class="flex-1 w-full max-w-2xl mx-auto overflow-y-auto" style="min-height:0;"></div>
 
-  <!-- Overlay (Discover / Inbox / Notifications / Comments / Share / Stories / AI Class) -->
+  <!-- Overlay (Discover / Inbox / Notifications / Comments / Share / Stories / AI Space) -->
   <div id="overlay" class="hidden absolute left-1/2 -translate-x-1/2 w-full max-w-2xl bg-gray-50 flex flex-col z-20" style="top:0; bottom:0;"></div>
 
   <!-- Minimized call banner: shown when a call is live but the person
@@ -1871,15 +1871,15 @@
       <div class="text-[11px] text-gray-400 mt-2" id="callNotesSavedHint">Saved automatically</div>
     </div>
   </div>
-  <!-- Add someone to a running class call (see openLectureAddPeople in courses.js): lists only
-       people who have already joined the class. -->
+  <!-- Add someone to a running space call (see openLectureAddPeople in courses.js): lists only
+       people who have already joined the space. -->
   <div id="lectureAddModal" class="hidden absolute inset-0 z-50 flex items-end justify-center" style="background:rgba(0,0,0,0.5);">
     <div class="bg-white rounded-t-3xl w-full p-5" style="max-width:42rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);max-height:70vh;display:flex;flex-direction:column;">
       <div class="flex items-center justify-between mb-2">
         <div class="text-lg font-bold text-[${NAVY}] font-display">Add to call</div>
         <button onclick="closeLectureAddPeople()" class="text-gray-400 flex-shrink-0" aria-label="Close">${IconBold('close','w-5 h-5')}</button>
       </div>
-      <div class="text-xs text-gray-400 mb-2">Only people who have joined this class can be added.</div>
+      <div class="text-xs text-gray-400 mb-2">Only people who have joined this space can be added.</div>
       <div id="lectureAddList" class="overflow-y-auto" style="min-height:0;"></div>
     </div>
   </div>
@@ -1887,7 +1887,7 @@
        banner like the 1:1/group call above. Instead it's rendered inline
        inside classDetailHTML(), pinned just below the Stream/Classwork/
        People tab row, for as long as the person is looking at that
-       class's detail screen (see lectureMinimizedBannerHTML in
+       space's detail screen (see lectureMinimizedBannerHTML in
        courses.js) -- minimizing a lecture always returns to that screen. -->
   <!-- Plays a minimized call's remote audio so it's still audible while
        browsing elsewhere -- the call screen's own <video>/<audio>
@@ -1908,11 +1908,11 @@
     </div>
   </div>
 
-  <!-- Leave Classroom confirmation modal -->
+  <!-- Leave Workspace confirmation modal -->
   <div id="leaveClassModal" class="hidden absolute inset-0 z-40 flex items-end justify-center confirm-sheet-wrap" style="background:rgba(0,0,0,0.5);" onclick="if(event.target===this) closeLeaveClassModal()">
     <div class="bg-white w-full p-6 text-center confirm-sheet" style="max-width:640px;border-radius:24px 24px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,0.2);"><div style="width:40px;height:4px;border-radius:9999px;background:rgba(10,37,64,0.18);margin:-8px auto 16px;"></div>
       <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" id="leaveClassModalIcon" style="background:rgba(107,114,128,0.16);color:#6b7280;">${IconBold('back','w-5 h-5')}</div>
-      <div class="text-sm text-gray-500 mb-6" id="leaveClassModalMessage">You'll be removed from this classroom and its materials until you rejoin.</div>
+      <div class="text-sm text-gray-500 mb-6" id="leaveClassModalMessage">You'll be removed from this space and its materials until you rejoin.</div>
       <div class="flex gap-3">
         <button onclick="closeLeaveClassModal()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">No</button>
         <button onclick="confirmLeaveClassroomYes()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Yes</button>
@@ -2024,7 +2024,7 @@
        visible underneath (see openOverlay's keepsTaskbar block) -- as
        that bar hides/retracts on scroll its own background fades out
        along with it (see applyBottomNavVisual), which used to leave the
-       vacated sliver showing whatever's mounted behind it (the Classroom
+       vacated sliver showing whatever's mounted behind it (the Workspace
        screen's own content) instead of a clean, opaque fill. This sits
        just behind the nav bars (below their z-10, above #screen's
        default stacking) so that gap is always solid white/dark instead
@@ -2037,14 +2037,14 @@
       <button onclick="switchTab(0)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
       <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcaseOutline','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
       <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center" id="nav-2">
-        <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookStack','w-7 h-7')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Classroom</span>
+        <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookStack','w-7 h-7')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Workspace</span>
       </button>
       <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${Icon('commentOutline','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
       <button onclick="switchTab(4)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-4"><span id="nav-4-icon">${navProfileIconHTML(undefined, true)}</span><span class="text-[9px] font-medium leading-none mt-1">Profile</span></button>
     </div>
   </div>
 
-  <!-- Classroom Bottom Nav (only visible inside the Classroom tab). Same
+  <!-- Workspace Bottom Nav (only visible inside the Workspace tab). Same
        flat, edge-to-edge bar as #bottom-nav (nav-bar-floating + nav-bare),
        rather than a detached floating pill, and stays up (with Stitch Bot
        and Alerts reserving a gap for it) instead of being hidden there. -->
@@ -2592,7 +2592,7 @@
         function classroomLoadingMarkup(){
           const card = `<div class="sk sk-card" style="height:104px;margin-bottom:12px;"></div>`;
           return `
-            <div id="classroom-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Loading classroom">
+            <div id="classroom-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Loading workspace">
               <div class="sk-wrap">
                 <div class="sk-row" style="justify-content:space-between;margin-bottom:16px;">
                   <div class="sk" style="width:120px;height:14px;"></div>
@@ -2630,7 +2630,7 @@
             const el = document.getElementById('classroom-loading-text');
             if (!el || myToken !== classroomLoadToken) { clearInterval(dotTimer); return; }
             dots = (dots + 1) % 4;
-            el.textContent = 'Loading classroom' + '.'.repeat(dots);
+            el.textContent = 'Loading workspace' + '.'.repeat(dots);
           }, 350);
 
           const CLASSROOM_LOAD_MS = 5000; 
@@ -2681,8 +2681,8 @@
           const titleEl = document.getElementById('leaveClassModalTitle');
           const messageEl = document.getElementById('leaveClassModalMessage');
           const iconEl = document.getElementById('leaveClassModalIcon');
-          if (titleEl) titleEl.textContent = title || 'Leave this classroom?';
-          if (messageEl) messageEl.textContent = message || "You'll be removed from this classroom and its materials until you rejoin.";
+          if (titleEl) titleEl.textContent = title || 'Leave this space?';
+          if (messageEl) messageEl.textContent = message || "You'll be removed from this space and its materials until you rejoin.";
           if (iconEl) iconEl.innerHTML = IconBold(icon || 'back', 'w-5 h-5');
           if (modal) modal.classList.remove('hidden');
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeLeaveClassModal(fromPopState));

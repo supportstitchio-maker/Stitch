@@ -587,7 +587,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function rightPanelTitle(){
           if (rightPanelMode === 'profile') return 'Profile';
           if (rightPanelMode === 'discover') return 'Discover';
-          if (rightPanelMode === 'notebook') return inLectureCall ? 'Class Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook');
+          if (rightPanelMode === 'notebook') return inLectureCall ? 'Space Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook');
           if (rightPanelMode === 'jobplan') return 'Job Plan';
           if (rightPanelMode === 'gameprofile') return 'Gaming Profile';
           if (rightPanelMode === 'aihistory') return 'Chat History';
@@ -659,9 +659,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function classPadBodyHTML(prefix){
           return `
-            <textarea id="${prefix}-notebook-draft-input" oninput="notebookDraft=this.value" placeholder="Jot a quick note for this class..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-3 resize-none" rows="3">${escapeHtml(notebookDraft)}</textarea>
+            <textarea id="${prefix}-notebook-draft-input" oninput="notebookDraft=this.value" placeholder="Jot a quick note for this space..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-3 resize-none" rows="3">${escapeHtml(notebookDraft)}</textarea>
             <button onclick="addNotebookNote()" class="w-full py-2.5 rounded-full font-medium text-sm text-white mb-5" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Add note</button>
-            <div class="font-semibold text-sm text-gray-700 mb-3">${inLectureCall ? 'Class Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook')}</div>
+            <div class="font-semibold text-sm text-gray-700 mb-3">${inLectureCall ? 'Space Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook')}</div>
             <div id="${prefix}-notebook-notes-list">${notebookNotesHTML()}</div>
             ${inLectureCall ? `
             <div id="${prefix}-classpad-resources-list">${classPadResourcesHTML()}</div>` : ''}`;
@@ -672,7 +672,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
         function notebookNotesHTML(){
-          if (!notebookNotes.length) return `<div class="text-gray-400 text-sm text-center py-10">Notes you jot down during class will show up here.</div>`;
+          if (!notebookNotes.length) return `<div class="text-gray-400 text-sm text-center py-10">Notes you jot down during space will show up here.</div>`;
           return notebookNotes.map(n => {
             const expanded = notebookExpandedIds.has(n.id);
             return `

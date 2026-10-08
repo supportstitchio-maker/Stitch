@@ -1305,7 +1305,7 @@ let userPoints = 0;
         const AUTH_INTENT_GROUPS = [
           { title: 'Using Stitch', items: [['explore','Explore','search'],['network','Network','users']] },
           { title: 'Post opportunities', items: [['jobs','Jobs','briefcase'],['internships','Internships','graduate'],['scholarships','Scholarships','trophy'],['courses','Free courses','book'],['others','Others','gridOutline']] },
-          { title: 'Teach & earn (paid)', items: [['paidcourses','Paid courses','coin'],['paidclasses','Paid live classes','video'],['paidmeetings','Paid meetings','calendar'],['paidsessions','1:1 sessions','mic']],
+          { title: 'Teach & earn (paid)', items: [['paidcourses','Paid courses','coin'],['paidclasses','Paid live spaces','video'],['paidmeetings','Paid meetings','calendar'],['paidsessions','1:1 sessions','mic']],
             note: 'Adds a few quick questions about pricing and payouts.' }
         ];
         const AUTH_POST_KEYS = ['jobs','internships','scholarships','courses','others'];
@@ -2696,9 +2696,9 @@ let userPoints = 0;
             title: 'Help Center',
             html: `
               <h3 style="font-weight:700;padding-top:4px;">Getting started</h3>
-              <p>Register with your email, join or create a class with a class code, and you're set -- upload a document to generate notes, flashcards, and practice questions from it automatically.</p>
+              <p>Register with your email, join or create a space with a space code, and you're set -- upload a document to generate notes, flashcards, and practice questions from it automatically.</p>
               <h3 style="font-weight:700;padding-top:4px;">Common questions</h3>
-              <p><strong>How do study groups work?</strong> Anyone in a class can start or lead a group -- no admin approval needed.</p>
+              <p><strong>How do study groups work?</strong> Anyone in a space can start or lead a group -- no admin approval needed.</p>
               <p><strong>What are the usage limits?</strong> Every account gets 50 Stitch Bot prompts a day (up to 250 a week and 1000 a month). Practice questions, flashcards, and Challenge Arena questions generated from your uploads are unlimited. There's no paid tier -- these limits are the same for everyone.</p>
               <p><strong>My upload didn't generate anything.</strong> This usually means it looked like a duplicate of something you already uploaded. Try again with the original file.</p>
               <p>Didn't find your answer? Reach out below and we'll help directly.</p>
