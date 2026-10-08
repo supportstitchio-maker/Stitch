@@ -996,12 +996,11 @@
         /* ---- Call action buttons (end / decline / accept) ---- */
         .call-end-icon-btn{
           background:#ef4444;
-          box-shadow:0 0 0 6px rgba(239,68,68,0.16), 0 0 0 12px rgba(239,68,68,0.08);
+          box-shadow:none;
         }
         .call-decline-icon-btn{
           background:#ef4444;
-          box-shadow:0 0 0 8px rgba(239,68,68,0.16), 0 0 0 16px rgba(239,68,68,0.08);
-          animation:callDeclinePulse 1.6s ease-out infinite;
+          box-shadow:none;
         }
         .call-accept-icon-btn{
           background:#10b981;
@@ -3647,3 +3646,15 @@ input[type="time"]::-webkit-calendar-picker-indicator{ opacity:0; position:absol
 /* Mock test footer buttons (Back / Next / Submit) and the class-call title use the Colmeak font */
 .ar-foot .ar-btn{font-family:'Colmeak','Montserrat',sans-serif !important;}
 #lecture-call-screen .cu-title-name{font-family:'Colmeak','Montserrat',sans-serif !important;}
+
+/* Delete/destructive rows in pull-up menus: always show a red icon */
+.text-red-500 svg{ color:#ef4444 !important; }
+
+/* ---- Skeleton loading screens ---- */
+@keyframes sk-shimmer{ 0%{background-position:-240px 0;} 100%{background-position:calc(240px + 100%) 0;} }
+.sk{ background-color:#e5e7eb; background-image:linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 100%); background-size:240px 100%; background-repeat:no-repeat; animation:sk-shimmer 1.3s ease-in-out infinite; border-radius:10px; }
+.sk-round{ border-radius:9999px; }
+.sk-card{ border-radius:24px; }
+.sk-wrap{ padding:var(--top-safe-pad, 20px) 20px 24px; height:100%; overflow:hidden; box-sizing:border-box; }
+.sk-row{ display:flex; align-items:center; gap:12px; }
+body.dark-mode .sk{ background-color:rgba(255,255,255,.08); background-image:linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,.10) 50%, rgba(255,255,255,0) 100%); }

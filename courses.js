@@ -4258,7 +4258,34 @@ try {
           return `<span style="display:inline-flex;align-items:center;gap:8px;">${spinner}${label ? `<span>${escapeHtml(label)}</span>` : ''}</span>`;
         }
 
+        function classDetailSkeletonMarkup(){
+          return `
+            <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing class">
+              <div class="sk-wrap">
+                <div class="sk-row" style="justify-content:space-between;margin-bottom:20px;">
+                  <div class="sk sk-round" style="width:28px;height:28px;"></div>
+                  <div class="sk" style="width:150px;height:18px;"></div>
+                  <div class="sk sk-round" style="width:28px;height:28px;"></div>
+                </div>
+                <div class="sk sk-card" style="height:198px;margin-bottom:16px;"></div>
+                <div class="sk-row" style="gap:12px;margin-bottom:20px;">
+                  <div class="sk sk-round" style="flex:1;height:58px;"></div>
+                  <div class="sk sk-round" style="flex:1;height:58px;"></div>
+                </div>
+                <div class="sk-row" style="gap:10px;margin-bottom:18px;">
+                  <div class="sk sk-round" style="width:84px;height:34px;"></div>
+                  <div class="sk sk-round" style="width:96px;height:34px;"></div>
+                  <div class="sk sk-round" style="width:90px;height:34px;"></div>
+                </div>
+                <div class="sk sk-card" style="height:92px;margin-bottom:12px;"></div>
+                <div class="sk sk-card" style="height:92px;margin-bottom:12px;"></div>
+                <div class="sk sk-card" style="height:92px;"></div>
+              </div>
+            </div>`;
+        }
+
         function classActionLoadingMarkup(text, iconName){
+          if (['Preparing class','Creating class','Adding you to class'].includes(text)) return classDetailSkeletonMarkup();
           return `
             <div id="class-action-loading-overlay" class="classroom-slide-cover flex flex-col items-center justify-center">
               <div style="position:relative;width:84px;height:84px;">

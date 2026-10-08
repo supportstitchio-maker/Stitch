@@ -4911,7 +4911,7 @@
         function postMenuSheetHtml(post){
           const row = (onclick, icon, label, cls, disabled) => `
             <button onclick="${disabled ? '' : onclick}" ${disabled ? 'disabled' : ''} class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${Icon(icon,'w-6 h-6')}</span>
+              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0" style="${(cls && /text-red/.test(cls)) ? 'color:#ef4444;' : ''}">${Icon(icon,'w-6 h-6')}</span>
               <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${label}</span>
             </button>`;
           let rows = '';

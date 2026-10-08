@@ -560,7 +560,17 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           document.getElementById('overlay').innerHTML = practiceTestsHTML();
         }
 
+        let mockTestResourceLabel = null;
+        function openMockTestForResource(id){
+          const r = (typeof uploadedResources !== 'undefined' ? uploadedResources : []).find(x => x.id === id);
+          if (!r || !r.courseName) return;
+          selectedCourseNames = new Set([r.courseName]);
+          mockTestResourceLabel = r.name;
+          openChallengeModal(mockTestStartHTML());
+        }
+
         function openMockTestForCourse(name){
+          mockTestResourceLabel = null;
           selectedCourseNames = name === '__ALL__' ? new Set(courseBank.map(c => c.name)) : new Set([name]);
           openChallengeModal(mockTestStartHTML());
         }
@@ -569,7 +579,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const n = selectedCourseNames.size;
           return `
             ${challengeSheetHeader('Mock Test')}
-            <div class="text-base text-gray-500 mb-5">${n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's')} selected. How do you want to take this test?</div>
+            <div class="text-base text-gray-500 mb-5">${mockTestResourceLabel ? escapeHtml(mockTestResourceLabel) + ' selected' : (n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's')) + ' selected'}. How do you want to take this test?</div>
             <button onclick="startMockTest('timed')" class="w-full text-white font-bold text-center py-4 rounded-full mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('clock','w-4 h-4 inline-block mr-1 -mt-0.5')} Timed · 60s per question</button>
             <button onclick="startMockTest('self')" class="w-full font-bold text-center py-4 rounded-full mb-4 border" style="color:${NAVY};border-color:rgba(65,105,225,0.3);">Self-paced · no timer</button>
             <div class="text-sm text-gray-400">Either way, leaving this tab or page ends the test early and locks in your score.</div>`;

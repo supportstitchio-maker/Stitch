@@ -2590,15 +2590,19 @@
 
         // ---- Classroom loading transition + leave-class modal ----
         function classroomLoadingMarkup(){
+          const card = `<div class="sk sk-card" style="height:104px;margin-bottom:12px;"></div>`;
           return `
-            <div id="classroom-loading-overlay" class="classroom-slide-cover flex flex-col items-center justify-center">
-              <div style="position:relative;width:84px;height:84px;">
-                <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(10,37,64,0.12) 45%, rgba(10,37,64,0.12) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));animation:classroom-spin 0.9s linear infinite;"></div>
-                <div style="position:absolute;inset:10px;background:#ffffff;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(10,37,64,0.18);">
-                  <svg viewBox="0 0 24 24" fill="url(#navyRoyalGrad)" style="width:30px;height:30px;"><rect x="3" y="7.4" width="4.4" height="13.1" rx="0.9"/><rect x="9.1" y="5" width="4.4" height="15.5" rx="0.9"/><rect x="15" y="7.3" width="4.7" height="13.2" rx="0.9" transform="rotate(11 17.35 13.9)"/></svg>
+            <div id="classroom-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Loading classroom">
+              <div class="sk-wrap">
+                <div class="sk-row" style="justify-content:space-between;margin-bottom:16px;">
+                  <div class="sk" style="width:120px;height:14px;"></div>
+                  <div class="sk" style="width:150px;height:30px;"></div>
                 </div>
+                <div class="sk sk-card" style="height:46px;border-radius:16px;margin-bottom:20px;"></div>
+                <div class="sk" style="width:90px;height:11px;margin-bottom:14px;"></div>
+                ${card}${card}${card}
+                <div class="sk sk-card" style="height:150px;margin-top:20px;"></div>
               </div>
-              <div class="mt-4 text-sm font-semibold text-gray-500 font-display" id="classroom-loading-text">Loading classroom</div>
             </div>`;
         }
 

@@ -4006,7 +4006,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="convo-sheet-grabber"></div>
                   <button onclick="closeConvoOptionsMenuThen(() => openConvoProfile())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('user','w-4 h-4')} View profile</button>
                   <button onclick="${reported ? '' : `closeConvoOptionsMenuThen(() => reportConvo())`}" ${reported ? 'disabled' : ''} class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium border-b border-gray-100 ${reported ? 'text-gray-400' : 'text-gray-800'}">${Icon('flag','w-4 h-4')} ${reported ? 'Reported' : 'Report'}</button>
-                  <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('trash','w-4 h-4')} Clear chat</button>
+                  <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100"><span style="color:#ef4444;display:inline-flex;">${Icon('trash','w-4 h-4')}</span> Clear chat</button>
                   <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} ${blocked ? 'Unblock' : 'Block'}</button>
                 </div>
             <div id="convo-log-wrap" class="flex-1 relative" style="min-height:0;">
@@ -6305,7 +6305,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-ctl-label{font-size:10.5px;font-weight:600;line-height:1;white-space:nowrap;}
             .cu-ctl.on .cu-ctl-btn{background:var(--cu-fg);color:var(--cu-bg);}
             .cu-ctl.accent .cu-ctl-btn{background:#1e90ff;color:#fff;}
-            .cu-ctl.end .cu-ctl-btn{background:#ef4444;color:#fff;box-shadow:0 6px 18px rgba(239,68,68,.45);}
+            .cu-ctl.end .cu-ctl-btn{background:#ef4444;color:#fff;box-shadow:none;}
             .cu-ctl.end{color:var(--cu-endtxt);}
             .cu-ctl.accept .cu-ctl-btn{background:#22c55e;color:#fff;box-shadow:0 6px 18px rgba(34,197,94,.45);}
             .cu-ctl.accept{color:var(--cu-accepttxt);}

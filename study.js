@@ -205,7 +205,6 @@ let studyFabMenuOpen = false;
             ${uploadedResources.length ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Your Uploads</div>
               ${uploadedResources.map(resourceStatusRow).join('')}
-              ${studyCard('edit', 'Practice', 'Quizzes and flashcards built from your uploads', "studySubTab('exams')")}
             ` : `
               <div class="text-sm text-gray-400 text-center py-6">Upload a PDF, DOCX, or PPTX above to unlock quizzes and flashcards built from it.</div>
             `}
@@ -1035,10 +1034,13 @@ let studyFabMenuOpen = false;
         }
 
         function resourceStatusRow(r){
+          const rowCls = 'flex items-center gap-4 py-4';
+          const rowStyle = 'border-bottom:1px solid rgba(10,37,64,0.08);';
+          const delBtn = (stop) => `<button onclick="${stop ? 'event.stopPropagation();' : ''}removeUploadedResource('${r.id}')" aria-label="Delete resource" class="flex-shrink-0 p-2 text-red-500">${Icon('trash','w-5 h-5')}</button>`;
           if (r.status === 'processing') {
             return `
-              <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
-                <div class="w-12 h-12 flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+              <div class="${rowCls}" style="${rowStyle}">
+                <div class="w-10 h-10 flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-amber-600">Scanning with Stitch Bot: building flashcards &amp; questions…</div>
@@ -1047,26 +1049,25 @@ let studyFabMenuOpen = false;
           }
           if (r.status === 'error') {
             return `
-              <div class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 shadow-sm">
-                <div class="w-12 h-12 flex items-center justify-center text-red-500 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+              <div class="${rowCls}" style="${rowStyle}">
+                <div class="w-10 h-10 flex items-center justify-center text-red-500 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-red-500 truncate">${r.error}</div>
                 </div>
-                <button onclick="removeUploadedResource('${r.id}')" class="text-gray-300 flex-shrink-0 px-1">${Icon('close','w-4 h-4')}</button>
+                ${delBtn(false)}
               </div>`;
           }
-          const hasCards = r.flashcards.length > 0;
           const hasQuestions = r.questions.length > 0;
-          const action = hasQuestions ? `openMockTestForCourse('${r.courseName}')` : '';
+          const action = hasQuestions ? `openMockTestForResource('${r.id}')` : '';
           return `
-            <div ${action ? `onclick="${action}"` : ''} class="bg-white rounded-3xl p-4 flex items-center gap-4 mb-4 ${action ? 'cursor-pointer' : ''} shadow-sm">
-              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
+            <div ${action ? `onclick="${action}"` : ''} class="${rowCls} ${action ? 'cursor-pointer' : ''}" style="${rowStyle}">
+              <div class="w-10 h-10 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                 <div class="text-xs text-gray-500">${r.flashcards.length} flashcards · ${r.questions.length} practice questions</div>
               </div>
-              <button onclick="event.stopPropagation();removeUploadedResource('${r.id}')" class="text-gray-300 flex-shrink-0 px-1">${Icon('close','w-4 h-4')}</button>
+              ${delBtn(true)}
             </div>`;
         }
 
