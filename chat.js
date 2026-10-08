@@ -1276,8 +1276,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : key === 'general' ? generalUnreadCount()
               : count;
             return `
-              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="seg-btn ${inboxFilter===key ? 'on' : ''}">
-                ${label}${effectiveCount ? `<span class="seg-badge">${effectiveCount}</span>` : ''}
+              <button onclick="inboxFilterTab('${key}')" ${inboxFilter===key ? 'data-pill-active="1"' : ''} class="flex-shrink-0 flex items-center gap-1 px-4 py-2 rounded-full text-xs font-semibold ${inboxFilter===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${inboxFilter===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">
+                ${label}${effectiveCount ? `<span class="rounded-full ${inboxFilter===key?`bg-[${NAVY}] text-white`:'bg-red-500 text-white'} text-[9px] flex items-center justify-center" style="min-width:1rem;height:1rem;padding:0 0.25rem;">${effectiveCount}</span>` : ''}
               </button>
             `;
           }).join('');
@@ -1345,7 +1345,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               `}
             </div>
             <div id="inbox-filterbar" class="sticky z-10 bg-gray-50 px-5 pb-3 border-b border-gray-100">
-              <div class="seg-bar seg-scroll" id="inbox-filterbar-row">${inboxFilterBarRowHTML()}</div>
+              <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" id="inbox-filterbar-row">${inboxFilterBarRowHTML()}</div>
             </div>
             <div class="divide-y" id="inbox-list">${inboxContent()}</div>`;
           stickBarsStack(['inbox-titlebar','inbox-searchbar','inbox-filterbar']);
@@ -1631,7 +1631,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             const incomingHTML = incoming.length ? incoming.map(c => requestRow(c)).join('') : '';
             const sentHTML = sent.length ? `
-              <div class="px-5 pt-4 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">Sent</div>
               ${sent.map(c => sentRequestRow(c)).join('')}` : '';
             return incomingHTML + sentHTML;
           }
@@ -1740,7 +1739,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="text-xs text-gray-500 mt-0.5 truncate">${escapeHtml(preview || 'Invitation sent')}</div>
                 <div class="text-[11px] text-gray-400 mt-0.5">${time}</div>
               </div>
-              <button onclick="event.stopPropagation(); confirmWithdrawSentRequest('${escapeForJsAttr(id)}','${escapeForJsAttr(name)}')" class="text-xs font-semibold px-4 py-1.5 rounded-full flex-shrink-0 bg-white" style="border:1.5px solid #d1d5db;color:#6b7280;">Pending</button>
+              <button onclick="event.stopPropagation(); confirmWithdrawSentRequest('${escapeForJsAttr(id)}','${escapeForJsAttr(name)}')" class="text-xs font-semibold px-4 py-1.5 rounded-full flex-shrink-0 bg-white" style="border:1.5px solid #fca5a5;color:#dc2626;">Cancel</button>
             </div>`;
         }
 

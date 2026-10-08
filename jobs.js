@@ -42,9 +42,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function careerFilterPillsHTML(){
           return `
-            <div id="career-tabs-scroller" class="seg-bar seg-scroll">
+            <div id="career-tabs-scroller" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1">
               ${jobsTabs.map(([key,label]) => `
-                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="seg-btn career-tab-pill ${jobsSub===key ? 'on' : ''}">${label}</button>
+                <button data-tab-key="${key}" onclick="jobsSubTab('${key}')" class="career-tab-pill flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold ${jobsSub===key ? '' : 'bg-white text-gray-500 border border-gray-200'}" style="${jobsSub===key ? `background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};` : ''}">${label}</button>
               `).join('')}
             </div>`;
         }
@@ -3183,7 +3183,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function jobDocLabel(id){
-          const t = OPP_DOC_TYPES.find(x => x.id === id);
+          const t = oppDocType(id);
           return t ? t.label : id;
         }
 
@@ -3769,7 +3769,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 </div>` : `
                 <div class="mb-5 pb-5 border-b border-gray-100">
                   <div class="font-semibold text-sm text-gray-800 mb-1">How to apply</div>
-                  <div class="text-xs text-gray-500">Applications go straight to the poster here in the app -- no email needed.${!isCourse ? ` Have ready: <span class="font-medium text-gray-700">${['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume')).map(id => escapeHtml((OPP_DOC_TYPES.find(t=>t.id===id)||{}).label || id)).join(', ')}</span>.` : ''}</div>
+                  <div class="text-xs text-gray-500">Applications go straight to the poster here in the app -- no email needed.${!isCourse ? ` Have ready: <span class="font-medium text-gray-700">${['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume')).map(id => escapeHtml(oppDocLabel(id))).join(', ')}</span>.` : ''}</div>
                 </div>`)}
               ${isJobApplied(job) && !isCourse ? jobApplicationTrackerHTML(job) : ''}
               ${(isCourse && canManage) ? `
@@ -3885,6 +3885,21 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           { id: 'portfolio', label: 'Portfolio', accept: '.pdf,.doc,.docx' },
           { id: 'idDocument', label: 'ID document', accept: '.pdf,.jpg,.jpeg,.png' },
         ];
+        const OPP_DOC_ICONS = { resume:'file', applicationLetter:'mail', coverLetter:'edit', transcript:'graduate', portfolio:'folder', idDocument:'shield' };
+        // Documents the poster types themselves are stored in requiredDocs as 'custom:<label>', so the
+        // saved shape stays a plain array of strings and every existing lookup keeps working.
+        const OPP_CUSTOM_DOC_PREFIX = 'custom:';
+        const OPP_CUSTOM_DOC_MAX = 5;
+        let newOppCustomDocText = '';
+        function oppDocType(id){
+          const t = OPP_DOC_TYPES.find(x => x.id === id);
+          if (t) return t;
+          if (typeof id === 'string' && id.indexOf(OPP_CUSTOM_DOC_PREFIX) === 0) {
+            return { id, label: id.slice(OPP_CUSTOM_DOC_PREFIX.length), accept: '.pdf,.doc,.docx,.jpg,.jpeg,.png', custom: true };
+          }
+          return null;
+        }
+        function oppDocLabel(id){ const t = oppDocType(id); return t ? t.label : id; }
         // Which shared file-validation profile (see FILE_ACCEPT_PROFILES) applies to each type.
         const OPP_DOC_VALIDATION_PROFILE = { resume: 'resume', applicationLetter: 'coverLetter', coverLetter: 'coverLetter', transcript: 'coverLetter', portfolio: 'coverLetter', idDocument: 'idDoc' };
 
@@ -3949,7 +3964,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-2">Documents</div>
             ${jobApplyDocPicker('resume', 'Resume / CV', '.pdf,.doc,.docx', true)}
             ${extraRequired.map(id => {
-              const t = OPP_DOC_TYPES.find(x => x.id === id);
+              const t = oppDocType(id);
               if (!t) return '';
               return jobApplyDocPicker(t.id, t.label, t.accept, true);
             }).join('')}
@@ -3984,6 +3999,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         async function jobApplyUploadOne(file, jobId, applicantId, docId){
+          docId = String(docId).replace(/[^A-Za-z0-9_-]/g, '_');
           if (typeof uploadApplicationDocumentDetailed === 'function') {
             return await uploadApplicationDocumentDetailed(file, jobId, applicantId, docId);
           }
@@ -6377,7 +6393,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               duration: j.duration || '',
               deadline: j.deadlineDate || '',
               pay: j.priceType === 'paid' ? (j.price || 'paid') : 'free',
-              requiredDocuments: ['Resume / CV'].concat((j.requiredDocs || []).filter(id => id !== 'resume').map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id)),
+              requiredDocuments: ['Resume / CV'].concat((j.requiredDocs || []).filter(id => id !== 'resume').map(id => oppDocLabel(id))),
               missingDocuments: missing,
               openTo: j.gender === 'male' ? 'men only' : j.gender === 'female' ? 'women only' : 'everyone',
               description: (j.description || '').slice(0, 900),
@@ -6696,7 +6712,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerBotMissingFor(job){
           const needed = ['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume'));
-          return needed.filter(id => !careerBotDocFor(id)).map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id);
+          return needed.filter(id => !careerBotDocFor(id)).map(id => oppDocLabel(id));
         }
         function careerBotCanApply(job){
           return job && job.type !== 'Course' && !(job.applyMethod === 'website' && job.website) && !isJobApplied(job);
@@ -6712,7 +6728,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             return String(await callCareerAI('cover_note', {
               fullName: p.fullName, title: job.title, org: job.org || '', type: job.type || '',
               location: ctx.location, jobLocation: job.location || job.place || '', mode: job.mode || '',
-              requiredDocuments: (job.requiredDocs || []).map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id),
+              requiredDocuments: (job.requiredDocs || []).map(id => oppDocLabel(id)),
               description: (job.description || '').slice(0, 1500), tone: careerBotPrefs().tone,
               // Writing rules first, then anything the person asked for in Preferences
               instructions: CAREER_AI_WRITING_RULES + (careerBotPrefs().notes ? ' The candidate also asks: ' + careerBotPrefs().notes : ''),
@@ -6778,7 +6794,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (!p.botApplied) p.botApplied = {};
           const mScore = ((p.matches || []).find(m => m.id === job.id) || {}).score;
           // Remember what was actually sent, so the Applied list can show it
-          const sentLabels = Object.keys(documents).map(id => id === 'resume' ? 'CV' : ((OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id)).filter((l, i, a) => a.indexOf(l) === i && !(l === 'Cover letter' && a.indexOf('Application letter') !== -1));
+          const sentLabels = Object.keys(documents).map(id => id === 'resume' ? 'CV' : (oppDocLabel(id))).filter((l, i, a) => a.indexOf(l) === i && !(l === 'Cover letter' && a.indexOf('Application letter') !== -1));
           if (additionalDocuments.length) sentLabels.push(`${additionalDocuments.length} extra document${additionalDocuments.length === 1 ? '' : 's'}`);
           p.botApplied[job.id] = { ts: Date.now(), by: by === 'auto' ? 'auto' : 'manual', score: typeof mScore === 'number' ? mScore : null, sent: sentLabels };
           careerBotLog(`Applied to "${job.title}" for you.`, job.id, true);
@@ -7104,7 +7120,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             const allRequired = ['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume'));
             const missing = allRequired.filter(id => !d.documents[id]);
             if (missing.length) {
-              const labels = missing.map(id => (OPP_DOC_TYPES.find(t => t.id === id) || {}).label || id).join(', ');
+              const labels = missing.map(id => oppDocLabel(id)).join(', ');
               openAppAlertModal(`Please attach the required document(s): ${labels}.`);
               return;
             }
@@ -7332,6 +7348,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         const oppTypes = ['Job','Internship','Part-time','Scholarship','Course','Other'];
         const oppModes = ['Online','On-site'];
+        // Icons for the option chips in the post form (same icon set as the onboarding chips)
+        const OPP_TYPE_ICONS = { 'Job':'briefcase', 'Internship':'graduate', 'Part-time':'clock', 'Scholarship':'trophy', 'Course':'book', 'Other':'gridOutline' };
+        const OPP_GENDER_ICONS = { any:'users', male:'user', female:'user' };
         // applyMethod 'inapp' (the default) means applications go straight to the poster and
         // admins inside Stitch
         let newOppDraft = { title:'', org:'', type:'Job', mode:'On-site', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'inapp', email:'', website:'', requiredDocs:[], gender:'any', priceType:'free', price:'', coverImage:'' };
@@ -7423,6 +7442,29 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function toggleNewOppRequiredDoc(id){
           const idx = newOppDraft.requiredDocs.indexOf(id);
           if (idx === -1) newOppDraft.requiredDocs.push(id); else newOppDraft.requiredDocs.splice(idx, 1);
+          rerenderPostOpportunity();
+        }
+
+        function addNewOppCustomDoc(){
+          const input = document.getElementById('opp-custom-doc-input');
+          const raw = (input ? input.value : newOppCustomDocText) || '';
+          // Letters, numbers, spaces and a few separators only, so the name is safe everywhere it is shown
+          const label = raw.replace(/[^\p{L}\p{N} ,.()_-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+          if (!label) { openAppAlertModal('Type the name of the document you want applicants to attach.'); return; }
+          const id = OPP_CUSTOM_DOC_PREFIX + label;
+          const lower = label.toLowerCase();
+          const clash = OPP_DOC_TYPES.some(t => t.label.toLowerCase() === lower)
+            || newOppDraft.requiredDocs.some(d => String(d).toLowerCase() === id.toLowerCase());
+          if (clash) { openAppAlertModal('That document is already on the list.'); return; }
+          const customCount = newOppDraft.requiredDocs.filter(d => String(d).indexOf(OPP_CUSTOM_DOC_PREFIX) === 0).length;
+          if (customCount >= OPP_CUSTOM_DOC_MAX) { openAppAlertModal(`You can add up to ${OPP_CUSTOM_DOC_MAX} other documents.`); return; }
+          newOppDraft.requiredDocs.push(id);
+          newOppCustomDocText = '';
+          rerenderPostOpportunity();
+        }
+        function removeNewOppCustomDoc(id){
+          const idx = newOppDraft.requiredDocs.indexOf(id);
+          if (idx !== -1) newOppDraft.requiredDocs.splice(idx, 1);
           rerenderPostOpportunity();
         }
 
@@ -7648,29 +7690,28 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Type</label>
-                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" style="scroll-snap-type:x proximity;margin-left:-1.25rem;margin-right:-1.25rem;padding-left:1.25rem;padding-right:1.25rem;scroll-padding-left:1.25rem;">
+                <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${(isCurrentUserAdmin() ? oppTypes : oppTypes.filter(t => t !== 'Course')).map(t => `
-                    <button onclick="setNewOppType('${t}')" class="flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-xs font-semibold outline-pill ${newOppDraft.type===t ? 'is-selected' : ''}" style="scroll-snap-align:start;">${t}</button>
+                    <button onclick="setNewOppType('${t}')" class="auth-intent-chip ${newOppDraft.type===t ? 'on' : ''}">${Icon(OPP_TYPE_ICONS[t] || 'gridOutline','w-4 h-4')}<span>${t}</span></button>
                   `).join('')}
-                  <span class="flex-shrink-0" style="width:0.75rem;" aria-hidden="true"></span>
                 </div>
               </div>
 
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Open to</label>
                 <div class="text-xs text-gray-400 mb-2">Used to match this listing with the right people in Match with CV.</div>
-                <div class="flex gap-2">
+                <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${[['any','Everyone'],['male','Men'],['female','Women']].map(([g,l]) => `
-                    <button onclick="setNewOppGender('${g}')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${(newOppDraft.gender||'any')===g ? 'is-selected' : ''}">${l}</button>
+                    <button onclick="setNewOppGender('${g}')" class="auth-intent-chip ${(newOppDraft.gender||'any')===g ? 'on' : ''}">${Icon(OPP_GENDER_ICONS[g],'w-4 h-4')}<span>${l}</span></button>
                   `).join('')}
                 </div>
               </div>
 
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Where</label>
-                <div class="flex gap-2">
+                <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${oppModes.map(m => `
-                    <button onclick="setNewOppMode('${m}')" class="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${newOppDraft.mode===m ? 'is-selected' : ''}">${Icon(m==='Online'?'link':'pin','w-4 h-4')} ${m}</button>
+                    <button onclick="setNewOppMode('${m}')" class="auth-intent-chip ${newOppDraft.mode===m ? 'on' : ''}">${Icon(m==='Online'?'link':'pin','w-4 h-4')}<span>${m}</span></button>
                   `).join('')}
                 </div>
               </div>
@@ -7698,9 +7739,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="mb-4">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Enrollment</label>
                   <div class="text-xs text-gray-400 mb-2">Learners join a course by enrolling, not by applying; no application letter needed. Set whether enrollment is free or has a fee.</div>
-                  <div class="flex gap-2 mb-3">
-                    <button onclick="setNewOppPriceType('free')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${newOppDraft.priceType==='free' ? 'is-selected' : ''}">Free</button>
-                    <button onclick="setNewOppPriceType('paid')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${newOppDraft.priceType==='paid' ? 'is-selected' : ''}">Paid</button>
+                  <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
+                    <button onclick="setNewOppPriceType('free')" class="auth-intent-chip ${newOppDraft.priceType==='free' ? 'on' : ''}">${Icon('gift','w-4 h-4')}<span>Free</span></button>
+                    <button onclick="setNewOppPriceType('paid')" class="auth-intent-chip ${newOppDraft.priceType==='paid' ? 'on' : ''}">${Icon('coin','w-4 h-4')}<span>Paid</span></button>
                   </div>
                   ${newOppDraft.priceType === 'paid' ? oppFieldRow('Enrollment fee', 'price', 'e.g. GHS 150, or $20') : ''}
                 </div>
@@ -7709,9 +7750,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="mb-4">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Apply via</label>
                   <div class="text-xs text-gray-400 mb-2">By default, applications go straight to you right here in Stitch -- no email needed. Choose Website instead if you'd rather applicants apply on your own site.</div>
-                  <div class="flex gap-2 mb-3">
-                    <button onclick="setNewOppApplyMethod('inapp')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${newOppDraft.applyMethod!=='website' ? 'is-selected' : ''}">In-app</button>
-                    <button onclick="setNewOppApplyMethod('website')" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold outline-pill ${newOppDraft.applyMethod==='website' ? 'is-selected' : ''}">Website</button>
+                  <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
+                    <button onclick="setNewOppApplyMethod('inapp')" class="auth-intent-chip ${newOppDraft.applyMethod!=='website' ? 'on' : ''}">${Icon('phone','w-4 h-4')}<span>In-app</span></button>
+                    <button onclick="setNewOppApplyMethod('website')" class="auth-intent-chip ${newOppDraft.applyMethod==='website' ? 'on' : ''}">${Icon('monitor','w-4 h-4')}<span>Website</span></button>
                   </div>
                   ${newOppDraft.applyMethod === 'website'
                     ? oppFieldRow('Website to receive applications', 'website', 'e.g. careers.yourorg.com/apply', 'url')
@@ -7721,11 +7762,20 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="mb-4">
                   <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Documents required from applicants (optional)</label>
                   <div class="text-xs text-gray-400 mb-2">A resume/CV is always required from applicants. Select any other documents you also want to require before they can submit.</div>
-                  <div class="flex flex-col gap-2">
+                  <div class="auth-intent-row" style="padding:6px 2px 10px;">
                     ${OPP_DOC_TYPES.map(t => {
                       const active = newOppDraft.requiredDocs.includes(t.id);
-                      return `<button onclick="toggleNewOppRequiredDoc('${t.id}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-left outline-pill ${active ? 'is-selected' : ''}"><span class="flex-1">${escapeHtml(t.label)}</span><span class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${active ? 'text-white' : 'border border-gray-400'}" style="${active ? `background:${NAVY};` : ''}">${active ? '&#10003;' : ''}</span></button>`;
+                      return `<button onclick="toggleNewOppRequiredDoc('${t.id}')" aria-pressed="${active}" class="auth-intent-chip ${active ? 'on' : ''}">${Icon(OPP_DOC_ICONS[t.id] || 'file','w-4 h-4')}<span>${escapeHtml(t.label)}</span></button>`;
                     }).join('')}
+                    ${newOppDraft.requiredDocs.filter(id => String(id).indexOf(OPP_CUSTOM_DOC_PREFIX) === 0).map(id => `
+                      <span class="auth-intent-chip on" style="cursor:default;max-width:100%;">${Icon('paperclip','w-4 h-4')}<span style="min-width:0;overflow-wrap:anywhere;">${escapeHtml(oppDocLabel(id))}</span><button onclick="removeNewOppCustomDoc('${id}')" aria-label="Remove ${escapeHtml(oppDocLabel(id))}" class="flex-shrink-0 flex items-center justify-center" style="width:20px;height:20px;margin-left:2px;color:#1e90ff;">${IconBold('close','w-3.5 h-3.5')}</button></span>`).join('')}
+                  </div>
+                  <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mt-3 mb-1">Other documents</div>
+                  <div class="text-xs text-gray-400 mb-2">Need something that isn't listed? Type its name and add it. Applicants will see it and have to attach it.</div>
+                  <div class="flex gap-2" style="padding:2px 2px 4px;">
+                    <input type="text" id="opp-custom-doc-input" maxlength="40" autocomplete="off" placeholder="e.g. Recommendation letter" value="${escapeHtml(newOppCustomDocText)}" oninput="newOppCustomDocText = this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewOppCustomDoc();}" class="flex-1 min-w-0 bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
+                    <button onclick="addNewOppCustomDoc()" class="auth-intent-chip on flex-shrink-0" style="justify-content:center;padding:0 18px;">${Icon('plus','w-4 h-4')} Add</button>
+                  </div>
                   </div>
                 </div>`}
               `}
