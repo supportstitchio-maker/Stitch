@@ -343,7 +343,10 @@
                      styles.css) -->
                   <div class="auth-onboarding-footer">
                     <div class="auth-error" id="auth-complete-profile-error">Please fill in all fields.</div>
-                    <button class="auth-cta" id="auth-cp-submit" type="submit">Continue</button>
+                    <div class="flow-pill-bar">
+                      <button type="button" class="flow-pill flow-pill-back" id="auth-cp-back" onclick="authFlowBack()">Back</button>
+                      <button class="auth-cta flow-pill flow-pill-go" id="auth-cp-submit" type="submit">Continue</button>
+                    </div>
                   </div>
                 </form>
               </div></div>
@@ -357,8 +360,11 @@
                    top:auto) instead of sitting immediately under the form -->
                 <div class="auth-onboarding-footer">
                   <div class="auth-error" id="auth-poster-app-error">Couldn't save that. Please check your connection and try again.</div>
-                  <button class="auth-cta" type="button" id="auth-poster-app-continue-btn" onclick="authPosterAppNext()">Continue</button>
-                  <button type="button" class="auth-skip-link" id="auth-photo-skip-btn" style="display:none;" onclick="authSkipPhoto()">Skip for now</button>
+                  <div class="flow-pill-bar">
+                    <button type="button" class="flow-pill flow-pill-back" id="auth-poster-app-back-btn" onclick="authFlowBack()">Back</button>
+                    <button class="auth-cta flow-pill flow-pill-go" type="button" id="auth-poster-app-continue-btn" onclick="authPosterAppNext()">Continue</button>
+                    <button type="button" class="auth-skip-link flow-pill flow-pill-back" id="auth-photo-skip-btn" style="display:none;" onclick="authSkipPhoto()">Skip for now</button>
+                  </div>
                 </div>
               </div></div>
 

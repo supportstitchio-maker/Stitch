@@ -3152,6 +3152,9 @@
         }
 
 
+        // Feed videos start WITH sound (no muted attribute): attemptFeedVideoPlay plays them as they
+        // scroll into view and, only if the browser refuses sound autoplay, falls back to muted and
+        // flips the speaker icon. setupFeedVideoAutoplay pauses them once scrolled past the threshold.
         function simplePostVideoHtml(url, errorTarget, posterUrl){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
@@ -3163,11 +3166,11 @@
           return `
             <div class="relative feed-video-wrap" id="${uid}" style="min-height:240px;background:#f3f4f6;">
               ${skeleton}
-              <video src="${url}"${posterAttr} muted playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" style="min-height:240px;" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="feedMediaAutoRetry(this,'video')"></video>
+              <video src="${url}"${posterAttr} playsinline webkit-playsinline preload="metadata" disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" class="w-full h-auto bg-gray-100 block" style="min-height:240px;" onloadedmetadata="armFeedVideoReveal(this)" onended="const b=this.closest('.feed-video-wrap').querySelector('.feed-video-playbtn'); if(b) b.style.opacity='1';" onerror="feedMediaAutoRetry(this,'video')"></video>
               <div class="feed-video-playbtn absolute inset-0 flex items-center justify-center" style="pointer-events:none;">
                 <button type="button" onclick="event.stopPropagation(); toggleFeedVideoPlay('${uid}')" class="flex items-center justify-center rounded-full" style="width:3.5rem;height:3.5rem;background:rgba(0,0,0,0.45);pointer-events:auto;">${Icon('play','w-6 h-6 text-white')}</button>
               </div>
-              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);z-index:16;">${Icon('volumeOff','w-4 h-4 text-white')}</button>
+              <button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${uid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:10px;right:10px;width:2rem;height:2rem;background:rgba(0,0,0,0.45);z-index:16;">${Icon('volume','w-4 h-4 text-white')}</button>
               ${scrubStripHtml(uid, true)}
               ${effectivePoster ? `<img src="${effectivePoster}" alt="" style="display:none" onload="revealFeedVideoWrap(this)" onerror="revealFeedVideoWrap(this)">` : ''}
             </div>`;

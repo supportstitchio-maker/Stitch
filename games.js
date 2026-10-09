@@ -1851,22 +1851,33 @@ let userPoints = 0;
         }
         // Single dispatcher behind the fixed top-left arrow (#authBackBtn) across every panel that
         // shows it
+        // The top-left arrow EXITS the whole onboarding process (from any onboarding page) -- the
+        // "Back" pill at the bottom (authFlowBack below) is what steps to the previous page.
         function authGoBack(){
           authForgetPendingVerify();
+          const posterPanel = document.getElementById('auth-panel-poster-app');
+          const profilePanel = document.getElementById('auth-panel-complete-profile');
+          const inOnboarding = !!((posterPanel && posterPanel.classList.contains('active')) || (profilePanel && profilePanel.classList.contains('active')));
+          if (inOnboarding) { authExitOnboarding(); return; }
+          authShowLogin();
+        }
+        // Leaving onboarding abandons sign-up: no account is kept
+        function authExitOnboarding(){
+          authForgetPendingVerify();
+          authShowLogin();
+          window.__authDiscardPromise = authDiscardUnfinishedAccount().catch(() => {}).finally(() => { window.__authDiscardPromise = null; });
+        }
+        // The floating "Back" pill: one page back at a time. From the very first onboarding page
+        // there is no earlier page, so it leaves the process the same way the top arrow does.
+        function authFlowBack(){
+          if (authSubmittingPosterApp || authCompletingProfile) return;
           const posterPanel = document.getElementById('auth-panel-poster-app');
           if (posterPanel && posterPanel.classList.contains('active')) {
             if (authPosterAppStageIdx > 0) { authPosterAppBack(); return; }
             authShowCompleteProfile();
             return;
           }
-          const profilePanel = document.getElementById('auth-panel-complete-profile');
-          if (profilePanel && profilePanel.classList.contains('active')) {
-            // Leaving "Almost there" abandons sign-up: no account is kept
-            authShowLogin();
-            window.__authDiscardPromise = authDiscardUnfinishedAccount().catch(() => {}).finally(() => { window.__authDiscardPromise = null; });
-            return;
-          }
-          authShowLogin();
+          authExitOnboarding();
         }
         async function applyGoogleProfileInfo(){
           // Disabled on purpose: the name and profile photo shown in the app must only ever come
@@ -2604,6 +2615,8 @@ let userPoints = 0;
         function authSetCpBusy(on){
           const b = document.getElementById('auth-cp-submit');
           if (!b) return;
+          const backPill = document.getElementById('auth-cp-back');
+          if (backPill) backPill.disabled = !!on;
           if (on) {
             b.disabled = true;
             b.classList.add('auth-cta-busy');

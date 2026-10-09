@@ -118,6 +118,28 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (backdrop) backdrop.remove();
         }
 
+        // Floating "Back" + "Continue" pills for the step-by-step flows (Apply to post, Match with
+        // CV/Resume). They hover over the page (no bar or panel behind them); the scrolling
+        // content leaves room underneath. Back = card pill (same look as .filter-pill),
+        // Continue = dodger-blue -> royal-blue gradient pill. Styles: .flow-float / .flow-pill in
+        // styles.css. The Continue slot is hidden with visibility (not display) so Back never
+        // stretches across the screen while a question is unanswered.
+        function flowFloatBarHTML(o){
+          return `
+            <div class="flow-float">
+              <div class="max-w-2xl mx-auto">
+                ${o.topHTML || ''}
+                ${o.errorId ? `<div id="${o.errorId}" role="alert" class="flow-float-error" style="display:none;"></div>` : ''}
+                <div class="flow-pill-bar">
+                  <button type="button" class="flow-pill flow-pill-back" onclick="${o.backOnclick}">Back</button>
+                  <div id="${o.wrapId}" class="flow-pill-slot" style="${o.ready === false ? 'visibility:hidden;pointer-events:none;' : ''}">
+                    <button id="${o.btnId}" onclick="${o.goOnclick}" ${o.goDisabled ? 'disabled' : ''} class="flow-pill flow-pill-go" style="width:100%;${o.goDisabled ? 'opacity:.6;' : ''}">${o.goLabel}</button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }
+
         function careerMenuRowHTML(onclick, icon, label, cls){
           return `
             <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}" style="background:transparent;">
@@ -430,7 +452,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!wrap || typeof posterAppStages === 'undefined') return;
           const list = posterAppStages();
           const stage = list[Math.min(Math.max(posterAppStageIdx, 0), list.length - 1)];
-          wrap.style.display = posterAppStageReady(stage) ? '' : 'none';
+          const ready = posterAppStageReady(stage); wrap.style.visibility = ready ? '' : 'hidden'; wrap.style.pointerEvents = ready ? '' : 'none';
         }
 
         // ---- Typed "date established" input ----
@@ -1261,7 +1283,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           await submitPosterApplicationOverlay();
         }
 
-        // Header arrow: one question back at a time; from the first question, leave the form.
+        // Header arrow: leaves the whole "Apply to post" form from any question.
+        function posterAppExit(){
+          if (posterAppSubmitInFlight) return;
+          overlayGoBack();
+        }
+
+        // "Back" pill: one question back at a time; from the first question, leave the form.
         function posterAppBack(){
           if (posterAppSubmitInFlight) return;
           if (posterAppStageIdx > 0) {
@@ -1416,7 +1444,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             ${bg}
             <div id="poster-app-stage-scroll" class="flex-1 overflow-y-auto">
-            ${overlayHeader(posterAppHeaderTitle(), '20px', 'posterAppBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader(posterAppHeaderTitle(), '20px', 'posterAppExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="w-full px-5" style="margin-top:10px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
@@ -1424,7 +1452,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 </div>
               </div>
             </div>
-            <div class="px-5" style="padding-top:26px;padding-bottom:20px;">
+            <div class="px-5" style="padding-top:26px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
                 ${deniedBanner}
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Step ${idx + 1} of ${total}</div>
@@ -1435,14 +1463,15 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               </div>
             </div>
             </div>
-            <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(22px, env(safe-area-inset-bottom));">
-              <div class="max-w-2xl mx-auto">
-                <div id="poster-app-stage-error" role="alert" style="display:none;color:#e11d48;font-size:12.5px;text-align:center;margin-bottom:10px;"></div>
-                <div id="poster-app-next-wrap" style="${posterAppStageReady(stage) ? '' : 'display:none;'}">
-                <button id="poster-app-submit-btn" onclick="posterAppNext()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Next'}</button>
-                </div>
-              </div>
-            </div>`;
+            ${flowFloatBarHTML({
+              errorId: 'poster-app-stage-error',
+              wrapId: 'poster-app-next-wrap',
+              btnId: 'poster-app-submit-btn',
+              backOnclick: 'posterAppBack()',
+              goOnclick: 'posterAppNext()',
+              goLabel: isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Continue',
+              ready: posterAppStageReady(stage),
+            })}`;
         }
 
         // ---- Listing cover images live in Storage, not inside the row ----
@@ -4293,6 +4322,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (overlayReturnTo) { overlayGoBack(); return; }
           closeOverlay(fromPopState);
         }
+        // Header arrow on the intro + question pages: leaves the whole "Match with CV/Resume" flow
+        // from any page. (The floating "Back" pill is what steps back one page: careerStartBack.)
+        function careerStartExit(fromPopState){
+          careerPlanBusy = false;
+          if (overlayReturnTo) { overlayGoBack(); return; }
+          closeOverlay(fromPopState);
+        }
         function updateCareerStartField(field, value){ careerStartDraft[field] = value; careerStartSyncNext(); }
         // "Next" only shows once the step has an answer (selected / started typing)
         function careerStartStepReady(){
@@ -4309,7 +4345,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerStartSyncNext(){
           const wrap = document.getElementById('career-start-next-wrap');
-          if (wrap) wrap.style.display = careerStartStepReady() ? '' : 'none';
+          if (wrap) { const ready = careerStartStepReady(); wrap.style.visibility = ready ? '' : 'hidden'; wrap.style.pointerEvents = ready ? '' : 'none'; }
         }
         function toggleCareerStartInterest(id){
           const idx = careerStartDraft.interests.indexOf(id);
@@ -4829,8 +4865,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${careerIntroStylesHTML()}
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:26px;padding-bottom:20px;">
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            <div class="px-5" style="padding-top:26px;padding-bottom:150px;">
               <div class="max-w-2xl mx-auto">
                 ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-top:24px;margin-bottom:8px;">${title}</h2>
@@ -4839,14 +4875,16 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               </div>
             </div>
             </div>
-            <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(22px, env(safe-area-inset-bottom));">
-              <div class="max-w-2xl mx-auto">
-                <div class="flex items-center justify-center gap-2" style="margin-bottom:14px;">
-                  ${['intro1','intro2'].map(id => `<span style="height:6px;width:${id === stepId ? 22 : 6}px;border-radius:9999px;background:${id === stepId ? NAVY : 'rgba(128,128,128,0.35)'};transition:width .2s ease;"></span>`).join('')}
-                </div>
-                <button id="career-start-submit-btn" onclick="careerStartNext()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">Continue</button>
-              </div>
-            </div>`;
+            ${flowFloatBarHTML({
+              topHTML: `<div class="flex items-center justify-center gap-2" style="margin-bottom:14px;">
+                ${['intro1','intro2'].map(id => `<span style="height:6px;width:${id === stepId ? 22 : 6}px;border-radius:9999px;background:${id === stepId ? NAVY : 'rgba(128,128,128,0.35)'};transition:width .2s ease;"></span>`).join('')}
+              </div>`,
+              wrapId: 'career-start-next-wrap',
+              btnId: 'career-start-submit-btn',
+              backOnclick: 'careerStartBack()',
+              goOnclick: 'careerStartNext()',
+              goLabel: 'Continue',
+            })}`;
         }
         function careerPlanCardHTML(plan){
           const selected = careerPlanChoice === plan.id;
@@ -6200,7 +6238,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${bg}
             <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
+            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="w-full px-5" style="margin-top:10px;">
               <div class="max-w-2xl mx-auto">
                 <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
@@ -6208,7 +6246,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 </div>
               </div>
             </div>
-            <div class="px-5" style="padding-top:26px;padding-bottom:20px;">
+            <div class="px-5" style="padding-top:26px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Step ${stepNum} of ${total}</div>
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">${careerStartStepTitle(stepId)}</h2>
@@ -6220,14 +6258,16 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               </div>
             </div>
             </div>
-            <div class="flex-shrink-0 w-full px-5" style="padding-top:10px;padding-bottom:max(22px, env(safe-area-inset-bottom));">
-              <div class="max-w-2xl mx-auto">
-                <div id="career-start-stage-error" role="alert" style="display:none;color:#e11d48;font-size:12.5px;text-align:center;margin-bottom:10px;"></div>
-                <div id="career-start-next-wrap" style="${careerStartStepReady() ? '' : 'display:none;'}">
-                <button id="career-start-submit-btn" onclick="${resumeBusy ? '' : 'careerStartNext()'}" ${resumeBusy ? 'disabled' : ''} class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;${resumeBusy ? 'opacity:.6;' : ''}">${nextBtnLabel}</button>
-                </div>
-              </div>
-            </div>`;
+            ${flowFloatBarHTML({
+              errorId: 'career-start-stage-error',
+              wrapId: 'career-start-next-wrap',
+              btnId: 'career-start-submit-btn',
+              backOnclick: 'careerStartBack()',
+              goOnclick: resumeBusy ? '' : 'careerStartNext()',
+              goDisabled: resumeBusy,
+              goLabel: nextBtnLabel,
+              ready: careerStartStepReady(),
+            })}`;
         }
 
         function openCareerMatchesPage(forceRecompute){

@@ -3724,3 +3724,70 @@ body.dark-mode .seg-btn.on, html.dark-mode .seg-btn.on{ color:#fff; box-shadow:0
   display:inline-flex; align-items:center; justify-content:center; background:#ef4444; color:#fff;
 }
 .seg-btn.on .seg-badge{ background:#fff; color:#4169e1; }
+
+
+/* ---- Floating Back + Continue pills: onboarding, Apply to post, Match with CV/Resume ----
+   Two pills side by side hovering over the page -- no bar, panel or backdrop behind them.
+   Back = the white card pill used on the Messaging / Career Space filters and the Post
+   opportunity options (.filter-pill): soft shadow, NO outline. Continue = dodger blue -> royal
+   blue gradient. */
+.flow-pill-bar{ display:flex; align-items:center; gap:12px; width:100%; background:transparent; border:0; box-shadow:none; }
+.flow-pill-slot{ flex:1 1 0; min-width:0; display:flex; }
+.flow-pill{
+  flex:1 1 0; min-width:0;
+  display:inline-flex; align-items:center; justify-content:center; text-align:center; white-space:nowrap;
+  border:0; outline:none; border-radius:9999px;
+  padding:0.85rem 1.1rem; margin:0;
+  font-family:'Colmeak','Montserrat',sans-serif; font-weight:600; font-size:14.5px; letter-spacing:.01em; line-height:1.2;
+  cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  transition:transform .1s ease, box-shadow .15s ease, filter .1s ease, opacity .15s ease;
+}
+.flow-pill:active{ transform:scale(.97); }
+.flow-pill:disabled{ cursor:default; }
+.flow-pill-back{ background:#fff; color:#1f2937; box-shadow:0 2px 10px rgba(15,23,42,0.10); }
+.flow-pill-go{ color:#fff; background:linear-gradient(135deg, #1e90ff, #4169e1); box-shadow:0 8px 20px -6px rgba(65,105,225,0.55); }
+.flow-pill-go:disabled{ opacity:.6; }
+html.dark-mode .flow-pill-back, body.dark-mode .flow-pill-back{ background:#1e1e1e; color:#e5e7eb; box-shadow:0 2px 10px rgba(0,0,0,0.5); }
+html.dark-mode .flow-pill-go, body.dark-mode .flow-pill-go{ background:linear-gradient(135deg, #1e90ff, #4169e1); box-shadow:0 8px 20px -6px rgba(0,0,0,0.55); }
+
+/* In-app flows: the pills hover over the bottom of the overlay while the page scrolls under them */
+.flow-float{
+  position:absolute; left:0; right:0; bottom:0; z-index:5;
+  padding:0 20px max(22px, env(safe-area-inset-bottom));
+  background:transparent; pointer-events:none;
+}
+.flow-float .flow-pill, .flow-float .flow-pill-slot, .flow-float .flow-float-error{ pointer-events:auto; }
+.flow-float .flow-pill-slot[style*="visibility:hidden"]{ pointer-events:none; }
+.flow-float-error{
+  width:fit-content; max-width:100%; margin:0 auto 10px; padding:8px 14px; border-radius:9999px;
+  background:#fff; color:#e11d48; font-size:12.5px; text-align:center;
+  box-shadow:0 2px 10px rgba(15,23,42,0.10);
+}
+html.dark-mode .flow-float-error, body.dark-mode .flow-float-error{ background:#1e1e1e; box-shadow:0 2px 10px rgba(0,0,0,0.5); }
+
+/* Onboarding: same two pills, floating at the bottom of the page. These beat the old full-width
+   .auth-cta / "Skip for now" grey pill rules. */
+#auth-gate .auth-onboarding-footer{ position:sticky; bottom:calc(env(safe-area-inset-bottom, 0px) + 12px); z-index:3; background:transparent; }
+#auth-gate .auth-onboarding-footer .flow-pill{
+  width:auto !important; margin:0 !important;
+  padding:0.9rem 1.1rem !important; font-size:14.5px !important; font-weight:600 !important;
+  border:0 !important; border-radius:9999px !important;
+}
+#auth-gate .auth-onboarding-footer .flow-pill-back{
+  background:#fff !important; color:#1f2937 !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important;
+}
+#auth-gate .auth-onboarding-footer .flow-pill-go{
+  background:linear-gradient(135deg, #1e90ff, #4169e1) !important; color:#fff !important;
+  box-shadow:0 8px 20px -6px rgba(65,105,225,0.55) !important;
+}
+#auth-gate .auth-onboarding-footer .auth-skip-link.loading{
+  background:linear-gradient(135deg, #1e90ff, #4169e1) !important; color:#fff !important;
+}
+#auth-gate .auth-onboarding-footer .flow-pill:disabled{ opacity:.6; }
+#auth-gate .auth-onboarding-footer .auth-cta-busy{ gap:8px; }
+body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back{
+  background:#1e1e1e !important; color:#e5e7eb !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important;
+}
+body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-go{
+  background:linear-gradient(135deg, #1e90ff, #4169e1) !important; box-shadow:0 8px 20px -6px rgba(0,0,0,0.55) !important;
+}
