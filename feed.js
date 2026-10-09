@@ -1098,14 +1098,14 @@
           // all the way back to plain black
           const noBgFallback = `linear-gradient(135deg, ${NAVY}, ${ROYAL})`;
           return `
-            <div id="story-viewer-screen" class="flex flex-col h-full" style="padding-top:var(--top-safe-pad);color:${fg};${item.mediaUrl ? 'background:#000;' : (item.bgStyle || ('background:' + noBgFallback + ';'))}">
+            <div id="story-viewer-screen" class="flex flex-col h-full" ontouchstart="storySwipeStart(event)" ontouchmove="storySwipeMove(event)" ontouchend="storySwipeEnd(event)" ontouchcancel="storySwipeEnd(event)" style="padding-top:var(--top-safe-pad);color:${fg};${item.mediaUrl ? 'background:#000;' : (item.bgStyle || ('background:' + noBgFallback + ';'))}">
               <div class="flex items-center justify-between px-4 flex-shrink-0">
                 <button onclick="storyTapNext()" class="flex items-center gap-2">
                   <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden" style="background:transparent;border-color:${fg}99;">${(s.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!s.mine && s.photo) ? `<img src="${s.photo}" class="w-full h-full object-cover">` : silhouetteIcon(icon, 'w-4 h-4 ' + (iconClass||''))}</div>
                   <div class="text-lg font-semibold" style="color:${fg};">${escapeHtml(s.name)}</div>
                   <div class="text-sm" style="color:${fg};opacity:0.6;">2h</div>
                 </button>
-                <button onclick="closeOverlay()" style="color:${fg};">${IconBold('close','w-6 h-6')}</button>
+                <button onclick="toggleStoryMenu()" aria-label="Glimpse options" class="h-8 flex items-center justify-end flex-shrink-0" style="width:32px;color:${fg};">${IconBold('dashesShortRight','w-6 h-6')}</button>
               </div>
               <div class="flex gap-1.5 px-3 pt-3 pb-1 flex-shrink-0">${segments}</div>
               <div class="flex-1 relative">
@@ -1131,13 +1131,136 @@
                   <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'next')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" oncontextmenu="return false" aria-label="Next glimpse"></button>
                 </div>
                 <div id="story-reply-bar" class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 12px);">
-                  <input type="file" id="story-reply-file-input" accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx" multiple class="hidden" onchange="handleStoryReplyFileSelect(event)">
-                  <button onclick="document.getElementById('story-reply-file-input').click()" title="Attach a file" class="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-white" style="background:#1f2937;border:1px solid #374151;">${Icon('paperclip','w-4 h-4')}</button>
                   <textarea id="story-reply-input" rows="1" placeholder="Send message" oninput="handleStoryReplyTyping()" onfocus="pauseStoryTimer()" onblur="handleStoryReplyBlur()" class="flex-1 min-w-0 text-sm text-white placeholder-gray-300" style="background:#1f2937;border:1px solid #374151;outline:none;resize:none;padding:0.5rem 0.875rem;border-radius:9999px;max-height:6.5rem;overflow-y:auto;line-height:1.3;"></textarea>
                   <button id="story-send-btn" onclick="storyReplyPrimaryAction()" class="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-white bg-[${NAVY}]">${Icon('mic','w-4 h-4')}</button>
                 </div>
               </div>
             </div>`;
+        }
+
+
+        // ---- Glimpse viewer: three-dash menu (repost / share to network / report) ----
+        let storyMenuOpen = false;
+        const glimpseShareExtra = {};
+        const reportedGlimpseKeys = new Set();
+
+        function currentViewedGlimpse(){
+          const s = stories.find(x => x.id === currentStoryId);
+          if (!s) return null;
+          const items = storyItems(s);
+          return { s, item: items[currentItemIndex] || items[0] };
+        }
+
+        function storyMenuRowsHTML(){
+          const cur = currentViewedGlimpse();
+          const rows = [];
+          if (cur && !cur.s.mine) rows.push({ onclick: 'closeStoryMenu(); repostViewedGlimpse();', icon: 'repostOutline', label: 'Repost glimpse' });
+          rows.push({ onclick: 'closeStoryMenu(); shareViewedGlimpseToNetwork();', icon: 'send', label: 'Share to network' });
+          if (cur && !cur.s.mine) rows.push({ onclick: 'closeStoryMenu(); reportViewedGlimpse();', icon: 'flag', label: 'Report', cls: 'text-red-500' });
+          return classMenuSheetHTML('closeStoryMenu', rows);
+        }
+
+        function removeStoryMenuSheet(){
+          document.querySelectorAll('[data-story-menu-sheet]').forEach(el => el.remove());
+        }
+
+        function closeStoryMenu(){
+          if (!storyMenuOpen) { removeStoryMenuSheet(); return; }
+          storyMenuOpen = false;
+          removeStoryMenuSheet();
+          if (currentStoryId !== null) resumeCurrentStoryTimer();
+        }
+
+        function toggleStoryMenu(){
+          if (storyMenuOpen) { closeStoryMenu(); return; }
+          if (!currentViewedGlimpse()) return;
+          storyMenuOpen = true;
+          pauseStoryTimer();
+          const wrap = document.createElement('div');
+          wrap.innerHTML = storyMenuRowsHTML();
+          while (wrap.firstElementChild) {
+            const el = wrap.firstElementChild;
+            el.setAttribute('data-story-menu-sheet', '1');
+            document.body.appendChild(el);
+          }
+        }
+
+        // Puts the glimpse being watched onto your own glimpse (same photo/video/text look)
+        function repostViewedGlimpse(){
+          const cur = currentViewedGlimpse();
+          if (!cur) return;
+          const { s, item } = cur;
+          const data = { type: item.mediaUrl ? (item.mediaType === 'video' ? 'video' : 'image') : 'text', caption: item.caption || '' };
+          if (item.mediaUrl) {
+            data.mediaUrl = item.mediaUrl;
+            data.mediaType = item.mediaType === 'video' ? 'video' : 'image';
+            if (item.posterUrl) data.posterUrl = item.posterUrl;
+            if (item.trimStart != null) data.trimStart = item.trimStart;
+            if (item.trimEnd != null) data.trimEnd = item.trimEnd;
+          } else {
+            if (item.bgStyle) data.bgStyle = item.bgStyle;
+            if (item.icon) data.icon = item.icon;
+            if (item.iconClass) data.iconClass = item.iconClass;
+          }
+          data.repostedFrom = s.name || '';
+          GlimpsesAPI.create(data).then(() => {
+            try { refreshMyGlimpses(); refreshStoryStrip(); } catch (e) {}
+            openAppAlertModal('Reposted to your glimpse.');
+          });
+        }
+
+        // Opens the normal glimpse share screen (network contacts + other apps) for the glimpse being watched
+        function shareViewedGlimpseToNetwork(){
+          const cur = currentViewedGlimpse();
+          if (!cur) return;
+          const { s, item } = cur;
+          let gid = Number(item.id);
+          if (!isFinite(gid) || !item.id) gid = Date.now();
+          glimpseShareExtra[String(gid)] = {
+            id: gid, caption: item.caption || '',
+            mediaType: item.mediaUrl ? (item.mediaType === 'video' ? 'video' : 'image') : undefined,
+            authorName: s.name || ''
+          };
+          openShareGlimpse(gid);
+        }
+
+        function reportViewedGlimpse(){
+          const cur = currentViewedGlimpse();
+          if (!cur) return;
+          const key = String(cur.item.id != null ? cur.item.id : cur.s.id);
+          if (reportedGlimpseKeys.has(key)) { openAppAlertModal('You already reported this glimpse.'); return; }
+          reportedGlimpseKeys.add(key);
+          openAppAlertModal('Thanks for letting us know. This glimpse has been reported and our team will review it.');
+        }
+
+        // Swipe down anywhere on the glimpse to close it (no X button any more)
+        let storySwipe = null;
+        function storySwipeStart(e){
+          const t = e.touches && e.touches[0];
+          if (!t || (e.touches.length > 1)) { storySwipe = null; return; }
+          if (e.target && e.target.closest && e.target.closest('#story-reply-bar')) { storySwipe = null; return; }
+          storySwipe = { x: t.clientX, y: t.clientY, dragging: false };
+        }
+        function storySwipeMove(e){
+          if (!storySwipe) return;
+          const t = e.touches && e.touches[0];
+          if (!t) return;
+          const dy = t.clientY - storySwipe.y, dx = t.clientX - storySwipe.x;
+          if (!storySwipe.dragging) {
+            if (dy > 12 && dy > Math.abs(dx) * 1.5) storySwipe.dragging = true; else return;
+          }
+          const el = document.getElementById('story-viewer-screen');
+          if (el) { el.style.transition = 'none'; el.style.transform = 'translateY(' + Math.max(0, dy) + 'px)'; el.style.opacity = String(Math.max(0.4, 1 - dy / 600)); }
+        }
+        function storySwipeEnd(e){
+          const sw = storySwipe; storySwipe = null;
+          if (!sw || !sw.dragging) return;
+          const t = e.changedTouches && e.changedTouches[0];
+          const dy = t ? t.clientY - sw.y : 0;
+          const el = document.getElementById('story-viewer-screen');
+          if (dy > 90) { closeStoryMenu(); closeOverlay(); return; }
+          if (el) { el.style.transition = 'transform .2s ease, opacity .2s ease'; el.style.transform = ''; el.style.opacity = ''; }
+          resumeCurrentStoryTimer();
         }
 
         const GLIMPSES_TABLE = 'glimpses';
@@ -6765,7 +6888,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
 
         // ---- Share a glimpse to contacts ----
         function openShareGlimpse(id){
-          const g = myGlimpses.find(x => x.id === id);
+          const g = myGlimpses.find(x => x.id === id) || glimpseShareExtra[String(id)];
           if (!g) return;
           shareGlimpseSelected = new Set();
           if (typeof pauseAllOverlayMedia === 'function') pauseAllOverlayMedia();
@@ -6870,7 +6993,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
 
         function sendGlimpseToSelectedContacts(glimpseId){
           if (!shareGlimpseSelected.size) return;
-          const g = myGlimpses.find(x => x.id === glimpseId);
+          const g = myGlimpses.find(x => x.id === glimpseId) || glimpseShareExtra[String(glimpseId)];
           if (!g) return;
           const desc = g.caption ? `"${g.caption.slice(0,60)}"` : (g.mediaType === 'video' ? 'a video' : g.mediaType === 'image' ? 'a photo' : 'a glimpse');
           const text = `Shared a glimpse: ${desc}`;

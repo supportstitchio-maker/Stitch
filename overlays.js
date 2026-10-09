@@ -579,6 +579,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             clearLectureTimer();
             stopLectureLocalStream();
           }
+          try { if (typeof storyMenuOpen !== 'undefined') storyMenuOpen = false; document.querySelectorAll('[data-story-menu-sheet]').forEach(el => el.remove()); } catch (e) {}
           if (typeof stopGlimpsePlayback === 'function') stopGlimpsePlayback(); else clearStoryTimer();
           if (typeof stopChallengeScorePolling === 'function') stopChallengeScorePolling();
           const ov = document.getElementById('overlay');
