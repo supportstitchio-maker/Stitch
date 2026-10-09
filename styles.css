@@ -3810,3 +3810,20 @@ body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back:active, body.d
 #screen:has(.meetings-fill) > *{flex-shrink:0;}
 #screen:has(.meetings-fill) > #inbox-list{flex:1 1 auto;display:flex;flex-direction:column;}
 #screen:has(.meetings-fill) > #inbox-list > .meetings-fill{flex:1 1 auto;}
+
+
+/* ---- Chat screen: options panel in Colmeak (same look as the other pull-up menus), username in Montserrat ---- */
+#convo-options-menu button{font-family:'Colmeak','Montserrat',sans-serif !important;font-weight:400 !important;font-size:17px !important;letter-spacing:.01em;}
+.convo-header-name{font-family:'Montserrat',system-ui,-apple-system,sans-serif !important;font-weight:600;font-size:12.5px;line-height:1.25;}
+
+/* Glimpse reply card shown above a reply in a chat (same idea as the shared-post card) */
+.glimpse-reply-card{display:block;width:150px;max-width:100%;border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,0.08);background:#fff;}
+.glimpse-reply-card .grc-label{font-size:10.5px;font-weight:600;padding:6px 10px 5px;color:#4169e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.glimpse-reply-card .grc-media{width:100%;height:170px;object-fit:cover;display:block;background:#f3f4f6;}
+.glimpse-reply-card .grc-text{width:100%;height:170px;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-size:12.5px;font-weight:600;line-height:1.3;overflow:hidden;word-break:break-word;}
+.glimpse-reply-card .grc-text.bg-light{background:#ffffff;color:#0a2540;}
+.glimpse-reply-card .grc-text.bg-dark{background:#000000;color:#ffffff;}
+.glimpse-reply-card .grc-text.bg-brand{background:linear-gradient(135deg,#0a2540,#4169e1);color:#ffffff;}
+.glimpse-reply-card .grc-cap{font-size:11px;color:#374151;padding:6px 10px 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+body.dark-mode .glimpse-reply-card{background:var(--c-onyx,#16191f);border-color:rgba(255,255,255,0.12);}
+body.dark-mode .glimpse-reply-card .grc-cap{color:#d1d5db;}

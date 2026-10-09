@@ -130,6 +130,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               out.push(c);
               return;
             }
+            if (c.type === 'stitch/glimpse') {
+              const bg = ['light','dark','brand'].includes(a.bg) ? a.bg : 'brand';
+              out.push({ type: 'stitch/glimpse', name: '', authorName: String(a.authorName || '').slice(0, 80), caption: String(a.caption || '').slice(0, 200), thumbnail: safeChatUrl(a.thumbnail) || undefined, bg });
+              return;
+            }
             if (c.type === 'stitch/challenge') {
               const code = String(a.code || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
               if (!code) return;
@@ -219,7 +224,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            const { data: row } = await sb.from(PUBLIC_PROFILES_TABLE).select('photo,username,last_active').eq('user_id', meta.otherUserId).maybeSingle();
+            const { data: row } = await sb.from(PUBLIC_PROFILES_TABLE).select('photo,username,name,last_active').eq('user_id', meta.otherUserId).maybeSingle();
+            // A chat started before the person's details were known only has a placeholder name
+            if (row && row.name && meta.name === 'Stitch member' && convoMeta[convoId]) {
+              convoMeta[convoId].name = row.name;
+              const ph = convoArrays().flat().find(x => x.id === convoId);
+              if (ph) ph.name = row.name;
+            }
             const freshPhoto = (row && row.photo) || null;
             const freshUsername = (row && row.username) || '';
             const freshLastActive = (row && row.last_active) || null;
@@ -2654,8 +2665,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // Re-syncs the inbox order against what actually happened on the server while this device
         // was signed out
-        function convoAttachmentPreviewText(attachments, mine){
+        function convoAttachmentPreviewText(attachments, mine, text){
           const first = attachments && attachments[0];
+          if (first && first.type === 'stitch/glimpse') {
+            // A reply to a glimpse: the typed reply is the preview, like any other message
+            if (text) return text;
+            return mine ? 'You replied to a glimpse' : 'Replied to your glimpse';
+          }
           if (first && first.type === 'stitch/post') {
             if (first.tagged) {
               // Sender sees who they tagged; the person tagged sees who tagged them.
@@ -2675,7 +2691,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!m) return '';
           if (m.from === 'system') return m.text || '';
           if (m.voice) return '🎤 Voice message';
-          if (Array.isArray(m.attachments) && m.attachments.length) return convoAttachmentPreviewText(m.attachments, m.from === 'me');
+          if (Array.isArray(m.attachments) && m.attachments.length) return convoAttachmentPreviewText(m.attachments, m.from === 'me', m.text);
           return m.text || 'Attachment';
         }
         function syncConvoPreviewFromMessages(c){
@@ -2746,7 +2762,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               const isSysEvent = (row.text || '').startsWith(SYS_MSG_PREFIX);
               const previewText = isSysEvent ? row.text.slice(SYS_MSG_PREFIX.length)
                 : row.voice_url ? '🎤 Voice message'
-                : (Array.isArray(row.attachments) && row.attachments.length) ? convoAttachmentPreviewText(row.attachments, row.sender_id && String(row.sender_id) === String(myId))
+                : (Array.isArray(row.attachments) && row.attachments.length) ? convoAttachmentPreviewText(row.attachments, row.sender_id && String(row.sender_id) === String(myId), row.text)
                 : (row.text || 'Attachment');
               // Already in sync (same moment or slightly newer locally, same text): nothing to do.
               if (Math.abs(rowTime - (c._lastMsgAt || 0)) < 5000 && c.preview === previewText) return;
@@ -3491,11 +3507,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             time: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
           });
           queueSaveUserState();
-          const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? convoAttachmentPreviewText(row.attachments) : (row.text || 'Attachment'));
+          const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? convoAttachmentPreviewText(row.attachments, false, row.text) : (row.text || 'Attachment'));
           if (!isSysEvent && activeConvoId === convoId && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
 
-          const found = findConvoAndArray(convoId);
+          let found = findConvoAndArray(convoId);
           let c = null;
+          // Someone who isn't a connection replied to my glimpse: no chat exists here yet, so
+          // start one with their profile picture and name so it can be opened like any other
+          if (!found && !isSysEvent && row.sender_id && String(convoId).indexOf('dm-') === 0) {
+            const entry = { id: convoId, otherUserId: row.sender_id, icon: 'user', avatarBg: 'bg-blue-50', name: 'Stitch member', username: '', photo: null, preview: previewText, time: formatRequestTime(Date.now()), unread: true, read: false, unreadCount: 0 };
+            primaryConvos.unshift(entry);
+            convoMeta[convoId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: entry.username, photo: null, preview: previewText, otherUserId: row.sender_id };
+            refreshConvoAvatarFromProfile(convoId);
+            found = findConvoAndArray(convoId);
+          }
           if (found) {
             [c] = found.arr.splice(found.idx, 1);
             c.preview = previewText;
@@ -3992,7 +4017,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
-                <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
+                <div id="chat-header-name" class="convo-header-name truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
                 <div id="chat-header-status" class="text-xs text-gray-400 truncate">${convoLastSeenText(meta)}</div>
               </div>
               <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
@@ -4288,9 +4313,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             const sharedPosts = (m.attachments || []).filter(f => f.type === 'stitch/post');
             const sharedChallenges = (m.attachments || []).filter(f => f.type === 'stitch/challenge');
+            const glimpseReplies = (m.attachments || []).filter(f => f.type === 'stitch/glimpse');
             const images = (m.attachments || []).filter(f => f.type && f.type.startsWith('image/') && (f.dataUrl || f.url));
             const videos = (m.attachments || []).filter(f => f.type && f.type.startsWith('video/') && (f.url || f.file));
-            const files = (m.attachments || []).filter(f => !images.includes(f) && !videos.includes(f) && !sharedPosts.includes(f) && !sharedChallenges.includes(f));
+            const files = (m.attachments || []).filter(f => !images.includes(f) && !videos.includes(f) && !sharedPosts.includes(f) && !sharedChallenges.includes(f) && !glimpseReplies.includes(f));
             const hasBubbleContent = !!m.text || files.length > 0;
             const mine = m.from === 'me';
             const voiceHTML = m.voice ? convoVoiceNoteHTML(m.voice, mine, m) : '';
@@ -4299,7 +4325,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
                 : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
             ) : '';
-            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine);
+            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) + convoGlimpseReplyAttachmentsHTML(glimpseReplies, mine);
             const imagesHTML = convoImageAttachmentsHTML(images);
             const videosHTML = convoVideoAttachmentsHTML(videos);
             const footer = mine
@@ -4764,6 +4790,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   </div>
                 </button>`).join('')}
             </div>`;
+        }
+
+        // The small glimpse thumbnail that travels with a reply to a glimpse
+        function convoGlimpseReplyAttachmentsHTML(items, mine){
+          if (!items || !items.length) return '';
+          return items.map(g => {
+            const label = mine ? `You replied to ${escapeHtml(g.authorName ? g.authorName + "'s" : 'a')} glimpse` : 'Replied to your glimpse';
+            const media = g.thumbnail
+              ? `<img src="${escapeHtml(g.thumbnail)}" alt="" class="grc-media" draggable="false">`
+              : `<div class="grc-text bg-${escapeHtml(g.bg || 'brand')}">${escapeHtml((g.caption || '').slice(0, 90))}</div>`;
+            const cap = (g.thumbnail && g.caption) ? `<div class="grc-cap">${escapeHtml(g.caption)}</div>` : '';
+            return `<div class="glimpse-reply-card"><div class="grc-label">${label}</div>${media}${cap}</div>`;
+          }).join('');
         }
 
         function convoImageAttachmentsHTML(images){

@@ -871,6 +871,40 @@
           return null;
         }
 
+        // Finds (or starts) the chat with a real person from a glimpse, carrying their photo and
+        // user id so the chat shows their profile picture and the header opens their profile,
+        // whether or not they're a connection.
+        async function ensureConvoForUser(u){
+          const otherId = u && u.otherUserId ? String(u.otherUserId) : '';
+          if (!otherId) return null;
+          const metaOf = c => (convoMeta[c.id] && convoMeta[c.id].otherUserId) || c.otherUserId;
+          let convo = convoArrays().flat().find(c => c.icon !== 'users' && String(metaOf(c) || '') === otherId);
+          if (convo) {
+            // Older local-only chats made from a glimpse never got these
+            let patched = false;
+            if (!convo.otherUserId) { convo.otherUserId = otherId; patched = true; }
+            if (!convo.photo && u.photo) { convo.photo = u.photo; patched = true; }
+            if (!convoMeta[convo.id]) convoMeta[convo.id] = { icon: convo.icon, avatarBg: convo.avatarBg, name: convo.name, preview: convo.preview };
+            if (!convoMeta[convo.id].otherUserId) { convoMeta[convo.id].otherUserId = otherId; patched = true; }
+            if (!convoMeta[convo.id].photo && u.photo) { convoMeta[convo.id].photo = u.photo; patched = true; }
+            if (patched) queueSaveUserState();
+          } else {
+            const myId = await getCurrentUserId();
+            if (!myId) return null;
+            const id = 'dm-' + [String(myId), otherId].sort().join('_');
+            convo = convoArrays().flat().find(c => c.id === id);
+            if (!convo) {
+              convo = { id, otherUserId: otherId, icon: 'user', avatarBg: u.avatarBg || 'bg-blue-50', name: u.name || 'Stitch member', username: u.username || '', photo: u.photo || null, preview: '', time: 'now', unread: false, read: true };
+              primaryConvos.unshift(convo);
+            }
+            convoMeta[convo.id] = Object.assign({ icon: convo.icon, avatarBg: convo.avatarBg, name: convo.name, username: convo.username, photo: convo.photo, preview: convo.preview, otherUserId: otherId }, convoMeta[convo.id] || {});
+            queueSaveUserState();
+          }
+          if (!conversationMessages[convo.id]) conversationMessages[convo.id] = [];
+          if (typeof refreshConvoAvatarFromProfile === 'function') refreshConvoAvatarFromProfile(convo.id);
+          return convo;
+        }
+
         function ensureConvoForStory(s){
           let convo = findConvoRecord(s.name);
           if (!convo) {
@@ -880,6 +914,41 @@
           if (!convoMeta[convo.id]) convoMeta[convo.id] = { icon: convo.icon, avatarBg: convo.avatarBg, name: convo.name, preview: convo.preview };
           if (!conversationMessages[convo.id]) conversationMessages[convo.id] = [];
           return convo;
+        }
+
+        // The small thumbnail of the glimpse being replied to (photo, video poster, or the text card)
+        function buildGlimpseReplyAttachment(s, item){
+          let thumb = null;
+          if (item && item.mediaUrl) thumb = item.mediaType === 'video' ? (item.posterUrl || null) : item.mediaUrl;
+          if (thumb && String(thumb).indexOf('blob:') === 0) thumb = null;
+          const bgStyle = (item && !item.mediaUrl && item.bgStyle) ? String(item.bgStyle) : '';
+          const bg = bgStyle.indexOf('#ffffff') !== -1 ? 'light' : (bgStyle.indexOf('#000000') !== -1 ? 'dark' : 'brand');
+          return {
+            type: 'stitch/glimpse',
+            authorName: s.name || '',
+            caption: ((item && item.caption) || '').trim().slice(0, 200),
+            thumbnail: thumb,
+            bg,
+          };
+        }
+
+        // Sends a reply to a glimpse: the reply text goes together with the glimpse's thumbnail,
+        // the same way a shared post travels with its card
+        async function sendGlimpseReply(s, item, text){
+          const attachment = buildGlimpseReplyAttachment(s, item);
+          const convo = s.otherUserId ? await ensureConvoForUser(s) : null;
+          if (!convo) {
+            // Not tied to a real account (demo/local glimpse): keep the old local-only behaviour
+            const local = ensureConvoForStory(s);
+            conversationMessages[local.id].push({ from: 'me', text, attachments: [attachment] });
+            local.preview = text; local.time = 'now'; local.unread = false;
+            bumpConvoToTop(local);
+            return;
+          }
+          deliverSharedMessage(convo.id, text, { attachments: [attachment], previewText: text });
+          bumpConvoToTop(convo);
+          const inboxList = document.getElementById('inbox-list');
+          if (inboxList && typeof inboxContent === 'function') inboxList.innerHTML = inboxContent();
         }
 
         function bumpConvoToTop(convo){
@@ -996,12 +1065,8 @@
           if (!text) return;
           const s = stories.find(x => x.id === currentStoryId);
           if (s) {
-            const convo = ensureConvoForStory(s);
-            conversationMessages[convo.id].push({ from: 'me', text });
-            convo.preview = text;
-            convo.time = 'now';
-            convo.unread = false;
-            bumpConvoToTop(convo);
+            const item = storyItems(s)[currentItemIndex] || storyItems(s)[0];
+            sendGlimpseReply(s, item, text);
           }
           if (input) {
             input.value = '';
@@ -1932,6 +1997,9 @@
               const p = profileById[r.user_id];
               return {
                 name: (p && (p.name || p.username)) || 'Stitch member',
+                username: (p && p.username) || '',
+                otherUserId: r.user_id,
+                photo: (p && p.photo) || null,
                 icon: 'user',
                 avatarBg: 'bg-blue-50',
                 viewedLabel: formatRequestTime(r.created_at),
@@ -2030,12 +2098,12 @@
           const safeName = escapeForJsAttr(v.name);
           return `
             <div class="flex items-center gap-3 px-5 py-2.5">
-              <div class="w-11 h-11 rounded-full ${v.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0">${Icon(v.icon,'w-5 h-5')}</div>
+              <div class="w-11 h-11 rounded-full ${v.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${v.photo ? `<img src="${escapeHtml(v.photo)}" class="w-full h-full object-cover" alt="">` : Icon(v.icon,'w-5 h-5')}</div>
               <div class="min-w-0 flex-1">
                 <div class="text-[15px] font-semibold text-gray-800 truncate">${escapeHtml(v.name)}</div>
                 <div class="text-xs text-gray-400">${v.viewedLabel}</div>
               </div>
-              <button onclick="replyToGlimpseViewer('${safeName}','${v.icon}','${v.avatarBg}')" title="Reply" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0" style="background:#f3f4f6;">${Icon('comment','w-4 h-4')}</button>
+              <button onclick="replyToGlimpseViewer('${safeName}','${v.icon}','${v.avatarBg}','${escapeForJsAttr(String(v.otherUserId || ''))}','${escapeForJsAttr(String(v.photo || ''))}','${escapeForJsAttr(String(v.username || ''))}')" title="Reply" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0" style="background:#f3f4f6;">${Icon('comment','w-4 h-4')}</button>
             </div>`;
         }
 
@@ -2051,7 +2119,11 @@
           return convo;
         }
 
-        function replyToGlimpseViewer(name, icon, avatarBg){
+        async function replyToGlimpseViewer(name, icon, avatarBg, userId, photo, username){
+          if (userId) {
+            const real = await ensureConvoForUser({ otherUserId: userId, name, icon, avatarBg, photo: photo || null, username: username || '' });
+            if (real) { openConversation(real.id); return; }
+          }
           const convo = ensureConvoForPerson(name, icon, avatarBg);
           openConversation(convo.id);
         }
