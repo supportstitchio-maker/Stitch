@@ -2486,7 +2486,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             if (error || !data) return;
             const seenLocalIds = new Set();
-            conversationMessages[convoId] = data
+            const prevLocalMsgs = conversationMessages[convoId] || [];
+            const serverLocalIds = new Set(data.map(r => r.local_id).filter(Boolean));
+            const fresh = data
               .filter(r => !deletedForMeMessageIds.has(r.id))
               .map(r => {
                 const raw = r.text || '';
@@ -2515,6 +2517,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 return !arr.slice(0, idx).some(prev => prev._mine && !prev.localId && prev.text === m.text && Math.abs(prev.time - m.time) < 5000);
               })
               .map(({ _mine, ...rest }) => rest);
+            // My own messages that never reached the server (e.g. a glimpse reply to someone who
+            // hasn't accepted a connection yet) used to be wiped here, so the chat opened empty.
+            // Keep them, flagged "Not delivered" once they've been waiting a while.
+            const stuck = prevLocalMsgs.filter(m => m && m.from === 'me' && m.localId && m.id == null && !serverLocalIds.has(m.localId));
+            stuck.forEach(m => { if (!m.unsent && Date.now() - (m.time || 0) > 60000) m.unsent = true; });
+            conversationMessages[convoId] = fresh.concat(stuck).sort((a, b) => (a.time || 0) - (b.time || 0));
             // The chat now holds the server's full history: make sure this conversation's inbox row
             // shows the real last message instead of an older stored preview
             const loadedConvo = (typeof findConvoAndArray === 'function') ? findConvoAndArray(convoId) : null;
@@ -3975,6 +3983,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return names.length ? names.join(', ') : 'Group';
           }
           if (meta.otherUserId && isUserOnline(meta.otherUserId)) return 'Online';
+          // "Last seen" is only for people in my network: strangers (e.g. someone I messaged from
+          // their glimpse) get no last-seen line at all
+          if (meta.otherUserId && !isUserInMyNetwork(meta.otherUserId)) return '';
           return formatLastActiveText(meta.lastActive);
         }
 
@@ -4331,7 +4342,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const footer = mine
               ? `<div class="flex items-center gap-1 mt-1 px-1">
                    <span class="text-[10px] text-gray-400">${timeLabel}</span>
-                   ${convoReadTicksHTML(m)}
+                   ${m.unsent ? '<span class="text-[10px] font-semibold" style="color:#ef4444;">Not delivered</span>' : convoReadTicksHTML(m)}
                  </div>`
               : `<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div>`;
             // Voice notes need an actual (not shrink-wrapped) width to expand into, or width:100% on
@@ -4624,7 +4635,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const meta = convoMeta[targetConvoId];
           if (meta && meta.otherUserId) {
             const id = await sendMessageRemote(targetConvoId, meta.otherUserId, text, voice ? voice.src : null, voice ? voice.duration : null, attachments, localId);
-            if (id) { newMessage.id = id; refreshConvoLogIfOpen(targetConvoId); }
+            if (id) { newMessage.id = id; delete newMessage.unsent; refreshConvoLogIfOpen(targetConvoId); }
+            else { newMessage.unsent = true; refreshConvoLogIfOpen(targetConvoId); queueSaveUserState(); }
           } else if (meta && meta.icon === 'users' && Array.isArray(meta.members)) {
             const recipients = meta.members.filter(m => !m.mine && m.otherUserId);
             const results = await Promise.all(recipients.map(m =>

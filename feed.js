@@ -6810,22 +6810,27 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           if (!convo) return;
           conversationMessages[convoId] = conversationMessages[convoId] || [];
           const localId = 'lm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-          conversationMessages[convoId].push({
+          const sentMsg = {
             from: 'me', text,
             attachments: (attachments && attachments.length) ? attachments : undefined,
             time: Date.now(), read: false, localId,
-          });
+          };
+          conversationMessages[convoId].push(sentMsg);
+          const markSent = (ok) => {
+            if (ok) { sentMsg.id = ok; delete sentMsg.unsent; } else { sentMsg.unsent = true; }
+            refreshConvoLogIfOpen(convoId);
+            queueSaveUserState();
+          };
           updateConvoPreview(convoId, previewText);
           queueSaveUserState();
           refreshConvoLogIfOpen(convoId);
           const meta = convoMeta[convoId];
           if (meta && meta.otherUserId) {
-            sendMessageRemote(convoId, meta.otherUserId, text, null, null, attachments || [], localId);
+            sendMessageRemote(convoId, meta.otherUserId, text, null, null, attachments || [], localId).then(markSent);
           } else if (meta && meta.icon === 'users' && Array.isArray(meta.members)) {
-            meta.members.forEach(m => {
-              if (m.mine || !m.otherUserId) return;
-              sendMessageRemote(convoId, m.otherUserId, text, null, null, attachments || [], localId);
-            });
+            const recips = meta.members.filter(m => !m.mine && m.otherUserId);
+            Promise.all(recips.map(m => sendMessageRemote(convoId, m.otherUserId, text, null, null, attachments || [], localId)))
+              .then(results => markSent(results.find(Boolean) || null));
           }
         }
 
