@@ -2291,7 +2291,11 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         // ---- Message request compose (replaces the old prompt()-based flow) --
         let messageRequestComposeDraft = '';
         function messageAndConnectViewedProfile(){
-          if (!viewedProfile || viewedProfile.connected || viewedProfile.requestSent) return;
+          if (!viewedProfile) return;
+          if (viewedProfile.connected) { messageViewedProfile(); return; }
+          // A request is already pending: tapping Message opens the chat straight away
+          // (it used to do nothing because the request was already sent)
+          if (viewedProfile.requestSent) { messagePendingViewedProfile(); return; }
           messageRequestComposeDraft = '';
           openOverlayFrom('personProfile', 'messageRequestCompose');
         }
@@ -2338,6 +2342,23 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (!ok) { viewedProfile.requestSent = false; renderPersonProfile(); return; }
           const dp = discoverPeople.find(p => p.id === id);
           if (dp) dp.requestSent = true;
+        }
+
+        async function messagePendingViewedProfile(){
+          const p = viewedProfile;
+          if (!p || !p.id) return;
+          try {
+            const convo = await ensureConvoForUser({
+              otherUserId: p.id, name: p.name, username: p.username,
+              photo: p.photo, avatarBg: p.avatarBg
+            });
+            if (!convo) { if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't start that chat. Please try again."); return; }
+            closeOverlay();
+            startNewMessageWith(convo.id);
+          } catch (e) {
+            console.warn('Opening chat with pending contact failed:', e);
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't start that chat. Please try again.");
+          }
         }
 
         async function messageViewedProfile(){

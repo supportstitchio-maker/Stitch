@@ -2462,6 +2462,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } catch (e) { console.warn('Sending message threw an error:', e); return null; }
         }
 
+        // Re-sends a message that never reached the server (shown as "Not delivered").
+        const retryingLocalIds = new Set();
+        async function retryUnsentMessage(convoId, localId){
+          if (!convoId || !localId || retryingLocalIds.has(localId)) return;
+          const m = (conversationMessages[convoId] || []).find(x => x && x.localId === localId);
+          if (!m || m.id != null) return;
+          const meta = convoMeta[convoId];
+          if (!meta || !meta.otherUserId) return;
+          retryingLocalIds.add(localId);
+          try {
+            const id = await sendMessageRemote(convoId, meta.otherUserId, m.text || '', m.voice ? m.voice.src : null, m.voice ? m.voice.duration : null, m.attachments || [], localId);
+            if (id) { m.id = id; delete m.unsent; } else { m.unsent = true; }
+          } finally {
+            retryingLocalIds.delete(localId);
+            refreshConvoLogIfOpen(convoId);
+            queueSaveUserState();
+          }
+        }
+
         async function loadConversationHistory(convoId){
           const sb = getSupabaseClient();
           if (!sb) return;
@@ -2522,6 +2541,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             // Keep them, flagged "Not delivered" once they've been waiting a while.
             const stuck = prevLocalMsgs.filter(m => m && m.from === 'me' && m.localId && m.id == null && !serverLocalIds.has(m.localId));
             stuck.forEach(m => { if (!m.unsent && Date.now() - (m.time || 0) > 60000) m.unsent = true; });
+            // Try once more in the background -- the server rules may have changed since it failed
+            stuck.forEach(m => { if (m.unsent) retryUnsentMessage(convoId, m.localId); });
             conversationMessages[convoId] = fresh.concat(stuck).sort((a, b) => (a.time || 0) - (b.time || 0));
             // The chat now holds the server's full history: make sure this conversation's inbox row
             // shows the real last message instead of an older stored preview
@@ -4342,7 +4363,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const footer = mine
               ? `<div class="flex items-center gap-1 mt-1 px-1">
                    <span class="text-[10px] text-gray-400">${timeLabel}</span>
-                   ${m.unsent ? '<span class="text-[10px] font-semibold" style="color:#ef4444;">Not delivered</span>' : convoReadTicksHTML(m)}
+                   ${m.unsent ? `<button type="button" onclick="retryUnsentMessage('${escapeForJsAttr(String(activeConvoId))}','${escapeForJsAttr(String(m.localId || ''))}')" class="text-[10px] font-semibold" style="color:#ef4444;">Not delivered · Tap to retry</button>` : convoReadTicksHTML(m)}
                  </div>`
               : `<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div>`;
             // Voice notes need an actual (not shrink-wrapped) width to expand into, or width:100% on
