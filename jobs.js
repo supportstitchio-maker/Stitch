@@ -1732,6 +1732,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             poster_blocked: 'lock',
             admin_message: 'comment',
             opportunity_reported: 'flag',
+            content_reported: 'flag',
+            class_reported: 'flag',
             cancel_reason: 'flag',
             meeting_admin: 'video',
             meeting_reminder: 'calendar',

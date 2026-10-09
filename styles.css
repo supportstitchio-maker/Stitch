@@ -3121,7 +3121,9 @@ body.dark-mode .neu-add-plus::before,body.dark-mode .neu-add-plus::after{backgro
 /* ---- Auth onboarding / sign-up steps ("Almost there", "What brings you here?" and every
    stage after it): plain white page, NO background artwork, content starts 20px from the
    top instead of being vertically centred, and the Continue pill is pinned to */
-#auth-gate.auth-compact-mode:not(.auth-verify-mode)::before{
+/* The "Show your face" step (.auth-photo-stage) keeps the same artwork as the Get Started and
+   verification pages */
+#auth-gate.auth-compact-mode:not(.auth-verify-mode):not(.auth-photo-stage)::before{
   display:none !important;
   content:none !important;
   background:none !important;

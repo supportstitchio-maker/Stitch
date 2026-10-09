@@ -1198,6 +1198,7 @@ let userPoints = 0;
           document.getElementById('authBackToLandingBtn').style.display = 'flex';
           document.getElementById('auth-gate').classList.remove('auth-compact-mode');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
+          document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
           setAuthProgress(null);
@@ -1247,7 +1248,7 @@ let userPoints = 0;
           setAuthProgress(null);
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
-          document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           // Simple, un-decorated verify screen: no big brand logo, no gradient hero title, and (see
           // auth-verify-mode CSS) pinned near the top of the viewport instead of vertically
           document.getElementById('auth-gate').classList.add('auth-verify-mode');
@@ -1279,7 +1280,7 @@ let userPoints = 0;
           document.getElementById('authHeadSub').textContent = "Let's set up your profile";
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
-          document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
@@ -1355,7 +1356,7 @@ let userPoints = 0;
           document.getElementById('authHeadTitle').textContent = 'What brings you here?';
           document.getElementById('authBackBtn').style.display = 'flex';
           document.getElementById('authBackToLandingBtn').style.display = 'none';
-          document.getElementById('auth-gate').classList.add('auth-compact-mode');
+          document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
@@ -1533,6 +1534,8 @@ let userPoints = 0;
           setAuthProgress(1, Math.round(((authPosterAppStageIdx + 1) / stages.length) * 100));
           // Back navigation through the poster-app sub-stages goes through the single fixed top-left
           // arrow (#authBackBtn)
+          const authGateEl = document.getElementById('auth-gate');
+          if (authGateEl) authGateEl.classList.toggle('auth-photo-stage', stage === 'photo');
           const continueBtn = document.getElementById('auth-poster-app-continue-btn');
           if (continueBtn) {
             continueBtn.style.display = stage === 'photo' ? 'none' : 'block';

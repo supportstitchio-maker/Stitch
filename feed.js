@@ -1203,6 +1203,12 @@
             if (item.iconClass) data.iconClass = item.iconClass;
           }
           data.repostedFrom = s.name || '';
+          if (item.id != null) data.repostOf = String(item.id);
+          if (s.otherUserId && UUID_RE.test(String(s.otherUserId))) data.repostOwnerId = String(s.otherUserId);
+          if (data.repostOf && myGlimpses.some(g => g.repostOf === data.repostOf)) {
+            openAppAlertModal('You already reposted this glimpse.');
+            return;
+          }
           GlimpsesAPI.create(data).then(() => {
             try { refreshMyGlimpses(); refreshStoryStrip(); } catch (e) {}
             openAppAlertModal('Reposted to your glimpse.');
@@ -1219,18 +1225,96 @@
           glimpseShareExtra[String(gid)] = {
             id: gid, caption: item.caption || '',
             mediaType: item.mediaUrl ? (item.mediaType === 'video' ? 'video' : 'image') : undefined,
-            authorName: s.name || ''
+            authorName: s.name || '',
+            attachment: buildGlimpseReplyAttachment(s, item)
           };
           openShareGlimpse(gid);
         }
 
+        const GLIMPSE_REPORT_REASONS = [
+          ['spam', 'Spam or scam'],
+          ['sexual', 'Nudity or sexual content'],
+          ['violence', 'Violence or harm'],
+          ['harassment', 'Harassment or hate'],
+          ['misleading', 'Misleading or false'],
+          ['other', 'Something else'],
+        ];
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let glimpseReportBusy = false;
+
+        function glimpseReportKey(cur){
+          return String(cur.item.id != null ? cur.item.id : 'story-' + cur.s.id);
+        }
+
+        // Step 1: pick a reason (bottom sheet). Step 2: submitGlimpseReport saves it to Supabase.
         function reportViewedGlimpse(){
           const cur = currentViewedGlimpse();
+          if (!cur || cur.s.mine) return;
+          if (reportedGlimpseKeys.has(glimpseReportKey(cur))) { openAppAlertModal('You already reported this glimpse. Our team will review it.'); return; }
+          if (storyMenuOpen) { storyMenuOpen = false; removeStoryMenuSheet(); }
+          storyMenuOpen = true;
+          pauseStoryTimer();
+          const rows = GLIMPSE_REPORT_REASONS.map(([id, label]) => ({
+            onclick: `submitGlimpseReport('${id}')`, icon: 'flag', label
+          }));
+          const wrap = document.createElement('div');
+          wrap.innerHTML = classMenuSheetHTML('closeStoryMenu', rows);
+          while (wrap.firstElementChild) {
+            const el = wrap.firstElementChild;
+            el.setAttribute('data-story-menu-sheet', '1');
+            document.body.appendChild(el);
+          }
+        }
+
+        async function submitGlimpseReport(reasonId){
+          if (glimpseReportBusy) return;
+          const cur = currentViewedGlimpse();
+          closeStoryMenu();
           if (!cur) return;
-          const key = String(cur.item.id != null ? cur.item.id : cur.s.id);
-          if (reportedGlimpseKeys.has(key)) { openAppAlertModal('You already reported this glimpse.'); return; }
-          reportedGlimpseKeys.add(key);
-          openAppAlertModal('Thanks for letting us know. This glimpse has been reported and our team will review it.');
+          const found = GLIMPSE_REPORT_REASONS.find(r => r[0] === reasonId);
+          if (!found) return;
+          const key = glimpseReportKey(cur);
+          if (reportedGlimpseKeys.has(key)) { openAppAlertModal('You already reported this glimpse. Our team will review it.'); return; }
+          glimpseReportBusy = true;
+          try {
+            const sb = getSupabaseClient();
+            const uid = await getCurrentUserId();
+            if (!sb || !uid) throw new Error('signin');
+            const { s, item } = cur;
+            const owner = s.otherUserId && UUID_RE.test(String(s.otherUserId)) ? String(s.otherUserId) : null;
+            const keepUrl = u => (u && String(u).indexOf('blob:') !== 0) ? String(u) : null;
+            const { error } = await sb.from('content_reports').insert({
+              content_type: 'glimpse',
+              content_id: key,
+              content_owner_id: owner,
+              reporter_id: uid,
+              reason_id: found[0],
+              reason_label: found[1],
+              details: '',
+              snapshot: {
+                authorName: s.name || '',
+                caption: (item.caption || '').slice(0, 500),
+                mediaType: item.mediaUrl ? (item.mediaType === 'video' ? 'video' : 'image') : 'text',
+                mediaUrl: keepUrl(item.mediaUrl),
+                posterUrl: keepUrl(item.posterUrl),
+                reportedAt: new Date().toISOString()
+              },
+              status: 'open'
+            });
+            // 23505 = this person already reported it (unique index): treat as success
+            if (error && error.code !== '23505') throw error;
+            reportedGlimpseKeys.add(key);
+            if (!error && typeof notifyAllAdminsRemote === 'function') {
+              notifyAllAdminsRemote({ type: 'content_reported', title: 'Glimpse reported', message: `A glimpse by ${s.name || 'a member'} was reported (${found[1]}). Review it on the Admin Dashboard.` });
+            }
+            openAppAlertModal('Thanks for letting us know. This glimpse has been reported and our team will review it.');
+          } catch (e) {
+            console.warn('Glimpse report failed:', e);
+            const msg = (e && e.message === 'signin') ? 'Please sign in again to send a report.' : "Couldn't send your report. Please try again.";
+            openAppAlertModal(msg);
+          } finally {
+            glimpseReportBusy = false;
+          }
         }
 
         // Swipe down anywhere on the glimpse to close it (no X button any more)
@@ -6998,7 +7082,8 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           const desc = g.caption ? `"${g.caption.slice(0,60)}"` : (g.mediaType === 'video' ? 'a video' : g.mediaType === 'image' ? 'a photo' : 'a glimpse');
           const text = `Shared a glimpse: ${desc}`;
           const ids = Array.from(shareGlimpseSelected);
-          ids.forEach(contactId => deliverSharedMessage(contactId, text));
+          const shareOpts = g.attachment ? { attachments: [g.attachment], previewText: text } : undefined;
+          ids.forEach(contactId => deliverSharedMessage(contactId, text, shareOpts));
           closeOverlay();
           openAppAlertModal(ids.length === 1 ? 'Sent' : `Sent to ${ids.length} people`);
         }
