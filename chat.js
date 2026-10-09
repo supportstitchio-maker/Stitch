@@ -2770,7 +2770,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!myId) return;
           try {
             const { data, error } = await sb.from(MESSAGES_TABLE)
-              .select('convo_id,text,voice_url,attachments,created_at,sender_id')
+              .select('convo_id,text,voice_url,attachments,created_at,sender_id,read')
               .or(`sender_id.eq.${myId},recipient_id.eq.${myId}`)
               .order('created_at', { ascending: false })
               .limit(500);
@@ -2781,8 +2781,25 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             });
             let changed = false;
             latestByConvo.forEach((row, convoId) => {
-              const found = findConvoAndArray(convoId);
-              if (!found) return;
+              let found = findConvoAndArray(convoId);
+              if (!found) {
+                // A message that arrived while the app was closed/offline (e.g. a glimpse reply from
+                // someone who isn't a connection) has no chat here yet, so it never showed up. Start
+                // the chat from the unread message so it appears in the inbox.
+                const fromThem = row.sender_id && String(row.sender_id) !== String(myId);
+                if (!(fromThem && row.read === false && String(convoId).indexOf('dm-') === 0 && !(row.text || '').startsWith(SYS_MSG_PREFIX))) return;
+                const unreadCount = data.filter(r => r.convo_id === convoId && r.sender_id && String(r.sender_id) !== String(myId) && r.read === false).length;
+                const prev = Array.isArray(row.attachments) && row.attachments.length
+                  ? convoAttachmentPreviewText(row.attachments, false, row.text)
+                  : (row.voice_url ? '🎤 Voice message' : (row.text || 'Attachment'));
+                const rt = row.created_at ? new Date(row.created_at).getTime() : Date.now();
+                const entry = { id: convoId, otherUserId: row.sender_id, icon: 'user', avatarBg: 'bg-blue-50', name: 'Stitch member', username: '', photo: null, preview: prev, time: formatRequestTime(rt), unread: true, read: false, unreadCount: unreadCount || 1, _lastMsgAt: rt };
+                primaryConvos.unshift(entry);
+                convoMeta[convoId] = { icon: entry.icon, avatarBg: entry.avatarBg, name: entry.name, username: '', photo: null, preview: prev, otherUserId: row.sender_id };
+                if (typeof refreshConvoAvatarFromProfile === 'function') refreshConvoAvatarFromProfile(convoId);
+                changed = true;
+                return;
+              }
               const c = found.arr[found.idx];
               const rowTime = row.created_at ? new Date(row.created_at).getTime() : 0;
               // Trust the server's own "latest row per convo" query as ground truth rather than gating
