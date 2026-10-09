@@ -4777,7 +4777,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `<style>
             @keyframes ciScan{0%{top:14%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:84%;opacity:0}}
             @keyframes ciRise{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
-            @keyframes ciRing{to{stroke-dashoffset:0}}
+            @keyframes ciRing{from{stroke-dashoffset:100}to{stroke-dashoffset:var(--ci-off,0)}}
             @keyframes ciFill{to{width:var(--ci-fill)}}
             @keyframes ciPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
             @keyframes ciPulse{0%{box-shadow:0 0 0 0 rgba(30,144,255,.45)}100%{box-shadow:0 0 0 10px rgba(30,144,255,0)}}
@@ -4786,16 +4786,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             .ci-line{height:6px;border-radius:9999px;background:rgba(128,128,128,.28);}
             .ci-chip{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 12px 7px 8px;border-radius:9999px;background:var(--pill-fill,#fff);color:var(--pill-text,#1f2937);font-size:12.5px;font-weight:600;box-shadow:0 2px 10px rgba(30,80,200,.14);}
             .ci-tick{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;background:${NAVY};color:#fff;}
-            .ci-bluehero{position:relative;overflow:hidden;padding:18px 14px 64px;background:linear-gradient(160deg,${NAVY} 0%,${ROYAL} 100%);}
-            .ci-bluehero:before,.ci-bluehero:after{content:'';position:absolute;border-radius:9999px;background:rgba(255,255,255,.08);pointer-events:none;}
-            .ci-bluehero:before{width:260px;height:260px;left:-90px;top:-70px;}
-            .ci-bluehero:after{width:200px;height:200px;right:-60px;bottom:10px;}
+            .ci-bluehero{position:relative;overflow:visible;padding:18px 14px 28px;background:transparent;}
             .ci-bluehero svg{position:relative;z-index:1;}
-            .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:-34px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -8px 30px rgba(30,80,200,.18);}
+            .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:18px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -6px 24px rgba(30,80,200,.10);}
             body.dark-mode .ci-panel{background:var(--c-black,#121212);}
-            .ci-title{font-size:1.65rem;line-height:1.2;font-weight:700;color:#0f1f3d;margin-bottom:12px;}
+            .ci-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.2;font-weight:700;color:#0f1f3d;margin-bottom:12px;}
             body.dark-mode .ci-title{color:#ffffff;}
-            .ci-title .ci-hl{color:${NAVY};}
+            .ci-title .ci-hl{font-family:'Colmeak','Montserrat',sans-serif;color:#1e90ff;}
             .ci-sub{font-size:.95rem;line-height:1.55;color:#6b7280;max-width:340px;margin:0 auto;}
             @media (prefers-reduced-motion:reduce){.ci-hero *{animation-duration:.01s !important;animation-delay:0s !important;}}
           </style>`;
@@ -4810,7 +4807,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="relative flex-shrink-0 flex items-center justify-center" style="width:40px;height:40px;">
                 <svg viewBox="0 0 40 40" width="40" height="40" style="position:absolute;inset:0;transform:rotate(-90deg);" aria-hidden="true">
                   <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(128,128,128,.25)" stroke-width="4"/>
-                  <circle cx="20" cy="20" r="16" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" pathLength="100" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};animation:ciRing 1.1s ease-out ${delay + 0.2}s backwards;"/>
+                  <circle cx="20" cy="20" r="16" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" pathLength="100" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};--ci-off:${100 - pct};animation:ciRing 1.1s ease-out ${delay + 0.2}s both;"/>
                 </svg>
                 <span style="font-size:11px;font-weight:800;color:${color};">${pct}%</span>
               </div>
@@ -4825,7 +4822,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <g>
               <rect x="655" y="${y}" width="657" height="181" rx="90.5" fill="#ffffff" filter="url(#ciSh)"/>
               <circle cx="760" cy="${y + 90}" r="57" fill="none" stroke="#cfe3fb" stroke-width="15"/>
-              <circle cx="760" cy="${y + 90}" r="57" fill="none" stroke="#1a7cff" stroke-width="15" stroke-linecap="round" pathLength="100" transform="rotate(-90 760 ${y + 90})" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};animation:ciRing 1.1s ease-out ${delay}s backwards;"/>
+              <circle cx="760" cy="${y + 90}" r="57" fill="none" stroke="#1a7cff" stroke-width="15" stroke-linecap="round" pathLength="100" transform="rotate(-90 760 ${y + 90})" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};--ci-off:${100 - pct};animation:ciRing 1.1s ease-out ${delay}s both;"/>
               <text x="760" y="${y + 106}" text-anchor="middle" font-size="41" font-weight="800" fill="#1a7cff">${pct}%</text>
               <text x="870" y="${y + 75}" font-size="42" font-weight="800" fill="#0f1f3d">${title}</text>
               <text x="870" y="${y + 133}" font-size="35" fill="#6b7a99">${meta}</text>
@@ -4893,12 +4890,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
-          const title = isFirst ? '<span class="ci-hl">Stitch Bot</span> finds your matches' : '<span class="ci-hl">Stitch Bot</span> can apply for you';
+          const title = isFirst ? 'Stitch Bot <span class="ci-hl">finds</span> your matches' : 'Stitch Bot can <span class="ci-hl">apply</span> for you';
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
             : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem. It's a homebody and will not wander off to other websites.";
           return `
             ${careerIntroStylesHTML()}
+            <div class="apply-bg-overlay" style="opacity:.28;"></div>
             <div class="flex-1 overflow-y-auto" style="display:flex;flex-direction:column;">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div style="flex:1 1 auto;display:flex;flex-direction:column;margin-top:22px;">
@@ -4906,7 +4904,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
               </div>
               <div class="ci-panel">
-                <h2 class="ci-title font-display">${title}</h2>
+                <h2 class="ci-title">${title}</h2>
                 <div class="ci-sub">${sub}</div>
               </div>
             </div>
