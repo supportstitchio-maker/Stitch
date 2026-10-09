@@ -4810,48 +4810,77 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </div>`;
         }
         function careerIntroHeroMatchHTML(){
+          const card = (y, pct, title, meta, delay) => `
+            <g>
+              <rect x="655" y="${y}" width="657" height="181" rx="90.5" fill="#ffffff" filter="url(#ciSh)"/>
+              <circle cx="760" cy="${y + 90}" r="57" fill="none" stroke="#cfe3fb" stroke-width="15"/>
+              <circle cx="760" cy="${y + 90}" r="57" fill="none" stroke="#1a7cff" stroke-width="15" stroke-linecap="round" pathLength="100" transform="rotate(-90 760 ${y + 90})" style="stroke-dasharray:100;stroke-dashoffset:${100 - pct};animation:ciRing 1.1s ease-out ${delay}s backwards;"/>
+              <text x="760" y="${y + 106}" text-anchor="middle" font-size="41" font-weight="800" fill="#1a7cff">${pct}%</text>
+              <text x="870" y="${y + 75}" font-size="42" font-weight="800" fill="#0f1f3d">${title}</text>
+              <text x="870" y="${y + 133}" font-size="35" fill="#6b7a99">${meta}</text>
+            </g>`;
           return `
-            <div class="ci-hero">
-              <div class="ci-card" style="left:12px;top:22px;width:92px;height:150px;padding:11px;transform:rotate(-5deg);animation-name:none;">
-                <div class="flex items-center justify-center" style="width:30px;height:30px;border-radius:9999px;background:rgba(30,144,255,.14);color:${NAVY};margin-bottom:10px;">${Icon('user','w-4 h-4')}</div>
-                <div class="ci-line" style="width:82%;"></div>
-                <div class="ci-line" style="margin-top:7px;"></div>
-                <div class="ci-line" style="margin-top:7px;width:62%;"></div>
-                <div class="ci-line" style="margin-top:16px;"></div>
-                <div class="ci-line" style="margin-top:7px;width:72%;"></div>
-                <div class="ci-line" style="margin-top:7px;width:50%;"></div>
-                <div style="position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${NAVY},transparent);box-shadow:0 0 12px ${NAVY};animation:ciScan 2.4s ease-in-out .3s infinite;"></div>
-              </div>
-              <span class="ci-chip" style="position:absolute;left:16px;bottom:14px;animation:ciRise .5s ease-out .2s both;">${careerIntroTickHTML()}CV scanned</span>
-              ${careerIntroMatchCardHTML(92, 'UI Designer', 'Accra · Full-time', 18, 10, 188, 0.35, NAVY)}
-              ${careerIntroMatchCardHTML(86, 'UX Researcher', 'Remote', 86, 26, 188, 0.6, ROYAL)}
-              ${careerIntroMatchCardHTML(74, 'Brand Intern', 'Kumasi', 154, 6, 188, 0.85, '#6b8fe8')}
-            </div>`;
+            <svg viewBox="180 150 1180 750" width="100%" style="display:block;" role="img" aria-label="CV scanned and matched to opportunities">
+              <defs>
+                <linearGradient id="ciPanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eefd"/><stop offset="1" stop-color="#bfd8fb"/></linearGradient>
+                <filter id="ciSh" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#2f6fd6" flood-opacity=".16"/></filter>
+              </defs>
+              <rect x="195" y="165" width="1150" height="715" rx="140" fill="url(#ciPanel)"/>
+              <g transform="rotate(-8 430 460)">
+                <rect x="232" y="250" width="372" height="430" rx="44" fill="#ffffff" filter="url(#ciSh)"/>
+                <circle cx="334" cy="330" r="54" fill="#cfe3fb"/>
+                <circle cx="334" cy="313" r="19" fill="#1a7cff"/>
+                <path d="M303 355c4-18 18-26 31-26s27 8 31 26c-9 7-20 10-31 10s-22-3-31-10z" fill="#1a7cff"/>
+                <rect x="292" y="390" width="224" height="22" rx="11" fill="#c9d1de"/>
+                <rect x="296" y="425" width="268" height="22" rx="11" fill="#c9d1de"/>
+                <rect x="302" y="462" width="172" height="22" rx="11" fill="#c9d1de"/>
+                <rect x="310" y="511" width="266" height="26" rx="13" fill="#cfe3fb"/>
+                <rect x="310" y="511" width="238" height="26" rx="13" fill="#2f86ff">
+                  <animate attributeName="width" values="60;238" dur="1.4s" fill="freeze"/>
+                </rect>
+                <rect x="318" y="565" width="182" height="22" rx="11" fill="#c9d1de"/>
+                <rect x="322" y="603" width="136" height="22" rx="11" fill="#c9d1de"/>
+              </g>
+              <g filter="url(#ciSh)">
+                <rect x="230" y="712" width="380" height="112" rx="56" fill="#ffffff"/>
+              </g>
+              <circle cx="295" cy="768" r="32" fill="#1a7cff"/>
+              <path d="M280 768l11 11 20-22" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="354" y="781" font-size="40" font-weight="800" fill="#0f1f3d">CV scanned</text>
+              ${card(222, 92, 'UI Designer', 'Accra · Full-time', 0.3)}
+              ${card(432, 86, 'UX Researcher', 'Remote', 0.5)}
+              ${card(642, 74, 'Brand Intern', 'Kumasi', 0.7)}
+            </svg>`;
         }
         function careerIntroHeroApplyHTML(){
-          const steps = [['Matched', true], ['Applied', true], ['Review', false], ['Interview', false]];
+          const steps = [[393, 'Matched', true], [684, 'Applied', true], [973, 'Review', false], [1270, 'Interview', false]];
           return `
-            <div class="ci-hero">
-              <div class="ci-card flex items-center" style="left:18px;right:18px;top:20px;padding:11px 12px;gap:11px;animation-delay:.1s;">
-                <div class="flex-shrink-0 flex items-center justify-center" style="width:38px;height:38px;border-radius:12px;background:rgba(30,144,255,.14);color:${NAVY};">${Icon('briefcase','w-5 h-5')}</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold truncate" style="font-size:13px;">Product Designer</div>
-                  <div style="font-size:11px;opacity:.6;">92% match</div>
-                </div>
-                <span class="inline-flex items-center font-bold" style="gap:5px;padding:5px 10px 5px 7px;border-radius:9999px;background:rgba(22,163,74,.14);color:#16a34a;font-size:11px;animation:ciPop .4s ease-out 1.2s both;">${Icon('check','w-3 h-3')}Applied</span>
-              </div>
-              <div style="position:absolute;left:36px;right:36px;top:112px;height:3px;border-radius:9999px;background:rgba(128,128,128,.3);">
-                <div style="--ci-fill:33.3%;height:100%;width:0;border-radius:9999px;background:linear-gradient(90deg,${NAVY},${ROYAL});animation:ciFill 1s ease-out .7s forwards;"></div>
-              </div>
-              <div class="flex justify-between" style="position:absolute;left:18px;right:18px;top:98px;">
-                ${steps.map((s, i) => `
-                  <div class="flex flex-col items-center" style="width:64px;">
-                    <span class="flex items-center justify-center" style="width:30px;height:30px;border-radius:9999px;${s[1] ? `background:${NAVY};color:#fff;` : `background:var(--pill-fill,#fff);border:2px solid ${i === 2 ? NAVY : 'rgba(128,128,128,.4)'};`}${i === 2 ? 'animation:ciPulse 1.6s ease-out 1.8s infinite;' : ''}">${s[1] ? Icon('check','w-4 h-4') : ''}</span>
-                    <span style="margin-top:7px;font-size:10.5px;font-weight:600;opacity:${s[1] ? 0.9 : 0.5};">${s[0]}</span>
-                  </div>`).join('')}
-              </div>
-              <span class="ci-chip" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);white-space:nowrap;animation:ciRise .5s ease-out 1.4s both;"><span class="ci-tick">${Icon('home','w-3 h-3')}</span>A true homebody</span>
-            </div>`;
+            <svg viewBox="170 100 1330 760" width="100%" style="display:block;" role="img" aria-label="Product Designer application progress">
+              <defs>
+                <filter id="ciSh2" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#2f6fd6" flood-opacity=".16"/></filter>
+              </defs>
+              <rect x="175" y="105" width="1315" height="735" rx="150" fill="#f3f8ff"/>
+              <rect x="213" y="148" width="1242" height="652" rx="130" fill="#e2eefd"/>
+              <rect x="270" y="222" width="1123" height="235" rx="90" fill="#ffffff" filter="url(#ciSh2)"/>
+              <rect x="318" y="263" width="157" height="153" rx="42" fill="#dbe9fd"/>
+              <path d="M372 322v-8a8 8 0 0 1 8-8h34a8 8 0 0 1 8 8v8" fill="none" stroke="#1a7cff" stroke-width="9"/>
+              <rect x="350" y="322" width="94" height="62" rx="12" fill="#1a7cff"/>
+              <rect x="350" y="344" width="94" height="5" fill="#dbe9fd" opacity=".55"/>
+              <rect x="388" y="338" width="18" height="20" rx="5" fill="#ffffff"/>
+              <text x="513" y="325" font-size="52" font-weight="800" fill="#0f1f3d">Product Designer</text>
+              <text x="513" y="396" font-size="46" fill="#6b7a99">92% match</text>
+              <rect x="1050" y="288" width="301" height="105" rx="52.5" fill="#d9f3e1"/>
+              <circle cx="1108" cy="340" r="22" fill="#16a34a"/>
+              <path d="M1098 340l7 7 13-14" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="1153" y="357" font-size="46" font-weight="800" fill="#16a34a">Applied</text>
+              <rect x="445" y="571" width="190" height="9" fill="#1a7cff"/>
+              <rect x="735" y="571" width="190" height="9" fill="#bcd3f5"/>
+              <rect x="1025" y="571" width="195" height="9" fill="#c9d1de"/>
+              ${steps.map((s, i) => `
+                <circle cx="${s[0]}" cy="575" r="${s[2] ? 57 : 54}" ${s[2] ? 'fill="#1a7cff"' : `fill="#ffffff" stroke="${i === 2 ? '#1a7cff' : '#c4c9d4'}" stroke-width="9"`}/>
+                ${s[2] ? `<path d="M${s[0] - 25} 575l17 17 33-35" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+                <text x="${s[0]}" y="692" text-anchor="middle" font-size="40" font-weight="800" fill="${s[2] ? '#0f1f3d' : '#7b8497'}">${s[1]}</text>`).join('')}
+            </svg>`;
         }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
@@ -4859,9 +4888,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
             : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem. It's a homebody and will not wander off to other websites.";
-          const chips = isFirst
-            ? ['Reads your CV and preferences', 'Scores every posted opportunity', 'Tells you which to prioritize']
-            : ['Applies to your matches for you', 'Stays inside Stitch', 'Cancel any time'];
           return `
             ${careerIntroStylesHTML()}
             <div class="flex-1 overflow-y-auto">
@@ -4871,7 +4897,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-top:24px;margin-bottom:8px;">${title}</h2>
                 <div class="text-sm text-gray-500">${sub}</div>
-                ${careerIntroChipsHTML(chips)}
               </div>
             </div>
             </div>
@@ -4908,7 +4933,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           // One static screen (no scrolling): the plan cards plus a short explanation. The old
           // checklist box and the separate "Cancel any time" note are folded into that explanation.
           return `
-            <div class="apply-bg-overlay" aria-hidden="true"></div>
             <div class="flex-1 overflow-hidden">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="px-5" style="padding-top:26px;padding-bottom:max(24px, env(safe-area-inset-bottom));">
