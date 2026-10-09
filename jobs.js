@@ -4788,11 +4788,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             .ci-tick{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;background:${NAVY};color:#fff;}
             .ci-bluehero{position:relative;overflow:visible;padding:18px 14px 28px;background:transparent;}
             .ci-bluehero svg{position:relative;z-index:1;}
-            .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:18px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -6px 24px rgba(30,80,200,.10);}
+            .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:42px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -6px 24px rgba(30,80,200,.10);}
             body.dark-mode .ci-panel{background:var(--c-black,#121212);}
             .ci-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.2;font-weight:700;color:#0f1f3d;margin-bottom:12px;}
             body.dark-mode .ci-title{color:#ffffff;}
-            .ci-title .ci-hl{font-family:'Colmeak','Montserrat',sans-serif;color:#1e90ff;}
+            .ci-title .ci-hl{font-family:'Montserrat',system-ui,sans-serif;font-weight:700;color:#1e90ff;}
             .ci-sub{font-size:.95rem;line-height:1.55;color:#6b7280;max-width:340px;margin:0 auto;}
             @media (prefers-reduced-motion:reduce){.ci-hero *{animation-duration:.01s !important;animation-delay:0s !important;}}
           </style>`;
@@ -4897,7 +4897,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             ${careerIntroStylesHTML()}
             <div class="apply-bg-overlay" style="opacity:.28;"></div>
-            <div class="flex-1 overflow-y-auto" style="display:flex;flex-direction:column;">
+            <div class="flex-1 overflow-hidden" style="display:flex;flex-direction:column;min-height:0;">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div style="flex:1 1 auto;display:flex;flex-direction:column;margin-top:22px;">
               <div class="ci-bluehero">
@@ -4942,18 +4942,22 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           // One static screen (no scrolling): the plan cards plus a short explanation. The old
           // checklist box and the separate "Cancel any time" note are folded into that explanation.
           return `
-            <div class="flex-1 overflow-hidden">
+            <div class="apply-bg-overlay" style="opacity:.28;"></div>
+            <div class="flex-1 overflow-hidden" style="display:flex;flex-direction:column;min-height:0;">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:26px;padding-bottom:max(24px, env(safe-area-inset-bottom));">
+            <div class="px-5" style="padding-top:26px;flex:0 0 auto;">
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
                 <div class="text-sm text-gray-500" style="margin-bottom:18px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
                 ${careerPlanCardHTML(CAREER_PLANS.daily)}
                 ${careerPlanCardHTML(CAREER_PLANS.weekly)}
                 ${careerPlanCardHTML(CAREER_PLANS.monthly)}
-                <div class="text-sm text-gray-500" style="margin-top:6px;line-height:1.5;">Stitch Bot matches you to opportunities using your CV and preferences, applies for you inside the app, and sends fresh matches as new ones are posted. Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
               </div>
             </div>
+            <div class="cp-panel">
+              <div class="text-sm text-gray-500" style="line-height:1.5;max-width:42rem;margin:0 auto;">Stitch Bot matches you to opportunities using your CV and preferences, applies for you inside the app, and sends fresh matches as new ones are posted. Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
+            </div>
+            <style>.cp-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:6px;border-radius:32px 32px 0 0;background:#ffffff;padding:26px 24px 190px;box-shadow:0 -6px 24px rgba(30,80,200,.10);}body.dark-mode .cp-panel{background:var(--c-black,#121212);}</style>
             </div>
             `;
         }
