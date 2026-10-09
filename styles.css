@@ -3731,10 +3731,11 @@ body.dark-mode .seg-btn.on, html.dark-mode .seg-btn.on{ color:#fff; box-shadow:0
    Back = the white card pill used on the Messaging / Career Space filters and the Post
    opportunity options (.filter-pill): soft shadow, NO outline. Continue = dodger blue -> royal
    blue gradient. */
-.flow-pill-bar{ display:flex; align-items:center; gap:12px; width:100%; background:transparent; border:0; box-shadow:none; }
-.flow-pill-slot{ flex:1 1 0; min-width:0; display:flex; }
+/* Two EQUAL columns, so Back and Continue are always exactly the same width */
+.flow-pill-bar{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:12px; width:100%; background:transparent; border:0; box-shadow:none; }
+.flow-pill-slot{ min-width:0; display:block; }
 .flow-pill{
-  flex:1 1 0; min-width:0;
+  width:100%; min-width:0; box-sizing:border-box;
   display:inline-flex; align-items:center; justify-content:center; text-align:center; white-space:nowrap;
   border:0; outline:none; border-radius:9999px;
   padding:0.85rem 1.1rem; margin:0;
@@ -3742,7 +3743,11 @@ body.dark-mode .seg-btn.on, html.dark-mode .seg-btn.on{ color:#fff; box-shadow:0
   cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation;
   transition:transform .1s ease, box-shadow .15s ease, filter .1s ease, opacity .15s ease;
 }
-.flow-pill:active{ transform:scale(.97); }
+.flow-pill:active, .flow-pill.is-pressed{ transform:scale(.94); }
+.flow-pill-back:active, .flow-pill-back.is-pressed{ background:#e8ecf1; box-shadow:0 1px 4px rgba(15,23,42,0.14); }
+.flow-pill-go:active, .flow-pill-go.is-pressed{ filter:brightness(.88); box-shadow:0 3px 10px -4px rgba(65,105,225,0.6); }
+html.dark-mode .flow-pill-back:active, body.dark-mode .flow-pill-back:active,
+html.dark-mode .flow-pill-back.is-pressed, body.dark-mode .flow-pill-back.is-pressed{ background:#2c2c2c; }
 .flow-pill:disabled{ cursor:default; }
 .flow-pill-back{ background:#fff; color:#1f2937; box-shadow:0 2px 10px rgba(15,23,42,0.10); }
 .flow-pill-go{ color:#fff; background:linear-gradient(135deg, #1e90ff, #4169e1); box-shadow:0 8px 20px -6px rgba(65,105,225,0.55); }
@@ -3769,7 +3774,7 @@ html.dark-mode .flow-float-error, body.dark-mode .flow-float-error{ background:#
    .auth-cta / "Skip for now" grey pill rules. */
 #auth-gate .auth-onboarding-footer{ position:sticky; bottom:calc(env(safe-area-inset-bottom, 0px) + 12px); z-index:3; background:transparent; }
 #auth-gate .auth-onboarding-footer .flow-pill{
-  width:auto !important; margin:0 !important;
+  width:100% !important; margin:0 !important;
   padding:0.9rem 1.1rem !important; font-size:14.5px !important; font-weight:600 !important;
   border:0 !important; border-radius:9999px !important;
 }
@@ -3791,3 +3796,10 @@ body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back{
 body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-go{
   background:linear-gradient(135deg, #1e90ff, #4169e1) !important; box-shadow:0 8px 20px -6px rgba(0,0,0,0.55) !important;
 }
+
+/* Press feedback in onboarding (these beat the earlier !important background rules) */
+#auth-gate .auth-onboarding-footer .flow-pill{ transition:transform .1s ease, filter .1s ease, background-color .1s ease, box-shadow .1s ease !important; }
+#auth-gate .auth-onboarding-footer .flow-pill:active, #auth-gate .auth-onboarding-footer .flow-pill.is-pressed{ transform:scale(.94) !important; }
+#auth-gate .auth-onboarding-footer .flow-pill-back:active, #auth-gate .auth-onboarding-footer .flow-pill-back.is-pressed{ background:#e8ecf1 !important; box-shadow:0 1px 4px rgba(15,23,42,0.14) !important; }
+#auth-gate .auth-onboarding-footer .flow-pill-go:active, #auth-gate .auth-onboarding-footer .flow-pill-go.is-pressed{ filter:brightness(.88); }
+body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back:active, body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back.is-pressed{ background:#2c2c2c !important; }

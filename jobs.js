@@ -4905,28 +4905,20 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </button>`;
         }
         function careerStartPlanHTML(){
-          const plan = CAREER_PLANS[careerPlanChoice] || CAREER_PLANS.monthly;
-          const features = [
-            'Matched to opportunities using your CV and preferences',
-            'Stitch Bot applies to your matches for you (in the app only)',
-            'Fresh match updates as new opportunities are posted',
-            'Cancel any time',
-          ];
+          // One static screen (no scrolling): the plan cards plus a short explanation. The old
+          // checklist box and the separate "Cancel any time" note are folded into that explanation.
           return `
             <div class="apply-bg-overlay" aria-hidden="true"></div>
-            <div class="flex-1 overflow-y-auto">
+            <div class="flex-1 overflow-hidden">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:30px;padding-bottom:max(28px, env(safe-area-inset-bottom));">
+            <div class="px-5" style="padding-top:26px;padding-bottom:max(24px, env(safe-area-inset-bottom));">
               <div class="max-w-2xl mx-auto">
                 <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
-                <div class="text-sm text-gray-500" style="margin-bottom:22px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
+                <div class="text-sm text-gray-500" style="margin-bottom:18px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
                 ${careerPlanCardHTML(CAREER_PLANS.daily)}
                 ${careerPlanCardHTML(CAREER_PLANS.weekly)}
                 ${careerPlanCardHTML(CAREER_PLANS.monthly)}
-                <div class="rounded-3xl p-4" style="background:rgba(10,37,64,0.05);margin-top:6px;">
-                  ${careerIntroBulletsHTML(features).replace('margin-top:22px;', 'margin-top:0;')}
-                </div>
-                <div class="text-xs text-gray-400 text-center" style="margin-top:14px;">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
+                <div class="text-sm text-gray-500" style="margin-top:6px;line-height:1.5;">Stitch Bot matches you to opportunities using your CV and preferences, applies for you inside the app, and sends fresh matches as new ones are posted. Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
               </div>
             </div>
             </div>

@@ -2960,3 +2960,26 @@ window.addEventListener('online', () => { realOfflineCheck(); });
     window.closeCommentSheet = slowClose;
   });
 })();
+
+
+// Press feedback for the floating Back / Continue pills: the pill visibly shrinks and darkens the
+// instant it's touched and holds that look for a moment, so even a quick tap clearly registers.
+(function(){
+  var down = new WeakMap();
+  function pill(e){ return e.target && e.target.closest ? e.target.closest('.flow-pill') : null; }
+  document.addEventListener('pointerdown', function(e){
+    var el = pill(e); if (!el || el.disabled) return;
+    down.set(el, Date.now()); el.classList.add('is-pressed');
+  }, true);
+  function release(e){
+    var el = pill(e);
+    document.querySelectorAll('.flow-pill.is-pressed').forEach(function(p){
+      if (el && p !== el) { p.classList.remove('is-pressed'); return; }
+      var wait = Math.max(0, 110 - (Date.now() - (down.get(p) || 0)));
+      setTimeout(function(){ p.classList.remove('is-pressed'); }, wait);
+    });
+  }
+  document.addEventListener('pointerup', release, true);
+  document.addEventListener('pointercancel', release, true);
+  document.addEventListener('touchstart', function(){}, { passive: true });
+})();
