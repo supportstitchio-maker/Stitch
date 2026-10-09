@@ -4786,6 +4786,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             .ci-line{height:6px;border-radius:9999px;background:rgba(128,128,128,.28);}
             .ci-chip{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 12px 7px 8px;border-radius:9999px;background:var(--pill-fill,#fff);color:var(--pill-text,#1f2937);font-size:12.5px;font-weight:600;box-shadow:0 2px 10px rgba(30,80,200,.14);}
             .ci-tick{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9999px;background:${NAVY};color:#fff;}
+            .ci-bluehero{position:relative;overflow:hidden;padding:18px 14px 64px;background:linear-gradient(160deg,${NAVY} 0%,${ROYAL} 100%);}
+            .ci-bluehero:before,.ci-bluehero:after{content:'';position:absolute;border-radius:9999px;background:rgba(255,255,255,.08);pointer-events:none;}
+            .ci-bluehero:before{width:260px;height:260px;left:-90px;top:-70px;}
+            .ci-bluehero:after{width:200px;height:200px;right:-60px;bottom:10px;}
+            .ci-bluehero svg{position:relative;z-index:1;}
+            .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:-34px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -8px 30px rgba(30,80,200,.18);}
+            body.dark-mode .ci-panel{background:var(--c-black,#121212);}
+            .ci-title{font-size:1.65rem;line-height:1.2;font-weight:700;color:#0f1f3d;margin-bottom:12px;}
+            body.dark-mode .ci-title{color:#ffffff;}
+            .ci-title .ci-hl{color:${NAVY};}
+            .ci-sub{font-size:.95rem;line-height:1.55;color:#6b7280;max-width:340px;margin:0 auto;}
             @media (prefers-reduced-motion:reduce){.ci-hero *{animation-duration:.01s !important;animation-delay:0s !important;}}
           </style>`;
         }
@@ -4820,12 +4831,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <text x="870" y="${y + 133}" font-size="35" fill="#6b7a99">${meta}</text>
             </g>`;
           return `
-            <svg viewBox="180 150 1180 750" width="100%" style="display:block;" role="img" aria-label="CV scanned and matched to opportunities">
+            <svg viewBox="212 200 1120 640" width="100%" style="display:block;" role="img" aria-label="CV scanned and matched to opportunities">
               <defs>
                 <linearGradient id="ciPanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eefd"/><stop offset="1" stop-color="#bfd8fb"/></linearGradient>
                 <filter id="ciSh" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#2f6fd6" flood-opacity=".16"/></filter>
               </defs>
-              <rect x="195" y="165" width="1150" height="715" rx="140" fill="url(#ciPanel)"/>
               <g transform="rotate(-8 430 460)">
                 <rect x="232" y="250" width="372" height="430" rx="44" fill="#ffffff" filter="url(#ciSh)"/>
                 <circle cx="334" cy="330" r="54" fill="#cfe3fb"/>
@@ -4855,12 +4865,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerIntroHeroApplyHTML(){
           const steps = [[393, 'Matched', true], [684, 'Applied', true], [973, 'Review', false], [1270, 'Interview', false]];
           return `
-            <svg viewBox="170 100 1330 760" width="100%" style="display:block;" role="img" aria-label="Product Designer application progress">
+            <svg viewBox="196 132 1278 688" width="100%" style="display:block;" role="img" aria-label="Product Designer application progress">
               <defs>
                 <filter id="ciSh2" x="-10%" y="-20%" width="120%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#2f6fd6" flood-opacity=".16"/></filter>
               </defs>
-              <rect x="175" y="105" width="1315" height="735" rx="150" fill="#f3f8ff"/>
-              <rect x="213" y="148" width="1242" height="652" rx="130" fill="#e2eefd"/>
+              <rect x="213" y="148" width="1242" height="652" rx="110" fill="#eaf2fe" filter="url(#ciSh2)"/>
               <rect x="270" y="222" width="1123" height="235" rx="90" fill="#ffffff" filter="url(#ciSh2)"/>
               <rect x="318" y="263" width="157" height="153" rx="42" fill="#dbe9fd"/>
               <path d="M372 322v-8a8 8 0 0 1 8-8h34a8 8 0 0 1 8 8v8" fill="none" stroke="#1a7cff" stroke-width="9"/>
@@ -4884,19 +4893,21 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
-          const title = isFirst ? 'Stitch Bot finds your matches' : 'Stitch Bot can apply for you';
+          const title = isFirst ? '<span class="ci-hl">Stitch Bot</span> finds your matches' : '<span class="ci-hl">Stitch Bot</span> can apply for you';
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
             : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem. It's a homebody and will not wander off to other websites.";
           return `
             ${careerIntroStylesHTML()}
-            <div class="flex-1 overflow-y-auto">
+            <div class="flex-1 overflow-y-auto" style="display:flex;flex-direction:column;">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:26px;padding-bottom:150px;">
-              <div class="max-w-2xl mx-auto">
+            <div style="flex:1 1 auto;display:flex;flex-direction:column;margin-top:22px;">
+              <div class="ci-bluehero">
                 ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
-                <h2 class="text-2xl font-bold font-display grad-text" style="margin-top:24px;margin-bottom:8px;">${title}</h2>
-                <div class="text-sm text-gray-500">${sub}</div>
+              </div>
+              <div class="ci-panel">
+                <h2 class="ci-title font-display">${title}</h2>
+                <div class="ci-sub">${sub}</div>
               </div>
             </div>
             </div>
