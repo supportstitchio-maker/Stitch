@@ -3805,3 +3805,9 @@ body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-go{
 body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back:active, body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back.is-pressed{ background:#2c2c2c !important; }
 
 .ff-colmeak{font-family:'Colmeak','Montserrat',sans-serif;}
+
+/* Inbox "Meetings" tab: gray page fills the whole screen so there is no white strip under the cards */
+#screen:has(.meetings-fill){display:flex;flex-direction:column;}
+#screen:has(.meetings-fill) > *{flex-shrink:0;}
+#screen:has(.meetings-fill) > #inbox-list{flex:1 1 auto;display:flex;flex-direction:column;}
+#screen:has(.meetings-fill) > #inbox-list > .meetings-fill{flex:1 1 auto;}

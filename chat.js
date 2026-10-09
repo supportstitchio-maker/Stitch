@@ -7000,7 +7000,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // Inbox "Meetings" tab: Live + Scheduled options and your meetings, all under the tab
         function inlineMeetingsHTML(){
           return `
-            <div class="bg-gray-50 px-5" style="padding-top:16px;padding-bottom:24px;">
+            <div class="meetings-fill bg-gray-50 px-5" style="padding-top:16px;padding-bottom:24px;">
               ${meetingChoiceCard("pickInlineMeeting('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
               ${meetingChoiceCard("pickInlineMeeting('scheduled')", 'Scheduled meeting', 'Pick a date and time.', 'People who open the link can ask for a reminder before it starts.')}
               ${meetingsListHTML()}
