@@ -9150,31 +9150,31 @@ try {
           return `
             <div class="flex-1 overflow-y-auto px-5">
 <div class="-mx-5">${overlayHeader(label, '20px', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
-              <input type="text" id="classwork-title-input" oninput="const b=document.getElementById('classwork-create-btn'); if(b){const c=this.value.trim().length>0; b.disabled=!c; b.className='w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
+              <input type="text" id="classwork-title-input" oninput="const b=document.getElementById('classwork-create-btn'); if(b){const c=this.value.trim().length>0; b.disabled=!c; b.className='ff-colmeak w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
               <textarea id="classwork-instructions-input" placeholder="Instructions (optional)" rows="4" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               ${showScoring ? `
               <div class="grid grid-cols-2 gap-3 mb-6">
                 <div>
-                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Points</label>
+                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Points</label>
                   <input type="number" id="classwork-points-input" placeholder="100" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
+                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
                   <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="classwork-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
                   ${typedDateHintHTML()}
                 </div>
               </div>` : `
               <div class="mb-6">
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">Due date (optional)</label>
+                <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date (optional)</label>
                 <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="classwork-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
                 ${typedDateHintHTML()}
               </div>`}
               <input type="file" id="classwork-attach-input" multiple class="hidden" onchange="handleClassworkAttachFile(event)">
-              <button onclick="document.getElementById('classwork-attach-input').click()" class="flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
+              <button onclick="document.getElementById('classwork-attach-input').click()" class="ff-colmeak flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
               <div id="classwork-attach-strip" class="mt-3">${classworkAttachStripHTML()}</div>
             </div>
             <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitNewClasswork()" id="classwork-create-btn" class="w-full font-semibold py-3 rounded-full text-gray-400 bg-gray-100">Create</button>
+              <button onclick="submitNewClasswork()" id="classwork-create-btn" class="ff-colmeak w-full font-semibold py-3 rounded-full text-gray-400 bg-gray-100">Create</button>
             </div>`;
         }
 
@@ -9298,22 +9298,22 @@ try {
               <textarea id="quiz-instructions-input" placeholder="Instructions (optional)" rows="3" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
               <div class="grid grid-cols-2 gap-3 mb-6">
                 <div>
-                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Points (optional)</label>
+                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Points (optional)</label>
                   <input type="number" id="quiz-points-input" placeholder="e.g. 100" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
+                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
                   <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="quiz-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
                   ${typedDateHintHTML()}
                 </div>
               </div>
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:16px;">Questions</div>
               <div id="quiz-questions-container">${quizQuestionBlockHTML(0)}</div>
-              <button onclick="addQuizQuestionBlock()" class="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add question</button>
+              <button onclick="addQuizQuestionBlock()" class="ff-colmeak w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add question</button>
               <div style="height:24px;"></div>
             </div>
             <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitNewQuiz()" class="w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>
+              <button onclick="submitNewQuiz()" class="ff-colmeak w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>
             </div>`;
         }
 

@@ -6,7 +6,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             closeOverlay(fromPopState);
           },
           meetingCreated: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openCreateMenu(); },
-          newMeeting: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; openOverlay('meetingKind'); },
+          newMeeting: (fromPopState) => { if (fromPopState) overlayHistoryPushed = false; if (typeof meetingInline !== 'undefined' && meetingInline) { meetingInline = false; closeOverlay(fromPopState); if (typeof renderInboxTab === 'function') renderInboxTab(); return; } openOverlay('meetingKind'); },
           // Phone back on People / Class profile / My class report returns to the class page instead
           // of leaving the class
           classDetail: (fromPopState) => {

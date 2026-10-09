@@ -89,7 +89,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="inbox-filter-dropdown" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
               <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
               ${row("closeInboxFilterMenuDom();openOverlay('newMessage')", 'edit', 'New', false)}
-              ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
+              ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;meetingInline=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
               ${row("toggleInboxViewFilter('pinned')", 'pin', 'Pinned', inboxViewFilter === 'pinned')}
             </div>`;
@@ -1591,10 +1591,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function inboxFilterTab(key){
-          // "Meetings" is not an inbox list: it opens the meetings page (create + your meetings)
-          if (key === 'meetings') { openCreateMenu(); return; }
+          // "Meetings" shows Live / Scheduled + your meetings right here under the tab (no extra page)
           inboxFilter = key;
           inboxViewFilter = 'all';
+          if (key === 'meetings') loadMyUpcomingMeetings();
           renderInboxTab();
         }
 
@@ -1619,6 +1619,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const emptyLabel = (defaultText) => inboxViewFilter === 'pinned' ? 'No pinned messages.' : defaultText;
           // Empty inbox / requests / pinned: just a clean blank page, no text
           const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center bg-white"></div>`;
+          if (inboxFilter === 'meetings') return inlineMeetingsHTML();
           if (inboxFilter === 'general') {
             const list = applyView(primaryConvos);
             return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');
@@ -6929,12 +6930,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // "New meeting" goes back to the Meetings page when it was opened from there,
         // otherwise (opened from the inbox menu) back to the page you were on.
         let meetingKindFromMeetings = false;
+        // true when Live / Scheduled was picked straight from the inbox "Meetings" tab
+        let meetingInline = false;
         function meetingKindBack(){
           if (meetingKindFromMeetings) openCreateMenu(); else closeOverlay();
         }
+        // Back to the inbox Meetings tab (it no longer has its own page)
         function openCreateMenu(){
-          openOverlay('createMenu');
+          meetingKindFromMeetings = false;
+          meetingInline = false;
+          if (currentOverlayKind) closeOverlay();
+          inboxFilter = 'meetings';
+          inboxViewFilter = 'all';
+          if (typeof renderInboxTab === 'function') renderInboxTab();
           loadMyUpcomingMeetings();
+        }
+        // Back from the New / Schedule meeting form
+        function meetingNewBack(){
+          if (meetingInline) { meetingInline = false; closeOverlay(); if (typeof renderInboxTab === 'function') renderInboxTab(); }
+          else openOverlay('meetingKind');
+        }
+        function pickInlineMeeting(kind){
+          meetingKindFromMeetings = false;
+          meetingInline = true;
+          chooseMeetingKind(kind);
         }
 
         // Header + cards share the look of the "New collaboration" screen
@@ -6955,6 +6974,37 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="text-sm text-gray-500 mt-0.5 leading-snug">${desc}</div>
               ${detail ? `<p class="text-xs text-gray-400 mt-2 leading-relaxed">${detail}</p>` : ''}
             </button>`;
+        }
+
+        function meetingsListHTML(){
+          const upcoming = (myUpcomingMeetings || []);
+          if (upcoming.length) setTimeout(startMeetingCountdownTicker, 0);
+          return `
+              ${upcoming.length ? `
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-6 mb-2">Your meetings</div>
+                ${upcoming.map(m => `
+                  <div class="w-full rounded-2xl border border-gray-200 bg-white mb-3 overflow-hidden" style="box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+                    <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="w-full p-4 text-left">
+                      <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(m.title)}</div>
+                      <div class="text-xs text-gray-400"><span data-meeting-countdown="${escapeHtml(m.starts_at)}" style="font-variant-numeric:tabular-nums;">${escapeHtml(meetingCountdownText(m.starts_at))}</span>${m.is_host ? '' : (m.is_admin ? ' · Admin' : ' · Reminder on')}</div>
+                    </button>
+                    <div class="flex border-t border-gray-100">
+                      <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 py-2.5 text-xs font-semibold" style="color:${NAVY};">Copy link</button>
+                      <button onclick="shareMeetingLink('${escapeHtml(m.code)}', '${escapeHtml(m.title).replace(/'/g, '&#39;')}')" class="flex-1 py-2.5 text-xs font-semibold border-l border-gray-100" style="color:${NAVY};">Share</button>
+                    </div>
+                    ${m.is_admin ? `<button onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')" class="w-full py-2.5 text-xs font-semibold border-t border-gray-100" style="color:#ef4444;">${m.state === 'live' ? 'End meeting' : 'Cancel meeting'}</button>` : ''}
+                  </div>`).join('')}` : ''}
+`;
+        }
+
+        // Inbox "Meetings" tab: Live + Scheduled options and your meetings, all under the tab
+        function inlineMeetingsHTML(){
+          return `
+            <div class="bg-gray-50 px-5" style="padding-top:16px;padding-bottom:24px;">
+              ${meetingChoiceCard("pickInlineMeeting('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
+              ${meetingChoiceCard("pickInlineMeeting('scheduled')", 'Scheduled meeting', 'Pick a date and time.', 'People who open the link can ask for a reminder before it starts.')}
+              ${meetingsListHTML()}
+            </div>`;
         }
 
         function createMenuHTML(){
@@ -6995,7 +7045,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               const { error } = await sb.rpc('end_meeting', { p_meeting: m.id });
               if (error) throw error;
               myUpcomingMeetings = (myUpcomingMeetings || []).filter(x => x.code !== code);
-              if (currentOverlayKind === 'createMenu') { const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = createMenuHTML(); }
+              if (inboxFilter === 'meetings' && typeof rerenderInboxList === 'function') rerenderInboxList();
               loadMyUpcomingMeetings();
             } catch (e) {
               console.warn('end_meeting failed:', e);
@@ -7013,10 +7063,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             // Meetings I host or administer, plus scheduled ones I asked to be reminded about
             myUpcomingMeetings = data.map(normalizeMeeting)
               .filter(m => m && m.state !== 'ended' && (m.is_admin || (m.kind === 'scheduled' && m.reminded)));
-            if (currentOverlayKind === 'createMenu') {
-              const ov = document.getElementById('overlay');
-              if (ov) ov.innerHTML = createMenuHTML();
-            }
+            if (inboxFilter === 'meetings' && typeof rerenderInboxList === 'function') rerenderInboxList();
           } catch (e) { /* the menu simply shows no list */ }
         }
 
@@ -7040,7 +7087,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function newMeetingHTML(){
           const scheduled = meetingDraft.kind === 'scheduled';
           return `
-            ${meetingScreenHeader(scheduled ? 'Schedule meeting' : 'Live meeting', "openOverlay('meetingKind')")}
+            ${meetingScreenHeader(scheduled ? 'Schedule meeting' : 'Live meeting', "meetingNewBack()")}
             <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Meeting title</label>
               <input type="text" id="meeting-title-input" maxlength="120" value="${escapeHtml(meetingDraft.title)}" oninput="meetingDraft.title=this.value" placeholder="e.g. Physics revision session" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">
