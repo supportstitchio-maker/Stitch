@@ -7943,11 +7943,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         let adminReviewedApplications = [];
         let adminExpandedReviewedId = null;
         let adminDetailUserId = null;
-        // "Post an update" lives on its own page, opened from the + in the dashboard header.
-        let adminComposeOpen = false;
-        // Side menu (three dashes in the header) holding Post an update and every dashboard section
+        // Side menu (three dashes in the header) holding every dashboard section
         let adminMenuOpen = false;
-        let adminComposeDraft = { title: '', message: '' };
         // Newer moderation columns (see poster-moderation.sql)
         let ADMIN_NEW_COLS = ', poster_email, poster_frozen_at, poster_blocked_at, poster_moderation_note';
         async function adminFetchProfiles(build){
@@ -7971,15 +7968,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (!isCurrentUserAdmin()) return;
           adminDashboardTab = 'applications';
           adminDetailUserId = null;
-          adminComposeOpen = false;
           adminMenuOpen = false;
-          adminComposeDraft = { title: '', message: '' };
           adminHistoryLoaded = false;
           adminHistoryItems = [];
           adminReviewedApplications = [];
           adminExpandedReviewedId = null;
-          if (typeof noticeComposeImageFile !== 'undefined') noticeComposeImageFile = null;
-          if (typeof noticeComposeImagePreviewUrl !== 'undefined') noticeComposeImagePreviewUrl = null;
           openOverlay('adminDashboard');
           loadAdminDashboardData();
           // Creator payments data loads alongside so the tab counts (pending creators, payouts,
@@ -8050,7 +8043,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         function refreshAdminDashboardDom(){
           if (currentOverlayKind !== 'adminDashboard') return;
-          if (adminComposeOpen) return; // don't redraw (and drop focus) while an update is being written
           const body = document.getElementById('admin-tab-body');
           if (body) {
             body.innerHTML = adminBodyHTML();
@@ -8663,45 +8655,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               </div>
             </div>`;
         }
-        function openAdminCompose(){
-          adminComposeOpen = true;
-          const ov = document.getElementById('overlay');
-          if (ov) { ov.innerHTML = adminDashboardHTML(); const sc = ov.querySelector('.overflow-y-auto'); if (sc) sc.scrollTop = 0; }
-        }
-        function closeAdminCompose(){
-          adminComposeOpen = false;
-          const ov = document.getElementById('overlay');
-          if (ov) ov.innerHTML = adminDashboardHTML();
-        }
-        function adminComposeHTML(){
-          const hasImg = typeof noticeComposeImagePreviewUrl !== 'undefined' && noticeComposeImagePreviewUrl;
-          return `
-            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
-              <div style="margin:0 -1.25rem;">${overlayHeader('Post an update', '20px', 'closeAdminCompose()', null, {center:true, pb: '10px'})}</div>
-              <div class="max-w-2xl mx-auto pt-3">
-                <div class="rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
-                  <input id="notice-compose-title" type="text" value="${escapeHtml(adminComposeDraft.title)}" oninput="adminComposeDraft.title=this.value" placeholder="Title (optional)" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm" />
-                  <textarea id="notice-compose-message" oninput="adminComposeDraft.message=this.value" placeholder="What's the update?" rows="6" class="w-full mb-3 px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none">${escapeHtml(adminComposeDraft.message)}</textarea>
-                  <div class="mb-3">${hasImg ? `
-                    <div class="relative inline-block">
-                      <img src="${noticeComposeImagePreviewUrl}" class="rounded-xl max-h-40" />
-                      <button onclick="removeNoticeComposeImage()" class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs">✕</button>
-                    </div>` : ''}</div>
-                  <input id="notice-compose-image-input" type="file" accept="image/*" class="hidden" onchange="onNoticeComposeImageSelected(this)" />
-                  <button onclick="document.getElementById('notice-compose-image-input').click()" class="w-full mb-3 py-2.5 rounded-xl font-medium text-sm bg-gray-100">${hasImg ? 'Change image' : 'Add image (optional)'}</button>
-                  <button id="notice-compose-submit-btn" onclick="submitAdminNotice()" class="w-full py-2.5 rounded-xl font-semibold text-sm text-white notice-compose-submit-btn" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Post update</button>
-                </div>
-              </div>
-            </div>`;
-        }
-
         function openAdminMenu(){ adminMenuOpen = true; renderAdminMenu(); }
         function closeAdminMenu(){ adminMenuOpen = false; renderAdminMenu(); }
         function renderAdminMenu(){
           const slot = document.getElementById('admin-menu-slot');
           if (slot) slot.innerHTML = adminMenuOpen ? adminMenuHTML() : '';
         }
-        function adminMenuPostUpdate(){ adminMenuOpen = false; openAdminCompose(); }
         function adminMenuPick(key){
           adminMenuOpen = false;
           if (key === 'mydashboard') { openDashboardFromAdmin(); return; }
@@ -8720,9 +8679,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <div class="flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);padding-bottom:14px;">
                 <h1 class="text-lg font-bold font-display grad-text">Admin dashboard</h1>
                 <button onclick="closeAdminMenu()" aria-label="Close menu" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              </div>
-              <div class="px-3 pb-2 flex-shrink-0">
-                <button onclick="adminMenuPostUpdate()" class="w-full flex items-center gap-2 px-3 py-3 text-sm font-bold" style="border-bottom:1px solid rgba(10,37,64,0.07);color:${NAVY};">${Icon('plus','w-4 h-4')} Post an update</button>
               </div>
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pb-1 flex-shrink-0">Sections</div>
               <div class="flex-1 overflow-y-auto px-3 pb-4 no-scrollbar">${rows}</div>
@@ -8743,7 +8699,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         function adminDashboardHTML(){
-          if (adminComposeOpen) return adminComposeHTML();
           if (adminDetailUserId) { const d = adminPosterDetailHTML(); if (d) return d; }
           const allJobsList = allJobs();
           const userPostedCount = allJobsList.filter(j => j.createdByRole === 'user').length;

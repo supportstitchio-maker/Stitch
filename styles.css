@@ -425,7 +425,6 @@
         body.dark-mode #rp-reopen-tab { background:var(--c-onyx) !important; border-color:var(--c-tapshoe) !important; box-shadow:-2px 0 8px rgba(0,0,0,0.4) !important; color:#ffffff !important; }
         /* Admin dashboard "Post update" pill: bright navy/royal gradient reads fine in light mode,
            but looks glaring against a dark screen */
-        body.dark-mode .notice-compose-submit-btn { background:var(--c-charcoal) !important; }
         body.dark-mode .pill-cta:active { box-shadow:0 2px 8px rgba(0,0,0,0.5) !important; }
         body.dark-mode .pill-cta:hover { box-shadow:0 8px 20px rgba(0,0,0,0.55) !important; }
         body.dark-mode .flip-card { background:linear-gradient(135deg,var(--c-onyx),var(--c-black)) !important; border-color:var(--c-tapshoe) !important; }
