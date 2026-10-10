@@ -601,6 +601,19 @@
         }
 
         const STORY_ITEM_DURATION_MS = 60000;
+        // "Just now" / "9 minutes ago" / "2 hours ago" label shown under the name in glimpse viewers
+        function glimpseAgeLabel(ts){
+          const t = Number(ts);
+          if (!t || !isFinite(t)) return '';
+          const mins = Math.max(0, Math.floor((Date.now() - t) / 60000));
+          if (mins < 1) return 'Just now';
+          if (mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+          const hrs = Math.floor(mins / 60);
+          if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+          const days = Math.floor(hrs / 24);
+          return days + (days === 1 ? ' day ago' : ' days ago');
+        }
+
         let currentStoryId = null;
         let currentItemIndex = 0;
         let storyTimer = null;
@@ -1108,8 +1121,10 @@
               <div class="flex items-center justify-between px-4 flex-shrink-0">
                 <button onclick="storyTapNext()" class="flex items-center gap-2">
                   <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center overflow-hidden" style="background:transparent;border-color:${fg}99;">${(s.mine && profileData.photo) ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : (!s.mine && s.photo) ? `<img src="${s.photo}" class="w-full h-full object-cover">` : silhouetteIcon(icon, 'w-4 h-4 ' + (iconClass||''))}</div>
-                  <div class="text-lg font-semibold" style="color:${fg};">${escapeHtml(s.name)}</div>
-                  <div class="text-sm" style="color:${fg};opacity:0.6;">2h</div>
+                  <div class="text-left min-w-0">
+                    <div class="text-lg font-semibold leading-tight" style="color:${fg};">${escapeHtml(s.name)}</div>
+                    <div class="text-sm leading-tight" style="color:${fg};opacity:0.7;">${glimpseAgeLabel(item.createdAt || (s.mine ? item.id : 0))}</div>
+                  </div>
                 </button>
                 <button onclick="toggleStoryMenu()" aria-label="Glimpse options" class="h-8 flex items-center justify-end flex-shrink-0" style="width:32px;color:${fg};">${IconBold('dashesShortRight','w-6 h-6')}</button>
               </div>
@@ -1402,7 +1417,12 @@
             if (v) { try { v.pause(); } catch (err) {} }
           },
           onResume: () => { if (typeof myGlimpseResumePlayback === 'function') myGlimpseResumePlayback(); },
-          onClose: () => { closeOverlay(); },
+          // Pulling your own glimpse down returns to the "My glimpse" page rather than leaving
+          onClose: () => {
+            if (typeof stopGlimpsePlayback === 'function') stopGlimpsePlayback();
+            try { myGlimpseViewingId = null; myGlimpseViewersOpen = false; } catch (err) {}
+            if (typeof openMyGlimpses === 'function') openMyGlimpses(); else closeOverlay();
+          },
         };
         function myGlimpsePullStart(e){ glimpsePullStart(e, MY_GLIMPSE_PULL_CFG); }
 
@@ -1813,6 +1833,7 @@
               (byAuthor[row.user_id] = byAuthor[row.user_id] || []).push({
                 id: row.id,
                 ...row.data,
+                createdAt: (row.created_at ? Date.parse(row.created_at) : 0) || (row.data && row.data.createdAt) || 0,
               });
             });
 
@@ -2326,7 +2347,7 @@
                 <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:${avatarBg};color:${fg};">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : silhouetteIcon(g.icon,'w-4 h-4')}</div>
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-semibold truncate">My glimpse</div>
-                  <div class="text-xs" style="color:${fg};opacity:0.6;">${g.timeLabel}</div>
+                  <div class="text-xs" style="color:${fg};opacity:0.7;">${glimpseAgeLabel(g.createdAt || g.id) || g.timeLabel}</div>
                 </div>
               </div>
               ${g.caption && viewUrl ? `
