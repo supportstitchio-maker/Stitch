@@ -2217,7 +2217,7 @@ let userPoints = 0;
         function openAppAlertModal(message, title, onClose){
           const el = document.createElement('div');
           el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-start gap-3';
-          el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:calc(100% - 32px); max-width:480px; box-shadow:0 10px 30px rgba(0,0,0,.18);';
+          el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:max-content; min-width:min(220px, calc(100% - 32px)); max-width:min(480px, calc(100% - 32px)); box-shadow:0 10px 30px rgba(0,0,0,.18);';
           const hasTitle = !!(title && title.trim());
           el.innerHTML = `
             <div class="min-w-0 flex-1 text-center">

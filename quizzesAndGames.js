@@ -93,7 +93,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const sb = getSupabaseClient();
           if (!sb) return false;
           try {
-            const { error } = await sb.from(CHALLENGE_INVITES_TABLE).insert({ code, subject, time_per_q: timePerQ, questions, joined: false });
+            let { error } = await sb.from(CHALLENGE_INVITES_TABLE).insert({ code, subject, time_per_q: timePerQ, questions, joined: false });
+            if (error) {
+              // one quick retry (flaky mobile connections); a duplicate code is not retried
+              if (!/duplicate|unique/i.test(error.message || '')) {
+                await new Promise(r => setTimeout(r, 600));
+                ({ error } = await sb.from(CHALLENGE_INVITES_TABLE).insert({ code, subject, time_per_q: timePerQ, questions, joined: false }));
+              }
+            }
             if (error) { console.warn('Challenge invite create failed:', error.message); return false; }
             return true;
           } catch (err) {
@@ -113,6 +120,35 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             console.warn('Challenge invite lookup failed:', err);
             return null;
           }
+        }
+
+        // Join through the server so every player gets the identical stored question set and is
+        // recorded as a participant (supports more than one friend per challenge).
+        async function joinChallengeRemote(code){
+          const sb = getSupabaseClient();
+          if (!sb) return null;
+          try {
+            const name = (typeof profileData !== 'undefined' && profileData && profileData.name) || '';
+            const { data, error } = await sb.rpc('join_challenge', { p_code: code, p_name: name });
+            if (error) {
+              console.warn('join_challenge RPC failed, falling back:', error.message);
+              if (/full/i.test(error.message || '')) return { full: true };
+              return undefined; // signal: use the legacy path
+            }
+            const row = Array.isArray(data) ? data[0] : data;
+            return row || null;
+          } catch (err) { console.warn('join_challenge threw:', err); return undefined; }
+        }
+
+        // Lightweight poll: who joined + scores. No questions payload.
+        async function fetchChallengeStateRemote(code){
+          const sb = getSupabaseClient();
+          if (!sb) return null;
+          try {
+            const { data, error } = await sb.rpc('challenge_state', { p_code: code });
+            if (error) return null;
+            return data || null;
+          } catch (err) { return null; }
         }
 
         async function markChallengeInviteJoinedRemote(code){
@@ -144,8 +180,12 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            const field = role === 'inviter' ? 'inviter_score' : 'friend_score';
-            await sb.from(CHALLENGE_INVITES_TABLE).update({ [field]: score }).eq('code', code);
+            const name = (typeof profileData !== 'undefined' && profileData && profileData.name) || '';
+            const { error } = await sb.rpc('submit_challenge_score', { p_code: code, p_score: score, p_name: name });
+            if (error) {
+              const field = role === 'inviter' ? 'inviter_score' : 'friend_score';
+              await sb.from(CHALLENGE_INVITES_TABLE).update({ [field]: score }).eq('code', code);
+            }
           } catch (err) {
             console.warn('Submitting challenge score failed:', err);
           }
@@ -170,8 +210,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           await submitChallengeScoreRemote(code, role, examScore());
           const opponentField = role === 'inviter' ? 'friend_score' : 'inviter_score';
           const check = async () => {
-            const row = await fetchChallengeScoresRemote(code);
-            const score = row ? row[opponentField] : null;
+            let score = null;
+            const st = await fetchChallengeStateRemote(code);
+            if (st && Array.isArray(st.participants)) {
+              const others = st.participants.filter(p => !p.me && p.score !== null && p.score !== undefined).map(p => p.score);
+              if (role !== 'inviter' && st.inviter_score !== null && st.inviter_score !== undefined) others.push(st.inviter_score);
+              if (others.length) score = Math.max.apply(null, others);
+            } else {
+              const row = await fetchChallengeScoresRemote(code);
+              score = row ? row[opponentField] : null;
+            }
             if (score !== null && score !== undefined) {
               stopChallengeScorePolling();
               challengeOpponentScore = score;
@@ -202,7 +250,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
-          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions); 
+          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
+            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
+          });
           openChallengeModal(inviteFriendHTML(code));
         }
 
@@ -325,6 +375,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function startWaitingForChallengeFriend(code){
           waitingForChallengeFriendCode = code;
+          const waitStartedAt = Date.now();
           openChallengeModal(waitingForChallengeFriendHTML());
           clearInterval(waitingForChallengeFriendTimer);
           waitingForChallengeFriendTimer = setInterval(async () => {
@@ -333,13 +384,19 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             let joined = !!(invite && invite.joined);
             let remote = null;
             if (!joined) {
-              remote = await fetchChallengeInviteRemote(code);
-              if (remote && remote.joined) joined = true;
+              const st = await fetchChallengeStateRemote(code);
+              if (st && Number(st.joined) > 0) joined = true;
+              else if (!st) {
+                remote = await fetchChallengeInviteRemote(code);
+                if (remote && remote.joined) joined = true;
+              }
             }
+            if (!joined && Date.now() - waitStartedAt > 15 * 60 * 1000) { cancelWaitingForChallengeFriend(); return; }
             if (joined) {
               clearInterval(waitingForChallengeFriendTimer);
               waitingForChallengeFriendTimer = null;
-              const questions = invite ? invite.questions : (remote && remote.questions) || [];
+              let questions = invite ? invite.questions : (remote && remote.questions) || [];
+              if (!questions.length) { const full = await fetchChallengeInviteRemote(code); questions = (full && full.questions) || []; }
               delete pendingChallengeInvites[code];
               activeChallengeCode = code;
               activeChallengeRole = 'inviter';
@@ -347,7 +404,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               dismissChallengeModalForExam();
               startChallengeWithQuestions(questions, 'All Resources', challengeConfig.timePerQ);
             }
-          }, 800);
+          }, 2000);
         }
 
         function waitingForChallengeFriendHTML(){
@@ -412,9 +469,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
 
           openChallengeModal(joinGameCodeLoadingHTML());
-          const remote = await fetchChallengeInviteRemote(code);
+          let remote = await joinChallengeRemote(code);
+          if (remote && remote.full) { openChallengeModal(joinChallengeCodeHTML('That challenge is full.')); return false; }
+          if (remote === undefined) {
+            // RPC unavailable: legacy lookup + mark joined
+            remote = await fetchChallengeInviteRemote(code);
+            if (remote) await markChallengeInviteJoinedRemote(code);
+          }
           if (!remote) { openChallengeModal(joinChallengeCodeHTML("We couldn't find that code. Check it and try again.")); return false; }
-          await markChallengeInviteJoinedRemote(code);
           activeChallengeCode = code;
           activeChallengeRole = 'friend';
           challengeOpponentScore = null;
@@ -1721,7 +1783,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
-          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions);
+          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
+            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
+          });
           openChallengeModal(challengeCreatedHTML(code));
         }
 
