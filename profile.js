@@ -386,7 +386,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               ${asOverlay
                 ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
                 : `<button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
-              <span id="profile-username-el" class="nm-wrap nm-fit font-bold" data-fit="13" style="flex:1;min-width:0;font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;">${profileUsernameHTML()}</span>
+              <span id="profile-username-el" class="nm-wrap font-bold" style="flex:1;min-width:0;font-family:'Montserrat',sans-serif;font-size:16px;">${profileUsernameHTML()}</span>
               <div class="flex items-center rounded-full" style="background:rgba(65,105,225,0.08)">
                 <button onclick="openOverlay('profileMenu')" class="w-8 h-8 flex items-center justify-center">${gradIcon(IconBold('settings','w-4 h-4'))}</button>
               </div>
