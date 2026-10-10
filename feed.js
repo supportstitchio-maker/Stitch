@@ -1409,14 +1409,36 @@
         function storySwipeEnd(e){ glimpsePullEnd(e); }
 
         // Same slow pull-down for your own glimpse ("My glimpse")
+        // Shows the My glimpse page behind the viewer while it is pulled down
+        function showMyGlimpsePullBackdrop(){
+          const ov = document.getElementById('overlay');
+          const screen = document.getElementById('my-glimpse-viewer-screen');
+          if (!ov || !screen || document.getElementById('my-glimpse-pull-backdrop')) return;
+          const bd = document.createElement('div');
+          bd.id = 'my-glimpse-pull-backdrop';
+          bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;background:#fff;';
+          bd.innerHTML = myGlimpsesHTML().replace('data-my-glimpses-root="1"', 'data-pull-backdrop="1"');
+          ov.insertBefore(bd, ov.firstChild);
+          screen.style.position = 'relative';
+          screen.style.zIndex = '1';
+        }
+        function removeMyGlimpsePullBackdrop(){
+          const bd = document.getElementById('my-glimpse-pull-backdrop');
+          if (bd) bd.remove();
+        }
         const MY_GLIMPSE_PULL_CFG = {
           screenId: 'my-glimpse-viewer-screen',
           onPause: () => {
+            showMyGlimpsePullBackdrop();
             if (typeof pauseMyGlimpseBar === 'function') pauseMyGlimpseBar();
             const v = (typeof myGlimpseVideoEl === 'function') ? myGlimpseVideoEl() : null;
             if (v) { try { v.pause(); } catch (err) {} }
           },
-          onResume: () => { if (typeof myGlimpseResumePlayback === 'function') myGlimpseResumePlayback(); },
+          onResume: () => {
+            // let the spring-back finish before the page behind is removed
+            setTimeout(removeMyGlimpsePullBackdrop, 330);
+            if (typeof myGlimpseResumePlayback === 'function') myGlimpseResumePlayback();
+          },
           // Pulling your own glimpse down returns to the "My glimpse" page rather than leaving
           onClose: () => {
             if (typeof stopGlimpsePlayback === 'function') stopGlimpsePlayback();
@@ -2043,9 +2065,9 @@
                 ${myGlimpses.length === 0 ? '' : myGlimpses.map(myGlimpseRow).join('')}
                 <div class="${myGlimpses.length === 0 ? 'flex-1 flex flex-col items-center justify-center' : ''}" style="${myGlimpses.length === 0 ? 'padding-bottom:12vh;' : ''}">
                 <div class="px-6 pt-2 pb-4 flex justify-center">
-                  <button type="button" onclick="composeGlimpseMedia()" class="glimpse-add-pill flex items-center justify-center gap-2.5 rounded-full px-8 py-3" style="color:${NAVY};background:rgba(10,37,64,0.08);cursor:pointer;min-width:min(200px,100%);">
+                  <button type="button" onclick="composeGlimpseMedia()" class="glimpse-add-pill filter-pill nowrap-pill justify-center font-display" style="padding:12px 30px;gap:8px;min-width:min(200px,100%);">
                     ${Icon('addGlimpseOutline','w-5 h-5')}
-                    <span class="text-sm font-semibold">Add glimpse</span>
+                    <span>Add glimpse</span>
                   </button>
                 </div>
                 <div class="px-6 pb-6 text-center text-xs text-gray-400 leading-relaxed">
