@@ -3195,6 +3195,38 @@
           });
         }
 
+        // Feed videos always START with sound. The person can mute one while it plays (that choice
+        // is remembered only until the video scrolls away), and the next time it plays it is back
+        // on sound. If the browser refuses sound autoplay, the video plays muted instead and is
+        // switched back to sound on the person's very first tap/scroll/key press.
+        function syncFeedMuteIcon(video){
+          const wrap = video.closest && video.closest('.feed-video-wrap');
+          const muteBtn = wrap && wrap.querySelector('.feed-video-mutebtn');
+          if (muteBtn) {
+            const big = muteBtn.style.width === '2.5rem';
+            muteBtn.innerHTML = Icon(video.muted ? 'volumeOff' : 'volume', big ? 'w-5 h-5 text-white' : 'w-4 h-4 text-white');
+          }
+        }
+
+        let feedSoundGestureArmed = false;
+        function armFeedSoundOnGesture(){
+          if (feedSoundGestureArmed) return;
+          feedSoundGestureArmed = true;
+          const evs = ['touchstart','touchend','pointerdown','click','keydown'];
+          const unmute = function(){
+            evs.forEach(ev => document.removeEventListener(ev, unmute, true));
+            feedSoundGestureArmed = false;
+            document.querySelectorAll('video[data-auto-muted="1"]').forEach(v => {
+              delete v.dataset.autoMuted;
+              if (v.dataset.userMuted === '1' || !v.isConnected || v.paused) return;
+              v.muted = false;
+              v.volume = 1;
+              syncFeedMuteIcon(v);
+            });
+          };
+          evs.forEach(ev => document.addEventListener(ev, unmute, true));
+        }
+
         function attemptFeedVideoPlay(video, btn){
           // The Home feed (which lives in #screen, behind #auth-gate) can be pre-rendered before
           // login/signup finishes, so its IntersectionObserver can fire while the auth gate is still
@@ -3208,6 +3240,12 @@
           const overlayShowing = activeOv && !activeOv.classList.contains('hidden') && activeOv.innerHTML.trim() !== '';
           if (overlayShowing && !activeOv.contains(video)) return;
           pauseOtherFeedVideos(video);
+          // Sound on, unless the person muted this very video themselves while it was playing
+          if (video.dataset.userMuted !== '1') { video.muted = false; video.volume = 1; }
+          // Feed videos are loaded lazily (preload=metadata): make sure the real video data is
+          // coming, otherwise the post can sit on its still picture
+          if (video.preload !== 'auto') { try { video.preload = 'auto'; } catch (e) {} }
+          syncFeedMuteIcon(video);
           const playPromise = video.play();
           if (playPromise && typeof playPromise.catch === 'function') {
             playPromise.catch((err) => {
@@ -3215,10 +3253,12 @@
               // pauseAllOverlayMedia / setupFeedVideoAutoplay) can call pause() while this play() is
               if (err && err.name === 'AbortError') return;
               if (!video.muted) {
+                // The browser blocked autoplay with sound: play muted for now and bring the
+                // sound back on the first tap/scroll
                 video.muted = true;
-                const wrap = video.closest('.feed-video-wrap');
-                const muteBtn = wrap && wrap.querySelector('.feed-video-mutebtn');
-                if (muteBtn) muteBtn.innerHTML = Icon('volumeOff', 'w-4 h-4 text-white');
+                video.dataset.autoMuted = '1';
+                syncFeedMuteIcon(video);
+                armFeedSoundOnGesture();
                 video.play().catch(() => {});
               }
             });
@@ -3685,6 +3725,7 @@
                   if (btn) btn.style.opacity = '1';
                 }
                 delete video.dataset.userPaused;
+                delete video.dataset.userMuted;
               }
             });
           }, { threshold: [0, 0.15, 0.3, 0.5, 0.6, 0.8, 1] });
@@ -3708,7 +3749,12 @@
           const btn = wrap.querySelector('.feed-video-mutebtn') || document.getElementById('mutebtn-' + wrapId);
           if (!video) return;
           video.muted = !video.muted;
-          if (btn) btn.innerHTML = Icon(video.muted ? 'volumeOff' : 'volume', 'w-4 h-4 text-white');
+          delete video.dataset.autoMuted;
+          if (video.muted) video.dataset.userMuted = '1'; else { delete video.dataset.userMuted; video.volume = 1; }
+          if (btn) {
+            const big = btn.style.width === '2.5rem';
+            btn.innerHTML = Icon(video.muted ? 'volumeOff' : 'volume', big ? 'w-5 h-5 text-white' : 'w-4 h-4 text-white');
+          }
         }
 
         // ---- Post media grid layout (multi-image posts) ----
@@ -5866,12 +5912,13 @@
           const items = postMediaItemsList(post);
           const item = items[index] || items[0] || null;
           const isVideo = !!item && item.type === 'video';
-          const videoAttrs = 'playsinline webkit-playsinline muted loop disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" onloadedmetadata="this.play().catch(function(){})"';
+          const videoAttrs = 'playsinline webkit-playsinline loop disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen" onloadedmetadata="attemptFeedVideoPlay(this)"';
           const galUid = 'gvp' + post.id + '-' + index;
           return `
             <div class="relative w-full h-full bg-black overflow-hidden" id="gallery-post-${post.id}" ontouchstart="galleryTouchStart(event)" ontouchend="galleryTouchEnd(event, ${post.id}, ${index})">
-              <div class="absolute inset-0 ${isVideo ? 'feed-video-wrap' : ''}" ${isVideo ? `id="${galUid}" onclick="(function(v){ if(v){ v.paused ? v.play().catch(function(){}) : v.pause(); } })(this.querySelector('video'))"` : ''}>
+              <div class="absolute inset-0 ${isVideo ? 'feed-video-wrap' : ''}" ${isVideo ? `id="${galUid}" onclick="(function(v){ if(v){ v.paused ? attemptFeedVideoPlay(v) : v.pause(); } })(this.querySelector('video'))"` : ''}>
                 ${framedMediaLayerHtml(item, isVideo ? videoAttrs : '')}
+                ${isVideo ? `<button type="button" onclick="event.stopPropagation(); toggleFeedVideoMute('${galUid}')" class="feed-video-mutebtn absolute flex items-center justify-center rounded-full" style="bottom:calc(env(safe-area-inset-bottom, 0px) + 84px);right:14px;width:2.5rem;height:2.5rem;background:rgba(0,0,0,0.45);z-index:16;">${Icon('volume','w-5 h-5 text-white')}</button>` : ''}
                 ${isVideo ? scrubStripHtml(galUid) : ''}
               </div>
 

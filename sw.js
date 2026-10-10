@@ -32,7 +32,12 @@ self.addEventListener('activate', (event) => {
 
 function isMediaRequest(request){
   if (request.method !== 'GET') return false;
-  if (request.destination === 'image' || request.destination === 'video' || request.destination === 'audio') return true;
+  // Videos/audio are never handled here: the browser asks for them in byte ranges (206) and the
+  // Cache API can neither store those nor answer them correctly, which left feed videos stuck on
+  // their still picture. Let the browser stream them straight from the network.
+  if (request.destination === 'video' || request.destination === 'audio') return false;
+  if (request.headers && request.headers.has('range')) return false;
+  if (request.destination === 'image') return true;
   try {
     const url = new URL(request.url);
     // Supabase Storage public object URLs, wherever the project is hosted.
