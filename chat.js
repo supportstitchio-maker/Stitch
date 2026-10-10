@@ -6397,9 +6397,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           st.textContent = `
 
             body{--cu-bg:#f8fafc;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e5eaf2;--cu-sheet:#ffffff;--cu-bar:#f1f3f6;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
-            body.dark-mode{--cu-bg:#0b0d12;--cu-fg:#f1f5f9;--cu-sub:#94a3b8;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#242a36;--cu-tile:#1a1f29;--cu-sheet:#161a22;--cu-bar:#161a22;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
+            body.dark-mode{--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:#9a9a9a;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#2b2b2b;--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-bar:#1e1e1e;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
             ::view-transition-old(root),::view-transition-new(root){animation-duration:.18s;animation-timing-function:ease-out;}
             .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
+            body.dark-mode .cu-float,body.dark-mode .cu-bsheet,body.dark-mode .cu-pip,body.dark-mode .cu-corner.cu-hand,body.dark-mode .cu-toast,body.dark-mode .cu-ctl.accept .cu-ctl-btn{box-shadow:none;}
+            body.dark-mode .cu-float,body.dark-mode .cu-corner.cu-hand{border:1px solid var(--cu-line);}
+            body.dark-mode .cu-bsheet{border-top:1px solid var(--cu-line);}
+            body.dark-mode .cu-toast{background:var(--cu-sheet);border:1px solid var(--cu-line);color:var(--cu-fg);}
             .cu-float{background:var(--cu-sheet);color:var(--cu-fg);box-shadow:0 4px 14px rgba(0,0,0,.18);}
             .cu-float .cu-float-sub{color:var(--cu-fg);}
             .cu-backdrop{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.35);animation:cuFade .2s ease;}
@@ -7932,7 +7936,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 </span>
               </button>`;
             const preview = `
-              <div class="w-full rounded-3xl overflow-hidden relative" style="background:#0f1115;max-width:230px;aspect-ratio:3/4;flex:none;margin:auto 0;">
+              <div class="w-full rounded-3xl overflow-hidden relative" style="background:#1e1e1e;max-width:230px;aspect-ratio:3/4;flex:none;margin:auto 0;">
                 <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
                 ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-3" style="color:#9ca3af;"><div class="flex items-center justify-center overflow-hidden" style="width:96px;height:96px;border-radius:50%;background:#e5e7eb;">${myCallAvatarHTML('w-24 h-24')}</div><div class="text-sm font-semibold">Camera is off</div></div>`}
               </div>`;
@@ -8234,7 +8238,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof liveLectureState !== 'undefined' && liveLectureState && liveLectureState.connected && liveLectureState.lectureId) {
             const classId = liveLectureState.classId, lid = String(liveLectureState.lectureId);
             const cls = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === classId) : null;
-            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Session chat', noun: 'session', extra: { class_id: classId },
+            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Messaging', noun: 'session', extra: { class_id: classId },
               join: async (sb) => { const r = await sb.rpc('join_lecture_chat', { p_class: classId, p_lecture: lid }); if (r.error) throw r.error; },
               float: (id, t, n) => { if (typeof addLectureFloatingComment === 'function') addLectureFloatingComment(id, t, n); } };
           }
@@ -8364,10 +8368,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           page.innerHTML = `
             <div style="display:flex;align-items:center;gap:10px;padding:calc(var(--top-safe-pad, env(safe-area-inset-top,0px)) + 10px) 12px 10px;border-bottom:1px solid var(--cu-line);flex-shrink:0;">
               <button onclick="closeMeetingChatPage()" title="Back to call" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);color:var(--cu-fg);">${Icon('arrowLeft','w-5 h-5')}</button>
-              <div style="min-width:0;flex:1;">
-                <div style="font-size:16px;font-weight:700;" class="truncate">${escapeHtml(ctx.heading)}</div>
-                <div style="font-size:12px;color:var(--cu-sub);" class="truncate">${escapeHtml(ctx.title)} \u00b7 everyone in the ${ctx.noun} can see this</div>
+              <div style="min-width:0;flex:1;text-align:center;">
+                <div style="font-size:18px;font-weight:700;font-family:'Colmeak','Montserrat',sans-serif;" class="truncate">${escapeHtml(ctx.heading)}</div>
               </div>
+              <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>
             <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
             <div style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
