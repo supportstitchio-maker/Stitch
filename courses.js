@@ -1579,12 +1579,7 @@ try {
                   ${Icon('plus','w-4 h-4')} Create a Course
                 </button>
               </div>` : ''}
-            ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : `
-              <div class="flex flex-col items-center justify-center text-center px-3" style="min-height:calc(100dvh - 400px);">
-                <div class="w-20 h-20 flex items-center justify-center text-[${NAVY}]" style="margin-bottom:20px;">${Icon('book','w-9 h-9')}</div>
-                <div class="text-base font-semibold text-gray-600">No courses yet</div>
-                <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Structured, self-paced courses will show up here once one is published.</div>
-              </div>`}`;
+            ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : ''}`;
         }
 
         function courseCardHTML(c){
@@ -6331,7 +6326,7 @@ try {
           if ('Notification' in window && Notification.permission === 'granted') {
             try { new Notification(title, { body, tag: 'lecture-countdown-' + l.id }); } catch (e) {}
           }
-          pushInAppNotification(title, body);
+          pushBellNotification(title, body);
         }
         // A scheduled meeting that nobody has started or joined within a day of its start time is
         // dropped from the schedule. Only the teacher's device deletes it (and gets the notice);
@@ -6384,7 +6379,7 @@ try {
             if ('Notification' in window && Notification.permission === 'granted') {
               try { new Notification(title, { body, tag: 'lecture-expired' }); } catch (e) {}
             }
-            pushInAppNotification(title, body);
+            pushBellNotification(title, body);
           }
         }
 
@@ -10394,6 +10389,14 @@ try {
           }
         }
 
+        // A real notification: shows the banner AND lands in the bell list (red badge + ring)
+        function pushBellNotification(title, body, extra){
+          try {
+            if (typeof addNotif === 'function') addNotif(Object.assign({ type: 'info', icon: 'bell', name: title, message: body }, extra || {}));
+          } catch (e) {}
+          pushInAppNotification(title, body);
+        }
+
         function pushInAppNotification(title, body){
           const el = document.createElement('div');
           el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-start gap-3';
@@ -10414,9 +10417,9 @@ try {
             if (myId) sendPushTo(myId, { title, body, tag: 'study-reminder' });
           });
           if ('Notification' in window && Notification.permission === 'granted') {
-            try { new Notification(title, { body }); return; } catch (e) {  }
+            try { new Notification(title, { body }); addNotif({ type: 'info', icon: 'bell', name: title, message: body }); return; } catch (e) {  }
           }
-          pushInAppNotification(title, body);
+          pushBellNotification(title, body);
         }
 
         function checkStudyPlannerNotifications(){

@@ -847,6 +847,7 @@
         }
         function storyPressEnd(e, dir){
           if (e && e.cancelable) e.preventDefault();
+          if (glimpsePullActive) return;
           const heldMs = Date.now() - storyPressStartedAt;
           if (heldMs < STORY_TAP_MAX_MS) {
             if (dir === 'prev') storyTapPrev(); else storyTapNext();
@@ -855,6 +856,7 @@
           }
         }
         function storyPressCancel(){
+          if (glimpsePullActive) return;
           resumeCurrentStoryTimer();
         }
 
@@ -923,11 +925,15 @@
           if (thumb && String(thumb).indexOf('blob:') === 0) thumb = null;
           const bgStyle = (item && !item.mediaUrl && item.bgStyle) ? String(item.bgStyle) : '';
           const bg = bgStyle.indexOf('#ffffff') !== -1 ? 'light' : (bgStyle.indexOf('#000000') !== -1 ? 'dark' : 'brand');
+          let mediaUrl = (item && item.mediaUrl) ? String(item.mediaUrl) : null;
+          if (mediaUrl && mediaUrl.indexOf('blob:') === 0) mediaUrl = null;
           return {
             type: 'stitch/glimpse',
             authorName: s.name || '',
             caption: ((item && item.caption) || '').trim().slice(0, 200),
             thumbnail: thumb,
+            mediaUrl,
+            mediaType: mediaUrl ? (item.mediaType === 'video' ? 'video' : 'image') : undefined,
             bg,
           };
         }
@@ -1130,7 +1136,7 @@
                   <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'prev')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" oncontextmenu="return false" aria-label="Previous glimpse"></button>
                   <button onpointerdown="storyPressStart(event)" onpointerup="storyPressEnd(event,'next')" onpointercancel="storyPressCancel()" onpointerleave="storyPressCancel()" class="h-full" style="width:50%;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;" oncontextmenu="return false" aria-label="Next glimpse"></button>
                 </div>
-                <div id="story-reply-bar" class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 12px);">
+                <div id="story-reply-bar" class="absolute bottom-0 px-4 py-4 flex items-end justify-center gap-2" style="left:0;right:0;padding-bottom:calc(env(safe-area-inset-bottom, 12px) + 40px);">
                   <textarea id="story-reply-input" rows="1" placeholder="Send message" oninput="handleStoryReplyTyping()" onfocus="pauseStoryTimer()" onblur="handleStoryReplyBlur()" class="flex-1 min-w-0 text-sm text-white placeholder-gray-300" style="background:#1f2937;border:1px solid #374151;outline:none;resize:none;padding:0.5rem 0.875rem;border-radius:9999px;max-height:6.5rem;overflow-y:auto;line-height:1.3;"></textarea>
                   <button id="story-send-btn" onclick="storyReplyPrimaryAction()" class="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-white bg-[${NAVY}]">${Icon('mic','w-4 h-4')}</button>
                 </div>
@@ -1228,7 +1234,7 @@
             authorName: s.name || '',
             attachment: buildGlimpseReplyAttachment(s, item)
           };
-          openShareGlimpse(gid);
+          openShareGlimpse(gid, true);
         }
 
         const GLIMPSE_REPORT_REASONS = [
@@ -1317,35 +1323,88 @@
           }
         }
 
-        // Swipe down anywhere on the glimpse to close it (no X button any more)
-        let storySwipe = null;
-        function storySwipeStart(e){
+        // Pull down anywhere on a glimpse to close it. The screen follows the finger with some
+        // resistance (it shrinks and fades a little), and on release it either glides away slowly
+        // or springs back -- nothing snaps shut instantly.
+        let glimpsePull = null;
+        let glimpsePullActive = false;
+        function glimpsePullStart(e, cfg){
           const t = e.touches && e.touches[0];
-          if (!t || (e.touches.length > 1)) { storySwipe = null; return; }
-          if (e.target && e.target.closest && e.target.closest('#story-reply-bar')) { storySwipe = null; return; }
-          storySwipe = { x: t.clientX, y: t.clientY, dragging: false };
+          if (!t || e.touches.length > 1) { glimpsePull = null; return; }
+          if (cfg.ignore && e.target && e.target.closest && e.target.closest(cfg.ignore)) { glimpsePull = null; return; }
+          glimpsePull = { cfg, x: t.clientX, y: t.clientY, lastY: t.clientY, lastT: Date.now(), v: 0, dy: 0, dragging: false };
         }
-        function storySwipeMove(e){
-          if (!storySwipe) return;
+        function glimpsePullMove(e){
+          const p = glimpsePull;
+          if (!p) return;
           const t = e.touches && e.touches[0];
           if (!t) return;
-          const dy = t.clientY - storySwipe.y, dx = t.clientX - storySwipe.x;
-          if (!storySwipe.dragging) {
-            if (dy > 12 && dy > Math.abs(dx) * 1.5) storySwipe.dragging = true; else return;
+          const dy = t.clientY - p.y, dx = t.clientX - p.x;
+          if (!p.dragging) {
+            if (dy > 12 && dy > Math.abs(dx) * 1.5) {
+              p.dragging = true;
+              glimpsePullActive = true;
+              if (p.cfg.onPause) p.cfg.onPause();
+            } else return;
           }
-          const el = document.getElementById('story-viewer-screen');
-          if (el) { el.style.transition = 'none'; el.style.transform = 'translateY(' + Math.max(0, dy) + 'px)'; el.style.opacity = String(Math.max(0.4, 1 - dy / 600)); }
+          if (e.cancelable) e.preventDefault();
+          const now = Date.now();
+          p.v = (t.clientY - p.lastY) / Math.max(1, now - p.lastT);
+          p.lastY = t.clientY; p.lastT = now;
+          p.dy = Math.max(0, dy);
+          const el = document.getElementById(p.cfg.screenId);
+          if (!el) return;
+          const d = p.dy * 0.6;                       // resistance: the screen moves slower than the finger
+          const prog = Math.min(1, d / 360);
+          el.style.transition = 'none';
+          el.style.overflow = 'hidden';
+          el.style.transform = 'translateY(' + d + 'px) scale(' + (1 - prog * 0.12) + ')';
+          el.style.borderRadius = (prog * 28) + 'px';
+          el.style.opacity = String(1 - prog * 0.45);
         }
-        function storySwipeEnd(e){
-          const sw = storySwipe; storySwipe = null;
-          if (!sw || !sw.dragging) return;
-          const t = e.changedTouches && e.changedTouches[0];
-          const dy = t ? t.clientY - sw.y : 0;
-          const el = document.getElementById('story-viewer-screen');
-          if (dy > 90) { closeStoryMenu(); closeOverlay(); return; }
-          if (el) { el.style.transition = 'transform .2s ease, opacity .2s ease'; el.style.transform = ''; el.style.opacity = ''; }
-          resumeCurrentStoryTimer();
+        function glimpsePullEnd(e){
+          const p = glimpsePull; glimpsePull = null;
+          setTimeout(() => { glimpsePullActive = false; }, 60);
+          if (!p || !p.dragging) return;
+          const el = document.getElementById(p.cfg.screenId);
+          const d = p.dy * 0.6;
+          if (!el) { if (p.cfg.onClose) p.cfg.onClose(); return; }
+          if (d > 90 || p.v > 0.9) {
+            // Glide off the bottom slowly, then actually close
+            el.style.transition = 'transform 480ms cubic-bezier(.32,.0,.2,1), opacity 480ms ease';
+            el.style.transform = 'translateY(' + window.innerHeight + 'px) scale(0.86)';
+            el.style.opacity = '0';
+            setTimeout(() => { if (p.cfg.onClose) p.cfg.onClose(); }, 470);
+          } else {
+            el.style.transition = 'transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease, border-radius 320ms ease';
+            el.style.transform = ''; el.style.opacity = ''; el.style.borderRadius = '';
+            if (p.cfg.onResume) p.cfg.onResume();
+          }
         }
+
+        const STORY_PULL_CFG = {
+          screenId: 'story-viewer-screen',
+          ignore: '#story-reply-bar',
+          onPause: () => { if (typeof pauseStoryTimer === 'function') pauseStoryTimer(); },
+          onResume: () => { if (typeof resumeCurrentStoryTimer === 'function') resumeCurrentStoryTimer(); },
+          onClose: () => { closeStoryMenu(); closeOverlay(); },
+        };
+        function storySwipeStart(e){ glimpsePullStart(e, STORY_PULL_CFG); }
+        function storySwipeMove(e){ glimpsePullMove(e); }
+        function storySwipeEnd(e){ glimpsePullEnd(e); }
+
+        // Same slow pull-down for your own glimpse ("My glimpse")
+        const MY_GLIMPSE_PULL_CFG = {
+          screenId: 'my-glimpse-viewer-screen',
+          onPause: () => {
+            if (typeof pauseMyGlimpseBar === 'function') pauseMyGlimpseBar();
+            const v = (typeof myGlimpseVideoEl === 'function') ? myGlimpseVideoEl() : null;
+            if (v) { try { v.pause(); } catch (err) {} }
+          },
+          onResume: () => { if (typeof myGlimpseResumePlayback === 'function') myGlimpseResumePlayback(); },
+          onClose: () => { closeOverlay(); },
+        };
+        function myGlimpsePullStart(e){ glimpsePullStart(e, MY_GLIMPSE_PULL_CFG); }
 
         const GLIMPSES_TABLE = 'glimpses';
         const GLIMPSE_VIEWS_TABLE = 'glimpse_views';
@@ -2103,10 +2162,12 @@
         }
         function myGlimpsePressEnd(e, dir){
           if (e && e.cancelable) e.preventDefault();
+          if (glimpsePullActive) return;
           if (Date.now() - myGlimpsePressAt < 250) myGlimpseStep(dir);
           else myGlimpseResumePlayback();
         }
         function myGlimpsePressCancel(){
+          if (glimpsePullActive) return;
           if (myGlimpsePressAt) myGlimpseResumePlayback();
         }
         function myGlimpseStep(dir){
@@ -2237,7 +2298,7 @@
           // at when a text glimpse is missing its bgStyle
           const noBgFallback = `linear-gradient(135deg, ${NAVY}, ${ROYAL})`;
           return `
-            <div class="flex flex-col h-full relative" style="color:${fg};${viewUrl ? 'background:#000;' : (g.bgStyle || ('background:' + noBgFallback + ';'))}">
+            <div id="my-glimpse-viewer-screen" class="flex flex-col h-full relative" ontouchstart="myGlimpsePullStart(event)" ontouchmove="glimpsePullMove(event)" ontouchend="glimpsePullEnd(event)" ontouchcancel="glimpsePullEnd(event)" style="color:${fg};${viewUrl ? 'background:#000;' : (g.bgStyle || ('background:' + noBgFallback + ';'))}">
               <div class="absolute inset-0 flex items-center justify-center ${viewUrl ? 'bg-black' : ''} pointer-events-none">
                 ${viewUrl ? `
                   ${g.mediaType === 'video'
@@ -3106,6 +3167,13 @@
           const reveal = () => { if (done) return; done = true; revealFeedVideo(video); rememberFeedVideoFrame(video); };
           if (typeof video.requestVideoFrameCallback === 'function') {
             video.requestVideoFrameCallback(reveal);
+          }
+          // preload="metadata" never decodes a picture, so a post without a stored poster stayed a
+          // grey box until it was tapped. Nudging the playhead a hair forces the browser to decode and
+          // paint the first frame (same trick the grid tiles use) without downloading the whole video.
+          if (video.paused && !video.getAttribute('poster') && (video.currentTime || 0) < 0.05) {
+            video.addEventListener('seeked', reveal, { once: true });
+            try { video.currentTime = 0.05; } catch (e) {}
           }
           // 'canplay' means the browser genuinely has enough buffered to render and keep playing
           // without immediately stalling again
@@ -6976,9 +7044,12 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
         let shareGlimpseSelected = new Set();
 
         // ---- Share a glimpse to contacts ----
-        function openShareGlimpse(id){
+        // networkOnly: "Share to network" only offers the people in the app (no WhatsApp, links, etc.)
+        let shareGlimpseNetworkOnly = false;
+        function openShareGlimpse(id, networkOnly){
           const g = myGlimpses.find(x => x.id === id) || glimpseShareExtra[String(id)];
           if (!g) return;
+          shareGlimpseNetworkOnly = !!networkOnly;
           shareGlimpseSelected = new Set();
           if (typeof pauseAllOverlayMedia === 'function') pauseAllOverlayMedia();
           const ov = document.getElementById('overlay');
@@ -6995,7 +7066,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
             <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
               <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between">
                 <div class="font-semibold text-lg font-display" style="color:${NAVY};">Send as message</div>
-                <button onclick="openMyGlimpses()" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
+                <button onclick="${shareGlimpseNetworkOnly ? 'closeOverlay()' : 'openMyGlimpses()'}" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
               </div>
               <div class="max-w-2xl mx-auto px-5 pb-4">
                 <div class="relative">
@@ -7015,6 +7086,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
             <div class="share-sheet-actions flex-shrink-0 w-full border-t border-gray-100" style="background:#fafafa;">
               <div class="share-sheet-actions-row flex items-start no-scrollbar" style="gap:22px;padding:16px 20px calc(env(safe-area-inset-bottom, 12px) + 16px) 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
                 <div id="share-glimpse-action-${g.id}">${shareGlimpseActionHTML(g.id)}</div>
+                ${shareGlimpseNetworkOnly ? '' : `
                 ${shareExternalOption('send','Share', `shareGlimpseExternally(${g.id})`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
                 ${shareExternalOption('link','Copy link', `copyGlimpseLink(${g.id})`, '#eef0f4', NAVY)}
                 ${shareWhatsAppOption(`shareGlimpseViaWhatsApp(${g.id})`)}
@@ -7023,6 +7095,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
                 ${shareOutlookOption(`shareGlimpseViaOutlook(${g.id})`)}
                 ${shareGmailOption(`shareGlimpseViaGmail(${g.id})`)}
                 ${shareBluetoothOption(`shareGlimpseViaBluetooth(${g.id})`)}
+`}
               </div>
             </div>`;
         }
@@ -7087,7 +7160,14 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           const desc = g.caption ? `"${g.caption.slice(0,60)}"` : (g.mediaType === 'video' ? 'a video' : g.mediaType === 'image' ? 'a photo' : 'a glimpse');
           const text = `Shared a glimpse: ${desc}`;
           const ids = Array.from(shareGlimpseSelected);
-          const shareOpts = g.attachment ? { attachments: [g.attachment], previewText: text } : undefined;
+          // A glimpse shared from "My glimpse" has no prebuilt card yet: build one from the glimpse itself
+          // so the thumbnail always travels with the message
+          let card = g.attachment;
+          if (!card) {
+            const me = (typeof profileData !== 'undefined' && profileData && profileData.name) ? profileData.name : '';
+            card = buildGlimpseReplyAttachment({ name: me }, g);
+          }
+          const shareOpts = { attachments: [card], previewText: text };
           ids.forEach(contactId => deliverSharedMessage(contactId, text, shareOpts));
           closeOverlay();
           openAppAlertModal(ids.length === 1 ? 'Sent' : `Sent to ${ids.length} people`);

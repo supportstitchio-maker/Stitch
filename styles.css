@@ -3829,3 +3829,6 @@ body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-back:active, body.d
 .glimpse-reply-card .grc-cap{font-size:11px;color:#374151;padding:6px 10px 8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 body.dark-mode .glimpse-reply-card{background:var(--c-onyx,#16191f);border-color:rgba(255,255,255,0.12);}
 body.dark-mode .glimpse-reply-card .grc-cap{color:#d1d5db;}
+
+@keyframes bell-ring{0%{transform:rotate(0)}10%{transform:rotate(18deg)}20%{transform:rotate(-16deg)}30%{transform:rotate(13deg)}40%{transform:rotate(-10deg)}50%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}70%{transform:rotate(2deg)}100%{transform:rotate(0)}}
+.notif-bell-icon.bell-ring{animation:bell-ring 1.2s ease-in-out;}

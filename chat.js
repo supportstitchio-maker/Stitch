@@ -132,7 +132,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             if (c.type === 'stitch/glimpse') {
               const bg = ['light','dark','brand'].includes(a.bg) ? a.bg : 'brand';
-              out.push({ type: 'stitch/glimpse', name: '', authorName: String(a.authorName || '').slice(0, 80), caption: String(a.caption || '').slice(0, 200), thumbnail: safeChatUrl(a.thumbnail) || undefined, bg });
+              out.push({ type: 'stitch/glimpse', name: '', authorName: String(a.authorName || '').slice(0, 80), caption: String(a.caption || '').slice(0, 200), thumbnail: safeChatUrl(a.thumbnail) || undefined, mediaUrl: safeChatUrl(a.mediaUrl) || undefined, mediaType: a.mediaType === 'video' ? 'video' : (a.mediaUrl ? 'image' : undefined), bg });
               return;
             }
             if (c.type === 'stitch/challenge') {
@@ -1664,8 +1664,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return `
               <div class="inbox-empty empty-center w-full bg-white px-8 text-center">
                 <button type="button" onclick="openNewCollaboration()" class="neu-add-btn" aria-label="Create a collaboration"><span class="neu-add-plus"></span></button>
-                <div class="text-base font-semibold text-gray-600" style="margin-top:20px;">No collaborations yet</div>
-                <div class="text-sm text-gray-400" style="max-width:280px;line-height:1.5;margin-top:8px;">Tap on the plus to collaborate with your network</div>
               </div>`;
           }
           return `
@@ -3127,7 +3125,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           queueSaveUserState();
           if (currentTab === 3) renderInboxTab();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
-          if (wasPresent && meta) pushInAppNotification(toastTitle, toastBodyFor(meta.name || 'Collaboration'));
+          if (wasPresent && meta) pushBellNotification(toastTitle, toastBodyFor(meta.name || 'Collaboration'));
         }
 
         let collabMembersChannel = null;
@@ -4345,6 +4343,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function convoLogHTML(){ return chatMediaRewriteHtml(convoLogHTMLInner()); }
         function convoLogHTMLInner(){
+          convoGlimpseCards = [];
           const meta = convoMeta[activeConvoId] || { icon: 'user', avatarBg: 'bg-gray-100' };
           const msgs = conversationMessages[activeConvoId] || [];
           let lastDateKey = null;
@@ -4843,16 +4842,66 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // The small glimpse thumbnail that travels with a reply to a glimpse
+        // Glimpse cards currently on screen, so a tap can open the right one in the viewer
+        let convoGlimpseCards = [];
         function convoGlimpseReplyAttachmentsHTML(items, mine){
           if (!items || !items.length) return '';
           return items.map(g => {
             const label = mine ? `You replied to ${escapeHtml(g.authorName ? g.authorName + "'s" : 'a')} glimpse` : 'Replied to your glimpse';
-            const media = g.thumbnail
-              ? `<img src="${escapeHtml(g.thumbnail)}" alt="" class="grc-media" draggable="false">`
-              : `<div class="grc-text bg-${escapeHtml(g.bg || 'brand')}">${escapeHtml((g.caption || '').slice(0, 90))}</div>`;
-            const cap = (g.thumbnail && g.caption) ? `<div class="grc-cap">${escapeHtml(g.caption)}</div>` : '';
-            return `<div class="glimpse-reply-card"><div class="grc-label">${label}</div>${media}${cap}</div>`;
+            const idx = convoGlimpseCards.push(g) - 1;
+            let media;
+            if (g.thumbnail) media = `<img src="${escapeHtml(g.thumbnail)}" alt="" class="grc-media" draggable="false">`;
+            else if (g.mediaType === 'video' && g.mediaUrl) media = `<video src="${escapeHtml(g.mediaUrl)}#t=0.1" class="grc-media" muted playsinline preload="metadata" style="pointer-events:none;"></video>`;
+            else if (g.mediaUrl) media = `<img src="${escapeHtml(g.mediaUrl)}" alt="" class="grc-media" draggable="false">`;
+            else media = `<div class="grc-text bg-${escapeHtml(g.bg || 'brand')}">${escapeHtml((g.caption || '').slice(0, 90))}</div>`;
+            const hasMedia = g.thumbnail || g.mediaUrl;
+            const cap = (hasMedia && g.caption) ? `<div class="grc-cap">${escapeHtml(g.caption)}</div>` : '';
+            return `<div class="glimpse-reply-card" role="button" tabindex="0" style="cursor:pointer;" onclick="openGlimpseCardViewer(${idx})"><div class="grc-label">${label}</div>${media}${cap}</div>`;
           }).join('');
+        }
+
+        // Tap a glimpse card in a chat to see the glimpse full screen (drag down slowly to close)
+        function closeGlimpseCardViewer(fromPopState){
+          const modal = document.getElementById('convoGlimpseViewerModal');
+          if (!modal) return;
+          const v = modal.querySelector('video'); if (v) { try { v.pause(); } catch (e) {} }
+          modal.remove();
+          if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
+        }
+        function openGlimpseCardViewer(idx){
+          const g = convoGlimpseCards[idx];
+          if (!g) return;
+          closeGlimpseCardViewer();
+          const modal = document.createElement('div');
+          modal.id = 'convoGlimpseViewerModal';
+          modal.className = 'fixed inset-0 z-50 flex flex-col';
+          const light = !g.mediaUrl && !g.thumbnail && g.bg === 'light';
+          const fg = light ? '#0a2540' : '#ffffff';
+          const bgCss = (g.mediaUrl || g.thumbnail) ? '#000' : (g.bg === 'light' ? '#ffffff' : g.bg === 'dark' ? '#000000' : `linear-gradient(135deg, ${NAVY}, ${ROYAL})`);
+          modal.style.background = bgCss;
+          modal.style.color = fg;
+          let body;
+          if (g.mediaType === 'video' && g.mediaUrl) {
+            body = `<video src="${escapeHtml(g.mediaUrl)}" ${g.thumbnail ? `poster="${escapeHtml(g.thumbnail)}"` : ''} class="max-w-full max-h-full" autoplay controls playsinline style="max-width:100%;max-height:100%;"></video>`;
+          } else if (g.mediaUrl || g.thumbnail) {
+            body = `<img src="${escapeHtml(g.mediaUrl || g.thumbnail)}" alt="" draggable="false" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+          } else {
+            body = `<div class="px-8 text-center text-lg font-medium" style="color:${fg};">${escapeHtml(g.caption || '')}</div>`;
+          }
+          modal.innerHTML = `
+            <div id="convo-glimpse-viewer-screen" class="flex flex-col h-full w-full" style="background:${bgCss};"
+                 ontouchstart="glimpsePullStart(event,{screenId:'convo-glimpse-viewer-screen',onClose:closeGlimpseCardViewer})" ontouchmove="glimpsePullMove(event)" ontouchend="glimpsePullEnd(event)" ontouchcancel="glimpsePullEnd(event)">
+              <div class="flex items-center gap-3 px-4 flex-shrink-0" style="padding-top:calc(env(safe-area-inset-top, 12px) + 12px);padding-bottom:10px;z-index:2;">
+                <button onclick="closeGlimpseCardViewer()" aria-label="Back" class="w-9 h-9 flex items-center justify-center" style="color:${fg};">${IconBold('back','w-5 h-5')}</button>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-semibold truncate">${escapeHtml(g.authorName ? g.authorName + "'s glimpse" : 'Glimpse')}</div>
+                </div>
+              </div>
+              <div class="flex-1 flex items-center justify-center overflow-hidden min-h-0">${body}</div>
+              ${(g.caption && (g.mediaUrl || g.thumbnail)) ? `<div class="px-6 py-4 text-sm text-white text-center" style="background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);">${escapeHtml(g.caption)}</div>` : '<div style="height:calc(env(safe-area-inset-bottom, 0px) + 16px);"></div>'}
+            </div>`;
+          document.body.appendChild(modal);
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeGlimpseCardViewer(fromPopState));
         }
 
         function convoImageAttachmentsHTML(images){
@@ -7981,7 +8030,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const fire = () => {
             meetingEndTimer = null;
             if (!activeMeeting || activeMeeting.code !== code) return;
-            pushInAppNotification('Meeting ended', 'This meeting has wrapped up.');
+            pushBellNotification('Meeting ended', 'This meeting has wrapped up.');
             endCall();
           };
           const ms = activeMeeting.endsAt - Date.now();
@@ -8179,7 +8228,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const res = await fetchMeetingByCode(code);
           if (!activeMeeting || activeMeeting.code !== code) return;
           if (res.status === 'ok' && (res.state === 'ended' || res.state === 'cancelled')) {
-            pushInAppNotification('Meeting ended', 'The host ended this meeting.');
+            pushBellNotification('Meeting ended', 'The host ended this meeting.');
             endCall(true);
           }
         }

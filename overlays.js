@@ -2964,6 +2964,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           } catch (e) {}
         }
 
+        // Every notification shakes the bell (the red count badge is handled by refreshNotifBadge)
+        function ringNotifBell(){
+          try {
+            const icon = document.querySelector('#notif-bell-btn .notif-bell-icon');
+            if (!icon) return;
+            icon.classList.remove('bell-ring');
+            void icon.offsetWidth;
+            icon.classList.add('bell-ring');
+            setTimeout(() => icon.classList.remove('bell-ring'), 1400);
+          } catch (e) {}
+        }
+
         function addNotif(opts){
           opts = opts || {};
           const id = opts.id || ('notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
@@ -2997,6 +3009,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           playNotifChime(opts.name || 'Stitch', opts.message || '');
           queueSaveUserState();
           refreshNotifBadge();
+          ringNotifBell();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'notifications') renderNotifTab();
           // No per-event email anymore -- rolled into the daily digest (send-daily-digest).
           return id;
@@ -3060,7 +3073,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               existing.textContent = count;
             } else {
               const topbarIcons = document.getElementById('topbar-icons');
-              const bellBtn = topbarIcons && topbarIcons.querySelector('button:last-child');
+              const bellBtn = document.getElementById('notif-bell-btn') || (topbarIcons && topbarIcons.querySelector('button:last-child'));
               if (bellBtn) bellBtn.insertAdjacentHTML('beforeend', `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${count}</span>`);
             }
           } else if (existing) {
