@@ -3184,10 +3184,25 @@ try {
           };
         }
 
+        // Plain-language explainer shown under each chart title on the Course analytics page
+        const CA_DESCRIPTIONS = {
+          'Where learners are': 'Every learner who has enrolled, grouped by how far along they are. A big completed slice is a good sign, and a big not started slice means people sign up but never begin.',
+          'Success vs. drop-off': 'The share of learners who finished the course next to the share who stayed. The rings show how well the course keeps people going through to the end.',
+          'Progress spread': 'How many learners sit at each progress level. Bars piled at the low end suggest people stall early, and bars at the high end mean most are close to finishing.',
+          'Enrolments': 'How many new learners joined in each of the last eight weeks. Spikes usually follow a share or a promotion.',
+          'Trend': 'Completions, learners who left and new sign-ups, week by week. If the red line climbs above the green one, more people are leaving than finishing.',
+          'Module completion': 'The share of enrolled learners who finished every part of each module. Short bars point to the modules that lose people.',
+          'Parts people skip most': 'The lessons with the lowest completion, lowest first. These are the parts worth shortening, reordering or explaining more clearly.',
+          'Quiz performance': 'The average score on each quiz and how many learners have taken it. A low average can mean a question is unclear or the lesson before it needs work.',
+          'Top learners': 'The learners who are furthest through the course right now.',
+          'Recently left': 'The learners who left most recently and how far they had got, which shows where people tend to give up.',
+        };
         function caCard(title, sub, body){
+          const desc = CA_DESCRIPTIONS[title];
           return `<div style="padding:6px 2px 10px;">
             <div class="font-semibold text-sm text-gray-800">${title}</div>
-            ${sub ? `<div class="text-xs text-gray-400" style="margin-bottom:12px;">${sub}</div>` : '<div style="height:10px;"></div>'}
+            ${sub ? `<div class="text-xs text-gray-400" style="margin-bottom:${desc ? '6px' : '12px'};">${sub}</div>` : (desc ? '' : '<div style="height:10px;"></div>')}
+            ${desc ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:${sub ? '0' : '3px'} 0 12px;">${desc}</div>` : ''}
             ${body}</div>`;
         }
         function caBar(label, pct, right, color){
@@ -5027,13 +5042,42 @@ try {
         }
 
         // ---- Small chart helpers (no panels, text sits on the page background) ----
+        // Plain-language explainers shown under each chart title on the Space profile (moderator)
+        // and Space report (member) pages
+        const CLS_DESCRIPTIONS = {
+          // Moderator: Space profile
+          'Who joined': 'Members in the space next to people who were invited but have not joined, plus requests waiting for your approval. Join requests are the ones you can act on.',
+          'Space activity': 'The announcements you posted each week and the minutes of calls held. Steady bars mean the space stays active, and quiet weeks show where it went still.',
+          'Tasks': 'What you have posted so far, split by kind, so you can see the mix of assignments, quizzes, questions, polls and materials.',
+          'Handed in vs missing': 'Work members have handed in compared with what is still missing, counted across every member and every assignment or quiz. A big missing slice means work is piling up.',
+          'Interactions': 'How members take part: comments on announcements, work handed in, quiz attempts and poll votes. The tallest bar is where most of the activity happens.',
+          'Calls': 'How many calls you have held, how long they ran in total, and what is scheduled or live now. The bars show the minutes of each recent call.',
+          'Space performance': 'The space average on graded work, how much of it has been handed in, and how many members fall into each grade from A to F.',
+          'Every member, plotted': 'A quick way to spot clusters. Members bunched near the top are doing well together, and a lone low dot is someone who may need help.',
+          'Average score by task': 'The average score members earned on each graded task. Low bars point to tasks that were hard or unclear.',
+          'Average by kind of work': 'Quizzes, questions and assignments compared, to show which kind of work members do best on.',
+          'Top performers': 'The five members with the highest overall average across graded work.',
+          'Worth a check-in': 'Members scoring under 60% or with nothing handed in yet. A short message from you can help them catch up.',
+          'Latest poll': 'How members voted on the most recent poll, with the total number of votes next to the title.',
+          // Member: Space report
+          'Where I stand': 'Your rank among graded members, your overall grade, and your best and lowest scores. These compare you with the rest of the space.',
+          'My progress': 'The work you have handed in compared with what is still to do. A fuller green slice means you are keeping up.',
+          'My scores': 'The percentage you got on each of your latest graded items.',
+          'Me and the space, item by item': 'Your score on each item next to the space average. When your line sits above the grey one, you did better than most of the space on that item.',
+          'What I have handed in': 'Your handed-in work split by assignments, quizzes and questions.',
+          'Me and the space': 'Your overall score next to the space average, so you can see at a glance whether you are ahead or behind.',
+          'Still to do': 'Work that has not been handed in yet, with due dates where there are any.',
+          'My tasks': 'Every task in the space and where it stands for you: your score once it is graded, or not submitted while it is still open.',
+        };
         function classSectionHTML(title, sub, inner){
           // Only 'Who joined' and 'Where I stand' keep a panel; the rest sit on the page background.
           const panel = (title === 'Who joined' || title === 'Where I stand');
+          const desc = CLS_DESCRIPTIONS[title];
           return `
             <div class="${panel ? 'bg-white rounded-3xl p-5 shadow-sm' : 'class-flat-section'}" style="margin-bottom:${panel ? '16px' : '28px'};${panel ? '' : 'padding:0 4px;'}">
-              <div class="font-semibold text-base text-gray-800" style="margin-bottom:${sub ? '2px' : '12px'};">${title}</div>
-              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 14px;">${sub}</div>` : ''}
+              <div class="font-semibold text-base text-gray-800" style="margin-bottom:${(sub || desc) ? '2px' : '12px'};">${title}</div>
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 ${desc ? '6px' : '14px'};">${sub}</div>` : ''}
+              ${desc ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:${sub ? '0' : '3px'} 0 14px;">${desc}</div>` : ''}
               ${inner}
             </div>`;
         }

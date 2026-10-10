@@ -8920,7 +8920,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         // Applications-sent-per-week graph (last 6 weeks).
-        function careerAnalyticsGraphHTML(appliedJobs){
+        function careerAnalyticsGraphHTML(appliedJobs, withDesc){
           const WEEKS = 6, DAY = 86400000, now = Date.now();
           const counts = new Array(WEEKS).fill(0);
           appliedJobs.forEach(job => {
@@ -8940,16 +8940,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           }).join('');
           return `
             <div>
-              <div class="flex items-center justify-between" style="margin-bottom:10px;">
+              <div class="flex items-center justify-between" style="margin-bottom:${withDesc ? '4px' : '10px'};">
                 <div class="font-semibold text-sm text-gray-800">Applications sent</div>
                 <div class="text-xs text-gray-400">Last 6 weeks${total ? ` &middot; ${total}` : ''}</div>
               </div>
+              ${withDesc ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:0 0 12px;">How many applications you sent in each of the last six weeks. Taller bars mean busier weeks, and empty weeks show where you paused.</div>` : ''}
               <div class="act-graph">${cols}</div>
             </div>`;
         }
 
         // Everything the user has interacted with (applied / saved / posted) as plain rows.
-        function careerActivityListHTML(){
+        function careerActivityListHTML(withDesc){
           const rows = [];
           allJobs().forEach(job => {
             const app = jobApplication(job);
@@ -8968,7 +8969,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (!rows.length) return '';
           return `
             <div>
-              <div class="font-semibold text-sm text-gray-800" style="margin-bottom:4px;">Your activity</div>
+              <div class="font-semibold text-sm text-gray-800" style="margin-bottom:${withDesc ? '2px' : '4px'};">Your activity</div>
+              ${withDesc ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:0 0 6px;">Everything you have applied to, saved or posted, with your applications first. Tap any row to open it.</div>` : ''}
               <div class="act-list">
                 ${rows.map(({ job, tags }) => {
                   const open = job.isCatalogCourse ? `openCourseDetail('${job.id}')` : `openJobOrClassroom('${job.id}')`;
@@ -9002,10 +9004,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">Applications sent</div>
                 <div class="text-3xl font-bold font-display">${appliedJobs.length}</div>
               </div>
-              ${careerAnalyticsGraphHTML(appliedJobs)}
-              ${careerActivityListHTML()}
+              ${careerAnalyticsGraphHTML(appliedJobs, true)}
+              ${careerActivityListHTML(true)}
               <div>
-                <div class="font-semibold text-sm text-gray-800 mb-3">Application status</div>
+                <div class="font-semibold text-sm text-gray-800 mb-1">Application status</div>
+                <div class="text-xs" style="color:#6b7280;line-height:1.55;margin:0 0 12px;">Where each application stands right now, from applied through to an offer. The bar fills as the poster moves you along.</div>
                 ${trackedApplications.length ? `
                   <div>
                     ${trackedApplications.map(j => {
@@ -9308,7 +9311,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         // ---- Small chart helpers ----
-        // Plain-language explainers shown between the charts on the Dashboard (not on the standalone page)
+        // Plain-language explainers shown under each chart title (Dashboard and the standalone My Activity page)
         let actDescMode = false;
         const ACT_DESCRIPTIONS = {
           'Top post vs your other posts': 'Your best performing post set against the average of the rest, so you can see how far ahead it is and what kind of reactions it earned.',
@@ -9326,9 +9329,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const wrapStyle = panel ? '' : 'padding:6px 2px 2px;';
           return `
             <div class="${wrap}" style="${wrapStyle}">
-              <div class="font-semibold text-sm text-gray-800" style="margin-bottom:${sub ? '2px' : '12px'};">${title}</div>
-              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 ${actDescMode && ACT_DESCRIPTIONS[title] ? '6px' : '12px'};">${sub}</div>` : ''}
-              ${actDescMode && ACT_DESCRIPTIONS[title] ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:0 0 12px;">${ACT_DESCRIPTIONS[title]}</div>` : ''}
+              <div class="font-semibold text-sm text-gray-800" style="margin-bottom:${(sub || ACT_DESCRIPTIONS[title]) ? '2px' : '12px'};">${title}</div>
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 ${ACT_DESCRIPTIONS[title] ? '6px' : '12px'};">${sub}</div>` : ''}
+              ${ACT_DESCRIPTIONS[title] ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:${sub ? '0' : '3px'} 0 12px;">${ACT_DESCRIPTIONS[title]}</div>` : ''}
               ${inner}
             </div>`;
         }
