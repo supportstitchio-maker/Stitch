@@ -2446,7 +2446,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // ---- Job list + job detail screens ----
         // Same centered "Nothing posted yet" message on every Career Space tab
         function careerEmptyHTML(title, hint){
-          return `<div class="empty-center bg-white"></div>`;
+          return `<div class="empty-center"></div>`;
         }
         function careerListOrEmpty(list, title, hint){
           return list.length ? list.map(jobCard).join('') : careerEmptyHTML(title, hint);
@@ -4931,7 +4931,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             .ci-bluehero{position:relative;overflow:visible;padding:18px 14px 28px;background:transparent;}
             .ci-bluehero svg{position:relative;z-index:1;}
             .ci-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:42px;border-radius:32px 32px 0 0;background:#ffffff;padding:30px 26px 190px;text-align:center;box-shadow:0 -6px 24px rgba(30,80,200,.10);}
-            body.dark-mode .ci-panel{background:var(--c-black,#121212);}
+            body.dark-mode .ci-panel{background:var(--c-onyx,#1e1e1e);box-shadow:none;}
             .ci-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.2;font-weight:700;color:#0f1f3d;margin-bottom:12px;}
             body.dark-mode .ci-title{color:#ffffff;}
             .ci-title .ci-hl{font-family:'Montserrat',system-ui,sans-serif;font-weight:700;color:#1e90ff;}

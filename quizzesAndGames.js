@@ -65,13 +65,34 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           if (typeof popModalBackHandler === 'function') popModalBackHandler(true);
         }
 
+        function challengeSkeletonHTML(){
+          const chip = `<div class="sk" style="width:64px;height:38px;border-radius:9999px;"></div>`;
+          return `
+            <div id="challenge-skeleton" aria-busy="true">
+              <div class="flex items-center justify-between gap-4 mb-4">
+                <div class="sk" style="width:22px;height:22px;border-radius:6px;"></div>
+                <div class="sk" style="width:150px;height:20px;"></div>
+              </div>
+              <div class="sk" style="width:96%;height:12px;margin-bottom:8px;"></div>
+              <div class="sk" style="width:72%;height:12px;margin-bottom:22px;"></div>
+              <div class="sk" style="width:38%;height:14px;margin-bottom:12px;"></div>
+              <div style="display:flex;gap:10px;margin-bottom:26px;">${chip}${chip}${chip}${chip}</div>
+              <div style="display:flex;gap:12px;">
+                <div class="sk" style="flex:1;height:48px;border-radius:9999px;"></div>
+                <div class="sk" style="flex:1;height:48px;border-radius:9999px;"></div>
+              </div>
+            </div>`;
+        }
+
         function openChallengeSetupModal(){
           if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
-          if (!courseBank.length) {
-            openChallengeModal(challengeEmptyStateHTML());
-            return;
-          }
-          openChallengeModal(challengeSetupHTML());
+          openChallengeModal(challengeSkeletonHTML());
+          setTimeout(() => {
+            // Only swap in the real screen if the skeleton is still what's showing (user may have closed it)
+            if (!document.getElementById('challenge-skeleton')) return;
+            const content = document.getElementById('challengeModalContent');
+            if (content) content.innerHTML = courseBank.length ? challengeSetupHTML() : challengeEmptyStateHTML();
+          }, 450);
         }
 
         function challengeEmptyStateHTML(){
@@ -553,9 +574,38 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         let selectedCourseNames = new Set(courseBank.map(c => c.name));
 
         // ---- Practice Tests overlay (tabs, scores, course list) ----
+        // Skeleton shown for a moment while Practice Tests / Challenge open, so the screen never pops in half-built
+        let practiceTestsSkeletonOn = false;
+        function practiceTestsSkeletonHTML(){
+          const row = `<div class="sk" style="height:64px;border-radius:16px;"></div>`;
+          return `
+            <div class="ar-root ar-page" aria-busy="true"><div class="ar-in">
+              <div class="ar-top" style="justify-content:flex-start;gap:14px;">
+                <div class="sk" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;"></div>
+                <div class="sk" style="width:140px;height:20px;"></div>
+              </div>
+              <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f3f4f6;border-radius:16px;padding:4px;">
+                <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
+                <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:90px;height:12px;"></div></div>
+              </div>
+              <div class="sk" style="width:46%;height:18px;margin-bottom:10px;"></div>
+              <div class="sk" style="width:92%;height:12px;margin-bottom:8px;"></div>
+              <div class="sk" style="width:70%;height:12px;margin-bottom:20px;"></div>
+              <div style="display:flex;flex-direction:column;gap:14px;">${row}${row}${row}${row}</div>
+            </div></div>`;
+        }
+
         function openPracticeTestsOverlay(){
           practiceTestsTab = 'test';
+          practiceTestsSkeletonOn = true;
           openOverlay('practiceTests');
+          setTimeout(() => {
+            practiceTestsSkeletonOn = false;
+            const ov = document.getElementById('overlay');
+            if (ov && !ov.classList.contains('hidden') && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'practiceTests') {
+              ov.innerHTML = practiceTestsHTML();
+            }
+          }, 450);
         }
 
         function practiceTestsTabBtn(key, label){
@@ -1689,6 +1739,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // ---- Practice tests overlay ----
         function practiceTestsHTML(){
+          if (practiceTestsSkeletonOn) return practiceTestsSkeletonHTML();
           return `
             <div class="ar-root ar-page"><div class="ar-in">
               <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>

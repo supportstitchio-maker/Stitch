@@ -4301,8 +4301,8 @@ try {
                   <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
                   <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
                 </div>` : ''}
-                <div style="display:flex;gap:4px;margin-bottom:12px;background:#f3f4f6;border-radius:16px;padding:4px;">
-                  <div class="sk" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
+                <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:12px;background:#f3f4f6;border-radius:16px;padding:4px;">
+                  <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
                   <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:56px;height:12px;"></div></div>
                 </div>
                 ${card}${card}${card}

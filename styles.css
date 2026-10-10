@@ -429,7 +429,7 @@
         body.dark-mode .pill-cta:hover { box-shadow:none !important; }
         body.dark-mode .flip-card { background:linear-gradient(135deg,var(--c-onyx),var(--c-black)) !important; border-color:var(--c-tapshoe) !important; }
 
-        body.dark-mode .classroom-slide-cover { background:var(--c-raven) !important; }
+        body.dark-mode .classroom-slide-cover { background:var(--c-black) !important; }
         body.dark-mode [style*="background:#ffffff"],
         body.dark-mode [style*="background-color:#ffffff"] { background:var(--c-onyx) !important; }
         body.dark-mode #career-titlebar,
@@ -515,7 +515,7 @@
         body.dark-mode [fill="#4169e1"],
         body.dark-mode [class*="text-[#4169e1]"] { color:#ffffff !important; fill:#ffffff !important; }
 
-        body.dark-mode .classroom-slide-cover { background:var(--c-ebony) !important; }
+        body.dark-mode .classroom-slide-cover { background:var(--c-black) !important; }
 
         /* Desktop side nav: icons/labels default to a dark navy (#0f1f33) which is nearly
            invisible against the dark sidebar background, so force them white in dark mode */
@@ -3872,3 +3872,7 @@ body.dark-mode .flow-pill-go{ box-shadow:0 8px 20px -6px rgba(0,0,0,0.55) !impor
 body.dark-mode .nav-bar-floating, body.dark-mode .ai-history-drawer { border:1px solid var(--c-tapshoe) !important; }
 body.dark-mode .convo-sheet, body.dark-mode .confirm-sheet { border-top:1px solid var(--c-tapshoe) !important; }
 body.dark-mode .fc-face-front, body.dark-mode .myact-dl-pill, body.dark-mode .skel-post { border:1px solid var(--c-tapshoe); }
+
+/* Skeleton tab strip (classroom loading): was a white bar in dark mode */
+body.dark-mode .sk-tabs{ background:var(--c-onyx) !important; }
+body.dark-mode .sk-tabs .sk-tab-on{ background-color:var(--c-charcoal) !important; }

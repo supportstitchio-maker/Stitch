@@ -1645,7 +1645,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           };
           const emptyLabel = (defaultText) => inboxViewFilter === 'pinned' ? 'No pinned messages.' : defaultText;
           // Empty inbox / requests / pinned: just a clean blank page, no text
-          const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center bg-white"></div>`;
+          const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center"></div>`;
           if (inboxFilter === 'meetings') return inlineMeetingsHTML();
           if (inboxFilter === 'general') {
             const list = applyView(primaryConvos);
@@ -1678,7 +1678,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               return `<div class="inbox-empty bg-white p-8 text-center text-gray-400 text-sm">${emptyLabel('No collaborations yet.')}</div>`;
             }
             return `
-              <div class="inbox-empty empty-center w-full bg-white px-8 text-center">
+              <div class="inbox-empty empty-center w-full px-8 text-center">
                 <button type="button" onclick="openNewCollaboration()" class="neu-add-btn" aria-label="Create a collaboration"><span class="neu-add-plus"></span></button>
               </div>`;
           }
@@ -8278,9 +8278,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function meetingChatPlacePage(){
           const page = document.getElementById('meeting-chat-page');
           if (!page) return;
-          const vv = window.visualViewport;
-          page.style.top = (vv ? vv.offsetTop : 0) + 'px';
-          page.style.height = (vv ? vv.height : window.innerHeight) + 'px';
+          // The app runs with interactive-widget=overlays-content, so the keyboard does not shrink
+          // the page by itself: measure it and end the page right above it, which keeps the
+          // message box (and everything typed in it) visible.
+          const input = document.getElementById('meeting-chat-input');
+          const focused = !!(input && document.activeElement === input);
+          const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(focused) : 0;
+          const open = inset > 0;
+          page.style.top = '0px';
+          page.style.height = (window.innerHeight - inset) + 'px';
+          const bar = document.getElementById('meeting-chat-bar');
+          if (bar) bar.style.paddingBottom = open ? '10px' : 'calc(env(safe-area-inset-bottom,0px) + 10px)';
           const list = document.getElementById('meeting-chat-list');
           if (list) list.scrollTop = list.scrollHeight;
         }
@@ -8374,7 +8382,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>
             <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
+            <div id="meeting-chat-bar" style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
               <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
                 style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingChatMessage();}">
@@ -8387,6 +8395,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             window.visualViewport.addEventListener('resize', meetingChat.vvHandler);
             window.visualViewport.addEventListener('scroll', meetingChat.vvHandler);
           }
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', meetingChat.vvHandler);
+          window.addEventListener('resize', meetingChat.vvHandler);
+          const chatInput = document.getElementById('meeting-chat-input');
+          if (chatInput) {
+            chatInput.addEventListener('focus', () => { setTimeout(meetingChatPlacePage, 60); setTimeout(meetingChatPlacePage, 300); });
+            chatInput.addEventListener('blur', () => setTimeout(meetingChatPlacePage, 60));
+          }
           meetingChatRender(true);
           meetingChatLoadHistory();
           setTimeout(() => { const i = document.getElementById('meeting-chat-input'); if (i) i.focus(); }, 80);
@@ -8397,6 +8412,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (window.visualViewport && meetingChat.vvHandler) {
             window.visualViewport.removeEventListener('resize', meetingChat.vvHandler);
             window.visualViewport.removeEventListener('scroll', meetingChat.vvHandler);
+          }
+          if (meetingChat.vvHandler) {
+            if (navigator.virtualKeyboard) navigator.virtualKeyboard.removeEventListener('geometrychange', meetingChat.vvHandler);
+            window.removeEventListener('resize', meetingChat.vvHandler);
           }
           meetingChat.vvHandler = null;
           const page = document.getElementById('meeting-chat-page');
