@@ -4796,7 +4796,16 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             body.dark-mode .ci-title{color:#ffffff;}
             .ci-title .ci-hl{font-family:'Montserrat',system-ui,sans-serif;font-weight:700;color:#1e90ff;}
             .ci-sub{font-size:.95rem;line-height:1.55;color:#6b7280;max-width:340px;margin:0 auto;}
-            @media (prefers-reduced-motion:reduce){.ci-hero *{animation-duration:.01s !important;animation-delay:0s !important;}}
+            @keyframes ciaPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.14);opacity:1}100%{transform:scale(1);opacity:1}}
+            @keyframes ciaDraw{to{stroke-dashoffset:0}}
+            @keyframes ciaGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+            @keyframes ciaFade{from{opacity:0}to{opacity:1}}
+            @keyframes ciaPing{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.9);opacity:0}}
+            @keyframes ciaLabel{to{fill:#0f1f3d}}
+            .cia-o{transform-box:fill-box;transform-origin:center;opacity:0;}
+            .cia-bar{transform-box:fill-box;transform-origin:0 50%;transform:scaleX(0);}
+            .cia-check{stroke-dasharray:100;stroke-dashoffset:100;}
+            @media (prefers-reduced-motion:reduce){.ci-hero *,.ci-bluehero *{animation-duration:.01s !important;animation-delay:0s !important;}}
           </style>`;
         }
         function careerIntroTickHTML(){ return `<span class="ci-tick">${Icon('check','w-3 h-3')}</span>`; }
@@ -4877,17 +4886,31 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <rect x="388" y="338" width="18" height="20" rx="5" fill="#ffffff"/>
               <text x="513" y="325" font-size="52" font-weight="800" fill="#0f1f3d">Product Designer</text>
               <text x="513" y="396" font-size="46" fill="#6b7a99">92% match</text>
-              <rect x="1050" y="288" width="301" height="105" rx="52.5" fill="#d9f3e1"/>
-              <circle cx="1108" cy="340" r="22" fill="#16a34a"/>
-              <path d="M1098 340l7 7 13-14" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-              <text x="1153" y="357" font-size="46" font-weight="800" fill="#16a34a">Applied</text>
-              <rect x="445" y="571" width="190" height="9" fill="#1a7cff"/>
-              <rect x="735" y="571" width="190" height="9" fill="#bcd3f5"/>
+              <g class="cia-o" style="animation:ciaPop .45s ease-out 2.0s both;">
+                <rect x="1050" y="288" width="301" height="105" rx="52.5" fill="#d9f3e1"/>
+                <circle cx="1108" cy="340" r="22" fill="#16a34a"/>
+                <path d="M1098 340l7 7 13-14" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="1153" y="357" font-size="46" font-weight="800" fill="#16a34a">Applied</text>
+              </g>
+              <!-- connectors: grey (untouched) underneath, progress colour grows over them -->
+              <rect x="445" y="571" width="190" height="9" fill="#c9d1de"/>
+              <rect x="735" y="571" width="190" height="9" fill="#c9d1de"/>
               <rect x="1025" y="571" width="195" height="9" fill="#c9d1de"/>
-              ${steps.map((s, i) => `
-                <circle cx="${s[0]}" cy="575" r="${s[2] ? 57 : 54}" ${s[2] ? 'fill="#1a7cff"' : `fill="#ffffff" stroke="${i === 2 ? '#1a7cff' : '#c4c9d4'}" stroke-width="9"`}/>
-                ${s[2] ? `<path d="M${s[0] - 25} 575l17 17 33-35" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-                <text x="${s[0]}" y="692" text-anchor="middle" font-size="40" font-weight="800" fill="${s[2] ? '#0f1f3d' : '#7b8497'}">${s[1]}</text>`).join('')}
+              <rect class="cia-bar" x="445" y="571" width="190" height="9" fill="#1a7cff" style="animation:ciaGrow .5s ease-out 1.05s both;"/>
+              <rect class="cia-bar" x="735" y="571" width="190" height="9" fill="#bcd3f5" style="animation:ciaGrow .5s ease-out 2.45s both;"/>
+              ${steps.map((s, i) => {
+                const delay = [0.45, 1.6, 2.95, 0][i];
+                const lblDelay = [0.6, 1.75, 3.0, 0][i];
+                return `
+                <circle cx="${s[0]}" cy="575" r="54" fill="#ffffff" stroke="#c4c9d4" stroke-width="9"/>
+                ${s[2] ? `
+                <circle class="cia-o" cx="${s[0]}" cy="575" r="57" fill="#1a7cff" style="animation:ciaPop .45s ease-out ${delay}s both;"/>
+                <path class="cia-check" pathLength="100" d="M${s[0] - 25} 575l17 17 33-35" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="animation:ciaDraw .35s ease-out ${delay + 0.2}s both;"/>` : ''}
+                ${i === 2 ? `
+                <circle class="cia-o" cx="${s[0]}" cy="575" r="54" fill="none" stroke="#1a7cff" stroke-width="9" style="animation:ciaFade .4s ease-out ${delay}s both;"/>
+                <circle class="cia-o" cx="${s[0]}" cy="575" r="54" fill="none" stroke="#1a7cff" stroke-width="6" style="animation:ciaPing 1.3s ease-out ${delay + 0.1}s 2 forwards;"/>` : ''}
+                <text x="${s[0]}" y="692" text-anchor="middle" font-size="40" font-weight="800" fill="#7b8497" ${i < 3 ? `style="animation:ciaLabel .3s ease-out ${lblDelay}s forwards;"` : ''}>${s[1]}</text>`;
+              }).join('')}
             </svg>`;
         }
         function careerStartIntroHTML(stepId){

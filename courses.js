@@ -1575,9 +1575,7 @@ try {
           return `
             ${isAdmin ? `
               <div class="flex gap-2 mb-5">
-                <button onclick="openNewCourse()" class="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border" style="font-family:'Colmeak','Montserrat',sans-serif;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">
-                  ${Icon('plus','w-4 h-4')} Create a Course
-                </button>
+                <button onclick="openNewCourse()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('plus','w-4 h-4')} Create a Course</button>
               </div>` : ''}
             ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : ''}`;
         }
@@ -6099,9 +6097,9 @@ try {
           startClassStreamTimeTicker();
           return `
             ${classLecturesListHTML(cls)}
-            <div class="flex gap-2 mb-6">
+            ${cls.announcements.length ? '' : `<div class="flex gap-2 mb-6">
               <button onclick="openNewAnnouncementOverlay()" class="flex-1 flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">New announcement</button>
-            </div>
+            </div>`}
             ${cls.announcements.length ? cls.announcements.map(a => `
               <div class="bg-white rounded-3xl p-4 mb-3 shadow-sm">
                 ${a.repostOf ? `
@@ -6124,12 +6122,8 @@ try {
                 <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">${escapeHtml(a.text)}</div>
                 ${announcementAttachmentsDisplayHTML(a)}
                 ${streamAnnouncementCommentsHTML(a)}
-              </div>`).join('') : `
-              <div class="flex flex-col items-center text-center py-10">
-                <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('comment','w-9 h-9')}</div>
-                <div class="font-bold text-gray-700 mb-1">This is where you can talk to your space</div>
-                <div class="text-sm text-gray-400 leading-relaxed">Use the stream to share announcements, post assignments, and respond to questions</div>
-              </div>`}`;
+              </div>`).join('') + `<div style="height:60px;"></div>
+            <button onclick="openNewAnnouncementOverlay()" title="New announcement" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}`;
         }
 
         function announcementAttachmentsDisplayHTML(a){
@@ -8931,8 +8925,7 @@ try {
                 ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
                 ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the space', "openNewPollOverlay()")}
                 ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()", true)}
-              </div>
-              ${createFab}`;
+              </div>`;
           }
 
           return `
@@ -9812,7 +9805,7 @@ try {
                 <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
                   <div class="text-gray-400 mb-5">Invite members to your space</div>
-                  <button onclick="openInviteStudentsOverlay()" class="font-semibold text-sm px-8 py-2.5 rounded-2xl" style="color:${NAVY};background:rgba(30,144,255,0.12);margin-bottom:10px;">Invite</button>
+                  <button onclick="openInviteStudentsOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:28px;padding-right:28px;margin-bottom:10px;">${Icon('personPlus','w-4 h-4')} Invite</button>
                 </div>` : `
                 <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
                   <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
@@ -9850,13 +9843,17 @@ try {
         function inviteCoTeacherHTML(){
           const canInvite = inviteCoTeacherDraft.trim().length > 0;
           return `
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto px-5 pb-4">
 <div class="-mx-5">${overlayHeader('Invite co-moderator', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email address</label>
-              <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl mt-4 '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
+              <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
               <div class="text-xs text-gray-400 leading-relaxed mb-4">They'll be added as a co-moderator for this space once invited.</div>
-              <button id="coteacher-submit-btn" onclick="submitInviteCoTeacher()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl mt-4 ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
-            </div>`;
+            </div>
+            <div class="flex-shrink-0 px-5" style="padding-top:8px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);">
+              <button id="coteacher-submit-btn" onclick="submitInviteCoTeacher()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
+            </div>
+          </div>`;
         }
 
         function submitInviteCoTeacher(){
@@ -10080,7 +10077,8 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           const canInvite = inviteEmailsDraft.trim().length > 0;
           return `
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto px-5 pb-4">
 <div class="-mx-5">${overlayHeader('Invite members', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               ${cls && cls.code ? `<div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-3">
                 <div class="min-w-0 text-gray-700">
@@ -10100,10 +10098,13 @@ try {
                 </div>
               </div>` : ''}
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email addresses</label>
-              <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl mt-4 '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. ama@example.com, kojo@example.com" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
+              <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. ama@example.com, kojo@example.com" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
               <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple addresses with commas, or just share the space code above so members can join themselves.' : 'Separate multiple addresses with commas.'}</div>
-              <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl mt-4 ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
-            </div>`;
+            </div>
+            <div class="flex-shrink-0 px-5" style="padding-top:8px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);">
+              <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
+            </div>
+          </div>`;
         }
 
         function classInviteLink(){

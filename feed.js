@@ -3255,6 +3255,11 @@
           // Never start a video that isn't on the surface the person is actually looking at: the app
           // is backgrounded, or an overlay/page is open on top of the feed the video lives in
           if (document.hidden) return;
+          // A video whose post is no longer on the page (the feed was detached when the person
+          // switched tabs, or its overlay was closed) must never start: a detached <video> still
+          // plays sound in the background
+          if (!video.isConnected) return;
+          if (video.closest && video.closest('#feed-list') && typeof currentTab !== 'undefined' && currentTab !== 0) return;
           const activeOv = document.getElementById('overlay');
           const overlayShowing = activeOv && !activeOv.classList.contains('hidden') && activeOv.innerHTML.trim() !== '';
           if (overlayShowing && !activeOv.contains(video)) return;
@@ -3469,7 +3474,38 @@
         });
 
         // ---- Keep post videos from playing in the background ----
+        // Feed/post videos that are playing. A video taken out of the page (leaving the feed,
+        // closing a post) keeps playing its sound but can no longer be found with
+        // document.querySelectorAll, so playing ones are tracked here to be silenced.
+        const __playingPostVideos = new Set();
+        (function trackPlayingPostVideos(){
+          if (window.__trackPlayingPostVideos) return; window.__trackPlayingPostVideos = true;
+          const origPlay = HTMLMediaElement.prototype.play;
+          HTMLMediaElement.prototype.play = function(){
+            if (this.tagName === 'VIDEO' && !this.srcObject && this.closest && this.closest('.feed-video-wrap')) {
+              // Never start a post video that is already off the page
+              if (!this.isConnected) return Promise.resolve();
+              __playingPostVideos.add(this);
+              if (!this.__postVidTracked) {
+                this.__postVidTracked = true;
+                const drop = () => { __playingPostVideos.delete(this); };
+                this.addEventListener('pause', drop);
+                this.addEventListener('ended', drop);
+              }
+            }
+            return origPlay.apply(this, arguments);
+          };
+        })();
+        function pauseDetachedPostVideos(){
+          __playingPostVideos.forEach(v => {
+            if (v.isConnected) return;
+            try { v.pause(); } catch (e) {}
+            __playingPostVideos.delete(v);
+          });
+        }
+
         function pauseStrayPostVideos(all){
+          pauseDetachedPostVideos();
           const ov = document.getElementById('overlay');
           const overlayShowing = ov && !ov.classList.contains('hidden') && ov.innerHTML.trim() !== '';
           // Safety net: a glimpse that is no longer on screen must never keep playing/advancing.
@@ -3516,6 +3552,7 @@
         });
         window.addEventListener('pagehide', () => pauseStrayPostVideos(true));
         setInterval(() => pauseStrayPostVideos(false), 500);
+        setInterval(pauseDetachedPostVideos, 150);
 
         function feedMediaEnterPlaceholder(el, kind, baseUrl){
           const isVideo = kind === 'video';
@@ -3752,6 +3789,7 @@
             feedVideoObserver.observe(v);
             // If the video finishes loading while already on screen, start it then
             v.addEventListener('loadeddata', () => {
+              if (!v.isConnected) return; // feed already left: a detached video has a 0-size box and would count as "visible"
               if (!v.paused || v.dataset.userPaused === '1') return;
               const r = v.getBoundingClientRect();
               const vh = window.innerHeight || document.documentElement.clientHeight;

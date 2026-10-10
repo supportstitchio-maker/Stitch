@@ -2710,7 +2710,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return `
             <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div class="skel-line skel-shimmer" style="width:110px;height:16px;"></div>
+              <div class="skel-line skel-shimmer absolute left-1/2 -translate-x-1/2" style="width:110px;height:16px;"></div>
             </div>
             <div class="flex-1 overflow-y-auto">
               <div class="p-5">
@@ -2755,7 +2755,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="flex-1 overflow-y-auto">
             <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <span class="nm-wrap nm-left font-bold" style="flex:1;min-width:0;font-family:'Montserrat',sans-serif;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
+              <span class="nm-wrap font-bold absolute left-1/2 -translate-x-1/2" style="max-width:60%;font-family:'Montserrat',sans-serif;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
             </div>
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">
