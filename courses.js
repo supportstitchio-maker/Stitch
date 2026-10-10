@@ -9821,7 +9821,7 @@ try {
                     <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(s.name)}</div>
                     ${classBioLineHTML(s.bio || (s.id && classStudentProfiles[s.id] && classStudentProfiles[s.id].bio))}
                     ${s.pending
-                      ? `<div class="text-xs text-gray-400 mt-0.5">Invite pending &middot; must enroll to get access</div>`
+                      ? `<div class="text-xs text-gray-400 mt-0.5">Invite pending</div>`
                       : (s.enrolled
                         ? `<div class="text-xs font-semibold mt-0.5" style="color:${NAVY};">${cls.paymentEnabled ? 'Enrolled &middot; paid entrance' : 'Enrolled'}</div>`
                         : `<div class="text-xs text-gray-400 mt-0.5 truncate">${s.email}</div>`)}
@@ -10097,9 +10097,8 @@ try {
                   <button onclick="copyClassInviteLink()" class="font-semibold text-sm" style="color:${NAVY};">Copy link</button>
                 </div>
               </div>` : ''}
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email addresses</label>
-              <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. ama@example.com, kojo@example.com" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
-              <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple addresses with commas, or just share the space code above so members can join themselves.' : 'Separate multiple addresses with commas.'}</div>
+              <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Emails or @usernames, e.g. ama@example.com, @kojo" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
+              <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple emails or @usernames with commas, or just share the space code above so members can join themselves.' : 'Separate multiple emails or @usernames with commas.'}</div>
             </div>
             <div class="flex-shrink-0 px-5" style="padding-top:8px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);">
               <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
@@ -10144,14 +10143,33 @@ try {
           if (!cls) return;
           const raw = (document.getElementById('invite-emails-input') ? document.getElementById('invite-emails-input').value : inviteEmailsDraft).trim();
           if (!raw) return;
-          const emails = raw.split(/[,\n]/).map(e => e.trim()).filter(Boolean);
-          emails.forEach(email => {
-            const nameGuess = email.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-            cls.students.push(cls.isCourse ? { name: nameGuess, email, pending: true } : { name: nameGuess, email });
-            if (!cls.isCourse) recordClassInviteRemote(cls.id, email);
-          });
+          const entries = raw.split(/[,\n]/).map(e => e.trim()).filter(Boolean);
+          const notFound = [];
+          for (const entry of entries) {
+            if (entry.includes('@') && !entry.startsWith('@')) {
+              const email = entry;
+              const nameGuess = email.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+              cls.students.push(cls.isCourse ? { name: nameGuess, email, pending: true } : { name: nameGuess, email });
+              if (!cls.isCourse) recordClassInviteRemote(cls.id, email);
+            } else {
+              // In-app invite by username
+              const uname = entry.replace(/^@/, '').trim();
+              let prof = null;
+              try {
+                const sb = getSupabaseClient();
+                if (sb) {
+                  const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,username,photo').ilike('username', uname.replace(/[\\%_]/g, ch => '\\' + ch)).maybeSingle();
+                  prof = data || null;
+                }
+              } catch (e) {}
+              if (!prof) { notFound.push(entry); continue; }
+              if ((cls.members || []).includes(prof.user_id) || cls.students.some(st => st.id === prof.user_id)) continue;
+              cls.students.push({ id: prof.user_id, name: prof.name || prof.username || uname, username: prof.username || uname, email: '', pending: true, inApp: true });
+            }
+          }
           queueSaveClassRemote(cls);
           backToClassDetailPeople();
+          if (notFound.length) openAppAlertModal(`Couldn't find ${notFound.join(', ')}. Check the username or use their email.`);
         }
 
         function cancelStudentInvite(classId, index){
