@@ -8042,6 +8042,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           });
           pendingMeetingCode = null; pendingMeetingInfo = null;
           stopMeetingJoinPoll();
+          meetingChatSubscribe();
           startCall(id, 'video', true, opts);
         }
 
@@ -8062,6 +8063,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function meetingOnCallEnded(){
+          meetingChatTeardown();
           if (meetingEndTimer) { clearTimeout(meetingEndTimer); meetingEndTimer = null; }
           const id = activeMeeting ? 'meeting:' + activeMeeting.code : null;
           if (id && convoMeta[id]) delete convoMeta[id];
@@ -8118,7 +8120,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="cu-bsheet">
                 <div class="cu-bsheet-grab"></div>
                 ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
-                ${row('commentText', 'Send a message', "setMeetingSheet('comment')")}
+                ${row('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread} new)` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}
                 ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
                 ${activeMeeting.code ? row('send', 'Share invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
                 ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
@@ -8216,6 +8218,221 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           meetingCommentFocused = false;
           closeMeetingSheet();
         }
+
+
+        // ---- Call chat page: opens full-screen from the call's menu (meetings and space sessions) ----
+        // Messages are saved in Supabase (meeting_messages / lecture_messages) and delivered live
+        // (realtime) to everyone in the call, including people who join later (history loads when
+        // the page opens). Same page for both; callChatCtx() says which call we are in.
+        const meetingChat = { open: false, meetingId: null, ctx: null, ready: null, messages: [], channel: null, myId: null, unread: 0, loading: false, sending: false, vvHandler: null };
+
+        function callChatCtx(){
+          if (typeof activeMeeting !== 'undefined' && activeMeeting) {
+            return { table: 'meeting_messages', keyCol: 'meeting_id', key: activeMeeting.id, title: activeMeeting.title || '', heading: 'Meeting chat', noun: 'meeting', extra: {}, join: null,
+              float: (id, t, n) => addMeetingFloatComment(id, t, n) };
+          }
+          if (typeof liveLectureState !== 'undefined' && liveLectureState && liveLectureState.connected && liveLectureState.lectureId) {
+            const classId = liveLectureState.classId, lid = String(liveLectureState.lectureId);
+            const cls = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === classId) : null;
+            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Session chat', noun: 'session', extra: { class_id: classId },
+              join: async (sb) => { const r = await sb.rpc('join_lecture_chat', { p_class: classId, p_lecture: lid }); if (r.error) throw r.error; },
+              float: (id, t, n) => { if (typeof addLectureFloatingComment === 'function') addLectureFloatingComment(id, t, n); } };
+          }
+          return null;
+        }
+
+        function meetingChatFmtTime(iso){
+          try { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+        }
+
+        function meetingChatMsgHTML(m){
+          const mine = !!m.mine;
+          const name = escapeHtml(m.name || 'Someone');
+          return `
+            <div style="display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
+              ${mine ? '' : `<span style="font-size:11px;font-weight:700;color:var(--cu-sub);margin:0 10px 2px;">${name}</span>`}
+              <div style="max-width:82%;padding:9px 13px;border-radius:18px;font-size:15px;line-height:1.35;word-break:break-word;white-space:pre-wrap;${mine ? 'background:#1e90ff;color:#fff;border-bottom-right-radius:6px;' : 'background:var(--cu-soft);color:var(--cu-fg);border-bottom-left-radius:6px;'}${m.failed ? 'opacity:.55;' : ''}">${escapeHtml(m.text || '')}</div>
+              <span style="font-size:10px;color:var(--cu-sub);margin:2px 10px 0;">${m.failed ? 'Not sent \u00b7 tap to retry' : (m.pending ? 'Sending\u2026' : meetingChatFmtTime(m.created_at))}</span>
+            </div>`;
+        }
+
+        function meetingChatListHTML(){
+          const noun = (meetingChat.ctx && meetingChat.ctx.noun) || 'call';
+          if (meetingChat.loading && !meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 0;">Loading messages\u2026</div>`;
+          if (!meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 24px;">No messages yet.<br>Say something \u2014 everyone in this ${noun} can read it.</div>`;
+          return meetingChat.messages.map((m, i) => m.failed ? `<div onclick="retryMeetingChatMessage(${i})">${meetingChatMsgHTML(m)}</div>` : meetingChatMsgHTML(m)).join('');
+        }
+
+        function meetingChatRender(forceBottom){
+          const list = document.getElementById('meeting-chat-list');
+          if (!list) return;
+          const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+          list.innerHTML = meetingChatListHTML();
+          if (forceBottom || nearBottom) list.scrollTop = list.scrollHeight;
+        }
+
+        function meetingChatPlacePage(){
+          const page = document.getElementById('meeting-chat-page');
+          if (!page) return;
+          const vv = window.visualViewport;
+          page.style.top = (vv ? vv.offsetTop : 0) + 'px';
+          page.style.height = (vv ? vv.height : window.innerHeight) + 'px';
+          const list = document.getElementById('meeting-chat-list');
+          if (list) list.scrollTop = list.scrollHeight;
+        }
+
+        function meetingChatMapRow(r){
+          return { id: r.id, user_id: r.user_id, name: r.author_name || 'Someone', text: r.text, created_at: r.created_at, mine: !!(meetingChat.myId && r.user_id === meetingChat.myId) };
+        }
+
+        function meetingChatAdd(row){
+          if (meetingChat.messages.some(m => m.id === row.id)) return;
+          meetingChat.messages.push(meetingChatMapRow(row));
+        }
+
+        async function meetingChatLoadHistory(){
+          const sb = getSupabaseClient();
+          const ctx = meetingChat.ctx;
+          if (!sb || !ctx) return;
+          meetingChat.loading = true;
+          try {
+            if (meetingChat.ready) await meetingChat.ready;
+            if (!meetingChat.myId) meetingChat.myId = await getCurrentUserId();
+            const { data, error } = await sb.from(ctx.table)
+              .select('id,user_id,author_name,text,created_at')
+              .eq(ctx.keyCol, ctx.key).order('id', { ascending: true }).limit(500);
+            if (error) throw error;
+            if (meetingChat.ctx !== ctx) return;
+            const pending = meetingChat.messages.filter(m => m.pending || m.failed);
+            meetingChat.messages = (data || []).map(meetingChatMapRow).concat(pending);
+          } catch (e) { console.warn('call chat history failed:', e); }
+          meetingChat.loading = false;
+          meetingChatRender(true);
+        }
+
+        function meetingChatSubscribe(){
+          const sb = getSupabaseClient();
+          const ctx = callChatCtx();
+          if (!sb || !ctx) return;
+          meetingChatTeardown();
+          meetingChat.ctx = ctx;
+          meetingChat.meetingId = ctx.key;
+          meetingChat.messages = []; meetingChat.unread = 0;
+          getCurrentUserId().then(id => { meetingChat.myId = id; });
+          const key = ctx.key;
+          meetingChat.ready = (async () => {
+            if (ctx.join) { try { await ctx.join(sb); } catch (e) { console.warn('call chat join failed:', e); } }
+            if (meetingChat.meetingId !== key) return;
+            meetingChat.channel = sb.channel('call-chat:' + key)
+              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: ctx.table, filter: `${ctx.keyCol}=eq.${key}` }, ({ new: row }) => {
+                if (!row || meetingChat.meetingId !== key) return;
+                if (meetingChat.myId && row.user_id === meetingChat.myId) {
+                  // my own message echoing back: swap the pending copy for the saved one
+                  const i = meetingChat.messages.findIndex(m => m.pending && m.text === row.text);
+                  if (i >= 0) meetingChat.messages[i] = meetingChatMapRow(row);
+                  else meetingChatAdd(row);
+                  meetingChatRender(true);
+                  return;
+                }
+                meetingChatAdd(row);
+                if (meetingChat.open) meetingChatRender(false);
+                else {
+                  meetingChat.unread++;
+                  ctx.float('m' + row.id, String(row.text || '').slice(0, 200), row.author_name || 'Someone');
+                }
+              })
+              .subscribe();
+          })();
+        }
+
+        function meetingChatTeardown(){
+          const sb = getSupabaseClient();
+          if (meetingChat.channel && sb) { try { sb.removeChannel(meetingChat.channel); } catch (e) {} }
+          meetingChat.channel = null; meetingChat.ready = null;
+          closeMeetingChatPage();
+          meetingChat.messages = []; meetingChat.unread = 0; meetingChat.meetingId = null; meetingChat.ctx = null;
+        }
+
+        function openMeetingChatPage(){
+          const ctx = callChatCtx();
+          if (!ctx || document.getElementById('meeting-chat-page')) return;
+          if (!meetingChat.ready || !meetingChat.ctx || meetingChat.ctx.key !== ctx.key) meetingChatSubscribe();
+          meetingChat.open = true; meetingChat.unread = 0;
+          const page = document.createElement('div');
+          page.id = 'meeting-chat-page';
+          page.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;z-index:99990;display:flex;flex-direction:column;background:var(--cu-bg);color:var(--cu-fg);';
+          page.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;padding:calc(var(--top-safe-pad, env(safe-area-inset-top,0px)) + 10px) 12px 10px;border-bottom:1px solid var(--cu-line);flex-shrink:0;">
+              <button onclick="closeMeetingChatPage()" title="Back to call" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);color:var(--cu-fg);">${Icon('arrowLeft','w-5 h-5')}</button>
+              <div style="min-width:0;flex:1;">
+                <div style="font-size:16px;font-weight:700;" class="truncate">${escapeHtml(ctx.heading)}</div>
+                <div style="font-size:12px;color:var(--cu-sub);" class="truncate">${escapeHtml(ctx.title)} \u00b7 everyone in the ${ctx.noun} can see this</div>
+              </div>
+            </div>
+            <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
+              <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
+                style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingChatMessage();}">
+              <button onclick="sendMeetingChatMessage()" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1e90ff;">${Icon('send','w-5 h-5')}</button>
+            </div>`;
+          document.body.appendChild(page);
+          meetingChatPlacePage();
+          meetingChat.vvHandler = meetingChatPlacePage;
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', meetingChat.vvHandler);
+            window.visualViewport.addEventListener('scroll', meetingChat.vvHandler);
+          }
+          meetingChatRender(true);
+          meetingChatLoadHistory();
+          setTimeout(() => { const i = document.getElementById('meeting-chat-input'); if (i) i.focus(); }, 80);
+        }
+
+        function closeMeetingChatPage(){
+          meetingChat.open = false;
+          if (window.visualViewport && meetingChat.vvHandler) {
+            window.visualViewport.removeEventListener('resize', meetingChat.vvHandler);
+            window.visualViewport.removeEventListener('scroll', meetingChat.vvHandler);
+          }
+          meetingChat.vvHandler = null;
+          const page = document.getElementById('meeting-chat-page');
+          if (page) page.remove();
+        }
+
+        async function sendMeetingChatMessage(retryIdx){
+          const ctx = meetingChat.ctx || callChatCtx();
+          if (!ctx) return;
+          const input = document.getElementById('meeting-chat-input');
+          let text, entry;
+          if (typeof retryIdx === 'number' && meetingChat.messages[retryIdx]) {
+            entry = meetingChat.messages[retryIdx]; text = entry.text; entry.failed = false; entry.pending = true;
+          } else {
+            text = input ? input.value.trim().slice(0, 1000) : '';
+            if (!text) return;
+            entry = { id: 'tmp' + Date.now(), name: meetingMyName(), text, created_at: new Date().toISOString(), mine: true, pending: true };
+            meetingChat.messages.push(entry);
+            if (input) { input.value = ''; input.focus(); }
+          }
+          meetingChatRender(true);
+          const sb = getSupabaseClient();
+          try {
+            if (!sb) throw new Error('offline');
+            if (meetingChat.ready) await meetingChat.ready;
+            const row = Object.assign({ author_name: meetingMyName(), text }, ctx.extra);
+            row[ctx.keyCol] = ctx.key;
+            const { data, error } = await sb.from(ctx.table).insert(row).select('id,user_id,author_name,text,created_at').single();
+            if (error) throw error;
+            const i = meetingChat.messages.indexOf(entry);
+            const saved = meetingChatMapRow(data); saved.mine = true;
+            if (meetingChat.messages.some(m => m.id === data.id)) { if (i >= 0) meetingChat.messages.splice(i, 1); }
+            else if (i >= 0) meetingChat.messages[i] = saved;
+          } catch (e) {
+            console.warn('call chat send failed:', e);
+            entry.pending = false; entry.failed = true;
+          }
+          meetingChatRender(true);
+        }
+        function retryMeetingChatMessage(i){ sendMeetingChatMessage(i); }
 
         // Signals from other people in the meeting (never echoed back to the sender)
         function meetingReceiveExtra(payload){

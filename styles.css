@@ -444,6 +444,8 @@
         body.dark-mode #inbox-filterbar { border-color:rgba(255,255,255,0.08) !important; }
 
         body.dark-mode #flashModal { background:var(--c-black) !important; }
+        /* Edit Profile page has an inline white background in core.js, which beat dark mode */
+        body.dark-mode #editProfileModal { background:var(--c-black) !important; }
 
         body.dark-mode #desktop-right-panel {
           background:var(--c-onyx) !important;

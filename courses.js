@@ -6864,6 +6864,7 @@ try {
           lectureMinimized = false;
           openOverlay('lectureCall');
           joinLectureSignaling(lectureId);
+          if (typeof meetingChatSubscribe === 'function') meetingChatSubscribe();
           if (joiningAsTeacher) {
             setTimeout(() => {
               if (liveLectureState.connected && liveLectureState.lectureId === lectureId && !Object.keys(lecturePresence).length) {
@@ -7520,6 +7521,7 @@ try {
           }
           const wasGuest = guestLectureMode;
           guestLectureMode = false;
+          if (typeof meetingChatTeardown === 'function') meetingChatTeardown();
           liveLectureState = { classId: null, lectureId: null, connected: false, seconds: 0, muted: false, camOff: false, handRaised: false, view: 'grid', screenSharing: false };
           lectureSlides = null;
           if (whiteboardAttachment && whiteboardAttachment.url) URL.revokeObjectURL(whiteboardAttachment.url);
@@ -8414,7 +8416,7 @@ try {
               <div class="flex items-start justify-between gap-1">
                 ${grid("toggleLectureReactionsSheet()", 'reactions', 'Reactions', false)}
                 ${grid("lectureAttachDocuments()", 'doc', 'PDF', false)}
-                ${grid("toggleLectureCommentSheet()", 'commentText', 'Comment', lectureCommentSheetOpen)}
+                ${grid("closeLectureSheets();openMeetingChatPage()", 'commentText', 'Messages', false)}
                 ${grid(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}
               </div>
             </div>`;
