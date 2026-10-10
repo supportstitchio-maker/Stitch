@@ -7179,18 +7179,18 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
                 </div>
               </div>
             </div>
-            <div class="flex-1 overflow-y-hidden">
+            <div class="flex-1 min-h-0 overflow-y-auto no-scrollbar" style="-webkit-overflow-scrolling:touch;">
               <div class="max-w-2xl mx-auto px-5">
-                <div id="share-glimpse-grid-${g.id}" class="pill-bleed flex overflow-x-auto no-scrollbar" style="gap:16px;scroll-snap-type:x proximity;padding-top:2px;padding-bottom:8px;">
+                <div id="share-glimpse-grid-${g.id}" class="flex flex-wrap" style="gap:16px 16px;padding-top:2px;padding-bottom:${shareGlimpseNetworkOnly ? '120px' : '16px'};">
                   ${contacts.map(c => shareGlimpseContactCell(g.id, c)).join('')}
                 </div>
                 <div id="share-glimpse-empty-${g.id}" class="hidden text-center text-sm text-gray-400 py-10">No matches</div>
               </div>
             </div>
+            ${shareGlimpseNetworkOnly ? `<div id="share-glimpse-action-${g.id}" style="position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom, 0px) + 24px);z-index:30;">${shareGlimpseActionHTML(g.id)}</div>` : `
             <div class="share-sheet-actions flex-shrink-0 w-full border-t border-gray-100" style="background:#fafafa;">
               <div class="share-sheet-actions-row flex items-start no-scrollbar" style="gap:22px;padding:16px 20px calc(env(safe-area-inset-bottom, 12px) + 16px) 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
                 <div id="share-glimpse-action-${g.id}">${shareGlimpseActionHTML(g.id)}</div>
-                ${shareGlimpseNetworkOnly ? '' : `
                 ${shareExternalOption('send','Share', `shareGlimpseExternally(${g.id})`, `linear-gradient(135deg,${ROYAL},${NAVY})`, '#fff')}
                 ${shareExternalOption('link','Copy link', `copyGlimpseLink(${g.id})`, '#eef0f4', NAVY)}
                 ${shareWhatsAppOption(`shareGlimpseViaWhatsApp(${g.id})`)}
@@ -7199,9 +7199,8 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
                 ${shareOutlookOption(`shareGlimpseViaOutlook(${g.id})`)}
                 ${shareGmailOption(`shareGlimpseViaGmail(${g.id})`)}
                 ${shareBluetoothOption(`shareGlimpseViaBluetooth(${g.id})`)}
-`}
               </div>
-            </div>`;
+            </div>`}`;
         }
 
         function shareGlimpseContactCell(glimpseId, c){
@@ -7229,6 +7228,13 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
 
         function shareGlimpseActionHTML(glimpseId){
           const count = shareGlimpseSelected.size;
+          if (count > 0 && shareGlimpseNetworkOnly) {
+            return `
+              <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="rounded-full flex items-center justify-center relative" style="width:58px;height:58px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;box-shadow:0 6px 18px rgba(30,60,160,0.4);">
+                ${Icon('send','w-6 h-6')}
+                <span class="absolute bg-white text-[11px] font-bold rounded-full flex items-center justify-center" style="top:-4px;right:-4px;width:21px;height:21px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
+              </button>`;
+          }
           if (count > 0) {
             return `
               <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
