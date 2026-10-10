@@ -2755,7 +2755,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="flex-1 overflow-y-auto">
             <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <span class="nm-wrap nm-left font-bold font-display" style="flex:1;min-width:0;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
+              <span class="nm-wrap nm-left nm-fit font-bold" data-fit="13" style="flex:1;min-width:0;font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
             </div>
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">
@@ -3762,6 +3762,17 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
     queued = false;
     document.querySelectorAll('.nm-wrap').forEach(w => {
       const i = w.querySelector('.nm-inner'); if (!i) return;
+      // Profile-page usernames (data-fit): shrink the text until the whole name fits on one
+      // line (down to 9px); only a name that still doesn't fit at that size slides sideways
+      if (w.dataset.fit && w.clientWidth > 0) {
+        const base = parseFloat(w.dataset.fit) || 13;
+        let size = base;
+        w.style.fontSize = size + 'px';
+        while (size > 9 && i.getBoundingClientRect().width - w.clientWidth > 2) {
+          size -= 0.5;
+          w.style.fontSize = size + 'px';
+        }
+      }
       const over = Math.ceil(i.getBoundingClientRect().width - w.clientWidth);
       if (over > 2) {
         const d = (-over - 2) + 'px';

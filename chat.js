@@ -1609,7 +1609,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           renderInboxTab();
         }
 
+        // Test/reviewer account only: drops any chat where a real user wrote to it (nothing from the
+        // test account itself in it), so the inbox never shows someone else's data.
+        function purgeTestAccountForeignConvos(){
+          if (!isStitchTestAccount()) return;
+          [primaryConvos, requestConvos].forEach(arr => {
+            if (!Array.isArray(arr)) return;
+            for (let i = arr.length - 1; i >= 0; i--) {
+              const id = arr[i] && arr[i].id;
+              if (!id || String(id).indexOf('dm-') !== 0) continue;
+              const mine = (conversationMessages[id] || []).some(m => m && m.from === 'me');
+              if (!mine) { arr.splice(i, 1); delete conversationMessages[id]; }
+            }
+          });
+        }
+
         function inboxContent(){
+          purgeTestAccountForeignConvos();
           if (inboxSearchActive && inboxSearchQuery.trim()){
             const q = inboxSearchQuery.trim().toLowerCase();
             const results = convoArrays().flat().filter(c => c.name.toLowerCase().includes(q));
@@ -2502,6 +2518,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 .order('created_at', { ascending: true }));
             }
             if (error || !data) return;
+            // Test/reviewer account: only its own messages, never anything a real user sent it
+            if (isStitchTestAccount()) data = data.filter(r => String(r.sender_id) === String(myId));
             const seenLocalIds = new Set();
             const prevLocalMsgs = conversationMessages[convoId] || [];
             const serverLocalIds = new Set(data.map(r => r.local_id).filter(Boolean));
@@ -2621,6 +2639,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         async function reconcileUnreadMessages(){
+          if (isStitchTestAccount()) return;
           const sb = getSupabaseClient();
           if (!sb) return;
           const myId = await getCurrentUserId();
@@ -2762,6 +2781,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         async function reconcileConvoOrder(){
+          if (isStitchTestAccount()) return;
           const sb = getSupabaseClient();
           if (!sb) return;
           const myId = await getCurrentUserId();
@@ -2859,6 +2879,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let lastPolledMessageId = 0;
 
         async function pollForNewMessages(){
+          if (isStitchTestAccount()) return;
           const sb = getSupabaseClient();
           if (!sb) return;
           const myId = await getCurrentUserId();
@@ -3534,6 +3555,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // ---- Opening/reading a conversation thread ----
         function handleIncomingMessage(row){
+          // Test/reviewer account: never take in messages from real users
+          if (isStitchTestAccount()) return;
           if (!row || !row.convo_id) return;
           const convoId = row.convo_id;
           if (!conversationMessages[convoId]) conversationMessages[convoId] = [];
@@ -4064,7 +4087,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
-                <div id="chat-header-name" class="convo-header-name truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
+                <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
                 <div id="chat-header-status" class="text-xs text-gray-400 truncate">${convoLastSeenText(meta)}</div>
               </div>
               <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
