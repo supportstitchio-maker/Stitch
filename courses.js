@@ -4092,6 +4092,9 @@ try {
         let classDetailTab = 'stream'; 
         let classDetailMenuOpen = false;
         let inviteEmailsDraft = '';
+        let inviteUserSelected = new Map();
+        let inviteUserResults = [];
+        let inviteUserTimer = null;
         let joinClassBtnBusy = false;
         function setJoinClassBtnBusy(busy){
           joinClassBtnBusy = busy;
@@ -9847,11 +9850,11 @@ try {
             <div class="flex-1 overflow-y-auto px-5 pb-4">
 <div class="-mx-5">${overlayHeader('Invite co-moderator', 'var(--top-safe-pad)', 'backToClassDetailPeople()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Enter email address</label>
-              <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
+              <input type="email" id="coteacher-email-input" value="${escapeHtml(inviteCoTeacherDraft)}" oninput="inviteCoTeacherDraft=this.value; const b=document.getElementById('coteacher-submit-btn'); if(b){const c=inviteCoTeacherDraft.trim().length>0; b.disabled=!c; b.className='font-display w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="e.g. teacher@example.com" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">
               <div class="text-xs text-gray-400 leading-relaxed mb-4">They'll be added as a co-moderator for this space once invited.</div>
             </div>
             <div class="flex-shrink-0 px-5" style="padding-top:8px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);">
-              <button id="coteacher-submit-btn" onclick="submitInviteCoTeacher()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
+              <button id="coteacher-submit-btn" onclick="submitInviteCoTeacher()" ${canInvite ? '' : 'disabled'} class="font-display w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
             </div>
           </div>`;
         }
@@ -10070,12 +10073,14 @@ try {
 
         function openInviteStudentsOverlay(){
           inviteEmailsDraft = '';
+          inviteUserSelected = new Map();
+          inviteUserResults = [];
           openOverlay('inviteStudents');
         }
 
         function inviteStudentsHTML(){
           const cls = myClasses.find(c => c.id === currentClassId);
-          const canInvite = inviteEmailsDraft.trim().length > 0;
+          const canInvite = inviteUserSelected.size > 0;
           return `
             <div class="flex-1 flex flex-col min-h-0">
             <div class="flex-1 overflow-y-auto px-5 pb-4">
@@ -10097,11 +10102,13 @@ try {
                   <button onclick="copyClassInviteLink()" class="font-semibold text-sm" style="color:${NAVY};">Copy link</button>
                 </div>
               </div>` : ''}
-              <textarea id="invite-emails-input" oninput="inviteEmailsDraft=this.value; const b=document.getElementById('invite-submit-btn'); if(b){const c=inviteEmailsDraft.trim().length>0; b.disabled=!c; b.className='w-full font-semibold text-sm py-3 rounded-2xl '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Emails or @usernames, e.g. ama@example.com, @kojo" rows="4" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-2">${inviteEmailsDraft}</textarea>
-              <div class="text-xs text-gray-400 leading-relaxed">${cls && cls.code ? 'Separate multiple emails or @usernames with commas, or just share the space code above so members can join themselves.' : 'Separate multiple emails or @usernames with commas.'}</div>
+              <input type="text" id="invite-user-input" autocomplete="off" autocapitalize="none" oninput="searchInviteUsers(this.value)" placeholder="Search by username, e.g. @kojo" class="w-full bg-gray-100 border-2 border-gray-300 rounded-2xl px-4 py-3 text-sm mb-3">
+              <div id="invite-user-selected" class="flex flex-wrap gap-2 mb-2">${inviteSelectedChipsHTML()}</div>
+              <div id="invite-user-results">${inviteResultsHTML('')}</div>
+              <div class="text-xs text-gray-400 leading-relaxed mt-3">${cls && cls.code ? 'Type a username and tap the person to select them, or just share the space code above so members can join themselves.' : 'Type a username and tap the person to select them.'}</div>
             </div>
             <div class="flex-shrink-0 px-5" style="padding-top:8px;padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);">
-              <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
+              <button id="invite-submit-btn" onclick="submitInviteStudents()" ${canInvite ? '' : 'disabled'} class="font-display w-full font-semibold text-sm py-3 rounded-2xl ${canInvite ? 'text-white' : 'text-gray-400 bg-gray-100'}" style="${canInvite ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);` : ''}">Invite</button>
             </div>
           </div>`;
         }
@@ -10138,38 +10145,85 @@ try {
           } catch (e) {  }
         }
 
+        function inviteSelectedChipsHTML(){
+          return Array.from(inviteUserSelected.values()).map(p => `<button onclick="toggleInviteUser('${p.user_id}')" class="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold" style="background:#e9f1ff;color:${NAVY};">@${escapeHtml(p.username || '')} <span style="font-size:14px;line-height:1;">&times;</span></button>`).join('');
+        }
+
+        function inviteResultsHTML(q){
+          if (!q) return '';
+          if (!inviteUserResults.length) return '<div class="text-sm text-gray-400 py-3">No one found with that username.</div>';
+          return inviteUserResults.map(p => {
+            const sel = inviteUserSelected.has(p.user_id);
+            return `<button onclick="toggleInviteUser('${p.user_id}')" class="w-full flex items-center gap-3 py-3 text-left border-b border-gray-100">
+              <span class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden" style="${sel ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarMediaHTML(p.photo || null, 'user', 'w-6 h-6')}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold text-sm text-gray-800 truncate">${escapeHtml(p.name || p.username || 'Unnamed')}</span>
+                <span class="block text-xs text-gray-400 truncate">@${escapeHtml(p.username || '')}</span>
+              </span>
+              <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" style="${sel ? `background:${ROYAL};color:#fff;` : 'border:2px solid #d1d5db;'}">${sel ? Icon('check','w-3.5 h-3.5') : ''}</span>
+            </button>`;
+          }).join('');
+        }
+
+        function refreshInviteUserUI(){
+          const q = (document.getElementById('invite-user-input') || {}).value || '';
+          const chips = document.getElementById('invite-user-selected');
+          if (chips) chips.innerHTML = inviteSelectedChipsHTML();
+          const res = document.getElementById('invite-user-results');
+          if (res) res.innerHTML = inviteResultsHTML(q.trim().replace(/^@/, ''));
+          const b = document.getElementById('invite-submit-btn');
+          if (b) {
+            const c = inviteUserSelected.size > 0;
+            b.disabled = !c;
+            b.className = 'font-display w-full font-semibold text-sm py-3 rounded-2xl ' + (c ? 'text-white' : 'text-gray-400 bg-gray-100');
+            b.style.background = c ? `linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)` : '';
+            b.style.boxShadow = c ? '0 4px 14px rgba(65,105,225,0.35)' : '';
+          }
+        }
+
+        function searchInviteUsers(value){
+          const q = String(value || '').trim().replace(/^@/, '');
+          if (inviteUserTimer) clearTimeout(inviteUserTimer);
+          if (!q) { inviteUserResults = []; refreshInviteUserUI(); return; }
+          inviteUserTimer = setTimeout(async () => {
+            const sb = getSupabaseClient();
+            let rows = [];
+            try {
+              if (sb) {
+                const safe = q.replace(/[\\%_]/g, ch => '\\' + ch);
+                const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,username,photo').ilike('username', safe + '%').limit(8);
+                rows = data || [];
+              }
+            } catch (e) {}
+            const cls = myClasses.find(c => c.id === currentClassId);
+            const myId = (typeof currentUserId !== 'undefined') ? currentUserId : null;
+            inviteUserResults = rows.filter(p => p.user_id !== myId && !(cls && ((cls.members || []).includes(p.user_id) || (cls.students || []).some(st => st.id === p.user_id))));
+            // Ignore stale responses if the box changed while we were searching
+            const cur = ((document.getElementById('invite-user-input') || {}).value || '').trim().replace(/^@/, '');
+            if (cur !== q) return;
+            refreshInviteUserUI();
+          }, 250);
+        }
+
+        function toggleInviteUser(userId){
+          if (inviteUserSelected.has(userId)) inviteUserSelected.delete(userId);
+          else {
+            const p = inviteUserResults.find(r => r.user_id === userId);
+            if (p) inviteUserSelected.set(userId, p);
+          }
+          refreshInviteUserUI();
+        }
+
         async function submitInviteStudents(){
           const cls = myClasses.find(c => c.id === currentClassId);
-          if (!cls) return;
-          const raw = (document.getElementById('invite-emails-input') ? document.getElementById('invite-emails-input').value : inviteEmailsDraft).trim();
-          if (!raw) return;
-          const entries = raw.split(/[,\n]/).map(e => e.trim()).filter(Boolean);
-          const notFound = [];
-          for (const entry of entries) {
-            if (entry.includes('@') && !entry.startsWith('@')) {
-              const email = entry;
-              const nameGuess = email.split('@')[0].replace(/[._]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-              cls.students.push(cls.isCourse ? { name: nameGuess, email, pending: true } : { name: nameGuess, email });
-              if (!cls.isCourse) recordClassInviteRemote(cls.id, email);
-            } else {
-              // In-app invite by username
-              const uname = entry.replace(/^@/, '').trim();
-              let prof = null;
-              try {
-                const sb = getSupabaseClient();
-                if (sb) {
-                  const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,username,photo').ilike('username', uname.replace(/[\\%_]/g, ch => '\\' + ch)).maybeSingle();
-                  prof = data || null;
-                }
-              } catch (e) {}
-              if (!prof) { notFound.push(entry); continue; }
-              if ((cls.members || []).includes(prof.user_id) || cls.students.some(st => st.id === prof.user_id)) continue;
-              cls.students.push({ id: prof.user_id, name: prof.name || prof.username || uname, username: prof.username || uname, email: '', pending: true, inApp: true });
-            }
-          }
+          if (!cls || !inviteUserSelected.size) return;
+          inviteUserSelected.forEach(p => {
+            if ((cls.members || []).includes(p.user_id) || cls.students.some(st => st.id === p.user_id)) return;
+            cls.students.push({ id: p.user_id, name: p.name || p.username || '', username: p.username || '', email: '', pending: true, inApp: true });
+          });
+          inviteUserSelected = new Map();
           queueSaveClassRemote(cls);
           backToClassDetailPeople();
-          if (notFound.length) openAppAlertModal(`Couldn't find ${notFound.join(', ')}. Check the username or use their email.`);
         }
 
         function cancelStudentInvite(classId, index){
