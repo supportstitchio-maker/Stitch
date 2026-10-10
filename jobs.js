@@ -2887,16 +2887,156 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             : dashboardTab === 'wallet' ? creatorWalletBodyHTML()
             : receiptsBodyHTML();
           const pills = tabs.length > 1 ? `
-            <div class="pill-bleed flex flex-shrink-0 gap-2 overflow-x-auto no-scrollbar pb-1 mb-4" style="justify-content:safe center;">
-              ${tabs.map(([k, label]) => `<button onclick="setDashboardTab('${k}')" class="filter-pill flex-shrink-0 ${dashboardTab === k ? 'on' : ''}">${label}</button>`).join('')}
+            <div class="seg-bar seg-soft mb-5">
+              ${tabs.map(([k, label]) => `<button onclick="setDashboardTab('${k}')" class="seg-btn ${dashboardTab === k ? 'on' : ''}">${label}</button>`).join('')}
             </div>` : '';
           return `
-            <div class="flex-1 overflow-y-auto px-5 flex flex-col" style="padding-bottom:50px;">
+            <div class="flex-1 overflow-y-auto px-5 flex flex-col bg-white" style="padding-bottom:60px;">
               <div class="flex-shrink-0" style="margin:0 -1.25rem 10px;">${overlayHeader('Dashboard', '20px', null, null, { center: true })}</div>
               <div class="max-w-2xl mx-auto w-full flex flex-col flex-1">
                 ${pills}
                 ${body}
+                ${dashboardAnalyticsHTML()}
               </div>
+            </div>`;
+        }
+
+        // Analytics for everything the user has (their activity, courses and spaces), shown under the
+        // Dashboard's main content as flat graphs in the app's blue palette -- no panels. The download
+        // buttons live on the individual pages only.
+        const DASH_BLUES = { red:'#1e90ff', blue:'#4169e1', green:'#0a2540', amber:'#7cc4ff', purple:'#7c8cf5', cyan:'#38bdf8', pink:'#5b8def', gray:'#cdd5e2' };
+        function dashboardAnalyticsSectionHTML(title, sub, inner){
+          return `
+            <div style="margin-top:26px;padding-top:20px;border-top:1px solid #eef0f4;">
+              <div class="uppercase font-semibold" style="font-size:11px;letter-spacing:.12em;color:${ROYAL};">${title}</div>
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:3px 0 14px;">${sub}</div>` : '<div style="height:14px;"></div>'}
+              ${inner}
+            </div>`;
+        }
+        function dashboardStatRowHTML(items){
+          return `<div class="flex" style="gap:30px;margin:12px 0 14px;">${items.map(([n, l, c]) => `<div><div class="font-display font-bold" style="font-size:24px;line-height:1;color:${c || NAVY};">${n}</div><div class="text-[11px]" style="color:#6b7280;margin-top:4px;">${l}</div></div>`).join('')}</div>`;
+        }
+        function dashboardCourseCardsHTML(){
+          if (typeof allCourses === 'undefined' || typeof courseAnalyticsCollect !== 'function') return '';
+          const myId = (typeof currentUserId !== 'undefined') ? currentUserId : null;
+          const mine = myId ? allCourses.filter(c => c.createdBy === myId) : [];
+          if (!mine.length) return '';
+          const blocks = mine.map((c, i) => {
+            const A = courseAnalyticsCollect(c);
+            const total = Math.max(1, A.completed.length + A.inProgress.length + A.notStarted.length);
+            const seg = (n, col) => n ? `<div style="width:${n / total * 100}%;background:${col};"></div>` : '';
+            return `
+              <button type="button" onclick="openCourseAnalytics('${c.id}')" class="w-full text-left" style="padding:${i ? '18px' : '2px'} 0 4px;${i ? 'border-top:1px solid #f3f4f6;' : ''}">
+                <div class="font-semibold text-sm truncate" style="color:${NAVY};">${escapeHtml(c.title || 'Untitled course')}</div>
+                ${dashboardStatRowHTML([[A.everEnrolled, 'Enrolled'], [A.completed.length, 'Completed', ROYAL], [A.avgProgress + '%', 'Avg progress', '#1e90ff']])}
+                <div class="flex overflow-hidden" style="height:8px;border-radius:9999px;background:#eef1f6;">${seg(A.completed.length, ROYAL)}${seg(A.inProgress.length, '#1e90ff')}${seg(A.notStarted.length, '#cdd5e2')}</div>
+                <div class="text-[11px] text-gray-400" style="margin:6px 0 10px;">Completed &middot; In progress &middot; Not started</div>
+                ${insightsBarChartHTML(A.buckets.map(b => b.label), A.buckets.map(b => b.n), ROYAL)}
+              </button>`;
+          }).join('');
+          let overview = ''; try { overview = dashboardCoursesOverviewHTML(mine); } catch (e) {}
+          return dashboardAnalyticsSectionHTML('Your courses', 'How learners are moving through them. Tap a course for its full page.', blocks + overview);
+        }
+        function dashboardSpaceCardsHTML(){
+          if (typeof myClasses === 'undefined' || typeof classAnalytics !== 'function') return '';
+          const mine = myClasses.filter(c => c.role === 'teacher' && !c.isCourse);
+          if (!mine.length) return '';
+          const blocks = mine.map((cls, i) => {
+            let A; try { A = classAnalytics(cls); } catch (e) { return ''; }
+            const letters = ['A', 'B', 'C', 'D', 'F'];
+            return `
+              <div style="padding:${i ? '18px' : '2px'} 0 4px;${i ? 'border-top:1px solid #f3f4f6;' : ''}">
+                <div class="font-semibold text-sm truncate" style="color:${NAVY};">${escapeHtml(cls.name || 'Space')}</div>
+                ${dashboardStatRowHTML([[A.joined.length, 'Members'], [A.average === null ? '-' : A.average + '%', 'Average score', ROYAL], [A.completion === null ? '-' : A.completion + '%', 'Work handed in', '#1e90ff']])}
+                ${A.ranked.length ? `<div class="text-[11px] text-gray-400" style="margin-bottom:4px;">Grade spread</div>${insightsBarChartHTML(letters, letters.map(l => A.dist[l] || 0), '#1e90ff')}` : '<div class="text-xs text-gray-400">Charts appear once work is graded.</div>'}
+              </div>`;
+          }).join('');
+          let overview = ''; try { overview = dashboardSpacesOverviewHTML(mine); } catch (e) {}
+          return dashboardAnalyticsSectionHTML('Your spaces', 'Scores and hand-ins across the spaces you run.', blocks + overview);
+        }
+        // One chart with a title and a short plain-language description above it
+        function dashboardChartBlockHTML(title, desc, inner){
+          return `<div style="margin:18px 0 6px;">
+            <div class="font-semibold text-sm" style="color:${NAVY};">${title}</div>
+            <div class="text-xs" style="color:#6b7280;line-height:1.55;margin:3px 0 12px;">${desc}</div>
+            ${inner}
+          </div>`;
+        }
+        function dashboardActivityExtrasHTML(){
+          const A = myActivityCollect();
+          const mix = [
+            { label: 'Likes', value: A.likes, color: ACT_COLORS.red },
+            { label: 'Comments', value: A.comments, color: ACT_COLORS.blue },
+            { label: 'Reposts', value: A.reposts, color: ACT_COLORS.green },
+            { label: 'Shares', value: A.shares, color: ACT_COLORS.amber },
+          ];
+          // Weekly posting rhythm (bar) and how well each week's posts did on average (trend line)
+          const WEEKS = 8, wk = insightsWeekBuckets(WEEKS);
+          const perWeek = new Array(WEEKS).fill(0), reactSum = new Array(WEEKS).fill(0);
+          A.myPosts.forEach(p => {
+            const i = wk.idxOf(insightsPostTime(p)); if (i < 0) return;
+            perWeek[i]++; reactSum[i] += (p.likes || 0) + (p.comments || 0) + (p.reposts || 0) + (p.shares || 0);
+          });
+          const avgPerPost = perWeek.map((n, i) => n ? Math.round(reactSum[i] / n * 10) / 10 : 0);
+          const rhythm = A.myPosts.length
+            ? insightsBarChartHTML(wk.labels, perWeek, ACT_COLORS.blue)
+            : '<div class="text-xs text-gray-400">Your weekly posting will be charted here once you post.</div>';
+          const trend = A.myPosts.length
+            ? insightsLineChartHTML(wk.labels, [{ name: 'Avg reactions per post', color: ACT_COLORS.red, values: avgPerPost, area: true }])
+            : '<div class="text-xs text-gray-400">Your trend will appear here once you have posts with reactions.</div>';
+          return dashboardChartBlockHTML('Posts you shared each week', 'How many posts you published in each of the last eight weeks. Steady bars mean a steady posting rhythm, and gaps show weeks you were quiet.', rhythm)
+               + dashboardChartBlockHTML('Are your posts getting better?', 'The average number of reactions per post, by the week it was posted. A line that climbs means your newer posts are landing better than your older ones.', trend)
+               + dashboardChartBlockHTML('What people do on your posts', 'The share of each kind of reaction across everything you have posted. A big comments slice means your posts start conversations.', actPieHTML(mix, 'Reactions will show up here once people respond to your posts.'));
+        }
+        function dashboardCoursesOverviewHTML(mine){
+          const all = mine.map(c => ({ c, A: courseAnalyticsCollect(c) }));
+          const sum = k => all.reduce((n, x) => n + x.A[k].length, 0);
+          const pie = actPieHTML([
+            { label: 'Completed', value: sum('completed'), color: ROYAL },
+            { label: 'In progress', value: sum('inProgress'), color: '#1e90ff' },
+            { label: 'Not started', value: sum('notStarted'), color: '#7cc4ff' },
+            { label: 'Left the course', value: sum('left'), color: '#cdd5e2' },
+          ], 'Learner progress will show up here once people enrol.');
+          const pts = all.map(x => ({ x: x.A.everEnrolled, y: x.A.avgProgress, size: 14, color: '#1e90ff', tip: (x.c.title || 'Course') + ': ' + x.A.everEnrolled + ' learners, ' + x.A.avgProgress + '% average progress' }));
+          const scatter = actScatterHTML(pts, { xLeft: 'Fewer learners', xRight: 'More learners', yMax: '100%', empty: 'Your courses will be plotted here once they have learners.' });
+          return dashboardChartBlockHTML('Where all your learners are', 'Every learner across all of your courses, grouped by how far along they are.', pie)
+               + dashboardChartBlockHTML('Reach vs. progress', 'Each dot is a course. Dots further right have more learners, and dots higher up have learners who are further through the content.', scatter);
+        }
+        function dashboardSpacesOverviewHTML(mine){
+          const all = mine.map(cls => { try { return { cls, A: classAnalytics(cls) }; } catch (e) { return null; } }).filter(Boolean);
+          const dist = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+          all.forEach(x => ['A', 'B', 'C', 'D', 'F'].forEach(l => { dist[l] += x.A.dist[l] || 0; }));
+          const pie = actPieHTML([
+            { label: 'A', value: dist.A, color: ROYAL }, { label: 'B', value: dist.B, color: '#1e90ff' },
+            { label: 'C', value: dist.C, color: '#7cc4ff' }, { label: 'D', value: dist.D, color: '#7c8cf5' },
+            { label: 'F', value: dist.F, color: '#cdd5e2' },
+          ], 'Grades will show up here once work is graded.');
+          const pts = all.filter(x => x.A.average !== null).map(x => ({ x: x.A.joined.length, y: x.A.average, size: 14, color: ROYAL, tip: (x.cls.name || 'Space') + ': ' + x.A.joined.length + ' members, ' + x.A.average + '% average' }));
+          const scatter = actScatterHTML(pts, { xLeft: 'Smaller', xRight: 'Larger', yMax: '100%', empty: 'Spaces will be plotted here once some work is graded.' });
+          return dashboardChartBlockHTML('How students are grading', 'The letter grades earned by students across every space you run.', pie)
+               + dashboardChartBlockHTML('Size vs. average score', 'Each dot is a space. Further right means more members, higher up means a better average score.', scatter);
+        }
+        function dashboardAnalyticsHTML(){
+          let activity = '';
+          // Draw the activity charts in the app's blues, then put the original colours back
+          const savedColors = Object.assign({}, ACT_COLORS);
+          try {
+            Object.assign(ACT_COLORS, DASH_BLUES); actDescMode = true;
+            activity = profileAnalyticsHTML(true);
+            try { activity += dashboardActivityExtrasHTML(); } catch (e) {}
+          }
+          catch (e) { console.warn('Dashboard activity failed:', e); }
+          finally { Object.assign(ACT_COLORS, savedColors); actDescMode = false; }
+          let courses = '', spaces = '';
+          try { courses = dashboardCourseCardsHTML(); } catch (e) {}
+          try { spaces = dashboardSpaceCardsHTML(); } catch (e) {}
+          return `
+            <div class="dash-flat" style="margin-top:40px;">
+              <div class="font-display font-bold" style="font-size:24px;color:${NAVY};line-height:1.1;">Analytics</div>
+              <div class="text-xs" style="color:#6b7280;line-height:1.55;margin-top:6px;">Everything you do on Stitch, charted in one place: how your posts perform, how your courses and spaces are going, and how your time and money are spent.</div>
+              ${dashboardAnalyticsSectionHTML('Your activity', 'Posts, reactions, profile views, jobs and time on Stitch.', activity)}
+              ${courses}
+              ${spaces}
             </div>`;
         }
 
@@ -9168,13 +9308,27 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         // ---- Small chart helpers ----
+        // Plain-language explainers shown between the charts on the Dashboard (not on the standalone page)
+        let actDescMode = false;
+        const ACT_DESCRIPTIONS = {
+          'Top post vs your other posts': 'Your best performing post set against the average of the rest, so you can see how far ahead it is and what kind of reactions it earned.',
+          'Every post, plotted': 'A quick way to spot patterns: posts that sit high got the most reactions, and where they sit left to right shows whether newer posts are doing better than older ones.',
+          'Audience activity': 'How people reacted to your posts week by week. A rising line means your audience is growing more engaged.',
+          'Profile & Glimpse views': 'How often people open your profile and glimpses. Spikes usually follow a new post or a connection request.',
+          'Spaces': 'The spaces you started compared with the ones you joined.',
+          'Opportunities': 'What you posted, what you engaged with, and how your applications are moving through the process.',
+          'My network': 'How your connections have grown, how many requests are waiting and who you talk to most.',
+          'Payments & receipts': 'What you have paid for on Stitch and whether each payment went through.',
+          'Screen time': 'Time spent in Stitch on this device over the last seven days.',
+        };
         function actSectionHTML(color, title, sub, inner, panel){
           const wrap = panel ? 'bg-white rounded-3xl p-5 shadow-sm' : '';
           const wrapStyle = panel ? '' : 'padding:6px 2px 2px;';
           return `
             <div class="${wrap}" style="${wrapStyle}">
               <div class="font-semibold text-sm text-gray-800" style="margin-bottom:${sub ? '2px' : '12px'};">${title}</div>
-              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 12px;">${sub}</div>` : ''}
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 ${actDescMode && ACT_DESCRIPTIONS[title] ? '6px' : '12px'};">${sub}</div>` : ''}
+              ${actDescMode && ACT_DESCRIPTIONS[title] ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:0 0 12px;">${ACT_DESCRIPTIONS[title]}</div>` : ''}
               ${inner}
             </div>`;
         }
@@ -9317,6 +9471,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function dlRerender(kind, htmlFn){
           if (dlActive) { dlActive.pendingRender = () => dlRerender(kind, htmlFn); return; }
           const ov = document.getElementById('overlay');
+          if (ov && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'posterDashboard' && kind === 'profileAnalytics' && typeof posterDashboardHTML === 'function') { kind = 'posterDashboard'; htmlFn = posterDashboardHTML; }
           if (!ov || typeof currentOverlayKind === 'undefined' || currentOverlayKind !== kind) return;
           const sc = ov.querySelector('.overflow-y-auto');
           const top = sc ? sc.scrollTop : 0;
@@ -9721,7 +9876,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           doc.save('my-stitch-activity-' + actDayKey(Date.now()) + '.pdf');
         }
 
-        function profileAnalyticsHTML(){
+        function profileAnalyticsHTML(embed){
           if (!myActivityLoading && (myActivityData === null || Date.now() - myActivityLoadedAt > 60000) && typeof loadMyActivityData === 'function') loadMyActivityData();
           if (insightsNetworkTimes === null && typeof loadInsightsNetworkTimes === 'function') loadInsightsNetworkTimes();
           const A = myActivityCollect();
@@ -9813,10 +9968,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
           const dlBtnClass = 'myact-dl-circle';
           return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
+            ${embed ? '<div class="space-y-4">' : `<div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
             ${overlayHeader('My Activity', '20px', null, null, { center: true })}
-            <div class="p-5 space-y-4">
+            <div class="p-5 space-y-4">`}
 
+              ${embed ? `<div class="flex" style="gap:34px;padding:2px 2px 4px;">${[[A.myPosts.length,'Posts'],[typeof cachedNetworkCount === 'number' ? cachedNetworkCount : 0,'Connections'],[A.appliedJobs.length,'Applied']].map(([n,l]) => `<div><div class="font-display font-bold" style="font-size:32px;line-height:1;color:${NAVY};">${n}</div><div class="text-[11px]" style="color:#6b7280;margin-top:5px;">${l}</div></div>`).join('')}</div>` : `
               <div class="rounded-3xl p-5 text-white stat-hero-pill" style="background:linear-gradient(135deg,${ROYAL},${NAVY});position:relative;overflow:hidden;">
                 <div class="flex items-start justify-between gap-3">
                   <div>
@@ -9827,10 +9983,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                       <div><div class="text-2xl font-bold font-display" style="line-height:1;">${A.appliedJobs.length}</div><div class="text-[11px] text-blue-100">Applied</div></div>
                     </div>
                   </div>
-                  <button type="button" onclick="downloadMyActivity()" aria-label="Download my activity" class="${dlBtnClass}">${Icon('download','w-5 h-5')}</button>
+                  ${embed ? '' : `<button type="button" onclick="downloadMyActivity()" aria-label="Download my activity" class="${dlBtnClass}">${Icon('download','w-5 h-5')}</button>`}
                 </div>
                 <div class="myact-hero-bars" aria-hidden="true">${[40,65,35,80,55,90,60,100].map(h => `<i style="height:${h}%;"></i>`).join('')}</div>
               </div>
+              `}
               ${loadingNote}
 
               <div class="flex gap-3">
@@ -9942,8 +10099,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 </div>
               ` : ''}
 
-              <button type="button" onclick="downloadMyActivity()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>Download my activity</span></button>
-              <div class="text-[11px] text-gray-400 text-center" style="padding-bottom:max(24px, env(safe-area-inset-bottom));">Saves everything on this page as a PDF on your device.</div>
-            </div>
-            </div>`;
+              ${embed ? '' : `<button type="button" onclick="downloadMyActivity()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>Download my activity</span></button>
+              <div class="text-[11px] text-gray-400 text-center" style="padding-bottom:max(24px, env(safe-area-inset-bottom));">Saves everything on this page as a PDF on your device.</div>`}
+            ${embed ? '</div>' : '</div></div>'}`;
         }

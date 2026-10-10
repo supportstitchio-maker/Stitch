@@ -3831,3 +3831,20 @@ body.dark-mode .glimpse-reply-card .grc-cap{color:#d1d5db;}
 
 @keyframes bell-ring{0%{transform:rotate(0)}10%{transform:rotate(18deg)}20%{transform:rotate(-16deg)}30%{transform:rotate(13deg)}40%{transform:rotate(-10deg)}50%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}70%{transform:rotate(2deg)}100%{transform:rotate(0)}}
 .notif-bell-icon.bell-ring{animation:bell-ring 1.2s ease-in-out;}
+
+
+/* ---- Dashboard analytics: flat sections, no panels ---- */
+.dash-flat .bg-white.rounded-3xl,
+.dash-flat .bg-white.rounded-2xl{
+  background:transparent !important; box-shadow:none !important; border:0 !important;
+  border-radius:0 !important; padding-left:2px !important; padding-right:2px !important;
+}
+.dash-flat .bg-white.rounded-3xl{ border-top:1px solid #eef0f4 !important; padding-top:20px !important; padding-bottom:6px !important; margin-top:6px; }
+.dash-flat .shadow-sm{ box-shadow:none !important; }
+.dash-flat .bg-gray-50{ background:transparent !important; }
+.dash-flat .flex.gap-3 > .flex-1.bg-white{ padding-left:0 !important; }
+html.dark-mode .dash-flat .bg-white.rounded-3xl, body.dark-mode .dash-flat .bg-white.rounded-3xl{ border-top-color:rgba(255,255,255,0.08) !important; }
+
+/* Curved-edge (not pill) tab bar used on the Dashboard and Wallet */
+.seg-bar.seg-soft{ border-radius:14px; padding:5px; gap:4px; }
+.seg-bar.seg-soft .seg-btn{ border-radius:10px; padding:0.65rem 0.9rem; }

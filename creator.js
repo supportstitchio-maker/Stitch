@@ -292,11 +292,13 @@
           return `
                 ${currentUserCreatorStatus === 'suspended' ? `<div class="bg-red-50 text-red-600 text-xs rounded-2xl p-3 mb-3">Your creator access is paused. You can still see your history. Contact support to find out why.</div>` : ''}
                 ${creatorPayoutsHeld ? `<div class="bg-amber-50 text-amber-700 text-xs rounded-2xl p-3 mb-3">Withdrawals are on hold while a report is reviewed.</div>` : ''}
-                <div class="rounded-3xl p-5 text-white mb-3" style="${creatorNavyBtn}">
-                  <div class="text-xs text-white/80">Available to withdraw</div>
-                  <div class="text-3xl font-bold font-display mt-1">${ghs(b.available)}</div>
-                  <div class="text-[11px] text-white/80 mt-2">${creatorWithdrawalNote()}</div>
-                  <button onclick="openCreatorWithdraw()" class="mt-3 w-full py-2.5 rounded-full font-semibold text-sm" style="background:#fff;color:${NAVY};">Withdraw</button>
+                <div class="mb-5" style="padding:4px 2px 0;">
+                  <div class="text-xs" style="color:#6b7280;">Available to withdraw</div>
+                  <div class="flex items-center justify-between gap-3" style="margin-top:4px;">
+                    <div class="font-bold font-display" style="font-size:30px;line-height:1.1;color:${NAVY};min-width:0;">${ghs(b.available)}</div>
+                    <button onclick="openCreatorWithdraw()" class="flow-pill flow-pill-go flex-shrink-0" style="width:auto;padding:0.55rem 1.35rem;font-size:13px;">Withdraw</button>
+                  </div>
+                  <div class="text-[11px]" style="color:#6b7280;margin-top:8px;line-height:1.5;">${creatorWithdrawalNote()}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mb-2">
                   <div class="${creatorCard} p-4">
@@ -313,8 +315,8 @@
                 ${walletChartsHTML(b)}
                 ${upcoming.length ? `
                   <div class="text-[11px] text-gray-400 mb-4 px-1">${upcoming.slice(0, 3).map(x => `${ghs(x.creator_net)} on ${creatorDate(x.release_at)}`).join(' · ')}</div>` : '<div class="mb-4"></div>'}
-                <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
-                  ${tabs.map(([k, label]) => `<button onclick="setWalletTab('${k}')" class="filter-pill flex-shrink-0 ${walletTab === k ? 'on' : ''}">${label}</button>`).join('')}
+                <div class="seg-bar seg-soft mb-4">
+                  ${tabs.map(([k, label]) => `<button onclick="setWalletTab('${k}')" class="seg-btn ${walletTab === k ? 'on' : ''}">${label}</button>`).join('')}
                 </div>
                 ${body}`;
         }

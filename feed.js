@@ -3528,6 +3528,10 @@
             if (this.tagName === 'VIDEO' && !this.srcObject && this.closest && this.closest('.feed-video-wrap')) {
               // Never start a post video that is already off the page
               if (!this.isConnected) return Promise.resolve();
+              // Never start a post video that sits underneath an open page (or inside a closed one)
+              if (postVideoIsCovered(this)) return Promise.resolve();
+              // Only one post video plays at a time
+              pauseOtherPostVideos(this);
               __playingPostVideos.add(this);
               if (!this.__postVidTracked) {
                 this.__postVidTracked = true;
@@ -3539,6 +3543,32 @@
             return origPlay.apply(this, arguments);
           };
         })();
+        // True when this video is hidden behind the overlay page, or lives in an overlay that is closed
+        function postVideoIsCovered(v){
+          const ov = document.getElementById('overlay');
+          if (!ov) return false;
+          const ovHidden = ov.classList.contains('hidden') || ov.innerHTML.trim() === '';
+          if (ov.contains(v)) return ovHidden;
+          return !ovHidden && !(v.closest && v.closest('[data-keep-playing]'));
+        }
+        function pauseOtherPostVideos(except){
+          const pauseOne = v => {
+            if (v === except || v.paused) return;
+            try { v.pause(); } catch (e) {}
+            const wrap = v.closest && v.closest('.feed-video-wrap');
+            const btn = wrap && wrap.querySelector('.feed-video-playbtn');
+            if (btn) btn.style.opacity = '1';
+          };
+          __playingPostVideos.forEach(pauseOne);
+          document.querySelectorAll('.feed-video-wrap video').forEach(pauseOne);
+        }
+        // Safety net for any path that starts a video without going through play() above
+        document.addEventListener('play', (e) => {
+          const v = e.target;
+          if (!v || v.tagName !== 'VIDEO' || v.srcObject || !(v.closest && v.closest('.feed-video-wrap'))) return;
+          if (!v.isConnected || postVideoIsCovered(v)) { try { v.pause(); } catch (err) {} return; }
+          pauseOtherPostVideos(v);
+        }, true);
         function pauseDetachedPostVideos(){
           __playingPostVideos.forEach(v => {
             if (v.isConnected) return;
@@ -3556,6 +3586,9 @@
           if (ov && ov.classList.contains('hidden')) {
             ov.querySelectorAll('video[id^="story-video-"], video[id^="my-glimpse-video-"]').forEach(v => { try { v.pause(); } catch (e) {} });
           }
+          document.querySelectorAll('.feed-video-wrap video').forEach(v => {
+            if (!v.paused && !v.srcObject && postVideoIsCovered(v)) { try { v.pause(); } catch (e) {} }
+          });
           document.querySelectorAll('video').forEach(v => {
             if (v.paused || v.srcObject) return;
             if (all || (overlayShowing && !ov.contains(v) && !v.closest('[data-keep-playing]'))) {
