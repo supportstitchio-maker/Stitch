@@ -2077,7 +2077,7 @@ let userPoints = 0;
           if (authOtpSendInFlight) return;
           // Test account: nothing to send. Type the code 000000 on the next screen
           if (isStitchTestEmail(authPendingEmail)) {
-            if (err) { err.textContent = 'Test account: enter 000000 as the code.'; err.style.color = '#b45309'; err.classList.add('show'); }
+            if (err) { err.textContent = 'Test account: enter the QA code.'; err.style.color = '#b45309'; err.classList.add('show'); }
             return;
           }
           authOtpSendInFlight = true;
@@ -2462,10 +2462,8 @@ let userPoints = 0;
           try {
             let error;
             if (isStitchTestEmail(authPendingEmail)) {
-              if (entered !== STITCH_TEST_CODE) {
-                error = { message: 'Test account: the code is 000000.' };
-              } else {
-                ({ error } = await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }));
+              {
+                ({ error } = await stitchTestServerSignIn(sb, entered));
                 if (!error) {
                   // Every test sign-in starts from scratch, even if the last session never signed out
                   await resetStitchTestAccount(true);
@@ -2476,7 +2474,7 @@ let userPoints = 0;
                   let hasSession = false;
                   try { const { data: sd } = await sb.auth.getSession(); hasSession = !!(sd && sd.session); } catch (e) {}
                   if (!hasSession) {
-                    ({ error } = await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }));
+                    ({ error } = await stitchTestServerSignIn(sb, entered));
                     resetCachedAuthUser();
                   }
                 }
@@ -2500,7 +2498,7 @@ let userPoints = 0;
             let needsProfileSetup = await authCheckNeedsProfileSetup();
             // Test account: if the check couldn't confirm (session dropped), sign in once more and retry
             if (needsProfileSetup === null && isStitchTestEmail(authPendingEmail)) {
-              try { await sb.auth.signInWithPassword({ email: STITCH_TEST_EMAIL, password: STITCH_TEST_PASSWORD }); } catch (e) {}
+              try { await stitchTestServerSignIn(sb, entered); } catch (e) {}
               resetCachedAuthUser();
               needsProfileSetup = await authCheckNeedsProfileSetup();
             }

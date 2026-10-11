@@ -43,9 +43,37 @@
         const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
         // ---- Form/input validation helpers ----
         // ---- Test account (reviewers/QA): skips the emailed code and all payments ----
+        // The QA code and password are NOT in the app. The code is checked on the server (test-account-login),
+        // which hands back a one-time token that the app turns into a normal session.
         const STITCH_TEST_EMAIL = 'test@account.stitch';
-        const STITCH_TEST_CODE = '000000';
-        const STITCH_TEST_PASSWORD = 'Stitch-Test-7Kq2xPvM94';
+        async function stitchTestServerSignIn(sb, code){
+          try {
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/test-account-login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+              body: JSON.stringify({ email: STITCH_TEST_EMAIL, code: String(code || '') }),
+            });
+            const j = await res.json().catch(() => ({}));
+            if (!res.ok || !j.token_hash) return { error: { message: j.error || 'That code is incorrect or expired.' } };
+            return await sb.auth.verifyOtp({ token_hash: j.token_hash, type: 'magiclink' });
+          } catch (e) {
+            return { error: { message: 'Could not sign in. Check your connection and try again.' } };
+          }
+        }
+        // Test account only: joins a paid space without paying (checked again on the server)
+        async function stitchTestJoinPaidClass(classId){
+          try {
+            const token = await getAuthAccessToken();
+            if (!token) return null;
+            const res = await fetch(`${SUPABASE_URL}/functions/v1/test-account-join-class`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_ANON_KEY },
+              body: JSON.stringify({ classId }),
+            });
+            const j = await res.json().catch(() => ({}));
+            return (res.ok && j && j.class) ? j : null;
+          } catch (e) { return null; }
+        }
         function isStitchTestEmail(str){
           return String(str || '').trim().toLowerCase() === STITCH_TEST_EMAIL;
         }
