@@ -574,38 +574,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         let selectedCourseNames = new Set(courseBank.map(c => c.name));
 
         // ---- Practice Tests overlay (tabs, scores, course list) ----
-        // Skeleton shown for a moment while Practice Tests / Challenge open, so the screen never pops in half-built
-        let practiceTestsSkeletonOn = false;
-        function practiceTestsSkeletonHTML(){
-          const row = `<div class="sk" style="height:64px;border-radius:16px;"></div>`;
-          return `
-            <div class="ar-root ar-page" aria-busy="true"><div class="ar-in">
-              <div class="ar-top" style="justify-content:flex-start;gap:14px;">
-                <div class="sk" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;"></div>
-                <div class="sk" style="width:140px;height:20px;"></div>
-              </div>
-              <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f3f4f6;border-radius:16px;padding:4px;">
-                <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
-                <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:90px;height:12px;"></div></div>
-              </div>
-              <div class="sk" style="width:46%;height:18px;margin-bottom:10px;"></div>
-              <div class="sk" style="width:92%;height:12px;margin-bottom:8px;"></div>
-              <div class="sk" style="width:70%;height:12px;margin-bottom:20px;"></div>
-              <div style="display:flex;flex-direction:column;gap:14px;">${row}${row}${row}${row}</div>
-            </div></div>`;
-        }
-
         function openPracticeTestsOverlay(){
           practiceTestsTab = 'test';
-          practiceTestsSkeletonOn = true;
           openOverlay('practiceTests');
-          setTimeout(() => {
-            practiceTestsSkeletonOn = false;
-            const ov = document.getElementById('overlay');
-            if (ov && !ov.classList.contains('hidden') && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'practiceTests') {
-              ov.innerHTML = practiceTestsHTML();
-            }
-          }, 450);
         }
 
         function practiceTestsTabBtn(key, label){
@@ -843,15 +814,25 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function examLoadingMarkup(){
+          // Skeleton of the test screen while a specific test / quiz / challenge opens
+          const row = `<div class="sk" style="height:64px;border-radius:16px;"></div>`;
           return `
-            <div id="exam-loading-overlay" class="classroom-slide-cover flex flex-col items-center justify-center">
-              <div style="position:relative;width:84px;height:84px;">
-                <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(10,37,64,0.12) 45%, rgba(10,37,64,0.12) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));animation:classroom-spin 0.9s linear infinite;"></div>
-                <div style="position:absolute;inset:10px;background:#ffffff;border-radius:9999px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(10,37,64,0.18);">
-                  ${gradIcon(Icon('edit','w-8 h-8'))}
+            <div id="exam-loading-overlay" class="classroom-slide-cover flex flex-col" aria-busy="true" style="overflow:hidden;">
+              <div style="padding:calc(var(--top-safe-pad, 0px) + 24px) 20px 20px;width:100%;max-width:640px;margin:0 auto;">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+                  <div class="sk" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;"></div>
+                  <div class="sk" style="width:140px;height:20px;"></div>
                 </div>
+                <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f3f4f6;border-radius:16px;padding:4px;">
+                  <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
+                  <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:90px;height:12px;"></div></div>
+                </div>
+                <div class="sk" style="width:46%;height:18px;margin-bottom:10px;"></div>
+                <div class="sk" style="width:92%;height:12px;margin-bottom:8px;"></div>
+                <div class="sk" style="width:70%;height:12px;margin-bottom:20px;"></div>
+                <div style="display:flex;flex-direction:column;gap:14px;">${row}${row}${row}${row}</div>
+                <span id="exam-loading-text" style="display:none;">${examLoadingLabel()}</span>
               </div>
-              <div class="mt-4 text-sm font-semibold text-gray-500 font-display" id="exam-loading-text">${examLoadingLabel()}</div>
             </div>`;
         }
 
@@ -1739,7 +1720,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // ---- Practice tests overlay ----
         function practiceTestsHTML(){
-          if (practiceTestsSkeletonOn) return practiceTestsSkeletonHTML();
           return `
             <div class="ar-root ar-page"><div class="ar-in">
               <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
