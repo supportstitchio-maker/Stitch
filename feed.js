@@ -3034,7 +3034,13 @@
 
         // Uploads one file with real progress reporting and a stall watchdog
         function uploadObjectWithProgress(file, path, onProgress, token){
-          return new Promise((resolve) => {
+          const __card = (window.StitchUploadProgress && window.StitchUploadProgress.start(file && file.name, file && file.size)) || null;
+          if (__card) {
+            const __orig = onProgress;
+            onProgress = (p) => { try { __card.set(p); } catch (e) {} if (typeof __orig === 'function') __orig(p); };
+          }
+          return new Promise((resolve0) => {
+            const resolve = (r) => { try { if (__card) { if (r && r.ok) __card.done(); else __card.fail(); } } catch (e) {} resolve0(r); };
             const url = `${SUPABASE_URL}/storage/v1/object/${POST_MEDIA_BUCKET}/${path.split('/').map(encodeURIComponent).join('/')}`;
             const xhr = new XMLHttpRequest();
             let lastMove = Date.now(), finished = false, stalled = false;
@@ -3065,9 +3071,27 @@
           });
         }
 
+        // Shrinks big JPEG/WEBP photos before upload (max 1600px, quality 0.82). Falls back to the
+        // original file on any problem or if the result isn't smaller. Videos/PNGs/GIFs are untouched.
+        async function compressImageForUpload(file){
+          try {
+            if (!file || !/^image\/(jpeg|webp)$/.test(file.type) || file.size < 600 * 1024) return file;
+            const bmp = await createImageBitmap(file);
+            const maxSide = 1600, scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+            const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+            const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+            cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+            if (bmp.close) bmp.close();
+            const blob = await new Promise(r => cv.toBlob(r, file.type, 0.82));
+            if (!blob || blob.size >= file.size) return file;
+            return new File([blob], file.name, { type: file.type, lastModified: Date.now() });
+          } catch (e) { return file; }
+        }
+
         async function uploadPostMediaToStorage(file, postId, onProgress){
           const sb = getSupabaseClient();
           if (!sb) { lastMediaUploadError = 'not connected'; return null; }
+          file = await compressImageForUpload(file);
           const path = `${postId}-${escapeHtml(file.name)}`;
           // Phones on mobile data drop uploads fairly often
           for (let attempt = 0; attempt < 3; attempt++) {

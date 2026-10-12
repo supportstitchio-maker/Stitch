@@ -4391,12 +4391,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const hasBubbleContent = !!m.text || files.length > 0;
             const mine = m.from === 'me';
             const voiceHTML = m.voice ? convoVoiceNoteHTML(m.voice, mine, m) : '';
-            const bubbleHTML = hasBubbleContent ? (
+            const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
                 ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
                 : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
             ) : '';
-            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) + convoGlimpseReplyAttachmentsHTML(glimpseReplies, mine);
+            const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
             const imagesHTML = convoImageAttachmentsHTML(images);
             const videosHTML = convoVideoAttachmentsHTML(videos);
             const footer = mine
@@ -4862,6 +4862,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   </div>
                 </button>`).join('')}
             </div>`;
+        }
+
+        // A reply to (or share of) a glimpse is ONE bubble, like a WhatsApp status reply: a quoted
+        // glimpse block (name, "Photo"/"Video", small thumbnail) with the reply text underneath.
+        // The glimpse owner sees the same bubble, with "You" on the quote.
+        function convoGlimpseBubbleHTML(items, m, mine, filesHTML){
+          const isShare = /^Shared a glimpse:/i.test(m.text || '');
+          const quotes = items.map(g => {
+            const idx = convoGlimpseCards.push(g) - 1;
+            const ownerName = g.authorName ? escapeHtml(g.authorName) : 'Glimpse';
+            const who = isShare ? (mine ? 'You' : ownerName) : (mine ? ownerName : 'You');
+            const kind = g.mediaType === 'video' ? 'Video' : (g.mediaType === 'image' ? 'Photo' : '');
+            const icon = g.mediaType === 'video' ? Icon('video','w-3.5 h-3.5') : (kind ? Icon('camera','w-3.5 h-3.5') : '');
+            const desc = kind || (g.caption ? escapeHtml(String(g.caption).slice(0, 60)) : 'Glimpse');
+            let thumb = '';
+            if (g.thumbnail) thumb = `<img src="${escapeHtml(g.thumbnail)}" alt="" class="gq-thumb" draggable="false">`;
+            else if (g.mediaType === 'video' && g.mediaUrl) thumb = `<video src="${escapeHtml(g.mediaUrl)}#t=0.1" class="gq-thumb" muted playsinline preload="metadata" style="pointer-events:none;"></video>`;
+            else if (g.mediaUrl) thumb = `<img src="${escapeHtml(g.mediaUrl)}" alt="" class="gq-thumb" draggable="false">`;
+            else thumb = `<div class="gq-thumb gq-thumb-text bg-${escapeHtml(g.bg || 'brand')}"></div>`;
+            return `<div class="gq-quote" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who} \u00b7 Glimpse</div><div class="gq-desc">${icon}<span>${desc}</span></div></div>${thumb}</div>`;
+          }).join('');
+          const body = (m.text && !isShare) ? `<div class="gq-body">${escapeHtml(m.text)}</div>` : '';
+          const radius = mine ? '20px 20px 0 20px' : '20px 20px 20px 0';
+          return `<div class="gq-bubble ${mine ? 'gq-mine' : 'gq-theirs'}" style="border-radius:${radius};">${filesHTML || ''}${quotes}${body}</div>`;
         }
 
         // The small glimpse thumbnail that travels with a reply to a glimpse
@@ -6430,7 +6454,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-glass:active{transform:scale(.93);background:var(--cu-soft2);}
             .cu-glass .cu-count{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
             .cu-title{flex:1;min-width:0;text-align:center;}
-            .cu-title-name{font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .cu-title-name{font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
             .cu-status{display:inline-flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:var(--cu-sub);font-variant-numeric:tabular-nums;}
             .cu-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:cuPulse 1.8s infinite;}
             .cu-dot-warn{background:#fbbf24;animation-name:cuPulseWarn;}
@@ -6760,6 +6784,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Stage (1:1 and group) ----
+        // While a 1:1 call is still ringing (voice, or video before the camera shows), the status
+        // ("Calling...") sits in the middle under the name instead of in the header.
+        function callStatusInMiddle(){
+          try {
+            if (callState.connected || isGroupCallConvo(callState.convoId)) return false;
+            const showLocalVideo = callState.type === 'video' && callLocalStream && !callState.camOff && !callState.mediaError;
+            return !showLocalVideo;
+          } catch (e) { return false; }
+        }
+        function callRingStatusText(){
+          if (callState.statusOverride) return escapeHtml(callState.statusOverride);
+          return callState.type === 'video' ? 'Video calling\u2026' : 'Calling\u2026';
+        }
+
         function callStageHTML(){
           const meta = convoMeta[callState.convoId] || { icon: 'user', avatarBg: 'bg-gray-100', name: 'Unknown' };
           const isVideo = callState.type === 'video';
@@ -6799,7 +6837,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
                   <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-16 h-16')}</div>
                 </div>
-                <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
                 <div class="cu-voice-sub">${peerMuted ? `${Icon('micOff', 'w-3.5 h-3.5')} Muted` : 'Voice call'}</div>
                 <audio id="call-remote-audio" autoplay playsinline class="hidden"></audio>
               </div>`;
@@ -6819,7 +6856,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
                 <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-16 h-16')}</div>
               </div>
-              <div class="cu-voice-name">${escapeHtml(callDisplayName(meta))}</div>
+              <div class="cu-voice-sub">${callRingStatusText()}</div>
             </div>`;
         }
 
@@ -6956,7 +6993,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="minimizeCall()" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
                 <div class="cu-title">
                   <div id="call-display-name" class="cu-title-name">${escapeHtml(callDisplayName(meta))}</div>
-                  <div class="cu-status">${statusHTML}</div>
+                  ${callStatusInMiddle() ? '' : `<div class="cu-status">${statusHTML}</div>`}
                 </div>
                 ${headRight}
               </div>

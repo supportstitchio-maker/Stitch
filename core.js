@@ -213,6 +213,21 @@
                 }
               }
             );
+            try {
+              // Show the upload progress card for every storage upload (display only).
+              const __st = _sbClient.storage, __from = __st.from.bind(__st);
+              __st.from = function (bucket) {
+                const api = __from(bucket);
+                try {
+                  const __up = api.upload.bind(api);
+                  api.upload = function (path, body, opts) {
+                    const p = __up(path, body, opts);
+                    try { return window.StitchUploadProgress ? window.StitchUploadProgress.wrap(p, body, path) : p; } catch (e) { return p; }
+                  };
+                } catch (e) {}
+                return api;
+              };
+            } catch (e) {}
             let __feedShuffleUid = null;
             _sbClient.auth.onAuthStateChange((event, session) => {
               // New login (or sign-out) = fresh random feed order
@@ -2928,4 +2943,140 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   document.addEventListener('pointerup', release, true);
   document.addEventListener('pointercancel', release, true);
   document.addEventListener('touchstart', function(){}, { passive: true });
+})();
+
+/* Accessibility: give every image an alt attribute (screen readers, SEO).
+   Images created by the app's templates often have none. We only fill in a MISSING alt;
+   existing alt text is never changed. Cheap: runs on added nodes only. */
+(function () {
+  // Typing fields: stop writing-assistant add-ons (e.g. Grammarly) from drawing their own marks inside the field.
+  function quiet(el) {
+    try {
+      if (el.hasAttribute('data-gramm')) return;
+      el.setAttribute('data-gramm', 'false');
+      el.setAttribute('data-gramm_editor', 'false');
+      el.setAttribute('data-enable-grammarly', 'false');
+    } catch (e) {}
+  }
+  function fix(img) {
+    try {
+      if (img.tagName === 'TEXTAREA' || img.tagName === 'INPUT') { quiet(img); return; }
+      if (img.hasAttribute('alt')) return;
+      var label = img.getAttribute('aria-label') || img.getAttribute('title') || '';
+      if (!label) {
+        var c = (img.className && img.className.baseVal === undefined ? String(img.className) : '').toLowerCase();
+        if (/avatar|profile|pfp|photo-?thumb/.test(c)) label = 'Profile photo';
+        else if (/logo/.test(c)) label = 'Stitch logo';
+      }
+      img.setAttribute('alt', label);
+    } catch (e) {}
+  }
+  function scan(node) {
+    if (node.nodeType !== 1) return;
+    if (node.tagName === 'IMG' || node.tagName === 'TEXTAREA' || node.tagName === 'INPUT') fix(node);
+    else if (node.querySelectorAll) {
+      var list = node.querySelectorAll('img,textarea,input');
+      for (var i = 0; i < list.length; i++) fix(list[i]);
+    }
+  }
+  try {
+    var start = function () {
+      scan(document.body);
+      new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var added = muts[i].addedNodes;
+          for (var j = 0; j < added.length; j++) scan(added[j]);
+        }
+      }).observe(document.body, { childList: true, subtree: true });
+    };
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  } catch (e) {}
+})();
+
+/* Upload progress card ("slow start, fast finish").
+   Any upload that takes a moment shows a small card with the file name and a progress bar that
+   crawls at first and then speeds up toward the end, finishing the instant the upload completes.
+   Works for every Supabase storage upload (class files, CVs, applications, course media, chat
+   files...) and for the feed's progress-aware uploads. It only DISPLAYS progress: it never
+   changes what is uploaded, the result, or any error. Small files (<120 KB) show nothing. */
+(function () {
+  var MIN_BYTES = 120 * 1024, active = [], box = null, raf = 0;
+  function fmt(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function ensureBox() {
+    if (box && box.parentNode) return box;
+    box = document.createElement('div');
+    box.setAttribute('aria-live', 'polite');
+    box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);z-index:2147482000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;';
+    document.body.appendChild(box);
+    return box;
+  }
+  function start(name, size) {
+    try {
+      if (!document.body || !(size >= MIN_BYTES)) return null;
+      var el = document.createElement('div');
+      el.style.cssText = 'width:100%;max-width:360px;background:#fff;color:#0f1f33;border-radius:16px;padding:10px 12px;box-shadow:0 6px 24px rgba(10,37,64,.22);font:600 12px Montserrat,Inter,system-ui,sans-serif;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;';
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:30px;height:30px;border-radius:9px;background:#fff1dc;color:#e08a00;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>' +
+        '<div style="min-width:0;flex:1"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(name || 'File') + '</div><div style="font-weight:500;color:#55688a;font-size:10.5px">' + fmt(size) + '</div></div>' +
+        '<div data-pct style="font-weight:700;min-width:36px;text-align:right">0%</div></div>' +
+        '<div style="height:5px;border-radius:99px;background:#e6eaf3;margin-top:8px;overflow:hidden"><div data-bar style="height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#1e90ff,#4169e1)"></div></div>';
+      ensureBox().appendChild(el);
+      requestAnimationFrame(function () { el.style.opacity = '1'; el.style.transform = 'none'; });
+      var c = { el: el, pctEl: el.querySelector('[data-pct]'), bar: el.querySelector('[data-bar]'), t0: Date.now(),
+                T: Math.min(40000, Math.max(2500, size / 200)), real: null, shown: 0, end: 0, state: 'run' };
+      c.set = function (p) { if (typeof p === 'number') c.real = Math.max(0, Math.min(100, p)); };
+      c.done = function () { if (c.state === 'run') { c.state = 'finish'; c.end = Date.now(); c.from = c.shown; } };
+      c.fail = function () { if (c.state === 'run') { c.state = 'gone'; remove(c); } };
+      active.push(c); loop();
+      return c;
+    } catch (e) { return null; }
+  }
+  function remove(c) {
+    try {
+      c.state = 'gone';
+      c.el.style.opacity = '0'; c.el.style.transform = 'translateY(8px)';
+      setTimeout(function () { if (c.el.parentNode) c.el.parentNode.removeChild(c.el); }, 250);
+    } catch (e) {}
+  }
+  function paint(c, v) {
+    v = Math.max(c.shown, Math.min(100, v)); c.shown = v;
+    c.bar.style.width = v + '%'; c.pctEl.textContent = Math.floor(v) + '%';
+  }
+  function loop() {
+    if (raf) return;
+    raf = requestAnimationFrame(function tick() {
+      raf = 0; var now = Date.now();
+      active = active.filter(function (c) { return c.state !== 'gone'; });
+      active.forEach(function (c) {
+        if (c.state === 'run') {
+          var v;
+          if (c.real !== null) v = 92 * Math.pow(c.real / 100, 2);          // real progress, shown slow-then-fast
+          else {
+            var el = now - c.t0, f = el / c.T;
+            v = f <= 1 ? 92 * Math.pow(f, 2.2) : 92 + 6 * (1 - Math.exp(-(el - c.T) / c.T));
+          }
+          paint(c, Math.min(v, 98));
+        } else if (c.state === 'finish') {
+          var k = Math.min(1, (now - c.end) / 350);                         // race to the end
+          paint(c, c.from + (100 - c.from) * (k * k * (3 - 2 * k)));
+          if (k >= 1) {
+            c.state = 'done'; c.pctEl.innerHTML = '<span style="color:#17913f">&#10003;</span>';
+            setTimeout(function () { remove(c); }, 900);
+          }
+        }
+      });
+      if (active.some(function (c) { return c.state === 'run' || c.state === 'finish'; })) raf = requestAnimationFrame(tick);
+    });
+  }
+  window.StitchUploadProgress = {
+    start: start,
+    wrap: function (promise, body, path) {
+      var c = start((body && body.name) || (path ? String(path).split('/').pop() : 'File'), (body && body.size) || 0);
+      if (!c) return promise;
+      Promise.resolve(promise).then(function (r) { if (r && r.error) c.fail(); else c.done(); }, function () { c.fail(); });
+      return promise;
+    }
+  };
 })();

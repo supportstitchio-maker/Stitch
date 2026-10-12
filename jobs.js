@@ -5053,37 +5053,52 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               }).join('')}
             </svg>`;
         }
+        function careerStartIntroSkip(){
+          careerStartStepIndex = careerStartStepIds.indexOf('interests');
+          careerStartErrors = { interests: '', jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', resume: '' };
+          rerenderCareerStart();
+        }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
-          const title = isFirst ? 'Stitch Bot <span class="ci-hl">finds</span> your matches' : 'Stitch Bot can <span class="ci-hl">apply</span> for you';
+          const title = isFirst ? 'Stitch Bot finds<br>your matches' : 'Stitch Bot can<br>apply for you';
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
-            : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem. It's a homebody and will not wander off to other websites.";
+            : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem and will not wander off to other websites.";
+          const dots = ['intro1','intro2'].map(id => `<span class="ci2-dot${id === stepId ? ' on' : ''}"></span>`).join('');
           return `
-            ${careerIntroStylesHTML()}
-            <div class="apply-bg-overlay" style="opacity:.28;"></div>
-            <div class="flex-1 overflow-hidden" style="display:flex;flex-direction:column;min-height:0;">
-            ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div style="flex:1 1 auto;display:flex;flex-direction:column;margin-top:22px;">
-              <div class="ci-bluehero">
-                ${isFirst ? careerIntroHeroMatchHTML() : careerIntroHeroApplyHTML()}
+            <style>
+              .ci2-wrap{position:absolute;inset:0;display:flex;flex-direction:column;background:linear-gradient(160deg,#1e90ff 0%,#4169e1 62%,#2f4fb0 100%);overflow:hidden;}
+              .ci2-top{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0;color:#fff;}
+              .ci2-top button{background:transparent;border:0;color:#fff;cursor:pointer;}
+              .ci2-back{width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-left:-8px;}
+              .ci2-skip{font-size:15px;font-weight:600;padding:8px 4px;opacity:.95;}
+              .ci2-panel{margin:auto 14px calc(env(safe-area-inset-bottom,0px) + 14px);border-radius:34px;background:#ffffff;padding:34px 26px 26px;text-align:center;box-shadow:0 10px 30px rgba(10,30,90,.25);max-width:520px;align-self:center;width:calc(100% - 28px);position:relative;z-index:1;}
+              .ci2-art{position:absolute;inset:0;background:var(--auth-swirl) center top / cover no-repeat;mix-blend-mode:soft-light;opacity:.65;pointer-events:none;}
+              .ci2-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 60% at 15% 0%,rgba(255,255,255,.22),transparent 60%),radial-gradient(90% 50% at 100% 55%,rgba(255,255,255,.10),transparent 65%);pointer-events:none;}
+              body.dark-mode .ci2-art{opacity:.3;}
+              body.dark-mode .ci2-wrap{background:linear-gradient(135deg,#3d4350,#2a2e38 60%,#15181e);}
+              body.dark-mode .ci2-panel{background:var(--c-onyx,#1e1e1e);}
+              .ci2-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.22;font-weight:800;letter-spacing:0;color:#0f1f3d;margin:0 0 12px;}
+              body.dark-mode .ci2-title{color:#fff;}
+              .ci2-sub{font-size:.92rem;line-height:1.55;color:#6b7280;max-width:320px;margin:0 auto;}
+              .ci2-dots{display:flex;justify-content:center;gap:8px;margin:24px 0 22px;}
+              .ci2-dot{height:6px;width:6px;border-radius:9999px;background:rgba(128,128,128,0.35);}
+              .ci2-dot.on{width:22px;background:#1e90ff !important;}
+              .ci2-btn{width:100%;height:56px;border:0;border-radius:9999px;background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;font-family:'Montserrat',system-ui,sans-serif;font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 8px 20px rgba(65,105,225,.35);}
+            </style>
+            <div class="ci2-wrap">
+              <div class="ci2-art"></div>
+              <div class="ci2-top">
+                <button type="button" class="ci2-back" onclick="careerStartBack()" aria-label="Back">${IconBold('back','w-5 h-5')}</button>
+                <button type="button" class="ci2-skip" onclick="careerStartIntroSkip()">Skip</button>
               </div>
-              <div class="ci-panel">
-                <h2 class="ci-title">${title}</h2>
-                <div class="ci-sub">${sub}</div>
+              <div class="ci2-panel">
+                <h2 class="ci2-title">${title}</h2>
+                <div class="ci2-sub">${sub}</div>
+                <div class="ci2-dots">${dots}</div>
+                <div id="career-start-next-wrap"><button id="career-start-submit-btn" type="button" class="ci2-btn" onclick="careerStartNext()">${isFirst ? 'Continue' : 'Get started'}</button></div>
               </div>
-            </div>
-            </div>
-            ${flowFloatBarHTML({
-              topHTML: `<div class="flex items-center justify-center gap-2" style="margin-bottom:14px;">
-                ${['intro1','intro2'].map(id => `<span style="height:6px;width:${id === stepId ? 22 : 6}px;border-radius:9999px;background:${id === stepId ? NAVY : 'rgba(128,128,128,0.35)'};transition:width .2s ease;"></span>`).join('')}
-              </div>`,
-              wrapId: 'career-start-next-wrap',
-              btnId: 'career-start-submit-btn',
-              backOnclick: 'careerStartBack()',
-              goOnclick: 'careerStartNext()',
-              goLabel: 'Continue',
-            })}`;
+            </div>`;
         }
         function careerPlanCardHTML(plan){
           const selected = careerPlanChoice === plan.id;
