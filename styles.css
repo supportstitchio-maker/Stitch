@@ -4081,3 +4081,15 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{
 }
 
 @keyframes cvBarFill{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+
+/* Feed comment icon: filled in light mode, outline only in dark mode */
+.cm-ic-outline{display:none}
+body.dark-mode .cm-ic-fill{display:none}
+body.dark-mode .cm-ic-outline{display:inline-flex}
+.cm-ic-fill,.cm-ic-outline{align-items:center}
+/* Glimpse viewers: message button readable in dark mode */
+body.dark-mode .glimpse-viewer-reply{background:#2f2f2f !important;color:#fff !important;border:1.5px solid rgba(255,255,255,.35)}
+body.dark-mode .glimpse-viewer-reply svg{color:#fff;fill:currentColor}
+
+/* Slightly larger text across the app */
+html{font-size:17px}

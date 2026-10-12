@@ -814,25 +814,47 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function examLoadingMarkup(){
-          // Skeleton of the test screen while a specific test / quiz / challenge opens
-          const row = `<div class="sk" style="height:64px;border-radius:16px;"></div>`;
+          // Skeleton shaped like the real test screen: top bar, question numbers, question card
+          // (progress bar, question text, four answer rows) and the Back / Next footer.
+          let n = 8;
+          try { if (examTest && examTest.questions && examTest.questions.length) n = Math.min(14, examTest.questions.length); } catch (e) {}
+          const sq = `<div class="sk" style="flex:0 0 34px;width:34px;height:34px;border-radius:10px;"></div>`;
+          const opt = `<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);margin-bottom:10px;">
+              <div class="sk" style="flex:0 0 28px;height:28px;border-radius:9px;"></div>
+              <div class="sk" style="height:13px;flex:1;max-width:78%;"></div></div>`;
           return `
             <div id="exam-loading-overlay" class="classroom-slide-cover flex flex-col" aria-busy="true" style="overflow:hidden;">
-              <div style="padding:calc(var(--top-safe-pad, 0px) + 24px) 20px 20px;width:100%;max-width:640px;margin:0 auto;">
-                <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
-                  <div class="sk" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;"></div>
-                  <div class="sk" style="width:140px;height:20px;"></div>
+              <div class="ar-root ar-page" style="overflow:hidden;">
+                <div class="ar-in">
+                  <div class="ar-top">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="sk" style="width:30px;height:14px;"></div>
+                      <div class="sk" style="width:120px;height:18px;"></div>
+                    </div>
+                    <div class="sk" style="width:68px;height:30px;border-radius:999px;"></div>
+                  </div>
+                  <div class="ar-strip" style="overflow:hidden;">${Array.from({ length: n }, () => sq).join('')}</div>
+                  <div class="ar-take">
+                    <div class="ar-card">
+                      <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="sk" style="width:128px;height:14px;"></div>
+                        <div class="sk" style="width:34px;height:30px;border-radius:10px;"></div>
+                      </div>
+                      <div class="ar-bar mb-4"><div class="sk" style="height:10px;width:100%;border-radius:99px;"></div></div>
+                      <div class="sk" style="width:94%;height:15px;margin-bottom:9px;"></div>
+                      <div class="sk" style="width:82%;height:15px;margin-bottom:9px;"></div>
+                      <div class="sk" style="width:56%;height:15px;margin-bottom:22px;"></div>
+                      ${opt}${opt}${opt}${opt}
+                    </div>
+                  </div>
+                  <span id="exam-loading-text" style="display:none;">${examLoadingLabel()}</span>
                 </div>
-                <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:16px;background:#f3f4f6;border-radius:16px;padding:4px;">
-                  <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
-                  <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:90px;height:12px;"></div></div>
-                </div>
-                <div class="sk" style="width:46%;height:18px;margin-bottom:10px;"></div>
-                <div class="sk" style="width:92%;height:12px;margin-bottom:8px;"></div>
-                <div class="sk" style="width:70%;height:12px;margin-bottom:20px;"></div>
-                <div style="display:flex;flex-direction:column;gap:14px;">${row}${row}${row}${row}</div>
-                <span id="exam-loading-text" style="display:none;">${examLoadingLabel()}</span>
               </div>
+              <div class="ar-root ar-foot"><div class="ar-foot-in">
+                <div class="sk" style="width:84px;height:42px;border-radius:999px;"></div>
+                <div class="sk" style="width:44px;height:14px;"></div>
+                <div class="sk" style="width:104px;height:42px;border-radius:999px;"></div>
+              </div></div>
             </div>`;
         }
 

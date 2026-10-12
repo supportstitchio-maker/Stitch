@@ -2070,7 +2070,7 @@
                     <span>Add glimpse</span>
                   </button>
                 </div>` : ''}
-                <div class="px-6 pb-6 text-center text-xs text-gray-400 leading-relaxed">
+                <div class="px-6 pb-6 text-center text-xs text-gray-400 leading-relaxed" style="${myGlimpses.length > 0 ? 'padding-top:24vh;' : ''}">
                   Your glimpses are private to your Stitch network and disappear after 24 hours.
                 </div>
                 </div>
@@ -2415,7 +2415,7 @@
                 <div class="text-[15px] font-semibold text-gray-800 truncate">${escapeHtml(v.name)}</div>
                 <div class="text-xs text-gray-400">${v.viewedLabel}</div>
               </div>
-              <button onclick="replyToGlimpseViewer('${safeName}','${v.icon}','${v.avatarBg}','${escapeForJsAttr(String(v.otherUserId || ''))}','${escapeForJsAttr(String(v.photo || ''))}','${escapeForJsAttr(String(v.username || ''))}')" title="Reply" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0" style="background:#f3f4f6;">${Icon('comment','w-4 h-4')}</button>
+              <button onclick="replyToGlimpseViewer('${safeName}','${v.icon}','${v.avatarBg}','${escapeForJsAttr(String(v.otherUserId || ''))}','${escapeForJsAttr(String(v.photo || ''))}','${escapeForJsAttr(String(v.username || ''))}')" title="Reply" class="glimpse-viewer-reply w-9 h-9 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0" style="background:#f3f4f6;">${Icon('comment','w-4 h-4')}</button>
             </div>`;
         }
 
@@ -3571,10 +3571,25 @@
         // True when this video is hidden behind the overlay page, or lives in an overlay that is closed
         function postVideoIsCovered(v){
           const ov = document.getElementById('overlay');
-          if (!ov) return false;
-          const ovHidden = ov.classList.contains('hidden') || ov.innerHTML.trim() === '';
-          if (ov.contains(v)) return ovHidden;
-          return !ovHidden && !(v.closest && v.closest('[data-keep-playing]'));
+          if (ov) {
+            const ovHidden = ov.classList.contains('hidden') || ov.innerHTML.trim() === '';
+            if (ov.contains(v)) { if (ovHidden) return true; }
+            else if (!ovHidden && !(v.closest && v.closest('[data-keep-playing]'))) return true;
+          }
+          // Any other full-screen page/sheet/modal on top of the video (comments, chat, call page...)
+          try {
+            if (v.closest && v.closest('[data-keep-playing]')) return false;
+            const r = v.getBoundingClientRect();
+            if (r.width > 20 && r.height > 20) {
+              const x = r.left + r.width / 2, y = r.top + r.height / 2;
+              if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight) {
+                const top = document.elementFromPoint(x, y);
+                const own = v.closest('[id^="post-"]') || v.closest('.feed-video-wrap') || v.parentElement;
+                if (top && own && !own.contains(top)) return true;
+              }
+            }
+          } catch (e) {}
+          return false;
         }
         function pauseOtherPostVideos(except){
           const pauseOne = v => {
@@ -5881,7 +5896,7 @@
                   <span class="text-[12px]" id="like-inline-count-${post.id}">${formatCount(post.likes)}</span>
                 </button>
                 <button onclick="openComments(${post.id})" id="comment-btn-${post.id}" class="p-1 flex items-center gap-1 text-gray-500">
-                  ${Icon('comment','w-[18px] h-[18px]')}
+                  <span class="cm-ic-fill">${Icon('comment','w-[18px] h-[18px]')}</span><span class="cm-ic-outline">${Icon('commentOutline','w-[18px] h-[18px]')}</span>
                   <span class="text-[12px]" id="comment-inline-count-${post.id}">${formatCount(post.comments)}</span>
                 </button>
                 <button onclick="toggleRepost(${post.id})" id="repost-btn-${post.id}" class="p-1 flex items-center gap-1 ${post.reposted ? 'text-emerald-600' : 'text-gray-500'}${(typeof repostsPending !== 'undefined' && repostsPending.has(String(post.id))) ? ' repost-spinning' : ''}">

@@ -4112,7 +4112,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <button id="convo-jump-latest-btn" onclick="scrollConvoLogToBottom()" title="Jump to latest" class="hidden convo-jump-btn flex items-center justify-center" style="position:absolute;right:16px;bottom:14px;z-index:5;width:36px;height:36px;border-radius:9999px;">${Icon('chevronDown','w-4 h-4')}</button>
             </div>
             <div id="convo-attach-strip" class="flex-shrink-0">${convoAttachStripHTML()}</div>
-            <div id="convo-reply-bar" class="flex-shrink-0 items-center gap-2 px-4 py-2" style="display:none;border-top:1px solid rgba(0,0,0,.06);"></div>
+            <div id="convo-reply-bar" class="flex-shrink-0 items-center gap-2 px-4 py-2" style="display:none;"></div>
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
               <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
@@ -6975,7 +6975,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
                 <div class="cu-voice-avatar ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-16 h-16')}</div>
               </div>
-              <div class="cu-voice-sub">${callRingStatusText()}</div>
+              <div class="cu-voice-sub" style="margin-top:34px;">${callRingStatusText()}</div>
             </div>`;
         }
 
@@ -8416,7 +8416,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         function meetingChatBodyHTML(m, mine){
           const p = meetingChatParse(m.text);
-          const quote = p.rname ? `<div style="border-left:3px solid ${mine ? 'rgba(255,255,255,.85)' : '#1e90ff'};background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;white-space:normal;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>` : '';
+          const quote = p.rname ? `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;white-space:normal;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>` : '';
           return quote + escapeHtml(p.body);
         }
         let meetingChatReply = null;
@@ -8425,7 +8425,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!bar) return;
           if (!meetingChatReply) { bar.style.display = 'none'; bar.innerHTML = ''; meetingChatPlacePage(); return; }
           bar.style.display = 'flex';
-          bar.innerHTML = `<div style="min-width:0;flex:1;border-left:3px solid #1e90ff;padding-left:10px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(meetingChatReply.name)}</div><div style="font-size:13px;color:var(--cu-sub);" class="truncate">${escapeHtml(meetingChatReply.text)}</div></div><button onclick="meetingChatSetReply(null)" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--cu-sub);flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
+          bar.innerHTML = `<div style="min-width:0;flex:1;padding-left:4px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(meetingChatReply.name)}</div><div style="font-size:13px;color:var(--cu-sub);" class="truncate">${escapeHtml(meetingChatReply.text)}</div></div><button onclick="meetingChatSetReply(null)" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--cu-sub);flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
           meetingChatPlacePage();
         }
         function meetingChatSetReply(i){
@@ -8472,7 +8472,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoTextHTML(text, mine){
           const p = meetingChatParse(text);
           if (!p.rname) return escapeHtml(p.body);
-          const q = `<div style="border-left:3px solid ${mine ? 'rgba(255,255,255,.85)' : '#1e90ff'};background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>`;
+          const q = `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>`;
           return q + escapeHtml(p.body);
         }
         function convoShowReply(){
@@ -8480,7 +8480,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!bar) return;
           if (!convoReply || convoReply.convoId !== activeConvoId) { convoReply = null; bar.style.display = 'none'; bar.innerHTML = ''; return; }
           bar.style.display = 'flex';
-          bar.innerHTML = `<div style="min-width:0;flex:1;border-left:3px solid #1e90ff;padding-left:10px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(convoReply.name)}</div><div style="font-size:13px;color:#6b7280;" class="truncate">${escapeHtml(convoReply.text)}</div></div><button type="button" onclick="convoClearReply()" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7280;flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
+          bar.innerHTML = `<div style="min-width:0;flex:1;padding-left:4px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(convoReply.name)}</div><div style="font-size:13px;color:#6b7280;" class="truncate">${escapeHtml(convoReply.text)}</div></div><button type="button" onclick="convoClearReply()" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7280;flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
         }
         function convoClearReply(){ convoReply = null; convoShowReply(); }
         function convoSetReply(key){
@@ -8629,7 +8629,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>
             <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
-            <div id="meeting-chat-replybar" style="display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);"></div>
+            <div id="meeting-chat-replybar" style="display:none;align-items:center;gap:8px;padding:8px 12px;flex-shrink:0;background:var(--cu-bg);"></div>
             <div id="meeting-chat-bar" style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
               <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
                 style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
