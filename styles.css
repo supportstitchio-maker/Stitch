@@ -4016,3 +4016,13 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-cta{box-shadow:non
 #auth-gate .auth-promo-cta,
 #landing-page .nav-cta,
 #landing-page .btn-primary{font-family:'Montserrat',system-ui,sans-serif !important;}
+
+/* Dark mode: primary pills use the same dark grey as the other dark buttons instead of blue */
+body.dark-mode .flow-pill-go,
+html.dark-mode .flow-pill-go,
+body.dark-mode #auth-gate .auth-onboarding-footer .flow-pill-go,
+body.dark-mode #auth-gate .auth-onboarding-footer .auth-skip-link.loading,
+body.dark-mode #auth-gate .auth-skip-link.loading{
+  background:var(--c-tapshoe,#3a3a3a) !important; background-image:none !important; color:#fff !important;
+  box-shadow:none !important; border:1px solid rgba(255,255,255,.08) !important;
+}

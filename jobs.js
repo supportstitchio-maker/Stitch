@@ -5067,16 +5067,16 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const dots = ['intro1','intro2'].map(id => `<span class="ci2-dot${id === stepId ? ' on' : ''}"></span>`).join('');
           return `
             <style>
-              .ci2-wrap{position:absolute;inset:0;display:flex;flex-direction:column;background:linear-gradient(160deg,#1e90ff 0%,#4169e1 62%,#2f4fb0 100%);overflow:hidden;}
-              .ci2-top{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0;color:#fff;}
-              .ci2-top button{background:transparent;border:0;color:#fff;cursor:pointer;}
+              .ci2-wrap{position:absolute;inset:0;display:flex;flex-direction:column;background:#e9ebef;overflow:hidden;}
+              .ci2-top{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0;color:#0f1f3d;}
+              body.dark-mode .ci2-top{color:#fff;}
+              .ci2-top button{background:transparent;border:0;color:inherit;cursor:pointer;}
               .ci2-back{width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-left:-8px;}
               .ci2-skip{font-size:15px;font-weight:600;padding:8px 4px;opacity:.95;}
-              .ci2-panel{margin:auto 14px calc(env(safe-area-inset-bottom,0px) + 14px);border-radius:34px;background:#ffffff;padding:34px 26px 26px;text-align:center;box-shadow:0 10px 30px rgba(10,30,90,.25);max-width:520px;align-self:center;width:calc(100% - 28px);position:relative;z-index:1;}
-              .ci2-art{position:absolute;inset:0;background:var(--auth-swirl) center top / cover no-repeat;mix-blend-mode:soft-light;opacity:.65;pointer-events:none;}
-              .ci2-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 60% at 15% 0%,rgba(255,255,255,.22),transparent 60%),radial-gradient(90% 50% at 100% 55%,rgba(255,255,255,.10),transparent 65%);pointer-events:none;}
-              body.dark-mode .ci2-art{opacity:.3;}
-              body.dark-mode .ci2-wrap{background:linear-gradient(135deg,#3d4350,#2a2e38 60%,#15181e);}
+              .ci2-panel{margin:auto 14px calc(env(safe-area-inset-bottom,0px) + 14px);border-radius:34px;background:#ffffff;padding:34px 26px 26px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.08);max-width:520px;align-self:center;width:calc(100% - 28px);position:relative;z-index:1;}
+              body.dark-mode .ci2-wrap{background:#2b2d31;}
+              body.dark-mode .ci2-btn{background:var(--c-tapshoe,#3a3d44);box-shadow:none;border:1px solid rgba(255,255,255,.08);}
+              body.dark-mode .ci2-dot.on{background:#ffffff !important;}
               body.dark-mode .ci2-panel{background:var(--c-onyx,#1e1e1e);}
               .ci2-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.22;font-weight:800;letter-spacing:0;color:#0f1f3d;margin:0 0 12px;}
               body.dark-mode .ci2-title{color:#fff;}
@@ -5087,7 +5087,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               .ci2-btn{width:100%;height:56px;border:0;border-radius:9999px;background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;font-family:'Montserrat',system-ui,sans-serif;font-weight:700;font-size:17px;cursor:pointer;box-shadow:0 8px 20px rgba(65,105,225,.35);}
             </style>
             <div class="ci2-wrap">
-              <div class="ci2-art"></div>
               <div class="ci2-top">
                 <button type="button" class="ci2-back" onclick="careerStartBack()" aria-label="Back">${IconBold('back','w-5 h-5')}</button>
                 <button type="button" class="ci2-skip" onclick="careerStartIntroSkip()">Skip</button>
