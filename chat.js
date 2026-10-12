@@ -2738,7 +2738,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (m.from === 'system') return m.text || '';
           if (m.voice) return '🎤 Voice message';
           if (Array.isArray(m.attachments) && m.attachments.length) return convoAttachmentPreviewText(m.attachments, m.from === 'me', m.text);
-          return m.text || 'Attachment';
+          return meetingChatParse(m.text).body || 'Attachment';
         }
         function syncConvoPreviewFromMessages(c){
           try {
@@ -2809,7 +2809,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const unreadCount = data.filter(r => r.convo_id === convoId && r.sender_id && String(r.sender_id) !== String(myId) && r.read === false).length;
                 const prev = Array.isArray(row.attachments) && row.attachments.length
                   ? convoAttachmentPreviewText(row.attachments, false, row.text)
-                  : (row.voice_url ? '🎤 Voice message' : (row.text || 'Attachment'));
+                  : (row.voice_url ? '🎤 Voice message' : (meetingChatParse(row.text).body || 'Attachment'));
                 const rt = row.created_at ? new Date(row.created_at).getTime() : Date.now();
                 const entry = { id: convoId, otherUserId: row.sender_id, icon: 'user', avatarBg: 'bg-blue-50', name: 'Stitch member', username: '', photo: null, preview: prev, time: formatRequestTime(rt), unread: true, read: false, unreadCount: unreadCount || 1, _lastMsgAt: rt };
                 primaryConvos.unshift(entry);
@@ -2827,7 +2827,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               const previewText = isSysEvent ? row.text.slice(SYS_MSG_PREFIX.length)
                 : row.voice_url ? '🎤 Voice message'
                 : (Array.isArray(row.attachments) && row.attachments.length) ? convoAttachmentPreviewText(row.attachments, row.sender_id && String(row.sender_id) === String(myId), row.text)
-                : (row.text || 'Attachment');
+                : (meetingChatParse(row.text).body || 'Attachment');
               // Already in sync (same moment or slightly newer locally, same text): nothing to do.
               if (Math.abs(rowTime - (c._lastMsgAt || 0)) < 5000 && c.preview === previewText) return;
               // The row already reflects something newer than the server's latest (a message still being
@@ -3574,7 +3574,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             time: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
           });
           queueSaveUserState();
-          const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? convoAttachmentPreviewText(row.attachments, false, row.text) : (row.text || 'Attachment'));
+          const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? convoAttachmentPreviewText(row.attachments, false, row.text) : (meetingChatParse(row.text).body || 'Attachment'));
           if (!isSysEvent && activeConvoId === convoId && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
 
           let found = findConvoAndArray(convoId);
@@ -4112,6 +4112,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <button id="convo-jump-latest-btn" onclick="scrollConvoLogToBottom()" title="Jump to latest" class="hidden convo-jump-btn flex items-center justify-center" style="position:absolute;right:16px;bottom:14px;z-index:5;width:36px;height:36px;border-radius:9999px;">${Icon('chevronDown','w-4 h-4')}</button>
             </div>
             <div id="convo-attach-strip" class="flex-shrink-0">${convoAttachStripHTML()}</div>
+            <div id="convo-reply-bar" class="flex-shrink-0 items-center gap-2 px-4 py-2" style="display:none;border-top:1px solid rgba(0,0,0,.06);"></div>
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
               <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
@@ -4393,8 +4394,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const voiceHTML = m.voice ? convoVoiceNoteHTML(m.voice, mine, m) : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
-                ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
-                : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${escapeHtml(m.text)}</div>`
+                ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}</div>`
+                : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}</div>`
             ) : '';
             const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
             const imagesHTML = convoImageAttachmentsHTML(images);
@@ -4421,12 +4422,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const pressHandlers = `onmousedown="startPress('messageLongPress','${pressKey}', event)" onmouseup="endPress()" onmouseleave="endPress()" ontouchstart="startPress('messageLongPress','${pressKey}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"`;
             const menuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${pressKey}', event)" class="desktop-msg-menu-btn w-7 h-7 rounded-full items-center justify-center text-gray-400 hover:bg-gray-100 flex-shrink-0" style="align-self:center;" title="Message options" aria-label="Message options">${Icon('dots','w-4 h-4')}</button>`;
             const bubble = m.from === 'them' ? `
-            <div class="flex items-start gap-3" ${pressHandlers}>
+            <div class="flex items-start gap-3" data-cv-key="${pressKey}" ${pressHandlers}>
               <div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
               ${content}
               ${menuBtn}
             </div>` : `
-            <div class="flex items-start justify-end gap-3" ${pressHandlers}>
+            <div class="flex items-start justify-end gap-3" data-cv-key="${pressKey}" ${pressHandlers}>
               ${menuBtn}
               ${content}
             </div>`;
@@ -4969,7 +4970,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (s.mine || s.name !== g.authorName) continue;
               const items = (s.items && s.items.length) ? s.items : [];
               if (!items.length) continue;
-              const i = Math.max(0, items.findIndex(it => it.caption && it.caption === g.caption));
+              if (g.mediaUrl || !g.caption) continue;
+              const i = items.findIndex(it => !it.mediaUrl && it.caption === g.caption);
+              if (i < 0) continue;
               return { s, items, i };
             }
           } catch (e) {}
@@ -4978,8 +4981,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function openGlimpseCardViewer(idx){
           const g = convoGlimpseCards[idx];
           if (!g) return;
-          const f = cgvFind(g);
-          if (!f) { openGlimpseCardViewerPlain(idx); return; }
+          let f = cgvFind(g);
+          if (!f) {
+            // Not in the live glimpses: either they haven't loaded yet, or this glimpse has expired
+            // (glimpses last 24 hours). An expired one opens nothing.
+            if (typeof remoteGlimpsesLoaded !== 'undefined' && !remoteGlimpsesLoaded && typeof loadRemoteGlimpses === 'function' && !g.__retried) {
+              g.__retried = true;
+              Promise.resolve(loadRemoteGlimpses()).catch(() => {}).then(() => openGlimpseCardViewer(idx));
+            }
+            return;
+          }
           closeGlimpseCardViewer();
           cgvState = { s: f.s, items: f.items, i: f.i };
           const modal = document.createElement('div');
@@ -5565,6 +5576,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // ---- Message compose input (keyboard, autogrow, send) ----
         function updateConvoPreview(convoId, previewText){
+          if (typeof previewText === 'string' && previewText.charAt(0) === '\u2063') previewText = meetingChatParse(previewText).body;
           const found = findConvoAndArray(convoId);
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
@@ -5632,7 +5644,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function sendConvoMessage(){
           const inputEl = document.getElementById('convo-input');
-          const text = inputEl ? inputEl.value.trim() : '';
+          let text = inputEl ? inputEl.value.trim() : '';
+          const plainText = text;
+          if (text && convoReply && convoReply.convoId === activeConvoId) {
+            const pre = '\u2063' + convoReply.name + '\u2063' + convoReply.text + '\u2063';
+            text = pre + text.slice(0, Math.max(1, 4000 - pre.length));
+          }
+          if (convoReply) { convoReply = null; convoShowReply(); }
           const attachmentsForUpload = pendingConvoAttachments;
           // Keep `file` on the locally-echoed attachment (not just dataUrl) so non-image attachments
           const attachments = attachmentsForUpload.map(f => ({ name: f.name, type: f.type, dataUrl: f.dataUrl, file: f.file }));
@@ -5650,7 +5668,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           queueSaveUserState();
           const convoIdAtSend = activeConvoId;
           const isPhoto = attachments.length && attachments[0].type && attachments[0].type.startsWith('image/');
-          updateConvoPreview(convoIdAtSend, text || (isPhoto ? '📷 Photo' : (attachments.length ? `📎 ${attachments[0].name}` : 'Attachment')));
+          updateConvoPreview(convoIdAtSend, plainText || (isPhoto ? '📷 Photo' : (attachments.length ? `📎 ${attachments[0].name}` : 'Attachment')));
 
           const meta = convoMeta[convoIdAtSend];
           (async () => {
@@ -8420,9 +8438,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         (function(){
           let st = null;
           document.addEventListener('touchstart', (e) => {
-            const row = e.target.closest && e.target.closest('[data-mc-i]');
-            if (!row || !document.getElementById('meeting-chat-list') || e.touches.length !== 1) { st = null; return; }
-            st = { row, i: +row.getAttribute('data-mc-i'), x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, lock: '', hit: false };
+            const row = e.target.closest && e.target.closest('[data-mc-i],[data-cv-key]');
+            if (!row || e.touches.length !== 1) { st = null; return; }
+            st = { row, i: row.getAttribute('data-mc-i') !== null ? +row.getAttribute('data-mc-i') : null, key: row.getAttribute('data-cv-key'), x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, lock: '', hit: false };
           }, { passive: true });
           document.addEventListener('touchmove', (e) => {
             if (!st) return;
@@ -8440,14 +8458,43 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }, { passive: false });
           function end(){
             if (!st) return;
-            const { row, i, hit } = st; st = null;
+            const { row, i, key, hit } = st; st = null;
             row.style.transition = 'transform .18s ease'; row.style.transform = '';
             setTimeout(() => { const a = row.querySelector('[data-mc-arrow]'); if (a) a.remove(); }, 200);
-            if (hit) meetingChatSetReply(i);
+            if (hit) { if (key) convoSetReply(key); else meetingChatSetReply(i); }
           }
           document.addEventListener('touchend', end, { passive: true });
           document.addEventListener('touchcancel', end, { passive: true });
         })();
+
+        // ---- Swipe to reply in normal chats (same hidden-quote trick as the call chat) ----
+        let convoReply = null;
+        function convoTextHTML(text, mine){
+          const p = meetingChatParse(text);
+          if (!p.rname) return escapeHtml(p.body);
+          const q = `<div style="border-left:3px solid ${mine ? 'rgba(255,255,255,.85)' : '#1e90ff'};background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>`;
+          return q + escapeHtml(p.body);
+        }
+        function convoShowReply(){
+          const bar = document.getElementById('convo-reply-bar');
+          if (!bar) return;
+          if (!convoReply || convoReply.convoId !== activeConvoId) { convoReply = null; bar.style.display = 'none'; bar.innerHTML = ''; return; }
+          bar.style.display = 'flex';
+          bar.innerHTML = `<div style="min-width:0;flex:1;border-left:3px solid #1e90ff;padding-left:10px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(convoReply.name)}</div><div style="font-size:13px;color:#6b7280;" class="truncate">${escapeHtml(convoReply.text)}</div></div><button type="button" onclick="convoClearReply()" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7280;flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
+        }
+        function convoClearReply(){ convoReply = null; convoShowReply(); }
+        function convoSetReply(key){
+          const sep = key.lastIndexOf('|');
+          const convoId = key.slice(0, sep), ts = Number(key.slice(sep + 1));
+          const m = (conversationMessages[convoId] || []).find(x => (x.time || 0) === ts);
+          if (!m || m.from === 'system') return;
+          const body = meetingChatParse(m.text).body;
+          const label = body || (m.voice ? '\ud83c\udfa4 Voice message' : ((m.attachments || []).some(a => a.type && a.type.indexOf('image/') === 0) ? '\ud83d\udcf7 Photo' : 'Attachment'));
+          const meta = convoMeta[convoId] || {};
+          convoReply = { convoId, name: m.from === 'me' ? 'You' : (meta.name || 'Them'), text: label.slice(0, 80) };
+          convoShowReply();
+          const inp = document.getElementById('convo-input'); if (inp) inp.focus();
+        }
 
         function meetingChatMsgHTML(m){
           const mine = !!m.mine;

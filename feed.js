@@ -2075,7 +2075,7 @@
                 </div>
                 </div>
               </div>
-              ${myGlimpses.length > 0 ? `<button type="button" onclick="composeGlimpseMedia()" title="Add glimpse" aria-label="Add glimpse" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}
+              ${myGlimpses.length > 0 ? `<button type="button" onclick="composeGlimpseMedia()" title="Add glimpse" aria-label="Add glimpse" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(2.75rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}
             </div>`;
         }
 
