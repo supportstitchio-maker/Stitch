@@ -4026,3 +4026,18 @@ body.dark-mode #auth-gate .auth-skip-link.loading{
   background:var(--c-tapshoe,#3a3a3a) !important; background-image:none !important; color:#fff !important;
   box-shadow:none !important; border:1px solid rgba(255,255,255,.08) !important;
 }
+
+/* Get Started: let the blue header take up any spare height so the white panel sits low on the screen */
+#auth-gate:has(#auth-panel-login.active) .auth-head{flex:1 1 auto;}
+#auth-gate:has(#auth-panel-login.active) .auth-card{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 22px) !important;}
+#auth-gate:has(#auth-panel-login.active) .auth-body{flex:0 0 auto;}
+
+/* Get Started heading: Montserrat with the dodger blue to royal blue gradient */
+#auth-gate:has(#auth-panel-login.active) .auth-login-title,
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
+  font-family:'Montserrat',system-ui,sans-serif;font-weight:800;letter-spacing:-.01em;
+  background:linear-gradient(135deg,#1e90ff,#4169e1);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  display:inline-block;
+}

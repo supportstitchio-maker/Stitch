@@ -5060,7 +5060,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerStartIntroHTML(stepId){
           const isFirst = stepId === 'intro1';
-          const title = isFirst ? 'Stitch Bot finds<br>your matches' : 'Stitch Bot can<br>apply for you';
+          const title = isFirst ? 'Stitch Bot finds your matches' : 'Stitch Bot can apply for you';
           const sub = isFirst
             ? "Share your CV and what you're looking for. Stitch Bot reads them and matches you to the opportunities that fit you best."
             : "Once you're matched, Stitch Bot can send your applications for you. It only works on opportunities inside the Stitch ecosystem and will not wander off to other websites.";
@@ -5078,7 +5078,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               body.dark-mode .ci2-btn{background:var(--c-tapshoe,#3a3d44);box-shadow:none;border:1px solid rgba(255,255,255,.08);}
               body.dark-mode .ci2-dot.on{background:#ffffff !important;}
               body.dark-mode .ci2-panel{background:var(--c-onyx,#1e1e1e);}
-              .ci2-title{font-family:'Montserrat',system-ui,sans-serif;font-size:1.65rem;line-height:1.22;font-weight:800;letter-spacing:0;color:#0f1f3d;margin:0 0 12px;}
+              .ci2-title{font-family:'Montserrat',system-ui,sans-serif;font-size:clamp(14px,4.7vw,20px);line-height:1.25;font-weight:800;letter-spacing:0;white-space:nowrap;color:#0f1f3d;margin:0 0 12px;}
               body.dark-mode .ci2-title{color:#fff;}
               .ci2-sub{font-size:.92rem;line-height:1.55;color:#6b7280;max-width:320px;margin:0 auto;}
               .ci2-dots{display:flex;justify-content:center;gap:8px;margin:24px 0 22px;}
