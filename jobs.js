@@ -4332,6 +4332,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         const careerStartResumeUploadPhases = ['Fetching…', 'Extracting content…', 'Almost there…', 'Finding matches…', 'In a second…'];
         let careerStartResumeUploading = false;
         let careerStartResumeUploadPhaseIndex = 0;
+        let careerStartResumeUploadStart = 0;
         let careerStartResumeUploadTimers = [];
         function clearCareerStartResumeUploadTimers(){
           careerStartResumeUploadTimers.forEach(t => clearTimeout(t));
@@ -4340,6 +4341,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function startCareerStartResumeUploadAnimation(){
           clearCareerStartResumeUploadTimers();
           careerStartResumeUploading = true;
+          careerStartResumeUploadStart = Date.now();
           careerStartResumeUploadPhaseIndex = 0;
           rerenderCareerStart();
           const stepMs = 1000; 
@@ -4531,6 +4533,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           careerStartDraft.resumeDataUrl = '';
           rerenderCareerStart();
         }
+        // Slim in-place progress bar for the CV upload: slow at first, fast at the end.
+        function careerStartResumeBarHTML(){
+          const total = careerStartResumeUploadPhases.length * 1000;
+          const el = Math.max(0, Date.now() - careerStartResumeUploadStart);
+          return `<div style="height:4px;border-radius:99px;background:rgba(30,144,255,.18);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#1e90ff,#4169e1);transform-origin:left;transform:scaleX(0);animation:cvBarFill ${total}ms cubic-bezier(.7,0,.9,.6) forwards;animation-delay:-${el}ms;"></div></div>`;
+        }
         function careerStartResumePickerHTML(){
           const fileName = careerStartDraft.resumeFileName;
           const err = careerStartErrors.resume;
@@ -4547,6 +4555,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                     <div class="text-xs font-medium mt-0.5 cv-upload-phase" style="color:${NAVY};">${phase}</div>
                   </div>
                 </div>
+                ${careerStartResumeBarHTML()}
               </div>`;
           }
           return `

@@ -2064,17 +2064,18 @@
               <div class="flex-1 overflow-y-auto flex flex-col">
                 ${myGlimpses.length === 0 ? '' : myGlimpses.map(myGlimpseRow).join('')}
                 <div class="${myGlimpses.length === 0 ? 'flex-1 flex flex-col items-center justify-center' : ''}" style="${myGlimpses.length === 0 ? 'padding-bottom:12vh;' : ''}">
-                <div class="px-6 pt-2 pb-4 flex justify-center">
+                ${myGlimpses.length === 0 ? `                <div class="px-6 pt-2 pb-4 flex justify-center">
                   <button type="button" onclick="composeGlimpseMedia()" class="glimpse-add-pill filter-pill nowrap-pill justify-center font-display" style="padding:12px 30px;gap:8px;min-width:min(200px,100%);">
                     ${Icon('addGlimpseOutline','w-5 h-5')}
                     <span>Add glimpse</span>
                   </button>
-                </div>
+                </div>` : ''}
                 <div class="px-6 pb-6 text-center text-xs text-gray-400 leading-relaxed">
                   Your glimpses are private to your Stitch network and disappear after 24 hours.
                 </div>
                 </div>
               </div>
+              ${myGlimpses.length > 0 ? `<button type="button" onclick="composeGlimpseMedia()" title="Add glimpse" aria-label="Add glimpse" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}
             </div>`;
         }
 

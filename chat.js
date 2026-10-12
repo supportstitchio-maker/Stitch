@@ -4909,13 +4909,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // Tap a glimpse card in a chat to see the glimpse full screen (drag down slowly to close)
         function closeGlimpseCardViewer(fromPopState){
+          try { if (typeof cgvClear === 'function') cgvClear(); } catch (e) {}
+          cgvState = null;
           const modal = document.getElementById('convoGlimpseViewerModal');
           if (!modal) return;
           const v = modal.querySelector('video'); if (v) { try { v.pause(); } catch (e) {} }
           modal.remove();
           if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
         }
-        function openGlimpseCardViewer(idx){
+        function openGlimpseCardViewerPlain(idx){
           const g = convoGlimpseCards[idx];
           if (!g) return;
           closeGlimpseCardViewer();
@@ -4949,6 +4951,105 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
           document.body.appendChild(modal);
           if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeGlimpseCardViewer(fromPopState));
+        }
+
+        // Opens the person's glimpses like the normal glimpse viewer (progress bars, tap to move, all of
+        // their glimpses), starting at the one that was tapped. Falls back to the single-glimpse view.
+        let cgvTimer = null, cgvState = null;
+        function cgvFind(g){
+          try {
+            const list = (typeof stories !== 'undefined' && stories) ? stories : [];
+            const norm = u => String(u || '').split('?')[0];
+            for (const s of list) {
+              const items = (s.items && s.items.length) ? s.items : [];
+              const i = items.findIndex(it => g.mediaUrl && it.mediaUrl && norm(it.mediaUrl) === norm(g.mediaUrl));
+              if (i >= 0) return { s, items, i };
+            }
+            for (const s of list) {
+              if (s.mine || s.name !== g.authorName) continue;
+              const items = (s.items && s.items.length) ? s.items : [];
+              if (!items.length) continue;
+              const i = Math.max(0, items.findIndex(it => it.caption && it.caption === g.caption));
+              return { s, items, i };
+            }
+          } catch (e) {}
+          return null;
+        }
+        function openGlimpseCardViewer(idx){
+          const g = convoGlimpseCards[idx];
+          if (!g) return;
+          const f = cgvFind(g);
+          if (!f) { openGlimpseCardViewerPlain(idx); return; }
+          closeGlimpseCardViewer();
+          cgvState = { s: f.s, items: f.items, i: f.i };
+          const modal = document.createElement('div');
+          modal.id = 'convoGlimpseViewerModal';
+          modal.className = 'fixed inset-0 z-50 flex flex-col';
+          modal.style.cssText = 'background:#000;color:#fff;';
+          document.body.appendChild(modal);
+          cgvRender();
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeGlimpseCardViewer(fromPopState));
+        }
+        function cgvClear(){ if (cgvTimer) { clearInterval(cgvTimer); cgvTimer = null; } }
+        function cgvRender(){
+          const modal = document.getElementById('convoGlimpseViewerModal');
+          if (!modal || !cgvState) return;
+          cgvClear();
+          const { s, items } = cgvState;
+          const idx = cgvState.i, item = items[idx];
+          if (!s.mine && item.id != null && typeof glimpseViewRemote === 'function') { try { glimpseViewRemote(item.id); } catch (e) {} }
+          const isVideo = item.mediaType === 'video' && item.mediaUrl;
+          const light = !item.mediaUrl && item.bgStyle && item.bgStyle.indexOf('#ffffff') !== -1;
+          const fg = light ? '#0a2540' : '#ffffff';
+          const bg = item.mediaUrl ? '#000' : (item.bgStyle || `linear-gradient(135deg, ${NAVY}, ${ROYAL})`);
+          const segs = items.map((it, i) => `<div class="h-1 flex-1 rounded-full overflow-hidden" style="background:${light ? 'rgba(10,37,64,.2)' : 'rgba(255,255,255,.3)'};"><div id="cgv-fill-${i}" class="h-full" style="background:${fg};width:${i < idx ? '100%' : '0%'};"></div></div>`).join('');
+          let body;
+          if (isVideo) body = `<video id="cgv-video" src="${escapeHtml(item.mediaUrl)}" ${item.posterUrl ? `poster="${escapeHtml(item.posterUrl)}"` : ''} autoplay playsinline style="max-width:100%;max-height:100%;"></video>`;
+          else if (item.mediaUrl) body = `<img src="${escapeHtml(item.mediaUrl)}" alt="" draggable="false" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+          else body = `<div class="px-8 text-center text-lg font-medium" style="color:${fg};">${escapeHtml(item.caption || '')}</div>`;
+          const age = (typeof glimpseAgeLabel === 'function') ? glimpseAgeLabel(item.createdAt || (s.mine ? item.id : 0)) : '';
+          const photo = s.mine && typeof profileData !== 'undefined' && profileData.photo ? profileData.photo : (s.photo || s.avatar || '');
+          modal.style.background = bg;
+          modal.innerHTML = `
+            <div id="convo-glimpse-viewer-screen" class="flex flex-col h-full w-full" style="background:${bg};color:${fg};"
+                 ontouchstart="glimpsePullStart(event,{screenId:'convo-glimpse-viewer-screen',onClose:closeGlimpseCardViewer})" ontouchmove="glimpsePullMove(event)" ontouchend="glimpsePullEnd(event)" ontouchcancel="glimpsePullEnd(event)">
+              <div class="flex gap-1.5 px-3 flex-shrink-0" style="padding-top:calc(env(safe-area-inset-top, 12px) + 10px);">${segs}</div>
+              <div class="flex items-center gap-3 px-4 py-3 flex-shrink-0" style="z-index:2;">
+                <button onclick="closeGlimpseCardViewer()" aria-label="Back" class="w-9 h-9 flex items-center justify-center" style="color:${fg};">${IconBold('back','w-5 h-5')}</button>
+                ${photo ? `<img src="${escapeHtml(photo)}" class="w-8 h-8 rounded-full object-cover" alt="">` : ''}
+                <div class="min-w-0 flex-1">
+                  <div class="text-base font-semibold truncate leading-tight">${escapeHtml(s.mine ? 'Your glimpse' : (s.name || 'Glimpse'))}</div>
+                  <div class="text-xs leading-tight" style="opacity:.7;">${escapeHtml(age || '')}</div>
+                </div>
+              </div>
+              <div class="flex-1 relative min-h-0 flex items-center justify-center overflow-hidden">
+                ${body}
+                ${(item.caption && item.mediaUrl) ? `<div class="absolute left-0 right-0 px-6 py-4 text-sm text-white text-center pointer-events-none" style="bottom:0;background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);">${escapeHtml(item.caption)}</div>` : ''}
+                <div class="absolute inset-0 flex">
+                  <button onclick="cgvStep(-1)" aria-label="Previous" class="h-full" style="width:35%;background:transparent;"></button>
+                  <button onclick="cgvStep(1)" aria-label="Next" class="h-full" style="width:65%;background:transparent;"></button>
+                </div>
+              </div>
+            </div>`;
+          const fill = document.getElementById('cgv-fill-' + idx);
+          const t0 = Date.now(), DUR = 5000;
+          cgvTimer = setInterval(() => {
+            const m = document.getElementById('convoGlimpseViewerModal');
+            if (!m) { cgvClear(); return; }
+            const v = document.getElementById('cgv-video');
+            let p;
+            if (v && v.duration > 0) { p = v.currentTime / v.duration; if (v.ended) p = 1; }
+            else p = (Date.now() - t0) / DUR;
+            if (fill) fill.style.width = Math.min(100, p * 100) + '%';
+            if (p >= 1) cgvStep(1);
+          }, 60);
+        }
+        function cgvStep(d){
+          if (!cgvState) return;
+          const n = cgvState.i + d;
+          if (n < 0) { cgvState.i = 0; cgvRender(); return; }
+          if (n >= cgvState.items.length) { closeGlimpseCardViewer(); return; }
+          cgvState.i = n; cgvRender();
         }
 
         function convoImageAttachmentsHTML(images){
@@ -6789,8 +6890,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function callStatusInMiddle(){
           try {
             if (callState.connected || isGroupCallConvo(callState.convoId)) return false;
-            const showLocalVideo = callState.type === 'video' && callLocalStream && !callState.camOff && !callState.mediaError;
-            return !showLocalVideo;
+            return true;
           } catch (e) { return false; }
         }
         function callRingStatusText(){
@@ -6847,6 +6947,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return `
               <div class="cu-tile" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;">
                 <video id="call-local-video" autoplay playsinline muted style="transform:scaleX(-1);"></video>
+                <div class="cu-voice-sub" style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);justify-content:center;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.55);font-size:15px;">${callRingStatusText()}</div>
                 <span class="cu-chip">You</span>
               </div>`;
           }
@@ -8286,13 +8387,75 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           try { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
         }
 
+        // A reply is stored inside the message text (no database change): \u2063 name \u2063 quote \u2063 message
+        function meetingChatParse(text){
+          const t = String(text || '');
+          if (t.charAt(0) === '\u2063') {
+            const p = t.split('\u2063');
+            if (p.length >= 4) return { rname: p[1], rquote: p[2], body: p.slice(3).join('\u2063') };
+          }
+          return { rname: '', rquote: '', body: t };
+        }
+        function meetingChatBodyHTML(m, mine){
+          const p = meetingChatParse(m.text);
+          const quote = p.rname ? `<div style="border-left:3px solid ${mine ? 'rgba(255,255,255,.85)' : '#1e90ff'};background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;white-space:normal;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>` : '';
+          return quote + escapeHtml(p.body);
+        }
+        let meetingChatReply = null;
+        function meetingChatShowReply(){
+          const bar = document.getElementById('meeting-chat-replybar');
+          if (!bar) return;
+          if (!meetingChatReply) { bar.style.display = 'none'; bar.innerHTML = ''; meetingChatPlacePage(); return; }
+          bar.style.display = 'flex';
+          bar.innerHTML = `<div style="min-width:0;flex:1;border-left:3px solid #1e90ff;padding-left:10px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(meetingChatReply.name)}</div><div style="font-size:13px;color:var(--cu-sub);" class="truncate">${escapeHtml(meetingChatReply.text)}</div></div><button onclick="meetingChatSetReply(null)" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--cu-sub);flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
+          meetingChatPlacePage();
+        }
+        function meetingChatSetReply(i){
+          const m = (i === null || i === undefined) ? null : meetingChat.messages[i];
+          meetingChatReply = m ? { name: m.mine ? 'You' : (m.name || 'Someone'), text: meetingChatParse(m.text).body.slice(0, 80) } : null;
+          meetingChatShowReply();
+          if (m) { const inp = document.getElementById('meeting-chat-input'); if (inp) inp.focus(); }
+        }
+        // Drag a message sideways to reply to it
+        (function(){
+          let st = null;
+          document.addEventListener('touchstart', (e) => {
+            const row = e.target.closest && e.target.closest('[data-mc-i]');
+            if (!row || !document.getElementById('meeting-chat-list') || e.touches.length !== 1) { st = null; return; }
+            st = { row, i: +row.getAttribute('data-mc-i'), x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, lock: '', hit: false };
+          }, { passive: true });
+          document.addEventListener('touchmove', (e) => {
+            if (!st) return;
+            const dx = e.touches[0].clientX - st.x, dy = e.touches[0].clientY - st.y;
+            if (!st.lock) { if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.4) st.lock = 'h'; else if (Math.abs(dy) > 8) { st = null; return; } else return; }
+            const d = Math.max(0, Math.min(70, dx > 0 ? dx : 0));
+            st.dx = d;
+            const b = st.row.firstElementChild; if (!b) return;
+            st.row.style.transform = 'translateX(' + d + 'px)'; st.row.style.transition = 'none';
+            let ic = st.row.querySelector('[data-mc-arrow]');
+            if (!ic) { ic = document.createElement('div'); ic.setAttribute('data-mc-arrow', '1'); ic.style.cssText = 'position:absolute;left:-44px;top:50%;margin-top:-16px;width:32px;height:32px;border-radius:50%;background:var(--cu-soft);color:var(--cu-fg);display:flex;align-items:center;justify-content:center;font-size:17px;pointer-events:none;'; ic.textContent = '\u21a9'; st.row.style.position = 'relative'; st.row.appendChild(ic); }
+            ic.style.opacity = String(Math.min(1, d / 50)); ic.style.transform = 'scale(' + (0.6 + 0.4 * Math.min(1, d / 50)) + ')';
+            if (d >= 50 && !st.hit) { st.hit = true; try { navigator.vibrate && navigator.vibrate(12); } catch (x) {} }
+            if (e.cancelable) e.preventDefault();
+          }, { passive: false });
+          function end(){
+            if (!st) return;
+            const { row, i, hit } = st; st = null;
+            row.style.transition = 'transform .18s ease'; row.style.transform = '';
+            setTimeout(() => { const a = row.querySelector('[data-mc-arrow]'); if (a) a.remove(); }, 200);
+            if (hit) meetingChatSetReply(i);
+          }
+          document.addEventListener('touchend', end, { passive: true });
+          document.addEventListener('touchcancel', end, { passive: true });
+        })();
+
         function meetingChatMsgHTML(m){
           const mine = !!m.mine;
           const name = escapeHtml(m.name || 'Someone');
           return `
             <div style="display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
               ${mine ? '' : `<span style="font-size:11px;font-weight:700;color:var(--cu-sub);margin:0 10px 2px;">${name}</span>`}
-              <div style="max-width:82%;padding:9px 13px;border-radius:18px;font-size:15px;line-height:1.35;word-break:break-word;white-space:pre-wrap;${mine ? 'background:#1e90ff;color:#fff;border-bottom-right-radius:6px;' : 'background:var(--cu-soft);color:var(--cu-fg);border-bottom-left-radius:6px;'}${m.failed ? 'opacity:.55;' : ''}">${escapeHtml(m.text || '')}</div>
+              <div style="max-width:82%;padding:9px 13px;border-radius:18px;font-size:15px;line-height:1.35;word-break:break-word;white-space:pre-wrap;${mine ? 'background:#1e90ff;color:#fff;border-bottom-right-radius:6px;' : 'background:var(--cu-soft);color:var(--cu-fg);border-bottom-left-radius:6px;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
               <span style="font-size:10px;color:var(--cu-sub);margin:2px 10px 0;">${m.failed ? 'Not sent \u00b7 tap to retry' : (m.pending ? 'Sending\u2026' : meetingChatFmtTime(m.created_at))}</span>
             </div>`;
         }
@@ -8301,7 +8464,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const noun = (meetingChat.ctx && meetingChat.ctx.noun) || 'call';
           if (meetingChat.loading && !meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 0;">Loading messages\u2026</div>`;
           if (!meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 24px;">No messages yet.<br>Say something \u2014 everyone in this ${noun} can read it.</div>`;
-          return meetingChat.messages.map((m, i) => m.failed ? `<div onclick="retryMeetingChatMessage(${i})">${meetingChatMsgHTML(m)}</div>` : meetingChatMsgHTML(m)).join('');
+          return meetingChat.messages.map((m, i) => `<div data-mc-i="${i}"${m.failed ? ` onclick="retryMeetingChatMessage(${i})"` : ''}>${meetingChatMsgHTML(m)}</div>`).join('');
         }
 
         function meetingChatRender(forceBottom){
@@ -8419,6 +8582,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>
             <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
+            <div id="meeting-chat-replybar" style="display:none;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);"></div>
             <div id="meeting-chat-bar" style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
               <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
                 style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
@@ -8445,7 +8609,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function closeMeetingChatPage(){
-          meetingChat.open = false;
+          meetingChat.open = false; meetingChatReply = null;
           if (window.visualViewport && meetingChat.vvHandler) {
             window.visualViewport.removeEventListener('resize', meetingChat.vvHandler);
             window.visualViewport.removeEventListener('scroll', meetingChat.vvHandler);
@@ -8467,8 +8631,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof retryIdx === 'number' && meetingChat.messages[retryIdx]) {
             entry = meetingChat.messages[retryIdx]; text = entry.text; entry.failed = false; entry.pending = true;
           } else {
-            text = input ? input.value.trim().slice(0, 1000) : '';
+            text = input ? input.value.trim() : '';
             if (!text) return;
+            if (meetingChatReply) {
+              const pre = '\u2063' + meetingChatReply.name + '\u2063' + meetingChatReply.text + '\u2063';
+              text = pre + text.slice(0, Math.max(1, 1000 - pre.length));
+              meetingChatReply = null; meetingChatShowReply();
+            } else text = text.slice(0, 1000);
             entry = { id: 'tmp' + Date.now(), name: meetingMyName(), text, created_at: new Date().toISOString(), mine: true, pending: true };
             meetingChat.messages.push(entry);
             if (input) { input.value = ''; input.focus(); }

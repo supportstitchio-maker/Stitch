@@ -4079,3 +4079,5 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{
   background:linear-gradient(135deg,#3d4350,#2a2e38 60%,#15181e);
 }
+
+@keyframes cvBarFill{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}

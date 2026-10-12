@@ -2993,38 +2993,35 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   } catch (e) {}
 })();
 
-/* Upload progress card ("slow start, fast finish").
-   Any upload that takes a moment shows a small card with the file name and a progress bar that
-   crawls at first and then speeds up toward the end, finishing the instant the upload completes.
-   Works for every Supabase storage upload (class files, CVs, applications, course media, chat
-   files...) and for the feed's progress-aware uploads. It only DISPLAYS progress: it never
-   changes what is uploaded, the result, or any error. Small files (<120 KB) show nothing. */
+/* Upload progress bar ("slow start, fast finish").
+   A slim bar appears INSIDE the area where the file was picked/uploaded (no floating card or panel).
+   It follows the real upload slowly at first, then races to the end once the upload completes.
+   Glimpse uploads show nothing. Display only: it never changes what is uploaded or any result. */
 (function () {
-  var MIN_BYTES = 120 * 1024, active = [], box = null, raf = 0;
-  function fmt(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function ensureBox() {
-    if (box && box.parentNode) return box;
-    box = document.createElement('div');
-    box.setAttribute('aria-live', 'polite');
-    box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);z-index:2147482000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;';
-    document.body.appendChild(box);
-    return box;
+  var MIN_BYTES = 120 * 1024, active = [], raf = 0, lastPick = null;
+  document.addEventListener('change', function (e) {
+    try {
+      var t = e.target;
+      if (t && t.tagName === 'INPUT' && t.type === 'file') lastPick = { id: t.id || '', el: t, t: Date.now() };
+    } catch (err) {}
+  }, true);
+  function hostFor(c) {
+    var el = c.id ? document.getElementById(c.id) : null;
+    if (!el || !el.isConnected) el = c.el && c.el.isConnected ? c.el : null;
+    if (!el) return null;
+    var h = el.parentElement;
+    while (h && h !== document.body && h.offsetHeight < 20) h = h.parentElement;
+    return h && h !== document.body ? h : null;
   }
   function start(name, size) {
     try {
       if (!document.body || !(size >= MIN_BYTES)) return null;
-      var el = document.createElement('div');
-      el.style.cssText = 'width:100%;max-width:360px;background:#fff;color:#0f1f33;border-radius:16px;padding:10px 12px;box-shadow:0 6px 24px rgba(10,37,64,.22);font:600 12px Montserrat,Inter,system-ui,sans-serif;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;';
-      el.innerHTML =
-        '<div style="display:flex;align-items:center;gap:10px">' +
-        '<div style="width:30px;height:30px;border-radius:9px;background:#fff1dc;color:#e08a00;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>' +
-        '<div style="min-width:0;flex:1"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(name || 'File') + '</div><div style="font-weight:500;color:#55688a;font-size:10.5px">' + fmt(size) + '</div></div>' +
-        '<div data-pct style="font-weight:700;min-width:36px;text-align:right">0%</div></div>' +
-        '<div style="height:5px;border-radius:99px;background:#e6eaf3;margin-top:8px;overflow:hidden"><div data-bar style="height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#1e90ff,#4169e1)"></div></div>';
-      ensureBox().appendChild(el);
-      requestAnimationFrame(function () { el.style.opacity = '1'; el.style.transform = 'none'; });
-      var c = { el: el, pctEl: el.querySelector('[data-pct]'), bar: el.querySelector('[data-bar]'), t0: Date.now(),
+      if (!lastPick || Date.now() - lastPick.t > 90000 || lastPick.id === 'glimpse-media-input') return null;
+      var bar = document.createElement('div');
+      bar.setAttribute('data-upload-bar', '1');
+      bar.style.cssText = 'position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:99px;background:rgba(30,144,255,.18);overflow:hidden;pointer-events:none;z-index:5;transition:opacity .25s';
+      bar.innerHTML = '<div data-bar style="height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#1e90ff,#4169e1)"></div>';
+      var c = { id: lastPick.id, el: lastPick.el, wrap: bar, bar: bar.firstChild, host: null, t0: Date.now(),
                 T: Math.min(40000, Math.max(2500, size / 200)), real: null, shown: 0, end: 0, state: 'run' };
       c.set = function (p) { if (typeof p === 'number') c.real = Math.max(0, Math.min(100, p)); };
       c.done = function () { if (c.state === 'run') { c.state = 'finish'; c.end = Date.now(); c.from = c.shown; } };
@@ -3033,16 +3030,23 @@ window.addEventListener('online', () => { realOfflineCheck(); });
       return c;
     } catch (e) { return null; }
   }
+  function attach(c) {
+    var h = hostFor(c);
+    if (!h) return;
+    if (c.host === h && c.wrap.parentNode === h) return;
+    if (getComputedStyle(h).position === 'static') h.style.position = 'relative';
+    h.appendChild(c.wrap); c.host = h;
+  }
   function remove(c) {
     try {
       c.state = 'gone';
-      c.el.style.opacity = '0'; c.el.style.transform = 'translateY(8px)';
-      setTimeout(function () { if (c.el.parentNode) c.el.parentNode.removeChild(c.el); }, 250);
+      c.wrap.style.opacity = '0';
+      setTimeout(function () { if (c.wrap.parentNode) c.wrap.parentNode.removeChild(c.wrap); }, 300);
     } catch (e) {}
   }
   function paint(c, v) {
     v = Math.max(c.shown, Math.min(100, v)); c.shown = v;
-    c.bar.style.width = v + '%'; c.pctEl.textContent = Math.floor(v) + '%';
+    attach(c); c.bar.style.width = v + '%';
   }
   function loop() {
     if (raf) return;
@@ -3062,8 +3066,8 @@ window.addEventListener('online', () => { realOfflineCheck(); });
           var k = Math.min(1, (now - c.end) / 350);                         // race to the end
           paint(c, c.from + (100 - c.from) * (k * k * (3 - 2 * k)));
           if (k >= 1) {
-            c.state = 'done'; c.pctEl.innerHTML = '<span style="color:#17913f">&#10003;</span>';
-            setTimeout(function () { remove(c); }, 900);
+            c.state = 'done';
+            setTimeout(function () { remove(c); }, 500);
           }
         }
       });
@@ -3079,4 +3083,49 @@ window.addEventListener('online', () => { realOfflineCheck(); });
       return promise;
     }
   };
+})();
+
+// Keep the phone keyboard open when a message / comment is sent. Tapping a send button used to move focus
+// off the text box, so the keyboard dropped after every send. Now it only closes when the person closes it
+// (down arrow / back gesture).
+(function keepKeyboardOnSend(){
+  var SEND_RE = /send|addStreamComment|submitGlimpse|submitMessageRequestCompose|postComment|submitComment/i;
+  var lastId = '';
+  function isTextField(el){
+    if (!el || el === document.body) return false;
+    var t = (el.tagName || '').toUpperCase();
+    if (t === 'TEXTAREA') return true;
+    if (t === 'INPUT') { var ty = (el.type || 'text').toLowerCase(); return ['text','search','email','url','tel','number',''].indexOf(ty) !== -1; }
+    return !!el.isContentEditable;
+  }
+  function sendButtonFrom(target){
+    var btn = target && target.closest ? target.closest('button') : null;
+    if (!btn) return null;
+    var oc = btn.getAttribute('onclick') || '';
+    if (!SEND_RE.test(oc) || /openChallengeSendPicker/.test(oc)) return null;
+    return btn;
+  }
+  document.addEventListener('mousedown', function(e){
+    try {
+      var ae = document.activeElement;
+      if (!isTextField(ae)) return;
+      var btn = sendButtonFrom(e.target);
+      if (!btn) return;
+      e.preventDefault();               // keep focus (and the keyboard) on the text box
+      lastId = ae.id || '';
+    } catch (err) {}
+  }, true);
+  document.addEventListener('click', function(e){
+    try {
+      var btn = sendButtonFrom(e.target);
+      if (!btn || !lastId) { lastId = ''; return; }
+      var id = lastId; lastId = '';
+      setTimeout(function(){
+        var el = document.getElementById(id);
+        if (el && isTextField(el) && !isTextField(document.activeElement)) {
+          try { el.focus({ preventScroll: true }); } catch (err) { el.focus(); }
+        }
+      }, 80);
+    } catch (err) {}
+  }, true);
 })();
