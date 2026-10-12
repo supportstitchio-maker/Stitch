@@ -4011,3 +4011,8 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-apple-cta{backgrou
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-back{color:#fff;}
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-cta{box-shadow:none;border:1px solid var(--c-tapshoe,#3a3d46);}
 #auth-gate:has(#auth-panel-login.active) .auth-card{padding:0 !important;}
+
+/* Sign-up "Get started" buttons in Montserrat */
+#auth-gate .auth-promo-cta,
+#landing-page .nav-cta,
+#landing-page .btn-primary{font-family:'Montserrat',system-ui,sans-serif !important;}
