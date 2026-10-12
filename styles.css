@@ -4074,7 +4074,7 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
 
 /* Get Started: use the swirl artwork (same as the verify page) in the top area instead of the blue gradient */
 #auth-gate:has(#auth-panel-login.active) .auth-head{
-  background:linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)), var(--auth-swirl) center top / cover no-repeat, #ffffff;
+  background:linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)), var(--auth-swirl) center top / auto 100lvh no-repeat, #ffffff;
 }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{
   background:linear-gradient(135deg,#3d4350,#2a2e38 60%,#15181e);
