@@ -2149,6 +2149,25 @@ let userPoints = 0;
             countdown.textContent = ' Resend in 0:' + String(authResendSecondsLeft).padStart(2, '0');
           }
         }
+        // In-app number pad for the verify page: fills the six boxes without opening the phone keyboard
+        function authKeypadPress(key){
+          if (typeof authSubmittingVerify !== 'undefined' && authSubmittingVerify) return;
+          const boxes = [0,1,2,3,4,5].map(i => document.getElementById('auth-otp-' + i));
+          if (boxes.some(b => !b || b.disabled)) return;
+          const err = document.getElementById('auth-verify-error');
+          if (err) err.classList.remove('show');
+          if (key === 'del') {
+            let last = -1;
+            boxes.forEach((b, i) => { if (b.value) last = i; });
+            if (last >= 0) { boxes[last].value = ''; boxes[last].focus(); }
+            return;
+          }
+          const next = boxes.findIndex(b => !b.value);
+          if (next === -1) return;
+          boxes[next].value = key;
+          const after = boxes[Math.min(next + 1, 5)];
+          if (after) after.focus();
+        }
         function authOtpInput(e, idx){
           const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
           e.target.value = val;

@@ -4041,3 +4041,41 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
   -webkit-text-fill-color:transparent;color:transparent;
   display:inline-block;
 }
+
+/* Verify page: in-app number pad (phone keyboard stays closed) */
+#auth-gate .auth-keypad{display:none;}
+#auth-gate:has(#auth-panel-verify.active) .auth-keypad{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  background:#d9dce3;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(15,31,51,.12);
+}
+#auth-gate:has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:300px;}
+#auth-gate .auth-keypad button{
+  height:54px;border:0;border-radius:12px;background:#fff;color:#0f1f33;
+  font-family:'Montserrat',system-ui,sans-serif;font-size:22px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 1px 0 rgba(15,31,51,.18);-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#auth-gate .auth-keypad button:active{background:#e8ebf2;transform:scale(.97);}
+#auth-gate .auth-keypad .auth-keypad-del{background:transparent;box-shadow:none;}
+body.dark-mode #auth-gate:has(#auth-panel-verify.active) .auth-keypad{background:#2b2b2b;box-shadow:0 -6px 24px rgba(0,0,0,.4);}
+body.dark-mode #auth-gate .auth-keypad button{background:#3a3a3a;color:#fff;box-shadow:none;}
+body.dark-mode #auth-gate .auth-keypad button:active{background:#4a4a4a;}
+body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{background:transparent;}
+/* Readonly code boxes: still show which box is next */
+#auth-gate .auth-otp-row input[readonly]{caret-color:transparent;}
+
+/* Get Started heading back to Colmeak */
+#auth-gate:has(#auth-panel-login.active) .auth-login-title,
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
+  font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;letter-spacing:.01em;
+}
+
+/* Get Started: use the swirl artwork (same as the verify page) in the top area instead of the blue gradient */
+#auth-gate:has(#auth-panel-login.active) .auth-head{
+  background:linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)), var(--auth-swirl) center top / cover no-repeat, #ffffff;
+}
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{
+  background:linear-gradient(135deg,#3d4350,#2a2e38 60%,#15181e);
+}

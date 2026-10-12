@@ -213,7 +213,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261012l">
+    <link rel="stylesheet" href="styles.css?v=20261012n">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -275,7 +275,7 @@
               <!-- LOGIN PANEL -->
               <div class="auth-panel active" id="auth-panel-login"><div>
                 <h2 class="auth-login-title">Get Started</h2>
-                <p class="auth-login-sub">Enter your email and we'll send you a code.</p>
+                <p class="auth-login-sub">Welcome to the Stitch community</p>
 
                 <form onsubmit="authSubmitLogin(event); return false;" novalidate>
                   <div class="auth-field auth-field-icon">
@@ -309,12 +309,12 @@
                   <div class="auth-info-banner">We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>.</div>
 
                   <div class="auth-otp-row">
-                    <input id="auth-otp-0" type="text" inputmode="numeric" enterkeyhint="go" autocomplete="one-time-code" maxlength="1" oninput="authOtpInput(event,0)" onkeydown="authOtpKeydown(event,0)" onpaste="authOtpPaste(event)">
-                    <input id="auth-otp-1" type="text" inputmode="numeric" enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,1)" onkeydown="authOtpKeydown(event,1)">
-                    <input id="auth-otp-2" type="text" inputmode="numeric" enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,2)" onkeydown="authOtpKeydown(event,2)">
-                    <input id="auth-otp-3" type="text" inputmode="numeric" enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,3)" onkeydown="authOtpKeydown(event,3)">
-                    <input id="auth-otp-4" type="text" inputmode="numeric" enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,4)" onkeydown="authOtpKeydown(event,4)">
-                    <input id="auth-otp-5" type="text" inputmode="numeric" enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,5)" onkeydown="authOtpKeydown(event,5)">
+                    <input id="auth-otp-0" type="text" inputmode="none" readonly enterkeyhint="go" autocomplete="one-time-code" maxlength="1" oninput="authOtpInput(event,0)" onkeydown="authOtpKeydown(event,0)" onpaste="authOtpPaste(event)">
+                    <input id="auth-otp-1" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,1)" onkeydown="authOtpKeydown(event,1)">
+                    <input id="auth-otp-2" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,2)" onkeydown="authOtpKeydown(event,2)">
+                    <input id="auth-otp-3" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,3)" onkeydown="authOtpKeydown(event,3)">
+                    <input id="auth-otp-4" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,4)" onkeydown="authOtpKeydown(event,4)">
+                    <input id="auth-otp-5" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,5)" onkeydown="authOtpKeydown(event,5)">
                   </div>
                   <div class="auth-error" id="auth-verify-error">That code doesn't match. Check it and try again.</div>
                   <div class="auth-resend">Didn't get a code? Check your spam/junk folder, or <button type="button" id="auth-resend-btn" onclick="authResendCode()">Resend code</button><span id="auth-resend-countdown" class="hidden"></span></div>
@@ -400,6 +400,22 @@
         </div>
         </div>
       </div>
+      </div>
+
+      <!-- In-app number pad for the email code (the phone keyboard stays closed on the verify page) -->
+      <div class="auth-keypad" id="auth-keypad" aria-label="Number pad">
+        <button type="button" onclick="authKeypadPress('1')">1</button>
+        <button type="button" onclick="authKeypadPress('2')">2</button>
+        <button type="button" onclick="authKeypadPress('3')">3</button>
+        <button type="button" onclick="authKeypadPress('4')">4</button>
+        <button type="button" onclick="authKeypadPress('5')">5</button>
+        <button type="button" onclick="authKeypadPress('6')">6</button>
+        <button type="button" onclick="authKeypadPress('7')">7</button>
+        <button type="button" onclick="authKeypadPress('8')">8</button>
+        <button type="button" onclick="authKeypadPress('9')">9</button>
+        <span></span>
+        <button type="button" onclick="authKeypadPress('0')">0</button>
+        <button type="button" class="auth-keypad-del" onclick="authKeypadPress('del')" aria-label="Delete"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></button>
       </div>
 
     </div>
@@ -916,6 +932,6 @@
     <script src="settings.js?v=20261004b"></script>
     <script src="profile.js?v=20261008a"></script>
     <script src="overlays.js?v=20261010a"></script>
-    <script src="games.js?v=20261007b"></script>
+    <script src="games.js?v=20261012a"></script>
 </body>
 </html>
