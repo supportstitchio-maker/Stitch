@@ -420,33 +420,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (iAmTypingActive) { iAmTypingActive = false; sendTypingBroadcast(false); }
         }
 
-        // Long "last seen ..." text slides left and right by itself so all of it can be read
-        function convoStatusFit(){
-          const el = document.getElementById('chat-header-status');
-          if (!el) return;
-          const txt = el.textContent || '';
-          if (el.dataset.csmFor === txt && el.firstElementChild) return;
-          el.dataset.csmFor = txt;
-          el.innerHTML = '';
-          const inner = document.createElement('span');
-          inner.className = 'csm-in';
-          inner.textContent = txt;
-          el.appendChild(inner);
-          // shrink the text a little first so it fits on one line; only slide it if it still doesn't
-          let fs = 12;
-          el.style.fontSize = fs + 'px';
-          while (inner.offsetWidth > el.clientWidth && fs > 9.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; }
-          const over = inner.offsetWidth - el.clientWidth;
-          if (over > 2) { inner.style.setProperty('--csm-d', (-(over + 6)) + 'px'); inner.classList.add('csm-run'); }
-        }
-        setInterval(convoStatusFit, 1200);
-
         function refreshConvoStatusLine(convoId){
           if (activeConvoId !== convoId) return;
           const meta = convoMeta[convoId];
           if (!meta) return;
           const el = document.getElementById('chat-header-status');
-          if (el) { el.textContent = convoLastSeenText(meta); convoStatusFit(); }
+          if (el) el.textContent = convoLastSeenText(meta);
           const profileEl = document.getElementById('convo-profile-status');
           if (profileEl) profileEl.textContent = convoLastSeenText(meta);
         }

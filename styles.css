@@ -4135,3 +4135,7 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
   #auth-gate:has(#auth-panel-verify.active) .auth-keypad{display:none !important;}
   #auth-gate:has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:0;}
 }
+
+/* Chat header "last seen": small from the first paint and static (no resizing, no sliding) */
+.chat-status-scroll{font-size:10px !important;line-height:1.3;letter-spacing:-.1px;overflow:hidden !important;white-space:nowrap;text-overflow:ellipsis;min-width:0;max-width:100%}
+.csm-run{animation:none !important}
