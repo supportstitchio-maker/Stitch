@@ -4098,3 +4098,8 @@ html{font-size:17px}
 .chat-status-scroll::-webkit-scrollbar{display:none}
 
 .mc-back-bold svg path{stroke:currentColor;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round}
+
+.chat-status-scroll{overflow:hidden !important;white-space:nowrap;min-width:0;max-width:100%}
+.csm-in{display:inline-block;white-space:nowrap}
+.csm-run{animation:csmSlide 7s ease-in-out infinite alternate}
+@keyframes csmSlide{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--csm-d,0))}}
