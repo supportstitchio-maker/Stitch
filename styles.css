@@ -4103,3 +4103,28 @@ html{font-size:17px}
 .csm-in{display:inline-block;white-space:nowrap}
 .csm-run{animation:csmSlide 7s ease-in-out infinite alternate}
 @keyframes csmSlide{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--csm-d,0))}}
+
+/* Get Started on desktop: the whole floating panel is white and sits fully inside the screen
+   (no empty blue header area pushing the form down and cutting the bottom off). The swirly
+   background stays as the space around it. */
+@media (min-width:700px){
+  #auth-gate:has(#auth-panel-login.active) .auth-scroll-inner{min-height:100%;display:flex;align-items:center;justify-content:center;}
+  #auth-gate:has(#auth-panel-login.active) .auth-stage{height:auto;min-height:0;margin:0 auto;}
+  #auth-gate:has(#auth-panel-login.active) .auth-card{height:auto;min-height:0;background:#fff;padding:0 !important;}
+  #auth-gate:has(#auth-panel-login.active) .auth-head{display:none !important;}
+  #auth-gate:has(#auth-panel-login.active) .auth-body{overflow-y:visible;padding:36px 28px 26px;}
+  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card{background:var(--c-onyx,#16191f);}
+}
+
+/* Verify page number pad: white tray, with the keys picked out as soft pills so they stand apart from it */
+#auth-gate:has(#auth-panel-verify.active) .auth-keypad{background:#fff;box-shadow:0 -8px 28px rgba(15,31,51,.10);border-top:1px solid #eceff4;}
+#auth-gate .auth-keypad button{background:#f3f5f9;border:1px solid #e1e6ee;box-shadow:0 2px 5px rgba(15,31,51,.08);}
+#auth-gate .auth-keypad button:active{background:#e6eaf2;}
+#auth-gate .auth-keypad .auth-keypad-del{background:transparent;border-color:transparent;box-shadow:none;}
+body.dark-mode #auth-gate .auth-keypad button{border-color:transparent;}
+body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent;}
+
+/* Number pad keys: plain white pills (no grey fill), lifted off the white tray by a soft shadow */
+#auth-gate .auth-keypad button{background:#fff;border:1px solid #edf0f5;box-shadow:0 3px 10px rgba(15,31,51,.12),0 1px 2px rgba(15,31,51,.08);}
+#auth-gate .auth-keypad button:active{background:#fff;box-shadow:0 1px 3px rgba(15,31,51,.14);}
+#auth-gate .auth-keypad .auth-keypad-del{background:transparent;border-color:transparent;box-shadow:none;}
