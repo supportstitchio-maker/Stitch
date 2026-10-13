@@ -2168,6 +2168,21 @@ let userPoints = 0;
           const after = boxes[Math.min(next + 1, 5)];
           if (after) after.focus();
         }
+        // The on-screen number pad is for phones only. On a computer (wide screen + mouse) the six boxes
+        // take the real keyboard, like before.
+        function authApplyOtpInputMode(){
+          let desk = false;
+          try { desk = window.matchMedia('(min-width:700px) and (hover:hover) and (pointer:fine)').matches; } catch (e) {}
+          for (let i = 0; i < 6; i++) {
+            const el = document.getElementById('auth-otp-' + i);
+            if (!el) continue;
+            el.readOnly = !desk;
+            el.setAttribute('inputmode', desk ? 'numeric' : 'none');
+          }
+        }
+        authApplyOtpInputMode();
+        window.addEventListener('resize', authApplyOtpInputMode);
+
         function authOtpInput(e, idx){
           const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
           e.target.value = val;
