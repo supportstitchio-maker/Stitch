@@ -8510,7 +8510,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function meetingChatListHTML(){
           const noun = (meetingChat.ctx && meetingChat.ctx.noun) || 'call';
           if (meetingChat.loading && !meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 0;">Loading messages\u2026</div>`;
-          if (!meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 24px;">No messages yet.<br>Say something \u2014 everyone in this ${noun} can read it.</div>`;
+          if (!meetingChat.messages.length) return `<div style="text-align:center;color:var(--cu-sub);font-size:13px;padding:40px 24px;">No messages yet.<br>Say something. Everyone in this ${noun} can read it.</div>`;
           return meetingChat.messages.map((m, i) => `<div data-mc-i="${i}"${m.failed ? ` onclick="retryMeetingChatMessage(${i})"` : ''}>${meetingChatMsgHTML(m)}</div>`).join('');
         }
 
@@ -8626,7 +8626,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           page.style.cssText = 'position:fixed;left:0;right:0;top:0;height:100%;z-index:99990;display:flex;flex-direction:column;background:var(--cu-bg);color:var(--cu-fg);';
           page.innerHTML = `
             <div style="display:flex;align-items:center;gap:10px;padding:calc(var(--top-safe-pad, env(safe-area-inset-top,0px)) + 10px) 12px 10px;border-bottom:1px solid var(--cu-line);flex-shrink:0;">
-              <button onclick="closeMeetingChatPage()" title="Back to call" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);color:var(--cu-fg);">${Icon('arrowLeft','w-5 h-5')}</button>
+              <button onclick="closeMeetingChatPage()" title="Back to call" class="mc-back-bold" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);color:var(--cu-fg);">${Icon('arrowLeft','w-5 h-5')}</button>
               <div style="min-width:0;flex:1;text-align:center;">
                 <div style="font-size:18px;font-weight:700;font-family:'Colmeak','Montserrat',sans-serif;" class="truncate">${escapeHtml(ctx.heading)}</div>
               </div>

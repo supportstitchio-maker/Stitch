@@ -4096,3 +4096,5 @@ html{font-size:17px}
 
 .chat-status-scroll{overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-width:0;max-width:100%;touch-action:pan-x}
 .chat-status-scroll::-webkit-scrollbar{display:none}
+
+.mc-back-bold svg path{stroke:currentColor;stroke-width:1.4px;stroke-linejoin:round;stroke-linecap:round}
