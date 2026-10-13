@@ -4139,3 +4139,11 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 /* Chat header "last seen": small from the first paint and static (no resizing, no sliding) */
 .chat-status-scroll{font-size:10px !important;line-height:1.3;letter-spacing:-.1px;overflow:hidden !important;white-space:nowrap;text-overflow:ellipsis;min-width:0;max-width:100%}
 .csm-run{animation:none !important}
+
+/* Desktop auth panels: static, no inner scrollbar. The panel is sized to fit its content (tighter
+   top/bottom padding on the code screen) instead of scrolling inside a fixed-height box. */
+@media (min-width:700px) and (hover:hover) and (pointer:fine){
+  #auth-gate .auth-form-side{overflow:visible !important;max-height:none !important;}
+  #auth-gate.auth-verify-mode .auth-form-side{padding-top:28px !important;padding-bottom:28px !important;}
+  #auth-gate.auth-verify-mode .auth-body{padding-top:44px;}
+}
