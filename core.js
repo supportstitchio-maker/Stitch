@@ -1847,13 +1847,13 @@
        (callNotes in chat.js, keyed by conversation) is saved through the
        same queueSaveUserState mechanism as everything else, so it's still
        there after the call ends. -->
-  <div id="callNotesModal" class="hidden absolute inset-0 z-50 flex items-end justify-center" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-t-3xl w-full p-5" style="max-width:42rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
+  <div id="callNotesModal" class="hidden absolute inset-0 z-50 flex items-end justify-center" style="background:rgba(0,0,0,0.5);box-sizing:border-box;">
+    <div id="callNotesPanel" class="bg-white rounded-t-3xl w-full p-5" style="max-width:42rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);height:78vh;max-height:calc(100% - 16px);display:flex;flex-direction:column;box-sizing:border-box;">
       <div class="flex items-center justify-between mb-3">
         <div class="text-lg font-bold text-[${NAVY}] font-display truncate" id="callNotesModalTitle">Call notes</div>
         <button onclick="closeCallNotesModal()" class="text-gray-400 flex-shrink-0" aria-label="Close">${IconBold('close','w-5 h-5')}</button>
       </div>
-      <textarea id="callNotesTextarea" rows="6" placeholder="Type notes while the call is in progress -- they'll still be here after it ends." oninput="handleCallNotesInput()" class="w-full text-sm text-gray-800 rounded-2xl p-3" style="background:#f3f4f6;outline:none;resize:none;"></textarea>
+      <textarea id="callNotesTextarea" rows="6" placeholder="Type notes while the call is in progress -- they'll still be here after it ends." oninput="handleCallNotesInput()" class="w-full text-sm text-gray-800 rounded-2xl p-3" style="flex:1;min-height:0;background:#f3f4f6;outline:none;resize:none;"></textarea>
       <div class="text-[11px] text-gray-400 mt-2" id="callNotesSavedHint">Saved automatically</div>
     </div>
   </div>

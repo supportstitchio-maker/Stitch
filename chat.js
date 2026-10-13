@@ -4891,15 +4891,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const idx = convoGlimpseCards.push(g) - 1;
             const ownerName = g.authorName ? escapeHtml(g.authorName) : 'Glimpse';
             const who = isShare ? (mine ? 'You' : ownerName) : (mine ? ownerName : 'You');
-            const kind = g.mediaType === 'video' ? 'Video' : (g.mediaType === 'image' ? 'Photo' : '');
-            const icon = g.mediaType === 'video' ? Icon('video','w-3.5 h-3.5') : (kind ? Icon('camera','w-3.5 h-3.5') : '');
-            const desc = kind || (g.caption ? escapeHtml(String(g.caption).slice(0, 60)) : 'Glimpse');
+            const capText = g.caption ? escapeHtml(String(g.caption).slice(0, 60)) : '';
             let thumb = '';
             if (g.thumbnail) thumb = `<img src="${escapeHtml(g.thumbnail)}" alt="" class="gq-thumb" draggable="false">`;
             else if (g.mediaType === 'video' && g.mediaUrl) thumb = `<video src="${escapeHtml(g.mediaUrl)}#t=0.1" class="gq-thumb" muted playsinline preload="metadata" style="pointer-events:none;"></video>`;
             else if (g.mediaUrl) thumb = `<img src="${escapeHtml(g.mediaUrl)}" alt="" class="gq-thumb" draggable="false">`;
             else thumb = `<div class="gq-thumb gq-thumb-text bg-${escapeHtml(g.bg || 'brand')}"></div>`;
-            return `<div class="gq-quote" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who} \u00b7 Glimpse</div><div class="gq-desc">${icon}<span>${desc}</span></div></div>${thumb}</div>`;
+            return `<div class="gq-quote" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who === 'You' ? 'Your Glimpse' : who + ' \u00b7 Glimpse'}</div>${capText ? `<div class="gq-desc"><span>${capText}</span></div>` : ''}</div>${thumb}</div>`;
           }).join('');
           const body = (m.text && !isShare) ? `<div class="gq-body">${escapeHtml(m.text)}</div>` : '';
           const radius = mine ? '20px 20px 0 20px' : '20px 20px 20px 0';
@@ -6113,6 +6111,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (ta) ta.value = lectureNoteText();
             if (hint) hint.textContent = 'Saved to your space Notebook';
             if (modal) modal.classList.remove('hidden');
+            callNotesWatch();
             requestAnimationFrame(() => { if (ta) ta.focus(); });
             return;
           }
@@ -6129,12 +6128,39 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (ta) ta.value = callNotes[activeCallNotesConvoId] || '';
           if (hint) hint.textContent = 'Saved automatically';
           if (modal) modal.classList.remove('hidden');
+          callNotesWatch();
           requestAnimationFrame(() => { if (ta) ta.focus(); });
+        }
+
+        // The keyboard overlays the page, so lift the notes panel above it: the panel stays tall and
+        // the text box inside it stays fully visible while typing
+        function callNotesPlace(){
+          const modal = document.getElementById('callNotesModal');
+          if (!modal || modal.classList.contains('hidden')) return;
+          const ta = document.getElementById('callNotesTextarea');
+          const focused = !!(ta && document.activeElement === ta);
+          const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(focused) : 0;
+          modal.style.paddingBottom = inset + 'px';
+          const panel = document.getElementById('callNotesPanel');
+          if (panel) panel.style.paddingBottom = inset > 0 ? '16px' : 'calc(env(safe-area-inset-bottom, 16px) + 16px)';
+        }
+        function callNotesWatch(){
+          const ta = document.getElementById('callNotesTextarea');
+          if (ta && !ta.dataset.cnw) {
+            ta.dataset.cnw = '1';
+            ta.addEventListener('focus', () => { setTimeout(callNotesPlace, 60); setTimeout(callNotesPlace, 300); });
+            ta.addEventListener('blur', () => setTimeout(callNotesPlace, 60));
+          }
+          if (window.visualViewport && !window.__cnVV) {
+            window.__cnVV = true;
+            window.visualViewport.addEventListener('resize', callNotesPlace);
+          }
+          callNotesPlace();
         }
 
         function closeCallNotesModal(){
           const modal = document.getElementById('callNotesModal');
-          if (modal) modal.classList.add('hidden');
+          if (modal) { modal.classList.add('hidden'); modal.style.paddingBottom = ''; }
           activeCallNotesConvoId = null;
         }
 
