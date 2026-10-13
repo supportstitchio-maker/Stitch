@@ -4093,3 +4093,6 @@ body.dark-mode .glimpse-viewer-reply svg{color:#fff;fill:currentColor}
 
 /* Slightly larger text across the app */
 html{font-size:17px}
+
+.chat-status-scroll{overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-width:0;max-width:100%;touch-action:pan-x}
+.chat-status-scroll::-webkit-scrollbar{display:none}

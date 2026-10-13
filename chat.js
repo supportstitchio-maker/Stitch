@@ -4088,7 +4088,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
                 <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
-                <div id="chat-header-status" class="text-xs text-gray-400 truncate">${convoLastSeenText(meta)}</div>
+                <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
               </div>
               <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
                 <button onclick="startCall('${activeConvoId}','video')" title="Video call" class="p-1">${gradIcon(Icon('video','w-5 h-5'))}</button>
@@ -8388,13 +8388,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function callChatCtx(){
           if (typeof activeMeeting !== 'undefined' && activeMeeting) {
-            return { table: 'meeting_messages', keyCol: 'meeting_id', key: activeMeeting.id, title: activeMeeting.title || '', heading: 'Meeting chat', noun: 'meeting', extra: {}, join: null,
+            return { table: 'meeting_messages', keyCol: 'meeting_id', key: activeMeeting.id, title: activeMeeting.title || '', heading: 'Chat', noun: 'meeting', extra: {}, join: null,
               float: (id, t, n) => addMeetingFloatComment(id, t, n) };
           }
           if (typeof liveLectureState !== 'undefined' && liveLectureState && liveLectureState.connected && liveLectureState.lectureId) {
             const classId = liveLectureState.classId, lid = String(liveLectureState.lectureId);
             const cls = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === classId) : null;
-            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Messaging', noun: 'session', extra: { class_id: classId },
+            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Chat', noun: 'session', extra: { class_id: classId },
               join: async (sb) => { const r = await sb.rpc('join_lecture_chat', { p_class: classId, p_lecture: lid }); if (r.error) throw r.error; },
               float: (id, t, n) => { if (typeof addLectureFloatingComment === 'function') addLectureFloatingComment(id, t, n); } };
           }
@@ -8532,8 +8532,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const focused = !!(input && document.activeElement === input);
           const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(focused) : 0;
           const open = inset > 0;
+          // The page always covers the whole screen (so nothing from the call screen can show through
+          // while the keyboard opens/closes); the keyboard's height is taken off the bottom as padding.
           page.style.top = '0px';
-          page.style.height = (window.innerHeight - inset) + 'px';
+          page.style.boxSizing = 'border-box';
+          page.style.height = window.innerHeight + 'px';
+          page.style.paddingBottom = inset + 'px';
           const bar = document.getElementById('meeting-chat-bar');
           if (bar) bar.style.paddingBottom = open ? '10px' : 'calc(env(safe-area-inset-bottom,0px) + 10px)';
           const list = document.getElementById('meeting-chat-list');
@@ -8722,7 +8726,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // Admins can end the meeting for everyone. The server decides who may; other people's
         // apps double-check with the server before leaving, so a spoofed signal can't kick anyone.
         function confirmEndMeetingForAll(){
-          openAppConfirmModal('End meeting for everyone?', 'Everyone will be removed from the call.', 'End for everyone', () => endMeetingForAll(), 'phoneHangup');
+          openAppConfirmModal('End meeting for everyone?', 'Everyone will be removed from the call.', 'End', () => endMeetingForAll(), 'phoneHangup');
         }
 
         async function endMeetingForAll(){
