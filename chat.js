@@ -432,6 +432,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           inner.className = 'csm-in';
           inner.textContent = txt;
           el.appendChild(inner);
+          // shrink the text a little first so it fits on one line; only slide it if it still doesn't
+          let fs = 12;
+          el.style.fontSize = fs + 'px';
+          while (inner.offsetWidth > el.clientWidth && fs > 9.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; }
           const over = inner.offsetWidth - el.clientWidth;
           if (over > 2) { inner.style.setProperty('--csm-d', (-(over + 6)) + 'px'); inner.classList.add('csm-run'); }
         }
@@ -4123,7 +4127,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} ${blocked ? 'Unblock' : 'Block'}</button>
                 </div>
             <div id="convo-log-wrap" class="flex-1 relative" style="min-height:0;">
-              <div id="convo-log" class="overflow-y-auto p-5 flex flex-col gap-3" style="height:100%;">
+              <div id="convo-log" class="overflow-y-auto p-5 flex flex-col gap-3" style="height:100%;overflow-x:hidden;">
                 ${convoLogHTML()}
               </div>
               <button id="convo-jump-latest-btn" onclick="scrollConvoLogToBottom()" title="Jump to latest" class="hidden convo-jump-btn flex items-center justify-center" style="position:absolute;right:16px;bottom:14px;z-index:5;width:36px;height:36px;border-radius:9999px;">${Icon('chevronDown','w-4 h-4')}</button>
@@ -8675,7 +8679,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>
               <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>
-            <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
+            <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
             <div id="meeting-chat-replybar" style="display:none;align-items:center;gap:8px;padding:8px 12px;flex-shrink:0;background:var(--cu-bg);"></div>
             <div id="meeting-chat-bar" style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
               <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
