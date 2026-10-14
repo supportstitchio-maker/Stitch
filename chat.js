@@ -3764,6 +3764,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function isConvoNotifEnabled(id){ return !mutedConvoNotifs.has(id); }
 
         function toggleFavoriteConvo(){
+          if (window.haptic) window.haptic(8);
           if (!activeConvoId) return;
           if (favoriteConvos.has(activeConvoId)) favoriteConvos.delete(activeConvoId);
           else favoriteConvos.add(activeConvoId);
@@ -3772,6 +3773,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function toggleConvoNotifPref(){
+          if (window.haptic) window.haptic(8);
           if (!activeConvoId) return;
           if (mutedConvoNotifs.has(activeConvoId)) mutedConvoNotifs.delete(activeConvoId);
           else mutedConvoNotifs.add(activeConvoId);
@@ -3904,13 +3906,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </button>`;
             }).join('')) : empty(`No links shared with ${escapeHtml(meta.name)} yet.`);
           }
-          const tabBtn = (id, label, n) => `<button type="button" onclick="setConvoMediaTab('${id}')" class="cm-tab ${tab === id ? 'on' : ''}">${label}<span class="cm-n">${n}</span></button>`;
+          const tabBtn = (id, label, n) => `<button type="button" onclick="setConvoMediaTab('${id}')" ${tab === id ? 'data-pill-active="1"' : ''} class="filter-pill flex-shrink-0 ${tab === id ? 'on' : ''}">${label}${n ? `<span class="rounded-full ${tab === id ? 'bg-white text-[#4169e1]' : 'bg-gray-200 text-gray-600'} text-[9px] flex items-center justify-center" style="min-width:1rem;height:1rem;padding:0 0.25rem;">${n}</span>` : ''}</button>`;
           return `
             <style>
-              .cm-tabs{display:flex;border-bottom:1px solid rgba(10,37,64,.08);position:sticky;top:0;background:inherit;z-index:2;}
-              .cm-tab{flex:1;padding:12px 0;font-size:14px;font-weight:600;color:#9ca3af;border-bottom:2.5px solid transparent;margin-bottom:-1px;}
-              .cm-tab.on{color:#1e90ff;border-bottom-color:#1e90ff;}
-              .cm-n{font-size:11px;margin-left:5px;opacity:.7;}
+              .cm-tabs{position:sticky;top:0;z-index:2;}
               .cm-head{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9ca3af;padding:18px 20px 8px;}
               .cm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
               .cm-cell{position:relative;aspect-ratio:1;overflow:hidden;background:#e5e7eb;display:block;}
@@ -3928,7 +3927,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="openConvoProfile()" class="cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <div class="font-semibold text-lg font-display truncate grad-text">${escapeHtml(meta.name || 'Conversation')}</div>
               </div>
-              <div class="cm-tabs">${tabBtn('media','Media',images.length)}${tabBtn('docs','Docs',docs.length)}${tabBtn('links','Links',links.length)}</div>
+              <div class="cm-tabs flex gap-2 px-5 py-2 overflow-x-auto">${tabBtn('media','Media',images.length)}${tabBtn('docs','Docs',docs.length)}${tabBtn('links','Links',links.length)}</div>
               ${body}
             </div>`;
         }
@@ -5790,6 +5789,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function sendConvoMessage(){
+          if (window.haptic) window.haptic(6);
           const inputEl = document.getElementById('convo-input');
           let text = inputEl ? inputEl.value.trim() : '';
           const plainText = text;

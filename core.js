@@ -3337,3 +3337,120 @@ function toggleEmojiPicker(targetId, btn){
     try { input.focus(); } catch (e) {}
   }
 }
+
+
+/* ===== Fluid sheets (Apple-style): drag a bottom sheet down 1:1, release with momentum, spring back or dismiss ===== */
+window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) navigator.vibrate(ms || 8); } catch (e) {} };
+(function(){
+  if (!('ontouchstart' in window)) return;                       // touch devices only
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var DECEL = 0.99;                                              // momentum projection rate
+  function project(v){ return (v / 1000) * DECEL / (1 - DECEL); }
+  function rubber(over, dim){ var c = 0.55; return (over * dim * c) / (dim + c * Math.abs(over)); }
+
+  // Critically damped spring (damping 1.0). Starts from the live value and the finger's velocity.
+  function spring(from, to, v0, response, step, done){
+    var k = Math.pow(2 * Math.PI / response, 2), c = 2 * Math.sqrt(k);
+    var x = from, v = v0, last = performance.now(), raf;
+    function tick(now){
+      var dt = Math.min(0.032, (now - last) / 1000); last = now;
+      var a = -k * (x - to) - c * v; v += a * dt; x += v * dt;
+      step(x);
+      if (Math.abs(x - to) < 0.5 && Math.abs(v) < 8) { step(to); if (done) done(); return; }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return function cancel(){ cancelAnimationFrame(raf); };
+  }
+
+  function isDimBackdrop(el){
+    if (!el || el.nodeType !== 1 || !el.hasAttribute('onclick')) return false;
+    var cs = getComputedStyle(el);
+    if (cs.position !== 'fixed' && cs.position !== 'absolute') return false;
+    var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(cs.backgroundColor || '');
+    if (!m) return false;
+    var a = m[4] === undefined ? 1 : parseFloat(m[4]);
+    if (a < 0.05 || +m[1] > 60 || +m[2] > 60 || +m[3] > 60) return false;
+    var r = el.getBoundingClientRect();
+    return r.width >= 280 && r.height >= 300;
+  }
+  function bottomPanel(p, bd){
+    var r = p.getBoundingClientRect(), b = bd.getBoundingClientRect();
+    return r.width && r.height && Math.abs(r.bottom - b.bottom) < 6 && r.top > b.top + 20;
+  }
+  // From a touched element, find { panel, backdrop } if it sits inside a dimmed bottom sheet.
+  function sheetFor(t){
+    for (var p = t, i = 0; p && p.nodeType === 1 && i < 12; p = p.parentElement, i++) {
+      var bd = p.parentElement;
+      if (bd && isDimBackdrop(bd) && bottomPanel(p, bd)) return { panel: p, bd: bd };
+      var prev = p.previousElementSibling;
+      if (prev && isDimBackdrop(prev) && bottomPanel(p, prev)) return { panel: p, bd: prev };
+    }
+    return null;
+  }
+  function scrollableAbove(t, panel){
+    for (var n = t; n && n !== panel.parentElement; n = n.parentElement) {
+      if (n.nodeType === 1 && n.scrollHeight > n.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowY)) return n;
+    }
+    return null;
+  }
+
+  var st = null, running = null;
+  document.addEventListener('touchstart', function(e){
+    if (e.touches.length !== 1 || window.matchMedia('(min-width:1024px) and (hover:hover) and (pointer:fine)').matches) { st = null; return; }
+    var t = e.target; if (!t || t.nodeType !== 1) return;
+    if (t.closest && t.closest('input,textarea,select,[contenteditable="true"],.dsk-menu')) { st = null; return; }
+    var s = sheetFor(t); if (!s) { st = null; return; }
+    if (s.bd.__sheetClosing) { st = null; return; }
+    if (running) { running(); running = null; }                    // interruptible: grab it mid-flight
+    var r = s.panel.getBoundingClientRect(), cur = new DOMMatrix(getComputedStyle(s.panel).transform).m42 || 0;
+    var sc = scrollableAbove(t, s.panel);
+    st = { panel: s.panel, bd: s.bd, y0: e.touches[0].clientY, x0: e.touches[0].clientX, base: cur,
+           inHandle: (e.touches[0].clientY - r.top) < 72, scroller: sc, drag: false, dead: false, hist: [], h: r.height,
+           savedStyle: s.panel.getAttribute('style'), savedBd: s.bd.getAttribute('style') };
+  }, { passive: true, capture: true });
+
+  document.addEventListener('touchmove', function(e){
+    if (!st || st.dead) return;
+    var tch = e.touches[0], dy = tch.clientY - st.y0, dx = tch.clientX - st.x0;
+    if (!st.drag) {
+      if (Math.abs(dy) < 10 && Math.abs(dx) < 10) return;           // hysteresis before committing to a direction
+      var canDrag = Math.abs(dy) > Math.abs(dx) && dy > 0 && (st.inHandle || !st.scroller || st.scroller.scrollTop <= 0);
+      if (!canDrag) { st.dead = true; return; }
+      st.drag = true; st.y0 = tch.clientY; dy = 0;                 // track from here so it stays glued to the finger
+      st.panel.style.animation = 'none'; st.panel.style.transition = 'none'; st.panel.style.willChange = 'transform';
+    }
+    e.preventDefault();
+    var y = st.base + dy;
+    y = y >= 0 ? y : rubber(y, st.h);                              // resist when pulled upward past rest
+    st.panel.style.transform = 'translateY(' + y + 'px)';
+    st.hist.push({ t: performance.now(), y: y }); if (st.hist.length > 6) st.hist.shift();
+  }, { passive: false, capture: true });
+
+  function end(){
+    if (!st) return; var s = st; st = null;
+    if (!s.drag) return;
+    var y = new DOMMatrix(getComputedStyle(s.panel).transform).m42 || 0;
+    var h0 = s.hist[0], h1 = s.hist[s.hist.length - 1], v = 0;
+    if (h0 && h1 && h1.t > h0.t) v = (h1.y - h0.y) / ((h1.t - h0.t) / 1000);
+    var dismiss = v > 0 ? (y + project(v) > s.h * 0.5 || v > 700) : (y > s.h * 0.55 && v > -300);   // velocity sign decides, not just position
+    if (dismiss) {
+      window.haptic(6);
+      s.bd.__sheetClosing = false;
+      running = spring(y, s.h, v, reduce ? 0.12 : 0.3, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; }, function(){
+        running = null; s.bd.__sheetPass = true; s.bd.click(); s.bd.__sheetPass = false;
+        setTimeout(function(){
+          if (s.panel.isConnected) { if (s.savedStyle == null) s.panel.removeAttribute('style'); else s.panel.setAttribute('style', s.savedStyle); }
+          if (s.bd.isConnected) { if (s.savedBd == null) s.bd.removeAttribute('style'); else s.bd.setAttribute('style', s.savedBd); }
+        }, 80);
+      });
+    } else {
+      running = spring(y, 0, v, reduce ? 0.12 : 0.35, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; }, function(){
+        running = null;
+        if (s.savedStyle == null) s.panel.removeAttribute('style'); else s.panel.setAttribute('style', s.savedStyle);
+      });
+    }
+  }
+  document.addEventListener('touchend', end, { passive: true, capture: true });
+  document.addEventListener('touchcancel', end, { passive: true, capture: true });
+})();
