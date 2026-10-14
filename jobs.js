@@ -2764,10 +2764,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const rangeBtn = n => `<button onclick="setPosterDashboardRange(${n})" class="px-3 py-1.5 rounded-full text-xs font-semibold" style="${posterDashboardRange === n ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);color:#fff;` : 'background:#f3f4f6;color:#6b7280;'}">${n}d</button>`;
           if (!jobs.length) {
             return `
-                <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
-                  <div class="flex justify-center mb-2 text-gray-400">${Icon('briefcase','w-6 h-6')}</div>
-                  You haven't posted anything yet. Your listings and how they're doing will show up here.
-                </div>
+                ${ghostEmptyHTML("You haven't posted anything yet. Your listings and how they're doing will show up here.", ghostSample(() => [0, 1].map(i => jobCard({ id: 'ghost' + i, title: 'Sample listing title', company: 'Company name', type: 'Internship', location: 'Accra, Ghana', posted: 'Today', createdAt: Date.now(), applicants: [], mine: true })).join('')))}
               <div class="mt-4" style="margin-top:auto;padding-top:1rem;">
                 <button onclick="openPostOpportunity()" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">Post an Opportunity</button>
               </div>`;
@@ -8123,7 +8120,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
 
         // ---- Admin Dashboard (Profile tab pill, admins only) ----
-        let adminDashboardTab = 'applications';
+        let adminDashboardTab = 'mydashboard';
         let adminDashboardLoading = false;
         let adminPosterApplications = [];
         let adminOpenReports = [];
@@ -8154,7 +8151,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function openAdminDashboard(){
           if (!isCurrentUserAdmin()) return;
-          adminDashboardTab = 'applications';
+          adminDashboardTab = 'mydashboard';
+          dashboardTab = null; posterDashboardRange = 14;
           adminDetailUserId = null;
           adminMenuOpen = false;
           adminHistoryLoaded = false;
@@ -8162,6 +8160,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           adminReviewedApplications = [];
           adminExpandedReviewedId = null;
           openOverlay('adminDashboard');
+          try { dashboardLoadTab(); } catch (e) {}
           loadAdminDashboardData();
           // Creator payments data loads alongside so the tab counts (pending creators, payouts,
           // reports) are right
@@ -8235,6 +8234,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           if (body) {
             body.innerHTML = adminBodyHTML();
             if (adminMenuOpen) renderAdminMenu();
+            adminPillsRefresh();
+            const cs = document.getElementById('admin-chart-slot');
+            if (cs) {
+              if (adminDashboardTab === 'mydashboard') cs.innerHTML = '';
+              else { const jl = allJobs(), up = jl.filter(j => j.createdByRole === 'user').length; cs.innerHTML = adminListingsChartHTML(jl.length, up, jl.length - up); }
+            }
             return;
           }
           const ov = document.getElementById('overlay');
@@ -8245,6 +8250,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           adminDashboardTab = tab;
           adminExpandedReviewedId = null;
           refreshAdminDashboardDom();
+          if (tab === 'mydashboard') dashboardLoadTab();
           if (['approved','declined','frozen','blocked','log'].includes(tab) && !adminHistoryLoaded && !adminHistoryLoading) loadAdminHistoryData();
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab) && !adminCreatorData.loaded && !adminCreatorData.loading) loadAdminCreatorData();
         }
@@ -8634,7 +8640,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const declinedCount = adminReviewedApplications.filter(x => x.poster_status === 'denied').length;
           const frozenCount = adminReviewedApplications.filter(x => x.poster_status === 'frozen').length;
           const blockedCount = adminReviewedApplications.filter(x => x.poster_status === 'blocked').length;
-          const tabs = [['applications', `Pending${adminPosterApplications.length ? ` (${adminPosterApplications.length})` : ''}`], ['approved', `Approved${adminHistoryLoaded ? ` (${approvedCount})` : ''}`], ['declined', `Declined${adminHistoryLoaded ? ` (${declinedCount})` : ''}`], ['frozen', `Frozen${adminHistoryLoaded ? ` (${frozenCount})` : ''}`], ['blocked', `Blocked${adminHistoryLoaded ? ` (${blockedCount})` : ''}`], ['reports', `Reports${adminOpenReports.length ? ` (${adminOpenReports.length})` : ''}`], ['log', 'Report log']].concat(typeof creatorAdminTabs === 'function' ? creatorAdminTabs() : []).concat([['mydashboard', 'My Dashboard']]);
+          const tabs = [['applications', `Pending${adminPosterApplications.length ? ` (${adminPosterApplications.length})` : ''}`], ['approved', `Approved${adminHistoryLoaded ? ` (${approvedCount})` : ''}`], ['declined', `Declined${adminHistoryLoaded ? ` (${declinedCount})` : ''}`], ['frozen', `Frozen${adminHistoryLoaded ? ` (${frozenCount})` : ''}`], ['blocked', `Blocked${adminHistoryLoaded ? ` (${blockedCount})` : ''}`], ['reports', `Reports${adminOpenReports.length ? ` (${adminOpenReports.length})` : ''}`], ['log', 'Report log']].concat(typeof creatorAdminTabs === 'function' ? creatorAdminTabs() : []);
+          tabs.unshift(['mydashboard', 'My Dashboard']);
           return tabs;
         }
 
@@ -8808,6 +8815,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         function adminBodyHTML(){
           const tab0 = adminDashboardTab;
+          if (tab0 === 'mydashboard') return myDashboardInlineHTML();
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab0)) return adminBodyCoreHTML();
           let charts = '';
           try { charts = adminPosterChartsHTML(tab0); } catch (e) { charts = ''; }
@@ -8825,8 +8833,43 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             return rows.length ? rows.map(adminReviewedRowHTML).join('') : empty(tab === 'approved' ? 'No approved posters.' : tab === 'frozen' ? 'No frozen posters.' : tab === 'blocked' ? 'No blocked posters.' : 'No declined applications.');
           }
           if (adminDashboardLoading) return empty('Loading…');
-          if (tab === 'applications') return adminPosterApplications.length ? adminPosterApplications.map(adminReviewedRowHTML).join('') : `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">No pending poster applications.</div>`;
-          return adminOpenReports.length ? adminOpenReports.map(adminReportCardHTML).join('') : `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">No open reports.</div>`;
+          if (tab === 'applications') return adminPosterApplications.length ? adminPosterApplications.map(adminReviewedRowHTML).join('') : ghostEmptyHTML('No pending poster applications.', ghostSample(() => [0, 1].map(i => adminReviewedRowHTML({ user_id: 'g' + i, person: { name: 'Sample Name', username: 'sample' }, poster_status: 'pending', poster_applied_at: new Date().toISOString(), poster_role: 'business' })).join('')));
+          return adminOpenReports.length ? adminOpenReports.map(adminReportCardHTML).join('') : ghostEmptyHTML('No open reports.', ghostSample(() => [0, 1].map(i => adminReportCardHTML({ id: 'g' + i, status: 'open', person: { name: 'Sample Name', username: 'sample' }, job: { title: 'Sample listing title' }, created_at: new Date().toISOString(), reason: 'Spam\nPlaceholder details of the report' })).join('')));
+        }
+
+        // "My Dashboard" shown right inside the Admin Dashboard (first pill, open by default)
+        function myDashboardInlineHTML(){
+          const tabs = dashboardTabs();
+          if (!tabs.some(([k]) => k === dashboardTab)) dashboardTab = tabs[0][0];
+          const body = dashboardTab === 'listings' ? posterListingsBodyHTML()
+            : dashboardTab === 'wallet' ? creatorWalletBodyHTML()
+            : receiptsBodyHTML();
+          const pills = tabs.length > 1 ? `
+            <div class="seg-bar seg-soft mb-5">
+              ${tabs.map(([k, label]) => `<button onclick="setAdminMyDashTab('${k}')" class="seg-btn ${dashboardTab === k ? 'on' : ''}">${label}</button>`).join('')}
+            </div>` : '';
+          return `<div class="max-w-2xl mx-auto w-full flex flex-col" style="padding-top:6px;">${pills}${body}${dashboardAnalyticsHTML()}</div>`;
+        }
+        function setAdminMyDashTab(k){
+          dashboardTab = k;
+          refreshAdminDashboardDom();
+          dashboardLoadTab();
+        }
+        // Section pills (replace the side menu): scrollable row, active one highlighted
+        function adminPillsHTML(){
+          return adminDashboardTabs().map(([key, label]) => {
+            const on = adminDashboardTab === key;
+            return `<button onclick="switchAdminDashboardTab('${key}')" ${on ? 'data-pill-active="1"' : ''} class="filter-pill flex-shrink-0 ${on ? 'on' : ''}">${label}</button>`;
+          }).join('');
+        }
+        function adminPillsRefresh(){
+          const row = document.getElementById('admin-pills');
+          if (!row) return;
+          const keep = row.scrollLeft;
+          row.innerHTML = adminPillsHTML();
+          row.scrollLeft = keep;
+          const act = row.querySelector('[data-pill-active]');
+          if (act && act.scrollIntoView) { try { act.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
         }
 
         // Same centred header as every other page, plus a + on the right that opens "Post an
@@ -8838,7 +8881,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
                 <div class="relative flex items-center justify-center">
                   <button onclick="overlayGoBack()" aria-label="Back" class="absolute flex items-center" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                   <div class="font-semibold text-lg font-display grad-text text-center" style="font-size:20px;">Admin Dashboard</div>
-                  <button onclick="openAdminMenu()" aria-label="Menu" class="absolute flex items-center" style="right:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('dashesShortRight','w-6 h-6'))}</button>
                 </div>
               </div>
             </div>`;
@@ -8895,7 +8937,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <div class="flex-1 relative overflow-hidden flex flex-col">
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div style="margin:0 -1.25rem;">${adminDashboardHeaderHTML()}</div>
-              <div style="margin-top:calc(20px - 0.75rem);">${adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
+              <div id="admin-pills" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" style="margin-top:4px;">${adminPillsHTML()}</div>
+              <div id="admin-chart-slot" style="margin-top:14px;">${adminDashboardTab === 'mydashboard' ? '' : adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
               <div id="admin-tab-body">${adminBodyHTML()}</div>
             </div>
             <div id="admin-menu-slot">${adminMenuOpen ? adminMenuHTML() : ''}</div>

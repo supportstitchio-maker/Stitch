@@ -3245,6 +3245,7 @@ function closeEmojiPicker(keepKeyboardClosed){
     document.removeEventListener('pointerdown', st.outside, true);
     window.removeEventListener('resize', st.reposition);
     if (window.visualViewport) window.visualViewport.removeEventListener('resize', st.reposition);
+    if (window.visualViewport && st.searchGeo) window.visualViewport.removeEventListener('resize', st.searchGeo);
     if (st.btn) { st.btn.style.color = ''; if (st.docked) st.btn.innerHTML = emojiIconSVG(20); }
     if (st.docked) {
       emojiDockedHeight = 0;
@@ -3257,6 +3258,70 @@ function closeEmojiPicker(keepKeyboardClosed){
     }
   }
 }
+
+const EMOJI_KEYWORDS = {
+  smile:'😀😃😄😁🙂😊😇😌', happy:'😀😃😄😁😊🥳🤩', grin:'😁😄😃', laugh:'😂🤣😆😹', funny:'😂🤣😜🤪', lol:'😂🤣', joy:'😂🤣😹',
+  cry:'😢😭🥲😿', sad:'😞😔😟🙁😢😭', tears:'😢😭🥹', angry:'😠😡🤬', mad:'😠😡🤬', love:'😍🥰😘❤️💕💖💘', heart:'❤️🧡💛💚💙💜🖤🤍🤎💔💕💞💓💗💖', kiss:'😘😗😙😚💋',
+  cool:'😎🆒', wink:'😉😜', tongue:'😛😝😜🤪', think:'🤔🧐', thinking:'🤔🧐', shock:'😱😲😮🤯', surprise:'😲😮😯🎉', scared:'😱😨😰', sleep:'😴💤😪', tired:'😫😩🥱😴',
+  sick:'🤒🤢🤮🤧', party:'🥳🎉🎊🎈', celebrate:'🎉🎊🥳🍾', birthday:'🎂🎉🎈🎁🥳', gift:'🎁', fire:'🔥', hot:'🔥🥵', cold:'🥶❄️', star:'⭐🌟✨💫', sparkle:'✨💫', money:'💰💵💳🤑', cash:'💵💰',
+  thumbs:'👍👎', yes:'👍✅✔️', no:'👎❌🚫', ok:'👌🆗👍', clap:'👏🙌', pray:'🙏', please:'🙏🥺', thanks:'🙏🤝', hand:'✋🤚🖐️👋', wave:'👋', strong:'💪🦾', muscle:'💪', peace:'✌️🕊️', victory:'✌️🏆',
+  eyes:'👀', brain:'🧠', smart:'🧠🤓🎓', nerd:'🤓', study:'📚📖📝🎓✏️', book:'📚📖', school:'🏫🎓📚', graduate:'🎓', pen:'✏️📝', write:'📝✏️', computer:'💻🖥️⌨️', phone:'📱📞☎️', camera:'📷🎥', video:'🎥📺',
+  music:'🎵🎶🎤🎧🎸🥁', song:'🎵🎶🎤', sing:'🎤🎶', game:'🎮🕹️🎲', football:'⚽', soccer:'⚽', basketball:'🏀', win:'🏆🥇🎉', trophy:'🏆', medal:'🏅🥇🥈🥉', run:'🏃', sport:'⚽🏀🏈🎾',
+  dog:'🐶🐕', cat:'🐱🐈', animal:'🐶🐱🐭🐹🐰🦊🐻🐼🦁🐯🐮🐷🐸🐵', monkey:'🐵🙈🙉🙊', bird:'🐦🐧🦅🦉🐔', fish:'🐟🐠🐬🐳', flower:'🌸🌹🌻🌷', tree:'🌴🌳🌲', sun:'☀️🌞🌅', moon:'🌙🌛', rain:'🌧️☔', 
+  food:'🍎🍔🍕🍟🍗🍜🍚🍞', eat:'🍴🍔🍕🍗', pizza:'🍕', burger:'🍔', rice:'🍚🍙', chicken:'🍗', fruit:'🍎🍌🍉🍇🍓🍊', drink:'🥤🍹🍺☕', coffee:'☕', tea:'🍵☕', water:'💧🚰', beer:'🍺🍻', cake:'🎂🍰',
+  car:'🚗🚕🚙', bus:'🚌', plane:'✈️', travel:'✈️🌍🧳', home:'🏠🏡', world:'🌍🌎🌏', earth:'🌍🌎🌏', time:'⏰⌛🕘', clock:'⏰🕘', alarm:'⏰', check:'✅✔️', done:'✅✔️', wrong:'❌', warning:'⚠️', question:'❓', idea:'💡', light:'💡🔦',
+  lock:'🔒', key:'🔑', work:'💼💻', office:'💼🏢', chart:'📊📈📉', graph:'📈📉📊', up:'⬆️📈', down:'⬇️📉', hundred:'💯', perfect:'💯👌', zero:'0️⃣', one:'1️⃣', ghost:'👻', skull:'💀☠️', devil:'😈👿', angel:'😇👼',
+  baby:'👶', man:'👨', woman:'👩', family:'👪', couple:'👫💑', hug:'🤗🫂', shy:'😊🙈', bored:'😑😐', ok_hand:'👌', rocket:'🚀', bomb:'💣', crown:'👑', diamond:'💎', ring:'💍', rose:'🌹', rainbow:'🏳️‍🌈🌈', pride:'🏳️‍🌈', flag:'🚩🏁🏴🏳️'
+};
+let __emojiIndex = null;
+function emojiSearchIndex(){
+  if (__emojiIndex) return __emojiIndex;
+  const names = {}; let dn = null;
+  try { dn = new Intl.DisplayNames(['en'], { type: 'region' }); } catch (e) {}
+  const flags = (EMOJI_SET.find(t => t.name === 'Flags') || { list: [] }).list;
+  flags.forEach(f => {
+    const cps = Array.from(f).map(ch => ch.codePointAt(0));
+    if (cps.length === 2 && cps[0] >= 127462 && cps[0] <= 127487) {
+      const code = String.fromCharCode(cps[0] - 127397, cps[1] - 127397);
+      let nm = ''; try { nm = dn ? dn.of(code) : ''; } catch (e) {}
+      names[f] = (nm + ' ' + code + ' flag').toLowerCase();
+    }
+  });
+  __emojiIndex = { names };
+  return __emojiIndex;
+}
+function emojiSearch(q){
+  q = (q || '').trim().toLowerCase();
+  if (!q) return [];
+  const out = [], seen = new Set();
+  const add = ch => { if (!seen.has(ch)) { seen.add(ch); out.push(ch); } };
+  const all = []; EMOJI_SET.forEach(t => t.list.forEach(ch => all.push(ch)));
+  if (all.indexOf(q) !== -1) add(q);                              // they typed the emoji itself
+  Object.keys(EMOJI_KEYWORDS).forEach(k => { if (k.indexOf(q) === 0 || (q.length > 2 && k.indexOf(q) !== -1)) (typeof Intl !== 'undefined' && Intl.Segmenter ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(EMOJI_KEYWORDS[k]), s => s.segment) : Array.from(EMOJI_KEYWORDS[k])).forEach(add); });
+  EMOJI_SET.forEach(t => { if (t.name.toLowerCase().indexOf(q) !== -1 && t.name !== 'Flags') t.list.forEach(add); });
+  const idx = emojiSearchIndex().names;
+  Object.keys(idx).forEach(f => { if ((' ' + idx[f]).indexOf(' ' + q) !== -1) add(f); });
+  return out.slice(0, 160);
+}
+function emojiDeleteBack(input){
+  let s = input.selectionStart != null ? input.selectionStart : input.value.length;
+  const e2 = input.selectionEnd != null ? input.selectionEnd : s;
+  if (e2 > s) { input.value = input.value.slice(0, s) + input.value.slice(e2); }
+  else if (s > 0) {
+    const before = input.value.slice(0, s);
+    let cut = 1;
+    try {
+      if (Intl.Segmenter) { const segs = Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(before)); cut = segs.length ? segs[segs.length - 1].segment.length : 1; }
+      else { const cp = Array.from(before); cut = cp.length ? cp[cp.length - 1].length : 1; }
+    } catch (e) {}
+    input.value = before.slice(0, s - cut) + input.value.slice(s); s = s - cut;
+  } else return;
+  try { input.setSelectionRange(s, s); } catch (e) {}
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+function emojiSearchSVG(size){ return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'; }
+function emojiBackSVG(size){ return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>'; }
+function emojiBackspaceSVG(size){ return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 012 2v10a2 2 0 01-2 2H9l-6-7 6-7z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>'; }
 function toggleEmojiPicker(targetId, btn){
   if (emojiPickerState && emojiPickerState.targetId === targetId) { closeEmojiPicker(); return; }
   closeEmojiPicker();
@@ -3278,17 +3343,64 @@ function toggleEmojiPicker(targetId, btn){
     : 'position:fixed;z-index:20000;width:min(calc(100vw - 24px),372px);height:300px;border-radius:20px;background:' + bg + ';color:' + fg + ';box-shadow:0 14px 44px rgba(10,37,64,.22),0 0 0 1px rgba(10,37,64,.07);display:flex;flex-direction:column;overflow:hidden;animation:dskPop .16s ease-out both;';
   const tabs = [{ icon: '🕘', name: 'Recent', list: emojiRecents() }].concat(EMOJI_SET);
   let cur = emojiRecents().length ? 0 : 1;
+  let searching = false, query = '';
+  const iconBtn = 'width:38px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.75;';
+  const cellsHTML = list => list.map(ch => '<button type="button" data-e="' + ch + '" style="height:38px;font-size:24px;line-height:1;border-radius:10px;">' + ch + '</button>').join('');
+  const GRID = 'flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;align-content:start;-webkit-overflow-scrolling:touch;';
   function paint(){
     const t = tabs[cur];
+    if (searching) {
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px;padding:14px 8px 8px;flex-shrink:0;">' +
+          '<button type="button" data-act="exitsearch" aria-label="Back" style="' + iconBtn + '">' + emojiBackSVG(22) + '</button>' +
+          '<input id="emoji-search-input" type="text" value="' + query.replace(/"/g, '&quot;') + '" placeholder="Search emoji" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="flex:1;min-width:0;height:36px;border-radius:12px;border:0;outline:0;padding:0 12px;font-size:15px;background:' + soft + ';color:inherit;">' +
+          '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
+        '</div>' +
+        '<div id="emoji-results" style="' + GRID + '"></div>';
+      renderResults();
+      return;
+    }
     el.innerHTML =
-      '<div style="display:flex;gap:2px;padding:8px 8px 4px;flex-shrink:0;">' +
-        tabs.map((x, i) => '<button type="button" data-tab="' + i + '" title="' + x.name + '" style="flex:1;height:34px;border-radius:10px;font-size:18px;line-height:1;background:' + (i === cur ? soft : 'transparent') + ';">' + x.icon + '</button>').join('') +
+      '<div style="display:flex;align-items:center;gap:2px;padding:14px 6px 8px;flex-shrink:0;">' +
+        '<button type="button" data-act="search" aria-label="Search emoji" style="' + iconBtn + '">' + emojiSearchSVG(21) + '</button>' +
+        '<div style="flex:1;min-width:0;display:flex;gap:1px;">' +
+          tabs.map((x, i) => '<button type="button" data-tab="' + i + '" title="' + x.name + '" style="flex:1;min-width:0;height:36px;border-radius:10px;font-size:18px;line-height:1;background:' + (i === cur ? soft : 'transparent') + ';">' + x.icon + '</button>').join('') +
+        '</div>' +
+        '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
       '</div>' +
-      '<div style="padding:2px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
-      '<div style="flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;align-content:start;-webkit-overflow-scrolling:touch;">' +
-        (t.list.length ? t.list.map(ch => '<button type="button" data-e="' + ch + '" style="height:38px;font-size:24px;line-height:1;border-radius:10px;">' + ch + '</button>').join('') : '<div style="grid-column:1/-1;padding:24px 8px;text-align:center;font-size:13px;opacity:.55;">Emojis you use will show here</div>') +
+      '<div style="padding:4px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
+      '<div style="' + GRID + '">' +
+        (t.list.length ? cellsHTML(t.list) : '<div style="grid-column:1/-1;padding:24px 8px;text-align:center;font-size:13px;opacity:.55;">Emojis you use will show up here</div>') +
       '</div>';
   }
+  function renderResults(){
+    const box = el.querySelector('#emoji-results'); if (!box) return;
+    const res = emojiSearch(query);
+    box.innerHTML = res.length ? cellsHTML(res)
+      : '<div style="grid-column:1/-1;padding:28px 8px;text-align:center;font-size:13px;opacity:.55;">' + (query.trim() ? 'No emoji found' : 'Type a word like “love”, “food” or “Ghana”') + '</div>';
+  }
+  // While searching on a phone the real keyboard is up: sit the panel on top of it and lift the chat by both
+  let geoBusy = false;
+  function searchGeometry(){
+    if (!docked || geoBusy) return;
+    geoBusy = true;
+    const vv = window.visualViewport;
+    const kb = searching && vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+    const h = searching ? Math.round(Math.min(kbH, 280)) : kbH;
+    el.style.bottom = kb + 'px'; el.style.height = h + 'px';
+    el.style.paddingBottom = searching && kb > 0 ? '0px' : 'env(safe-area-inset-bottom,0px)';
+    emojiDockedHeight = h + kb;
+    emojiResync();
+    geoBusy = false;
+  }
+  function setSearching(on){
+    searching = on; if (!on) query = '';
+    paint(); searchGeometry();
+    if (on) { const si = el.querySelector('#emoji-search-input'); if (si) { try { si.focus(); } catch (e) {} } }
+    else { try { input.focus(); } catch (e) {} }
+  }
+  let delTimer = null, delRepeat = null;
+  function stopDel(){ clearTimeout(delTimer); clearInterval(delRepeat); delTimer = delRepeat = null; }
   function place(){
     if (docked) return;
     const r = anchor.getBoundingClientRect();
@@ -3309,13 +3421,28 @@ function toggleEmojiPicker(targetId, btn){
     emojiRememberUse(ch);
   }
   // keep the keyboard up: never let the panel steal focus
-  el.addEventListener('mousedown', e => e.preventDefault());
+  el.addEventListener('mousedown', e => { if (e.target.id !== 'emoji-search-input') e.preventDefault(); });
   el.addEventListener('click', e => {
     const ee = e.target.closest('[data-e]');
-    if (ee) { insert(ee.getAttribute('data-e')); return; }
+    if (ee) { insert(ee.getAttribute('data-e')); if (window.haptic) window.haptic(4); return; }
+    const aa = e.target.closest('[data-act]');
+    if (aa) {
+      const act = aa.getAttribute('data-act');
+      if (act === 'search') setSearching(true);
+      else if (act === 'exitsearch') setSearching(false);
+      return;
+    }
     const tt = e.target.closest('[data-tab]');
     if (tt) { cur = parseInt(tt.getAttribute('data-tab'), 10); paint(); }
   });
+  el.addEventListener('input', e => { if (e.target.id === 'emoji-search-input') { query = e.target.value; renderResults(); } });
+  // Delete button: one tap removes one emoji/character; hold to keep deleting
+  el.addEventListener('pointerdown', e => {
+    const d = e.target.closest('[data-act="del"]'); if (!d) return;
+    emojiDeleteBack(input); if (window.haptic) window.haptic(4);
+    stopDel(); delTimer = setTimeout(() => { delRepeat = setInterval(() => emojiDeleteBack(input), 55); }, 380);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => el.addEventListener(n, stopDel));
   paint();
   document.body.appendChild(el);
   place();
@@ -3323,7 +3450,8 @@ function toggleEmojiPicker(targetId, btn){
   document.addEventListener('pointerdown', outside, true);
   window.addEventListener('resize', place);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', place);
-  emojiPickerState = { targetId, btn, outside, reposition: place, docked, hadInputMode: input.getAttribute('inputmode') };
+  if (docked && window.visualViewport) window.visualViewport.addEventListener('resize', searchGeometry);
+  emojiPickerState = { targetId, btn, outside, reposition: place, searchGeo: searchGeometry, docked, hadInputMode: input.getAttribute('inputmode') };
   btn.style.color = '#1e90ff';
   if (docked) {
     // Stand in for the keyboard: hide the system keyboard, keep the cursor, lift the screen by the panel's height
@@ -3395,6 +3523,24 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
     return null;
   }
 
+  function fadeBd(s, y){            // the dim lifts as the sheet leaves, so the page behind comes back with your finger
+    if (!s || !s.bdRGB) return;
+    var base = s.bdRGB[4] === undefined ? 1 : parseFloat(s.bdRGB[4]);
+    var k = Math.max(0, Math.min(1, 1 - Math.max(0, y) / (s.h || 300)));
+    s.bd.style.transition = 'none'; s.bd.style.backgroundColor = 'rgba(' + s.bdRGB[1] + ',' + s.bdRGB[2] + ',' + s.bdRGB[3] + ',' + (base * k) + ')';
+  }
+  // Put the panel back exactly where it rests WITHOUT replaying its slide-up entrance (that was the "rebuilds from below" glitch):
+  // keep the entrance animation switched off while it is shown, and give it back once the panel is hidden or gone.
+  function settlePanel(s){
+    var p = s.panel;
+    if (s.savedStyle == null) p.removeAttribute('style'); else p.setAttribute('style', s.savedStyle);
+    p.style.animation = 'none';
+    var mo = new MutationObserver(function(){
+      if (!p.isConnected || p.classList.contains('hidden') || p.getClientRects().length === 0) { p.style.removeProperty('animation'); mo.disconnect(); }
+    });
+    mo.observe(p, { attributes: true, attributeFilter: ['class', 'style'] });
+    if (p.parentElement) mo.observe(p.parentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+  }
   var st = null, running = null;
   document.addEventListener('touchstart', function(e){
     if (e.touches.length !== 1 || window.matchMedia('(min-width:1024px) and (hover:hover) and (pointer:fine)').matches) { st = null; return; }
@@ -3407,7 +3553,7 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
     var sc = scrollableAbove(t, s.panel);
     st = { panel: s.panel, bd: s.bd, y0: e.touches[0].clientY, x0: e.touches[0].clientX, base: cur,
            inHandle: (e.touches[0].clientY - r.top) < 72, scroller: sc, drag: false, dead: false, hist: [], h: r.height,
-           savedStyle: s.panel.getAttribute('style'), savedBd: s.bd.getAttribute('style') };
+           savedStyle: s.panel.getAttribute('style'), savedBd: s.bd.getAttribute('style'), bdRGB: (/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(getComputedStyle(s.bd).backgroundColor) || [0,0,0,0,1]) };
   }, { passive: true, capture: true });
 
   document.addEventListener('touchmove', function(e){
@@ -3424,6 +3570,7 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
     var y = st.base + dy;
     y = y >= 0 ? y : rubber(y, st.h);                              // resist when pulled upward past rest
     st.panel.style.transform = 'translateY(' + y + 'px)';
+    fadeBd(st, y);
     st.hist.push({ t: performance.now(), y: y }); if (st.hist.length > 6) st.hist.shift();
   }, { passive: false, capture: true });
 
@@ -3433,24 +3580,39 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
     var y = new DOMMatrix(getComputedStyle(s.panel).transform).m42 || 0;
     var h0 = s.hist[0], h1 = s.hist[s.hist.length - 1], v = 0;
     if (h0 && h1 && h1.t > h0.t) v = (h1.y - h0.y) / ((h1.t - h0.t) / 1000);
-    var dismiss = v > 0 ? (y + project(v) > s.h * 0.5 || v > 700) : (y > s.h * 0.55 && v > -300);   // velocity sign decides, not just position
+    var dismiss = v > 0 ? (y + project(v) > s.h * 0.4 || v > 500) : (y > s.h * 0.4 && v > -300);   // velocity sign decides, not just position
     if (dismiss) {
       window.haptic(6);
       s.bd.__sheetClosing = false;
-      running = spring(y, s.h, v, reduce ? 0.12 : 0.3, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; }, function(){
+      running = spring(y, s.h, v, reduce ? 0.12 : 0.3, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; fadeBd(s, x); }, function(){
         running = null; s.bd.__sheetPass = true; s.bd.click(); s.bd.__sheetPass = false;
         setTimeout(function(){
-          if (s.panel.isConnected) { if (s.savedStyle == null) s.panel.removeAttribute('style'); else s.panel.setAttribute('style', s.savedStyle); }
+          if (s.panel.isConnected) settlePanel(s);
           if (s.bd.isConnected) { if (s.savedBd == null) s.bd.removeAttribute('style'); else s.bd.setAttribute('style', s.savedBd); }
         }, 80);
       });
     } else {
-      running = spring(y, 0, v, reduce ? 0.12 : 0.35, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; }, function(){
+      running = spring(y, 0, v, reduce ? 0.12 : 0.35, function(x){ s.panel.style.transform = 'translateY(' + x + 'px)'; fadeBd(s, x); }, function(){
         running = null;
-        if (s.savedStyle == null) s.panel.removeAttribute('style'); else s.panel.setAttribute('style', s.savedStyle);
+        if (s.savedBd == null) s.bd.removeAttribute('style'); else s.bd.setAttribute('style', s.savedBd);
+        settlePanel(s);
       });
     }
   }
   document.addEventListener('touchend', end, { passive: true, capture: true });
   document.addEventListener('touchcancel', end, { passive: true, capture: true });
 })();
+
+
+/* ===== Empty states that show a faded ghost of the real content (same markup, same layout) with the message under it ===== */
+function ghostEmptyHTML(msg, ghostHtml){
+  if (!ghostHtml) return '<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">' + msg + '</div>';
+  return '<div class="ghost-empty"><div class="ghost" aria-hidden="true">' + ghostHtml + '</div><div class="ghost-msg">' + msg + '</div></div>';
+}
+// Renders `fn` with `obj[key]` temporarily swapped for sample rows, so the real renderer draws the ghost
+function ghostWith(obj, key, sample, fn){
+  var old = obj[key], html = '';
+  try { obj[key] = sample; html = fn() || ''; } catch (e) { html = ''; }
+  obj[key] = old;
+  return html;
+}

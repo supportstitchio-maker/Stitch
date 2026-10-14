@@ -2511,6 +2511,47 @@
           }
         }, 250);
 
+
+        // Comments sheet: when the keyboard (or the emoji panel standing in for it) is up, lift the whole sheet so the
+        // typing box sits right on top of it instead of hiding behind it. Same approach as the glimpse typing screens.
+        (function commentSheetKeyboardAvoid(){
+          const vv = window.visualViewport;
+          const apply = () => {
+            const panel = document.querySelector('[id^="comment-sheet-panel-"]');
+            if (!panel) return;
+            const ae = document.activeElement;
+            const typing = !!(ae && ae.id === 'comment-input' && panel.contains(ae));
+            const docked = typeof emojiDockedHeight !== 'undefined' && emojiDockedHeight > 0 && !!document.getElementById('emoji-picker') && !!panel.querySelector('#comment-input') && (typeof emojiPickerState !== 'undefined' && emojiPickerState && emojiPickerState.targetId === 'comment-input');
+            let inset = 0;
+            if ((typing || docked) && typeof getKeyboardInset === 'function') inset = getKeyboardInset(true) || 0;
+            const root = panel.parentElement;
+            if (inset > 50) {
+              const room = (root ? root.clientHeight : window.innerHeight) - inset - 10;
+              panel.style.transition = 'height .22s ease, border-radius .22s ease, padding-top .22s ease';
+              panel.style.bottom = inset + 'px';
+              panel.style.maxHeight = Math.max(180, room) + 'px';
+              panel.style.borderRadius = '22px 22px 0 0';
+              panel.dataset.kbUp = '1';
+              const cs = panel.querySelector('.border-t.flex-shrink-0'); if (cs) { if (cs.dataset.pb0 === undefined) cs.dataset.pb0 = cs.style.paddingBottom; cs.style.paddingBottom = '4px'; }
+            } else if (panel.dataset.kbUp) {
+              panel.style.bottom = ''; panel.style.maxHeight = ''; delete panel.dataset.kbUp;
+              const cs = panel.querySelector('.border-t.flex-shrink-0'); if (cs && cs.dataset.pb0 !== undefined) cs.style.paddingBottom = cs.dataset.pb0;
+            }
+          };
+          window.__commentKbApply = apply;
+          const soon = () => { requestAnimationFrame(apply); [80, 200, 400, 700].forEach(ms => setTimeout(apply, ms)); };
+          if (vv) { vv.addEventListener('resize', apply); vv.addEventListener('scroll', apply); }
+          window.addEventListener('resize', apply);
+          if (navigator.virtualKeyboard) navigator.virtualKeyboard.addEventListener('geometrychange', apply);
+          document.addEventListener('focusin', soon);
+          document.addEventListener('focusout', () => setTimeout(apply, 120));
+          // some Android keyboards report late or not at all: keep checking while the comment box is focused
+          setInterval(() => {
+            const ae = document.activeElement;
+            if ((ae && ae.id === 'comment-input') || document.querySelector('[id^="comment-sheet-panel-"][data-kb-up]')) apply();
+          }, 250);
+        })();
+
         // ---- Glimpse composer (text) ----
         function composeGlimpseText(){
           glimpseComposeText = '';
@@ -6457,7 +6498,7 @@
           const media = document.getElementById('comment-sheet-media-' + postId);
           if (!panel || !media || typeof ResizeObserver === 'undefined') return;
           commentSheetResizeObs = new ResizeObserver(() => {
-            media.style.bottom = panel.getBoundingClientRect().height + 'px';
+            media.style.bottom = (panel.getBoundingClientRect().height + (parseFloat(panel.style.bottom) || 0)) + 'px';
           });
           commentSheetResizeObs.observe(panel);
         }
@@ -6726,6 +6767,7 @@
             <div class="border-t flex-shrink-0" style="${pad}">
               <div id="comment-reply-bar" data-reply-bar="${escapeForJsAttr(String(post.id))}">${commentReplyBarInnerHTML(post.id)}</div>
               <div class="px-3 py-2 flex items-center gap-2">
+                ${typeof emojiButtonHTML === 'function' ? emojiButtonHTML('comment-input', 'w-8 h-8 rounded-full', 'background:rgba(10,37,64,0.06);color:'+NAVY+';') : ''}
                 <textarea id="comment-input" placeholder="${escapeHtml(commentInputPlaceholder(post.id))}" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this)" class="flex-1 border border-gray-200 rounded-2xl px-4 py-2 text-sm resize-none" style="max-height:100px;overflow-y:auto;line-height:1.3;"></textarea>
                 <button onclick="addComment(${post.id})" class="bg-[${NAVY}] text-white px-4 py-2 rounded-full text-sm font-semibold">Post</button>
               </div>

@@ -98,6 +98,7 @@
         // ============================================================
         function creatorRerender(kind){
           // Wallet and receipts now live inside the Dashboard page
+          if (currentOverlayKind === 'adminDashboard' && adminDashboardTab === 'mydashboard' && (kind === 'creatorWallet' || kind === 'receipts')) { refreshAdminDashboardDom(); return; }
           const inDashboard = currentOverlayKind === 'posterDashboard' && (kind === 'creatorWallet' || kind === 'receipts');
           if (currentOverlayKind !== kind && !inDashboard) return;
           const ov = document.getElementById('overlay');
@@ -116,7 +117,10 @@
           return '';
         }
         const creatorCard = 'bg-white rounded-2xl shadow-sm border border-gray-100';
-        const creatorEmpty = msg => `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">${msg}</div>`;
+        const creatorEmpty = (msg, ghost) => ghostEmptyHTML(msg, ghost);
+        function ghostSample(fn){ try { return fn() || ''; } catch (e) { return ''; } }
+        const GHOST_ISO = new Date().toISOString();
+        const ghostPay = (n) => Array.from({ length: n || 2 }, (_, i) => ({ id: 'g' + i, status: 'paid', product_type: 'class', product_id: 'g' + i, buyer_id: 'gb' + i, creator_id: 'gc', paid_at: GHOST_ISO, created_at: GHOST_ISO, gross_amount: 100, stitch_fee: 10, creator_net: 90, paystack_reference: 'ref_000000' }));
         const creatorNavyBtn = `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);`;
 
         // ============================================================
@@ -212,7 +216,7 @@
 
         function walletStudentsHTML(){
           const paid = walletState.payments.filter(x => x.status === 'paid');
-          if (!paid.length) return creatorEmpty('No students yet. When someone pays to join one of your spaces, they appear here.');
+          if (!paid.length) return creatorEmpty('No students yet. When someone pays to join one of your spaces, they appear here.', ghostWith(walletState, 'payments', ghostPay(1).concat(ghostPay(1)), walletStudentsHTML));
           const groups = {};
           paid.forEach(x => { (groups[x.product_type + ':' + x.product_id] = groups[x.product_type + ':' + x.product_id] || []).push(x); });
           return Object.keys(groups).map(k => {
@@ -234,7 +238,7 @@
         }
 
         function walletPaymentsHTML(){
-          if (!walletState.payments.length) return creatorEmpty('No sales yet.');
+          if (!walletState.payments.length) return creatorEmpty('No sales yet.', ghostWith(walletState, 'payments', ghostPay(2), walletPaymentsHTML));
           return walletState.payments.map(x => `
             <div class="${creatorCard} p-4 mb-3">
               <div class="flex items-center justify-between mb-1">
@@ -251,7 +255,7 @@
         }
 
         function walletWithdrawalsHTML(){
-          if (!walletState.payouts.length) return creatorEmpty('No withdrawals yet.');
+          if (!walletState.payouts.length) return creatorEmpty('No withdrawals yet.', ghostWith(walletState, 'payouts', [{ id: 'g1', amount: 100, status: 'paid', requested_at: GHOST_ISO, paid_at: GHOST_ISO }, { id: 'g2', amount: 100, status: 'paid', requested_at: GHOST_ISO, paid_at: GHOST_ISO }], walletWithdrawalsHTML));
           return walletState.payouts.map(o => `
             <div class="${creatorCard} p-4 mb-3">
               <div class="flex items-center justify-between">
@@ -559,8 +563,8 @@
         function receiptsBodyHTML(){
           const rows = receiptsState.rows;
           const body = receiptsState.loading && !receiptsState.loaded ? `<div class="text-center text-gray-400 text-sm py-8">Loading…</div>`
-            : receiptsState.missing ? creatorEmpty('Receipts are not set up yet.')
-            : !rows.length ? creatorEmpty('No purchases yet. Receipts for paid spaces show up here.')
+            : receiptsState.missing ? creatorEmpty('Receipts are not set up yet.', ghostSample(() => { const m = receiptsState.missing; receiptsState.missing = false; const h = ghostWith(receiptsState, 'rows', ghostPay(3), receiptsBodyHTML); receiptsState.missing = m; return h; }))
+            : !rows.length ? creatorEmpty('No purchases yet. Receipts for paid spaces show up here.', ghostWith(receiptsState, 'rows', ghostPay(3), receiptsBodyHTML))
             : rows.map(r => `
               <div class="${creatorCard} p-4 mb-3">
                 <div class="flex items-center justify-between mb-1">
@@ -726,7 +730,7 @@
 
         function adminCreatorsTabHTML(){
           const rows = adminCreatorRows();
-          return rows.length ? rows.map(adminCreatorCardHTML).join('') : creatorEmpty('No creators or applications yet.');
+          return rows.length ? rows.map(adminCreatorCardHTML).join('') : creatorEmpty('No creators or applications yet.', ghostWith(adminCreatorData, 'creators', [{ user_id: 'gu1', status: 'approved' }, { user_id: 'gu2', status: 'pending' }], adminCreatorsTabHTML));
         }
 
         function adminPayoutCardHTML(p){
@@ -777,7 +781,7 @@
         }
         function adminPayoutsTabHTML(){
           const rows = adminCreatorData.payouts;
-          if (!rows.length) return creatorEmpty('No withdrawal requests yet.');
+          if (!rows.length) return creatorEmpty('No withdrawal requests yet.', ghostSample(() => [0, 1].map(i => adminPayoutCardHTML({ id: 'g' + i, user_id: 'gu' + i, amount: 100, status: 'pending_approval', requested_at: GHOST_ISO })).join('')));
           const waiting = rows.filter(p => p.status === 'pending_approval');
           const rest = rows.filter(p => p.status !== 'pending_approval').slice(0, 40);
           return (waiting.length ? waiting.map(adminPayoutCardHTML).join('') : creatorEmpty('Nothing waiting for approval.')) +
@@ -808,7 +812,7 @@
         }
         function adminClassReportsTabHTML(){
           const rows = adminCreatorData.reports;
-          if (!rows.length) return creatorEmpty('No space reports.');
+          if (!rows.length) return creatorEmpty('No space reports.', ghostSample(() => [0, 1].map(i => adminClassReportCardHTML({ id: 'g' + i, status: 'open', product_type: 'class', product_id: 'g' + i, reason: 'Misleading', reporter_id: 'gr', created_at: GHOST_ISO })).join('')));
           const open = rows.filter(r => r.status === 'open' || r.status === 'reviewing');
           const closed = rows.filter(r => !(r.status === 'open' || r.status === 'reviewing')).slice(0, 30);
           return (open.length ? open.map(adminClassReportCardHTML).join('') : creatorEmpty('No open reports.')) +
@@ -824,7 +828,7 @@
           const d = adminCreatorData;
           const q = adminPaymentSearch.trim().toLowerCase();
           const rows = d.payments.filter(p => !q || [p.paystack_reference, personName(d.people, p.buyer_id), personName(d.people, p.creator_id), creatorProductName(p.product_type, p.product_id)].join(' ').toLowerCase().includes(q)).slice(0, 100);
-          if (!rows.length) return creatorEmpty(q ? 'No payments match that search.' : 'No payments yet.');
+          if (!rows.length) return creatorEmpty(q ? 'No payments match that search.' : 'No payments yet.', ghostSample(() => { const sp = adminPaymentSearch; adminPaymentSearch = ''; const h = ghostWith(adminCreatorData, 'payments', ghostPay(2), adminPaymentsListHTML); adminPaymentSearch = sp; return h; }));
           return rows.map(p => `
             <div class="${creatorCard} p-4 mb-3">
               <div class="flex items-center justify-between">
@@ -861,7 +865,7 @@
         // Why people cancelled Stitch Bot (written by careerCancelSubmit in jobs.js)
         function adminCancellationsTabHTML(){
           const rows = adminCreatorData.cancels;
-          if (!rows.length) return creatorEmpty('No cancellations yet. Reasons show up here when someone cancels Stitch Bot.');
+          if (!rows.length) return creatorEmpty('No cancellations yet. Reasons show up here when someone cancels Stitch Bot.', ghostWith(adminCreatorData, 'cancels', [0, 1].map(i => ({ id: 'g' + i, reason_label: 'Too expensive', status: 'new', created_at: GHOST_ISO, user_id: 'gu' + i, detail: 'Placeholder detail text' })), adminCancellationsTabHTML));
           const summary = chartDonutCardHTML('Why people cancel', chartCountBy(rows, r => r.reason_label || 'Skipped'), rows.length, 'cancelled') +
             chartColumnsCardHTML('Cancellations per week', chartTimeline(rows, r => r.created_at, () => 1, 8, 7), '#ef4444', null, 'Last 8 weeks');
           const cards = rows.map(r => `
@@ -884,7 +888,7 @@
 
         function adminAuditTabHTML(){
           const rows = adminCreatorData.audit;
-          if (!rows.length) return creatorEmpty('No admin actions logged yet.');
+          if (!rows.length) return creatorEmpty('No admin actions logged yet.', ghostWith(adminCreatorData, 'audit', [0, 1, 2].map(i => ({ id: 'g' + i, action: 'approve_creator', admin_id: 'ga', created_at: GHOST_ISO, target: 'target' })), adminAuditTabHTML));
           return rows.map(a => `
             <div class="${creatorCard} p-3 mb-2 text-xs">
               <div class="font-semibold">${escapeHtml(String(a.action || '').replace(/_/g, ' '))}</div>
