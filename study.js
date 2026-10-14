@@ -167,9 +167,7 @@ let studyFabMenuOpen = false;
         function studyFeatureCard(icon, eyebrow, title, sub, actionsHtml, onclick, extraStyle, image){
           return `
             <div ${onclick ? `onclick="${onclick}" class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden border border-gray-100 cursor-pointer"` : `class="bg-white rounded-3xl p-6 mb-4 relative overflow-hidden border border-gray-100"`} style="${extraStyle || ''}">
-              ${image ? `<img src="${image}" alt="" class="absolute study-feature-card-img" style="right:-1rem;top:50%;transform:translateY(-50%);width:14rem;height:14rem;opacity:0.22;object-fit:contain;object-position:right center;pointer-events:none;user-select:none;-webkit-user-select:none;">` : ''}
               <div class="relative">
-                <div class="flex items-center gap-1.5 text-xs uppercase tracking-wide font-bold mb-2" style="color:${NAVY};opacity:0.75;">${Icon(icon,'w-3.5 h-3.5')} ${eyebrow}</div>
                 <div class="text-base font-bold mb-2 text-[${NAVY}]">${title}</div>
                 <div class="text-sm mb-4 text-gray-500">${sub}</div>
                 ${actionsHtml}
@@ -213,18 +211,18 @@ let studyFabMenuOpen = false;
           if (studySub === 'exams') return `
             ${studyFeatureCard('doc', 'Practice Tests', 'Full mock tests, timed or self-paced', 'Exam-ready questions sourced from your uploaded resources.', `
               <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="font-family:'Colmeak','Montserrat',sans-serif;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Browse Mock Tests</div>
-            `, 'openPracticeTestsOverlay()', null, 'assets/practice/practice-tests.png')}
+            `, 'openPracticeTestsOverlay()', null)}
             ${studyFeatureCard('bolt', 'Live · Head-to-head', 'Challenge Arena', 'Real-time, competitive practice: go head-to-head with another student on the same question set.', `
               <div class="challenge-arena-actions relative">
                 <button onclick="openChallengeSetupModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full mb-3 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Set Up a Challenge</button>
                 <button onclick="openInviteFriendModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full mb-3 text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Invite a Friend</button>
                 <button onclick="openJoinChallengeCodeModal()" class="w-full flex items-center justify-center gap-2 font-semibold px-6 py-2.5 rounded-full border" style="font-family:'Colmeak','Montserrat',sans-serif;border-color:${NAVY};color:${NAVY};">Join with a Code</button>
               </div>
-            `, null, null, 'assets/practice/challenge-arena.png')}
+            `, null, null)}
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3 mt-6">Flashcards</div>
             ${studyFeatureCard('bookmark', 'All Resources', 'Study All Flashcards', "Auto-generated from everything you've uploaded: no need to open each resource separately.", `
               <div class="font-semibold px-6 py-3 rounded-full inline-block text-white" style="font-family:'Colmeak','Montserrat',sans-serif;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Start Studying</div>
-            `, "openFlashDeck('all')", 'margin-bottom:50px;', 'assets/practice/flashcards.png')}
+            `, "openFlashDeck('all')", 'margin-bottom:50px;')}
           `;
         }
 

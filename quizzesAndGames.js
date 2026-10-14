@@ -563,6 +563,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           examStage = 'take';
           examResultTab = 'overview';
           examQuestionPickerOpen = false;
+          if (typeof examFocusEnter === 'function') examFocusEnter();
           openOverlay('examTake');
           if (examMode === 'timed') startExamTimer(currentExamTimerSeconds());
         }
@@ -814,6 +815,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function examLoadingMarkup(){
+          if (typeof examFocusEnter === 'function') examFocusEnter();   // hide the side panels before the loading screen shows
           // Skeleton shaped like the real test screen: top bar, question numbers, question card
           // (progress bar, question text, four answer rows) and the Back / Next footer.
           let n = 8;

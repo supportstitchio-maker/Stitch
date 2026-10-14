@@ -537,9 +537,6 @@ try {
         function preloadAppImageAssets(){
           const srcs = [
             ...AI_ROBOT_POSES.map(p => p.src),
-            'assets/practice/practice-tests.png',
-            'assets/practice/challenge-arena.png',
-            'assets/practice/flashcards.png',
           ];
           srcs.forEach(src => { const img = new Image(); img.src = src; });
         }
