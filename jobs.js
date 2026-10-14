@@ -8878,9 +8878,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div class="flex-shrink-0 w-full" style="padding-top:20px;">
               <div class="max-w-2xl mx-auto px-5" style="padding-bottom:10px;">
-                <div class="relative flex items-center justify-center">
-                  <button onclick="overlayGoBack()" aria-label="Back" class="absolute flex items-center" style="left:0;top:50%;transform:translateY(-50%);">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                  <div class="font-semibold text-lg font-display grad-text text-center" style="font-size:20px;">Admin Dashboard</div>
+                <div class="flex items-center" style="gap:14px;">
+                  <button onclick="overlayGoBack()" aria-label="Back" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                  <div class="font-semibold text-lg font-display grad-text" style="font-size:20px;text-align:left;">Admin Dashboard</div>
                 </div>
               </div>
             </div>`;

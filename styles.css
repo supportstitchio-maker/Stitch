@@ -4305,3 +4305,5 @@ body.dark-mode .ghost-msg{color:#9ca3af;}
 .ghost button.flex-1:not(:has(*)){max-width:30%;}
 .ghost input{display:none;}
 .ghost [class*="grid-cols"] > *{min-width:0;}
+
+body.dark-mode #to-top-btn{background:rgba(38,38,42,.95)!important;color:#7ab8ff!important;box-shadow:0 6px 20px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)!important;}

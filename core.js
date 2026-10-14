@@ -3242,6 +3242,7 @@ function closeEmojiPicker(keepKeyboardClosed){
   const st = emojiPickerState;
   emojiPickerState = null;
   if (st) {
+    if (st.stopPoll) st.stopPoll();
     document.removeEventListener('pointerdown', st.outside, true);
     window.removeEventListener('resize', st.reposition);
     if (window.visualViewport) window.visualViewport.removeEventListener('resize', st.reposition);
@@ -3347,16 +3348,20 @@ function toggleEmojiPicker(targetId, btn){
   const iconBtn = 'width:38px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.75;';
   const cellsHTML = list => list.map(ch => '<button type="button" data-e="' + ch + '" style="height:38px;font-size:24px;line-height:1;border-radius:10px;">' + ch + '</button>').join('');
   const GRID = 'flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;align-content:start;-webkit-overflow-scrolling:touch;';
+  const STRIP = 'height:48px;flex-shrink:0;overflow-x:auto;overflow-y:hidden;display:flex;align-items:center;gap:2px;padding:6px 8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;';
   function paint(){
     const t = tabs[cur];
     if (searching) {
-      el.innerHTML =
-        '<div style="display:flex;align-items:center;gap:6px;padding:14px 8px 8px;flex-shrink:0;">' +
+      const row =
+        '<div style="display:flex;align-items:center;gap:6px;padding:' + (docked ? '4px 8px 8px' : '14px 8px 8px') + ';flex-shrink:0;">' +
           '<button type="button" data-act="exitsearch" aria-label="Back" style="' + iconBtn + '">' + emojiBackSVG(22) + '</button>' +
           '<input id="emoji-search-input" type="text" value="' + query.replace(/"/g, '&quot;') + '" placeholder="Search emoji" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="flex:1;min-width:0;height:36px;border-radius:12px;border:0;outline:0;padding:0 12px;font-size:15px;background:' + soft + ';color:inherit;">' +
           '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
-        '</div>' +
-        '<div id="emoji-results" style="' + GRID + '"></div>';
+        '</div>';
+      // Phones: one scrolling strip of matches sitting right above the search field, like a keyboard suggestion bar
+      el.innerHTML = docked
+        ? '<div id="emoji-results" style="' + STRIP + '"></div>' + row
+        : row + '<div id="emoji-results" style="' + GRID + '"></div>';
       renderResults();
       return;
     }
@@ -3376,17 +3381,38 @@ function toggleEmojiPicker(targetId, btn){
   function renderResults(){
     const box = el.querySelector('#emoji-results'); if (!box) return;
     const res = emojiSearch(query);
+    if (docked) {
+      box.innerHTML = res.length ? res.map(ch => '<button type="button" data-e="' + ch + '" style="width:42px;height:40px;flex-shrink:0;font-size:26px;line-height:1;border-radius:10px;">' + ch + '</button>').join('')
+        : '<div style="padding:0 12px;font-size:13px;opacity:.55;white-space:nowrap;">' + (query.trim() ? 'No emoji found' : 'Type a word like “love”, “food” or “Ghana”') + '</div>';
+      box.scrollLeft = 0; return;
+    }
     box.innerHTML = res.length ? cellsHTML(res)
       : '<div style="grid-column:1/-1;padding:28px 8px;text-align:center;font-size:13px;opacity:.55;">' + (query.trim() ? 'No emoji found' : 'Type a word like “love”, “food” or “Ghana”') + '</div>';
   }
   // While searching on a phone the real keyboard is up: sit the panel on top of it and lift the chat by both
-  let geoBusy = false;
+  let geoBusy = false, kbSeen = false, geoPoll = null;
+  function realKb(){
+    const vv = window.visualViewport;
+    let k = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+    const vk = navigator.virtualKeyboard;
+    if (vk && vk.boundingRect) k = Math.max(k, Math.round(vk.boundingRect.height || 0));
+    return k > 50 ? k : 0;
+  }
   function searchGeometry(){
     if (!docked || geoBusy) return;
     geoBusy = true;
-    const vv = window.visualViewport;
-    const kb = searching && vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-    const h = searching ? Math.round(Math.min(kbH, 280)) : kbH;
+    const si = el.querySelector('#emoji-search-input');
+    const focused = !!si && document.activeElement === si;
+    let kb = 0;
+    if (searching) {
+      kb = realKb();
+      if (kb) { kbSeen = true; if (typeof __kbLastReal === 'number') __kbLastReal = Math.max(__kbLastReal, kb); }
+      else if (focused) {
+        if (kbSeen) { try { si.blur(); } catch (e) {} }
+        else kb = Math.min(420, Math.max(240, (typeof __kbLastReal === 'number' && __kbLastReal > 120) ? __kbLastReal : Math.round(window.innerHeight * 0.4)));
+      }
+    }
+    const h = searching ? 104 : kbH;
     el.style.bottom = kb + 'px'; el.style.height = h + 'px';
     el.style.paddingBottom = searching && kb > 0 ? '0px' : 'env(safe-area-inset-bottom,0px)';
     emojiDockedHeight = h + kb;
@@ -3394,7 +3420,8 @@ function toggleEmojiPicker(targetId, btn){
     geoBusy = false;
   }
   function setSearching(on){
-    searching = on; if (!on) query = '';
+    searching = on; if (!on) query = ''; kbSeen = false;
+    clearInterval(geoPoll); geoPoll = on ? setInterval(searchGeometry, 200) : null;
     paint(); searchGeometry();
     if (on) { const si = el.querySelector('#emoji-search-input'); if (si) { try { si.focus(); } catch (e) {} } }
     else { try { input.focus(); } catch (e) {} }
@@ -3451,7 +3478,7 @@ function toggleEmojiPicker(targetId, btn){
   window.addEventListener('resize', place);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', place);
   if (docked && window.visualViewport) window.visualViewport.addEventListener('resize', searchGeometry);
-  emojiPickerState = { targetId, btn, outside, reposition: place, searchGeo: searchGeometry, docked, hadInputMode: input.getAttribute('inputmode') };
+  emojiPickerState = { targetId, btn, outside, reposition: place, searchGeo: searchGeometry, stopPoll: function(){ clearInterval(geoPoll); geoPoll = null; }, docked, hadInputMode: input.getAttribute('inputmode') };
   btn.style.color = '#1e90ff';
   if (docked) {
     // Stand in for the keyboard: hide the system keyboard, keep the cursor, lift the screen by the panel's height
@@ -3616,3 +3643,35 @@ function ghostWith(obj, key, sample, fn){
   obj[key] = old;
   return html;
 }
+
+
+// ---- "Back to top" arrow: appears while scrolling back UP a long page, jumps to the top ----
+(function(){
+  let btn = null, hideT = null, last = new WeakMap(), cur = null;
+  const SKIP = '#emoji-picker, [id^="comment-sheet-panel-"], [id*="convo"], [id*="chat"], [id*="message"], [id*="glimpse"], textarea';
+  function ensure(){
+    if (btn) return btn;
+    btn = document.createElement('button');
+    btn.type = 'button'; btn.id = 'to-top-btn'; btn.setAttribute('aria-label', 'Back to top');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    btn.style.cssText = 'position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:9500;background:rgba(255,255,255,.94);color:#1e90ff;box-shadow:0 6px 20px rgba(10,37,64,.18),0 0 0 1px rgba(10,37,64,.06);opacity:0;transform:translateY(8px) scale(.92);pointer-events:none;transition:opacity .2s,transform .2s;-webkit-tap-highlight-color:transparent;';
+    btn.addEventListener('click', function(){
+      try { if (window.haptic) window.haptic('light'); } catch (e) {}
+      if (cur && cur.isConnected) { try { cur.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { cur.scrollTop = 0; } }
+      hide();
+    });
+    document.body.appendChild(btn);
+    return btn;
+  }
+  function show(){ const b = ensure(); b.style.opacity = '1'; b.style.transform = 'none'; b.style.pointerEvents = 'auto'; clearTimeout(hideT); hideT = setTimeout(hide, 3500); }
+  function hide(){ if (!btn) return; btn.style.opacity = '0'; btn.style.transform = 'translateY(8px) scale(.92)'; btn.style.pointerEvents = 'none'; }
+  document.addEventListener('scroll', function(e){
+    const el = e.target;
+    if (!el || el === document || el.nodeType !== 1 || el.matches(SKIP) || el.closest(SKIP)) return;
+    if (el.scrollHeight < el.clientHeight * 2.2) return;
+    const prev = last.get(el) || 0, now = el.scrollTop; last.set(el, now);
+    if (now < 250) { hide(); return; }
+    if (now < prev - 4) { cur = el; show(); }          // moving back up, well below the top
+    else if (now > prev + 4) hide();                   // heading down again
+  }, true);
+})();
