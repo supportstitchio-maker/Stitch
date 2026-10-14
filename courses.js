@@ -1496,13 +1496,22 @@ try {
           if (input) input.click();
         }
 
+        function pickCourseCoverColor(key){
+          newCourseDraft.photo = coverPatternDataUrl(key);
+          window.__courseCoverErr = false;
+          try { if (window.haptic) window.haptic('light'); } catch (e) {}
+          rerenderNewCourseOverlay();
+        }
+        function clearCourseCover(){ newCourseDraft.photo = null; rerenderNewCourseOverlay(); }
+
         function handleCoursePhotoSelected(e){
           const file = e.target.files && e.target.files[0];
           if (!file) return;
           const reader = new FileReader();
           reader.onload = function(ev){
-            newCourseDraft.photo = ev.target.result;
-            rerenderNewCourseOverlay();
+            const done = function(u){ newCourseDraft.photo = u; window.__courseCoverErr = false; rerenderNewCourseOverlay(); };
+            if (typeof compressImageDataUrl === 'function') compressImageDataUrl(ev.target.result, 1280, 0.82).then(done).catch(function(){ done(ev.target.result); });
+            else done(ev.target.result);
           };
           reader.readAsDataURL(file);
           e.target.value = '';
@@ -2975,6 +2984,7 @@ try {
         async function publishNewCourse(){
           if (newCourseEditingId ? !canManageCourse(newCourseEditingId) : !canCreateCourses()) return;
           const d = newCourseDraft;
+          if (!d.photo) { window.__courseCoverErr = true; rerenderNewCourseOverlay(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; }
           if (!d.title.trim()) { openAppAlertModal('Please add a course title.'); return; }
           if (d.price !== '' && d.price !== undefined && !(parseFloat(d.price) >= 0)) { openAppAlertModal('Enter a valid price, or leave it empty for a free course.'); return; }
           if (!d.modules.length || !d.modules.some(m => m.items.length)) { openAppAlertModal('Add at least one module with at least one item.'); return; }
@@ -3639,13 +3649,7 @@ try {
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { right: true, pb: '20px' })}
             <div class="px-5 pb-8" style="padding-top:20px;">
-              <div class="flex flex-col items-center mb-5">
-                <button onclick="triggerCoursePhotoUpload()" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${d.photo ? `background-image:url('${d.photo}');background-size:cover;background-position:center;` : `background:linear-gradient(135deg,${blueCardPalette[0][0]},${blueCardPalette[0][1]});`}">
-                  ${d.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('book','w-9 h-9')}</div>`}
-                  <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-[${NAVY}]" style="margin:4px;">${Icon('camera','w-4 h-4')}</div>
-                </button>
-                <button onclick="triggerCoursePhotoUpload()" class="text-sm font-semibold" style="color:${NAVY};">${d.photo ? 'Change course photo' : 'Add a course photo'}</button>
-              </div>
+              ${(() => { return coverPickerHTML({ cover: d.photo, label: 'Course cover', pickFn: 'pickCourseCoverColor', uploadJs: 'triggerCoursePhotoUpload()', clearJs: 'clearCourseCover()', error: !!window.__courseCoverErr }); })()}
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Course Title</label>
                 <input type="text" value="${escapeHtml(d.title)}" oninput="updateNewCourseField('title', this.value)" placeholder="e.g. Data Analysis with R" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">

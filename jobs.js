@@ -7708,7 +7708,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             // Shrink right away (max 1280px, JPEG) so a 5-8 MB photo never ends up in the draft or the
             // row
             compressImageDataUrl(ev.target.result, 1280, 0.82)
-              .then(function(small){ newOppDraft.coverImage = small; })
+              .then(function(small){ newOppDraft.coverImage = small; window.__oppCoverErr = false; })
               .catch(function(){ newOppDraft.coverImage = ev.target.result; })
               .then(function(){ rerenderPostOpportunity(); });
           };
@@ -7717,6 +7717,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
 
         function clearOppCover(){
           newOppDraft.coverImage = '';
+          rerenderPostOpportunity();
+        }
+        function pickOppCoverColor(key){
+          newOppDraft.coverImage = coverPatternDataUrl(key);
+          window.__oppCoverErr = false;
+          try { if (window.haptic) window.haptic('light'); } catch (e) {}
           rerenderPostOpportunity();
         }
 
@@ -7856,6 +7862,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             // Stitch
             const applyMethod = isCourse ? 'inapp' : (d.applyMethod || 'inapp');
             const applyViaWebsite = !isCourse && applyMethod === 'website';
+            { const keptCover = !!(newOppEditingId && (findJob(newOppEditingId) || {})._coverStripped);
+              if (!d.coverImage && !keptCover) { window.__oppCoverErr = true; rerenderPostOpportunity(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; } }
             if (!d.type) { openAppAlertModal('Please choose a type for this listing.'); return; }
             if (!d.mode) { openAppAlertModal('Please choose where this takes place (On-site, Online, ...).'); return; }
             if (!d.title.trim() || !d.description.trim()) {
@@ -8001,22 +8009,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             <div class="flex-1 overflow-y-auto">
             ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true, pb: '10px' })}
             <div class="px-5" style="padding-bottom:50px;">
-              <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover picture (optional)</label>
-                <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
-                ${newOppDraft.coverImage ? `
-                  <div class="relative rounded-2xl overflow-hidden mb-2" style="height:120px;">
-                    <img src="${newOppDraft.coverImage}" class="w-full h-full object-cover" alt="">
-                    <button onclick="clearOppCover()" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.5);">${IconBold('close','w-3.5 h-3.5')}</button>
-                  </div>
-                  <button onclick="document.getElementById('opp-cover-input').click()" class="text-xs font-semibold" style="color:${NAVY};">Change picture</button>
-                ` : `
-                  <button onclick="document.getElementById('opp-cover-input').click()" class="w-full flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-gray-300 text-gray-400" style="height:96px;">
-                    ${Icon('camera','w-6 h-6')}
-                    <span class="text-xs font-semibold">Tap to upload a cover picture</span>
-                  </button>
-                `}
-              </div>
+              <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
+              ${(() => { return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}
               ${oppFieldRow('Title', 'title', 'e.g. Research Intern')}
               ${oppFieldRow('Organization', 'org', 'e.g. Macro Team')}
 

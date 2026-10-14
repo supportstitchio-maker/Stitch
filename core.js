@@ -3675,3 +3675,94 @@ function ghostWith(obj, key, sample, fn){
     else if (now > prev + 4) hide();                   // heading down again
   }, true);
 })();
+
+
+// ---- Cover picker: same colours + line motifs as the Space cards, plus a few more patterns ----
+const COVER_PATTERNS = ['m0','m1','m2','m3','m4','m5','zigzag','diagonal','rings','stripes','grid','cross'];
+const __coverPatternCache = {};
+function coverPalette(){ return (typeof classCardPalette !== 'undefined' && classCardPalette.length) ? classCardPalette : [['#2563eb','#1d4ed8'],['#059669','#047857'],['#d97706','#b45309'],['#dc2626','#b91c1c'],['#7c3aed','#6d28d9'],['#0891b2','#0e7490'],['#db2777','#be185d'],['#65a30d','#4d7c0f']]; }
+// key = "<colourIndex>:<pattern>", w = pixel width (16:9)
+function coverPatternDataUrl(key, w){
+  w = w || 960;
+  const ck = key + '@' + w;
+  if (__coverPatternCache[ck]) return __coverPatternCache[ck];
+  const parts = String(key).split(':'), ci = (parseInt(parts[0], 10) || 0), pk = parts[1] || 'm0';
+  const pal = coverPalette(), col = pal[ci % pal.length];
+  const W = w, H = Math.round(w * 9 / 16), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, col[0]); grad.addColorStop(1, col[1]);
+  g.fillStyle = grad; g.fillRect(0, 0, W, H);
+  const k = W / 960;
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  const mi = /^m(\d)$/.exec(pk);
+  if (mi && typeof classCardMotifs !== 'undefined') {
+    // exactly the motif the Space cards use (SVG 300x100 stretched over the card)
+    const svg = classCardMotifs[parseInt(mi[1], 10) % classCardMotifs.length] || '';
+    g.save(); g.scale(W / 300, H / 100);
+    g.strokeStyle = 'rgba(255,255,255,0.16)'; g.fillStyle = 'rgba(255,255,255,0.16)';
+    const sw = /stroke-width="(\d+)"/.exec(svg); g.lineWidth = sw ? +sw[1] : 42;
+    const pm = /<path d="([^"]+)"/.exec(svg); if (pm) { try { g.stroke(new Path2D(pm[1])); } catch (e) {} }
+    const cm = /<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/.exec(svg);
+    if (cm) { g.beginPath(); g.arc(+cm[1], +cm[2], +cm[3], 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  } else {
+    g.strokeStyle = 'rgba(255,255,255,0.17)';
+    const line = (x1, y1, x2, y2) => { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); };
+    if (pk === 'zigzag') {
+      g.lineWidth = 20 * k; const amp = 34 * k, per = 68 * k;
+      for (let y = 0; y < H + amp * 2; y += 92 * k) { g.beginPath(); for (let x = 0, i = 0; x <= W + per; x += per / 2, i++) { const yy = y + (i % 2 ? amp : 0); x ? g.lineTo(x, yy) : g.moveTo(x, yy); } g.stroke(); }
+    } else if (pk === 'diagonal') {
+      g.lineWidth = 34 * k; for (let x = -H; x < W + H; x += 92 * k) line(x, H, x + H, 0);
+    } else if (pk === 'rings') {
+      g.lineWidth = 34 * k; for (let r = 40 * k; r < W * 1.2; r += 84 * k) { g.beginPath(); g.arc(W * 0.5, H * 0.5, r, 0, Math.PI * 2); g.stroke(); }
+    } else if (pk === 'stripes') {
+      g.lineWidth = 26 * k; for (let y = 20 * k; y < H + 40 * k; y += 62 * k) line(0, y, W, y);
+    } else if (pk === 'grid') {
+      g.strokeStyle = 'rgba(255,255,255,0.24)'; g.lineWidth = 4 * k;
+      for (let x = 0; x < W; x += 56 * k) line(x, 0, x, H); for (let y = 0; y < H; y += 56 * k) line(0, y, W, y);
+    } else if (pk === 'cross') {
+      g.strokeStyle = 'rgba(255,255,255,0.3)'; g.lineWidth = 7 * k; const s = 12 * k;
+      for (let y = 40 * k, r = 0; y < H + 40 * k; y += 84 * k, r++) for (let x = (r % 2 ? 84 : 42) * k; x < W + 40 * k; x += 84 * k) { line(x - s, y, x + s, y); line(x, y - s, x, y + s); }
+    }
+  }
+  let url = '';
+  try { url = cv.toDataURL('image/jpeg', 0.86); } catch (e) { url = ''; }
+  __coverPatternCache[ck] = url;
+  return url;
+}
+// which "<colour>:<pattern>" a stored cover came from (so the picker can highlight it)
+function coverKeyOfUrl(url){
+  if (!url) return '';
+  for (const ck in __coverPatternCache) { if (__coverPatternCache[ck] === url && /@960$/.test(ck)) return ck.replace(/@960$/, ''); }
+  return '';
+}
+// o: { cover, label, pickFn, uploadJs, clearJs, error }
+function coverPickerHTML(o){
+  const pal = coverPalette();
+  const selKey = coverKeyOfUrl(o.cover), sp = selKey.split(':');
+  const selC = selKey ? (parseInt(sp[0], 10) || 0) : -1, selP = selKey ? sp[1] : '';
+  const useC = selC >= 0 ? selC : 0, useP = selP || 'm0';
+  const has = !!o.cover;
+  const swatches = pal.map((c, i) =>
+    '<button type="button" onclick="' + o.pickFn + '(\'' + i + ':' + useP + '\')" aria-label="Colour ' + (i + 1) + '" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');' +
+    (selC === i ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + c[0] + ';' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);') + '"></button>').join('');
+  const tiles = COVER_PATTERNS.map(pk => {
+    const src = coverPatternDataUrl(useC + ':' + pk, 200);
+    return '<button type="button" onclick="' + o.pickFn + '(\'' + useC + ':' + pk + '\')" aria-label="Pattern ' + pk + '" style="width:64px;height:38px;border-radius:10px;flex-shrink:0;overflow:hidden;background:url(' + src + ') center/cover;' +
+      (selP === pk ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + pal[useC % pal.length][0] + ';' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);') + '"></button>';
+  }).join('');
+  return '<div class="mb-4">' +
+    '<label class="text-xs font-bold uppercase tracking-wide mb-1 block" style="color:' + (o.error ? '#dc2626' : '#9ca3af') + ';">' + (o.label || 'Cover') + ' (required)</label>' +
+    '<div class="relative rounded-2xl overflow-hidden mb-3" style="height:128px;' + (has ? '' : 'border:1.5px dashed ' + (o.error ? '#dc2626' : '#d1d5db') + ';background:rgba(10,37,64,.03);') + '">' +
+      (has ? '<img src="' + o.cover + '" class="w-full h-full object-cover" alt="">' +
+             '<button type="button" onclick="' + o.clearJs + '" aria-label="Remove" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.5);font-size:16px;line-height:1;">×</button>'
+           : '<div class="w-full h-full flex items-center justify-center text-center px-6" style="font-size:13px;font-weight:600;color:' + (o.error ? '#dc2626' : '#9ca3af') + ';">Pick a colour and pattern, or upload a picture, to continue</div>') +
+    '</div>' +
+    '<button type="button" onclick="' + o.uploadJs + '" class="flex items-center justify-center gap-2 w-full" style="height:42px;border-radius:21px;font-size:14px;font-weight:700;color:#0a2540;background:rgba(10,37,64,.06);margin-bottom:12px;">' +
+      '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload a picture</button>' +
+    '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:8px;">Or pick a colour</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:3px 4px;margin-bottom:10px;">' + swatches + '</div>' +
+    '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:8px;">and a pattern</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;padding:3px 4px;">' + tiles + '</div>' +
+  '</div>';
+}
