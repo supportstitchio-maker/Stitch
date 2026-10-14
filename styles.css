@@ -4201,3 +4201,16 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
   .cu-bsheet-grab{display:none !important;}
   .cu-backdrop{background:rgba(15,23,42,.45) !important;}
 }
+
+/* ===== Desktop loading skeleton: full app shell (left menu, feed, right panel) ===== */
+#auth-transition-loading.skel-desktop-mode{padding-top:0 !important;}
+.skel-desk{display:flex;height:100%;width:100%;background:#fff;}
+.skel-dnav{width:var(--nav-width,248px);flex-shrink:0;display:flex;flex-direction:column;padding:18px 14px;border-right:1px solid #f1f3f7;box-sizing:border-box;}
+.skel-dnav-item{display:flex;align-items:center;gap:14px;padding:13px 12px;}
+.skel-dnav-item .skel-line{height:12px;}
+.skel-dmain{flex:1;min-width:0;overflow:hidden;padding-top:20px;}
+.skel-dmain-in{max-width:700px;margin:0 auto;padding:0 20px;}
+.skel-dright{width:var(--rp-width,480px);flex-shrink:0;border-left:1px solid #f1f3f7;box-sizing:border-box;}
+.skel-dright-head{padding:20px;border-bottom:1px solid #f1f3f7;}
+body.dark-mode .skel-desk{background:#121212;}
+body.dark-mode .skel-dnav,body.dark-mode .skel-dright,body.dark-mode .skel-dright-head{border-color:#2a2a2a;}
