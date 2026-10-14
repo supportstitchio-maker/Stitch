@@ -1581,6 +1581,8 @@
         let __kbWasOpen = false;
         document.addEventListener('focusin', function(){ __kbWasOpen = false; });
         function getKeyboardInset(inputFocused){
+          // Emoji panel docked where the keyboard was: the screen lifts by exactly the panel's height
+          if (typeof emojiDockedHeight !== 'undefined' && emojiDockedHeight > 0) return emojiDockedHeight;
           const vv = window.visualViewport;
           let inset = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
           const vk = navigator.virtualKeyboard;
@@ -3190,3 +3192,147 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   }
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
+
+/* ===== Emoji picker for the message boxes (chats, Stitch Bot, call chat, class messages) =====
+   A smiley button sits at the left of the type space. It opens a small panel just above the box; tapping an
+   emoji drops it at the cursor. The button never takes focus, so the keyboard stays up while you pick. */
+const EMOJI_SET = [
+  ['😀', 'Smileys', '😀 😃 😄 😁 😆 😅 😂 🤣 🥲 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥳 🤩 😏 😒 😞 😔 😟 😕 🙁 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫣 🤭 🤫 🫡 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 💀 ☠️ 🤡 👻 👽 🤖'],
+  ['👍', 'Gestures', '👍 👎 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 🤝 🙏 👏 🙌 🫶 👐 🤲 💪 🦾 ✍️ 🤳 💅 🫵 👀 👁️ 🧠 🫀 👂 👃 👄 🦷 👅'],
+  ['❤️', 'Hearts', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❤️‍🔥 💕 💞 💓 💗 💖 💘 💝 💟 ❣️ 💌 💋 💯 💢 💥 💫 💦 💨 🔥 ✨ ⭐ 🌟 ⚡ 🎉 🎊 🎈 🎁'],
+  ['🐶', 'Animals and food', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🙈 🙉 🙊 🐔 🐧 🐦 🦆 🦅 🦉 🦋 🐝 🐢 🐍 🐙 🐬 🐳 🌸 🌹 🌻 🌴 🍀 🍎 🍌 🍉 🍇 🍓 🍍 🥭 🍕 🍔 🍟 🌭 🍗 🍿 🍩 🍪 🎂 🍫 ☕ 🍵 🥤 🍺 🥂'],
+  ['⚽', 'Activities', '⚽ 🏀 🏈 🎾 🏐 🏓 🥊 🎯 🎮 🕹️ 🎲 🎵 🎶 🎤 🎧 🎸 🥁 🎬 📚 🎓 🏆 🥇 🥈 🥉 🏅 ✈️ 🚗 🚌 🏍️ 🚀 🏠 🏫 ⛪ 🕌 🌍 🌅 🌙 ☀️ 🌈 ⛅ 🌧️'],
+  ['💡', 'Objects', '📱 💻 ⌨️ 🖥️ 📷 🎥 📞 ☎️ 📺 ⏰ ⌛ 🔋 🔌 💡 🔦 📚 📖 📝 ✏️ 📌 📎 ✂️ 🔒 🔑 💰 💵 💳 🧾 📦 📅 📊 📈 📉 🧪 🔬 🩺 💊 🛒'],
+  ['✅', 'Symbols', '✅ ❌ ❓ ❗ ‼️ ⚠️ 🚫 ✔️ ➕ ➖ ➗ ✖️ ♻️ 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ ▶️ ⏸️ ⏩ 🔁 🔀 ➡️ ⬅️ ⬆️ ⬇️ 🔝 🆗 🆕 🆒 🔔 🔕 🇬🇭']
+].map(c => ({ icon: c[0], name: c[1], list: c[2].split(' ') }));
+
+function emojiIconSVG(size){
+  size = size || 18;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.2c.9 1.5 2.3 2.3 4 2.3s3.1-.8 4-2.3"/><circle cx="9" cy="9.7" r=".6" fill="currentColor"/><circle cx="15" cy="9.7" r=".6" fill="currentColor"/></svg>';
+}
+// Button HTML. targetId = id of the text box it feeds. cls/style let each screen style it like its neighbours.
+function emojiButtonHTML(targetId, cls, style){
+  return '<button type="button" id="emoji-btn-' + targetId + '" title="Emoji" aria-label="Emoji" '
+    + 'onmousedown="event.preventDefault()" ontouchstart="event.preventDefault();toggleEmojiPicker(\'' + targetId + '\', this);" '
+    + 'onclick="toggleEmojiPicker(\'' + targetId + '\', this)" '
+    + 'class="' + (cls || '') + '" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;' + (style || '') + '">' + emojiIconSVG(20) + '</button>';
+}
+
+let emojiPickerState = null;
+let emojiDockedHeight = 0;   // >0 while the emoji panel is standing in for the keyboard (touch screens)
+function emojiResync(){
+  try { if (window.visualViewport) window.visualViewport.dispatchEvent(new Event('resize')); } catch (e) {}
+  try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+}
+function emojiKeyboardSVG(size){
+  size = size || 20;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>';
+}
+function emojiRecents(){ try { return JSON.parse(localStorage.getItem('stitchEmojiRecent') || '[]'); } catch (e) { return []; } }
+function emojiRememberUse(ch){
+  try {
+    const r = emojiRecents().filter(x => x !== ch); r.unshift(ch);
+    localStorage.setItem('stitchEmojiRecent', JSON.stringify(r.slice(0, 24)));
+  } catch (e) {}
+}
+function closeEmojiPicker(keepKeyboardClosed){
+  const el = document.getElementById('emoji-picker');
+  if (el) el.remove();
+  const st = emojiPickerState;
+  emojiPickerState = null;
+  if (st) {
+    document.removeEventListener('pointerdown', st.outside, true);
+    window.removeEventListener('resize', st.reposition);
+    if (window.visualViewport) window.visualViewport.removeEventListener('resize', st.reposition);
+    if (st.btn) { st.btn.style.color = ''; if (st.docked) st.btn.innerHTML = emojiIconSVG(20); }
+    if (st.docked) {
+      emojiDockedHeight = 0;
+      const inp = document.getElementById(st.targetId);
+      if (inp) {
+        if (st.hadInputMode == null) inp.removeAttribute('inputmode'); else inp.setAttribute('inputmode', st.hadInputMode);
+        try { inp.blur(); if (!keepKeyboardClosed) inp.focus(); } catch (e) {}
+      }
+      emojiResync();
+    }
+  }
+}
+function toggleEmojiPicker(targetId, btn){
+  if (emojiPickerState && emojiPickerState.targetId === targetId) { closeEmojiPicker(); return; }
+  closeEmojiPicker();
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  const anchor = btn.parentElement || btn;
+  const cs = getComputedStyle(anchor);
+  const sheet = cs.getPropertyValue('--cu-sheet').trim();
+  const dark = document.body.classList.contains('dark-mode');
+  const bg = sheet || (dark ? '#1e1e1e' : '#ffffff');
+  const fg = cs.getPropertyValue('--cu-fg').trim() || (dark ? '#f2f2f2' : '#1f2937');
+  const soft = dark || sheet ? 'rgba(255,255,255,0.08)' : 'rgba(10,37,64,0.06)';
+  const docked = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const kbH = Math.max(240, Math.min(420, (typeof __kbLastReal === 'number' && __kbLastReal > 120) ? __kbLastReal : Math.round(window.innerHeight * 0.4)));
+  const el = document.createElement('div');
+  el.id = 'emoji-picker';
+  el.style.cssText = docked
+    ? 'position:fixed;z-index:20000;left:0;right:0;bottom:0;height:' + kbH + 'px;background:' + bg + ';color:' + fg + ';border-top:1px solid rgba(10,37,64,.08);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box;'
+    : 'position:fixed;z-index:20000;width:min(calc(100vw - 24px),372px);height:300px;border-radius:20px;background:' + bg + ';color:' + fg + ';box-shadow:0 14px 44px rgba(10,37,64,.22),0 0 0 1px rgba(10,37,64,.07);display:flex;flex-direction:column;overflow:hidden;animation:dskPop .16s ease-out both;';
+  const tabs = [{ icon: '🕘', name: 'Recent', list: emojiRecents() }].concat(EMOJI_SET);
+  let cur = emojiRecents().length ? 0 : 1;
+  function paint(){
+    const t = tabs[cur];
+    el.innerHTML =
+      '<div style="display:flex;gap:2px;padding:8px 8px 4px;flex-shrink:0;">' +
+        tabs.map((x, i) => '<button type="button" data-tab="' + i + '" title="' + x.name + '" style="flex:1;height:34px;border-radius:10px;font-size:18px;line-height:1;background:' + (i === cur ? soft : 'transparent') + ';">' + x.icon + '</button>').join('') +
+      '</div>' +
+      '<div style="padding:2px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
+      '<div style="flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;align-content:start;-webkit-overflow-scrolling:touch;">' +
+        (t.list.length ? t.list.map(ch => '<button type="button" data-e="' + ch + '" style="height:38px;font-size:24px;line-height:1;border-radius:10px;">' + ch + '</button>').join('') : '<div style="grid-column:1/-1;padding:24px 8px;text-align:center;font-size:13px;opacity:.55;">Emojis you use will show here</div>') +
+      '</div>';
+  }
+  function place(){
+    if (docked) return;
+    const r = anchor.getBoundingClientRect();
+    const w = el.offsetWidth || 372;
+    let left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
+    let top = r.top - el.offsetHeight - 8;
+    if (top < 8) top = Math.min(r.bottom + 8, window.innerHeight - el.offsetHeight - 8);
+    el.style.left = left + 'px'; el.style.top = Math.max(8, top) + 'px';
+  }
+  function insert(ch){
+    const s = input.selectionStart != null ? input.selectionStart : input.value.length;
+    const e2 = input.selectionEnd != null ? input.selectionEnd : s;
+    if (input.maxLength > 0 && input.value.length - (e2 - s) + ch.length > input.maxLength) return;
+    input.value = input.value.slice(0, s) + ch + input.value.slice(e2);
+    const pos = s + ch.length;
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    emojiRememberUse(ch);
+  }
+  // keep the keyboard up: never let the panel steal focus
+  el.addEventListener('mousedown', e => e.preventDefault());
+  el.addEventListener('click', e => {
+    const ee = e.target.closest('[data-e]');
+    if (ee) { insert(ee.getAttribute('data-e')); return; }
+    const tt = e.target.closest('[data-tab]');
+    if (tt) { cur = parseInt(tt.getAttribute('data-tab'), 10); paint(); }
+  });
+  paint();
+  document.body.appendChild(el);
+  place();
+  const outside = e => { if (el.contains(e.target) || btn.contains(e.target)) return; if (docked && anchor.contains(e.target) && e.target !== input) return; closeEmojiPicker(docked && e.target !== input); };
+  document.addEventListener('pointerdown', outside, true);
+  window.addEventListener('resize', place);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', place);
+  emojiPickerState = { targetId, btn, outside, reposition: place, docked, hadInputMode: input.getAttribute('inputmode') };
+  btn.style.color = '#1e90ff';
+  if (docked) {
+    // Stand in for the keyboard: hide the system keyboard, keep the cursor, lift the screen by the panel's height
+    emojiDockedHeight = kbH + 0;
+    btn.innerHTML = emojiKeyboardSVG(20);
+    input.setAttribute('inputmode', 'none');
+    try { input.blur(); input.focus(); } catch (e) {}
+    emojiResync();
+    setTimeout(emojiResync, 120);
+  } else {
+    try { input.focus(); } catch (e) {}
+  }
+}

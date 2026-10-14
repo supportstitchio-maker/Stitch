@@ -4116,8 +4116,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
               <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
-                <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('clip','w-4 h-4')}</button>
+                ${emojiButtonHTML('convo-input', 'w-8 h-8 rounded-full convo-composer-icon-btn')}
                 <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
+                <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('clip','w-4 h-4')}</button>
                 <button onclick="toggleConvoVoiceNote()" id="convo-mic-btn" title="Record a voice note" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('mic','w-4 h-4')}</button>
                 <button onclick="handleConvoSendTap()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
               </div>
@@ -8661,9 +8662,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="meeting-chat-list" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:10px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;"></div>
             <div id="meeting-chat-replybar" style="display:none;align-items:center;gap:8px;padding:8px 12px;flex-shrink:0;background:var(--cu-bg);"></div>
             <div id="meeting-chat-bar" style="display:flex;align-items:center;gap:10px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--cu-line);flex-shrink:0;background:var(--cu-bg);">
-              <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
-                style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingChatMessage();}">
+              <div style="flex:1;min-width:0;height:46px;border-radius:999px;display:flex;align-items:center;gap:4px;padding:0 6px 0 8px;background:var(--cu-soft);color:var(--cu-fg);">
+                ${emojiButtonHTML('meeting-chat-input', '', 'width:34px;height:34px;border-radius:50%;opacity:.8;')}
+                <input id="meeting-chat-input" type="text" placeholder="Type a message..." maxlength="1000" enterkeyhint="send" autocomplete="off"
+                  style="flex:1;min-width:0;height:44px;padding:0 6px;font-size:16px;outline:none;border:0;background:transparent;color:var(--cu-fg);"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingChatMessage();}">
+              </div>
               <button onclick="sendMeetingChatMessage()" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1e90ff;">${Icon('send','w-5 h-5')}</button>
             </div>`;
           document.body.appendChild(page);

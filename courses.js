@@ -267,8 +267,9 @@ try {
             <div id="ai-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="ai-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx" multiple class="hidden" onchange="handleAIFileSelect(event)">
               <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
-                <button onclick="document.getElementById('ai-file-input').click()" title="Attach images, PDFs, or PPTX" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('clip','w-4 h-4')}</button>
+                ${emojiButtonHTML('ai-chat-input', 'w-8 h-8 rounded-full', 'background:rgba(10,37,64,0.06);color:'+NAVY+';')}
                 <textarea id="ai-chat-input" rows="1" placeholder="Ask Stitch Bot anything..." onkeydown="handleAIChatInputKeydown(event)" oninput="autoGrowAIChatInput(this)" onfocus="handleAIChatInputFocus()" onblur="handleAIChatInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center" style="max-height:120px; overflow-y:auto;"></textarea>
+                <button onclick="document.getElementById('ai-file-input').click()" title="Attach images, PDFs, or PPTX" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('clip','w-4 h-4')}</button>
                 <button id="ai-mic-btn" onclick="toggleAIVoiceInput()" title="Ask by voice" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('mic','w-4 h-4')}</button>
                 <button onclick="sendAIMessage()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
               </div>
@@ -5537,7 +5538,8 @@ try {
               <div id="cm-log" class="flex-1 overflow-y-auto no-scrollbar px-5 pb-3 flex flex-col gap-3" style="min-height:0;">${classMsgLogHTML(cls, studentId)}</div>
               <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:max(20px, env(safe-area-inset-bottom));">
                 <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
-                  <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea pl-2" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
+                  ${emojiButtonHTML('cm-input', 'w-8 h-8 rounded-full convo-composer-icon-btn')}
+                  <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
                   <button onclick="sendClassMessage()" title="Send" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
                 </div>
               </div>
@@ -8346,6 +8348,7 @@ try {
           // the lecture screen's inner wrapper
           return `
             <div id="lecture-comment-sheet" class="fixed z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
+              ${emojiButtonHTML('lecture-comment-input', 'w-8 h-8 rounded-full', 'background:rgba(10,37,64,0.06);color:'+NAVY+';')}
               <input id="lecture-comment-input" type="text" placeholder="Type a comment..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLectureComment();}" onfocus="handleLectureCommentFocus()" onblur="handleLectureCommentBlur()">
               <button onclick="sendLectureComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
             </div>`;
