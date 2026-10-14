@@ -1772,6 +1772,7 @@
   </div>
   <!-- Floating tab shown only while the right panel is collapsed --
        clicking it restores the panel to its last width/content. -->
+  <button id="nav-reopen-tab" onclick="examFocusShowNav()" title="Show menu">${Icon('arrowLeft','w-4 h-4')}</button>
   <button id="rp-reopen-tab" onclick="expandRightPanel()" title="Show panel">${Icon('arrowLeft','w-4 h-4')}</button>
   <!-- Top Bar -->
   <div id="top-bar" class="flex-shrink-0 sticky top-0 z-10" style="margin-bottom:10px;">

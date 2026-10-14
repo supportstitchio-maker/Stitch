@@ -589,6 +589,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (navBackdropElClose) navBackdropElClose.style.display = 'none';
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
+          examFocusExit();
           clearQuizBackground();
           if (typeof stopQuizMusic === 'function') stopQuizMusic();
           resetBottomNav();
@@ -3782,3 +3783,32 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
   setInterval(queue, 1500);
   queue();
 })();
+
+
+// ---- Practice test focus mode (desktop): while a mock test or challenge is open, the left menu and
+// the right-hand panel hide by themselves so the test has the whole screen. A small tab on each
+// edge brings them back with one tap; they come back on their own when the test is closed.
+let examFocusActive = false;
+let examFocusRpWasOpen = false;
+function examFocusEnter(){
+  if (examFocusActive) return;
+  examFocusActive = true;
+  const sh = document.getElementById('app-shell');
+  if (!sh) return;
+  examFocusRpWasOpen = sh.classList.contains('right-panel-open') && !sh.classList.contains('rp-collapsed');
+  sh.classList.add('nav-hidden');
+  if (examFocusRpWasOpen && typeof collapseRightPanel === 'function') collapseRightPanel();
+}
+function examFocusExit(){
+  if (!examFocusActive) return;
+  examFocusActive = false;
+  const sh = document.getElementById('app-shell');
+  if (!sh) return;
+  sh.classList.remove('nav-hidden');
+  if (examFocusRpWasOpen && typeof expandRightPanel === 'function') expandRightPanel();
+  examFocusRpWasOpen = false;
+}
+function examFocusShowNav(){
+  const sh = document.getElementById('app-shell');
+  if (sh) sh.classList.remove('nav-hidden');
+}

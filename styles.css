@@ -4147,3 +4147,17 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
   #auth-gate.auth-verify-mode .auth-form-side{padding-top:28px !important;padding-bottom:28px !important;}
   #auth-gate.auth-verify-mode .auth-body{padding-top:44px;}
 }
+
+/* Practice test focus (desktop): the left menu hides, and a tab on the left edge brings it back */
+#nav-reopen-tab{display:none;}
+@media (min-width:1024px){
+  #app-shell.nav-hidden{--nav-width:0px;}
+  #app-shell.nav-hidden #desktop-nav{display:none !important;}
+  #app-shell.nav-hidden #nav-reopen-tab{
+    display:flex;position:fixed;left:0;top:42%;width:26px;height:56px;align-items:center;justify-content:center;
+    background:#fff;border:1px solid rgba(10,37,64,.10);border-left:none;border-radius:0 12px 12px 0;
+    box-shadow:2px 0 8px rgba(10,37,64,.08);z-index:41;cursor:pointer;color:#374151;
+  }
+  #app-shell.nav-hidden #nav-reopen-tab svg{transform:rotate(180deg);}
+  body.dark-mode #nav-reopen-tab{background:var(--c-onyx,#16191f);color:#e5e7eb;border-color:rgba(255,255,255,.1);}
+}

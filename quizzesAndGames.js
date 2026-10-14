@@ -1874,6 +1874,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           if (examContext === 'weeklyQuiz' || examContext === 'dailyQuiz') {
             return examCardOpenIndex === null ? weeklyQuizBoardHTML() : weeklyQuizCardHTML(examCardOpenIndex);
           }
+          if (typeof examFocusEnter === 'function' && examStage === 'take') examFocusEnter();
           const q = examTest.questions[examQIndex];
           const total = examTest.questions.length;
           const sel = examAnswers[examQIndex];
