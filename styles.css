@@ -706,10 +706,7 @@
           .career-job-card.career-job-card-course .career-job-sub {
             font-size: 0.9rem !important;
           }
-          .career-tab-pill {
-            padding: 0.9rem 1.75rem !important;
-            font-size: 1.1rem !important;
-          }
+          /* Career tab pills keep the same size as the Messaging pills (.filter-pill) */
           #career-titlebar h1 {
             font-size: 1.65rem !important;
           }
