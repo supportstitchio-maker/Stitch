@@ -3130,3 +3130,63 @@ window.addEventListener('online', () => { realOfflineCheck(); });
     } catch (err) {}
   }, true);
 })();
+
+/* Desktop: bottom pull-up menus become anchored dropdowns, bottom form sheets become centred dialogs. */
+(function(){
+  var MQ = window.matchMedia ? window.matchMedia('(min-width:1024px) and (hover:hover) and (pointer:fine)') : { matches:false };
+  var lastRect = null, lastAt = 0;
+  document.addEventListener('pointerdown', function(e){
+    var t = e.target && e.target.closest ? e.target.closest('button,[onclick],a,[role="button"]') : null;
+    if (t) { lastRect = t.getBoundingClientRect(); lastAt = Date.now(); }
+  }, true);
+
+  var MENU_ID = /^(career-menu-dropdown|job-sheet-menu|admin-menu-sheet|post-menu-dropdown-.+|inbox-filter-dropdown|convo-options-menu)$/;
+  function styleOf(el){ return (el.getAttribute('style') || '').replace(/\s+/g, ''); }
+  function kindOf(el){
+    if (el.id && MENU_ID.test(el.id)) return 'menu';
+    var s = styleOf(el);
+    if (s.indexOf('position:fixed') < 0 || s.indexOf('z-index:11001') < 0) return '';
+    if (s.indexOf('border-radius:24px24px00') < 0) return '';
+    return s.indexOf('padding:10px0') >= 0 ? 'menu' : 'dialog';
+  }
+  function place(el){
+    var w = el.offsetWidth || 272, h = el.offsetHeight || 200, vw = window.innerWidth, vh = window.innerHeight;
+    var r = (lastRect && Date.now() - lastAt < 4000) ? lastRect : { left: vw - 60, right: vw - 24, top: 56, bottom: 72 };
+    var left = (r.left + r.right) / 2 > vw / 2 ? r.right - w : r.left;
+    left = Math.max(12, Math.min(left, vw - w - 12));
+    var top = r.bottom + 8;
+    if (top + h > vh - 12) top = Math.max(12, r.top - h - 8);
+    el.style.setProperty('left', left + 'px', 'important');
+    el.style.setProperty('top', top + 'px', 'important');
+  }
+  function scrimOf(el){
+    var p = el.previousElementSibling;
+    return p && /fixed/.test(styleOf(p) + ' ' + p.className) ? p : null;
+  }
+  function tag(el){
+    if (!MQ.matches || el.__dsk) return;
+    var k = kindOf(el); if (!k) return;
+    el.__dsk = k;
+    var sc = scrimOf(el);
+    if (k === 'menu') { el.classList.add('dsk-menu'); if (sc) sc.classList.add('dsk-scrim-clear'); if (!el.classList.contains('hidden')) place(el); }
+    else { el.classList.add('dsk-dialog'); if (sc) sc.classList.add('dsk-scrim-dim'); }
+  }
+  function scan(n){
+    if (!n || n.nodeType !== 1) return;
+    tag(n);
+    if (n.querySelectorAll) { var l = n.querySelectorAll('[style*="z-index:11001"],#convo-options-menu'); for (var i = 0; i < l.length; i++) tag(l[i]); }
+  }
+  function start(){
+    new MutationObserver(function(ms){
+      for (var i = 0; i < ms.length; i++) {
+        var m = ms[i];
+        if (m.type === 'attributes') {
+          var t = m.target;
+          if (t.id === 'convo-options-menu') { tag(t); if (MQ.matches && !t.classList.contains('hidden')) place(t); }
+        } else for (var j = 0; j < m.addedNodes.length; j++) scan(m.addedNodes[j]);
+      }
+    }).observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
+    scan(document.body);
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();

@@ -4470,14 +4470,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const canDeleteForEveryone = canDeleteMessageForEveryone(msg);
           const canCopy = !!(msg && msg.text);
           return `
-            <div class="fixed inset-0 flex items-end justify-center" style="background:rgba(0,0,0,0.35);z-index:60;" onclick="closeMessageActionSheet()">
-              <div class="bg-white w-full rounded-t-3xl overflow-hidden" style="max-width:480px;padding-bottom:env(safe-area-inset-bottom, 0px);" onclick="event.stopPropagation()">
-                <div class="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-2.5 mb-1"></div>
-                ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">Copy</button>` : ''}
-                <button onclick="openForwardMessagePicker()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">Forward</button>
-                <button onclick="deleteActionMessageForMe()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">Delete for me</button>
-                ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-red-500 border-b border-gray-100">Delete for everyone</button>` : ''}
-                <button onclick="closeMessageActionSheet()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-500">Cancel</button>
+            <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
+              <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
+                <div class="convo-sheet-grabber"></div>
+                ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Copy</button>` : ''}
+                <button onclick="openForwardMessagePicker()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Forward</button>
+                <button onclick="deleteActionMessageForMe()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Delete for me</button>
+                ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-red-500 border-b border-gray-100" style="font-family:inherit;">Delete for everyone</button>` : ''}
+                <button onclick="closeMessageActionSheet()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-500" style="font-family:inherit;">Cancel</button>
               </div>
             </div>`;
         }

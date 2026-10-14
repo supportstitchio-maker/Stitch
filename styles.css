@@ -4161,3 +4161,48 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
   #app-shell.nav-hidden #nav-reopen-tab svg{transform:rotate(180deg);}
   body.dark-mode #nav-reopen-tab{background:var(--c-onyx,#16191f);color:#e5e7eb;border-color:rgba(255,255,255,.1);}
 }
+
+/* ===== Desktop: pull-up sheets become dropdown menus or centred dialogs (phones keep bottom sheets) ===== */
+@keyframes dskPop{from{opacity:0;transform:scale(.96) translateY(8px);}to{opacity:1;transform:none;}}
+@keyframes dskPopC{from{opacity:0;transform:translate(-50%,-48%) scale(.97);}to{opacity:1;transform:translate(-50%,-50%);}}
+@keyframes dskDrop{from{opacity:0;transform:translateY(-6px) scale(.98);}to{opacity:1;transform:none;}}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  /* ---- dropdown menus ---- */
+  .dsk-menu{position:fixed !important;right:auto !important;bottom:auto !important;margin:0 !important;width:272px !important;max-width:calc(100vw - 24px) !important;max-height:min(72vh,540px) !important;overflow-y:auto !important;padding:8px !important;border-radius:18px !important;background:#fff;box-shadow:0 14px 44px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.06) !important;animation:dskDrop .14s ease-out both !important;}
+  .dsk-menu .convo-sheet-grabber,.dsk-menu > div[style*="height:5px"]{display:none !important;}
+  .dsk-menu button{width:100% !important;display:flex !important;align-items:center !important;gap:12px !important;padding:11px 14px !important;margin:0 0 4px !important;border:0 !important;border-radius:12px !important;background:#f5f6f8 !important;font-size:14px !important;text-align:left;transition:background .12s;}
+  .dsk-menu button:last-child{margin-bottom:0 !important;}
+  .dsk-menu button:hover{background:#eceef2 !important;}
+  .dsk-menu button svg{width:19px !important;height:19px !important;}
+  .dsk-menu button span[style*="Colmeak"]{font-size:15px !important;}
+  .dsk-menu button > span:first-child{width:20px !important;height:20px !important;}
+  .dsk-scrim-clear,#convo-options-menu-backdrop{background:transparent !important;animation:none !important;backdrop-filter:none !important;}
+  body.dark-mode .dsk-menu{background:#1e1e1e !important;box-shadow:0 14px 44px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08) !important;}
+  body.dark-mode .dsk-menu button{background:#2a2a2a !important;}
+  body.dark-mode .dsk-menu button:hover{background:#343434 !important;}
+
+  /* ---- centred dialogs: inline bottom-fixed panels ---- */
+  .dsk-dialog{position:fixed !important;left:50% !important;top:50% !important;right:auto !important;bottom:auto !important;transform:translate(-50%,-50%);width:min(520px,92vw) !important;max-width:520px !important;margin:0 !important;border-radius:22px !important;padding:22px 24px !important;max-height:86vh !important;box-shadow:0 24px 70px rgba(15,23,42,.28) !important;animation:dskPopC .18s ease-out both !important;}
+  .dsk-dialog > div[style*="height:5px"]{display:none !important;}
+  .dsk-scrim-dim{background:rgba(15,23,42,.45) !important;backdrop-filter:blur(2px);}
+
+  /* ---- centred dialogs: full-screen wrappers that used items-end ---- */
+  .confirm-sheet-wrap,#callNotesModal,#lectureAddModal,#notifDetailModal,.convo-sheet-scrim.items-end{align-items:center !important;background:rgba(15,23,42,.45) !important;}
+  .confirm-sheet-wrap > div,#callNotesModal > div,#lectureAddModal > div,#notifDetailModal > div,.convo-sheet-scrim.items-end > .convo-sheet{border-radius:22px !important;width:min(480px,92vw) !important;max-width:480px !important;margin:0 auto !important;box-shadow:0 24px 70px rgba(15,23,42,.28) !important;animation:dskPop .18s ease-out both !important;}
+  .confirm-sheet-wrap > div [style*="height:5px"],#callNotesModal > div [style*="height:5px"],#lectureAddModal > div [style*="height:5px"],#notifDetailModal > div [style*="height:5px"],.convo-sheet-grabber{display:none !important;}
+  #callNotesModal > div{max-height:84vh !important;}
+  .convo-sheet-scrim.items-end > .convo-sheet{max-width:380px !important;padding:8px !important;}
+
+  /* ---- share sheets ---- */
+  div:has(> .share-sheet-panel){justify-content:center !important;align-items:center !important;background:rgba(15,23,42,.45);}
+  .share-sheet-panel{width:min(520px,92vw) !important;border-radius:22px !important;margin:0 auto;box-shadow:0 24px 70px rgba(15,23,42,.28);animation:dskPop .18s ease-out both !important;}
+
+  /* ---- comment sheet ---- */
+  [id^="comment-sheet-panel-"]{left:50% !important;right:auto !important;top:50% !important;bottom:auto !important;transform:translate(-50%,-50%);width:min(580px,92vw) !important;height:min(80vh,740px) !important;border-radius:22px !important;box-shadow:0 24px 70px rgba(15,23,42,.35);padding-top:0 !important;}
+  [id^="comment-sheet-media-"]{bottom:0 !important;}
+
+  /* ---- call screen sheets ---- */
+  .cu-bsheet{left:50% !important;right:auto !important;top:50% !important;bottom:auto !important;transform:translate(-50%,-50%);width:min(440px,92vw) !important;max-width:440px !important;margin:0 !important;border-radius:22px !important;padding:14px !important;animation:dskPopC .18s ease-out both !important;box-shadow:0 24px 70px rgba(0,0,0,.4) !important;}
+  .cu-bsheet-grab{display:none !important;}
+  .cu-backdrop{background:rgba(15,23,42,.45) !important;}
+}
