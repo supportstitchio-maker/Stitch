@@ -2296,6 +2296,7 @@ let userPoints = 0;
           // 'plain' = same full-screen cover, but empty: a blank white (or dark) page with no
           // skeleton
           el.classList.toggle('plain-mode', skeletonMode === 'plain');
+          if (!skeletonMode) el.classList.remove('skel-desktop-mode');
           if (skeletonMode) {
             // This skeleton can go up before authEnterApp() has had a chance to apply the saved theme
             // (e.g. straight after a Google/Apple redirect), so it used to paint white first and only
@@ -2308,7 +2309,9 @@ let userPoints = 0;
               }
             } catch (e) {}
             if (authTransitionDotTimer) { clearInterval(authTransitionDotTimer); authTransitionDotTimer = null; }
-            el.innerHTML = skeletonMode === 'plain' ? '' : feedSkeletonHTML();
+            const desk = skeletonMode !== 'plain' && typeof isDesktopLayout === 'function' && isDesktopLayout();
+            el.classList.toggle('skel-desktop-mode', desk);
+            el.innerHTML = skeletonMode === 'plain' ? '' : (desk ? desktopShellSkeletonHTML() : feedSkeletonHTML());
             el.classList.remove('hidden');
             return;
           }
@@ -2328,7 +2331,7 @@ let userPoints = 0;
           if (immediate) {
             if (authTransitionDotTimer) { clearInterval(authTransitionDotTimer); authTransitionDotTimer = null; }
             const el = document.getElementById('auth-transition-loading');
-            if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); }
+            if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); el.classList.remove('skel-desktop-mode'); }
             return;
           }
           const elapsed = Date.now() - authTransitionShownAt;
@@ -2336,7 +2339,7 @@ let userPoints = 0;
           if (remaining > 0) { setTimeout(hideAuthTransitionLoading, remaining); return; }
           if (authTransitionDotTimer) { clearInterval(authTransitionDotTimer); authTransitionDotTimer = null; }
           const el = document.getElementById('auth-transition-loading');
-          if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); }
+          if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); el.classList.remove('skel-desktop-mode'); }
         }
 
         // Test account only: wipes everything it created (database rows + this device's saved data)

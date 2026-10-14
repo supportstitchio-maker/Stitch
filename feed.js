@@ -1,4 +1,16 @@
 // ---- Feed render + pull-to-refresh ----
+        // Desktop loading cover: the whole app shell (left menu, feed, right panel) in grey placeholders
+        function desktopShellSkeletonHTML(){
+          const bar = (w, h, extra) => `<div class="skel-line skel-shimmer" style="width:${w};height:${h || 12}px;${extra || ''}"></div>`;
+          let nav = `<div class="skel-dnav"><div class="skel-shimmer" style="width:120px;height:40px;border-radius:12px;margin:6px 0 26px 10px;"></div>`;
+          for (let i = 0; i < 6; i++) nav += `<div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>${bar((50 + (i * 7) % 30) + '%', 12)}</div>`;
+          nav += `<div style="flex:1"></div><div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>${bar('40%', 12)}</div></div>`;
+          const right = `<div class="skel-dright"><div class="skel-dright-head">${bar('90px', 14)}</div><div style="padding:20px;">${bar('60%', 14, 'margin-bottom:16px;')}<div class="skel-shimmer" style="height:44px;border-radius:12px;margin-bottom:12px;"></div><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin-bottom:26px;"></div>${bar('35%', 12, 'margin-bottom:14px;')}${bar('90%', 10, 'margin-bottom:10px;')}${bar('70%', 10)}</div></div>`;
+          const main = `<div class="skel-dmain"><div class="skel-dmain-in"><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin:6px 0 22px;"></div>${skeletonStoryRowHTML(5)}<div>${skeletonPostHTML()}${skeletonPostHTML()}${skeletonPostHTML()}</div></div></div>`;
+          return `<div class="skel-desk">${nav}${main}${right}</div>`;
+        }
+        function isDesktopLayout(){ return !!(window.matchMedia && window.matchMedia('(min-width:1024px)').matches); }
+
         function feedSkeletonHTML(){
           return `
             <div class="px-5 pb-5 feed-skeleton-marker" style="padding-top:var(--top-safe-pad);">
