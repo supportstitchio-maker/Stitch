@@ -2368,6 +2368,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (gotAny && typeof activeConvoId !== 'undefined' && activeConvoId) {
             const log = document.getElementById('convo-log');
             if (log) { const keep = log.scrollTop; log.innerHTML = convoLogHTML(); log.scrollTop = keep; }
+            const cmOv = document.getElementById('overlay');
+            if (cmOv && cmOv.querySelector('.cm-tabs')) {
+              const sc = cmOv.querySelector('.overflow-y-auto'), keepY = sc ? sc.scrollTop : 0;
+              cmOv.innerHTML = convoMediaLinksDocsHTML();
+              const sc2 = cmOv.querySelector('.overflow-y-auto'); if (sc2) sc2.scrollTop = keepY;
+            }
           }
         }
 
@@ -3820,18 +3826,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const urlRe = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
           msgs.forEach(m => {
             (m.attachments || []).forEach(f => {
-              if (f.type && f.type.startsWith('image/')) images.push(f);
-              else docs.push(f);
+              if (f.type && f.type.startsWith('stitch/')) return;   // shared posts, glimpses and challenges are not files
+              const item = Object.assign({}, f, { _t: m.time || 0 });
+              if (f.type && (f.type.startsWith('image/') || f.type.startsWith('video/'))) images.push(item);
+              else docs.push(item);
             });
             if (m.text) {
               const found = m.text.match(urlRe);
-              if (found) found.forEach(u => links.push(u));
+              if (found) found.forEach(u => links.push(Object.assign(new String(u), { _t: m.time || 0 })));
             }
           });
           return { images, docs, links };
         }
 
         function openConvoMediaLinksDocs(){
+          window.__cmTab = 'media';
+          const ov = document.getElementById('overlay');
+          if (ov) ov.innerHTML = convoMediaLinksDocsHTML();
+        }
+
+        window.__cmTab = window.__cmTab || 'media';
+        function setConvoMediaTab(t){
+          window.__cmTab = t;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoMediaLinksDocsHTML();
         }
@@ -3839,47 +3855,89 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoMediaLinksDocsHTML(){
           const meta = convoMeta[activeConvoId] || { name: 'Conversation' };
           const { images, docs, links } = collectConvoMedia(activeConvoId);
-          const section = (title, items, renderItem, emptyLabelText) => `
-            <div class="mb-6">
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">${title} (${items.length})</div>
-              ${items.length
-                ? `<div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">${items.map(renderItem).join('')}</div>`
-                : `<div class="text-sm text-gray-400">${emptyLabelText}</div>`}
-            </div>`;
+          const tab = window.__cmTab || 'media';
+          const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+          const groupLabel = t => {
+            if (!t) return 'Earlier';
+            const d = new Date(t), now = new Date();
+            if (now - d < 7 * 864e5) return 'Recent';
+            return MONTHS[d.getMonth()] + (d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : '');
+          };
+          // newest first, grouped by month under small headers
+          const grouped = (items, renderGroup) => {
+            const sorted = items.slice().sort((x, y) => (y._t || 0) - (x._t || 0));
+            const order = [], map = {};
+            sorted.forEach(it => { const k = groupLabel(it._t); if (!map[k]) { map[k] = []; order.push(k); } map[k].push(it); });
+            return order.map(k => `<div class="cm-group"><div class="cm-head">${escapeHtml(k)}</div>${renderGroup(map[k])}</div>`).join('');
+          };
+          const empty = txt => `<div class="text-sm text-gray-400" style="padding:28px 20px;text-align:center;">${txt}</div>`;
+          const fileExt = n => { const m = /\.([a-z0-9]{1,5})$/i.exec(n || ''); return m ? m[1].toUpperCase() : 'FILE'; };
+          const dateShort = t => t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: '2-digit' }) : '';
+          const hostOf = u => { try { return new URL(/^https?:/i.test(u) ? u : 'https://' + u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+
+          let body = '';
+          if (tab === 'media') {
+            body = images.length ? grouped(images, list => `<div class="cm-grid">${list.map(f => {
+              const u = f.url || f.dataUrl || '';
+              const isVid = f.type && f.type.startsWith('video/');
+              const open = isVid ? `openExternalUrl('${encUriArg(u)}')` : `openConvoImageViewer('${encUriArg(u)}')`;
+              return `<button type="button" onclick="${isVid ? `openExternalUrl(decodeURIComponent('${encUriArg(u)}'))` : open}" class="cm-cell cp-press">
+                ${isVid ? `<video src="${escapeHtml(chatMediaSrc(u))}#t=0.1" preload="metadata" muted playsinline></video><span class="cm-play">${Icon('play','w-4 h-4')}</span>` : `<img src="${escapeHtml(chatMediaSrc(u))}" alt="" loading="lazy">`}
+              </button>`;
+            }).join('')}</div>`) : empty('No photos or videos shared yet.');
+          } else if (tab === 'docs') {
+            body = docs.length ? grouped(docs, list => list.map(f => {
+              const n = f.name || 'Untitled file';
+              const u = f.url || f.dataUrl || '';
+              return `<button type="button" onclick="convoDownloadDocument('${encUriArg(u)}','${encUriArg(n)}')" class="cm-row cp-press">
+                <div class="cm-badge">${escapeHtml(fileExt(n))}</div>
+                <div class="flex-1 min-w-0"><div class="cm-title truncate">${escapeHtml(n)}</div><div class="cm-sub">${escapeHtml(fileExt(n))} file</div></div>
+                <div class="cm-date">${escapeHtml(dateShort(f._t))}</div>
+              </button>`;
+            }).join('')) : empty(`No documents shared with ${escapeHtml(meta.name)} yet.`);
+          } else {
+            body = links.length ? grouped(links, list => list.map(l => {
+              const u = String(l);
+              return `<button type="button" onclick="openExternalUrl(decodeURIComponent('${encUriArg(/^https?:/i.test(u) ? u : 'https://' + u)}'))" class="cm-row cp-press">
+                <div class="flex-1 min-w-0"><div class="cm-title truncate">${escapeHtml(hostOf(u) || u)}</div><div class="cm-sub truncate" style="color:${ROYAL};">${escapeHtml(u)}</div></div>
+                <div class="cm-date">${escapeHtml(dateShort(l._t))}</div>
+              </button>`;
+            }).join('')) : empty(`No links shared with ${escapeHtml(meta.name)} yet.`);
+          }
+          const tabBtn = (id, label, n) => `<button type="button" onclick="setConvoMediaTab('${id}')" class="cm-tab ${tab === id ? 'on' : ''}">${label}<span class="cm-n">${n}</span></button>`;
           return `
-            <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
-              <div class="px-5 pb-3 flex items-center gap-4">
-                <button onclick="openConvoProfile()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <div class="font-semibold text-lg font-display truncate grad-text">Media, links and docs</div>
+            <style>
+              .cm-tabs{display:flex;border-bottom:1px solid rgba(10,37,64,.08);position:sticky;top:0;background:inherit;z-index:2;}
+              .cm-tab{flex:1;padding:12px 0;font-size:14px;font-weight:600;color:#9ca3af;border-bottom:2.5px solid transparent;margin-bottom:-1px;}
+              .cm-tab.on{color:#1e90ff;border-bottom-color:#1e90ff;}
+              .cm-n{font-size:11px;margin-left:5px;opacity:.7;}
+              .cm-head{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9ca3af;padding:18px 20px 8px;}
+              .cm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+              .cm-cell{position:relative;aspect-ratio:1;overflow:hidden;background:#e5e7eb;display:block;}
+              .cm-cell img,.cm-cell video{width:100%;height:100%;object-fit:cover;display:block;}
+              .cm-play{position:absolute;left:6px;bottom:6px;width:24px;height:24px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;}
+              .cm-row{width:100%;display:flex;align-items:center;gap:14px;padding:12px 20px;text-align:left;}
+              .cm-badge{width:42px;height:48px;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:10px;font-weight:800;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;flex-shrink:0;}
+              .cm-title{font-size:15px;font-weight:600;color:#111827;}
+              .cm-sub{font-size:12px;color:#9ca3af;margin-top:2px;}
+              .cm-date{font-size:12px;color:#9ca3af;flex-shrink:0;}
+              body.dark-mode .cm-title{color:#f3f4f6;} body.dark-mode .cm-cell{background:#222;} body.dark-mode .cm-badge{background:rgba(220,38,38,.2);}
+            </style>
+            <div class="flex-1 overflow-y-auto pb-8" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+              <div class="flex items-center gap-4 px-5" style="padding-top:var(--top-safe-pad);padding-bottom:10px;">
+                <button onclick="openConvoProfile()" class="cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="font-semibold text-lg font-display truncate grad-text">${escapeHtml(meta.name || 'Conversation')}</div>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-5">
-              ${section('Media', images, f => `
-                <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('camera','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
-                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
-                </button>`, `No photos or videos shared with ${escapeHtml(meta.name)} yet.`)}
-              ${section('Docs', docs, f => `
-                <button onclick="openExternalUrl('${escapeHtml((f.url || f.dataUrl || '')).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('file','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${escapeHtml(f.name)}</div>
-                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
-                </button>`, `No documents shared with ${escapeHtml(meta.name)} yet.`)}
-              ${section('Links', links, u => `
-                <button onclick="openExternalUrl('${escapeHtml(u).replace(/'/g,"\\'")}')" class="w-full flex items-center gap-3 py-3 text-left">
-                  <div class="w-10 h-10 text-[${NAVY}] flex items-center justify-center flex-shrink-0">${Icon('link','w-5 h-5')}</div>
-                  <div class="text-sm text-gray-700 truncate flex-1 min-w-0">${u}</div>
-                  ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
-                </button>`, `No links shared with ${escapeHtml(meta.name)} yet.`)}
+              <div class="cm-tabs">${tabBtn('media','Media',images.length)}${tabBtn('docs','Docs',docs.length)}${tabBtn('links','Links',links.length)}</div>
+              ${body}
             </div>`;
         }
 
         // ---- Conversation profile screen (shared media, report) ----
         function convoProfileRow(icon, iconBg, iconColor, label, sub, onclick, danger){
           return `
-            <button onclick="${onclick}" class="w-full flex items-center gap-3 py-3 text-left">
-              <div class="w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center ${iconColor} flex-shrink-0">${Icon(icon,'w-5 h-5')}</div>
+            <button onclick="${onclick}" class="w-full flex items-center gap-3 py-3 text-left cp-press">
+              <div class="w-11 h-11 flex items-center justify-center ${iconColor} flex-shrink-0">${Icon(icon,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0">
                 <div class="text-[15px] font-semibold ${danger ? 'text-red-500' : 'text-gray-900'}">${label}</div>
                 ${sub ? `<div class="text-xs text-gray-400 mt-0.5">${sub}</div>` : ''}
@@ -3888,16 +3946,51 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </button>`;
         }
 
+        // Full name, username, bio and links of the other person, shown on the contact page like on their profile
+        function ensureConvoContactDetails(){
+          const meta = convoMeta[activeConvoId];
+          if (!meta || !meta.otherUserId || meta.icon === 'users') return;
+          const uid = meta.otherUserId;
+          const cached = personProfileCache[uid];
+          if (cached && cached.details && (Date.now() - cached.ts) < PERSON_PROFILE_CACHE_MS) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          sb.from(PUBLIC_PROFILES_TABLE).select('*').eq('user_id', uid).maybeSingle().then(({ data }) => {
+            if (!data) return;
+            const prev = personProfileCache[uid];
+            const details = Object.assign({}, prev && prev.details, {
+              name: data.name || data.username || meta.name,
+              username: data.username || '',
+              pronouns: data.pronouns || '',
+              bio: data.bio || '',
+              photo: data.photo || (prev && prev.details && prev.details.photo) || meta.photo || null,
+              links: Array.isArray(data.links) ? data.links : []
+            });
+            personProfileCache[uid] = { ts: Date.now(), network: prev ? prev.network : undefined, details };
+            const m2 = convoMeta[activeConvoId];
+            const sc = document.getElementById('convo-profile-scroll');
+            if (collabProfileOverlayOpen && sc && m2 && m2.otherUserId === uid) {
+              const ov = document.getElementById('overlay'), top = sc.scrollTop;
+              window.__cpNoRise = true;
+              if (ov) ov.innerHTML = convoProfileHTML();
+              const n = document.getElementById('convo-profile-scroll'); if (n) n.scrollTop = top;
+            }
+          }).catch(() => {});
+        }
+
         function openConvoProfile(){
           collabProfileOverlayOpen = true;
+          window.__cpNoRise = false;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoProfileHTML();
+          ensureConvoContactDetails();
         }
 
         function renderConvoProfile(){
           collabProfileOverlayOpen = true;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoProfileHTML();
+          ensureConvoContactDetails();
         }
 
         function closeConvoProfile(){
@@ -3920,43 +4013,102 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const notifOn = isConvoNotifEnabled(activeConvoId);
           const { images, docs, links } = collectConvoMedia(activeConvoId);
           const mediaCount = images.length + docs.length + links.length;
+          const mediaThumbs = images.slice(-4).reverse();
           const sharedCollabs = isGroup ? [] : collabConvos;
+          const pdCached = (!isGroup && meta.otherUserId && typeof personProfileCache !== 'undefined') ? personProfileCache[meta.otherUserId] : null;
+          const pd = pdCached && pdCached.details ? pdCached.details : null;
           return `
-            <div class="flex-shrink-0 w-full" style="padding-top:var(--top-safe-pad);">
-              <div class="px-5 pb-3 flex items-center gap-4">
-                <button onclick="closeConvoProfile()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <div class="font-semibold text-lg font-display grad-text">Contact info</div>
+            <style>
+              .cp-rise{animation:cpRise .5s cubic-bezier(.22,1,.36,1) both;}
+              @keyframes cpRise{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+              .cp-act{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px 10px;border-radius:18px;background:#fff;border:1px solid rgba(10,37,64,.08);}
+              .cp-act span.l{font-size:12px;font-weight:600;color:#374151;}
+              body.dark-mode .cp-act{background:#1e1e1e;border-color:rgba(255,255,255,.08);}
+              body.dark-mode .cp-act span.l{color:#e5e7eb;}
+              .cp-card{background:#fff;border:1px solid rgba(10,37,64,.08);border-radius:20px;}
+              .cp-chip{font-size:11px;font-weight:600;color:#4b5563;background:#f3f4f6;border-radius:999px;padding:4px 10px;}
+              .cp-pill{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:999px;background:#f3f4f6;color:#374151;font-size:14px;font-weight:600;border:1.5px solid transparent;}
+              .cp-pill.on{background:rgba(30,144,255,.1);color:#1e90ff;border-color:#1e90ff;}
+              body.dark-mode .cp-card{background:#1e1e1e;border-color:rgba(255,255,255,.08);}
+              body.dark-mode .cp-pill{background:#2a2a2a;color:#e5e7eb;} body.dark-mode .cp-pill.on{background:rgba(30,144,255,.18);color:#5cb0ff;}
+              body.dark-mode .cp-chip{background:#2a2a2a;color:#d1d5db;}
+              @media (prefers-reduced-motion: reduce){.cp-rise{animation:none;}}
+            </style>
+            <div id="convo-profile-scroll" class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+              <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
+                <button onclick="closeConvoProfile()" class="w-10 h-10 flex items-center justify-center cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <span class="font-bold absolute left-1/2 -translate-x-1/2 truncate grad-text" style="max-width:60%;font-family:'Montserrat',sans-serif;font-size:16px;">${escapeHtml(isGroup ? 'Group info' : (pd && pd.username) ? String(pd.username) : 'Contact info')}</span>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-5">
-              <div class="flex flex-col items-center text-center mb-6">
-                <div class="relative">
-                  <div class="w-24 h-24 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 mb-3 overflow-hidden" onclick="${isGroup ? 'triggerCollabPhotoUpload()' : `openPersonProfileForConvo('${activeConvoId}')`}">${avatarInnerHTML(meta,'w-10 h-10')}</div>
-                  ${isGroup ? `<button onclick="triggerCollabPhotoUpload()" class="absolute top-0 right-0 w-7 h-7 rounded-full bg-white border-2 border-white shadow flex items-center justify-center text-gray-600" style="background:${ROYAL};color:white;" title="Change photo">${Icon('camera','w-3.5 h-3.5')}</button>` : ''}
+              <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;">
+                <div class="flex items-center gap-5 mb-4">
+                  <div class="relative flex-shrink-0">
+                    <div class="w-20 h-20 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden cp-press" onclick="${isGroup ? 'triggerCollabPhotoUpload()' : `openPersonProfileForConvo('${activeConvoId}')`}" style="cursor:pointer;">${avatarInnerHTML(pd && pd.photo ? Object.assign({}, meta, { photo: pd.photo }) : meta,'w-9 h-9')}</div>
+                    ${isGroup ? `<button onclick="triggerCollabPhotoUpload()" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="right:-2px;bottom:-2px;background:${ROYAL};color:white;border:2px solid #fff;" title="Change photo">${Icon('camera','w-3.5 h-3.5')}</button>` : ''}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    ${isGroup ? `
+                      <button onclick="renameCollaboration()" class="flex items-center gap-1.5 max-w-full text-left" title="Rename collaboration">
+                        <span class="font-bold text-base truncate">${escapeHtml(convoDisplayName(meta))}</span>
+                        ${Icon('edit','w-4 h-4 text-gray-400 flex-shrink-0')}
+                      </button>
+                    ` : `<div class="font-bold text-base">${escapeHtml((pd && pd.name) || convoDisplayName(meta))}${pd && pd.pronouns ? ` <span class="font-normal text-gray-400">${escapeHtml(pd.pronouns)}</span>` : ''}</div>`}
+                    ${!isGroup && pd && pd.username && pd.username !== ((pd && pd.name) || '') ? `<div class="text-sm text-gray-500" style="margin-top:2px;">@${escapeHtml(String(pd.username).replace(/^@/, ''))}</div>` : ''}
+                    <div id="convo-profile-status" class="text-xs text-gray-400" style="margin-top:4px;">${convoLastSeenText(meta)}</div>
+                  </div>
                 </div>
                 ${isGroup ? `
-                  <button onclick="renameCollaboration()" class="flex items-center gap-1.5 max-w-full" title="Rename collaboration">
-                    <div class="font-bold text-xl font-display text-[${NAVY}] truncate">${escapeHtml(convoDisplayName(meta))}</div>
-                    ${Icon('edit','w-4 h-4 text-gray-400 flex-shrink-0')}
-                  </button>
-                ` : `<div class="font-bold text-xl font-display text-[${NAVY}]">${escapeHtml(convoDisplayName(meta))}</div>`}
-                <div id="convo-profile-status" class="text-sm text-gray-400 mt-0.5">${convoLastSeenText(meta)}</div>
-                ${isGroup ? `
-                  <button onclick="editCollabDescription()" class="flex items-center gap-1.5 max-w-full mt-2" title="Edit description">
-                    <div class="text-sm text-gray-500 truncate">${meta.description ? escapeHtml(meta.description) : 'Add a description'}</div>
+                  <button onclick="editCollabDescription()" class="flex items-center gap-1.5 max-w-full mb-4 text-left" title="Edit description">
+                    <div class="text-sm text-gray-600">${meta.description ? escapeHtml(meta.description) : 'Add a description'}</div>
                     ${Icon('edit','w-3.5 h-3.5 text-gray-400 flex-shrink-0')}
                   </button>
-                ` : ''}
+                ` : `
+                  ${pd && pd.bio ? `<div class="text-sm text-gray-600 mb-4" style="white-space:pre-wrap;">${escapeHtml(pd.bio)}</div>` : ''}
+                  ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
+                `}
+                <div class="flex w-full" style="gap:12px;">
+                  <button onclick="closeConvoProfile()" class="cp-act cp-press">${gradIcon(Icon('comment','w-6 h-6'))}<span class="l">Message</span></button>
+                  ${isGroup ? `
+                    <button onclick="openCollabMembers()" class="cp-act cp-press">${gradIcon(Icon('users','w-6 h-6'))}<span class="l">Members</span></button>
+                    <button onclick="shareCollabInviteLink()" class="cp-act cp-press">${gradIcon(Icon('send','w-6 h-6'))}<span class="l">Invite</span></button>
+                  ` : `
+                    <button onclick="startCall('${activeConvoId}','video')" class="cp-act cp-press">${gradIcon(Icon('video','w-6 h-6'))}<span class="l">Video</span></button>
+                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-act cp-press">${gradIcon(Icon('phoneOutline','w-6 h-6'))}<span class="l">Voice</span></button>
+                  `}
+                </div>
               </div>
+              <div class="px-5 pb-8">
 
-              <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-6">
-                ${isGroup ? convoProfileRow('users','bg-emerald-50','text-emerald-600','Members', (meta.members || []).length + ' people', 'openCollabMembers()') : ''}
-                ${isGroup ? convoProfileRow('send','bg-blue-50',`text-[${NAVY}]`,'Share invite link', 'Anyone with the link can ask to join', 'shareCollabInviteLink()') : ''}
-                ${convoProfileRow('grid','bg-blue-50',`text-[${NAVY}]`,'Media, links and docs', mediaCount + ' items', 'openConvoMediaLinksDocs()')}
-              </div>
+              ${isGroup ? `<div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-5">
+                ${convoProfileRow('users','','text-emerald-600','Members', (meta.members || []).length + ' people', 'openCollabMembers()')}
+                ${convoProfileRow('send','',`text-[${NAVY}]`,'Share invite link', 'Anyone with the link can ask to join', 'shareCollabInviteLink()')}
+              </div>` : ''}
 
-              <div class="rounded-2xl border border-gray-100 px-4 bg-white shadow-sm mb-6">
-                ${notificationSettingsRow('bell','bg-amber-100','text-amber-600','Notifications', notifOn ? 'Allowed for this chat' : 'Muted for this chat', notifOn, 'toggleConvoNotifPref()')}
+              <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full text-left mb-5 cp-card" style="display:block;padding:14px;">
+                <div class="flex items-center justify-between" style="margin-bottom:12px;">
+                  <div class="font-bold text-[15px] text-gray-900">Shared in this chat</div>
+                  <div class="text-xs font-semibold" style="color:${ROYAL};">See all</div>
+                </div>
+                <div class="flex" style="gap:8px;">
+                  ${mediaThumbs.length ? mediaThumbs.map(f => {
+                    const u = f.url || f.dataUrl || '';
+                    const isImg = f.type && f.type.startsWith('image/') && u;
+                    return `<div style="flex:1;aspect-ratio:1;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1e90ff,#4169e1);display:flex;align-items:center;justify-content:center;color:#fff;">${isImg ? `<img src="${escapeHtml(u)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : Icon('video','w-5 h-5')}</div>`;
+                  }).join('') + Array(4 - mediaThumbs.length).fill('<div style="flex:1;"></div>').join('') : `<div class="text-sm text-gray-400" style="padding:6px 0;">Nothing shared yet</div>`}
+                </div>
+                <div class="flex" style="gap:8px;margin-top:12px;">
+                  <span class="cp-chip">${images.length} media</span><span class="cp-chip">${links.length} links</span><span class="cp-chip">${docs.length} docs</span>
+                </div>
+              </button>
+
+              <div class="flex mb-6" style="gap:10px;">
+                <button onclick="toggleConvoNotifPref()" class="cp-press cp-pill ${notifOn ? '' : 'on'}">
+                  ${Icon('bell','w-5 h-5')}
+                  <span>${notifOn ? 'Mute' : 'Muted'}</span>
+                </button>
+                <button onclick="toggleFavoriteConvo()" class="cp-press cp-pill ${favorited ? 'on' : ''}">
+                  ${Icon('star','w-5 h-5')}
+                  <span>${favorited ? 'Favourited' : 'Favourite'}</span>
+                </button>
               </div>
 
               ${!isGroup ? `
@@ -3973,10 +4125,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     </div>`
                   : `<div class="text-sm text-gray-400">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
               </div>` : ''}
-
-              <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-6">
-                ${convoProfileRow('star','bg-amber-50','text-amber-500', favorited ? 'Remove from favorites' : 'Add to favorites', null, 'toggleFavoriteConvo()')}
-              </div>
 
               <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">
                 ${isGroup ? `
@@ -4085,8 +4233,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="px-5 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);">
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-5 h-5')}</div>
-              <div class="flex-1 min-w-0 cursor-pointer" onclick="openPersonProfileForConvo('${activeConvoId}')">
+              <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openConvoProfile()">${avatarInnerHTML(meta,'w-5 h-5')}</div>
+              <div class="flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
                 <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
               </div>

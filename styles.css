@@ -4214,3 +4214,44 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 .skel-dright-head{padding:20px;border-bottom:1px solid #f1f3f7;}
 body.dark-mode .skel-desk{background:#121212;}
 body.dark-mode .skel-dnav,body.dark-mode .skel-dright,body.dark-mode .skel-dright-head{border-color:#2a2a2a;}
+
+/* Contact info / media pages: instant press feedback (Apple-style) */
+.cp-press{transition:transform .14s cubic-bezier(.22,1,.36,1);-webkit-tap-highlight-color:transparent;}
+.cp-press:active{transform:scale(.97);}
+@media (prefers-reduced-motion: reduce){.cp-press{transition:none;}}
+
+/* ===== Apple-style polish, app-wide ===== */
+/* 1. Response: every tappable thing reacts the instant it is pressed (uses the separate `scale` property so it never fights existing transforms) */
+button,[role="button"],a[onclick],[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+button,[role="button"]{transition:scale .22s cubic-bezier(.22,1,.36,1);}
+button:active:not(:disabled),[role="button"]:active{scale:.97;transition-duration:.08s;}
+/* big tappable cards press a little less */
+[onclick]:not(button):not(input):not(textarea):not(select):not(a):not(body):active{scale:.985;}
+.no-press:active{scale:1 !important;}
+/* round icon buttons press a little more */
+button.rounded-full:active:not(:disabled){scale:.92;}
+input,textarea,select,label,video,img,canvas{scale:1 !important;}
+/* 2. Wayfinding / accessibility: clear keyboard focus */
+button:focus-visible,a:focus-visible,[role="button"]:focus-visible,[tabindex]:focus-visible{outline:2px solid #1e90ff;outline-offset:2px;border-radius:12px;}
+/* 3. Typography: tighter tracking on big text, slightly open on small, crisper rendering */
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
+.text-3xl,.text-2xl,.font-display{letter-spacing:-.022em;}
+.text-xl,.text-lg{letter-spacing:-.012em;}
+.text-xs,.text-\[11px\],.text-\[10px\]{letter-spacing:.01em;}
+.text-sm,.text-base{line-height:1.45;}
+/* 4. Soft boundaries: scrolling inside a sheet never drags the page behind it */
+#overlay .overflow-y-auto,#overlay [style*="overflow-y:auto"]{overscroll-behavior:contain;}
+/* 5. Materials: floating bars read as frosted glass over content */
+#desktop-nav,#bottom-nav,.bottom-nav{-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);}
+/* 6. Reduced motion / transparency / contrast */
+@media (prefers-reduced-motion: reduce){
+  button,[role="button"]{transition:none;}
+  button:active:not(:disabled),[role="button"]:active{scale:1;}
+  *{scroll-behavior:auto !important;}
+}
+@media (prefers-reduced-transparency: reduce){
+  #desktop-nav,#bottom-nav,.bottom-nav{-webkit-backdrop-filter:none;backdrop-filter:none;}
+}
+@media (prefers-contrast: more){
+  button:focus-visible,a:focus-visible{outline-width:3px;}
+}
