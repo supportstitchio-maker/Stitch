@@ -1565,7 +1565,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         // ---- Profile QR code (generate/share/download) ----
         function profileQRLink(){
-          return `https://stitch.app/@${escapeHtml(profileData.username)}`;
+          return `${window.location.origin}/u/${encodeURIComponent(profileData.username || '')}`;
         }
 
 
@@ -1595,7 +1595,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <div class="flex-1"></div>
                 <div class="flex flex-col items-center" style="margin-bottom:50px;width:280px;">
                   <div class="text-lg mb-3 tracking-wide" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;color:${t.text};">${label}</div>
-                  <div class="flex items-center justify-between rounded-3xl pt-2.5 pb-3 px-4 shadow-xl" style="width:280px;background:${t.bar};${t.dark ? 'box-shadow:0 0 0 1px rgba(255,255,255,0.08);' : ''}">
+                  <div class="flex items-center justify-between pt-2.5 pb-3 px-4" style="width:280px;background:transparent;">
                     ${qrActionButton('send','Share',shareFn)}
                     ${qrActionButton('link','Copy',copyFn)}
                     ${qrActionButton('download','Download',downloadFn)}
@@ -1605,10 +1605,17 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>`;
         }
 
-        // Draws the finished card (QR + centre photo + name in Colmeak) and resolves with the canvas
-        async function buildQRCardCanvas(qrCanvas, label, photo){
-          const t = qrTheme();
+        // Pictures that leave the app (share / download) are always the light version
+        function qrExportTheme(){ return { card: '#ffffff', text: NAVY, mod: NAVY, light: '#ffffff' }; }
+
+        // Draws the finished light card (QR + centre photo + name in Colmeak) and resolves with the canvas
+        async function buildQRCardCanvas(link, label, photo){
+          const t = qrExportTheme();
           try { if (document.fonts && document.fonts.load) await document.fonts.load("700 38px 'Colmeak'"); } catch (e) {}
+          const holder = document.createElement('div');
+          new QRCode(holder, { text: link, width: 240, height: 240, colorDark: t.mod, colorLight: t.light, correctLevel: QRCode.CorrectLevel.H });
+          const qrCanvas = holder.querySelector('canvas');
+          if (!qrCanvas) throw new Error('qr');
           const size = 640, pad = 60;
           const out = document.createElement('canvas');
           out.width = size; out.height = size + 140;
@@ -1616,8 +1623,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ctx.fillStyle = t.card;
           roundRect(ctx, 0, 0, out.width, out.height, 36);
           ctx.fill();
-          const qrSize = size - pad * 2;
-          ctx.drawImage(qrCanvas, pad, pad, qrSize, qrSize);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(qrCanvas, pad, pad, size - pad * 2, size - pad * 2);
+          ctx.imageSmoothingEnabled = true;
           ctx.fillStyle = t.text;
           ctx.font = "700 38px 'Colmeak','Montserrat',sans-serif";
           ctx.textAlign = 'center';
@@ -1646,17 +1654,23 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return out;
         }
 
-        // Share the card as a picture (with the name on it); fall back to the link
-        async function shareQRCard(codeId, label, photo, link, title){
-          const el = document.getElementById(codeId);
-          const qrCanvas = el ? el.querySelector('canvas') : null;
+        // Build the light picture ahead of time so tapping Share is instant (browsers only allow sharing right after a tap)
+        window.__qrShareBlobs = window.__qrShareBlobs || {};
+        function prepareQRShare(codeId, link, label, photo){
+          window.__qrShareBlobs[codeId] = buildQRCardCanvas(link, label, photo)
+            .then(c => new Promise(r => c.toBlob(r, 'image/png')))
+            .catch(() => null);
+        }
+
+        // Share the light card as a picture (name on it) with the name, bio and link as the caption
+        async function shareQRCard(codeId, text, title){
           try {
-            if (qrCanvas && navigator.share && navigator.canShare) {
-              const out = await buildQRCardCanvas(qrCanvas, label, photo);
-              const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+            const pending = window.__qrShareBlobs && window.__qrShareBlobs[codeId];
+            const blob = pending ? await pending : null;
+            if (blob && navigator.share && navigator.canShare) {
               const file = new File([blob], 'stitch-qr.png', { type: 'image/png' });
-              if (blob && navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: title || 'Stitch', text: link });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: title || 'Stitch', text: text });
                 return true;
               }
             }
@@ -1664,13 +1678,14 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return false;
         }
 
-        async function downloadQRCard(codeId, label, photo, filename){
-          const el = document.getElementById(codeId);
-          const qrCanvas = el ? el.querySelector('canvas') : null;
-          if (!qrCanvas) { openAppAlertModal('QR code is still generating, try again in a moment.'); return; }
-          const out = await buildQRCardCanvas(qrCanvas, label, photo);
+        async function downloadQRCard(codeId, filename){
+          const pending = window.__qrShareBlobs && window.__qrShareBlobs[codeId];
+          const blob = pending ? await pending : null;
+          if (!blob) { openAppAlertModal('QR code is still generating, try again in a moment.'); return; }
+          const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
-          a.download = filename; a.href = out.toDataURL('image/png'); a.click();
+          a.download = filename; a.href = url; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
         }
 
         function profileQRHTML(){
@@ -1680,9 +1695,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function qrActionButton(icon,label,onclick){
           return `
-            <button onclick="${onclick}" class="flex flex-col items-center gap-1 text-gray-700 flex-shrink-0">
+            <button onclick="${onclick}" class="flex flex-col items-center gap-1 flex-shrink-0" style="color:${qrTheme().text};">
               ${Icon(icon,'w-4 h-4')}
-              <span class="text-[10px] font-medium text-gray-500">${label}</span>
+              <span class="text-[10px] font-medium" style="color:${qrTheme().sub};">${label}</span>
             </button>`;
         }
 
@@ -1700,11 +1715,17 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           });
           const canvas = el.querySelector('canvas') || el.querySelector('img');
           if (canvas) canvas.style.position = 'relative';
+          prepareQRShare('profile-qr-code', profileQRLink(), profileData.username, profileData.photo);
+        }
+
+        function profileQRShareText(){
+          const bio = String(profileData.bio || '').trim().slice(0, 200);
+          return `${profileData.name || profileData.username} (@${profileData.username}) on Stitch${bio ? '\n' + bio : ''}\n${profileQRLink()}`;
         }
 
         async function shareProfileQR(){
           const link = profileQRLink();
-          if (await shareQRCard('profile-qr-code', profileData.username, profileData.photo, link, profileData.name)) return;
+          if (await shareQRCard('profile-qr-code', profileQRShareText(), profileData.name)) return;
           if (navigator.share) {
             navigator.share({ title: profileData.name, text: `Check out ${escapeHtml(profileData.username)} on Stitch`, url: link }).catch(() => {});
           } else {
@@ -1722,7 +1743,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
         function downloadProfileQR(){
-          downloadQRCard('profile-qr-code', profileData.username, profileData.photo, `${profileData.username}-qr.png`);
+          downloadQRCard('profile-qr-code', `${profileData.username}-qr.png`);
         }
 
         function roundRect(ctx, x, y, w, h, r){

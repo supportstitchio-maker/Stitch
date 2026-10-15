@@ -2570,7 +2570,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         // ---- Share a viewed (other) person's profile as a QR code ----
         function personProfileQRLink(p){
-          return `https://stitch.app/@${escapeHtml(p.username || '')}`;
+          return `${window.location.origin}/u/${encodeURIComponent(p.username || '')}`;
         }
 
         function personProfileQRHTML(){
@@ -2593,12 +2593,16 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           });
           const canvas = el.querySelector('canvas') || el.querySelector('img');
           if (canvas) canvas.style.position = 'relative';
+          const pp = viewedProfile || {};
+          prepareQRShare('person-profile-qr-code', personProfileQRLink(pp), pp.username || pp.name || 'Stitch member', pp.photo);
         }
 
         async function sharePersonProfileQR(){
           const p = viewedProfile || {};
           const link = personProfileQRLink(p);
-          if (await shareQRCard('person-profile-qr-code', p.username || p.name || 'Stitch member', p.photo, link, p.name)) return;
+          const bio = String(p.bio || '').trim().slice(0, 200);
+          const text = `${p.name || p.username || 'Stitch member'}${p.username ? ' (@' + p.username + ')' : ''} on Stitch${bio ? '\n' + bio : ''}\n${link}`;
+          if (await shareQRCard('person-profile-qr-code', text, p.name)) return;
           if (navigator.share) {
             navigator.share({ title: p.name, text: `Check out ${p.username ? escapeHtml(p.username) : (p.name || 'this profile')} on Stitch`, url: link }).catch(() => {});
           } else {
@@ -2617,7 +2621,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function downloadPersonProfileQR(){
           const p = viewedProfile || {};
-          downloadQRCard('person-profile-qr-code', p.username || p.name || 'Stitch member', p.photo, `${p.username || 'stitch-profile'}-qr.png`);
+          downloadQRCard('person-profile-qr-code', `${p.username || 'stitch-profile'}-qr.png`);
         }
 
         function personProfileSkeletonHTML(){
@@ -3732,3 +3736,22 @@ function examFocusShowNav(){
   const sh = document.getElementById('app-shell');
   if (sh) sh.classList.remove('nav-hidden');
 }
+
+
+        // ---- Shared profile link: /u/<username> lands here as ?u=<username> ----
+        async function checkPendingProfileLink(){
+          let uname = null;
+          try { uname = new URLSearchParams(window.location.search || '').get('u'); } catch (e) {}
+          if (!uname) return;
+          history.replaceState(null, '', window.location.pathname);
+          try {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            const { data } = await sb.from('public_profiles').select('user_id,name,username,photo,bio').ilike('username', uname).limit(1);
+            const row = data && data[0];
+            if (!row) { if (typeof openAppAlertModal === 'function') openAppAlertModal("This profile isn't available."); return; }
+            const me = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null;
+            if (me && String(row.user_id) === String(me)) { if (typeof switchTab === 'function') switchTab(4); return; }
+            openPersonProfile(row.user_id, { name: row.name || row.username, username: row.username, bio: row.bio || '', photo: row.photo || null });
+          } catch (e) { /* best effort */ }
+        }

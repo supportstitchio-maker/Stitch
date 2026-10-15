@@ -119,5 +119,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/u/:username",
+      "destination": "/api/profile-api?u=:username"
+    }
   ]
 }

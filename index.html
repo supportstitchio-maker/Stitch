@@ -197,7 +197,7 @@
         try {
           var q = new URLSearchParams(window.location.search || '');
           var keep = {}, any = false;
-          ['joinCollab','joinLecture','post','glimpse'].forEach(function(k){ if (q.get(k)) { keep[k] = q.get(k); any = true; } });
+          ['joinCollab','joinLecture','post','glimpse','u'].forEach(function(k){ if (q.get(k)) { keep[k] = q.get(k); any = true; } });
           if (any) localStorage.setItem('stitch-pending-link', JSON.stringify({ p: keep, t: Date.now() }));
         } catch (e) { /* storage unavailable: the address-bar param alone still works */ }
       })();
@@ -956,8 +956,8 @@
     <script src="jobs.js?v=20261015e"></script>
     <script src="creator.js?v=20261015d"></script>
     <script src="settings.js?v=20261004b"></script>
-    <script src="profile.js?v=20261016a"></script>
-    <script src="overlays.js?v=20261016f"></script>
-    <script src="games.js?v=20261016e"></script>
+    <script src="profile.js?v=20261016b"></script>
+    <script src="overlays.js?v=20261016g"></script>
+    <script src="games.js?v=20261016f"></script>
 </body>
 </html>

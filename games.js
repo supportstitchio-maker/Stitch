@@ -2038,11 +2038,13 @@ let userPoints = 0;
               } else if (p.joinCollab && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinCollab=' + encodeURIComponent(p.joinCollab));
               else if (p.joinLecture && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinLecture=' + encodeURIComponent(p.joinLecture));
               else if (p.glimpse && !window.location.search) history.replaceState(null, '', window.location.pathname + '?glimpse=' + encodeURIComponent(p.glimpse));
+              else if (p.u && !window.location.search) history.replaceState(null, '', window.location.pathname + '?u=' + encodeURIComponent(p.u));
               if (p.joinCollab && typeof checkPendingCollabLinkJoin === 'function') checkPendingCollabLinkJoin();
             }
           } catch (e) { /* best effort */ }
           if (typeof checkPendingLectureLinkJoin === 'function') checkPendingLectureLinkJoin();
           if (typeof checkPendingGlimpseLink === 'function') checkPendingGlimpseLink();
+          if (typeof checkPendingProfileLink === 'function') checkPendingProfileLink();
 
           // The tab bar stays locked until the Home skeleton has fully finished loading and the real
           // feed is on screen
