@@ -3323,6 +3323,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function stopIncomingCallRingtone(){
           if (ringIntervalId) { clearInterval(ringIntervalId); ringIntervalId = null; }
           if (navigator.vibrate) navigator.vibrate(0);
+          // take the "is calling you" notification off the screen once the ringing stops
+          try {
+            if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(reg => {
+              if (reg && reg.getNotifications) reg.getNotifications({ tag: 'incoming-call' }).then(list => list.forEach(n => n.close()));
+            }).catch(() => {});
+          } catch (e) {  }
         }
 
         async function subscribeToIncomingCalls(){

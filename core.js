@@ -681,9 +681,19 @@
               return true;
             }
             if ('Notification' in window && Notification.permission === 'granted') {
-              // A real (non-synthesized) Notification plays the browser/ OS's own notification sound
-              new Notification(title || 'Stitch', { body: body || '', silent: false, tag: opts.tag, renotify: !!opts.tag });
-              return true;
+              // A real (non-synthesized) notification plays the phone's / OS's own notification sound.
+              // Android Chrome and installed apps refuse "new Notification()", so go through the
+              // service worker first (works on Android, iPhone home-screen apps and desktop).
+              const nopts = {
+                body: body || '', silent: false, tag: opts.tag, renotify: !!opts.tag,
+                icon: '/assets/icon-192.png', badge: '/assets/badge-96.png',
+                vibrate: opts.channelId === 'calls' ? [400, 200, 400, 200, 400] : [150],
+              };
+              try {
+                const reg = ('serviceWorker' in navigator) ? await navigator.serviceWorker.getRegistration() : null;
+                if (reg && reg.showNotification) { await reg.showNotification(title || 'Stitch', nopts); return true; }
+              } catch (e) {  }
+              try { new Notification(title || 'Stitch', nopts); return true; } catch (e) {  }
             }
           } catch (e) {  }
           return false;
