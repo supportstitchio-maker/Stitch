@@ -4036,7 +4036,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="convo-profile-scroll" class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
               <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
                 <button onclick="closeConvoProfile()" class="w-10 h-10 flex items-center justify-center cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <span class="font-bold absolute left-1/2 -translate-x-1/2 truncate grad-text" style="max-width:60%;font-family:'Montserrat',sans-serif;font-size:16px;">${escapeHtml(isGroup ? 'Group info' : (pd && pd.username) ? String(pd.username) : 'Contact info')}</span>
+                <span class="font-bold truncate grad-text" style="margin-left:6px;text-align:left;font-family:'Colmeak','Montserrat',sans-serif;font-size:20px;">${isGroup ? 'Group info' : 'Contact info'}</span>
               </div>
               <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;">
                 <div class="flex items-center gap-5 mb-4">
