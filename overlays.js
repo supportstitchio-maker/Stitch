@@ -741,8 +741,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           opts = opts || {};
           const backFnName = opts.backFn || 'closeOverlay';
           const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
-          const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes ? 'dashesShortRight' : 'dashes');
-          const menuIconSize = opts.shortDashes ? 'w-6 h-6' : 'w-5 h-5';
+          const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes === false ? 'dashes' : 'dashesShortRight');
+          const menuIconSize = opts.shortDashes === false ? 'w-5 h-5' : 'w-6 h-6';
           const menuIcon = opts.boldMenuIcon ? IconBold(menuIconName,menuIconSize) : Icon(menuIconName,menuIconSize);
           const menuBtnClass = `${opts.menuEnd ? 'h-10 flex items-center justify-end flex-shrink-0' : 'w-8 h-8 flex items-center justify-center flex-shrink-0'}${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
           const menuBtnStyle = opts.menuEnd ? ' style="width:32px;margin-right:-2px;"' : '';
@@ -3019,7 +3019,14 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (!convoId) return;
           let changed = false;
           notifData.forEach(n => {
-            if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
+            if (n.type === 'call_attempt') {
+            n.read = true;
+            queueSaveUserState();
+            closeOverlay();
+            try { switchTab(3); inboxFilterTab('requests'); loadIncomingConnectionRequests(); } catch (e) {}
+            return;
+          }
+          if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
           });
           if (!changed) return;
           queueSaveUserState();

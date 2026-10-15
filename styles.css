@@ -4335,6 +4335,7 @@ body.dark-mode #to-top-btn{background:rgba(38,38,42,.95)!important;color:#7ab8ff
   #call-screen .cu-status{font-size:15px;}
   #call-screen .cu-glass{width:50px;height:50px;}
   #call-screen .cu-top{padding:12px 22px 6px;}
+  #app-shell.call-fullscreen #call-header{padding-left:calc(var(--nav-width,210px) + 24px);}
   /* Control bar scaled up as a whole, not the phone bar stretched out */
   #call-controls-bar.cu-bar{padding:12px 16px 34px;}
   #call-controls-bar .cu-bar-inner{

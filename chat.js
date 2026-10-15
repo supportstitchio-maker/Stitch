@@ -1414,6 +1414,41 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function convoArrays(){ return [primaryConvos, requestConvos, collabConvos]; }
+        // One chat per person: if the same person ends up with more than one direct conversation (for
+        // example one started by sharing a post and one by a call), keep a single row for them
+        function dedupeDirectConvos(){
+          try {
+            [primaryConvos, requestConvos].forEach(arr => {
+              const seen = new Map();
+              const nameOf = (c) => String(c.name || c.username || '').trim().toLowerCase();
+              // a chat with no user id yet (e.g. started from a shared post) joins the one with the same name
+              const idByName = new Map();
+              arr.forEach(c => { if (c && c.otherUserId && nameOf(c) && !idByName.has(nameOf(c))) idByName.set(nameOf(c), c.otherUserId); });
+              for (let i = 0; i < arr.length; i++) {
+                const c = arr[i];
+                if (!c || c.icon === 'users' || c.isGroup || c.collab || c.meeting) continue;
+                const uid = c.otherUserId || idByName.get(nameOf(c));
+                const key = uid ? 'u:' + uid : (nameOf(c) ? 'n:' + nameOf(c) : null);
+                if (!key) continue;
+                if (!seen.has(key)) { seen.set(key, i); continue; }
+                const keepIdx = seen.get(key);
+                let keep = arr[keepIdx], drop = c;
+                // never drop the chat that is open right now
+                const activeId = (typeof activeConvoId !== 'undefined') ? activeConvoId : null;
+                const preferDrop = (drop.id === activeId && keep.id !== activeId)
+                  || (keep.id !== activeId && String(drop.id).indexOf('dm-') === 0 && String(keep.id).indexOf('dm-') !== 0);
+                if (preferDrop) { const t = keep; keep = drop; drop = t; arr[keepIdx] = keep; }
+                if (drop.preview && keep.preview !== drop.preview && !keep.preview) keep.preview = drop.preview;
+                if (!keep.otherUserId && drop.otherUserId) keep.otherUserId = drop.otherUserId;
+                if (!keep.photo && drop.photo) keep.photo = drop.photo;
+                if (!keep.username && drop.username) keep.username = drop.username;
+                if (drop.pinned) keep.pinned = true;
+                if (drop.unread && !drop.read) { keep.unread = true; keep.read = false; keep.unreadCount = (keep.unreadCount || 0) + (drop.unreadCount || 1); }
+                arr.splice(i, 1); i--;
+              }
+            });
+          } catch (e) {}
+        }
 
         let cachedNetworkCount = null;
         let networkCountRequestSeq = 0;
@@ -1650,6 +1685,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center"></div>`;
           if (inboxFilter === 'meetings') return inlineMeetingsHTML();
           if (inboxFilter === 'general') {
+            dedupeDirectConvos();
             const list = applyView(primaryConvos);
             return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');
           }
@@ -2230,6 +2266,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               // A request that's no longer pending was either accepted or declined
               removedAuthorIds.forEach(uid => { if (typeof clearRequestSentLocally === 'function') clearRequestSentLocally(uid); });
             }
+
+            // A request the other person rejected (or that is gone) must stop showing "Cancel request" anywhere
+            // (feed posts, Discover, profiles), even when this device never had an inbox row for it
+            try {
+              const pendingTo = new Set(rows.map(r => r.to_user));
+              const inFlight = (typeof connectionRequestSendsInFlight !== 'undefined') ? connectionRequestSendsInFlight : new Set();
+              const optimisticTo = new Set(sentRequestConvos.filter(c => c.optimistic).map(c => c.otherUserId));
+              const stale = new Set();
+              if (typeof feedPosts !== 'undefined' && Array.isArray(feedPosts)) feedPosts.forEach(p => { if (p && p.connectRequestSent && p.authorId && !pendingTo.has(p.authorId)) stale.add(p.authorId); });
+              if (typeof discoverPeople !== 'undefined' && Array.isArray(discoverPeople)) discoverPeople.forEach(p => { if (p && p.requestSent && p.id && !pendingTo.has(p.id)) stale.add(p.id); });
+              stale.forEach(uid => { if (!inFlight.has(uid) && !optimisticTo.has(uid) && typeof clearRequestSentLocally === 'function') clearRequestSentLocally(uid); });
+            } catch (e) {}
 
             if (!rows.length) return;
 
@@ -3375,6 +3423,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('broadcast', { event: 'ring' }, ({ payload }) => handleIncomingCallRing(payload))
             .on('broadcast', { event: 'response' }, ({ payload }) => handleCallResponse(payload))
             .on('broadcast', { event: 'cancel' }, ({ payload }) => handleCallCancel(payload))
+            .on('broadcast', { event: 'attempt' }, ({ payload }) => handleCallAttempt(payload))
             .subscribe();
         }
 
@@ -3389,6 +3438,39 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               setTimeout(() => { try { sb.removeChannel(ch); } catch (e) {  } }, 1000);
             }
           });
+        }
+
+        // Someone who isn't a connection never gets a ringing phone: they get a silent notice instead
+        async function sendCallAttempt(otherUserId, type, convoId){
+          const myId = await getCurrentUserId();
+          if (!myId || !otherUserId) return;
+          const callerName = (typeof profileData !== 'undefined' && (profileData.name || profileData.username)) || 'Someone';
+          broadcastToUserChannel(otherUserId, 'attempt', {
+            fromUserId: myId, type, convoId, callerName,
+            callerPhoto: (typeof profileData !== 'undefined' && profileData.photo) || null,
+          });
+          sendPushTo(otherUserId, {
+            title: `${callerName} tried to reach you`,
+            body: 'Accept their connection request to talk',
+            tag: 'call-attempt-' + myId,
+            data: { kind: 'notification', type: 'connect_request' },
+          });
+        }
+        function handleCallAttempt(payload){
+          if (!payload || !payload.fromUserId) return;
+          const kind = payload.type === 'video' ? 'video' : 'voice';
+          addNotif({
+            id: 'call-attempt-' + payload.fromUserId + '-' + Math.floor(Date.now() / 60000),
+            type: 'call_attempt',
+            icon: 'phone',
+            iconBg: 'bg-red-50',
+            iconClass: 'text-red-500',
+            name: payload.callerName || 'Someone',
+            message: `Tried to ${kind === 'video' ? 'video ' : ''}call you. Accept their connection request to talk.`,
+            otherUserId: payload.fromUserId,
+          });
+          const c = convoArrays().flat().find(x => x && x.otherUserId === payload.fromUserId);
+          if (c) logCallEvent(c.id, `Missed ${kind} call`, 'in');
         }
 
         async function sendCallRing(convoId, type, otherUserId){
@@ -3411,10 +3493,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           });
         }
 
-        function logCallEvent(convoId, text){
+        function logCallEvent(convoId, text, dir){
           if (!convoId) return;
           if (!conversationMessages[convoId]) conversationMessages[convoId] = [];
-          conversationMessages[convoId].push({ from: 'system', text, time: Date.now() });
+          conversationMessages[convoId].push({ from: 'system', text, time: Date.now(), ...(dir ? { callDir: dir } : {}) });
           queueSaveUserState();
           const found = findConvoAndArray(convoId);
           if (found) {
@@ -3508,7 +3590,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else if (!payload.groupName) {
             // A one-to-one call from someone I'm not connected to never rings.
             const ok = await isAcceptedConnectionWith(payload.fromUserId);
-            if (!ok) { sendCallResponse(payload.convoId, payload.fromUserId, 'declined'); return; }
+            if (!ok) { sendCallResponse(payload.convoId, payload.fromUserId, 'declined'); handleCallAttempt(payload); return; }
           }
           if (callState.convoId || incomingCallInfo) {
             sendCallResponse(payload.convoId, payload.fromUserId, 'busy');
@@ -3530,7 +3612,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             const label = payload.response === 'busy' ? 'Line busy' : payload.response === 'missed' ? 'No answer' : 'Call declined';
             callState.statusOverride = label;
-            logCallEvent(callState.convoId, `${callState.type === 'video' ? 'Video' : 'Voice'} call · ${label}`);
+            logCallEvent(callState.convoId, `${callState.type === 'video' ? 'Video' : 'Voice'} call · ${label}`, 'out');
             const screen = document.getElementById('call-screen');
             if (screen) screen.outerHTML = callHTML();
             setTimeout(() => endCall(), 1400);
@@ -3541,7 +3623,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!payload || !incomingCallInfo || incomingCallInfo.convoId !== payload.convoId || incomingCallInfo.fromUserId !== payload.fromUserId) return;
           stopIncomingCallRingtone();
           clearTimeout(incomingCallRingTimeout); incomingCallRingTimeout = null;
-          logCallEvent(payload.convoId, `Missed ${incomingCallInfo.type === 'video' ? 'video' : 'voice'} call`);
+          logCallEvent(payload.convoId, `Missed ${incomingCallInfo.type === 'video' ? 'video' : 'voice'} call`, 'in');
           addMissedCallNotif({ convoId: payload.convoId, type: incomingCallInfo.type, fromUserId: incomingCallInfo.fromUserId, callerName: incomingCallInfo.callerName, groupName: incomingCallInfo.groupName });
           incomingCallInfo = null;
           closeOverlay();
@@ -3567,7 +3649,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!incomingCallInfo) { closeOverlay(fromPopState); return; }
           const { convoId, type, fromUserId, callerName, groupName } = incomingCallInfo;
           sendCallResponse(convoId, fromUserId, isTimeout ? 'missed' : 'declined');
-          logCallEvent(convoId, isTimeout ? `Missed ${type === 'video' ? 'video' : 'voice'} call` : `${type === 'video' ? 'Video' : 'Voice'} call declined`);
+          logCallEvent(convoId, isTimeout ? `Missed ${type === 'video' ? 'video' : 'voice'} call` : `${type === 'video' ? 'Video' : 'Voice'} call declined`, 'in');
           if (isTimeout) addMissedCallNotif({ convoId, type, fromUserId, callerName, groupName });
           incomingCallInfo = null;
           closeOverlay(fromPopState);
@@ -3580,7 +3662,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           clearTimeout(incomingCallRingTimeout); incomingCallRingTimeout = null;
           const info = incomingCallInfo;
           sendCallResponse(info.convoId, info.fromUserId, 'missed');
-          logCallEvent(info.convoId, `Missed ${info.type === 'video' ? 'video' : 'voice'} call`);
+          logCallEvent(info.convoId, `Missed ${info.type === 'video' ? 'video' : 'voice'} call`, 'in');
           addMissedCallNotif({ convoId: info.convoId, type: info.type, fromUserId: info.fromUserId, callerName: info.callerName, groupName: info.groupName });
           incomingCallInfo = null;
           closeOverlay();
@@ -3606,7 +3688,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           clearTimeout(incomingCallRingTimeout); incomingCallRingTimeout = null;
           const info = incomingCallInfo;
           sendCallResponse(info.convoId, info.fromUserId, 'declined');
-          logCallEvent(info.convoId, `${info.type === 'video' ? 'Video' : 'Voice'} call declined`);
+          logCallEvent(info.convoId, `${info.type === 'video' ? 'Video' : 'Voice'} call declined`, 'in');
           incomingCallInfo = null;
           closeOverlay();
           if (info.convoId && typeof openConversation === 'function') openConversation(info.convoId);
@@ -4597,6 +4679,29 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             const timeLabel = formatConvoBubbleTime(ts);
             if (m.from === 'system') {
+              const cm = /^(?:(Missed) (voice|video) call(?: declined)?|(Voice|Video) call(?: · (.+)| (declined)))$/i.exec(String(m.text || ''));
+              if (cm) {
+                const isVideo = /video/i.test(cm[2] || cm[3] || '');
+                const missed = !!cm[1];
+                const outgoing = m.callDir === 'out';
+                const detail = missed ? 'No answer' : (cm[5] ? 'Declined' : (cm[4] || ''));
+                const bad = missed || cm[5] || /^(no answer|call declined|line busy|not connected)$/i.test(detail);
+                const iconColor = bad ? '#ef4444' : '#16a34a';
+                const arrow = outgoing ? 'M7 17L17 7M9 7h8v8' : 'M17 7L7 17M7 9v8h8';
+                const glyph = isVideo
+                  ? '<path d="M15 10l4.5-2.5v9L15 14M4 7h9a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+                  : '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+                const title = (isVideo ? 'Video call' : 'Voice call');
+                const row = `<div class="flex ${outgoing ? 'justify-end' : 'justify-start'}"><div class="flex items-center gap-3 px-3 py-2.5" style="background:${outgoing ? 'rgba(65,105,225,0.12)' : '#f3f4f6'};border-radius:${outgoing ? '20px 20px 0 20px' : '20px 20px 20px 0'};min-width:210px;max-width:78%;">
+                    <div class="flex items-center justify-center flex-shrink-0" style="width:42px;height:42px;border-radius:9999px;background:rgba(107,114,128,0.14);color:#4b5563;"><svg viewBox="0 0 24 24" width="20" height="20">${glyph}</svg></div>
+                    <div class="min-w-0 flex-1">
+                      <div class="text-sm font-semibold" style="color:#1f2937;">${title}</div>
+                      <div class="flex items-center gap-1 text-xs" style="color:${iconColor};"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg><span>${escapeHtml(detail || (outgoing ? 'Outgoing' : 'Incoming'))}</span></div>
+                    </div>
+                    <div class="text-[10px] text-gray-400 self-end">${timeLabel}</div>
+                  </div></div>`;
+                return separator + row;
+              }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
             }
             const sharedPosts = (m.attachments || []).filter(f => f.type === 'stitch/post');
@@ -5966,7 +6071,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!answering && callNeedsConnection(id, convoMeta[id])) {
             const allowed = await isAcceptedConnectionWith(convoMeta[id].otherUserId);
             if (!allowed) {
-              if (typeof openAppAlertModal === 'function') openAppAlertModal("You can call this person once they accept your connection request. Until then you can send messages.", "Not connected yet");
+              // The call never rings for them: it is silenced, and they just get a notification that you tried
+              try { sendCallAttempt(convoMeta[id].otherUserId, type, id); } catch (e) {}
+              logCallEvent(id, `${type === 'video' ? 'Video' : 'Voice'} call · Not connected`, 'out');
+              if (typeof openAppAlertModal === 'function') openAppAlertModal("You can call this person once they accept your connection request. We let them know you tried to reach them.", "Not connected yet");
               return;
             }
           }
@@ -5974,7 +6082,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           stopCallLocalStream();
           teardownCallSignaling();
           groupCallFullscreenId = null;
-          callState = { convoId: id, type, connected: false, seconds: 0, muted: false, speaker: false, camOff: !!(opts && opts.camOff), mediaError: null, statusOverride: null, pendingRingTargets: null };
+          callState = { callDir: answering ? 'in' : 'out', convoId: id, type, connected: false, seconds: 0, muted: false, speaker: false, camOff: !!(opts && opts.camOff), mediaError: null, statusOverride: null, pendingRingTargets: null };
           openOverlay('call');
           refreshConvoAvatarFromProfile(id);
 
@@ -6024,7 +6132,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   callAnswerTimeout = setTimeout(() => {
                     if (callState.convoId !== ringingConvoId || callState.connected) return;
                     callState.statusOverride = 'No answer';
-                    logCallEvent(ringingConvoId, `${type === 'video' ? 'Video' : 'Voice'} call · No answer`);
+                    logCallEvent(ringingConvoId, `${type === 'video' ? 'Video' : 'Voice'} call · No answer`, 'out');
                     const screen = document.getElementById('call-screen');
                     if (screen) screen.outerHTML = callHTML();
                     setTimeout(() => endCall(), 1400);
@@ -6043,7 +6151,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   if (callState.convoId !== ringingConvoId || callState.connected) return;
                   sendCallResponse(ringingConvoId, meta.otherUserId, 'missed');
                   callState.statusOverride = 'No answer';
-                  logCallEvent(ringingConvoId, `${type === 'video' ? 'Video' : 'Voice'} call · No answer`);
+                  logCallEvent(ringingConvoId, `${type === 'video' ? 'Video' : 'Voice'} call · No answer`, 'out');
                   const screen = document.getElementById('call-screen');
                   if (screen) screen.outerHTML = callHTML();
                   setTimeout(() => endCall(), 1400);
@@ -6629,6 +6737,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const wasMinimized = callMinimized;
           const callDurationSecs = callState.seconds;
           const callType = callState.type;
+          const endedCallDir = callState.callDir || 'out';
           closeCallNotesModal();
           clearCallTimers();
           stopCallLocalStream();
@@ -6654,7 +6763,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const endedId = callState.convoId;
           const endedWasMeeting = isMeetingConvo(endedId);
           if (wasConnected && endedId && !endedWasMeeting) {
-            logCallEvent(endedId, `${callType === 'video' ? 'Video' : 'Voice'} call · ${formatCallTime(callDurationSecs)}`);
+            logCallEvent(endedId, `${callType === 'video' ? 'Video' : 'Voice'} call · ${formatCallTime(callDurationSecs)}`, endedCallDir);
           }
           if (endedWasMeeting) meetingOnCallEnded();
           callState = { convoId: null, type: 'audio', connected: false, seconds: 0, muted: false, speaker: false, camOff: false, mediaError: null, statusOverride: null, pendingRingTargets: null };
