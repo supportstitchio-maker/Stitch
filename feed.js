@@ -7029,8 +7029,6 @@
                 ${shareMessagesOption(`shareViaSMS(${post.id})`)}
                 ${shareGoogleDriveOption(`shareViaDrive(${post.id})`)}
                 ${shareOutlookOption(`shareViaOutlook(${post.id})`)}
-                ${shareGmailOption(`shareViaGmail(${post.id})`)}
-                ${shareBluetoothOption(`shareViaBluetooth(${post.id})`)}
               </div>
             </div>`;
         }
@@ -7413,8 +7411,6 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
                 ${shareMessagesOption(`shareGlimpseViaSMS(${g.id})`)}
                 ${shareGoogleDriveOption(`shareGlimpseViaDrive(${g.id})`)}
                 ${shareOutlookOption(`shareGlimpseViaOutlook(${g.id})`)}
-                ${shareGmailOption(`shareGlimpseViaGmail(${g.id})`)}
-                ${shareBluetoothOption(`shareGlimpseViaBluetooth(${g.id})`)}
               </div>
             </div>`}`;
         }

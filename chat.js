@@ -8087,7 +8087,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     ${shareExternalOption('link','Copy link', `copyMeetingLinkFromSheet()`, '#eef0f4', NAVY)}
                     ${shareWhatsAppOption(`shareMeetingVia('whatsapp')`)}
                     ${shareMessagesOption(`shareMeetingVia('sms')`)}
-                    ${shareGmailOption(`shareMeetingVia('gmail')`)}
                     ${shareOutlookOption(`shareMeetingVia('outlook')`)}
                   </div>
                 </div>
@@ -8254,7 +8253,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     ${shareExternalOption('link','Copy link', `callShareCopy()`, '#eef0f4', NAVY)}
                     ${shareWhatsAppOption(`callShareVia('whatsapp')`)}
                     ${shareMessagesOption(`callShareVia('sms')`)}
-                    ${shareGmailOption(`callShareVia('gmail')`)}
                     ${shareOutlookOption(`callShareVia('outlook')`)}
                   </div>
                 </div>
