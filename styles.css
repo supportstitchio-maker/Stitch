@@ -2794,19 +2794,8 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
   }
   #auth-gate.auth-verify-mode .auth-resend{margin:0 0 10px; font-size:11.5px; line-height:1.4;}
   #auth-gate.auth-verify-mode .auth-cta{padding:12px; font-size:14px;}
-  /* Phone: the big "Verify & Continue" button is gone. "Done" sits where the back arrow was (top-left
-     of the card) and the back arrow moves out into the left gutter beside it */
+  /* Phone: the big "Verify & Continue" button is gone; the number pad's "Done" key does its job */
   #auth-gate.auth-verify-mode #auth-panel-verify .auth-cta{display:none;}
-  #auth-gate.auth-verify-mode .auth-back{top:14px; left:-14px; width:30px; height:38px;}
-  #auth-gate.auth-verify-mode .auth-back svg{width:18px; height:18px;}
-  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn{
-    display:block; position:absolute; top:-44px; left:-2px; z-index:3;
-    height:38px; padding:0 4px; margin:0; border:none; background:transparent; cursor:pointer;
-    font-family:'Colmeak','Montserrat',sans-serif; font-size:18px; font-weight:700; line-height:38px;
-    color:var(--a-blue,#2f6bf0); touch-action:manipulation;
-  }
-  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn:active{opacity:.6;}
-  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn:disabled{opacity:.5;}
   #auth-gate.auth-verify-mode .auth-error{margin-bottom:8px;}
 }
 
@@ -4055,7 +4044,7 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{
 #auth-gate:has(#auth-panel-verify.active) .auth-keypad{
   display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 12px);
+  padding:10px 12px 15px;
   background:#d9dce3;border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(15,31,51,.12);
 }
 #auth-gate:has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:300px;}
@@ -4277,20 +4266,20 @@ body.dark-mode .cm-tabs{background:rgba(18,18,18,.72) !important;}
 .convo-sheet,.convo-sheet-scrim{will-change:transform;}
 
 /* Empty states: instead of a dashed box with a sentence, show a ghost of what will appear there, with the message under it */
-div.border-dashed.rounded-3xl.text-center{
+div.border-dashed.rounded-3xl.text-center:not(.resource-dropzone){
   position:relative;background:transparent !important;border:0 !important;border-radius:0 !important;
   padding:6px 8px 26px !important;color:#6b7280;font-size:13px !important;line-height:1.45;
 }
-div.border-dashed.rounded-3xl.text-center::before{
+div.border-dashed.rounded-3xl.text-center:not(.resource-dropzone)::before{
   content:'';display:block;width:min(320px,100%);aspect-ratio:320/190;margin:0 auto 14px;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 190'%3E%3Cg opacity='1'%3E%3Crect x='8' y='4' width='304' height='58' rx='16' fill='%23f1f4f9'/%3E%3Ccircle cx='38' cy='33' r='15' fill='%23dfe5ee'/%3E%3Crect x='64' y='20' width='124' height='9' rx='4.5' fill='%23dfe5ee'/%3E%3Crect x='64' y='37' width='84' height='8' rx='4' fill='%23e8ecf3'/%3E%3Crect x='248' y='25' width='48' height='17' rx='8.5' fill='%23dfe5ee'/%3E%3C/g%3E%3Cg opacity='0.62'%3E%3Crect x='8' y='70' width='304' height='58' rx='16' fill='%23f1f4f9'/%3E%3Ccircle cx='38' cy='99' r='15' fill='%23dfe5ee'/%3E%3Crect x='64' y='86' width='124' height='9' rx='4.5' fill='%23dfe5ee'/%3E%3Crect x='64' y='103' width='84' height='8' rx='4' fill='%23e8ecf3'/%3E%3Crect x='248' y='91' width='48' height='17' rx='8.5' fill='%23dfe5ee'/%3E%3C/g%3E%3Cg opacity='0.3'%3E%3Crect x='8' y='136' width='304' height='58' rx='16' fill='%23f1f4f9'/%3E%3Ccircle cx='38' cy='165' r='15' fill='%23dfe5ee'/%3E%3Crect x='64' y='152' width='124' height='9' rx='4.5' fill='%23dfe5ee'/%3E%3Crect x='64' y='169' width='84' height='8' rx='4' fill='%23e8ecf3'/%3E%3Crect x='248' y='157' width='48' height='17' rx='8.5' fill='%23dfe5ee'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
   -webkit-mask-image:linear-gradient(#000 62%,transparent);mask-image:linear-gradient(#000 62%,transparent);
   animation:emptySkelPulse 2.2s ease-in-out infinite;
 }
 @keyframes emptySkelPulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-body.dark-mode div.border-dashed.rounded-3xl.text-center{color:#9ca3af;}
-body.dark-mode div.border-dashed.rounded-3xl.text-center::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 190'%3E%3Cg opacity='1'%3E%3Crect x='8' y='4' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='33' r='15' fill='%23343434'/%3E%3Crect x='64' y='20' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='37' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='25' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3Cg opacity='0.62'%3E%3Crect x='8' y='70' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='99' r='15' fill='%23343434'/%3E%3Crect x='64' y='86' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='103' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='91' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3Cg opacity='0.3'%3E%3Crect x='8' y='136' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='165' r='15' fill='%23343434'/%3E%3Crect x='64' y='152' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='169' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='157' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3C/svg%3E");}
-@media (prefers-reduced-motion: reduce){div.border-dashed.rounded-3xl.text-center::before{animation:none;}}
+body.dark-mode div.border-dashed.rounded-3xl.text-center:not(.resource-dropzone){color:#9ca3af;}
+body.dark-mode div.border-dashed.rounded-3xl.text-center:not(.resource-dropzone)::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 190'%3E%3Cg opacity='1'%3E%3Crect x='8' y='4' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='33' r='15' fill='%23343434'/%3E%3Crect x='64' y='20' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='37' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='25' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3Cg opacity='0.62'%3E%3Crect x='8' y='70' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='99' r='15' fill='%23343434'/%3E%3Crect x='64' y='86' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='103' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='91' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3Cg opacity='0.3'%3E%3Crect x='8' y='136' width='304' height='58' rx='16' fill='%23222222'/%3E%3Ccircle cx='38' cy='165' r='15' fill='%23343434'/%3E%3Crect x='64' y='152' width='124' height='9' rx='4.5' fill='%23343434'/%3E%3Crect x='64' y='169' width='84' height='8' rx='4' fill='%232b2b2b'/%3E%3Crect x='248' y='157' width='48' height='17' rx='8.5' fill='%23343434'/%3E%3C/g%3E%3C/svg%3E");}
+@media (prefers-reduced-motion: reduce){div.border-dashed.rounded-3xl.text-center:not(.resource-dropzone)::before{animation:none;}}
 
 /* Ghost empty states: the real layout drawn from sample rows, text turned into grey bars */
 .ghost-empty{padding:2px 0 22px;}
@@ -4358,4 +4347,8 @@ body.dark-mode #to-top-btn{background:rgba(38,38,42,.95)!important;color:#7ab8ff
   #call-controls-bar .cu-ctl-label{font-size:13px;}
 }
 
-#auth-gate .auth-done-btn{display:none;}
+#auth-gate .auth-keypad .auth-keypad-done{background:transparent !important;border:0 !important;box-shadow:none !important;font-family:'Colmeak','Montserrat',sans-serif !important;font-size:22px;font-weight:700;color:#1e90ff !important;}
+#auth-gate .auth-keypad .auth-keypad-done:active{background:transparent !important;opacity:.6;transform:none;}
+body.dark-mode #auth-gate .auth-keypad .auth-keypad-done{color:#1e90ff !important;background:transparent !important;}
+
+.resource-dropzone .bg-gray-400{background-color:#9ca3af;}
