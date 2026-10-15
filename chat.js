@@ -3270,6 +3270,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         let ringAudioCtx = null;
         let ringIntervalId = null;
+        let ringVibrateId = null;
         // ---- Call ringtone sound effects ----
         function getRingAudioCtx(){
           if (!ringAudioCtx) {
@@ -3312,19 +3313,47 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             playRingBurst();
           }
         }
+        // A real ringtone file, looped for as long as the call rings. If the browser refuses to
+        // play it (no tap on the page yet, or muted), fall back to the device notification sound.
+        let ringtoneAudioEl = null;
+        function getRingtoneAudio(){
+          if (!ringtoneAudioEl) {
+            try {
+              ringtoneAudioEl = new Audio('/assets/ringtone.mp3');
+              ringtoneAudioEl.loop = true;
+              ringtoneAudioEl.preload = 'auto';
+              ringtoneAudioEl.volume = 1;
+            } catch (e) { ringtoneAudioEl = null; }
+          }
+          return ringtoneAudioEl;
+        }
         function startIncomingCallRingtone(){
           stopIncomingCallRingtone();
           const callerName = (incomingCallInfo && incomingCallInfo.callerName) || 'Someone';
           const callerPhoto = (incomingCallInfo && incomingCallInfo.callerPhoto) || null;
-          playDeviceRingBurst(callerName, callerPhoto);
-          if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
-          ringIntervalId = setInterval(() => {
+          const muted = (typeof soundMuted !== 'undefined' && soundMuted);
+          const deviceFallback = () => {
             playDeviceRingBurst(callerName, callerPhoto);
-            if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
-          }, 4000);
+            ringIntervalId = setInterval(() => playDeviceRingBurst(callerName, callerPhoto), 4000);
+          };
+          if (!muted) {
+            const a = getRingtoneAudio();
+            if (a) {
+              try {
+                a.currentTime = 0;
+                const pr = a.play();
+                if (pr && pr.then) pr.catch(() => { if (incomingCallInfo) deviceFallback(); });
+              } catch (e) { deviceFallback(); }
+            } else { deviceFallback(); }
+          }
+          const buzz = () => { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]); };
+          buzz();
+          ringVibrateId = setInterval(buzz, 4000);
         }
         function stopIncomingCallRingtone(){
           if (ringIntervalId) { clearInterval(ringIntervalId); ringIntervalId = null; }
+          if (ringVibrateId) { clearInterval(ringVibrateId); ringVibrateId = null; }
+          try { if (ringtoneAudioEl) { ringtoneAudioEl.pause(); ringtoneAudioEl.currentTime = 0; } } catch (e) {}
           if (navigator.vibrate) navigator.vibrate(0);
           // take the "is calling you" notification off the screen once the ringing stops
           try {
