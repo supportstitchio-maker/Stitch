@@ -1502,6 +1502,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const ov = document.getElementById('overlay');
             if (ov) ov.innerHTML = personNetworkHTML();
           }
+          // Connections just changed: posts that were held back as "stranger" videos may belong now
+          if (typeof feedRefreshForNetworkChange === 'function') feedRefreshForNetworkChange();
         }
 
         // ---- Server-truth reconcile for the network ----
@@ -3300,10 +3302,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         // Each ring "burst" tries the device's own ringtone first (native system sound, or the
         // browser's Notification sound on the web app) and only falls back to the synthesized tone
-        function playDeviceRingBurst(callerName){
+        function playDeviceRingBurst(callerName, callerPhoto){
           if (typeof soundMuted !== 'undefined' && soundMuted) return;
           if (typeof playDeviceNotificationSound === 'function') {
-            playDeviceNotificationSound(callerName || 'Incoming call', 'is calling you\u2026', { channelId: 'calls', tag: 'incoming-call' }).then(played => {
+            playDeviceNotificationSound(callerName || 'Incoming call', 'is calling you\u2026', { channelId: 'calls', tag: 'incoming-call', icon: callerPhoto }).then(played => {
               if (!played) playRingBurst();
             });
           } else {
@@ -3313,10 +3315,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function startIncomingCallRingtone(){
           stopIncomingCallRingtone();
           const callerName = (incomingCallInfo && incomingCallInfo.callerName) || 'Someone';
-          playDeviceRingBurst(callerName);
+          const callerPhoto = (incomingCallInfo && incomingCallInfo.callerPhoto) || null;
+          playDeviceRingBurst(callerName, callerPhoto);
           if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
           ringIntervalId = setInterval(() => {
-            playDeviceRingBurst(callerName);
+            playDeviceRingBurst(callerName, callerPhoto);
             if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400, 200, 400]);
           }, 4000);
         }
@@ -3441,12 +3444,42 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
-        function handleIncomingCallRing(payload){
+        // One-to-one calls are only for accepted connections. Sending someone a message (or a reply to
+        // their glimpse) does not make you a connection. Group calls, meetings and job interviews are
+        // separate and are not checked here. The server's connection list wins; if it can't be reached
+        // we fall back to this phone's own network list.
+        async function isAcceptedConnectionWith(userId){
+          if (!userId) return false;
+          const sb = getSupabaseClient();
+          const me = sb ? await getCachedAuthUser().catch(() => null) : null;
+          if (!sb || !me) return isUserInMyNetwork(userId);
+          try {
+            const [a, b] = await Promise.all([
+              sb.from(CONNECTION_REQUESTS_TABLE).select('status').eq('from_user', me.id).eq('to_user', userId).eq('status', 'accepted').limit(1),
+              sb.from(CONNECTION_REQUESTS_TABLE).select('status').eq('to_user', me.id).eq('from_user', userId).eq('status', 'accepted').limit(1),
+            ]);
+            if (a.error || b.error) return isUserInMyNetwork(userId);
+            return !!((a.data && a.data.length) || (b.data && b.data.length));
+          } catch (e) { return isUserInMyNetwork(userId); }
+        }
+        function callNeedsConnection(convoId, meta){
+          const id = String(convoId || '');
+          if (id.indexOf('interview-') === 0) return false;
+          if (meta && meta.icon === 'users') return false;
+          if (typeof isMeetingConvo === 'function' && isMeetingConvo(convoId)) return false;
+          return !!(meta && meta.otherUserId);
+        }
+
+        async function handleIncomingCallRing(payload){
           if (!payload || !payload.convoId) return;
           if (String(payload.convoId).indexOf('interview-') === 0) {
             ensureInterviewConvoMeta(payload.convoId, payload.fromUserId, payload.callerName, payload.callerPhoto);
             // Already waiting in this same interview call -- the other side will connect on their own.
             if (callState.convoId === payload.convoId) return;
+          } else if (!payload.groupName) {
+            // A one-to-one call from someone I'm not connected to never rings.
+            const ok = await isAcceptedConnectionWith(payload.fromUserId);
+            if (!ok) { sendCallResponse(payload.convoId, payload.fromUserId, 'declined'); return; }
           }
           if (callState.convoId || incomingCallInfo) {
             sendCallResponse(payload.convoId, payload.fromUserId, 'busy');
@@ -5900,6 +5933,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!id) return;
           // No Internet: the call screen never opens, the person just gets the notification
           if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
+          // Only accepted connections can be called one-to-one (answering a call that was already allowed is fine)
+          if (!answering && callNeedsConnection(id, convoMeta[id])) {
+            const allowed = await isAcceptedConnectionWith(convoMeta[id].otherUserId);
+            if (!allowed) {
+              if (typeof openAppAlertModal === 'function') openAppAlertModal("You can call this person once they accept your connection request. Until then you can send messages.", "Not connected yet");
+              return;
+            }
+          }
           clearCallTimers();
           stopCallLocalStream();
           teardownCallSignaling();
@@ -6815,7 +6856,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="cu-screen" style="padding-top:var(--top-safe-pad);background:linear-gradient(180deg,var(--cu-blue-soft),var(--cu-bg) 60%);">
               <div class="cu-top">
                 <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
-                <div class="cu-title"><div class="cu-status" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
+                <div class="cu-title"><div class="cu-status" style="font-family:'Colmeak','Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
                 <div style="width:42px;height:42px;flex-shrink:0;"></div>
               </div>
               <div class="cu-stage">
@@ -6824,8 +6865,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     <span class="cu-ring"></span><span class="cu-ring" style="animation-delay:1.3s;"></span>
                     <div class="cu-voice-avatar bg-blue-50">${o.avatar}</div>
                   </div>
-                  <div class="cu-voice-name">${escapeHtml(o.name)}</div>
-                  <div class="cu-voice-sub" style="max-width:86%;white-space:normal;">${escapeHtml(o.sub)}</div>
+                  <div class="cu-voice-name" style="font-size:17px;line-height:1.2;margin-top:2px;">${escapeHtml(o.name)}</div>
+                  <div class="cu-voice-sub" style="max-width:86%;white-space:normal;margin-top:-6px;">${escapeHtml(o.sub)}</div>
                 </div>
               </div>
               <div class="cu-bar">
@@ -8963,5 +9004,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           navigator.serviceWorker.addEventListener('message', (e) => {
             const d = e && e.data;
             if (d && d.type === 'open-meeting' && d.code) openMeetingByCode(d.code);
+            // Tapping a "wants to connect" push opens Messages > Requests
+            if (d && d.type === 'open-requests') {
+              try { if (typeof switchTab === 'function') switchTab(3); inboxFilterTab('requests'); loadIncomingConnectionRequests(); } catch (err) {}
+            }
           });
         }

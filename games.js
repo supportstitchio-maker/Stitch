@@ -2058,6 +2058,8 @@ let userPoints = 0;
               (typeof reconcileConvoOrder === 'function' ? reconcileConvoOrder() : Promise.resolve()),
             ]))
             .then(() => {
+              // Connections are loaded now: show any feed posts that were held back until then
+              if (typeof feedRefreshForNetworkChange === 'function') feedRefreshForNetworkChange();
               refreshMessagingBadges();
               if (typeof refreshNotifBadge === 'function') refreshNotifBadge();
               if (typeof prefetchContactProfiles === 'function') prefetchContactProfiles().catch(e => console.error(e));

@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v113';
+const OFFLINE_CACHE = 'stitch-offline-v118';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
@@ -103,6 +103,23 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// Round grey initials picture for people with no profile photo (drawn on the phone, sent as a data: image)
+async function initialsIcon(name){
+  try {
+    const w = (name || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+    if (!w.length || typeof OffscreenCanvas === 'undefined') return null;
+    const ini = ((w[0][0] || '') + (w.length > 1 ? (w[w.length - 1][0] || '') : '')).toUpperCase();
+    const c = new OffscreenCanvas(192, 192), x = c.getContext('2d');
+    x.fillStyle = '#e5e7eb'; x.fillRect(0, 0, 192, 192);
+    x.fillStyle = '#4b5563'; x.font = '700 80px Arial, sans-serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(ini, 96, 100);
+    const buf = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+    let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return 'data:image/png;base64,' + btoa(bin);
+  } catch (e) { return null; }
+}
+
 self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch (e) {  }
@@ -117,12 +134,20 @@ self.addEventListener('push', (event) => {
     requireInteraction: !!isCall,
     silent: false,
     image: (payload.image || (payload.data && payload.data.thumb)) || undefined,
-    icon: (payload.data && payload.data.thumb) || '/assets/icon-192.png',
+    // The sender's profile picture when there is one (data.avatar), then a post thumbnail, then the logo
+    icon: (payload.data && (payload.data.avatar || payload.data.thumb)) || '/assets/icon-192.png',
     badge: '/assets/badge-96.png',
     vibrate: isCall ? [400, 200, 400, 200, 400, 200, 400] : [150],
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    const d = payload.data || {};
+    if (!d.avatar && !d.thumb && d.name && !isCall) {
+      const ic = await initialsIcon(d.name);
+      if (ic) options.icon = ic;
+    }
+    await self.registration.showNotification(title, options);
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -137,6 +162,7 @@ self.addEventListener('notificationclick', (event) => {
         if ('focus' in client) {
           if (postId != null) { try { client.postMessage({ type: 'open-post', postId }); } catch (e) {} }
           if (meetingCode) { try { client.postMessage({ type: 'open-meeting', code: meetingCode }); } catch (e) {} }
+          if (data.type === 'connect_request') { try { client.postMessage({ type: 'open-requests' }); } catch (e) {} }
           return client.focus();
         }
       }

@@ -625,11 +625,68 @@
           });
         }
 
+        // A picture that can ride along inside a notification: a normal web address, not an
+        // embedded data: image (those are far too long to send)
+        function notifPhotoUrl(u){
+          u = (u || '').toString();
+          return (/^https:\/\//i.test(u) && u.length <= 280) ? u : null;
+        }
+        // Initials ("Festus Nkrumah" -> "FN") and a round initials picture for people with no profile photo
+        function notifInitials(name){
+          const w = (name || '').toString().replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+          if (!w.length) return '';
+          return ((w[0][0] || '') + (w.length > 1 ? (w[w.length - 1][0] || '') : '')).toUpperCase();
+        }
+        function notifInitialsIcon(name){
+          try {
+            const ini = notifInitials(name);
+            if (!ini) return null;
+            const c = document.createElement('canvas'); c.width = c.height = 192;
+            const x = c.getContext('2d');
+            x.fillStyle = '#e5e7eb'; x.fillRect(0, 0, 192, 192);
+            x.fillStyle = '#4b5563'; x.font = '700 80px Montserrat, Arial, sans-serif';
+            x.textAlign = 'center'; x.textBaseline = 'middle';
+            x.fillText(ini, 96, 100);
+            return c.toDataURL('image/png');
+          } catch (e) { return null; }
+        }
+        // Best known profile picture for a person, from what this device has already loaded
+        function notifAvatarFor(userId){
+          if (!userId) return null;
+          try {
+            if (typeof convoArrays === 'function') {
+              const c = convoArrays().flat().find(x => x && x.otherUserId === userId && notifPhotoUrl(x.photo));
+              if (c) return notifPhotoUrl(c.photo);
+            }
+            if (typeof personProfileCache !== 'undefined' && personProfileCache[userId] && personProfileCache[userId].details) {
+              const p = notifPhotoUrl(personProfileCache[userId].details.photo);
+              if (p) return p;
+            }
+            if (typeof discoverPeople !== 'undefined' && Array.isArray(discoverPeople)) {
+              const d = discoverPeople.find(x => x && x.id === userId && notifPhotoUrl(x.photo));
+              if (d) return notifPhotoUrl(d.photo);
+            }
+          } catch (e) {}
+          return null;
+        }
+
         async function sendPushTo(toUserId, { title, body, tag, data, image } = {}){
           try {
             if (!toUserId) return;
             const accessToken = await getAuthAccessToken();
             if (!accessToken) return;
+            // The notification shows the sender's profile picture (this person's own) next to it
+            try {
+              const mine = (typeof profileData !== 'undefined') ? notifPhotoUrl(profileData.photo) : null;
+              const me = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null;
+              const myName = (typeof profileData !== 'undefined') ? ((profileData.name || profileData.username || '') + '').trim().slice(0, 60) : '';
+              if (toUserId !== me) {
+                const extra = {};
+                if (mine) extra.avatar = mine;
+                if (myName) extra.name = myName; // lets the phone draw initials when there is no photo
+                data = Object.assign({}, data || {}, extra);
+              }
+            } catch (e) {}
             await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/send-push`, {
               method: 'POST',
               headers: {
@@ -686,7 +743,7 @@
               // service worker first (works on Android, iPhone home-screen apps and desktop).
               const nopts = {
                 body: body || '', silent: false, tag: opts.tag, renotify: !!opts.tag,
-                icon: '/assets/icon-192.png', badge: '/assets/badge-96.png',
+                icon: notifPhotoUrl(opts.icon) || notifInitialsIcon(opts.iconName) || '/assets/icon-192.png', badge: '/assets/badge-96.png',
                 vibrate: opts.channelId === 'calls' ? [400, 200, 400, 200, 400] : [150],
               };
               try {

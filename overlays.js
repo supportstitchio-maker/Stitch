@@ -1826,11 +1826,10 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const { data: userRes } = await sb.auth.getUser();
             const me = userRes && userRes.user;
             if (!me) { dropOptimistic(); setConnectionTagEverywhere(toUserId, false); return false; }
-            // Save this account's name/username/photo BEFORE the request goes out, so the person
-            // receiving it sees the real name instead of "Stitch member" (waits at most 4s)
-            if (typeof syncPublicProfile === 'function') {
-              try { await Promise.race([syncPublicProfile(), new Promise(r => setTimeout(r, 4000))]); } catch (e) {}
-            }
+            // The request goes out straight away. This account's name/photo are saved to the public
+            // profile alongside it (below), and the other person's app re-checks the name a moment later,
+            // so nobody waits on that first.
+            if (typeof syncPublicProfile === 'function') { syncPublicProfile().catch(() => {}); }
             // Belt-and-suspenders check against the DB itself, in case our local
             // sentRequestConvos/network state hasn't caught up yet (e.g. right after app load, before
             const { data: existing } = await sb.from(CONNECTION_REQUESTS_TABLE)
@@ -2850,13 +2849,13 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
           return notifChimeAudioCtx;
         }
-        function playNotifChime(title, body){
+        function playNotifChime(title, body, opts){
           if (navigator.vibrate) navigator.vibrate(150);
           if (typeof soundMuted !== 'undefined' && soundMuted) return;
           // Prefer the device's own notification tone (set in the phone's system settings, or the
           // browser's default) over a synthesized beep
           if (typeof playDeviceNotificationSound === 'function') {
-            playDeviceNotificationSound(title || 'Stitch', body || '').then(played => {
+            playDeviceNotificationSound(title || 'Stitch', body || '', opts || {}).then(played => {
               if (!played) playSynthesizedNotifChime();
             });
             return;
@@ -3007,7 +3006,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             tab: opts.tab || null,
             meetingCode: opts.meetingCode || null,
           });
-          playNotifChime(opts.name || 'Stitch', opts.message || '');
+          playNotifChime(opts.name || 'Stitch', opts.message || '', { icon: (typeof notifAvatarFor === 'function' ? notifAvatarFor(opts.otherUserId) : null), iconName: opts.name });
           queueSaveUserState();
           refreshNotifBadge();
           ringNotifBell();

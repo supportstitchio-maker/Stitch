@@ -195,6 +195,26 @@
           syncFeedImageReadyState(list);
         }
 
+        // Right after sign-in the feed can paint before the person's connections have arrived. Until
+        // then every author counts as a stranger, and a stranger's video is held back (see
+        // feedVisiblePosts). When the connections land, bring in whatever was held back so nothing
+        // waits for a refresh.
+        let feedNetworkRefreshTimer = null;
+        function feedRefreshForNetworkChange(){
+          if (feedNetworkRefreshTimer) return;
+          feedNetworkRefreshTimer = setTimeout(() => {
+            feedNetworkRefreshTimer = null;
+            try {
+              if (typeof currentTab === 'undefined' || currentTab !== 0) return;
+              if (typeof remotePostsLoaded !== 'undefined' && !remotePostsLoaded) return;
+              const list = document.getElementById('feed-list');
+              if (!list || feedShowingCachedOnly) return;
+              const missing = feedVisiblePosts().some(p => !document.getElementById('post-' + p.id));
+              if (missing) patchFeedInPlace();
+            } catch (e) {}
+          }, 150);
+        }
+
         let ptrPulling = false;
         let ptrMouseActive = false;
         let ptrStartY = 0;
