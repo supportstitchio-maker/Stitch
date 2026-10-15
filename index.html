@@ -217,7 +217,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261016a">
+    <link rel="stylesheet" href="styles.css?v=20261016b">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -306,6 +306,7 @@
               <!-- Shown after every Get Started / Log In -->
               <div class="auth-panel" id="auth-panel-verify"><div>
                 <form onsubmit="authSubmitVerify(event); return false;">
+                  <button class="auth-done-btn" type="submit">Done</button>
                   <div class="auth-info-banner">We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>.</div>
 
                   <div class="auth-otp-row">
@@ -945,6 +946,6 @@
     <script src="settings.js?v=20261004b"></script>
     <script src="profile.js?v=20261015b"></script>
     <script src="overlays.js?v=20261016c"></script>
-    <script src="games.js?v=20261016a"></script>
+    <script src="games.js?v=20261016b"></script>
 </body>
 </html>

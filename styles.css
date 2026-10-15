@@ -2794,6 +2794,19 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
   }
   #auth-gate.auth-verify-mode .auth-resend{margin:0 0 10px; font-size:11.5px; line-height:1.4;}
   #auth-gate.auth-verify-mode .auth-cta{padding:12px; font-size:14px;}
+  /* Phone: the big "Verify & Continue" button is gone. "Done" sits where the back arrow was (top-left
+     of the card) and the back arrow moves out into the left gutter beside it */
+  #auth-gate.auth-verify-mode #auth-panel-verify .auth-cta{display:none;}
+  #auth-gate.auth-verify-mode .auth-back{top:14px; left:-14px; width:30px; height:38px;}
+  #auth-gate.auth-verify-mode .auth-back svg{width:18px; height:18px;}
+  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn{
+    display:block; position:absolute; top:-44px; left:-2px; z-index:3;
+    height:38px; padding:0 4px; margin:0; border:none; background:transparent; cursor:pointer;
+    font-family:'Colmeak','Montserrat',sans-serif; font-size:18px; font-weight:700; line-height:38px;
+    color:var(--a-blue,#2f6bf0); touch-action:manipulation;
+  }
+  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn:active{opacity:.6;}
+  #auth-gate.auth-verify-mode #auth-panel-verify .auth-done-btn:disabled{opacity:.5;}
   #auth-gate.auth-verify-mode .auth-error{margin-bottom:8px;}
 }
 
@@ -4344,3 +4357,5 @@ body.dark-mode #to-top-btn{background:rgba(38,38,42,.95)!important;color:#7ab8ff
   #call-controls-bar .cu-ctl-btn svg{width:1.6rem;height:1.6rem;}
   #call-controls-bar .cu-ctl-label{font-size:13px;}
 }
+
+#auth-gate .auth-done-btn{display:none;}

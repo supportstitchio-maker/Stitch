@@ -2497,7 +2497,9 @@ let userPoints = 0;
           for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.disabled = true; }
           const verifyBtn = document.querySelector('#auth-panel-verify .auth-cta');
           const verifyBtnOriginalText = verifyBtn ? verifyBtn.textContent : '';
+          const doneBtn = document.querySelector('#auth-panel-verify .auth-done-btn');
           if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = 'Verifying...'; }
+          if (doneBtn) { doneBtn.disabled = true; doneBtn.style.opacity = '0.5'; }
           try {
             let error;
             if (isStitchTestEmail(authPendingEmail)) {
@@ -2552,6 +2554,7 @@ let userPoints = 0;
             authSubmittingVerify = false;
             for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.disabled = false; }
             if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.style.opacity = ''; verifyBtn.textContent = verifyBtnOriginalText || 'Verify & Continue'; }
+            if (doneBtn) { doneBtn.disabled = false; doneBtn.style.opacity = ''; }
           }
         }
         // Decides whether the signed-in account still has to go through sign-up/onboarding
