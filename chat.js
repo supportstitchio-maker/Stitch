@@ -3398,7 +3398,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           buzz();
           ringVibrateId = setInterval(buzz, 4000);
         }
+        // Take any "is calling you" phone notification (and its repeating ring) off the screen
+        function closeCallNotifications(convoId){
+          try {
+            if (!('serviceWorker' in navigator)) return;
+            navigator.serviceWorker.getRegistration().then(reg => {
+              if (!reg || !reg.getNotifications) return;
+              reg.getNotifications({ tag: 'call-' + convoId }).then(list => list.forEach(n => n.close()));
+              reg.getNotifications({ tag: 'incoming-call' }).then(list => list.forEach(n => n.close()));
+            }).catch(() => {});
+          } catch (e) {}
+        }
         function stopIncomingCallRingtone(){
+          try { if (incomingCallInfo && incomingCallInfo.convoId) closeCallNotifications(incomingCallInfo.convoId); } catch (e) {}
           if (ringIntervalId) { clearInterval(ringIntervalId); ringIntervalId = null; }
           if (ringVibrateId) { clearInterval(ringVibrateId); ringVibrateId = null; }
           try { if (ringtoneAudioEl) { ringtoneAudioEl.pause(); ringtoneAudioEl.currentTime = 0; } } catch (e) {}
@@ -3489,7 +3501,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             title: isGroup ? `${callerName} is calling "${meta.name}"` : `${callerName} is calling you`,
             body: type === 'video' ? 'Incoming video call' : 'Incoming voice call',
             tag: 'call-' + convoId,
-            data: { kind: 'call', convoId, type },
+            data: { kind: 'call', convoId, type, fromUserId: myId, callerName: String(callerName).slice(0, 60), groupName: isGroup ? String(meta.name || '').slice(0, 60) : '' },
           });
         }
 
@@ -9143,6 +9155,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const d = e && e.data;
             if (d && d.type === 'open-meeting' && d.code) openMeetingByCode(d.code);
             // Tapping a "wants to connect" push opens Messages > Requests
+            // A call push reached this phone while the app was open in the background: ring it like a normal call
+            if (d && d.type === 'call-push' && d.data && d.data.convoId) {
+              try {
+                const cd = d.data;
+                if (incomingCallInfo && document.visibilityState === 'visible') closeCallNotifications(cd.convoId);
+                if (!incomingCallInfo && !callState.convoId) {
+                  handleIncomingCallRing({ convoId: cd.convoId, type: cd.type || 'audio', fromUserId: cd.fromUserId, callerName: cd.callerName || 'Someone', callerPhoto: cd.avatar || null, groupName: cd.groupName || null });
+                }
+              } catch (err) {}
+            }
             if (d && d.type === 'open-requests') {
               try { if (typeof switchTab === 'function') switchTab(3); inboxFilterTab('requests'); loadIncomingConnectionRequests(); } catch (err) {}
             }

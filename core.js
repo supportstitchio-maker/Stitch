@@ -3294,11 +3294,13 @@ function emojiKeyboardSVG(size){
   size = size || 20;
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>';
 }
-function emojiRecents(){ try { return JSON.parse(localStorage.getItem('stitchEmojiRecent') || '[]'); } catch (e) { return []; } }
+let __emojiRecentMem = null;
+function emojiRecents(){ try { const v = JSON.parse(localStorage.getItem('stitchEmojiRecent') || 'null'); if (Array.isArray(v)) return v; } catch (e) {} return __emojiRecentMem || []; }
 function emojiRememberUse(ch){
   try {
     const r = emojiRecents().filter(x => x !== ch); r.unshift(ch);
-    localStorage.setItem('stitchEmojiRecent', JSON.stringify(r.slice(0, 24)));
+    __emojiRecentMem = r.slice(0, 32);
+    localStorage.setItem('stitchEmojiRecent', JSON.stringify(__emojiRecentMem));
   } catch (e) {}
 }
 function closeEmojiPicker(keepKeyboardClosed){
@@ -3308,6 +3310,7 @@ function closeEmojiPicker(keepKeyboardClosed){
   emojiPickerState = null;
   if (st) {
     if (st.stopPoll) st.stopPoll();
+    if (st.ro) { try { st.ro.disconnect(); } catch (e) {} }
     document.removeEventListener('pointerdown', st.outside, true);
     window.removeEventListener('resize', st.reposition);
     if (window.visualViewport) window.visualViewport.removeEventListener('resize', st.reposition);
@@ -3400,15 +3403,39 @@ function toggleEmojiPicker(targetId, btn){
   const bg = sheet || (dark ? '#1e1e1e' : '#ffffff');
   const fg = cs.getPropertyValue('--cu-fg').trim() || (dark ? '#f2f2f2' : '#1f2937');
   const soft = dark || sheet ? 'rgba(255,255,255,0.08)' : 'rgba(10,37,64,0.06)';
-  const docked = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  // Desktop chat: the type box lifts and the panel opens right under it, like a phone keyboard
+  const ovEl = document.getElementById('overlay');
+  const desk = !touch && window.innerWidth >= 1024 && !!ovEl && ovEl.contains(input) && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'conversation';
+  const docked = touch || desk;
   const kbH = Math.max(240, Math.min(420, (typeof __kbLastReal === 'number' && __kbLastReal > 120) ? __kbLastReal : Math.round(window.innerHeight * 0.4)));
   const el = document.createElement('div');
   el.id = 'emoji-picker';
   el.style.cssText = docked
-    ? 'position:fixed;z-index:20000;left:0;right:0;bottom:0;height:' + kbH + 'px;background:' + bg + ';color:' + fg + ';border-top:1px solid rgba(10,37,64,.08);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box;'
+    ? 'position:fixed;z-index:20000;' + (desk ? 'left:0;width:100%;' : 'left:0;right:0;') + 'bottom:0;height:' + kbH + 'px;background:' + bg + ';color:' + fg + ';border-top:1px solid rgba(10,37,64,.08);display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box;'
     : 'position:fixed;z-index:20000;width:min(calc(100vw - 24px),372px);height:300px;border-radius:20px;background:' + bg + ';color:' + fg + ';box-shadow:0 14px 44px rgba(10,37,64,.22),0 0 0 1px rgba(10,37,64,.07);display:flex;flex-direction:column;overflow:hidden;animation:dskPop .16s ease-out both;';
   const tabs = [{ icon: '🕘', name: 'Recent', list: emojiRecents() }].concat(EMOJI_SET);
+  // Desktop: as many columns as fit, and tall enough to show a whole group without scrolling
+  let deskCols = 8;
+  let deskLast = '';
+  function deskLayout(){
+    if (!desk) return;
+    const r = ovEl.getBoundingClientRect();
+    const cols = Math.max(8, Math.min(24, Math.floor((r.width - 24) / 44)));
+    const big = Math.max.apply(null, EMOJI_SET.filter(x => x.name !== 'Flags').map(x => x.list.length));
+    const rows = Math.ceil(big / cols);
+    const h = Math.max(300, Math.min(Math.round(window.innerHeight * 0.58), 112 + rows * 40));
+    const sig = Math.round(r.left) + '|' + Math.round(r.width) + '|' + h;
+    if (sig === deskLast) return;          // nothing moved: do not poke the layout again (avoids a resize loop)
+    deskLast = sig; deskCols = cols;
+    el.style.left = Math.round(r.left) + 'px'; el.style.width = Math.round(r.width) + 'px';
+    el.style.height = h + 'px';
+    emojiDockedHeight = h;
+    const g = el.querySelector('#emoji-grid'); if (g) g.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    emojiResync();
+  }
   let cur = emojiRecents().length ? 0 : 1;
+  const strip = touch;   // phones show matches in one scrolling strip above the search field
   let searching = false, query = '';
   const iconBtn = 'width:38px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.75;';
   const cellsHTML = list => list.map(ch => '<button type="button" data-e="' + ch + '" style="height:38px;font-size:24px;line-height:1;border-radius:10px;">' + ch + '</button>').join('');
@@ -3418,15 +3445,15 @@ function toggleEmojiPicker(targetId, btn){
     const t = tabs[cur];
     if (searching) {
       const row =
-        '<div style="display:flex;align-items:center;gap:6px;padding:' + (docked ? '4px 8px 8px' : '14px 8px 8px') + ';flex-shrink:0;">' +
+        '<div style="display:flex;align-items:center;gap:6px;padding:' + (strip ? '4px 8px 8px' : '14px 8px 8px') + ';flex-shrink:0;">' +
           '<button type="button" data-act="exitsearch" aria-label="Back" style="' + iconBtn + '">' + emojiBackSVG(22) + '</button>' +
           '<input id="emoji-search-input" type="text" value="' + query.replace(/"/g, '&quot;') + '" placeholder="Search emoji" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="flex:1;min-width:0;height:36px;border-radius:12px;border:0;outline:0;padding:0 12px;font-size:15px;background:' + soft + ';color:inherit;">' +
           '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
         '</div>';
       // Phones: one scrolling strip of matches sitting right above the search field, like a keyboard suggestion bar
-      el.innerHTML = docked
+      el.innerHTML = strip
         ? '<div id="emoji-results" style="' + STRIP + '"></div>' + row
-        : row + '<div id="emoji-results" style="' + GRID + '"></div>';
+        : row + '<div id="emoji-results" style="' + GRID + (desk ? 'grid-template-columns:repeat(' + deskCols + ',1fr);' : '') + '"></div>';
       renderResults();
       return;
     }
@@ -3439,14 +3466,14 @@ function toggleEmojiPicker(targetId, btn){
         '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
       '</div>' +
       '<div style="padding:4px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
-      '<div style="' + GRID + '">' +
+      '<div id="emoji-grid" style="' + GRID + (desk ? 'grid-template-columns:repeat(' + deskCols + ',1fr);' : '') + '">' +
         (t.list.length ? cellsHTML(t.list) : '<div style="grid-column:1/-1;padding:24px 8px;text-align:center;font-size:13px;opacity:.55;">Emojis you use will show up here</div>') +
       '</div>';
   }
   function renderResults(){
     const box = el.querySelector('#emoji-results'); if (!box) return;
     const res = emojiSearch(query);
-    if (docked) {
+    if (strip) {
       box.innerHTML = res.length ? res.map(ch => '<button type="button" data-e="' + ch + '" style="width:42px;height:40px;flex-shrink:0;font-size:26px;line-height:1;border-radius:10px;">' + ch + '</button>').join('')
         : '<div style="padding:0 12px;font-size:13px;opacity:.55;white-space:nowrap;">' + (query.trim() ? 'No emoji found' : 'Type a word like “love”, “food” or “Ghana”') + '</div>';
       box.scrollLeft = 0; return;
@@ -3464,7 +3491,7 @@ function toggleEmojiPicker(targetId, btn){
     return k > 50 ? k : 0;
   }
   function searchGeometry(){
-    if (!docked || geoBusy) return;
+    if (!touch || geoBusy) return;
     geoBusy = true;
     const si = el.querySelector('#emoji-search-input');
     const focused = !!si && document.activeElement === si;
@@ -3494,6 +3521,7 @@ function toggleEmojiPicker(targetId, btn){
   let delTimer = null, delRepeat = null;
   function stopDel(){ clearTimeout(delTimer); clearInterval(delRepeat); delTimer = delRepeat = null; }
   function place(){
+    if (desk) { deskLayout(); return; }
     if (docked) return;
     const r = anchor.getBoundingClientRect();
     const w = el.offsetWidth || 372;
@@ -3511,6 +3539,8 @@ function toggleEmojiPicker(targetId, btn){
     try { input.setSelectionRange(pos, pos); } catch (e) {}
     input.dispatchEvent(new Event('input', { bubbles: true }));
     emojiRememberUse(ch);
+    tabs[0].list = emojiRecents();
+    if (cur === 0 && !searching) paint();
   }
   // keep the keyboard up: never let the panel steal focus
   el.addEventListener('mousedown', e => { if (e.target.id !== 'emoji-search-input') e.preventDefault(); });
@@ -3525,7 +3555,7 @@ function toggleEmojiPicker(targetId, btn){
       return;
     }
     const tt = e.target.closest('[data-tab]');
-    if (tt) { cur = parseInt(tt.getAttribute('data-tab'), 10); paint(); }
+    if (tt) { cur = parseInt(tt.getAttribute('data-tab'), 10); tabs[0].list = emojiRecents(); paint(); }
   });
   el.addEventListener('input', e => { if (e.target.id === 'emoji-search-input') { query = e.target.value; renderResults(); } });
   // Delete button: one tap removes one emoji/character; hold to keep deleting
@@ -3545,9 +3575,10 @@ function toggleEmojiPicker(targetId, btn){
   if (docked && window.visualViewport) window.visualViewport.addEventListener('resize', searchGeometry);
   emojiPickerState = { targetId, btn, outside, reposition: place, searchGeo: searchGeometry, stopPoll: function(){ clearInterval(geoPoll); geoPoll = null; }, docked, hadInputMode: input.getAttribute('inputmode') };
   btn.style.color = '#1e90ff';
+  if (desk) { deskLayout(); try { if (window.ResizeObserver) { const ro = new ResizeObserver(() => deskLayout()); ro.observe(ovEl); emojiPickerState.ro = ro; } } catch (e) {} }
   if (docked) {
     // Stand in for the keyboard: hide the system keyboard, keep the cursor, lift the screen by the panel's height
-    emojiDockedHeight = kbH + 0;
+    emojiDockedHeight = desk ? emojiDockedHeight : kbH + 0;
     btn.innerHTML = emojiKeyboardSVG(20);
     input.setAttribute('inputmode', 'none');
     try { input.blur(); input.focus(); } catch (e) {}

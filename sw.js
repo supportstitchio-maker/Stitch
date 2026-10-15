@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v129';
+const OFFLINE_CACHE = 'stitch-offline-v131';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
@@ -103,6 +103,23 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// Profile picture cropped to a circle (transparent corners) so the phone shows it round
+async function circleIcon(url){
+  try {
+    if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') return null;
+    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+    if (!res.ok) return null;
+    const bmp = await createImageBitmap(await res.blob());
+    const S = 192, c = new OffscreenCanvas(S, S), x = c.getContext('2d');
+    x.beginPath(); x.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); x.closePath(); x.clip();
+    const m = Math.min(bmp.width, bmp.height);
+    x.drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, S, S);
+    const buf = new Uint8Array(await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer());
+    let bin = ''; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return 'data:image/png;base64,' + btoa(bin);
+  } catch (e) { return null; }
+}
+
 // Round grey initials picture for people with no profile photo (drawn on the phone, sent as a data: image)
 async function initialsIcon(name){
   try {
@@ -110,6 +127,7 @@ async function initialsIcon(name){
     if (!w.length || typeof OffscreenCanvas === 'undefined') return null;
     const ini = ((w[0][0] || '') + (w.length > 1 ? (w[w.length - 1][0] || '') : '')).toUpperCase();
     const c = new OffscreenCanvas(192, 192), x = c.getContext('2d');
+    x.beginPath(); x.arc(96, 96, 96, 0, Math.PI * 2); x.closePath(); x.clip();
     x.fillStyle = '#e5e7eb'; x.fillRect(0, 0, 192, 192);
     x.fillStyle = '#4b5563'; x.font = '700 80px Arial, sans-serif';
     x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -142,11 +160,36 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil((async () => {
     const d = payload.data || {};
-    if (!d.avatar && !d.thumb && d.name && !isCall) {
-      const ic = await initialsIcon(d.name);
-      if (ic) options.icon = ic;
+    {
+      if (d.avatar) {
+        const ic = await circleIcon(d.avatar);
+        if (ic) options.icon = ic;
+      } else if (!d.thumb && d.name && !isCall) {
+        const ic = await initialsIcon(d.name);
+        if (ic) options.icon = ic;
+      }
+      if (!d.avatar && !d.thumb && isCall && d.callerName) {
+        const ic = await initialsIcon(d.callerName);
+        if (ic) options.icon = ic;
+      }
     }
     await self.registration.showNotification(title, options);
+    if (isCall) {
+      // If the app is open (even in the background) let it ring properly with the ringtone
+      try {
+        const cl = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        cl.forEach(c => { try { c.postMessage({ type: 'call-push', data: d }); } catch (e) {} });
+      } catch (e) {}
+      // Keep the phone ringing: re-alert every few seconds while the call notification is still showing
+      for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 4000));
+        try {
+          const open = await self.registration.getNotifications({ tag: options.tag });
+          if (!open.length) break;
+          await self.registration.showNotification(title, options);
+        } catch (e) { break; }
+      }
+    }
   })());
 });
 
@@ -162,6 +205,7 @@ self.addEventListener('notificationclick', (event) => {
         if ('focus' in client) {
           if (postId != null) { try { client.postMessage({ type: 'open-post', postId }); } catch (e) {} }
           if (meetingCode) { try { client.postMessage({ type: 'open-meeting', code: meetingCode }); } catch (e) {} }
+          if (data.kind === 'call' && data.convoId) { try { client.postMessage({ type: 'call-push', data }); } catch (e) {} }
           if (data.type === 'connect_request') { try { client.postMessage({ type: 'open-requests' }); } catch (e) {} }
           return client.focus();
         }
