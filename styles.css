@@ -4214,8 +4214,8 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 .skel-dmain-in{max-width:700px;margin:0 auto;padding:0 20px;}
 .skel-dright{width:var(--rp-width,480px);flex-shrink:0;border-left:1px solid #f1f3f7;box-sizing:border-box;}
 .skel-dright-head{padding:20px;border-bottom:1px solid #f1f3f7;}
-body.dark-mode .skel-desk{background:#121212;}
-body.dark-mode .skel-dnav,body.dark-mode .skel-dright,body.dark-mode .skel-dright-head{border-color:#2a2a2a;}
+html.dark-mode .skel-desk,body.dark-mode .skel-desk{background:#121212;}
+html.dark-mode .skel-dnav,html.dark-mode .skel-dright,html.dark-mode .skel-dright-head,body.dark-mode .skel-dnav,body.dark-mode .skel-dright,body.dark-mode .skel-dright-head{border-color:#2a2a2a;}
 
 /* Contact info / media pages: instant press feedback (Apple-style) */
 .cp-press{transition:transform .14s cubic-bezier(.22,1,.36,1);-webkit-tap-highlight-color:transparent;}
