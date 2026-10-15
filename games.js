@@ -2152,6 +2152,12 @@ let userPoints = 0;
           }
         }
         // In-app number pad for the verify page: fills the six boxes without opening the phone keyboard
+        // "Done" key (bottom-right of the number pad): same as the old Verify & Continue button
+        function authKeypadDone(){
+          if (typeof authSubmittingVerify !== 'undefined' && authSubmittingVerify) return;
+          const f = document.querySelector('#auth-panel-verify form');
+          if (f && f.requestSubmit) f.requestSubmit(); else if (f) authSubmitVerify({ preventDefault(){} });
+        }
         function authKeypadPress(key){
           if (typeof authSubmittingVerify !== 'undefined' && authSubmittingVerify) return;
           const boxes = [0,1,2,3,4,5].map(i => document.getElementById('auth-otp-' + i));
@@ -2250,6 +2256,35 @@ let userPoints = 0;
 
         // Heads-up alerts that only need an acknowledgement (no Yes/No decision) surface as a
         // dismissible top banner
+        // Desktop: pop-up notices sit in the middle of the CONTENT area (between the left menu and the
+        // right-hand panel), not the whole window, and grow/shrink with it as the side panel is dragged,
+        // collapsed or the window is resized. On phones/tablets nothing changes (centred on the screen).
+        function placeToastInContent(el){
+          if (!el) return;
+          const place = () => {
+            if (!el.isConnected) { window.removeEventListener('resize', place); if (el.__toastRO) { try { el.__toastRO.disconnect(); } catch (e) {} } return; }
+            if (window.innerWidth < 1024) { el.style.left = ''; el.style.maxWidth = ''; el.style.width = ''; return; }
+            const nav = document.getElementById('desktop-nav');
+            const rp = document.getElementById('desktop-right-panel');
+            let l = 0, r = window.innerWidth;
+            try {
+              if (nav) { const b = nav.getBoundingClientRect(); if (b.width > 0 && b.right < window.innerWidth) l = Math.max(l, b.right); }
+              if (rp) { const b = rp.getBoundingClientRect(); if (b.width > 0 && b.left > l) r = Math.min(r, b.left); }
+            } catch (e) {}
+            const w = Math.max(0, r - l);
+            el.style.left = Math.round(l + w / 2) + 'px';
+            el.style.width = 'max-content';
+            el.style.maxWidth = Math.max(240, Math.min(560, Math.round(w * 0.8))) + 'px';
+          };
+          place();
+          window.addEventListener('resize', place);
+          try {
+            if (typeof ResizeObserver !== 'undefined') {
+              const ro = new ResizeObserver(place); el.__toastRO = ro;
+              ['desktop-nav', 'desktop-right-panel'].forEach(id => { const n = document.getElementById(id); if (n) ro.observe(n); });
+            }
+          } catch (e) {}
+        }
         function openAppAlertModal(message, title, onClose){
           const el = document.createElement('div');
           el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-start gap-3';
@@ -2262,6 +2297,7 @@ let userPoints = 0;
             </div>
             <button aria-label="Dismiss" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>`;
           document.body.appendChild(el);
+          placeToastInContent(el);
           let dismissed = false;
           const dismiss = () => {
             if (dismissed) return;
@@ -2497,9 +2533,9 @@ let userPoints = 0;
           for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.disabled = true; }
           const verifyBtn = document.querySelector('#auth-panel-verify .auth-cta');
           const verifyBtnOriginalText = verifyBtn ? verifyBtn.textContent : '';
-          const doneBtn = document.querySelector('#auth-panel-verify .auth-done-btn');
           if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = 'Verifying...'; }
-          if (doneBtn) { doneBtn.disabled = true; doneBtn.style.opacity = '0.5'; }
+          const keypadDone = document.querySelector('#auth-keypad .auth-keypad-done');
+          if (keypadDone) { keypadDone.disabled = true; keypadDone.style.opacity = '0.5'; }
           try {
             let error;
             if (isStitchTestEmail(authPendingEmail)) {
@@ -2554,7 +2590,7 @@ let userPoints = 0;
             authSubmittingVerify = false;
             for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.disabled = false; }
             if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.style.opacity = ''; verifyBtn.textContent = verifyBtnOriginalText || 'Verify & Continue'; }
-            if (doneBtn) { doneBtn.disabled = false; doneBtn.style.opacity = ''; }
+            if (keypadDone) { keypadDone.disabled = false; keypadDone.style.opacity = ''; }
           }
         }
         // Decides whether the signed-in account still has to go through sign-up/onboarding

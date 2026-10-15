@@ -217,7 +217,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261016b">
+    <link rel="stylesheet" href="styles.css?v=20261016c">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -306,7 +306,6 @@
               <!-- Shown after every Get Started / Log In -->
               <div class="auth-panel" id="auth-panel-verify"><div>
                 <form onsubmit="authSubmitVerify(event); return false;">
-                  <button class="auth-done-btn" type="submit">Done</button>
                   <div class="auth-info-banner">We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>.</div>
 
                   <div class="auth-otp-row">
@@ -414,9 +413,9 @@
         <button type="button" onclick="authKeypadPress('7')">7</button>
         <button type="button" onclick="authKeypadPress('8')">8</button>
         <button type="button" onclick="authKeypadPress('9')">9</button>
-        <span></span>
-        <button type="button" onclick="authKeypadPress('0')">0</button>
         <button type="button" class="auth-keypad-del" onclick="authKeypadPress('del')" aria-label="Delete"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5l-5 5M12 9.5l5 5"/></svg></button>
+        <button type="button" onclick="authKeypadPress('0')">0</button>
+        <button type="button" class="auth-keypad-done" onclick="authKeypadDone()">Done</button>
       </div>
 
     </div>
@@ -939,13 +938,13 @@
     <script src="feed.js?v=20261016a"></script>
     <script src="chat.js?v=20261016d"></script>
     <script src="study.js?v=20261014a"></script>
-    <script src="courses.js?v=20261015ax"></script>
+    <script src="courses.js?v=20261015axx"></script>
     <script src="quizzesAndGames.js?v=20261014c"></script>
     <script src="jobs.js?v=20261015e"></script>
     <script src="creator.js?v=20261015d"></script>
     <script src="settings.js?v=20261004b"></script>
     <script src="profile.js?v=20261015b"></script>
     <script src="overlays.js?v=20261016c"></script>
-    <script src="games.js?v=20261016b"></script>
+    <script src="games.js?v=20261016d"></script>
 </body>
 </html>

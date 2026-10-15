@@ -10531,6 +10531,7 @@ try {
             </div>
             <button onclick="this.parentElement.remove()" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>`;
           document.body.appendChild(el);
+          if (typeof placeToastInContent === 'function') placeToastInContent(el);
           enableSwipeDismiss(el, () => el.remove(), 'translateX(-50%)');
           setTimeout(() => el.remove(), 7000);
         }
