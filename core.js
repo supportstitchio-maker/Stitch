@@ -3424,7 +3424,7 @@ function toggleEmojiPicker(targetId, btn){
     const cols = Math.max(8, Math.min(24, Math.floor((r.width - 24) / 44)));
     const big = Math.max.apply(null, EMOJI_SET.filter(x => x.name !== 'Flags').map(x => x.list.length));
     const rows = Math.ceil(big / cols);
-    const h = Math.max(300, Math.min(Math.round(window.innerHeight * 0.58), 112 + rows * 40));
+    const h = Math.max(260, Math.min(Math.round(window.innerHeight * 0.36), 112 + rows * 40));   // shorter tray: the chat above stays visible and the grid scrolls
     const sig = Math.round(r.left) + '|' + Math.round(r.width) + '|' + h;
     if (sig === deskLast) return;          // nothing moved: do not poke the layout again (avoids a resize loop)
     deskLast = sig; deskCols = cols;

@@ -4697,7 +4697,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const missed = !!cm[1];
                 const outgoing = m.callDir === 'out';
                 const detail = missed ? 'No answer' : (cm[5] ? 'Declined' : (cm[4] || ''));
-                const bad = missed || cm[5] || /^(no answer|call declined|line busy|not connected)$/i.test(detail);
+                const bad = missed || cm[5] || /^(no answer|call declined|line busy|not connected|cancelled)$/i.test(detail);
                 const iconColor = bad ? '#ef4444' : '#16a34a';
                 const arrow = outgoing ? 'M7 17L17 7M9 7h8v8' : 'M17 7L7 17M7 9v8h8';
                 const glyph = isVideo
@@ -6750,6 +6750,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const callDurationSecs = callState.seconds;
           const callType = callState.type;
           const endedCallDir = callState.callDir || 'out';
+          const hungUpBeforeAnswer = !wasConnected && !remoteInitiated && endedCallDir === 'out' && !callState.statusOverride && !!callState.pendingRingTargets && callState.pendingRingTargets.size > 0 && !isMeetingConvo(callState.convoId);
+          const hungUpConvo = callState.convoId;
           closeCallNotesModal();
           clearCallTimers();
           stopCallLocalStream();
@@ -6777,6 +6779,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (wasConnected && endedId && !endedWasMeeting) {
             logCallEvent(endedId, `${callType === 'video' ? 'Video' : 'Voice'} call · ${formatCallTime(callDurationSecs)}`, endedCallDir);
           }
+          if (hungUpBeforeAnswer && hungUpConvo) logCallEvent(hungUpConvo, `${callType === 'video' ? 'Video' : 'Voice'} call · Cancelled`, 'out');
           if (endedWasMeeting) meetingOnCallEnded();
           callState = { convoId: null, type: 'audio', connected: false, seconds: 0, muted: false, speaker: false, camOff: false, mediaError: null, statusOverride: null, pendingRingTargets: null };
           groupCallFullscreenId = null;
