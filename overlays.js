@@ -2575,32 +2575,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function personProfileQRHTML(){
           const p = viewedProfile || {};
-          return `
-            <div class="flex-1 flex flex-col overflow-y-auto" style="background:#ffffff;">
-              <div class="flex items-center px-5 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-                <button onclick="closeOverlay()" class="text-[${NAVY}]">${IconBold('close','w-6 h-6')}</button>
-              </div>
-              <div class="flex-1 flex flex-col items-center px-8" style="padding-top:48px;">
-                <div class="bg-white rounded-3xl p-5 flex flex-col items-center shadow-xl" style="width:280px;">
-                  <div id="person-profile-qr-code" class="relative flex items-center justify-center" style="width:240px;height:240px;">
-                    <div class="absolute rounded-2xl bg-white flex items-center justify-center" style="width:52px;height:52px;box-shadow:0 0 0 5px #ffffff;">
-                      <div class="w-full h-full rounded-2xl overflow-hidden flex items-center justify-center" style="background:linear-gradient(135deg, ${ROYAL}, ${NAVY});">
-                        ${p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5 text-white')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="flex-1"></div>
-                <div class="flex flex-col items-center" style="margin-bottom:50px;width:280px;">
-                  <div class="font-bold text-lg font-display mb-3 tracking-wide text-[${NAVY}]">${p.username ? escapeHtml(p.username.toUpperCase()) : escapeHtml(p.name || 'STITCH MEMBER')}</div>
-                  <div class="flex items-center justify-between rounded-3xl pt-2.5 pb-3 px-4 bg-white shadow-xl" style="width:280px;">
-                    ${qrActionButton('send','Share','sharePersonProfileQR()')}
-                    ${qrActionButton('link','Copy','copyPersonProfileQRLink()')}
-                    ${qrActionButton('download','Download','downloadPersonProfileQR()')}
-                  </div>
-                </div>
-              </div>
-            </div>`;
+          const photoHTML = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5 text-white');
+          return qrScreenHTML('person-profile-qr-code', photoHTML, p.username ? escapeHtml(p.username.toUpperCase()) : escapeHtml(p.name || 'STITCH MEMBER'), 'sharePersonProfileQR()', 'copyPersonProfileQRLink()', 'downloadPersonProfileQR()');
         }
 
         function initPersonProfileQRCode(){
@@ -2611,17 +2587,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             text: personProfileQRLink(viewedProfile || {}),
             width: 240,
             height: 240,
-            colorDark: NAVY,
-            colorLight: '#ffffff',
+            colorDark: qrTheme().mod,
+            colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H
           });
           const canvas = el.querySelector('canvas') || el.querySelector('img');
           if (canvas) canvas.style.position = 'relative';
         }
 
-        function sharePersonProfileQR(){
+        async function sharePersonProfileQR(){
           const p = viewedProfile || {};
           const link = personProfileQRLink(p);
+          if (await shareQRCard('person-profile-qr-code', p.username || p.name || 'Stitch member', p.photo, link, p.name)) return;
           if (navigator.share) {
             navigator.share({ title: p.name, text: `Check out ${p.username ? escapeHtml(p.username) : (p.name || 'this profile')} on Stitch`, url: link }).catch(() => {});
           } else {
@@ -2639,73 +2616,10 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         function downloadPersonProfileQR(){
-          const el = document.getElementById('person-profile-qr-code');
-          const qrCanvas = el ? el.querySelector('canvas') : null;
-          if (!qrCanvas) { openAppAlertModal('QR code is still generating, try again in a moment.'); return; }
           const p = viewedProfile || {};
-          const size = 640, pad = 60;
-          const out = document.createElement('canvas');
-          out.width = size; out.height = size + 140;
-          const ctx = out.getContext('2d');
-
-          const drawBaseAndSave = () => {
-            const link = document.createElement('a');
-            link.download = `${escapeHtml(p.username || 'stitch-profile')}-qr.png`;
-            link.href = out.toDataURL('image/png');
-            link.click();
-          };
-
-          const drawBase = () => {
-            ctx.fillStyle = '#ffffff';
-            roundRect(ctx, 0, 0, out.width, out.height, 36);
-            ctx.fill();
-            const qrSize = size - pad * 2;
-            ctx.drawImage(qrCanvas, pad, pad, qrSize, qrSize);
-            ctx.fillStyle = NAVY;
-            ctx.font = 'bold 34px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(p.username ? p.username.toUpperCase() : (p.name || 'STITCH MEMBER'), out.width / 2, size + 80);
-          };
-
-          const centerX = pad + (size - pad * 2) / 2;
-          const centerY = pad + (size - pad * 2) / 2;
-
-          const drawBadge = (img) => {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 32, 0, Math.PI * 2);
-            ctx.clip();
-            if (img) {
-              ctx.drawImage(img, centerX - 32, centerY - 32, 64, 64);
-            } else {
-              const grad = ctx.createLinearGradient(centerX - 32, centerY - 32, centerX + 32, centerY + 32);
-              grad.addColorStop(0, ROYAL);
-              grad.addColorStop(1, NAVY);
-              ctx.fillStyle = grad;
-              ctx.fillRect(centerX - 32, centerY - 32, 64, 64);
-            }
-            ctx.restore();
-          };
-
-          drawBase();
-          if (p.photo) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => { drawBadge(img); drawBaseAndSave(); };
-            img.onerror = () => { drawBadge(null); drawBaseAndSave(); };
-            img.src = p.photo;
-          } else {
-            drawBadge(null);
-            drawBaseAndSave();
-          }
+          downloadQRCard('person-profile-qr-code', p.username || p.name || 'Stitch member', p.photo, `${p.username || 'stitch-profile'}-qr.png`);
         }
 
-        // Whole-screen placeholder shown until the person's details AND network count have loaded,
-        // so nobody lands on a half-filled profile ("Loading profile...", "..." network count)
         function personProfileSkeletonHTML(){
           return `
             <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">

@@ -1568,33 +1568,114 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return `https://stitch.app/@${escapeHtml(profileData.username)}`;
         }
 
-        function profileQRHTML(){
+
+        // ---- Shared QR card (profile + someone else's profile): theme-aware, names in Colmeak ----
+        function qrTheme(){
+          const dark = document.body.classList.contains('dark-mode');
+          return dark
+            ? { dark: true, page: '#121212', card: '#1e1e1e', mod: '#1e90ff', light: '#1e1e1e', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
+            : { dark: false, page: '#ffffff', card: '#ffffff', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
+        }
+
+        function qrScreenHTML(codeId, photoHTML, label, shareFn, copyFn, downloadFn){
+          const t = qrTheme();
           return `
-            <div class="flex-1 flex flex-col overflow-y-auto" style="background:#ffffff;">
+            <div class="flex-1 flex flex-col overflow-y-auto" style="background:${t.page};">
               <div class="flex items-center px-5 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-                <button onclick="closeOverlay()" class="text-[${NAVY}]">${IconBold('close','w-6 h-6')}</button>
+                <button onclick="closeOverlay()" style="color:${t.text};">${IconBold('close','w-6 h-6')}</button>
               </div>
               <div class="flex-1 flex flex-col items-center px-8" style="padding-top:48px;">
-                <div class="bg-white rounded-3xl p-5 flex flex-col items-center shadow-xl" style="width:280px;">
-                  <div id="profile-qr-code" class="relative flex items-center justify-center" style="width:240px;height:240px;">
-                    <div class="absolute rounded-2xl bg-white flex items-center justify-center" style="width:52px;height:52px;box-shadow:0 0 0 5px #ffffff;">
-                      <div class="w-full h-full rounded-2xl overflow-hidden flex items-center justify-center" style="background:linear-gradient(135deg, ${ROYAL}, ${NAVY});">
-                        ${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : Icon('camera','w-5 h-5 text-white')}
-                      </div>
+                <div class="rounded-3xl p-5 flex flex-col items-center shadow-xl" style="width:280px;background:${t.card};${t.dark ? 'box-shadow:0 0 0 1px rgba(255,255,255,0.08);' : ''}">
+                  <div id="${codeId}" class="relative flex items-center justify-center" style="width:240px;height:240px;">
+                    <div class="absolute rounded-2xl flex items-center justify-center" style="width:52px;height:52px;background:${t.card};box-shadow:0 0 0 5px ${t.card};">
+                      <div class="w-full h-full rounded-2xl overflow-hidden flex items-center justify-center" style="background:linear-gradient(135deg, ${ROYAL}, ${NAVY});">${photoHTML}</div>
                     </div>
                   </div>
                 </div>
                 <div class="flex-1"></div>
                 <div class="flex flex-col items-center" style="margin-bottom:50px;width:280px;">
-                  <div class="font-bold text-lg font-display mb-3 tracking-wide text-[${NAVY}]">${escapeHtml(profileData.username.toUpperCase())}</div>
-                  <div class="flex items-center justify-between rounded-3xl pt-2.5 pb-3 px-4 bg-white shadow-xl" style="width:280px;">
-                    ${qrActionButton('send','Share','shareProfileQR()')}
-                    ${qrActionButton('link','Copy','copyProfileQRLink()')}
-                    ${qrActionButton('download','Download','downloadProfileQR()')}
+                  <div class="text-lg mb-3 tracking-wide" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;color:${t.text};">${label}</div>
+                  <div class="flex items-center justify-between rounded-3xl pt-2.5 pb-3 px-4 shadow-xl" style="width:280px;background:${t.bar};${t.dark ? 'box-shadow:0 0 0 1px rgba(255,255,255,0.08);' : ''}">
+                    ${qrActionButton('send','Share',shareFn)}
+                    ${qrActionButton('link','Copy',copyFn)}
+                    ${qrActionButton('download','Download',downloadFn)}
                   </div>
                 </div>
               </div>
             </div>`;
+        }
+
+        // Draws the finished card (QR + centre photo + name in Colmeak) and resolves with the canvas
+        async function buildQRCardCanvas(qrCanvas, label, photo){
+          const t = qrTheme();
+          try { if (document.fonts && document.fonts.load) await document.fonts.load("700 38px 'Colmeak'"); } catch (e) {}
+          const size = 640, pad = 60;
+          const out = document.createElement('canvas');
+          out.width = size; out.height = size + 140;
+          const ctx = out.getContext('2d');
+          ctx.fillStyle = t.card;
+          roundRect(ctx, 0, 0, out.width, out.height, 36);
+          ctx.fill();
+          const qrSize = size - pad * 2;
+          ctx.drawImage(qrCanvas, pad, pad, qrSize, qrSize);
+          ctx.fillStyle = t.text;
+          ctx.font = "700 38px 'Colmeak','Montserrat',sans-serif";
+          ctx.textAlign = 'center';
+          ctx.fillText(String(label || '').toUpperCase(), out.width / 2, size + 84);
+          const cx = size / 2, cy = size / 2;
+          const badge = (img) => {
+            ctx.save();
+            ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI * 2); ctx.fillStyle = t.card; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, 32, 0, Math.PI * 2); ctx.clip();
+            if (img) ctx.drawImage(img, cx - 32, cy - 32, 64, 64);
+            else {
+              const grad = ctx.createLinearGradient(cx - 32, cy - 32, cx + 32, cy + 32);
+              grad.addColorStop(0, ROYAL); grad.addColorStop(1, NAVY);
+              ctx.fillStyle = grad; ctx.fillRect(cx - 32, cy - 32, 64, 64);
+            }
+            ctx.restore();
+          };
+          if (photo) {
+            await new Promise(res => {
+              const img = new Image(); img.crossOrigin = 'anonymous';
+              img.onload = () => { badge(img); res(); };
+              img.onerror = () => { badge(null); res(); };
+              img.src = photo;
+            });
+          } else badge(null);
+          return out;
+        }
+
+        // Share the card as a picture (with the name on it); fall back to the link
+        async function shareQRCard(codeId, label, photo, link, title){
+          const el = document.getElementById(codeId);
+          const qrCanvas = el ? el.querySelector('canvas') : null;
+          try {
+            if (qrCanvas && navigator.share && navigator.canShare) {
+              const out = await buildQRCardCanvas(qrCanvas, label, photo);
+              const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+              const file = new File([blob], 'stitch-qr.png', { type: 'image/png' });
+              if (blob && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: title || 'Stitch', text: link });
+                return true;
+              }
+            }
+          } catch (e) { if (e && e.name === 'AbortError') return true; }
+          return false;
+        }
+
+        async function downloadQRCard(codeId, label, photo, filename){
+          const el = document.getElementById(codeId);
+          const qrCanvas = el ? el.querySelector('canvas') : null;
+          if (!qrCanvas) { openAppAlertModal('QR code is still generating, try again in a moment.'); return; }
+          const out = await buildQRCardCanvas(qrCanvas, label, photo);
+          const a = document.createElement('a');
+          a.download = filename; a.href = out.toDataURL('image/png'); a.click();
+        }
+
+        function profileQRHTML(){
+          const photoHTML = profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : Icon('camera','w-5 h-5 text-white');
+          return qrScreenHTML('profile-qr-code', photoHTML, escapeHtml(profileData.username.toUpperCase()), 'shareProfileQR()', 'copyProfileQRLink()', 'downloadProfileQR()');
         }
 
         function qrActionButton(icon,label,onclick){
@@ -1613,16 +1694,17 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             text: profileQRLink(),
             width: 240,
             height: 240,
-            colorDark: NAVY,
-            colorLight: '#ffffff',
+            colorDark: qrTheme().mod,
+            colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H
           });
           const canvas = el.querySelector('canvas') || el.querySelector('img');
           if (canvas) canvas.style.position = 'relative';
         }
 
-        function shareProfileQR(){
+        async function shareProfileQR(){
           const link = profileQRLink();
+          if (await shareQRCard('profile-qr-code', profileData.username, profileData.photo, link, profileData.name)) return;
           if (navigator.share) {
             navigator.share({ title: profileData.name, text: `Check out ${escapeHtml(profileData.username)} on Stitch`, url: link }).catch(() => {});
           } else {
@@ -1640,68 +1722,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
         function downloadProfileQR(){
-          const el = document.getElementById('profile-qr-code');
-          const qrCanvas = el ? el.querySelector('canvas') : null;
-          if (!qrCanvas) { openAppAlertModal('QR code is still generating, try again in a moment.'); return; }
-          const size = 640, pad = 60;
-          const out = document.createElement('canvas');
-          out.width = size; out.height = size + 140;
-          const ctx = out.getContext('2d');
-
-          const drawBaseAndSave = () => {
-            const link = document.createElement('a');
-            link.download = `${escapeHtml(profileData.username)}-qr.png`;
-            link.href = out.toDataURL('image/png');
-            link.click();
-          };
-
-          const drawBase = () => {
-            ctx.fillStyle = '#ffffff';
-            roundRect(ctx, 0, 0, out.width, out.height, 36);
-            ctx.fill();
-            const qrSize = size - pad * 2;
-            ctx.drawImage(qrCanvas, pad, pad, qrSize, qrSize);
-            ctx.fillStyle = NAVY;
-            ctx.font = 'bold 34px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(profileData.username.toUpperCase(), out.width / 2, size + 80);
-          };
-
-          const centerX = pad + (size - pad * 2) / 2;
-          const centerY = pad + (size - pad * 2) / 2;
-
-          const drawBadge = (img) => {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 32, 0, Math.PI * 2);
-            ctx.clip();
-            if (img) {
-              ctx.drawImage(img, centerX - 32, centerY - 32, 64, 64);
-            } else {
-              const grad = ctx.createLinearGradient(centerX - 32, centerY - 32, centerX + 32, centerY + 32);
-              grad.addColorStop(0, ROYAL);
-              grad.addColorStop(1, NAVY);
-              ctx.fillStyle = grad;
-              ctx.fillRect(centerX - 32, centerY - 32, 64, 64);
-            }
-            ctx.restore();
-          };
-
-          drawBase();
-          if (profileData.photo) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => { drawBadge(img); drawBaseAndSave(); };
-            img.onerror = () => { drawBadge(null); drawBaseAndSave(); };
-            img.src = profileData.photo;
-          } else {
-            drawBadge(null);
-            drawBaseAndSave();
-          }
+          downloadQRCard('profile-qr-code', profileData.username, profileData.photo, `${profileData.username}-qr.png`);
         }
 
         function roundRect(ctx, x, y, w, h, r){

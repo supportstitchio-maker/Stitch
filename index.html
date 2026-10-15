@@ -159,16 +159,16 @@
     <!-- IMPORTANT: replace this with your real production domain (custom domain if you have one,
        otherwise your *.vercel.app URL) before launch, and keep it in sync with sitemap.xml and
        robots.txt below -->
-    <link rel="canonical" href="https://stitch.vercel.app/">
+    <link rel="canonical" href="https://mystitch.vercel.app/">
 
     <!-- Open Graph: controls the title/description/image shown when this link is pasted into
        WhatsApp, Twitter/X, Slack, Facebook, iMessage, etc. Without these, sharing the bare URL
        shows no preview at all -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://stitch.vercel.app/">
+    <meta property="og:url" content="https://mystitch.vercel.app/">
     <meta property="og:title" content="Stitch | Thread and Grow">
     <meta property="og:description" content="Join Stitch. Share, connect, study together and discover opportunities, all in one free app.">
-    <meta property="og:image" content="https://stitch.vercel.app/assets/og-image.jpg">
+    <meta property="og:image" content="https://mystitch.vercel.app/assets/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="Stitch">
@@ -177,7 +177,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Stitch | Thread and Grow">
     <meta name="twitter:description" content="Join Stitch. Share, connect, study together and discover opportunities, all in one free app.">
-    <meta name="twitter:image" content="https://stitch.vercel.app/assets/og-image.jpg">
+    <meta name="twitter:image" content="https://mystitch.vercel.app/assets/og-image.jpg">
 
     <!-- favicon.ico first, since desktop browsers request it by default. -->
     <link rel="icon" href="/favicon.ico" sizes="any">
@@ -191,6 +191,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Shared-link params survive a sign-in step: stash them before any script clears the address bar -->
+    <script>
+      (function(){
+        try {
+          var q = new URLSearchParams(window.location.search || '');
+          var keep = {}, any = false;
+          ['joinCollab','joinLecture','post','glimpse'].forEach(function(k){ if (q.get(k)) { keep[k] = q.get(k); any = true; } });
+          if (any) localStorage.setItem('stitch-pending-link', JSON.stringify({ p: keep, t: Date.now() }));
+        } catch (e) { /* storage unavailable: the address-bar param alone still works */ }
+      })();
+    </script>
     <!-- Capacitor (native iOS/Android app wrapper) detection: runs synchronously, before
        styles.css is even requested, so there's no flash of the wrong top spacing -->
     <script>
@@ -936,17 +947,17 @@
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
     <script src="analytics.js?v=20261004a"></script>
-    <script src="core.js?v=20261016d"></script>
-    <script src="feed.js?v=20261016a"></script>
-    <script src="chat.js?v=20261016h"></script>
+    <script src="core.js?v=20261016e"></script>
+    <script src="feed.js?v=20261016b"></script>
+    <script src="chat.js?v=20261016i"></script>
     <script src="study.js?v=20261014ax"></script>
     <script src="courses.js?v=20261015axx"></script>
     <script src="quizzesAndGames.js?v=20261014c"></script>
     <script src="jobs.js?v=20261015e"></script>
     <script src="creator.js?v=20261015d"></script>
     <script src="settings.js?v=20261004b"></script>
-    <script src="profile.js?v=20261015b"></script>
-    <script src="overlays.js?v=20261016e"></script>
-    <script src="games.js?v=20261016d"></script>
+    <script src="profile.js?v=20261016a"></script>
+    <script src="overlays.js?v=20261016f"></script>
+    <script src="games.js?v=20261016e"></script>
 </body>
 </html>

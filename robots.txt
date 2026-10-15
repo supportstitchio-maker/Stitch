@@ -10,4 +10,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://stitch.vercel.app/sitemap.xml
+Sitemap: https://mystitch.vercel.app/sitemap.xml

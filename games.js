@@ -2025,6 +2025,24 @@ let userPoints = 0;
           if (typeof checkPendingChallengeLinkJoin === 'function') checkPendingChallengeLinkJoin();
           if (typeof checkPendingCollabLinkJoin === 'function') checkPendingCollabLinkJoin();
           if (typeof checkPendingMeetingLink === 'function') checkPendingMeetingLink();
+          // Links that arrived before sign-in (the page reloaded and dropped the address-bar params)
+          try {
+            const raw = localStorage.getItem('stitch-pending-link');
+            localStorage.removeItem('stitch-pending-link');
+            const sv = raw ? JSON.parse(raw) : null;
+            if (sv && sv.p && Date.now() - sv.t < 24 * 3600 * 1000) {
+              const p = sv.p;
+              if (p.post && !(window.__linkDone && window.__linkDone.post) && typeof openPostById === 'function') {
+                (window.__linkDone = window.__linkDone || {}).post = true;
+                openPostById(isNaN(Number(p.post)) ? p.post : Number(p.post));
+              } else if (p.joinCollab && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinCollab=' + encodeURIComponent(p.joinCollab));
+              else if (p.joinLecture && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinLecture=' + encodeURIComponent(p.joinLecture));
+              else if (p.glimpse && !window.location.search) history.replaceState(null, '', window.location.pathname + '?glimpse=' + encodeURIComponent(p.glimpse));
+              if (p.joinCollab && typeof checkPendingCollabLinkJoin === 'function') checkPendingCollabLinkJoin();
+            }
+          } catch (e) { /* best effort */ }
+          if (typeof checkPendingLectureLinkJoin === 'function') checkPendingLectureLinkJoin();
+          if (typeof checkPendingGlimpseLink === 'function') checkPendingGlimpseLink();
 
           // The tab bar stays locked until the Home skeleton has fully finished loading and the real
           // feed is on screen

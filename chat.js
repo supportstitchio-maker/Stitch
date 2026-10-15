@@ -5215,7 +5215,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             else thumb = `<div class="gq-thumb gq-thumb-text bg-${escapeHtml(g.bg || 'brand')}"></div>`;
             return `<div class="gq-quote" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who === 'You' ? 'Your Glimpse' : who + ' \u00b7 Glimpse'}</div>${capText ? `<div class="gq-desc"><span>${capText}</span></div>` : ''}</div>${thumb}</div>`;
           }).join('');
-          const body = (m.text && !isShare) ? `<div class="gq-body">${escapeHtml(m.text)}</div>` : '';
+          const body = (m.text && !isShare) ? `<div class="gq-body">${linkifyChatText(m.text)}</div>` : '';
           const radius = mine ? '20px 20px 0 20px' : '20px 20px 20px 0';
           return `<div class="gq-bubble ${mine ? 'gq-mine' : 'gq-theirs'}" style="border-radius:${radius};">${filesHTML || ''}${quotes}${body}</div>`;
         }
@@ -8844,11 +8844,42 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // ---- Swipe to reply in normal chats (same hidden-quote trick as the call chat) ----
         let convoReply = null;
+        // Turn web addresses in a message into tappable links. Stitch links (?post=, ?meeting=, ?joinCollab=,
+        // ?joinLecture=, ?glimpse=) open inside the app; anything else opens in a new tab.
+        function linkifyChatText(text){
+          const esc = escapeHtml(String(text == null ? '' : text));
+          return esc.replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, function(m){
+            let url = m, tail = '';
+            const t = /[.,!?;:)\]]+$/.exec(url);
+            if (t) { tail = t[0]; url = url.slice(0, url.length - tail.length); }
+            if (!url) return m;
+            const href = /^https?:/i.test(url) ? url : 'https://' + url;
+            return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" onclick="return openChatLink(event,this)" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()" style="text-decoration:underline;color:inherit;word-break:break-all;">' + url + '</a>' + tail;
+          });
+        }
+        function openChatLink(ev, a){
+          try {
+            const u = new URL(a.getAttribute('href'), window.location.href);
+            const sameSite = u.origin === window.location.origin;
+            if (!sameSite) return true;
+            const q = u.searchParams;
+            const post = q.get('post'), meeting = q.get('meeting'), collab = q.get('joinCollab'), lecture = q.get('joinLecture'), glimpse = q.get('glimpse');
+            if (!(post || meeting || collab || lecture || glimpse)) return true;
+            ev.preventDefault();
+            if (post) openPostById(isNaN(Number(post)) ? post : Number(post));
+            else if (meeting) openMeetingByCode(meeting);
+            else if (collab) { history.replaceState(null, '', window.location.pathname + '?joinCollab=' + encodeURIComponent(collab)); checkPendingCollabLinkJoin(); }
+            else if (lecture) { history.replaceState(null, '', window.location.pathname + '?joinLecture=' + encodeURIComponent(lecture)); if (typeof checkPendingLectureLinkJoin === 'function') checkPendingLectureLinkJoin(); }
+            else if (glimpse && typeof openGlimpseById === 'function') openGlimpseById(glimpse);
+            return false;
+          } catch (e) { return true; }
+        }
+
         function convoTextHTML(text, mine){
           const p = meetingChatParse(text);
-          if (!p.rname) return escapeHtml(p.body);
+          if (!p.rname) return linkifyChatText(p.body);
           const q = `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>`;
-          return q + escapeHtml(p.body);
+          return q + linkifyChatText(p.body);
         }
         function convoShowReply(){
           const bar = document.getElementById('convo-reply-bar');

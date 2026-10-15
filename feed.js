@@ -4748,11 +4748,37 @@
             let tries = 0;
             const t = setInterval(() => {
               tries++;
-              if (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) { clearInterval(t); openPostById(isNaN(Number(pid)) ? pid : Number(pid)); }
+              if (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) { clearInterval(t); if (window.__linkDone && window.__linkDone.post) return; (window.__linkDone = window.__linkDone || {}).post = true; try { localStorage.removeItem('stitch-pending-link'); } catch (e) {} openPostById(isNaN(Number(pid)) ? pid : Number(pid)); }
               else if (tries > 40) clearInterval(t);
             }, 750);
           } catch (e) {}
         })();
+
+        async function openGlimpseById(id){
+          const want = String(id);
+          const find = () => {
+            for (const s of stories) {
+              const items = s.items || [];
+              const idx = items.findIndex(it => String(it.id) === want);
+              if (idx !== -1) return { s, idx };
+            }
+            return null;
+          };
+          let hit = find();
+          if (!hit && typeof loadRemoteGlimpses === 'function') { try { await loadRemoteGlimpses(); } catch (e) {} hit = find(); }
+          if (!hit) { if (typeof openAppAlertModal === 'function') openAppAlertModal("This glimpse isn't available anymore."); return; }
+          if (typeof switchTab === 'function' && !(typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'conversation')) switchTab(0);
+          currentStoryId = hit.s.id;
+          currentItemIndex = hit.idx;
+          openStoryOverlay(hit.s);
+        }
+        function checkPendingGlimpseLink(){
+          let gid = null;
+          try { gid = new URLSearchParams(location.search).get('glimpse'); } catch (e) {}
+          if (!gid) return;
+          history.replaceState(null, '', location.pathname);
+          openGlimpseById(gid);
+        }
 
         function handleRemotePostInsert(payload, myId){
           const row = payload && payload.new;
