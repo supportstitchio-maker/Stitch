@@ -1725,6 +1725,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 ${settingsRow('close','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
                 ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}
+              ${settingsSection('Get the app', `
+                ${settingsRow('download','Download the app', (typeof stitchAppInstalled === 'function' && stitchAppInstalled()) ? 'Already installed on this device' : 'Add Stitch to your home screen', "installAppFromSettings()")}
+              `)}
               ${settingsSection('Notification Preferences', `
                 ${settingsToggleRow('bell','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
                 ${settingsToggleRow('comment','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}

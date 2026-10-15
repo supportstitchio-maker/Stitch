@@ -3766,3 +3766,89 @@ function coverPickerHTML(o){
     '<div style="display:flex;flex-wrap:wrap;gap:10px;padding:3px 4px;">' + tiles + '</div>' +
   '</div>';
 }
+
+
+// ---- "Install Stitch" prompt: shown after login so people can add the web app to their home screen ----
+(function(){
+  const KEY = 'stitchInstallPrompt';           // { n: times dismissed, t: last dismissed (ms), done: 1 }
+  let deferred = null, shown = false, card = null;
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+  const write = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+  const standalone = () => { try { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; } };
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobile = isIOS || /Android/i.test(ua) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred = e; });
+  window.addEventListener('appinstalled', function(){ write(Object.assign(read(), { done: 1 })); closeCard(); });
+
+  function closeCard(){
+    if (!card) return;
+    const c = card; card = null;
+    c.style.transform = 'translateY(110%)'; c.style.opacity = '0';
+    setTimeout(function(){ if (c.parentNode) c.parentNode.removeChild(c); }, 320);
+  }
+  function dismiss(){ const s = read(); write({ n: (s.n || 0) + 1, t: Date.now(), done: s.done }); closeCard(); }
+
+  window.showInstallPrompt = function(force){
+    if (shown && !force) return;
+    if (standalone()) return;
+    const s = read();
+    if (!force && (s.done || (s.n || 0) >= 3 || (s.t && Date.now() - s.t < 7 * 864e5))) return;
+    if (!force && !isMobile) return;                       // desktop browsers have their own install button
+    // Android/Chrome gives us a real install dialog; iPhone Safari has none, so show the steps
+    if (!deferred && !isIOS && !force) return;
+    shown = true;
+    const dark = document.body.classList.contains('dark-mode');
+    card = document.createElement('div');
+    card.id = 'install-card';
+    card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Install Stitch');
+    card.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30000;max-width:460px;margin:0 auto;border-radius:24px;padding:18px 18px 16px;' +
+      'background:' + (dark ? '#1f2024' : '#ffffff') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';box-shadow:0 18px 50px rgba(10,37,64,.28),0 0 0 1px ' + (dark ? 'rgba(255,255,255,.08)' : 'rgba(10,37,64,.06)') + ';' +
+      'transform:translateY(110%);opacity:0;transition:transform .38s cubic-bezier(.2,.9,.25,1),opacity .25s;font-family:inherit;';
+    const steps = isIOS && !deferred
+      ? '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Tap <b>Share</b> <span style="display:inline-block;vertical-align:-3px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg></span> in Safari, then <b>Add to Home Screen</b>. You can find this again anytime in <b>Settings</b>.</div>'
+      : '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Add it to your home screen for faster access and a full-screen experience. No app store needed. You can also do this anytime in <b>Settings</b>.</div>';
+    const btn = 'height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
+    const actions = isIOS && !deferred
+      ? '<button type="button" id="install-no" style="width:100%;' + btn + '">Got it</button>'
+      : '<div style="display:flex;gap:10px;"><button type="button" id="install-no" style="flex:1;' + btn + '">Not now</button>' +
+        '<button type="button" id="install-yes" style="flex:1;' + btn + '">Install app</button></div>';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">' +
+        '<img src="/assets/icon-192.png" alt="" width="52" height="52" style="width:52px;height:52px;border-radius:13px;box-shadow:0 0 0 1px rgba(10,37,64,.08);flex-shrink:0;">' +
+        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">Install Stitch</div>' + steps + '</div>' +
+      '</div>' + actions;
+    document.body.appendChild(card);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (card) { card.style.transform = 'none'; card.style.opacity = '1'; } }); });
+    const no = card.querySelector('#install-no'); if (no) no.onclick = dismiss;
+    const yes = card.querySelector('#install-yes');
+    if (yes) yes.onclick = async function(){
+      const d = deferred; deferred = null;
+      if (!d) { closeCard(); return; }
+      try { d.prompt(); const r = await d.userChoice; if (r && r.outcome === 'accepted') write(Object.assign(read(), { done: 1 })); else write({ n: (read().n || 0) + 1, t: Date.now(), done: read().done }); } catch (e) {}
+      closeCard();
+    };
+  };
+
+  // Settings > "Download the app"
+  window.stitchAppInstalled = standalone;
+  window.installAppFromSettings = function(){
+    if (standalone()) { openAppAlertModal('Stitch is already installed on this device. Open it from your home screen.'); return; }
+    if (deferred || isIOS) { shown = false; window.showInstallPrompt(true); return; }
+    openAppAlertModal(/Android/i.test(ua)
+      ? 'Open your browser menu (the three dots) and tap "Install app" or "Add to Home screen".'
+      : 'In Chrome or Edge, use the install icon at the right end of the address bar, or open the menu and choose "Install Stitch". On a phone, open the browser menu and tap "Add to Home screen".');
+  };
+
+  // Wait until the person is signed in and the app is on screen, then show it once per visit
+  let tries = 0;
+  const iv = setInterval(function(){
+    if (++tries > 400 || shown) { clearInterval(iv); return; }
+    const gate = document.getElementById('auth-gate');
+    const inApp = gate && gate.classList.contains('auth-hidden') && document.getElementById('screen') && document.getElementById('screen').children.length;
+    if (!inApp) return;
+    clearInterval(iv);
+    setTimeout(function(){ try { window.showInstallPrompt(); } catch (e) {} }, 4500);
+  }, 1500);
+})();

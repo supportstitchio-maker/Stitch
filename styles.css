@@ -3972,7 +3972,7 @@ body.dark-mode .gq-theirs .gq-quote{background:rgba(255,255,255,0.08);}
 #auth-gate .auth-divider-mid::before{content:"";flex:1;height:1px;background:var(--a-field-border);}
 
 /* Google | Apple side by side */
-#auth-gate:has(#auth-panel-login.active) .auth-social-ctas{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#auth-gate:has(#auth-panel-login.active) .auth-social-ctas{display:grid;grid-template-columns:1fr;gap:12px;}
 #auth-gate:has(#auth-panel-login.active) .auth-google-cta,
 #auth-gate:has(#auth-panel-login.active) .auth-apple-cta{
   margin:0;height:54px;padding:0 10px;border-radius:999px;border:none;background:var(--a-field);font-size:15px;font-weight:600;gap:10px;box-shadow:none;
