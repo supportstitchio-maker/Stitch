@@ -549,11 +549,9 @@
 
           const registration = await navigator.serviceWorker.register('/sw.js');
 
-          if (Notification.permission === 'denied') return;
-          if (Notification.permission === 'default') {
-            const perm = await Notification.requestPermission();
-            if (perm !== 'granted') return;
-          }
+          // The permission box is only ever opened from a tap (see enablePushNotifications), because
+          // iPhones refuse it otherwise. Here we just keep an already-allowed device subscribed.
+          if (Notification.permission !== 'granted') return;
 
           let subscription = await registration.pushManager.getSubscription();
           if (!subscription) {
@@ -3850,5 +3848,92 @@ function coverPickerHTML(o){
     if (!inApp) return;
     clearInterval(iv);
     setTimeout(function(){ try { window.showInstallPrompt(); } catch (e) {} }, 4500);
+  }, 1500);
+})();
+
+
+// ---- Push notifications: ask on a tap (soft prompt + Settings row) ----
+(function(){
+  const KEY = 'stitchPushPrompt';
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+  const write = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+  const standalone = () => { try { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true; } catch (e) { return false; } };
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  // 'unsupported' | 'denied' | 'granted' | 'default'
+  window.pushStatus = function(){
+    try {
+      if (typeof isNativeApp === 'function' && isNativeApp()) return 'granted';
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+      return Notification.permission;
+    } catch (e) { return 'unsupported'; }
+  };
+  window.enablePushNotifications = async function(){
+    if (window.pushStatus() === 'unsupported') return 'unsupported';
+    try {
+      if (Notification.permission === 'default') await Notification.requestPermission();
+      if (Notification.permission === 'granted') {
+        _pushInitDone = false;               // let the normal setup subscribe this device now
+        await initPushNotifications();
+      }
+    } catch (e) { console.warn('Enabling push failed:', e); }
+    return window.pushStatus();
+  };
+  window.pushSettingsSub = function(){
+    const s = window.pushStatus();
+    return s === 'granted' ? 'On for this device' : s === 'denied' ? 'Blocked in your browser settings' : s === 'default' ? 'Tap to turn on' : (isIOS && !standalone() ? 'Add Stitch to your home screen first' : 'Not supported on this browser');
+  };
+  window.pushSettingsTap = async function(){
+    const s = window.pushStatus();
+    if (s === 'unsupported') {
+      openAppAlertModal(isIOS && !standalone() ? 'On iPhone, notifications work once Stitch is added to your home screen. Tap Share, then Add to Home Screen, and open Stitch from there.' : 'This browser does not support notifications.');
+    } else if (s === 'denied') {
+      openAppAlertModal('Notifications are blocked for Stitch. Allow them in your browser or phone settings (site settings for Stitch), then come back here.');
+    } else if (s === 'default') {
+      const r = await window.enablePushNotifications();
+      if (r === 'granted') openAppAlertModal('Notifications are on. You will get messages, calls and updates on this device.');
+      if (document.getElementById('profile-menu-push-sub')) document.getElementById('profile-menu-push-sub').textContent = window.pushSettingsSub();
+    } else {
+      openAppAlertModal('Notifications are already on for this device. Choose which ones you get with the switches below.');
+    }
+  };
+
+  let card = null, shown = false;
+  function closeCard(){ if (!card) return; const c = card; card = null; c.style.transform = 'translateY(110%)'; c.style.opacity = '0'; setTimeout(function(){ if (c.parentNode) c.parentNode.removeChild(c); }, 320); }
+  function showPushPrompt(){
+    if (shown || window.pushStatus() !== 'default') return;
+    const s = read();
+    if ((s.n || 0) >= 3 || (s.t && Date.now() - s.t < 7 * 864e5)) return;
+    shown = true;
+    const dark = document.body.classList.contains('dark-mode');
+    card = document.createElement('div'); card.id = 'push-card';
+    card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Turn on notifications');
+    card.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30000;max-width:460px;margin:0 auto;border-radius:24px;padding:18px 18px 16px;background:' + (dark ? '#1f2024' : '#ffffff') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';box-shadow:0 18px 50px rgba(10,37,64,.28),0 0 0 1px ' + (dark ? 'rgba(255,255,255,.08)' : 'rgba(10,37,64,.06)') + ';transform:translateY(110%);opacity:0;transition:transform .38s cubic-bezier(.2,.9,.25,1),opacity .25s;';
+    const btn = 'flex:1;height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">' +
+        '<img src="/assets/icon-192.png" alt="" width="52" height="52" style="width:52px;height:52px;border-radius:13px;box-shadow:0 0 0 1px rgba(10,37,64,.08);flex-shrink:0;">' +
+        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">Turn on notifications</div>' +
+        '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Get messages, calls and class updates even when Stitch is closed. You can change this anytime in <b>Settings</b>.</div></div>' +
+      '</div><div style="display:flex;gap:10px;"><button type="button" id="push-no" style="' + btn + '">Not now</button><button type="button" id="push-yes" style="' + btn + '">Turn on</button></div>';
+    document.body.appendChild(card);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (card) { card.style.transform = 'none'; card.style.opacity = '1'; } }); });
+    card.querySelector('#push-no').onclick = function(){ const p = read(); write({ n: (p.n || 0) + 1, t: Date.now() }); closeCard(); };
+    card.querySelector('#push-yes').onclick = async function(){ closeCard(); await window.enablePushNotifications(); };
+  }
+  window.showPushPrompt = showPushPrompt;
+
+  // After sign-in, once the install card (if any) is out of the way
+  let tries = 0;
+  const iv = setInterval(function(){
+    if (++tries > 600 || shown) { clearInterval(iv); return; }
+    const gate = document.getElementById('auth-gate');
+    const inApp = gate && gate.classList.contains('auth-hidden') && document.getElementById('screen') && document.getElementById('screen').children.length;
+    if (!inApp) return;
+    if (window.pushStatus() !== 'default') { clearInterval(iv); return; }
+    if (document.getElementById('install-card')) return;           // one card at a time
+    if (!window.__pushWait) { window.__pushWait = Date.now(); return; }
+    if (Date.now() - window.__pushWait < 12000) return;            // give the install card its moment first
+    clearInterval(iv); showPushPrompt();
   }, 1500);
 })();

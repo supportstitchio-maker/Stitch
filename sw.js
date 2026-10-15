@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v111';
+const OFFLINE_CACHE = 'stitch-offline-v112';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
@@ -117,7 +117,8 @@ self.addEventListener('push', (event) => {
     requireInteraction: !!isCall,
     silent: false,
     image: (payload.image || (payload.data && payload.data.thumb)) || undefined,
-    icon: (payload.data && payload.data.thumb) || undefined,
+    icon: (payload.data && payload.data.thumb) || '/assets/icon-192.png',
+    badge: '/assets/badge-96.png',
     vibrate: isCall ? [400, 200, 400, 200, 400, 200, 400] : [150],
   };
 

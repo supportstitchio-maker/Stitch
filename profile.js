@@ -1714,6 +1714,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ctx.closePath();
         }
 
+        function settingsRowPush(){
+          return settingsRow('bell','Push notifications', `<span id="profile-menu-push-sub">${(typeof pushSettingsSub === 'function') ? pushSettingsSub() : ''}</span>`, "pushSettingsTap()");
+        }
+
         // ---- Profile overflow menu ----
         function profileMenuHTML(){
           return `
@@ -1729,6 +1733,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 ${settingsRow('download','Download the app', (typeof stitchAppInstalled === 'function' && stitchAppInstalled()) ? 'Already installed on this device' : 'Add Stitch to your home screen', "installAppFromSettings()")}
               `)}
               ${settingsSection('Notification Preferences', `
+                ${settingsRowPush()}
                 ${settingsToggleRow('bell','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
                 ${settingsToggleRow('comment','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
                 ${settingsToggleRow('mail','Email notifications', 'Receive updates via email', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
