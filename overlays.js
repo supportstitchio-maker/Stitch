@@ -611,7 +611,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               setTimeout(() => { suppressNextPopstate = false; }, 600);
             }
           }
-          if (currentTab === 2) { renderStudy(); openRightPanel('notebook'); }
+          // Closing a page re-draws the Workspace underneath without replaying its slide-in (that
+          // replay looked like the whole app blinking)
+          if (currentTab === 2) { window.__studyNoSlide = true; try { renderStudy(); } finally { window.__studyNoSlide = false; } openRightPanel('notebook'); }
           if (currentTab === 0 && typeof setupFeedVideoAutoplay === 'function') {
             const feedListEl = document.getElementById('feed-list');
             if (feedListEl) setupFeedVideoAutoplay(feedListEl);

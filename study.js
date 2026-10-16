@@ -72,7 +72,7 @@ let studyFabMenuOpen = false;
                 <button onclick="setClassroomAreaTab('classes')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'classes' ? 'on' : ''}">My Spaces</button>
                 <button onclick="setClassroomAreaTab('courses')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'courses' ? 'on' : ''}">Courses</button>
               </div>
-              <div class="classroom-tab-panel ${classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right'}">
+              <div class="classroom-tab-panel ${(window.__studyNoSlide || !classroomAreaTabSlideDir) ? '' : (classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right')}">
               ${classroomAreaTab === 'courses' ? coursesHomeHTML() : `
                 ${hasClasses ? myClassesListHTML() : `
                 <div class="flex gap-2 mb-5">
@@ -87,6 +87,8 @@ let studyFabMenuOpen = false;
               </div>
             </div>
             ${classroomAreaTab === 'classes' && hasClasses && (studySub === 'exams' || studySub === 'resources') ? studyFabHTML() : ''}`;
+          // The slide-in plays once per tab switch, not on every re-draw (re-draws look like blinking)
+          classroomAreaTabSlideDir = null;
           const classroomNav = document.getElementById('classroom-nav');
           if (classroomNav) classroomNav.style.display = '';
           updateClassroomNav();

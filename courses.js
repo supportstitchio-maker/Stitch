@@ -1777,7 +1777,7 @@ try {
                 <div class="flex-1"></div>
                 ${enrolled ? `
                   <div class="mt-2"><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div><div class="text-[11px] text-gray-400 mt-1">${pct}% complete</div></div>`
-                : `<div class="flex items-center justify-between mt-2"><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:${courseIsPaid(c) ? 'rgba(30,144,255,.12)' : 'rgba(5,150,105,.12)'};color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}</span><span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
+                : `<div class="flex items-center justify-between mt-2">${courseIsPaid(c) ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(30,144,255,.12);color:${NAVY};">${coursePriceLabel(c)}</span>` : `<span class="text-xs font-bold uppercase" style="color:#059669;letter-spacing:.03em;">${coursePriceLabel(c)}</span>`}<span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
               </div>
             </div>`;
         }
@@ -4014,8 +4014,8 @@ try {
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Price <span class="normal-case font-medium text-gray-400">(leave empty for free)</span></label>
                 <div class="flex gap-2">
-                  <input type="number" min="0" step="1" inputmode="numeric" value="${escapeHtml(d.price || '')}" oninput="updateNewCourseField('price', this.value)" placeholder="0" class="border border-gray-200 flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
-                  <select onchange="updateNewCourseField('currency', this.value)" class="border border-gray-200 bg-gray-100 rounded-2xl px-3 py-3 text-sm">
+                  <input type="number" min="0" step="1" inputmode="numeric" value="${escapeHtml(d.price || '')}" oninput="updateNewCourseField('price', this.value)" placeholder="0" style="min-width:0;" class="border border-gray-200 flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+                  <select onchange="updateNewCourseField('currency', this.value)" style="width:96px;flex:0 0 96px;min-width:0;max-width:34%;" class="border border-gray-200 bg-gray-100 rounded-2xl px-3 py-3 text-sm">
                     ${['GHS','NGN','USD','ZAR','KES'].map(cu => `<option value="${cu}" ${(d.currency || 'GHS') === cu ? 'selected' : ''}>${cu}</option>`).join('')}
                   </select>
                 </div>
