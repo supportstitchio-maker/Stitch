@@ -1496,14 +1496,18 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             ${bg}
             <div id="poster-app-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
+            <div class="pa-sticky">
             ${overlayHeader(posterAppHeaderTitle(), '20px', 'posterAppExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             ${segs}
-            <div class="px-5" style="padding-top:${isWelcome ? '18' : '20'}px;padding-bottom:130px;">
+            ${isWelcome ? '' : `<div class="px-5" style="padding-top:18px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
+              <div class="pa-kick">Step ${stepNo} of ${stepPages.length}${page.kicker ? ' · ' + page.kicker : ''}</div>
+              <h2 class="pa-h2">${title}</h2>
+              <div class="pa-sub">${sub}</div>
+            </div></div>`}
+            </div>
+            <div class="px-5" style="padding-top:${isWelcome ? '18' : '2'}px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
                 ${deniedBanner}
-                ${isWelcome ? '' : `<div class="pa-kick">Step ${stepNo} of ${stepPages.length}${page.kicker ? ' · ' + page.kicker : ''}</div>`}
-                ${isWelcome ? '' : `<h2 class="pa-h2">${title}</h2>`}
-                ${isWelcome ? '' : `<div class="pa-sub">${sub}</div>`}
                 ${hint ? `<div class="pa-hint">${hint}</div>` : ''}
                 ${posterApplicationFormHTML()}
               </div>
@@ -6555,16 +6559,20 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             ${bg}
             <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
+            <div class="pa-sticky">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
             <div class="w-full px-5" style="margin-top:12px;">
               <div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">${segs}</div>
             </div>
-            <div class="px-5" style="padding-top:20px;padding-bottom:130px;">
+            <div class="px-5" style="padding-top:18px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
+              <div class="pa-kick">Step ${stepNum} of ${total} · ${careerStartPageKick[stepId] || ''}</div>
+              <h2 class="pa-h2">${careerStartStepTitle(stepId)}</h2>
+              <div class="pa-sub">${careerStartStepSub(stepId)}</div>
+            </div></div>
+            </div>
+            <div class="px-5" style="padding-top:2px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
-                <div class="pa-kick">Step ${stepNum} of ${total} · ${careerStartPageKick[stepId] || ''}</div>
-                <h2 class="pa-h2">${careerStartStepTitle(stepId)}</h2>
-                <div class="pa-sub">${careerStartStepSub(stepId)}</div>
-                ${hint ? `<div class="pa-hint">${hint}</div>` : ''}
+                ${hint ? `<div class="pa-hint" style="margin-top:0;">${hint}</div>` : ''}
                 <div id="career-start-step-body" style="margin-top:18px;">
                   ${careerStartStepBodyHTML()}
                 </div>
@@ -8154,13 +8162,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const goLabel = isLast ? (isEditing ? 'Save changes' : (newOppDraft.type === 'Course' ? 'Post course' : 'Post opportunity')) : 'Continue';
           return `
             <div class="flex-1 overflow-y-auto pa-flow">
+            <div class="pa-sticky">
             ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', 'newOppBack()', null, { center: true, titleSize: 'text-xl', titleClass: 'career-flow-title', pb: '0px' })}
             <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">${segs}</div></div>
-            <div class="px-5" style="padding-top:20px;padding-bottom:130px;">
-              <div class="max-w-2xl mx-auto">
+            <div class="px-5" style="padding-top:18px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
               <div class="pa-kick">Step ${pg + 1} of ${NEW_OPP_PAGES.length} · ${meta.kicker}</div>
               <h2 class="pa-h2">${meta.title}</h2>
-              <div class="pa-sub" style="margin-bottom:14px;">${meta.sub}</div>
+              <div class="pa-sub">${meta.sub}</div>
+            </div></div>
+            </div>
+            <div class="px-5" style="padding-top:2px;padding-bottom:130px;">
+              <div class="max-w-2xl mx-auto">
               ${pg === 0 ? `
 <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
               ${(() => { return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}

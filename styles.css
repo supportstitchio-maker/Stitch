@@ -4460,3 +4460,22 @@ body.dark-mode #auth-photo-circle{ background:#1c1c1c !important; border-color:#
 .pa-flow button[style*="height:42px"][style*="border-radius:21px"]{ background:#fff !important; color:#1e90ff !important; border:1.5px dashed #b9d4f7 !important; }
 body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"]{ background:#1c1c1c !important; }
 .pa-flow textarea{ padding:14px 16px; }
+
+/* Onboarding pages (phones): header stays put while the page scrolls */
+@media (max-width:1023px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back{
+    position:fixed; top:calc(env(safe-area-inset-top, 0px) + 20px); left:12px; z-index:6; }
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
+    position:fixed; top:calc(env(safe-area-inset-top, 0px) + 20px); left:54px; right:20px; z-index:6; }
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ padding-top:0; }
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head{
+    position:sticky; top:calc(-1 * (env(safe-area-inset-top, 0px) + 20px)); z-index:5;
+    margin:calc(-1 * (env(safe-area-inset-top, 0px) + 20px)) -20px 0; width:auto;
+    padding:calc(env(safe-area-inset-top, 0px) + 20px + 50px) 20px 14px;
+    background:rgba(255,255,255,.97); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head{ background:rgba(11,14,19,.97); }
+}
+
+/* Match with CV / Apply to post / Post an Opportunity: header, progress and page title stay put */
+.pa-flow .pa-sticky{ position:sticky; top:0; z-index:5; background:inherit; }
+#overlay .pa-flow .pa-sticky{ background:#f9fafb; }
