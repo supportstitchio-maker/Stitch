@@ -7828,7 +7828,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function openPostOpportunity(){
           if (!canCurrentUserPost()) { openPosterApplicationForm(); return; }
           resetNewOppDraft();
-          newOppEditingId = null;
+          newOppEditingId = null; newOppPage = 0;
           openOverlay('postOpportunity');
         }
 
@@ -7857,7 +7857,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             price: (job.priceType === 'paid' ? (job.price || '') : ''),
             coverImage: job.coverImage || '',
           };
-          newOppEditingId = id;
+          newOppEditingId = id; newOppPage = 0;
           openOverlay('postOpportunity');
         }
 
@@ -8093,28 +8093,82 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function oppFieldRow(label, field, placeholder, type){
           return `
             <div class="mb-4">
-              <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${label}</label>
-              <input type="${type || 'text'}" value="${newOppDraft[field]}" oninput="updateNewOppField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
+              <label class="pa-lab">${label}</label>
+              <input type="${type || 'text'}" value="${newOppDraft[field]}" oninput="updateNewOppField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full flow-outline px-4 py-3 text-sm outline-none">
             </div>`;
+        }
+
+        let newOppPage = 0;
+        const NEW_OPP_PAGES = [
+          { kicker: 'The basics', title: 'Post an opportunity', sub: 'Start with what people will see first.' },
+          { kicker: 'Who and where', title: 'Who is it for?', sub: 'Used to match this listing with the right people in Match with CV.' },
+          { kicker: 'The details', title: 'Describe it', sub: 'What will they do and what do they need?' },
+          { kicker: 'How to apply', title: 'How should people apply?', sub: 'Applications can come straight to you in Stitch.' },
+        ];
+        function newOppPageError(i){
+          const d = newOppDraft, isCourse = d.type === 'Course';
+          if (i === 0) {
+            const keptCover = !!(newOppEditingId && (findJob(newOppEditingId) || {})._coverStripped);
+            if (!d.coverImage && !keptCover) { window.__oppCoverErr = true; return 'Please pick a colour card or upload a cover picture to continue.'; }
+            if (!d.title.trim()) return 'Please add a title.';
+            if (!d.type) return 'Please choose a type for this listing.';
+          }
+          if (i === 1) {
+            if (!d.mode) return 'Please choose where this takes place (On-site, Online, ...).';
+            if (!isCourse && !d.deadlineDate) return (d.deadlineDateTyped || '').trim() ? 'Please enter a valid, future deadline date as DD/MM/YYYY.' : 'Please enter a deadline date for this listing.';
+          }
+          if (i === 2) {
+            if (!d.description.trim()) return 'Please add a description.';
+            const w = posterAppWordCount(d.description);
+            if (w < OPP_DESC_MIN_WORDS) return `Please write at least ${OPP_DESC_MIN_WORDS} words in the description (currently ${w}).`;
+          }
+          if (i === 3) {
+            if (!isCourse && d.applyMethod === 'website') {
+              if (!d.website.trim()) return 'Please add the website link where applicants should apply.';
+              if (!isValidUrl(d.website.trim())) return 'Please enter a valid website link (e.g. careers.yourorg.com/apply).';
+            }
+            if (isCourse && d.email.trim() && !isValidEmail(d.email.trim())) return 'Please enter a valid email address (e.g. you@example.com).';
+            if (isCourse && d.priceType === 'paid' && !d.price.trim()) return 'Please add the enrollment fee amount, or switch this to a free course.';
+          }
+          return '';
+        }
+        function newOppNext(){
+          const err = newOppPageError(newOppPage);
+          if (err) { if (newOppPage === 0) rerenderPostOpportunity(); openAppAlertModal(err); return; }
+          if (newOppPage >= NEW_OPP_PAGES.length - 1) { submitNewOpportunity(); return; }
+          newOppPage++; rerenderPostOpportunity();
+          const ov = document.getElementById('overlay'); const sc = ov && ov.querySelector('.overflow-y-auto'); if (sc) sc.scrollTop = 0;
+        }
+        function newOppBack(){
+          if (newOppPage <= 0) { overlayGoBack(); return; }
+          newOppPage--; rerenderPostOpportunity();
+          const ov = document.getElementById('overlay'); const sc = ov && ov.querySelector('.overflow-y-auto'); if (sc) sc.scrollTo ? sc.scrollTo(0,0) : (sc.scrollTop = 0);
         }
 
         function postOpportunityHTML(){
           const isEditing = !!newOppEditingId;
-          // Same still artwork as "Match with CV/Resume" / "Apply to post" (fixed, so it never
-          // scrolls)
-          const bg = '';
+          const pg = Math.min(Math.max(newOppPage, 0), NEW_OPP_PAGES.length - 1);
+          const meta = NEW_OPP_PAGES[pg];
+          const isLast = pg === NEW_OPP_PAGES.length - 1;
+          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('');
+          const goLabel = isLast ? (isEditing ? 'Save changes' : (newOppDraft.type === 'Course' ? 'Post course' : 'Post opportunity')) : 'Continue';
           return `
-            ${bg}
-            <div class="flex-1 overflow-y-auto">
-            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', null, null, { center: true, pb: '10px' })}
-            <div class="px-5" style="padding-bottom:50px;">
-              <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
+            <div class="flex-1 overflow-y-auto pa-flow">
+            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', 'newOppBack()', null, { center: true, titleSize: 'text-xl', titleClass: 'career-flow-title', pb: '0px' })}
+            <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">${segs}</div></div>
+            <div class="px-5" style="padding-top:20px;padding-bottom:130px;">
+              <div class="max-w-2xl mx-auto">
+              <div class="pa-kick">Step ${pg + 1} of ${NEW_OPP_PAGES.length} · ${meta.kicker}</div>
+              <h2 class="pa-h2">${meta.title}</h2>
+              <div class="pa-sub" style="margin-bottom:14px;">${meta.sub}</div>
+              ${pg === 0 ? `
+<input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
               ${(() => { return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}
               ${oppFieldRow('Title', 'title', 'e.g. Research Intern')}
               ${oppFieldRow('Organization', 'org', 'e.g. Macro Team')}
 
               <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Type</label>
+                <label class="pa-lab">Type</label>
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${(isCurrentUserAdmin() ? oppTypes : oppTypes.filter(t => t !== 'Course')).map(t => `
                     <button onclick="setNewOppType('${t}')" class="auth-intent-chip ${newOppDraft.type===t ? 'on' : ''}">${Icon(OPP_TYPE_ICONS[t] || 'gridOutline','w-4 h-4')}<span>${t}</span></button>
@@ -8122,9 +8176,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
               </div>
 
+              ` : ''}
+              ${pg === 1 ? `
               <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Open to</label>
-                <div class="text-xs text-gray-400 mb-2">Used to match this listing with the right people in Match with CV.</div>
+                <label class="pa-lab">Open to</label>
+                
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${[['any','Everyone'],['male','Men'],['female','Women']].map(([g,l]) => `
                     <button onclick="setNewOppGender('${g}')" class="auth-intent-chip ${newOppDraft.gender===g ? 'on' : ''}">${Icon(OPP_GENDER_ICONS[g],'w-4 h-4')}<span>${l}</span></button>
@@ -8133,7 +8189,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               </div>
 
               <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Where</label>
+                <label class="pa-lab">Where</label>
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
                   ${oppModes.map(m => `
                     <button onclick="setNewOppMode('${m}')" class="auth-intent-chip ${newOppDraft.mode===m ? 'on' : ''}">${Icon(m==='Online'?'link':'pin','w-4 h-4')}<span>${m}</span></button>
@@ -8148,22 +8204,26 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 ? oppFieldRow('Start date (optional)', 'deadline', 'e.g. Self-paced, or Starts Aug 10')
                 : `
                 <div class="mb-4">
-                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Deadline</label>
+                  <label class="pa-lab">Deadline</label>
                   <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="onOppDeadlineDateInput(this)" value="${escapeHtml(newOppDraft.deadlineDateTyped || '')}" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
                   ${typedDateHintHTML()}
-                  <div class="text-xs text-gray-400 mt-1">This listing disappears automatically once this date passes, so every admin's posts stay consistent.</div>
+                  <div class="pa-hint">This listing disappears automatically once this date passes, so every admin's posts stay consistent.</div>
                 </div>`}
 
+              ` : ''}
+              ${pg === 2 ? `
               <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description &amp; requirements</label>
+                <label class="pa-lab">Description &amp; requirements</label>
                 <textarea oninput="updateNewOppField('description', this.value); updateOppDescCounter(this.value)" data-autogrow placeholder="${newOppDraft.type === 'Course' ? 'What will learners cover? Any prerequisites?' : 'What will they be doing? What do you need from applicants?'}" rows="5" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none resize-none" style="overflow:hidden;">${escapeHtml(newOppDraft.description)}</textarea>
                 <div id="opp-desc-counter" class="text-right" style="font-size:11px;margin-top:4px;color:${posterAppWordCount(newOppDraft.description) >= OPP_DESC_MIN_WORDS ? '#16a34a' : '#e11d48'};">${posterAppWordCount(newOppDraft.description)}/${OPP_DESC_MIN_WORDS} words minimum</div>
               </div>
 
+              ` : ''}
+              ${pg === 3 ? `
               ${newOppDraft.type === 'Course' ? `
                 <div class="mb-4">
-                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Enrollment</label>
-                  <div class="text-xs text-gray-400 mb-2">Learners join a course by enrolling, not by applying; no application letter needed. Set whether enrollment is free or has a fee.</div>
+                  <label class="pa-lab">Enrollment</label>
+                  <div class="pa-hint" style="margin:0 0 8px;">Learners join a course by enrolling, not by applying; no application letter needed. Set whether enrollment is free or has a fee.</div>
                   <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
                     <button onclick="setNewOppPriceType('free')" class="auth-intent-chip ${newOppDraft.priceType==='free' ? 'on' : ''}">${Icon('gift','w-4 h-4')}<span>Free</span></button>
                     <button onclick="setNewOppPriceType('paid')" class="auth-intent-chip ${newOppDraft.priceType==='paid' ? 'on' : ''}">${Icon('coin','w-4 h-4')}<span>Paid</span></button>
@@ -8173,8 +8233,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 ${oppFieldRow('Email for enrollment questions (optional)', 'email', 'e.g. courses@yourorg.com', 'email')}
               ` : `
                 <div class="mb-4">
-                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Apply via</label>
-                  <div class="text-xs text-gray-400 mb-2">By default, applications go straight to you right here in Stitch -- no email needed. Choose Website instead if you'd rather applicants apply on your own site.</div>
+                  <label class="pa-lab">Apply via</label>
+                  <div class="pa-hint" style="margin:0 0 8px;">By default, applications go straight to you right here in Stitch -- no email needed. Choose Website instead if you'd rather applicants apply on your own site.</div>
                   <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
                     <button onclick="setNewOppApplyMethod('inapp')" class="auth-intent-chip ${newOppDraft.applyMethod==='inapp' ? 'on' : ''}">${Icon('phone','w-4 h-4')}<span>In-app</span></button>
                     <button onclick="setNewOppApplyMethod('website')" class="auth-intent-chip ${newOppDraft.applyMethod==='website' ? 'on' : ''}">${Icon('monitor','w-4 h-4')}<span>Website</span></button>
@@ -8185,8 +8245,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
                 ${newOppDraft.applyMethod === 'website' ? '' : `
                 <div class="mb-4">
-                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Documents required from applicants (optional)</label>
-                  <div class="text-xs text-gray-400 mb-2">A resume/CV is always required from applicants. Select any other documents you also want to require before they can submit.</div>
+                  <label class="pa-lab">Documents required from applicants (optional)</label>
+                  <div class="pa-hint" style="margin:0 0 8px;">A resume/CV is always required from applicants. Select any other documents you also want to require before they can submit.</div>
                   <div class="auth-intent-row" style="padding:6px 2px 10px;">
                     ${OPP_DOC_TYPES.map(t => {
                       const active = newOppDraft.requiredDocs.includes(t.id);
@@ -8195,8 +8255,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                     ${newOppDraft.requiredDocs.filter(id => String(id).indexOf(OPP_CUSTOM_DOC_PREFIX) === 0).map(id => `
                       <span class="auth-intent-chip on" style="cursor:default;max-width:100%;">${Icon('paperclip','w-4 h-4')}<span style="min-width:0;overflow-wrap:anywhere;">${escapeHtml(oppDocLabel(id))}</span><button onclick="removeNewOppCustomDoc('${id}')" aria-label="Remove ${escapeHtml(oppDocLabel(id))}" class="flex-shrink-0 flex items-center justify-center" style="width:20px;height:20px;margin-left:2px;color:#1e90ff;">${IconBold('close','w-3.5 h-3.5')}</button></span>`).join('')}
                   </div>
-                  <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mt-3 mb-1">Other documents</div>
-                  <div class="text-xs text-gray-400 mb-2">Need something that isn't listed? Type its name and add it. Applicants will see it and have to attach it.</div>
+                  <div class="pa-lab" style="margin-top:14px;">Other documents</div>
+                  <div class="pa-hint" style="margin:0 0 8px;">Need something that isn't listed? Type its name and add it. Applicants will see it and have to attach it.</div>
                   <div class="flex gap-2" style="padding:2px 2px 4px;">
                     <input type="text" id="opp-custom-doc-input" maxlength="40" autocomplete="off" placeholder="e.g. Recommendation letter" value="${escapeHtml(newOppCustomDocText)}" oninput="newOppCustomDocText = this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewOppCustomDoc();}" class="flex-1 min-w-0 bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
                     <button onclick="addNewOppCustomDoc()" class="auth-intent-chip flex-shrink-0" style="justify-content:center;padding:0 28px;">${Icon('plus','w-4 h-4')} Add</button>
@@ -8205,11 +8265,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>`}
               `}
 
-              <div class="text-center mt-2" style="padding:0 20px 10px;">
-                <button id="opp-submit-btn" onclick="submitNewOpportunity()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);transition:transform .12s ease, opacity .15s ease;">${isEditing ? 'Save Changes' : (newOppDraft.type === 'Course' ? 'Post Course' : 'Post Opportunity')}</button>
+              ` : ''}
               </div>
             </div>
-            </div>`;
+            </div>
+            ${flowFloatBarHTML({ wrapId: 'opp-next-wrap', btnId: 'opp-submit-btn', backOnclick: 'newOppBack()', goOnclick: 'newOppNext()', goLabel })}`;
         }
 
         // ---- Admin Dashboard (Profile tab pill, admins only) ----

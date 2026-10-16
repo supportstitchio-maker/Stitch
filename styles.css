@@ -4432,3 +4432,31 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head p,
 #auth-gate.auth-verify-mode .auth-card{ background:transparent !important; box-shadow:none !important; }
 body.dark-mode #auth-gate.auth-verify-mode{ background:var(--c-black,#0b0e13); }
 body.dark-mode #auth-gate.auth-verify-mode::before{ opacity:.08 !important; }
+
+/* ---- Dark mode for the new calm form look ---- */
+body.dark-mode .pa-h2, body.dark-mode .aa-h3, body.dark-mode .aa-flow .text-base.font-semibold,
+body.dark-mode .aa-flow .text-xl.font-bold, body.dark-mode .aa-flow .text-lg.font-bold,
+body.dark-mode .pa-steptitle, body.dark-mode .pa-sumval{ color:#f1f5f9 !important; }
+body.dark-mode .pa-kick, body.dark-mode .pa-sub, body.dark-mode .pa-lab, body.dark-mode .pa-stepsub, body.dark-mode .pa-sumlab{ color:#94a3b8 !important; }
+body.dark-mode .pa-hint{ color:#64748b; }
+body.dark-mode .pa-step, body.dark-mode .pa-sumrow{ border-top-color:rgba(255,255,255,.08); }
+body.dark-mode [style*="color:#0f172a"]{ color:#f1f5f9 !important; }
+body.dark-mode .pa-flow input[type="text"], body.dark-mode .pa-flow input[type="url"], body.dark-mode .pa-flow input[type="tel"],
+body.dark-mode .pa-flow input[type="number"], body.dark-mode .pa-flow input[type="email"], body.dark-mode .pa-flow textarea, body.dark-mode .pa-flow select,
+body.dark-mode .aa-flow input[type="text"], body.dark-mode .aa-flow input[type="tel"], body.dark-mode .aa-flow textarea,
+body.dark-mode #auth-gate .pa-flow input[type="text"], body.dark-mode #auth-gate .pa-flow input[type="url"], body.dark-mode #auth-gate .pa-flow textarea, body.dark-mode #auth-gate .pa-flow select,
+body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-field input{
+  background:#1c1c1c !important; border-color:#2f2f2f !important; color:#f1f5f9 !important; }
+body.dark-mode .pa-flow input::placeholder, body.dark-mode .pa-flow textarea::placeholder, body.dark-mode .aa-flow input::placeholder{ color:#6b7280; }
+body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-field label{ color:#94a3b8; }
+body.dark-mode #auth-gate .auth-seg-row i{ background:rgba(255,255,255,.14); }
+body.dark-mode [style*="background:#fff;border:1.5px dashed"], html.dark-mode [style*="background:#fff;border:1.5px dashed"]{ background:#1c1c1c !important; border-color:#3a4a63 !important; }
+body.dark-mode [style*="background:#fff;border:1.5px dashed"] .text-gray-800, html.dark-mode [style*="background:#fff;border:1.5px dashed"] .text-gray-800{ color:#f1f5f9 !important; }
+body.dark-mode [style*="background:#fff;color:#1e90ff;border:1.5px dashed"]{ background:#1c1c1c !important; }
+body.dark-mode #auth-photo-circle{ background:#1c1c1c !important; border-color:#3a4a63 !important; }
+
+/* Post an Opportunity: cover picker takes the calm form look */
+.pa-flow label.uppercase{ text-transform:none !important; letter-spacing:0 !important; font-size:11.5px !important; font-weight:700 !important; color:#64748b !important; }
+.pa-flow button[style*="height:42px"][style*="border-radius:21px"]{ background:#fff !important; color:#1e90ff !important; border:1.5px dashed #b9d4f7 !important; }
+body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"]{ background:#1c1c1c !important; }
+.pa-flow textarea{ padding:14px 16px; }
