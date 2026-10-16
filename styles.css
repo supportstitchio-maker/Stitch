@@ -4485,10 +4485,6 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
     display:flex; align-items:center; position:fixed; top:30px; left:50%; margin-left:calc(min(536px, 100vw - 320px) / -2);
     width:min(536px, calc(100vw - 320px)); height:5px; z-index:12; }
-  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show::before{
-    content:""; position:fixed; left:0; right:0; top:0; height:66px; z-index:-1;
-    background:rgba(255,255,255,.96); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
-  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show::before{ background:rgba(11,14,19,.96); }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back{ position:fixed; top:14px; left:32px; z-index:13; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:96px; }
 }
@@ -4498,4 +4494,9 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stage{ height:auto; min-height:100vh; min-height:100dvh; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ height:auto; min-height:100vh; min-height:100dvh; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:96px; padding-bottom:48px; min-height:100vh; min-height:100dvh; box-sizing:border-box; }
+}
+@media (min-width:1024px){
+  /* Short onboarding pages fit the screen exactly: no scrolling unless the content is taller */
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode){ padding:0; }
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ padding-top:0; padding-bottom:0; }
 }

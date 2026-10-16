@@ -1280,6 +1280,7 @@ let userPoints = 0;
         function authShowCompleteProfile(){
           // A first-time account: its first Home open skips the shimmer skeleton (see renderFeed).
           window.__stitchFreshSignup = true;
+          authMarkOnboardingPending();
           // Never leave the "Signing you in" skeleton cover up in front of onboarding
           try { hideAuthTransitionLoading(true); } catch (e) {}
           authForgetPendingVerify();
@@ -1851,7 +1852,9 @@ let userPoints = 0;
           if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
           authProfileJustCompleted = true;
           try { await authMarkOnboarded(); } finally { authProfileJustCompleted = false; }
-          return (await authCheckNeedsProfileSetup()) === false;
+          const committedOk = (await authCheckNeedsProfileSetup()) === false;
+          if (committedOk) authClearOnboardingPending();
+          return committedOk;
         }
         // Backing out of onboarding before the end: the half-made sign-in must not turn into an
         // account
@@ -1866,6 +1869,7 @@ let userPoints = 0;
           } catch (e) {}
           try { const sb = getSupabaseClient(); if (sb) await sb.auth.signOut().catch(() => {}); } catch (e) {}
           try { resetCachedAuthUser(); } catch (e) {}
+          authClearOnboardingPending();
           if (typeof profileData !== 'undefined') { profileData.name = ''; profileData.username = ''; }
         }
         let authSubmittingPosterApp = false;
@@ -1939,6 +1943,60 @@ let userPoints = 0;
           if (inOnboarding) { authExitOnboarding(); return; }
           authShowLogin();
         }
+        // ---- An unfinished sign-up must never turn into an account ----
+        // While onboarding is on screen the account is only "pending". If the page is closed or
+        // reloaded, or the app is killed, before the very last pill, the half-made account is
+        // deleted (right away when the browser lets us, otherwise at the next open).
+        function authOnboardingActive(){
+          const a = document.getElementById('auth-panel-complete-profile');
+          const b = document.getElementById('auth-panel-poster-app');
+          return !!((a && a.classList.contains('active')) || (b && b.classList.contains('active')));
+        }
+        function authMarkOnboardingPending(){
+          try {
+            getCachedAuthUser().then(function(u){
+              if (u && u.id) { try { localStorage.setItem('stitchOnboardingPending', u.id); } catch (e) {} }
+            }).catch(function(){});
+            getAuthAccessToken().then(function(t){ window.__authOnboardToken = t || null; }).catch(function(){});
+          } catch (e) {}
+        }
+        function authClearOnboardingPending(){
+          try { localStorage.removeItem('stitchOnboardingPending'); } catch (e) {}
+          window.__authOnboardToken = null;
+        }
+        window.addEventListener('pagehide', function(ev){
+          try {
+            if (ev && ev.persisted) return;
+            if (authSubmittingPosterApp || authCompletingProfile || !authOnboardingActive()) return;
+            const t = window.__authOnboardToken;
+            if (!t) return;
+            fetch('https://' + SUPABASE_PROJECT_REF + '.supabase.co/functions/v1/delete-account', {
+              method: 'POST', keepalive: true,
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t, 'apikey': SUPABASE_ANON_KEY },
+            });
+            try { localStorage.removeItem('stitchOnboardingPending'); } catch (e) {}
+          } catch (e) {}
+        });
+        // At the next open: an account that was left mid-onboarding is removed, and the person lands
+        // on the login screen
+        async function authDiscardStalePendingOnboarding(){
+          let pend = null;
+          try { pend = localStorage.getItem('stitchOnboardingPending'); } catch (e) {}
+          if (!pend) return;
+          try {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            const { data } = await sb.auth.getSession();
+            const user = data && data.session && data.session.user;
+            if (user && user.id === pend) {
+              await authDiscardUnfinishedAccount();
+              authClearOnboardingPending();
+              location.replace(location.pathname);
+              return;
+            }
+          } catch (e) {}
+          authClearOnboardingPending();
+        }
         // Leaving onboarding abandons sign-up: no account is kept
         function authExitOnboarding(){
           authForgetPendingVerify();
@@ -1972,6 +2030,7 @@ let userPoints = 0;
         }
 
         async function authEnterApp(){
+          authClearOnboardingPending();
           authForgetPendingVerify();
           // The account's saved theme (appPrefs) only arrives after the data loads below, which is
           // after the loading skeleton is already on screen
@@ -3102,6 +3161,8 @@ let userPoints = 0;
         }
 
         window.onload = async function(){
+          // A sign-up that was left before its last step never becomes an account
+          if (window.__stitchFreshOAuthReturn !== true) { try { await authDiscardStalePendingOnboarding(); } catch (e) {} }
           try { await restoreSessionIfSignedIn(); } catch(e) { console.error(e); }
           // Page was reloaded while sitting on the verify-your-email screen: put them back there.
           try {
