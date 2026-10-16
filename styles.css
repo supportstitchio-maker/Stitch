@@ -4479,3 +4479,11 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
 /* Match with CV / Apply to post / Post an Opportunity: header, progress and page title stay put */
 .pa-flow .pa-sticky{ position:sticky; top:0; z-index:5; background:inherit; }
 #overlay .pa-flow .pa-sticky{ background:#f9fafb; }
+
+/* Onboarding progress bar on desktop: centred at the top, level with the Back button */
+@media (min-width:1024px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
+    display:flex; align-items:center; position:fixed; top:109px; left:50%; transform:translateX(-50%);
+    width:min(536px, calc(100% - 320px)); height:5px; z-index:6; }
+}
+body.dark-mode #overlay .pa-flow .pa-sticky, html.dark-mode #overlay .pa-flow .pa-sticky{ background:#181818; }

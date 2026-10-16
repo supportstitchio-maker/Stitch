@@ -5210,8 +5210,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             <button type="button" onclick="setCareerPlan('${plan.id}')" aria-pressed="${selected}" class="w-full text-left flex items-center gap-3" style="padding:16px 2px;border-top:1px solid rgba(15,23,42,.07);">
               <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;border-radius:9999px;${selected ? 'background:#1e90ff;border:2px solid #1e90ff;' : 'border:2px solid #c5cedd;'}">${selected ? '<span style="width:8px;height:8px;border-radius:9999px;background:#fff;"></span>' : ''}</span>
               <span class="flex-1 min-w-0">
-                <span style="font-size:16px;font-weight:700;color:#0f172a;">${plan.label}</span>${best ? `<span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1e90ff;margin-left:8px;white-space:nowrap;">Best value</span>` : ''}
-                <span class="block" style="font-size:11.5px;color:#64748b;margin-top:1px;">Billed every ${plan.unit}</span>
+                <span style="font-size:16px;font-weight:700;color:#0f172a;">${plan.label}</span>
+                <span class="block" style="font-size:11.5px;color:#64748b;margin-top:1px;">Billed every ${plan.unit}${best ? ` · <b style="white-space:nowrap;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#1e90ff;font-size:10px;">Best value</b>` : ''}</span>
               </span>
               <span class="text-right flex-shrink-0"><span style="font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;color:${selected ? '#1e90ff' : '#0f172a'};">GHS ${plan.price}</span><span style="font-size:12px;color:#64748b;"> /${plan.unit}</span></span>
             </button>`;
@@ -5225,12 +5225,16 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           ];
           return `
             <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
+            <div class="pa-sticky">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:20px;padding-bottom:140px;">
+            <div class="px-5" style="padding-top:20px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
+              <div class="pa-kick">Last step</div>
+              <h2 class="pa-h2">Choose your plan</h2>
+              <div class="pa-sub">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
+            </div></div>
+            </div>
+            <div class="px-5" style="padding-top:2px;padding-bottom:140px;">
               <div class="max-w-2xl mx-auto">
-                <div class="pa-kick">Last step</div>
-                <h2 class="pa-h2">Choose your plan</h2>
-                <div class="pa-sub">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
                 <div style="margin-top:14px;">
                   ${careerPlanCardHTML(CAREER_PLANS.daily)}
                   ${careerPlanCardHTML(CAREER_PLANS.weekly)}
