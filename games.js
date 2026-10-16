@@ -1179,6 +1179,7 @@ let userPoints = 0;
         function setAuthProgress(segIndex, pct){
           const bar = document.getElementById('authStepBar');
           if (!bar) return;
+          bar.classList.remove('seg');
           if (segIndex === null || segIndex === undefined) { bar.classList.remove('show'); return; }
           const START = 12;
           const total = segIndex > 0 ? Math.min(100, START + (Math.max(0, Math.min(100, pct)) * (100 - START)) / 100) : START;
@@ -1187,6 +1188,17 @@ let userPoints = 0;
           if (fill) fill.style.width = total + '%';
           bar.setAttribute('aria-valuenow', String(Math.round(total)));
         }
+        // Onboarding progress as segments (one per page) instead of one continuous bar
+        function setAuthSegments(cur, total){
+          const bar = document.getElementById('authStepBar');
+          if (!bar) return;
+          let row = document.getElementById('authSegRow');
+          if (!row) { row = document.createElement('div'); row.id = 'authSegRow'; row.className = 'auth-seg-row'; bar.appendChild(row); }
+          row.innerHTML = Array.from({ length: total }, (_, i) => `<i class="${i < cur ? 'f' : ''}"></i>`).join('');
+          bar.classList.add('show', 'seg');
+          bar.setAttribute('aria-valuenow', String(Math.round(cur / total * 100)));
+        }
+        function authOnboardingTotal(){ try { return 1 + authPosterAppPages().length; } catch (e) { return 3; } }
         function authShowLogin(){
           authHideAllPanels();
           document.getElementById('auth-panel-login').classList.add('active');
@@ -1283,8 +1295,8 @@ let userPoints = 0;
           document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
-          if (eyebrow) eyebrow.textContent = 'ONE LAST STEP';
-          setAuthProgress(0, 100);
+          if (eyebrow) eyebrow.textContent = 'STEP 1 OF ' + authOnboardingTotal() + ' · YOUR PROFILE';
+          setAuthSegments(1, authOnboardingTotal());
           // Test account: always arrives pre-filled so nothing has to be typed on this step
           if (isStitchTestAccount()) {
             const f = document.getElementById('auth-cp-fname'), l = document.getElementById('auth-cp-lname'), u = document.getElementById('auth-cp-username');
@@ -1347,6 +1359,47 @@ let userPoints = 0;
           if (posterAppDraft.sellPaid) list.push(...PAID_SELLER_STAGES.filter(st => !(viaChips && st === 'paidtype')));
           list.push('bizdoc', 'iddoc', 'selfie', 'consent');
           return list;
+        }
+        // The questions are grouped into pages: related questions share one screen. Stage ids are
+        // unchanged (all the per-stage markup and checks below still apply); a page just renders and
+        // validates several of them at once.
+        function authPosterAppPages(){
+          const st = authPosterAppStages();
+          const pages = [];
+          const has = id => st.indexOf(id) >= 0;
+          const add = (id, stages, extra) => { const list = stages.filter(has); if (list.length) pages.push(Object.assign({ id, stages: list }, extra || {})); };
+          add('intent', ['intent'], { kicker: 'Your goals' });
+          add('photo', ['photo'], { kicker: 'Your photo' });
+          add('role', ['role'], { kicker: 'About you' });
+          add('business', ['bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'], { kicker: 'Your business', title: 'Tell us about it', sub: 'A few details about what you do.' });
+          add('paidchoice', ['paidchoice']);
+          add('paidsell', ['paidtype', 'paidprice', 'paidplan'], { kicker: 'Paid selling', title: 'What will you sell?', sub: 'A few quick questions about your paid listings.' });
+          add('paidpay', ['paidpay', 'paidpayout'], { kicker: 'Paid selling', title: 'How you get paid', sub: 'Payment plan and withdrawals.' });
+          add('paidconfirm', ['paidconfirm']);
+          add('verify', ['bizdoc', 'iddoc', 'selfie'], { kicker: 'Verify', title: "Prove it's really you", sub: 'Three quick uploads. An admin reviews them before you are approved.' });
+          add('review', ['consent'], { kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and send.' });
+          return pages;
+        }
+        function authCurrentPage(){
+          const pages = authPosterAppPages();
+          return pages[Math.min(Math.max(authPosterAppStageIdx, 0), pages.length - 1)];
+        }
+        function authPosterAppGoTo(id){
+          const i = authPosterAppPages().findIndex(pg => pg.id === id);
+          if (i >= 0) { authPosterAppStageIdx = i; authRenderPosterAppStage(); }
+        }
+        function authPosterAppSummaryHTML(){
+          const d = posterAppDraft;
+          const cat = ((typeof POSTER_CATEGORY_OPTIONS !== 'undefined' ? POSTER_CATEGORY_OPTIONS : []).find(o => o[0] === d.businessCategory) || [])[1] || '-';
+          const row = (label, value, page) => `<div class="pa-sumrow"><span class="pa-sumlab">${label}</span><span class="pa-sumval">${value}</span><a href="#" onclick="authPosterAppGoTo('${page}'); return false;" class="pa-edit">Edit</a></div>`;
+          const ok = v => v ? '<span style="color:#16a34a;">Uploaded</span>' : '<span style="color:#e11d48;">Missing</span>';
+          const selling = d.sellPaid ? (d.paidType === 'both' ? 'Paid courses and spaces' : d.paidType === 'courses' ? 'Paid courses' : 'Paid spaces') : 'Opportunities only';
+          return `<div style="margin-bottom:16px;">
+            ${row('Business', escapeHtml(d.businessName || '-'), 'business')}
+            ${row('Category', escapeHtml(cat), 'business')}
+            ${row('Selling', selling, d.sellPaid ? 'paidsell' : 'business')}
+            ${row('Documents', ok(d.businessDocumentFile && d.idDocumentFile && d.selfieFile), 'verify')}
+          </div>`;
         }
         function authShowPosterApp(){
           authHideAllPanels();
@@ -1414,7 +1467,7 @@ let userPoints = 0;
             return `
               <div class="mb-2">
                 <input type="file" accept="image/*,.pdf" id="auth-bizdoc-file-input" class="hidden" onchange="authHandleBizDocSelected(this)">
-                <button type="button" onclick="document.getElementById('auth-bizdoc-file-input').click()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-300 border-dashed">
+                <button type="button" onclick="document.getElementById('auth-bizdoc-file-input').click()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold" style="background:#fff;color:#1e90ff;border:1.5px dashed #b9d4f7;border-radius:22px;min-height:64px;">
                   ${Icon('upload','w-4 h-4')}
                   <span id="auth-bizdoc-label">${escapeHtml(d.businessDocumentName || 'Upload a document')}</span>
                 </button>
@@ -1424,7 +1477,7 @@ let userPoints = 0;
           if (stage === 'photo') {
             return `
               <div class="mb-2 flex flex-col items-center gap-3" style="min-height:calc(100dvh - 300px);justify-content:center;">
-                <div id="auth-photo-circle" class="auth-tap" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+                <div id="auth-photo-circle" class="auth-tap" role="button" tabindex="0" aria-label="Add a photo" onclick="document.getElementById('auth-photo-file-input').click()" style="width:112px;height:112px;border-radius:9999px;overflow:hidden;background:#fff;border:1.5px dashed #b9d4f7;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;">
                   <img id="auth-photo-preview-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
                   <span id="auth-photo-placeholder-icon" style="color:#9ca3af;">${Icon('camera','w-8 h-8')}</span>
                 </div>
@@ -1436,9 +1489,9 @@ let userPoints = 0;
             // Country is free text
             return `
               <div class="mb-2">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Country that issued your ID</label>
+                <label class="pa-lab">Country that issued your ID</label>
                 <input type="text" id="auth-idcountry-input" maxlength="2" autocapitalize="characters" oninput="this.value=this.value.toUpperCase(); updatePosterAppField('idCountry', this.value)" placeholder="e.g. GH, NG, US" value="${escapeHtml(d.idCountry || '')}" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none mb-3">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Document type</label>
+                <label class="pa-lab">Document type</label>
                 <select id="auth-idtype-input" onchange="updatePosterAppField('idType', this.value)" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm outline-none mb-3">
                   ${POSTER_ID_TYPE_OPTIONS.map(t => `<option value="${escapeHtml(t)}" ${d.idType === t ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
                 </select>
@@ -1516,22 +1569,37 @@ let userPoints = 0;
           return 'What brings you here?';
         }
         function authRenderPosterAppStage(){
-          const stages = authPosterAppStages();
-          const stage = stages[authPosterAppStageIdx];
+          const pages = authPosterAppPages();
+          authPosterAppStageIdx = Math.min(Math.max(authPosterAppStageIdx, 0), pages.length - 1);
+          const page = pages[authPosterAppStageIdx];
+          const stage = page.stages[0];
+          const multi = page.stages.length > 1;
+          const LABELS = { bizname: 'Business name', bizestablished: 'Established', bizcategory: 'Category', bizwebsite: 'Website or social link (optional)', bizdesc: 'In your own words', paidtype: 'Type', paidprice: 'Roughly what will most listings cost?', paidplan: 'Tell us what you will post', paidpay: '', paidpayout: 'Where should it go?', bizdoc: 'Business document' };
           const container = document.getElementById('auth-poster-app-form-container');
           if (container) {
-            container.innerHTML = authPosterAppStageHTML(stage);
-            // The in-app form shows a small helper line under each paid question; mirror it here.
-            const paidHint = (authIsPaidStage(stage) && stage !== 'paidchoice' && typeof posterAppStageHint === 'function') ? posterAppStageHint(stage) : '';
-            if (paidHint) container.insertAdjacentHTML('beforeend', `<div class="text-[11px] text-gray-400" style="margin-top:17px;">${paidHint}</div>`);
+            const body = page.stages.map(st => {
+              let html = authPosterAppStageHTML(st);
+              if (multi) {
+                html = html.replace(/onkeydown="if\(event\.key==='Enter'\)\{event\.preventDefault\(\);authPosterAppNext\(\);\}"/g, '')
+                  .replace(/<a href="#" onclick="authPosterAppNext\(\); return false;"[^>]*>Skip for now<\/a>/g, '');
+              }
+              // The in-app form shows a small helper line under each paid question; mirror it here.
+              const hint = (authIsPaidStage(st) && st !== 'paidchoice' && typeof posterAppStageHint === 'function') ? posterAppStageHint(st) : '';
+              const lab = multi && LABELS[st] ? `<label class="pa-lab">${LABELS[st]}</label>` : '';
+              return `<div class="${multi ? 'pa-field' : ''}">${lab}${html}${hint ? `<div class="text-[11px] text-gray-400" style="margin-top:${multi ? 6 : 17}px;">${hint}</div>` : ''}</div>`;
+            }).join('');
+            container.innerHTML = (page.id === 'review' ? authPosterAppSummaryHTML() : '') + body;
+            container.classList.add('pa-flow');
           }
           const errEl = document.getElementById('auth-poster-app-error');
           if (errEl) { errEl.classList.remove('show'); errEl.textContent = "Couldn't save that. Please check your connection and try again."; }
           const title = document.getElementById('authHeadTitle');
-          if (title) title.textContent = authPosterAppStageTitle(stage);
+          if (title) title.textContent = page.title || authPosterAppStageTitle(stage);
           const sub = document.getElementById('authHeadSub');
-          if (sub) sub.textContent = authPosterAppStageSub(stage);
-          setAuthProgress(1, Math.round(((authPosterAppStageIdx + 1) / stages.length) * 100));
+          if (sub) sub.textContent = page.sub || authPosterAppStageSub(stage);
+          const eyebrow = document.getElementById('authEyebrow');
+          if (eyebrow) eyebrow.textContent = `STEP ${authPosterAppStageIdx + 2} OF ${pages.length + 1}${page.kicker ? ' · ' + page.kicker.toUpperCase() : ''}`;
+          setAuthSegments(authPosterAppStageIdx + 2, pages.length + 1);
           // Back navigation through the poster-app sub-stages goes through the single fixed top-left
           // arrow (#authBackBtn)
           const authGateEl = document.getElementById('auth-gate');
@@ -1539,7 +1607,7 @@ let userPoints = 0;
           const continueBtn = document.getElementById('auth-poster-app-continue-btn');
           if (continueBtn) {
             continueBtn.style.display = stage === 'photo' ? 'none' : 'block';
-            continueBtn.textContent = (authPosterAppStageIdx >= stages.length - 1) ? 'Continue' : 'Next';
+            continueBtn.textContent = (authPosterAppStageIdx >= pages.length - 1) ? 'Finish' : 'Continue';
           }
           // "Skip for now" on the photo step lives in the footer at the bottom of the screen
           const skipPhotoBtn = document.getElementById('auth-photo-skip-btn');
@@ -1695,14 +1763,15 @@ let userPoints = 0;
           }
         }
         async function authPosterAppNext(){
-          const stages = authPosterAppStages();
-          if (stages[authPosterAppStageIdx] === 'intent' && authIntentPicks.size === 0) {
+          const stages = authPosterAppPages();
+          for (const cur of authCurrentPage().stages) {
+          if (cur === 'intent' && authIntentPicks.size === 0) {
             const errEl = document.getElementById('auth-poster-app-error');
             if (errEl) { errEl.textContent = 'Pick at least one to continue.'; errEl.classList.add('show'); }
             return;
           }
           // A half-typed or impossible "date established" (e.g. 31/02/2020) shouldn't slide through
-          if (stages[authPosterAppStageIdx] === 'bizestablished' && typeof posterAppEstablishedError === 'function') {
+          if (cur === 'bizestablished' && typeof posterAppEstablishedError === 'function') {
             const dateErr = posterAppEstablishedError();
             if (dateErr) {
               const errEl = document.getElementById('auth-poster-app-error');
@@ -1712,7 +1781,7 @@ let userPoints = 0;
           }
           // Same rule as the in-app "Apply to post" form (posterAppStageError in jobs.js): can't
           // move past the consent checkbox unticked
-          if (stages[authPosterAppStageIdx] === 'bizdesc' && typeof posterAppBizdescError === 'function') {
+          if (cur === 'bizdesc' && typeof posterAppBizdescError === 'function') {
             const descErr = posterAppBizdescError();
             if (descErr) {
               const errEl = document.getElementById('auth-poster-app-error');
@@ -1721,34 +1790,39 @@ let userPoints = 0;
             }
           }
           // Paid-courses pages: same rules as the in-app form (posterAppStageError in jobs.js).
-          if (authIsPaidStage(stages[authPosterAppStageIdx]) && typeof posterAppStageError === 'function') {
-            const paidErr = posterAppStageError(stages[authPosterAppStageIdx]);
+          if (authIsPaidStage(cur) && typeof posterAppStageError === 'function') {
+            const paidErr = posterAppStageError(cur);
             if (paidErr) {
               const errEl = document.getElementById('auth-poster-app-error');
               if (errEl) { errEl.textContent = paidErr; errEl.classList.add('show'); }
               return;
             }
           }
-          if (stages[authPosterAppStageIdx] === 'consent' && !posterAppDraft.consent) {
+          if (cur === 'consent' && !posterAppDraft.consent) {
             const errEl = document.getElementById('auth-poster-app-error');
             if (errEl) { errEl.textContent = 'Please agree to the Terms of Service and Privacy Policy to continue.'; errEl.classList.add('show'); }
             return;
           }
           // Same rule as the in-app "Apply to post" form (posterAppStageError in jobs.js): proof the
           // business is real is required, not optional
-          if (stages[authPosterAppStageIdx] === 'bizdoc' && !posterAppDraft.businessDocumentFile) {
+          if (cur === 'bizdoc' && !posterAppDraft.businessDocumentFile) {
             const errEl = document.getElementById('auth-poster-app-error');
             if (errEl) { errEl.textContent = 'Please upload something that proves your business is real to continue.'; errEl.classList.add('show'); }
             return;
           }
-          if (stages[authPosterAppStageIdx] === 'iddoc' && !(posterAppDraft.idCountry || '').trim()) {
+          if (cur === 'iddoc' && !posterAppDraft.idDocumentFile) {
+            const errEl = document.getElementById('auth-poster-app-error');
+            if (errEl) { errEl.textContent = 'Please submit an ID to continue.'; errEl.classList.add('show'); }
+            return;
+          }
+          if (cur === 'iddoc' && !(posterAppDraft.idCountry || '').trim()) {
             const errEl = document.getElementById('auth-poster-app-error');
             if (errEl) { errEl.textContent = 'Please tell us which country issued your ID.'; errEl.classList.add('show'); }
             return;
           }
           // Same AI-backed check as the in-app "Apply to post" form (posterAppVerifyIdDocument in
           // jobs.js)
-          if (stages[authPosterAppStageIdx] === 'iddoc' && typeof posterAppVerifyIdDocument === 'function') {
+          if (cur === 'iddoc' && typeof posterAppVerifyIdDocument === 'function') {
             const continueBtn = document.getElementById('auth-poster-app-continue-btn');
             const originalLabel = continueBtn ? continueBtn.textContent : '';
             if (continueBtn) { continueBtn.disabled = true; continueBtn.textContent = 'Checking ID…'; }
@@ -1758,10 +1832,11 @@ let userPoints = 0;
           }
           // Same rule as the in-app "Apply to post" form (posterAppStageError in jobs.js): a live
           // selfie is required for the automated liveness + face-match check
-          if (stages[authPosterAppStageIdx] === 'selfie' && !posterAppDraft.selfieFile) {
+          if (cur === 'selfie' && !posterAppDraft.selfieFile) {
             const errEl = document.getElementById('auth-poster-app-error');
             if (errEl) { errEl.textContent = "Please take a selfie to verify it's you."; errEl.classList.add('show'); }
             return;
+          }
           }
           if (authPosterAppStageIdx < stages.length - 1) {
             authPosterAppStageIdx++;
@@ -2283,7 +2358,7 @@ let userPoints = 0;
           if (!el) return;
           const place = () => {
             if (!el.isConnected) { window.removeEventListener('resize', place); if (el.__toastRO) { try { el.__toastRO.disconnect(); } catch (e) {} } return; }
-            if (window.innerWidth < 1024) { el.style.left = ''; el.style.maxWidth = ''; el.style.width = ''; return; }
+            if (window.innerWidth < 1024) { el.style.left = ''; el.style.width = 'calc(100% - 24px)'; el.style.maxWidth = 'none'; return; }   // phones: stretch to the side margins
             const nav = document.getElementById('desktop-nav');
             const rp = document.getElementById('desktop-right-panel');
             let l = 0, r = window.innerWidth;

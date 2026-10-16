@@ -450,9 +450,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function posterAppSyncNext(){
           const wrap = document.getElementById('poster-app-next-wrap');
           if (!wrap || typeof posterAppStages === 'undefined') return;
-          const list = posterAppStages();
-          const stage = list[Math.min(Math.max(posterAppStageIdx, 0), list.length - 1)];
-          const ready = posterAppStageReady(stage); wrap.style.visibility = ready ? '' : 'hidden'; wrap.style.pointerEvents = ready ? '' : 'none';
+          const ready = posterAppPageReady(posterAppCurrentPage()); wrap.style.visibility = ready ? '' : 'hidden'; wrap.style.pointerEvents = ready ? '' : 'none';
         }
 
         // ---- Typed "date established" input ----
@@ -521,11 +519,11 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const fileName = (file || hasPreview) ? docName : '';
           return `
             <div class="mb-4">
-              <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${escapeHtml(o.label)}</label>
+              <label class="pa-lab">${escapeHtml(o.label)}</label>
               <input type="file" accept="${o.accept || 'image/*,.pdf'}" ${o.capture ? `capture="${o.capture}"` : ''} id="${o.inputId}" class="hidden" onchange="${o.onSelect}(this)">
-              <div onclick="${hasPreview ? '' : `document.getElementById('${o.inputId}').click()`}" style="position:relative;height:120px;border-radius:16px;overflow:hidden;background:#f3f4f6;border:1.5px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;cursor:${hasPreview ? 'default' : 'pointer'};">
+              <div onclick="${hasPreview ? '' : `document.getElementById('${o.inputId}').click()`}" style="position:relative;height:120px;border-radius:22px;overflow:hidden;background:#fff;border:1.5px dashed #b9d4f7;display:flex;align-items:center;justify-content:center;cursor:${hasPreview ? 'default' : 'pointer'};">
                 ${!hasPreview
-                  ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:#9ca3af;">${Icon('camera','w-6 h-6')}<span style="font-size:11px;font-weight:600;">Tap to upload</span></span>`
+                  ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:${NAVY};">${Icon('camera','w-6 h-6')}<span style="font-size:12px;font-weight:700;">Tap to upload</span></span>`
                   : isPdf
                     ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:#6b7280;">${Icon('file','w-7 h-7')}<span style="font-size:11px;font-weight:600;">${escapeHtml(fileName)}</span></span>`
                     : `<img src="${escapeHtml(previewUrl)}" style="width:100%;height:100%;object-fit:cover;">`}
@@ -972,7 +970,35 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           list.push('bizdoc', 'iddoc', 'selfie', 'consent');
           return list;
         }
-        let posterAppStageIdx = 0;
+        let posterAppStageIdx = 0; // in the in-app form this is the PAGE index (see posterAppPages)
+        // The in-app form groups the questions into pages: welcome, about you, your business (5
+        // questions), paid selling, verify (3 uploads), review. The sign-up flow in games.js still
+        // walks posterAppStages() one question at a time.
+        function posterAppPages(){
+          const d = posterAppDraft;
+          if (posterAppPaidOnlyApproved()) return PAID_SELLER_STAGES.map(st => ({ id: st, stages: [st] }));
+          const pages = [
+            { id: 'welcome', stages: [] },
+            { id: 'about', kicker: 'About you', stages: ['role'] },
+            { id: 'business', kicker: 'Your business', title: 'Tell us about it', sub: 'A few details about what you do.', stages: ['bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'] },
+          ];
+          if (!d.paidOnly) pages.push({ id: 'paidchoice', kicker: 'Paid selling', stages: ['paidchoice'] });
+          if (d.sellPaid) PAID_SELLER_STAGES.forEach(st => pages.push({ id: st, kicker: 'Paid selling', stages: [st] }));
+          pages.push({ id: 'verify', kicker: 'Verify', title: "Prove it's really you", sub: 'Three quick uploads. An admin reviews them before you are approved.', stages: ['bizdoc', 'iddoc', 'selfie'] });
+          pages.push({ id: 'review', kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and send.', stages: ['consent'] });
+          return pages;
+        }
+        function posterAppCurrentPage(){
+          const pages = posterAppPages();
+          return pages[Math.min(Math.max(posterAppStageIdx, 0), pages.length - 1)];
+        }
+        function posterAppPageReady(page){
+          return page.stages.every(st => st === 'bizwebsite' || posterAppStageReady(st));
+        }
+        function posterAppGoToPage(id){
+          const i = posterAppPages().findIndex(pg => pg.id === id);
+          if (i >= 0) { posterAppStageIdx = i; posterAppRenderStage(); }
+        }
         function posterAppHeaderTitle(){
           return posterAppPaidOnlyApproved() ? 'Paid courses & spaces' : 'Apply to post';
         }
@@ -1087,7 +1113,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'bizdoc') {
             return `
               <input type="file" accept="image/*,.pdf" id="poster-app-bizdoc-file-input" class="hidden" onchange="posterAppHandleBizDocSelected(this)">
-              <button type="button" onclick="document.getElementById('poster-app-bizdoc-file-input').click()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold bg-gray-100 text-gray-600 border border-gray-300 border-dashed">
+              <button type="button" onclick="document.getElementById('poster-app-bizdoc-file-input').click()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold" style="background:#fff;color:#1e90ff;border:1.5px dashed #b9d4f7;border-radius:22px;min-height:64px;">
                 ${Icon('upload','w-4 h-4')}
                 <span id="poster-app-bizdoc-label">${escapeHtml(d.businessDocumentName || (currentUserPosterBusinessDocumentUrl ? 'Document on file -- tap to replace' : 'Upload a document'))}</span>
               </button>
@@ -1096,9 +1122,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'iddoc') {
             // Country is free text
             return `
-            <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Country that issued your ID</label>
+            <label class="pa-lab">Country that issued your ID</label>
             <input type="text" id="poster-app-idcountry-input" maxlength="2" autocapitalize="characters" oninput="this.value=this.value.toUpperCase(); updatePosterAppField('idCountry', this.value)" placeholder="e.g. GH, NG, US" value="${escapeHtml(d.idCountry || '')}" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none mb-3">
-            <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Document type</label>
+            <label class="pa-lab">Document type</label>
             <select id="poster-app-idtype-input" onchange="updatePosterAppField('idType', this.value)" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none mb-3">
               ${POSTER_ID_TYPE_OPTIONS.map(t => `<option value="${escapeHtml(t)}" ${d.idType === t ? 'selected' : ''}>${escapeHtml(t)}</option>`).join('')}
             </select>
@@ -1115,7 +1141,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           if (stage === 'paidchoice') {
             return `
-              <label for="poster-app-sellpaid-checkbox" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:#f9fafb;border:1.5px solid ${d.sellPaid ? NAVY : '#cbd5e1'};border-radius:16px;padding:14px 16px;">
+              <label for="poster-app-sellpaid-checkbox" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:6px 2px;">
                 <input type="checkbox" id="poster-app-sellpaid-checkbox" ${d.sellPaid ? 'checked' : ''} onchange="setPosterAppSellPaid(this.checked)" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:${NAVY};">
                 <span style="font-size:13px;line-height:1.55;color:#4b5563;">Yes, I'll also be posting <b>paid courses</b> and <b>paid meetings</b> on Stitch.</span>
               </label>
@@ -1147,7 +1173,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           if (stage === 'paidconfirm') {
             const box = (id, checked, fn, text) => `
-              <label for="${id}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:#f9fafb;border:1.5px solid #cbd5e1;border-radius:16px;padding:14px 16px;margin-bottom:12px;">
+              <label for="${id}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:6px 2px;margin-bottom:10px;">
                 <input type="checkbox" id="${id}" ${checked ? 'checked' : ''} onchange="${fn}(this.checked)" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:${NAVY};">
                 <span style="font-size:13px;line-height:1.55;color:#4b5563;">${text}</span>
               </label>`;
@@ -1168,7 +1194,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function posterAppConsentHTML(checkboxId, onChangeExpr, termsOnClick, privacyOnClick){
           const d = posterAppDraft;
           return `
-            <label for="${checkboxId}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;background:#f9fafb;border:1.5px solid #cbd5e1;border-radius:16px;padding:14px 16px;">
+            <label for="${checkboxId}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:6px 2px;">
               <input type="checkbox" id="${checkboxId}" ${d.consent ? 'checked' : ''} onchange="${onChangeExpr}" style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:${NAVY};">
               <span style="font-size:13px;line-height:1.55;color:#4b5563;">
                 I agree to the <a href="#" onclick="${termsOnClick}; return false;" style="color:${ROYAL};font-weight:600;">Terms of Service</a> and <a href="#" onclick="${privacyOnClick}; return false;" style="color:${ROYAL};font-weight:600;">Privacy Policy</a>, and I consent to Stitch tracking the opportunities I post and the decisions admins make on my application and posts (approvals, denials, and removals), so we can review applications and keep Career Space safe.
@@ -1178,7 +1204,22 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // Just the current question's input
         function posterApplicationFormHTML(){
-          return `<div id="poster-app-form" style="margin-top:22px;">${posterAppStageHTML(posterAppStages()[posterAppStageIdx])}</div>`;
+          const page = posterAppCurrentPage();
+          if (page.id === 'welcome') return posterAppWelcomeHTML();
+          const multi = page.stages.length > 1;
+          const LABELS = { bizname: 'Business name', bizestablished: 'Established', bizcategory: 'Category', bizwebsite: 'Website or social link (optional)', bizdesc: 'In your own words', bizdoc: 'Business document' };
+          const body = page.stages.map(st => {
+            let html = posterAppStageHTML(st);
+            if (multi) {
+              html = html.replace(/id="poster-app-input"/g, `id="poster-app-input-${st}"`)
+                .replace(/onkeydown="if\(event\.key==='Enter'\)\{event\.preventDefault\(\);posterAppNext\(\);\}"/g, '')
+                .replace(/<a href="#" onclick="posterAppNext\(\); return false;"[^>]*>Skip for now<\/a>/g, '');
+            }
+            const hint = (multi && page.id === 'business') ? posterAppStageHint(st) : '';
+            return `<div class="pa-field">${multi && LABELS[st] ? `<div class="pa-lab">${LABELS[st]}</div>` : ''}${html}${hint ? `<div class="pa-hint">${hint}</div>` : ''}</div>`;
+          }).join('');
+          const summary = page.id === 'review' ? posterAppSummaryHTML() : '';
+          return `<div id="poster-app-form" style="margin-top:18px;">${summary}${body}</div>`;
         }
 
         function posterAppShowStageError(msg){
@@ -1263,11 +1304,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         async function posterAppNext(){
           if (posterAppSubmitInFlight) return;
-          const stageList = posterAppStages();
-          const stage = stageList[posterAppStageIdx];
-          const err = posterAppStageError(stage);
-          if (err) { posterAppShowStageError(err); return; }
-          if (stage === 'iddoc') {
+          const pageList = posterAppPages();
+          const page = posterAppCurrentPage();
+          for (const st of page.stages) {
+            const err = posterAppStageError(st);
+            if (err) { posterAppShowStageError(err); return; }
+          }
+          if (page.stages.indexOf('iddoc') >= 0) {
             const btn = document.getElementById('poster-app-submit-btn');
             const originalLabel = btn ? btn.textContent : '';
             if (btn) { btn.disabled = true; btn.textContent = 'Checking ID…'; }
@@ -1275,7 +1318,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
             if (!ok) return;
           }
-          if (posterAppStageIdx < stageList.length - 1) {
+          if (posterAppStageIdx < pageList.length - 1) {
             posterAppStageIdx++;
             posterAppRenderStage();
             return;
@@ -1432,33 +1475,36 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               </div>
               </div>`;
           }
-          const stageList = posterAppStages();
-          const total = stageList.length;
-          const idx = Math.min(Math.max(posterAppStageIdx, 0), total - 1);
-          const stage = stageList[idx];
-          const isLast = idx === total - 1;
-          const pct = Math.round(((idx + 1) / total) * 100);
-          const hint = posterAppStageHint(stage);
-          const deniedBanner = (idx === 0 && currentUserPosterStatus === 'denied') ? `
+          const pages = posterAppPages();
+          const idx = Math.min(Math.max(posterAppStageIdx, 0), pages.length - 1);
+          const page = pages[idx];
+          const isWelcome = page.id === 'welcome';
+          const isLast = idx === pages.length - 1;
+          const stepPages = pages.filter(pg => pg.id !== 'welcome');
+          const stepNo = stepPages.indexOf(page) + 1;
+          const stage0 = page.stages[0];
+          const title = page.title || (isWelcome ? 'Share your work with Stitch' : posterAppStageTitle(stage0));
+          const sub = page.sub || (isWelcome ? 'Short steps. An admin reviews every application, usually within 72 hours.' : posterAppStageSub(stage0));
+          const hint = (!isWelcome && page.stages.length === 1 && page.id !== 'review') ? posterAppStageHint(stage0) : '';
+          const deniedBanner = (idx <= 1 && currentUserPosterStatus === 'denied') ? `
             <div class="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl p-3 text-xs mb-5">Your previous application wasn't approved. Feel free to update the details below and reapply.</div>` : '';
+          const segs = isWelcome ? '' : `
+            <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">
+              ${stepPages.map((pg, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNo ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('')}
+            </div></div>`;
+          const goLabel = isWelcome ? 'Start application' : (isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Continue');
           return `
             ${bg}
-            <div id="poster-app-stage-scroll" class="flex-1 overflow-y-auto">
+            <div id="poster-app-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
             ${overlayHeader(posterAppHeaderTitle(), '20px', 'posterAppExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="w-full px-5" style="margin-top:10px;">
-              <div class="max-w-2xl mx-auto">
-                <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
-                  <div style="height:100%;width:${pct}%;border-radius:9999px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);transition:width .25s ease;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="px-5" style="padding-top:26px;padding-bottom:130px;">
+            ${segs}
+            <div class="px-5" style="padding-top:${isWelcome ? '18' : '20'}px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
                 ${deniedBanner}
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Step ${idx + 1} of ${total}</div>
-                <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">${posterAppStageTitle(stage)}</h2>
-                <div class="text-sm text-gray-500">${posterAppStageSub(stage)}</div>
-                ${hint ? `<div class="text-xs text-gray-400" style="margin-top:6px;">${hint}</div>` : ''}
+                ${isWelcome ? '' : `<div class="pa-kick">Step ${stepNo} of ${stepPages.length}${page.kicker ? ' · ' + page.kicker : ''}</div>`}
+                ${isWelcome ? '' : `<h2 class="pa-h2">${title}</h2>`}
+                ${isWelcome ? '' : `<div class="pa-sub">${sub}</div>`}
+                ${hint ? `<div class="pa-hint">${hint}</div>` : ''}
                 ${posterApplicationFormHTML()}
               </div>
             </div>
@@ -1469,9 +1515,48 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               btnId: 'poster-app-submit-btn',
               backOnclick: 'posterAppBack()',
               goOnclick: 'posterAppNext()',
-              goLabel: isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Continue',
-              ready: posterAppStageReady(stage),
+              goLabel,
+              ready: posterAppPageReady(page),
             })}`;
+        }
+
+        // Welcome page: what to expect, before any question
+        function posterAppWelcomeHTML(){
+          const paid = !posterAppDraft.paidOnly;
+          const steps = [
+            ['About you', 'Who you are, 30 seconds'],
+            ['Your business', 'Name, category and a short story, 2 min'],
+            ["Verify it's you", 'Document, ID and a live selfie, 2 min'],
+          ];
+          if (paid) steps.push(['Paid selling', 'Only if you will sell courses or spaces']);
+          return `
+            <div style="position:relative;overflow:hidden;border-radius:28px;height:150px;background:linear-gradient(135deg, ${NAVY}, ${ROYAL});color:#fff;display:flex;align-items:flex-end;padding:20px;">
+              <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:60%;opacity:.25;"><path d="M0 60 Q100 10 200 55 T400 40 V100 H0Z" fill="#fff"/></svg>
+              <div class="disp" style="position:relative;font-size:26px;line-height:1.1;">Share your work<br>with Stitch</div>
+            </div>
+            <div class="pa-sub" style="margin-top:14px;">Short steps. An admin reviews every application, usually within ${PAID_SELLER_APPROVAL_HOURS} hours.</div>
+            <div style="margin-top:8px;">
+              ${steps.map((st, i) => `
+                <div class="pa-step"><span class="pa-stepnum">${i + 1}</span><div><div class="pa-steptitle">${st[0]}</div><div class="pa-stepsub">${st[1]}</div></div></div>`).join('')}
+            </div>
+            <div class="pa-hint" style="display:flex;align-items:center;gap:8px;margin-top:16px;"><svg viewBox="0 0 24 24" class="w-4 h-4" style="flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><span>Your documents are private. Only admins can see them.</span></div>`;
+        }
+
+        // Review page: what you entered, with an Edit link back to the page it came from
+        function posterAppSummaryHTML(){
+          const d = posterAppDraft;
+          const cat = (POSTER_CATEGORY_OPTIONS.find(o => o[0] === d.businessCategory) || [])[1] || '-';
+          const has = (f, url) => !!(f || (typeof url !== 'undefined' && url));
+          const row = (label, value, page) => `
+            <div class="pa-sumrow"><span class="pa-sumlab">${label}</span><span class="pa-sumval">${value}</span><a href="#" onclick="posterAppGoToPage('${page}'); return false;" class="pa-edit">Edit</a></div>`;
+          const ok = (v) => v ? '<span style="color:#16a34a;">Uploaded</span>' : '<span style="color:#e11d48;">Missing</span>';
+          return `
+            <div style="margin-bottom:18px;">
+              ${row('Business', escapeHtml(d.businessName || '-'), 'business')}
+              ${row('Category', escapeHtml(cat), 'business')}
+              ${row('Document', ok(has(d.businessDocumentFile, currentUserPosterBusinessDocumentUrl)), 'verify')}
+              ${row('ID and selfie', ok(has(d.idDocumentFile, currentUserPosterIdDocumentUrl) && has(d.selfieFile, currentUserPosterSelfieUrl)), 'verify')}
+            </div>`;
         }
 
         // ---- Listing cover images live in Storage, not inside the row ----
@@ -4236,8 +4321,12 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         ];
         // Two intro pages come first, then the seven form questions, then the plan page (shown
         // after the CV is submitted)
-const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experience', 'education', 'workStyle', 'age', 'gender', 'resume', 'plan'];
-        const careerStartFormStepIds = ['interests', 'keyword', 'experience', 'education', 'workStyle', 'age', 'gender', 'resume'];
+// Four question pages (each groups several questions), between the two intro pages and the plan page
+const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age', 'resume', 'plan'];
+        const careerStartFormStepIds = ['interests', 'experience', 'age', 'resume'];
+        const careerStartPageParts = { interests: ['interests', 'keyword'], experience: ['experience', 'education', 'workStyle'], age: ['age', 'gender'], resume: ['resume'] };
+        const careerStartPageKick = { interests: 'What you want', experience: 'Your background', age: 'About you', resume: 'Your CV' };
+        function careerStartParts(stepId){ return careerStartPageParts[stepId] || [stepId]; }
         let careerStartSkipIntro = false;
         let careerPlanFromMatches = false;
         const careerGenders = [
@@ -4473,7 +4562,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function updateCareerStartField(field, value){ careerStartDraft[field] = value; careerStartSyncNext(); }
         // "Next" only shows once the step has an answer (selected / started typing)
         function careerStartStepReady(){
-          const stepId = careerStartStepIds[careerStartStepIndex];
+          const pageId = careerStartStepIds[careerStartStepIndex];
+          return careerStartParts(pageId).every(careerStartPartReady);
+        }
+        function careerStartPartReady(stepId){
           const d = careerStartDraft;
           if (stepId === 'interests') return d.interests.length > 0;
           if (stepId === 'keyword') return !!d.jobTitle.trim();
@@ -4543,7 +4635,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             const phase = careerStartResumeUploadPhases[careerStartResumeUploadPhaseIndex];
             return `
               <div class="mb-4">
-                <div class="w-full flex items-center gap-3 bg-gray-100 rounded-2xl px-4 py-3 text-left">
+                <div class="w-full flex items-center gap-3 px-4 py-3 text-left" style="background:#fff;border:1.5px dashed #b9d4f7;border-radius:22px;">
                   <div class="w-9 h-9 rounded-full flex-shrink-0" style="position:relative;">
                     <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(10,37,64,0.12) 45%, rgba(10,37,64,0.12) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));animation:classroom-spin 0.9s linear infinite;"></div>
                   </div>
@@ -4558,10 +4650,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return `
             <div class="mb-4">
               <input type="file" id="career-start-resume-input" accept=".pdf,.doc,.docx" class="hidden" onchange="handleCareerStartResumeSelect(event)">
-              <button onclick="document.getElementById('career-start-resume-input').click()" class="w-full flex items-center gap-3 bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-left${err ? ' field-invalid' : ''}">
-                <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('paperclip','w-4 h-4')}</div>
+              <button onclick="document.getElementById('career-start-resume-input').click()" class="w-full flex items-center gap-3 text-left${err ? ' field-invalid' : ''}" style="background:#fff;border:1.5px dashed ${err ? '#f87171' : '#b9d4f7'};border-radius:22px;padding:22px 16px;min-height:92px;">
+                <div class="flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('paperclip','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm font-medium truncate ${fileName ? 'text-gray-800' : 'text-gray-400'}">${fileName || 'Tap to attach your resume/CV (PDF or Word) *'}</div>
+                  <div class="text-sm font-medium truncate ${fileName ? 'text-gray-800' : 'text-gray-400'}">${fileName || 'Attach your CV (PDF or Word) *'}</div>
                 </div>
                 ${fileName ? `<span onclick="event.stopPropagation(); clearCareerStartResume()" class="flex-shrink-0 text-gray-400">${IconBold('close','w-4 h-4')}</span>` : ''}
               </button>
@@ -4593,7 +4685,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const err = careerStartErrors[field];
           return `
             <div class="mb-4">
-              <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">${label}</label>
+              <label class="pa-lab">${label}</label>
               <input type="${type || 'text'}" autocomplete="off" value="${escapeHtml(careerStartDraft[field])}" oninput="updateCareerStartField('${field}', this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();careerStartFieldEnter(this);}" enterkeyhint="next" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;${err ? 'border-color:#dc2626;' : ''}">
               ${err ? `<div class="field-error">${escapeHtml(err)}</div>` : ''}
             </div>`;
@@ -4623,71 +4715,71 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         // ---- "Match with CV/Resume": one question per page ----
         function careerStartStepTitle(stepId){
           if (stepId === 'interests') return 'What are you looking for?';
-          if (stepId === 'keyword') return 'Role, subject, or keyword';
-          if (stepId === 'experience') return 'Your experience level';
-          if (stepId === 'education') return 'Your education';
-          if (stepId === 'workStyle') return 'How you like to work';
-          if (stepId === 'age') return 'How old are you?';
-          if (stepId === 'gender') return 'Your gender';
-          if (stepId === 'resume') return 'Get 3x more matches';
+          if (stepId === 'experience') return 'Tell us your background';
+          if (stepId === 'age') return 'A little about you';
+          if (stepId === 'resume') return 'Add your CV';
           return 'Match with CV/Resume';
         }
         function careerStartStepSub(stepId){
-          if (stepId === 'interests') return 'Pick as many as apply.';
-          if (stepId === 'keyword') return 'What role, subject, or keyword are you searching for?';
-          if (stepId === 'experience') return 'Which experience level fits you best?';
-          if (stepId === 'education') return "What's your highest level of education?";
-          if (stepId === 'workStyle') return 'How would you like to work or study?';
-          if (stepId === 'age') return 'Some opportunities have an age range.';
-          if (stepId === 'gender') return 'Some opportunities are open to one gender only.';
+          if (stepId === 'interests') return 'Pick as many as apply, then add a role or keyword.';
+          if (stepId === 'experience') return 'Stitch Bot uses this to rank the best fits first.';
+          if (stepId === 'age') return 'Some opportunities have an age range or are open to one gender only.';
           if (stepId === 'resume') return "We'll match your experience and skills to the best-fit opportunities.";
           return '';
         }
         // Smaller helper line under the question, same role as posterAppStageHint above.
         function careerStartStepHint(stepId){
-          if (stepId === 'interests') return "We'll widen your matches across everything you pick.";
-          if (stepId === 'workStyle') return 'This shapes which opportunities we prioritize for you.';
-          if (stepId === 'gender') return "We only use this to match you with opportunities you're eligible for.";
+          if (stepId === 'age') return "We only use this to match you with opportunities you're eligible for.";
           if (stepId === 'resume') return 'Your resume/CV is required so Stitch Bot can match you to the right opportunities.';
           return '';
         }
-        function careerStartStepBodyHTML(){
-          const stepId = careerStartStepIds[careerStartStepIndex];
+        // Single-choice / multi-choice chips, same look as the sign-up and Apply to post chips
+        function careerStartChipsHTML(options, isOn, onclickFn, errorKey){
+          const err = errorKey ? careerStartErrors[errorKey] : '';
+          return `<div class="auth-intent-row">${options.map(o => `
+            <button type="button" aria-pressed="${isOn(o.id)}" onclick="${onclickFn}('${o.id}')" class="auth-intent-chip ${isOn(o.id) ? 'on' : ''}"><span>${o.label}</span></button>`).join('')}</div>
+            ${err ? `<div class="field-error">${escapeHtml(err)}</div>` : ''}`;
+        }
+        // Experience levels have a short description each: plain rows, selected = blue with a tick
+        function careerStartExperienceRowsHTML(){
+          const err = careerStartErrors.experienceLevel; const sel = careerStartDraft.experienceLevel;
+          return `<div>${careerExperienceLevels.map((o, i) => `
+            <button type="button" onclick="setCareerStartExperience('${o.id}')" class="w-full flex items-center gap-3 text-left" style="padding:12px 2px;${i ? 'border-top:1px solid rgba(15,23,42,.07);' : ''}">
+              <span class="flex-1 min-w-0"><span class="block" style="font-size:14px;font-weight:700;color:${sel === o.id ? '#1e90ff' : '#0f172a'};">${o.label}</span>${o.desc ? `<span class="block" style="font-size:12px;color:#64748b;margin-top:1px;">${o.desc}</span>` : ''}</span>
+              ${sel === o.id ? `<svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0;color:#1e90ff;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12l5 5 9-10"/></svg>` : ''}
+            </button>`).join('')}</div>
+            ${err ? `<div class="field-error">${escapeHtml(err)}</div>` : ''}`;
+        }
+        function careerStartPartBodyHTML(stepId){
           const d = careerStartDraft;
           if (stepId === 'interests') {
-            return `
-              <div class="flex flex-col gap-3 mb-1">
-                ${careerInterestOptions.map(o => `
-                  <button onclick="toggleCareerStartInterest('${o.id}')" class="w-full px-4 py-4 rounded-2xl text-left text-sm font-medium outline-pill ${d.interests.includes(o.id) ? 'is-selected' : ''}">${o.label}</button>
-                `).join('')}
-              </div>
-              ${careerStartErrors.interests ? `<div class="field-error">${escapeHtml(careerStartErrors.interests)}</div>` : ''}`;
+            return careerStartChipsHTML(careerInterestOptions, id => d.interests.includes(id), 'toggleCareerStartInterest', 'interests');
           }
           if (stepId === 'keyword') {
-            return careerStartFieldHTML('Keyword', 'jobTitle', 'text', 'e.g. Project Manager, Nursing, Climate advocacy');
+            return careerStartFieldHTML('Role, subject or keyword', 'jobTitle', 'text', 'e.g. Project Manager, Nursing, Climate advocacy');
           }
-          if (stepId === 'experience') {
-            return careerStartOptionListHTML(careerExperienceLevels, d.experienceLevel, 'setCareerStartExperience', 'experienceLevel', true);
-          }
-          if (stepId === 'education') {
-            return careerStartOptionListHTML(careerEducationLevels, d.education, 'setCareerStartEducation', 'education', false);
-          }
-          if (stepId === 'workStyle') {
-            return careerStartOptionListHTML(careerWorkStyles, d.workStyle, 'setCareerStartWorkStyle', 'workStyle', false);
-          }
-          if (stepId === 'age') {
-            return careerStartFieldHTML('Age', 'age', 'number', 'e.g. 21');
-          }
-          if (stepId === 'gender') {
-            return careerStartOptionListHTML(careerGenders, d.gender, 'setCareerStartGender', 'gender', false);
-          }
+          if (stepId === 'experience') return careerStartExperienceRowsHTML();
+          if (stepId === 'education') return careerStartChipsHTML(careerEducationLevels, id => d.education === id, 'setCareerStartEducation', 'education');
+          if (stepId === 'workStyle') return careerStartChipsHTML(careerWorkStyles, id => d.workStyle === id, 'setCareerStartWorkStyle', 'workStyle');
+          if (stepId === 'age') return careerStartFieldHTML('Age', 'age', 'number', 'e.g. 21');
+          if (stepId === 'gender') return careerStartChipsHTML(careerGenders, id => d.gender === id, 'setCareerStartGender', 'gender');
           if (stepId === 'resume') {
-            return careerStartFieldHTML('Phone number (with country code)', 'phone', 'tel', 'e.g. +233 24 123 4567') +
+            return careerStartResumePickerHTML() +
+              careerStartFieldHTML('Phone number (with country code)', 'phone', 'tel', 'e.g. +233 24 123 4567') +
               careerStartFieldHTML('City', 'city', 'text', 'e.g. Accra') +
-              careerStartFieldHTML('Country', 'country', 'text', 'e.g. Ghana') +
-              careerStartResumePickerHTML();
+              careerStartFieldHTML('Country', 'country', 'text', 'e.g. Ghana');
           }
           return '';
+        }
+        const CAREER_PART_LABELS = { interests: 'Type', experience: 'Experience level', education: 'Education', workStyle: 'How you like to work', gender: 'Gender' };
+        function careerStartStepBodyHTML(){
+          const pageId = careerStartStepIds[careerStartStepIndex];
+          const parts = careerStartParts(pageId);
+          return parts.map(part => {
+            const lab = parts.length > 1 ? CAREER_PART_LABELS[part] : '';
+            const hint = parts.length > 1 || part === 'age' ? careerStartStepHint(part) : '';
+            return `<div class="pa-field">${lab ? `<div class="pa-lab">${lab}</div>` : ''}${careerStartPartBodyHTML(part)}${hint ? `<div class="pa-hint">${hint}</div>` : ''}</div>`;
+          }).join('');
         }
 
         // ---- Phone numbers: must carry a country code and look like a real number ----
@@ -4721,23 +4813,25 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           return { ok: true, e164: '+' + code + national, display: '+' + code + ' ' + national, code, national };
         }
         function careerStartNext(){
-          const stepId = careerStartStepIds[careerStartStepIndex];
+          const pageId = careerStartStepIds[careerStartStepIndex];
+          const parts = careerStartParts(pageId);
+          const stepId = { is: (x) => parts.indexOf(x) >= 0 };
           const d = careerStartDraft;
           careerStartErrors = { interests: '', jobTitle: '', experienceLevel: '', education: '', workStyle: '', age: '', gender: '', fullName: '', email: '', phone: '', resume: '' };
 
-          if (stepId === 'interests' && !d.interests.length) careerStartErrors.interests = 'Please select at least one option.';
-          if (stepId === 'keyword' && !d.jobTitle.trim()) careerStartErrors.jobTitle = 'Please enter a keyword.';
-          if (stepId === 'experience' && !d.experienceLevel) careerStartErrors.experienceLevel = 'Please select an experience level.';
-          if (stepId === 'education' && !d.education) careerStartErrors.education = 'Please select your education level.';
-          if (stepId === 'workStyle' && !d.workStyle) careerStartErrors.workStyle = 'Please select a work style.';
+          if (stepId.is('interests') && !d.interests.length) careerStartErrors.interests = 'Please select at least one option.';
+          if (stepId.is('keyword') && !d.jobTitle.trim()) careerStartErrors.jobTitle = 'Please enter a keyword.';
+          if (stepId.is('experience') && !d.experienceLevel) careerStartErrors.experienceLevel = 'Please select an experience level.';
+          if (stepId.is('education') && !d.education) careerStartErrors.education = 'Please select your education level.';
+          if (stepId.is('workStyle') && !d.workStyle) careerStartErrors.workStyle = 'Please select a work style.';
 
-          if (stepId === 'age') {
+          if (stepId.is('age')) {
             const ageNum = Number(String(d.age).trim());
             if (!String(d.age).trim()) careerStartErrors.age = 'Please enter your age.';
             else if (!Number.isInteger(ageNum) || ageNum < 13 || ageNum > 100) careerStartErrors.age = 'Enter a valid age between 13 and 100.';
           }
-          if (stepId === 'gender' && !d.gender) careerStartErrors.gender = 'Please select an option.';
-          if (stepId === 'resume') {
+          if (stepId.is('gender') && !d.gender) careerStartErrors.gender = 'Please select an option.';
+          if (stepId.is('resume')) {
             const phoneCheck = normalizeIntlPhone(d.phone);
             if (!phoneCheck.ok) careerStartErrors.phone = phoneCheck.error;
             else d.phone = phoneCheck.display;
@@ -4752,7 +4846,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const hasErrors = Object.values(careerStartErrors).some(Boolean);
           if (hasErrors) { rerenderCareerStart(); return; }
 
-          if (stepId === 'resume') { submitCareerStartForm(); return; }
+          if (stepId.is('resume')) { submitCareerStartForm(); return; }
 
           careerStartStepIndex = Math.min(careerStartStepIndex + 1, careerStartStepIds.length - 1);
           rerenderCareerStart();
@@ -4910,7 +5004,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           careerPlanPillAnim = false;
           careerPlanChoice = id;
           rerenderCareerStart();
-          openCareerSubscribeSheet();   // the panel pulls up right away; no separate Subscribe pill
+          // the pay pill floats up once a plan is picked; tapping it opens the confirm sheet
         }
         function careerIntroBulletsHTML(items){
           return `<div class="flex flex-col gap-3" style="margin-top:22px;">${items.map(t => `
@@ -5109,41 +5203,46 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const selected = careerPlanChoice === plan.id;
           const best = plan.id === 'monthly';
           return `
-            <button onclick="setCareerPlan('${plan.id}')" class="w-full text-left rounded-3xl p-4 relative outline-pill ${selected ? 'is-selected' : ''}" style="margin-bottom:12px;${best ? 'margin-top:20px;' : ''}">
-              ${best ? `<span class="absolute font-bold uppercase" style="top:-14px;left:18px;background:#1e90ff;color:#ffffff;font-size:11px;letter-spacing:0.04em;line-height:1.2;padding:0.45rem 1rem;border-radius:9999px;box-shadow:0 2px 8px rgba(30,144,255,0.35);white-space:nowrap;">Best value</span>` : ''}
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="text-base font-bold font-display" style="color:var(--pill-text);">${plan.label}</div>
-                  <div class="text-xs" style="margin-top:2px;color:var(--pill-text);opacity:0.6;">Billed every ${plan.unit}</div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="text-right"><span class="text-2xl font-bold" style="color:var(--pill-text);">GHS ${plan.price}</span><span class="text-xs" style="color:var(--pill-text);opacity:0.6;"> /${plan.unit}</span></div>
-                  <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;${selected ? `background:#1e90ff;color:#fff;` : 'border:2px solid rgba(128,128,128,0.45);'}">${selected ? Icon('check','w-3.5 h-3.5') : ''}</span>
-                </div>
-              </div>
+            <button type="button" onclick="setCareerPlan('${plan.id}')" aria-pressed="${selected}" class="w-full text-left flex items-center gap-3" style="padding:16px 2px;border-top:1px solid rgba(15,23,42,.07);">
+              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;border-radius:9999px;${selected ? 'background:#1e90ff;border:2px solid #1e90ff;' : 'border:2px solid #c5cedd;'}">${selected ? '<span style="width:8px;height:8px;border-radius:9999px;background:#fff;"></span>' : ''}</span>
+              <span class="flex-1 min-w-0">
+                <span style="font-size:16px;font-weight:700;color:#0f172a;">${plan.label}</span>${best ? `<span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1e90ff;margin-left:8px;white-space:nowrap;">Best value</span>` : ''}
+                <span class="block" style="font-size:11.5px;color:#64748b;margin-top:1px;">Billed every ${plan.unit}</span>
+              </span>
+              <span class="text-right flex-shrink-0"><span style="font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;color:${selected ? '#1e90ff' : '#0f172a'};">GHS ${plan.price}</span><span style="font-size:12px;color:#64748b;"> /${plan.unit}</span></span>
             </button>`;
         }
         function careerStartPlanHTML(){
-          // One static screen (no scrolling): the plan cards plus a short explanation. The old
-          // checklist box and the separate "Cancel any time" note are folded into that explanation.
+          const chosen = CAREER_PLANS[careerPlanChoice];
+          const perks = [
+            ['Matches you to opportunities', 'From your CV and preferences.'],
+            ['Applies for you', 'Inside Stitch, only to posts that fit.'],
+            ['Sends fresh matches', 'As soon as new ones are posted.'],
+          ];
           return `
-            <div class="apply-bg-overlay" style="opacity:.28;"></div>
-            <div class="flex-1 overflow-hidden" style="display:flex;flex-direction:column;min-height:0;">
+            <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartBack()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="px-5" style="padding-top:26px;flex:0 0 auto;">
+            <div class="px-5" style="padding-top:20px;padding-bottom:140px;">
               <div class="max-w-2xl mx-auto">
-                <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">Choose your plan</h2>
-                <div class="text-sm text-gray-500" style="margin-bottom:18px;">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
-                ${careerPlanCardHTML(CAREER_PLANS.daily)}
-                ${careerPlanCardHTML(CAREER_PLANS.weekly)}
-                ${careerPlanCardHTML(CAREER_PLANS.monthly)}
+                <div class="pa-kick">Last step</div>
+                <h2 class="pa-h2">Choose your plan</h2>
+                <div class="pa-sub">Your CV is in. Pick a plan and Stitch Bot starts matching you right away.</div>
+                <div style="margin-top:14px;">
+                  ${careerPlanCardHTML(CAREER_PLANS.daily)}
+                  ${careerPlanCardHTML(CAREER_PLANS.weekly)}
+                  ${careerPlanCardHTML(CAREER_PLANS.monthly)}
+                </div>
+                <div class="aa-h3" style="margin-top:22px;margin-bottom:4px;">What you get</div>
+                ${perks.map(p => `
+                  <div class="flex items-start gap-3" style="padding:7px 0;">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px;flex-shrink:0;color:${NAVY};fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12l5 5 9-10"/></svg>
+                    <div><div style="font-size:13.5px;font-weight:700;color:#0f172a;">${p[0]}</div><div style="font-size:12px;color:#64748b;">${p[1]}</div></div>
+                  </div>`).join('')}
+                <div class="pa-hint" style="margin-top:10px;">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
               </div>
             </div>
-            <div class="cp-panel">
-              <div class="text-sm text-gray-500" style="line-height:1.5;max-width:42rem;margin:0 auto;">Stitch Bot matches you to opportunities using your CV and preferences, applies for you inside the app, and sends fresh matches as new ones are posted. Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
             </div>
-            <style>.cp-panel{position:relative;z-index:2;flex:1 1 auto;margin-top:6px;border-radius:32px 32px 0 0;background:#ffffff;padding:26px 24px 190px;box-shadow:0 -6px 24px rgba(30,80,200,.10);}body.dark-mode .cp-panel{background:var(--c-black,#121212);}</style>
-            </div>
+            ${chosen ? `<div class="flow-float"><div class="max-w-2xl mx-auto"><button type="button" class="flow-pill flow-pill-go" style="width:100%;" onclick="openCareerSubscribeSheet()">Continue with ${chosen.label} · GHS ${chosen.price}</button></div></div>` : ''}
             `;
         }
         // Slide-up sheet shown when "Subscribe" is tapped: spells out the plan, price, end date and
@@ -5772,7 +5871,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerAutoDashboardHTML(){
           const s = careerBotStats();
           const card = (inner) => `<div class="bg-white rounded-3xl p-4 mb-4 shadow-sm">${inner}</div>`;
-          const title = (t, right) => `<div class="flex items-center justify-between" style="margin-bottom:10px;"><div class="font-semibold text-sm text-gray-800">${t}</div>${right ? `<div class="text-xs text-gray-400">${right}</div>` : ''}</div>`;
+          const title = (t, right) => `<div class="flex items-center justify-between" style="margin-bottom:10px;"><div class="aa-h3">${t}</div>${right ? `<div class="text-xs text-gray-400">${right}</div>` : ''}</div>`;
           const tile = (n, label, color) => `<div class="rounded-2xl text-center" style="background:rgba(10,37,64,0.05);padding:12px 4px;"><div class="text-xl font-bold" style="color:${color};">${n}</div><div class="text-xs text-gray-500" style="margin-top:2px;">${label}</div></div>`;
           const tiles = `<div class="grid grid-cols-4 gap-2 mb-4">${tile(s.matched, 'Matched', '#64748b')}${tile(s.applied, 'Applied', '#1e90ff')}${tile(s.shortPlus, 'Shortlisted', '#4f46e5')}${tile(s.offers, 'Offers', '#059669')}</div>`;
           const top = Math.max(1, s.matched, s.applied);
@@ -5858,7 +5957,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
             </div>
             ${careerBotDocsCardHTML()}`;
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerAutoApplyHeaderHTML()}
               <div class="px-5" style="padding-top:20px;">${toggle}${body}</div>
             </div>`;
@@ -5882,7 +5981,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
               <button onclick="document.getElementById('career-profile-resume-input').click()" class="block font-semibold" style="color:${NAVY};margin-top:6px;">Attach CV</button>
             </div>`;
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Documents')}
               <div class="px-5" style="padding-top:20px;">
                 <div class="text-xs text-gray-400 px-1" style="margin-bottom:12px;">Everything you have uploaded for Stitch Bot. View, download or edit any file.</div>
@@ -5904,7 +6003,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const channel = (p && p.contactMethod === 'email') ? 'by email' : 'in the app';
           const log = (p && p.botLog || []).slice(0, 30);
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Notifications')}
               <div class="px-5" style="padding-top:20px;">
                 <div class="bg-white rounded-3xl p-4 mb-5 shadow-sm">
@@ -5951,7 +6050,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const sec = (t, sub, inner) => `<div style="margin-bottom:28px;"><div class="text-base font-semibold text-gray-800">${t}</div>${sub ? `<div class="text-xs text-gray-400" style="margin:2px 0 12px;">${sub}</div>` : '<div style="height:10px;"></div>'}${inner}</div>`;
           const sub2 = (t) => `<div class="text-sm font-semibold text-gray-500" style="margin:20px 0 10px;">${t}</div>`;
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Preferences')}
               <div class="px-5" style="padding-top:20px;">
                 ${sec('How should Stitch Bot act for you?', 'Applies to everything it does on auto apply.', careerPrefChoiceHTML('mode', [
@@ -6065,7 +6164,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         }
         function careerCancelReasonHTML(){
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${overlayHeader('Why did you cancel?', '20px', 'careerCancelSkip()', null, { center: true })}
               <div class="px-5" style="padding-top:18px;">
                 <div class="text-sm text-gray-500 text-center" style="margin-bottom:18px;">We're sorry to see you go. Pick the closest reason. It takes a few seconds and helps us improve.</div>
@@ -6318,80 +6417,87 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
         function careerSubscriptionPageHTML(){
           const sub = careerStartProfile && careerStartProfile.subscription;
           const active = careerSubscriptionActive();
-          const row = (label, value) => `<div class="flex items-center justify-between py-3" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
-          let body, bottomBar = '';
+          const botIcon = `<svg viewBox="0 0 24 24" style="width:26px;height:26px;flex-shrink:0;color:${NAVY};fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01"/></svg>`;
+          const row = (label, value) => `<div class="pa-sumrow"><span class="pa-sumlab" style="width:auto;flex:1;">${label}</span><span class="pa-sumval" style="flex:none;max-width:62%;text-align:right;">${value}</span></div>`;
+          let body, floatHTML = '';
           if (!sub) {
-            body = `<div class="bg-white rounded-3xl p-8 text-center text-gray-500 text-sm shadow-sm">You don't have a Stitch Bot subscription yet.</div>
-              <button onclick="openCareerStartPlan(true)" class="w-full font-semibold text-sm py-3 rounded-full text-white mt-4" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Choose a plan</button>`;
+            body = `
+              <div style="text-align:center;margin-top:56px;">
+                <div style="color:${NAVY};display:flex;justify-content:center;">${botIcon.replace('width:26px;height:26px', 'width:54px;height:54px')}</div>
+                <h2 class="pa-h2" style="margin-top:14px;">No plan yet</h2>
+                <div class="pa-sub" style="max-width:270px;margin:0 auto;">Stitch Bot finds your matches and applies for you. Pick a plan to switch it on.</div>
+              </div>
+              ${careerSubscriptionAboutHTML(null, false, true)}`;
+            floatHTML = `<button onclick="openCareerStartPlan(true)" class="flow-pill flow-pill-go" style="width:100%;">Choose a plan</button>`;
           } else {
             const plan = CAREER_PLANS[sub.plan] || CAREER_PLANS.monthly;
             const leftDays = Math.max(0, Math.ceil((sub.expiresAt - Date.now()) / 86400000));
-            const status = !active ? 'Ended' : (sub.cancelled ? 'Cancelled' : 'Active');
-            const statusColor = !active ? '#ef4444' : (sub.cancelled ? '#b45309' : '#059669');
+            const soon = active && !sub.cancelled && careerSubscriptionExpiringSoon();
+            const status = !active ? 'Ended' : (sub.cancelled ? 'Cancelled' : (soon ? `Ends in ${leftDays} day${leftDays === 1 ? '' : 's'}` : 'Active'));
+            const statusColor = !active ? '#ef4444' : ((sub.cancelled || soon) ? '#b45309' : '#059669');
+            const bigColor = !active ? '#ef4444' : ((sub.cancelled || soon) ? '#b45309' : NAVY);
             const pct = (sub.startedAt && sub.expiresAt) ? Math.max(0, Math.min(100, Math.round((Date.now() - sub.startedAt) / (sub.expiresAt - sub.startedAt) * 100))) : 0;
+            const barBg = (sub.cancelled || soon) && active ? 'linear-gradient(90deg,#f59e0b,#ef4444)' : `linear-gradient(90deg, ${NAVY}, ${ROYAL})`;
             const ref = String(sub.reference || '');
             body = `
-              <div class="bg-white rounded-3xl p-4 shadow-sm">
-                <div class="flex items-center gap-3 mb-1">
-                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('bot','w-5 h-5')}</div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-gray-800">Stitch Bot · ${escapeHtml(plan.label)}</div>
-                    <div class="text-xs font-semibold" style="color:${statusColor};">${status}</div>
-                  </div>
+              <div class="flex items-center gap-3" style="margin-top:4px;">
+                ${botIcon}
+                <div class="flex-1 min-w-0">
+                  <div style="font-size:15px;font-weight:700;color:#0f172a;">Stitch Bot · ${escapeHtml(plan.label)}</div>
+                  <div style="font-size:12px;font-weight:800;color:${statusColor};">${status}</div>
                 </div>
-                ${active ? `<div style="margin:10px 0 4px;height:8px;border-radius:9999px;background:rgba(128,128,128,0.18);overflow:hidden;"><div style="height:100%;width:${pct}%;border-radius:9999px;background:linear-gradient(90deg, ${NAVY}, ${ROYAL});"></div></div><div class="text-xs text-gray-400" style="margin-bottom:6px;">${leftDays} day${leftDays === 1 ? '' : 's'} left</div>` : ''}
+              </div>
+              <div style="margin:22px 0 4px;">
+                <div class="disp" style="font-family:'Colmeak','Montserrat',sans-serif;font-size:46px;line-height:1;color:${bigColor};">${active ? `${leftDays} day${leftDays === 1 ? '' : 's'}` : 'Ended'}</div>
+                <div style="font-size:12.5px;color:#64748b;margin-top:6px;">${active ? (sub.cancelled ? 'left · then matching and auto apply stop' : (soon ? 'left · auto apply pauses after this' : `left · renews ${escapeHtml(careerPlanDateLabel(sub.expiresAt))}`)) : `on ${escapeHtml(careerPlanDateLabel(sub.expiresAt))} · auto apply is paused`}</div>
+              </div>
+              <div style="height:7px;border-radius:9999px;background:#e5eaf3;overflow:hidden;margin:12px 0 18px;"><div style="height:100%;width:${active ? pct : 100}%;border-radius:9999px;background:${active ? barBg : '#ef4444'};"></div></div>
+              <div>
                 ${row('Plan', escapeHtml(plan.label) + ' · GH₵' + (sub.amount != null ? sub.amount : plan.price) + ' per ' + plan.unit)}
                 ${row('Started', escapeHtml(careerPlanDateLabel(sub.startedAt)))}
-                ${row(!active ? 'Ended' : (sub.cancelled ? 'Access until' : 'Renews / ends'), escapeHtml(careerPlanDateLabel(sub.expiresAt)))}
+                ${row(!active ? 'Ended' : (sub.cancelled ? 'Access until' : (soon ? 'Ends' : 'Renews')), escapeHtml(careerPlanDateLabel(sub.expiresAt)))}
                 ${sub.cancelled && sub.cancelledAt ? row('Cancelled on', escapeHtml(careerPlanDateLabel(sub.cancelledAt))) : ''}
-                ${ref && ref.indexOf('preview_') !== 0 ? row('Payment reference', escapeHtml(ref.length > 18 ? ref.slice(0, 18) + '…' : ref)) : ''}
+                ${ref && ref.indexOf('preview_') !== 0 ? row('Reference', escapeHtml(ref.length > 18 ? ref.slice(0, 18) + '…' : ref)) : ''}
               </div>
               ${careerSubscriptionAboutHTML(sub, active)}`;
-            const needsSubscribe = (!active || sub.cancelled || careerSubscriptionExpiringSoon());
+            const needsSubscribe = (!active || sub.cancelled || soon);
             const canCancel = active && !sub.cancelled;
             if (needsSubscribe || canCancel) {
-              bottomBar = `
-                <div class="w-full" style="padding-top:26px;padding-bottom:max(8px, env(safe-area-inset-bottom));">
-                  <div class="max-w-2xl mx-auto flex flex-col gap-3">
-                    ${needsSubscribe ? `<button onclick="careerSubscribeAgain()" class="pill-cta font-display w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">Update subscription</button>` : ''}
-                    ${canCancel ? `<button onclick="cancelCareerSubscription()" class="font-display w-full inline-flex items-center justify-center font-semibold text-center rounded-full text-sm" style="background-image:linear-gradient(90deg,#ff3b30,#d4161f);background-color:#e11d28;color:#ffffff;border:none;padding:0.85rem 1.1rem;box-shadow:0 6px 16px rgba(212,22,31,0.30);">Cancel subscription</button>` : ''}
-                  </div>
-                </div>`;
+              floatHTML = `
+                ${needsSubscribe ? `<button onclick="careerSubscribeAgain()" class="flow-pill flow-pill-go" style="width:100%;">Subscribe again</button>` : ''}
+                ${canCancel ? `<button onclick="cancelCareerSubscription()" style="width:100%;text-align:center;font-size:13px;font-weight:700;color:#ef4444;padding:${needsSubscribe ? '12px' : '16px'} 0 4px;background:none;border:none;">Cancel subscription</button>` : ''}`;
             }
           }
           return `
-            <div class="flex-1 overflow-y-auto" style="padding-bottom:30px;">
+            <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:${floatHTML ? '150' : '30'}px;">
               ${overlayHeader('Manage subscription', '20px', 'overlayGoBack()', null, { center: true })}
-              <div class="px-5" style="padding-top:20px;">${body}${bottomBar}</div>
-            </div>`;
+              <div class="px-5" style="padding-top:12px;"><div class="max-w-2xl mx-auto">${body}</div></div>
+            </div>
+            ${floatHTML ? `<div class="flow-float"><div class="max-w-2xl mx-auto" style="display:flex;flex-direction:column;">${floatHTML}</div></div>` : ''}`;
         }
-        // Plain-language explainer shown under the plan details.
-        function careerSubscriptionAboutHTML(sub, active){
+        function careerSubscriptionAboutHTML(sub, active, noFoot){
           const items = [
             ['Matches you to opportunities', 'Stitch Bot reads your CV and what you are looking for, then picks the posts that fit you best.'],
             ['Applies for you', 'It sends your CV, open application letter and any documents a post asks for. It only applies to posts inside Stitch, never to outside websites.'],
             ['Keeps watch', 'It tracks every application and tells you when a status changes, an interview is set or a deadline is close. Updates come in the app or by email, as you chose.'],
           ];
           const end = sub && sub.expiresAt ? careerPlanDateLabel(sub.expiresAt) : '';
-          const foot = !active
+          const foot = noFoot ? '' : (!active
             ? 'Your plan has ended, so matching and auto apply are paused until you subscribe again.'
             : (sub && sub.cancelled
               ? `You cancelled. Everything keeps working until ${end}, then matching and auto apply stop.`
-              : `Your plan covers everything above until ${end}. If you cancel, you keep access until then.`);
+              : `Your plan covers everything above until ${end}. If you cancel, you keep access until then.`));
           return `
-            <div class="px-1" style="margin-top:22px;">
-              <div class="text-sm font-semibold text-gray-800" style="margin-bottom:4px;">What this subscription is</div>
-              <div class="text-xs text-gray-500" style="margin-bottom:10px;">Stitch Bot is your job-hunting assistant inside Stitch. This plan is what keeps it working for you.</div>
+            <div style="margin-top:${noFoot ? 34 : 24}px;">
+              <div class="aa-h3" style="margin-bottom:6px;">What this plan gives you</div>
               ${items.map(it => `
                 <div class="flex items-start gap-3" style="padding:8px 0;">
-                  <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('check','w-3.5 h-3.5')}</span>
-                  <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-gray-800">${it[0]}</div><div class="text-xs text-gray-500">${it[1]}</div></div>
+                  <svg viewBox="0 0 24 24" style="width:20px;height:20px;margin-top:1px;flex-shrink:0;color:${NAVY};fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12l5 5 9-10"/></svg>
+                  <div class="flex-1 min-w-0"><div style="font-size:13.5px;font-weight:700;color:#0f172a;">${it[0]}</div><div style="font-size:12px;color:#64748b;margin-top:1px;">${it[1]}</div></div>
                 </div>`).join('')}
-              <div class="text-xs text-gray-400" style="margin-top:8px;">${foot}</div>
+              ${foot ? `<div class="pa-hint" style="margin-top:8px;">${foot}</div>` : ''}
             </div>`;
         }
-
-        // ---- Saved opportunities (bookmarks from the cards) ----
         function careerSavedPageHTML(){
           const saved = allExploreCards().filter(c => c.saved && !c.isCatalogCourse);
           return `
@@ -6441,32 +6547,25 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'keyword', 'experie
           const total = careerStartFormStepIds.length;
           const stepNum = careerStartFormStepIds.indexOf(stepId) + 1;
           const isLastStep = stepId === 'resume';
-          const pct = Math.round((stepNum / total) * 100);
           const resumeBusy = isLastStep && careerStartResumeUploading;
-          const nextBtnLabel = resumeBusy ? 'Fetching…' : (isLastStep ? 'Submit' : 'Next');
-          const hint = careerStartStepHint(stepId);
-          // Same background technique as "Apply to post" (posterApplicationOverlayHTML): a sibling
-          // of the scrollable step area, not inside it, so it never scrolls or shifts as you move
-          // between questions
+          const nextBtnLabel = resumeBusy ? 'Fetching…' : (isLastStep ? 'Submit' : 'Continue');
+          const hint = (careerStartParts(stepId).length === 1 && stepId !== 'age') ? careerStartStepHint(stepId) : '';
+          const segs = careerStartFormStepIds.map((id, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNum ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('');
           const bg = '';
           return `
             ${bg}
-            <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto">
+            <div id="career-start-stage-scroll" class="flex-1 overflow-y-auto pa-flow">
             ${overlayHeader('Match with CV/Resume', '20px', 'careerStartExit()', null, {center:true, titleSize:'text-xl', titleClass:'career-flow-title', pb:'0px'})}
-            <div class="w-full px-5" style="margin-top:10px;">
-              <div class="max-w-2xl mx-auto">
-                <div style="height:4px;border-radius:9999px;background:rgba(128,128,128,0.25);overflow:hidden;">
-                  <div style="height:100%;width:${pct}%;border-radius:9999px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);transition:width .25s ease;"></div>
-                </div>
-              </div>
+            <div class="w-full px-5" style="margin-top:12px;">
+              <div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">${segs}</div>
             </div>
-            <div class="px-5" style="padding-top:26px;padding-bottom:130px;">
+            <div class="px-5" style="padding-top:20px;padding-bottom:130px;">
               <div class="max-w-2xl mx-auto">
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Step ${stepNum} of ${total}</div>
-                <h2 class="text-2xl font-bold font-display grad-text" style="margin-bottom:6px;">${careerStartStepTitle(stepId)}</h2>
-                <div class="text-sm text-gray-500">${careerStartStepSub(stepId)}</div>
-                ${hint ? `<div class="text-xs text-gray-400" style="margin-top:6px;">${hint}</div>` : ''}
-                <div id="career-start-step-body" style="margin-top:22px;">
+                <div class="pa-kick">Step ${stepNum} of ${total} · ${careerStartPageKick[stepId] || ''}</div>
+                <h2 class="pa-h2">${careerStartStepTitle(stepId)}</h2>
+                <div class="pa-sub">${careerStartStepSub(stepId)}</div>
+                ${hint ? `<div class="pa-hint">${hint}</div>` : ''}
+                <div id="career-start-step-body" style="margin-top:18px;">
                   ${careerStartStepBodyHTML()}
                 </div>
               </div>

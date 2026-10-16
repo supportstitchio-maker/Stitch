@@ -1577,39 +1577,276 @@ try {
           return allCourses.reduce((n, c) => n + (c.enrolledCount || 0), 0);
         }
 
-        function coursesHomeHTML(){
-          const isAdmin = canCreateCourses();
+        // ---- Courses: discover screen ----
+        let courseSearchQuery = '';
+        let courseFilter = 'all';   // all | mine | live | free | paid
+        const COURSE_FALLBACK_GRADS = [
+          'linear-gradient(135deg,#1e90ff,#4169e1)', 'linear-gradient(135deg,#10b981,#0e7490)',
+          'linear-gradient(135deg,#f59e0b,#ef4444)', 'linear-gradient(135deg,#8b5cf6,#4169e1)',
+          'linear-gradient(135deg,#334155,#0f172a)', 'linear-gradient(135deg,#ec4899,#8b5cf6)',
+        ];
+        function courseFallbackGrad(c){
+          let h = 0; const k = String((c && c.id) || '');
+          for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+          return COURSE_FALLBACK_GRADS[h % COURSE_FALLBACK_GRADS.length];
+        }
+        // The cover picture (or a gradient when there is none), filling its parent
+        function courseCoverFill(c){
+          const p = courseCoverOf(c);
+          return p ? `<img src="${escapeHtml(p)}" alt="" class="absolute inset-0 w-full h-full object-cover" loading="lazy">` : '';
+        }
+        function coursePriceLabel(c){
+          const n = Math.round(Number(c && c.price) || 0);
+          if (n <= 0) return 'Free';
+          const cur = (c.currency || 'GHS').toUpperCase();
+          return `${cur === 'GHS' ? 'GHS ' : cur + ' '}${n}`;
+        }
+        function courseIsPaid(c){ return Math.round(Number(c && c.price) || 0) > 0; }
+
+        // ---- Course completion certificate ----
+        function courseCertLoadImg(src){
+          return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+        }
+        async function buildCourseCertificate(c){
+          try { await Promise.all([document.fonts.load('64px Colmeak'), document.fonts.load('700 52px Inter'), document.fonts.load('400 30px Montserrat'), document.fonts.load('600 30px Montserrat'), document.fonts.load('700 30px Montserrat'), document.fonts.load('800 30px Montserrat'), document.fonts.ready]); } catch (e) {}
+          const W = 1600, H = 1130, CX = W / 2;
+          const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+          const x = cv.getContext('2d');
+          const NAVYD = '#0b1f4d';
+          const grad = x.createLinearGradient(CX - 300, 0, CX + 300, 0); grad.addColorStop(0, '#1e90ff'); grad.addColorStop(1, '#4169e1');
+          x.fillStyle = '#fffefb'; x.fillRect(0, 0, W, H);
+          // fine wavy rosette (guilloche) rings, in Stitch blue
+          const rosette = (cx, cy, rmax, alpha, n, flip) => {
+            x.save(); x.beginPath(); x.rect(0, 0, W, H); x.clip(); x.translate(cx, cy); x.lineWidth = 1.3;
+            for (let k = 0; k < 46; k++) {
+              const R = 60 + (rmax - 60) * (k / 45), amp = 10 + 26 * (k / 45), ph = k * 0.16 * (flip ? -1 : 1);
+              x.strokeStyle = 'rgba(' + (k % 2 ? '65,105,225' : '30,144,255') + ',' + alpha + ')';
+              x.beginPath();
+              for (let t = 0; t <= Math.PI * 2 + 0.01; t += 0.01) {
+                const rr = R + amp * Math.sin(n * t + ph);
+                const px = Math.cos(t) * rr, py = Math.sin(t) * rr;
+                if (t === 0) x.moveTo(px, py); else x.lineTo(px, py);
+              }
+              x.stroke();
+            }
+            x.restore();
+          };
+          rosette(W - 190, 250, 560, 0.20, 16, false);
+          rosette(190, H - 230, 520, 0.18, 14, true);
+          // soft fade so the text area stays clean
+          const fade = x.createRadialGradient(CX, 520, 120, CX, 520, 620); fade.addColorStop(0, 'rgba(255,254,251,0.96)'); fade.addColorStop(1, 'rgba(255,254,251,0)');
+          x.fillStyle = fade; x.fillRect(0, 0, W, H);
+          // thin double frame
+          x.strokeStyle = 'rgba(30,144,255,0.45)'; x.lineWidth = 2; x.strokeRect(36, 36, W - 72, H - 72);
+          x.strokeStyle = 'rgba(30,144,255,0.25)'; x.lineWidth = 1.2; x.strokeRect(50, 50, W - 100, H - 100);
+          x.textBaseline = 'alphabetic'; x.textAlign = 'center';
+          const lw0 = await courseCertLoadImg('assets/stitch-logo-wordmark.png');
+          x.save(); x.translate(0, -90);
+          // heading
+          x.fillStyle = '#1e90ff'; let hs = 92; x.font = hs + 'px Colmeak, Montserrat, sans-serif';
+          while (x.measureText('COURSE CERTIFICATE').width > W - 520 && hs > 50) { hs -= 4; x.font = hs + 'px Colmeak, Montserrat, sans-serif'; }
+          x.fillText('COURSE CERTIFICATE', CX, 360);
+          // body
+          const name = ((typeof profileData !== 'undefined' && profileData.name) || 'Learner').trim();
+          x.fillStyle = '#6b7280'; x.font = '400 27px Montserrat, sans-serif'; x.fillText('This is to certify that', CX, 490);
+          x.fillStyle = NAVYD; let fs = 84; x.font = fs + 'px Colmeak, Montserrat, sans-serif';
+          while (x.measureText(name).width > W - 400 && fs > 36) { fs -= 4; x.font = fs + 'px Colmeak, Montserrat, sans-serif'; }
+          x.fillText(name, CX, 585);
+          x.strokeStyle = '#c7d7f5'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(CX - 330, 618); x.lineTo(CX + 330, 618); x.stroke();
+          x.fillStyle = '#6b7280'; x.font = '400 26px Montserrat, sans-serif';
+          x.fillText('has successfully completed the course by demonstrating', CX, 678);
+          x.fillText('theoretical and practical understanding of', CX, 718);
+          const title = c.title || 'Course';
+          x.fillStyle = '#1e90ff'; fs = 56; x.font = '700 ' + fs + 'px Inter, Montserrat, sans-serif';
+          while (x.measureText(title).width > W - 360 && fs > 28) { fs -= 3; x.font = '700 ' + fs + 'px Inter, Montserrat, sans-serif'; }
+          x.fillText(title, CX, 800);
+          const orgTxt = stitchOrgName(c.org);
+          if (orgTxt && !/thread\s*(and|&)\s*grow/i.test(orgTxt)) { x.fillStyle = '#9ca3af'; x.font = '400 24px Montserrat, sans-serif'; x.fillText('Offered by ' + orgTxt, CX, 850); }
+          x.restore();
+          // footer: date left, signature right
+          const sig = await courseCertLoadImg('assets/signature.svg');
+          const sy = 990, dX = 400, sX = W - 400;
+          if (sig) { const sh = 110, sw = sig.width * sh / sig.height; x.drawImage(sig, sX - sw / 2, sy - sh - 8, sw, sh); }
+          x.strokeStyle = '#9ca3af'; x.lineWidth = 2;
+          x.beginPath(); x.moveTo(sX - 170, sy); x.lineTo(sX + 170, sy); x.stroke();
+          x.beginPath(); x.moveTo(dX - 150, sy); x.lineTo(dX + 150, sy); x.stroke();
+          x.fillStyle = NAVYD; x.font = '700 26px Montserrat, sans-serif'; x.fillText('Festus Nkrumah', sX, sy + 38);
+          x.fillStyle = '#6b7280'; x.font = '400 20px Montserrat, sans-serif'; x.fillText('Chief Executive Officer', sX, sy + 68);
+          x.fillStyle = NAVYD; x.font = '700 26px Montserrat, sans-serif';
+          x.fillText(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), dX, sy - 14);
+          x.fillStyle = '#6b7280'; x.font = '400 20px Montserrat, sans-serif'; x.fillText('Date of completion', dX, sy + 38);
+          if (lw0) { const lh = 52, lw = lw0.width * lh / lw0.height; x.drawImage(lw0, CX - lw / 2, H - 150, lw, lh); }
+          x.fillStyle = '#9ca3af'; x.font = '400 17px Montserrat, sans-serif';
+          x.fillText('Certificate no. ' + String(c.id).slice(-6).toUpperCase() + '-' + name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase(), CX, H - 62);
+          return cv;
+        }
+        async function openCourseCertificate(courseId){
+          const c = allCourses.find(x => x.id === courseId); if (!c) return;
+          const cv = await buildCourseCertificate(c);
+          const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+          const url = URL.createObjectURL(blob);
+          const fname = 'Stitch-certificate-' + (c.title || 'course').replace(/[^A-Za-z0-9]+/g, '-').slice(0, 40) + '.png';
+          window.__certBlob = { blob, fname };
+          let m = document.getElementById('cert-modal'); if (m) m.remove();
+          m = document.createElement('div'); m.id = 'cert-modal';
+          m.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;padding:16px;';
+          m.innerHTML = `<div style="background:#fff;border-radius:28px;padding:16px;width:100%;max-width:640px;max-height:100%;overflow:auto;">
+              <img src="${url}" style="width:100%;border-radius:14px;border:1px solid #e5e7eb;display:block;" alt="Certificate">
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <button onclick="downloadCourseCertificate()" class="flex-1 rounded-full font-bold text-sm text-white" style="padding:13px 0;background:linear-gradient(135deg,${NAVY},${ROYAL});">Download</button>
+                <button onclick="shareCourseCertificate()" class="flex-1 rounded-full font-bold text-sm" style="padding:13px 0;background:#f3f4f6;color:#374151;">Share</button>
+                <button onclick="document.getElementById('cert-modal').remove()" class="rounded-full font-bold text-sm" style="padding:13px 18px;background:#f3f4f6;color:#374151;">Close</button>
+              </div></div>`;
+          m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+          document.body.appendChild(m);
+        }
+        function downloadCourseCertificate(){
+          const b = window.__certBlob; if (!b) return;
+          const u = URL.createObjectURL(b.blob); const a = document.createElement('a');
+          a.href = u; a.download = b.fname; a.click(); setTimeout(() => URL.revokeObjectURL(u), 4000);
+        }
+        async function shareCourseCertificate(){
+          const b = window.__certBlob; if (!b) return;
+          try {
+            const f = new File([b.blob], b.fname, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text: 'I just completed a course on Stitch!' }); return; }
+          } catch (e) { if (e && e.name === 'AbortError') return; }
+          downloadCourseCertificate();
+        }
+
+        function courseNextItem(c){
+          const items = (c.modules || []).flatMap(m => m.items || []).concat(c.finalItems || []);
+          return items.find(it => !isCourseItemComplete(it)) || null;
+        }
+        function coursePctOf(c){
+          const total = courseTotalItems(c);
+          return total ? Math.round((courseCompletedItems(c) / total) * 100) : 0;
+        }
+        function courseMatchesFilters(c){
+          const q = courseSearchQuery.trim().toLowerCase();
+          if (q && !(`${c.title || ''} ${stitchOrgName(c.org)} ${c.description || ''}`.toLowerCase().includes(q))) return false;
+          if (courseFilter === 'mine') return enrolledCourseIds.includes(c.id);
+          if (courseFilter === 'live') return c.deliveryType === 'live';
+          if (courseFilter === 'free') return !courseIsPaid(c);
+          if (courseFilter === 'paid') return courseIsPaid(c);
+          return true;
+        }
+        function courseBadgesHTML(c, enrolled){
+          return `${c.deliveryType === 'live' ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#dc2626;">Live</span>` : ''}${enrolled ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#059669;">Enrolled</span>` : ''}`;
+        }
+        function courseAdminTrashHTML(c){
+          return canManageCourse(c) ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="top:8px;right:8px;background:rgba(255,255,255,.9);color:#6b7280;z-index:2;">${Icon('trash','w-3.5 h-3.5')}</button>` : '';
+        }
+
+        function courseFeaturedCardHTML(c){
+          const enrolled = enrolledCourseIds.includes(c.id);
+          const n = c.enrolledCount || 0;
           return `
-            ${isAdmin ? `
-              <div class="flex gap-2 mb-5">
-                <button onclick="openNewCourse()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('plus','w-4 h-4')} Create a Course</button>
-              </div>` : ''}
-            ${visibleCourses().length ? visibleCourses().map(courseCardHTML).join('') : ''}`;
+            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer mb-3">
+              <div class="relative" style="height:150px;background:${courseFallbackGrad(c)};">
+                ${courseCoverFill(c)}
+                <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.55) 100%);"></div>
+                <div class="absolute flex items-center" style="top:12px;left:12px;gap:6px;">${courseBadgesHTML(c, enrolled)}</div>
+                ${courseAdminTrashHTML(c)}
+                <div class="absolute font-display text-white"  style="left:16px;right:16px;bottom:12px;font-size:19px;line-height:1.15;text-shadow:0 1px 6px rgba(0,0,0,.35);">${escapeHtml(c.title)}</div>
+              </div>
+              <div class="flex items-center gap-2" style="padding:12px 16px;">
+                <div class="min-w-0 flex-1">
+                  <div class="text-xs text-gray-500 truncate">${escapeHtml(stitchOrgName(c.org))}</div>
+                  <div class="text-[11.5px] text-gray-400">${n ? `${n} enrolled · ` : ''}${(c.modules || []).length} module${(c.modules || []).length === 1 ? '' : 's'}</div>
+                </div>
+                <div class="font-bold text-sm flex-shrink-0" style="color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}</div>
+              </div>
+            </div>`;
         }
 
         function courseCardHTML(c){
           const enrolled = enrolledCourseIds.includes(c.id);
+          const pct = enrolled ? coursePctOf(c) : 0;
           const total = courseTotalItems(c);
-          const done = courseCompletedItems(c);
-          const pct = total ? Math.round((done / total) * 100) : 0;
-          const isLive = c.deliveryType === 'live';
-          const isAdmin = canManageCourse(c);
-          // Flat row separated by a faint line; the cover picture shows on the course page.
           return `
-            <div onclick="openCourseDetail('${c.id}')" class="relative cursor-pointer" style="padding:16px 4px;border-bottom:1px solid rgba(0,0,0,0.07);">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  ${isAdmin ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="w-6 h-6 -ml-1 rounded-full flex items-center justify-center text-gray-400 flex-shrink-0">${Icon('trash','w-3.5 h-3.5')}</button>` : ''}
-                  <div class="text-xs font-bold uppercase tracking-wide text-gray-400 truncate">${escapeHtml(stitchOrgName(c.org))}</div>
-                  ${isLive ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 bg-red-100 text-red-600">● Live</span>` : ''}
-                </div>
-                <div class="flex items-center gap-1.5 flex-shrink-0">
-                                    ${enrolled ? `<span class="text-[10px] font-bold uppercase text-emerald-500 flex-shrink-0">Enrolled</span>` : ''}
-                </div>
+            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer relative flex flex-col">
+              <div class="relative" style="height:88px;background:${courseFallbackGrad(c)};">
+                ${courseCoverFill(c)}
+                <div class="absolute flex items-center" style="top:8px;left:8px;gap:4px;">${courseBadgesHTML(c, enrolled)}</div>
+                ${courseAdminTrashHTML(c)}
               </div>
-              <div class="text-base font-bold font-display mb-1 text-gray-800">${escapeHtml(c.title)}</div>
-              <div class="text-xs text-gray-400">${c.modules.length} module${c.modules.length === 1 ? '' : 's'} · ${total} lesson${total === 1 ? '' : 's'}${enrolled ? ` · ${pct}% complete` : ''}</div>
+              <div class="flex-1 flex flex-col" style="padding:10px 12px 12px;">
+                <div class="font-bold text-[13.5px] leading-snug text-gray-800" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(c.title)}</div>
+                <div class="text-[11.5px] text-gray-400 truncate" style="margin-top:2px;">${escapeHtml(stitchOrgName(c.org))}</div>
+                <div class="flex-1"></div>
+                ${enrolled ? `
+                  <div class="mt-2"><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div><div class="text-[11px] text-gray-400 mt-1">${pct}% complete</div></div>`
+                : `<div class="flex items-center justify-between mt-2"><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:${courseIsPaid(c) ? 'rgba(30,144,255,.12)' : 'rgba(5,150,105,.12)'};color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}</span><span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
+              </div>
             </div>`;
+        }
+
+        function courseContinueCardHTML(c){
+          const pct = coursePctOf(c);
+          const next = courseNextItem(c);
+          return `
+            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex items-center mb-4" style="gap:14px;padding:14px;">
+              <div class="relative flex-shrink-0 overflow-hidden" style="width:60px;height:60px;border-radius:18px;background:${courseFallbackGrad(c)};">${courseCoverFill(c)}</div>
+              <div class="flex-1" style="min-width:0;">
+                <div class="font-bold text-[15px] text-gray-800 truncate">${escapeHtml(c.title)}</div>
+                <div class="text-xs text-gray-400 truncate mb-2">${next ? 'Next: ' + escapeHtml(next.title || 'Next lesson') : 'All lessons done'}</div>
+                <div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div>
+              </div>
+              <div class="font-bold text-sm flex-shrink-0" style="color:${NAVY};">${pct}%</div>
+            </div>`;
+        }
+
+        function courseListHTML(){
+          const all = visibleCourses();
+          if (!all.length) return '';
+          const shown = all.filter(courseMatchesFilters);
+          const browsing = courseFilter === 'all' && !courseSearchQuery.trim();
+          const label = t => `<div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-1">${t}</div>`;
+          let html = '';
+          if (browsing) {
+            const cont = all.filter(c => enrolledCourseIds.includes(c.id) && coursePctOf(c) < 100)[0];
+            if (cont) html += label('Continue learning') + courseContinueCardHTML(cont);
+          }
+          if (!shown.length) {
+            return html + `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">${courseFilter === 'mine' ? "You haven't enrolled in a course yet." : 'No courses match that.'}</div>`;
+          }
+          let rest = shown;
+          if (browsing && shown.length >= 3) {
+            const featured = shown.slice().sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0))[0];
+            html += label('Featured') + courseFeaturedCardHTML(featured);
+            rest = shown.filter(c => c !== featured);
+            if (rest.length) html += label('All courses');
+          }
+          html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">${rest.map(courseCardHTML).join('')}</div>`;
+          return html;
+        }
+
+        function courseChipsHTML(){
+          const chips = [['all', 'All'], ['mine', 'My learning'], ['live', 'Live'], ['free', 'Free'], ['paid', 'Paid']];
+          return chips.map(([k, label]) => `<button onclick="setCourseFilter('${k}')" class="flex-shrink-0 rounded-full px-4 py-2 text-xs font-bold ${courseFilter === k ? 'text-white' : 'text-gray-500 bg-gray-100'}" style="${courseFilter === k ? `background:linear-gradient(135deg,${NAVY},${ROYAL});` : ''}">${label}</button>`).join('');
+        }
+        function refreshCoursesList(){
+          const list = document.getElementById('courses-list'); if (list) list.innerHTML = courseListHTML();
+          const chips = document.getElementById('courses-chips'); if (chips) chips.innerHTML = courseChipsHTML();
+        }
+        function setCourseFilter(k){ courseFilter = k; refreshCoursesList(); }
+        function onCourseSearchInput(v){ courseSearchQuery = v || ''; refreshCoursesList(); }
+
+        function coursesHomeHTML(){
+          const isAdmin = canCreateCourses();
+          return `
+            ${isAdmin ? `
+              <div class="flex gap-2 mb-4">
+                <button onclick="openNewCourse()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('plus','w-4 h-4')} Create a Course</button>
+              </div>` : ''}
+            ${visibleCourses().length ? `
+              <div class="relative mb-3">
+                <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;color:#9ca3af;pointer-events:none;z-index:1;">${Icon('search','w-4 h-4')}</div>
+                <input id="course-search-input" type="text" value="${escapeHtml(courseSearchQuery)}" oninput="onCourseSearchInput(this.value)" placeholder="Search courses" autocomplete="off" class="w-full bg-gray-100 rounded-full text-sm" style="outline:none;padding:0.65rem 1rem 0.65rem 2.5rem;">
+              </div>
+              <div id="courses-chips" class="pill-bleed flex-shrink-0 flex items-center gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">${courseChipsHTML()}</div>` : ''}
+            <div id="courses-list">${courseListHTML()}</div>`;
         }
 
         function openCourseDetail(id){
@@ -1819,15 +2056,22 @@ try {
                     ? menuOverlayHeader('Dashboard', courseDetailMenuOpen, 'toggleCourseDetailMenu', courseDetailMenuDropdownHTML(c.id), {backFn: 'overlayGoBack', shortDashes: true})
                     : overlayHeader(escapeHtml(c.title), '20px')}
                 </div>
-                ${courseCoverOf(c) ? `<img src="${courseCoverOf(c)}" class="w-full rounded-3xl mb-4 object-cover" style="height:180px;margin-top:10px;" alt="">` : ''}
-                <div class="flex items-center gap-2 mb-3">
-                  <button onclick="openCourseEnrolledPeople('${c.id}')" class="text-xs font-bold uppercase tracking-wide text-gray-400 flex items-center gap-1">${escapeHtml(stitchOrgName(c.org))}</button>
-                  ${isLive ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-100 text-red-600">● Live Teaching</span>` : ''}
+                <div class="relative overflow-hidden rounded-3xl mb-4" style="height:190px;margin-top:10px;background:${courseFallbackGrad(c)};">
+                  ${courseCoverFill(c)}
+                  <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.6) 100%);"></div>
+                  <div class="absolute flex items-center" style="top:12px;left:12px;gap:6px;">${isLive ? '<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#dc2626;">Live Teaching</span>' : ''}</div>
+                  <div class="absolute" style="left:16px;right:16px;bottom:14px;">
+                    <button onclick="openCourseEnrolledPeople('${c.id}')" class="text-[11px] font-bold uppercase tracking-wide flex items-center gap-1" style="color:rgba(255,255,255,.85);">${escapeHtml(stitchOrgName(c.org))}</button>
+                    <div class="font-display text-white" style="font-size:24px;line-height:1.12;text-shadow:0 1px 6px rgba(0,0,0,.35);">${escapeHtml(c.title)}</div>
+                  </div>
                 </div>
-                <div class="text-xl font-bold font-display mb-2" style="color:#1E90FF;">${escapeHtml(c.title)}</div>
+                <div class="flex gap-2 mb-4">
+                  ${[[String((c.modules || []).length), 'Modules'], [String(total), 'Lessons'], [coursePriceLabel(c), 'Price'], [String(c.enrolledCount || 0), 'Enrolled']].map(([v, l]) => `<div class="flex-1 rounded-2xl bg-gray-50 border border-gray-100 py-2.5 text-center"><div class="font-bold text-sm" style="color:${NAVY};">${escapeHtml(v)}</div><div class="text-[10.5px] text-gray-400">${l}</div></div>`).join('')}
+                </div>
                 ${!canManageCourse(c) ? `<button onclick="openReportClass('course','${escapeForJsAttr(c.id)}','${escapeForJsAttr(c.title)}')" class="text-[11px] font-semibold text-gray-400 mb-3 inline-flex items-center gap-1">${Icon('flag','w-3 h-3')} Report this course</button>` : ''}
                 <div class="text-sm text-gray-600 leading-relaxed mb-4">${renderRichText(c.description)}</div>
 
+                ${courseLiveSectionHTML(c)}
                 <div class="flex gap-2 mb-4 bg-gray-100 rounded-full p-1">
                   <button onclick="setCourseDetailTab('content')" class="flex-1 rounded-full py-2 text-xs font-bold ${courseDetailTab === 'content' ? 'text-white' : 'text-gray-500'}" style="${courseDetailTab === 'content' ? `background:${NAVY};` : ''}">Content</button>
                   <button onclick="setCourseDetailTab('engage')" class="flex-1 rounded-full py-2 text-xs font-bold ${courseDetailTab === 'engage' ? 'text-white' : 'text-gray-500'}" style="${courseDetailTab === 'engage' ? `background:${NAVY};` : ''}">Engage${announcements.length ? ` (${announcements.length})` : ''}</button>
@@ -1851,21 +2095,23 @@ try {
                     }).join('')}
                   </div>
                   ${!enrolled ? `
-                    <button onclick="openCourseEnrollForm('${c.id}')" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-white mb-5" style="background:rgba(30,144,255,0.85);">
-                      ${Icon('plus','w-4 h-4')} Enroll to unlock all modules
+                    <button onclick="openCourseEnrollForm('${c.id}')" class="w-full flex items-center justify-center gap-2 rounded-full font-bold text-sm text-white mb-5" style="padding:14px 0;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 6px 18px rgba(65,105,225,0.35);">
+                      ${Icon('plus','w-4 h-4')} Enroll${courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free'} to unlock all modules
                     </button>` : `
                     <div class="mb-5">
+                      <div class="flex items-center gap-4 bg-white border border-gray-100 shadow-sm rounded-3xl p-4" style="padding:16px;">
+                        <div class="relative flex-shrink-0" style="width:64px;height:64px;">
+                          <svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);"><circle cx="32" cy="32" r="27" fill="none" stroke="#eef0f4" stroke-width="7"/><circle cx="32" cy="32" r="27" fill="none" stroke="${pct === 100 ? '#059669' : NAVY}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(169.6 * pct / 100).toFixed(1)} 169.6"/></svg>
+                          <div class="absolute inset-0 flex items-center justify-center font-bold text-sm text-gray-800">${pct}%</div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          ${pct === 100 ? `<div class="text-sm font-bold text-gray-800">Course completed</div><div class="text-xs text-gray-400">Congrats on finishing the course!</div>`
+                          : `<div class="text-sm font-bold text-gray-800">${done} of ${total} lessons done</div>${courseNextItem(c) ? `<div class="text-xs text-gray-400 truncate">Up next: ${escapeHtml(courseNextItem(c).title || 'Next lesson')}</div>` : ''}`}
+                        </div>
+                      </div>
                       ${pct === 100 ? `
-                        <div class="text-sm font-bold text-gray-800 mb-1">Course Completed</div>
-                        <div class="text-xs text-gray-400 mb-2">Congrats on completing the course!</div>
-                      ` : `
-                        <div class="flex items-center justify-between text-xs font-semibold text-gray-500 mb-1.5">
-                          <span>Your progress</span><span>${pct}% complete</span>
-                        </div>
-                        <div class="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
-                          <div class="h-full rounded-full" style="width:${pct}%;background:#059669;"></div>
-                        </div>
-                      `}
+                      <button onclick="openCourseCertificate('${c.id}')" class="w-full mt-3 flex items-center justify-center gap-2 rounded-full font-bold text-sm text-white" style="padding:13px 0;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 6px 18px rgba(65,105,225,0.3);">${Icon('trophy','w-4 h-4')} Get your certificate</button>
+                      ` : ''}
                       <button onclick="leaveCourse('${c.id}')" class="w-full mt-3 flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm" style="background:transparent;color:#DC2626;">
                         ${Icon('logout','w-4 h-4')} End Enrollment
                       </button>
@@ -1889,6 +2135,73 @@ try {
                 <div style="height:20px;"></div>
               </div>
             </div>`;
+        }
+
+
+        // ---- Live sessions on the course page ----
+        function openScheduleCourseSession(courseId){
+          if (!canManageCourse(courseId)) return;
+          scheduleLectureCourseId = courseId;
+          openOverlay('scheduleLecture');
+        }
+        function startCourseSessionNow(courseId){
+          const c = allCourses.find(x => x.id === courseId);
+          if (!c || !canManageCourse(c)) return;
+          const cls = courseVirtualClass(courseId);
+          const lecture = { id: 'lec-' + Date.now(), title: c.title + ' · Live Session', date: '', time: '', status: 'live' };
+          cls.lectures.unshift(lecture);
+          queueSaveClassRemote(cls);
+          ringClassMembersForLecture(cls, lecture);
+          joinLiveLecture(lecture.id, cls.id);
+        }
+        function cancelCourseSession(courseId, id){
+          const c = allCourses.find(x => x.id === courseId);
+          if (!c || !canManageCourse(c)) return;
+          c.liveSessions = (c.liveSessions || []).filter(l => l.id !== id);
+          queueSaveClassRemote(courseVirtualClass(courseId));
+          const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = courseDetailHTML();
+        }
+        function courseSessionWhenLabel(l){
+          if (!l.date) return 'Live now';
+          const d = new Date(l.date + 'T00:00:00'), t = new Date(); t.setHours(0, 0, 0, 0);
+          const diff = Math.round((d - t) / 86400000);
+          const day = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : formatReminderDate(l.date);
+          return day + ' · ' + formatTime12(l.time);
+        }
+        function courseSessionCardHTML(c, l, mgr, enrolled){
+          const vid = 'course:' + c.id;
+          const isLive = l.status === 'live';
+          const mine = typeof liveLectureState !== 'undefined' && liveLectureState.connected && liveLectureState.lectureId === l.id;
+          const canJoin = mgr || enrolled;
+          const joinBtn = (label) => `<button onclick="event.stopPropagation();${mine ? 'resumeLecture()' : `joinLiveLecture('${l.id}','${vid}')`}" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">${mine ? 'Return' : label}</button>`;
+          const kicker = isLive ? `<span class="text-[10px] font-bold uppercase" style="color:#dc2626;">Live now</span>` : '';
+          const right = isLive
+            ? (canJoin ? joinBtn('Join') : `<button onclick="event.stopPropagation();openCourseEnrollForm('${c.id}')" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Enrol to join</button>`)
+            : lectureCountdownSlotHTML(l, mgr, vid);
+          return `
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white mb-3">
+              <div class="flex items-center gap-3 px-4 py-3 select-none">
+                <div class="flex-1 min-w-0">
+                  ${kicker}
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(l.title)}</div>
+                  <div class="text-xs text-gray-500 truncate">${isLive ? 'Join the live class' : escapeHtml(courseSessionWhenLabel(l))}</div>
+                </div>
+                ${right}
+              </div>
+              ${(mgr && !isLive) ? `<div class="call-min-actions flex items-center border-t border-gray-100"><button onclick="cancelCourseSession('${c.id}','${l.id}')" class="flex-1 py-2.5 text-xs font-semibold text-red-500" style="color:#ef4444;">Cancel session</button></div>` : ''}
+            </div>`;
+        }
+        function courseLiveSectionHTML(c){
+          const mgr = canManageCourse(c);
+          const enrolled = enrolledCourseIds.includes(c.id);
+          const list = (c.liveSessions || []).filter(l => !lectureIsExpired(l)).sort((a, b) => (b.status === 'live') - (a.status === 'live') || (a.date + a.time).localeCompare(b.date + b.time));
+          const pills = (mgr && c.deliveryType === 'live') ? `
+            <div class="flex gap-2 mb-3">
+              <button onclick="startCourseSessionNow('${c.id}')" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('video','w-4 h-4')} Start Session</button>
+              <button onclick="openScheduleCourseSession('${c.id}')" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('calendar','w-4 h-4')} Schedule one</button>
+            </div>` : '';
+          if (!pills && !list.length) return '';
+          return `<div class="mb-2">${pills}${list.map(l => courseSessionCardHTML(c, l, mgr, enrolled)).join('')}</div>`;
         }
 
         function courseResourcesTabHTML(course, enrolled){
@@ -3055,27 +3368,62 @@ try {
           refreshCoursesThen('coursePeople');
         }
 
+        let courseStudentsFilter = 'all'; // all | progress | done | notstarted
+        function setCourseStudentsFilter(k){ courseStudentsFilter = k; const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = courseEnrolledPeopleHTML(); }
+        function courseStudentRowHTML(p, last){
+          const pct = Math.max(0, Math.min(100, Number(p.progress) || 0));
+          return `
+            <div class="flex items-center gap-3 py-3 ${last ? '' : 'border-b border-gray-100'}">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm" style="background:rgba(30,144,255,0.1);color:${NAVY};">${escapeHtml(((p.name || p.username || '?').trim()[0] || '?').toUpperCase())}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm truncate">${escapeHtml(p.name || 'Unnamed')}</div>
+                <div class="text-xs text-gray-400 truncate">${p.username ? '@' + escapeHtml(p.username) : ''}${p.username && p.email ? ' &middot; ' : ''}${p.email ? escapeHtml(p.email) : ''}</div>
+              </div>
+              ${p.progress !== undefined ? `<div style="width:84px;" class="flex-shrink-0"><div class="text-[11px] font-bold text-right mb-1" style="color:${pct >= 100 ? '#059669' : NAVY};">${pct >= 100 ? 'Done' : pct + '%'}</div><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:${pct >= 100 ? '#059669' : `linear-gradient(90deg,${NAVY},${ROYAL})`};"></div></div></div>` : ''}
+            </div>`;
+        }
         function courseEnrolledPeopleHTML(){
           const c = allCourses.find(x => x.id === coursePeopleViewingId);
           if (!c) return `${overlayHeader('People', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}<div class="p-5 text-center text-gray-400 text-sm">This course is no longer available.</div>`;
           const people = c.enrolledUsers || [];
+          const manager = canManageCourse(c);
+          const empty = `
+            <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
+              <div class="flex justify-center mb-2 text-gray-400">${Icon('personPlus','w-6 h-6')}</div>
+              No one has enrolled yet.
+            </div>`;
+          let body;
+          if (!manager) {
+            body = `<div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">${people.length} enrolled</div>` +
+              (people.length ? people.map((p, i) => courseStudentRowHTML(Object.assign({}, p, { progress: undefined }), i === people.length - 1)).join('') : empty);
+          } else {
+            const A = courseAnalyticsCollect(c);
+            const filters = [['all', 'All', people.length], ['progress', 'In progress', A.inProgress.length], ['done', 'Done', A.completed.length], ['notstarted', 'Not started', A.notStarted.length]];
+            const pool = courseStudentsFilter === 'progress' ? A.inProgress : courseStudentsFilter === 'done' ? A.completed : courseStudentsFilter === 'notstarted' ? A.notStarted : people;
+            const sorted = pool.slice().sort((x, y) => (Number(y.progress) || 0) - (Number(x.progress) || 0));
+            const tile = (v, l) => `<div class="flex-1 rounded-2xl bg-gray-50 border border-gray-100 py-3 text-center"><div class="font-display" style="font-size:22px;color:${NAVY};line-height:1.1;">${v}</div><div class="text-[10.5px] text-gray-400 mt-0.5">${l}</div></div>`;
+            body = `
+              <div class="font-display text-gray-800 mb-3" style="font-size:20px;">${escapeHtml(c.title)}</div>
+              <div class="flex gap-2 mb-4">${tile(people.length, 'Students')}${tile(A.completionRate + '%', 'Completed')}${tile(A.avgProgress + '%', 'Avg. progress')}</div>
+              ${A.modules.length && people.length ? `
+                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Module completion</div>
+                <div class="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 mb-4">
+                  ${A.modules.map(m => `<div style="margin-bottom:12px;"><div class="flex justify-between text-xs mb-1"><span class="font-semibold text-gray-700 truncate pr-2">${escapeHtml(m.title)}</span><span class="font-bold flex-shrink-0" style="color:${NAVY};">${m.pct}%</span></div><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${m.pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div></div>`).join('')}
+                </div>` : ''}
+              <div class="flex gap-2 mb-4">
+                <button onclick="openCourseAnalytics('${c.id}')" class="flex-1 rounded-full py-2.5 text-xs font-bold text-white flex items-center justify-center gap-1.5" style="background:linear-gradient(135deg,${NAVY},${ROYAL});">Full analytics</button>
+                <button onclick="openCourseDetail('${c.id}'); setTimeout(function(){ setCourseDetailTab('engage'); }, 0);" class="flex-1 rounded-full py-2.5 text-xs font-bold bg-gray-100 text-gray-600">Announce</button>
+              </div>
+              <div class="pill-bleed flex items-center gap-2 overflow-x-auto no-scrollbar mb-3 pb-1">
+                ${filters.map(([k, label, n]) => `<button onclick="setCourseStudentsFilter('${k}')" class="flex-shrink-0 rounded-full px-3.5 py-2 text-xs font-bold ${courseStudentsFilter === k ? 'text-white' : 'text-gray-500 bg-gray-100'}" style="${courseStudentsFilter === k ? `background:linear-gradient(135deg,${NAVY},${ROYAL});` : ''}">${label} · ${n}</button>`).join('')}
+              </div>
+              ${sorted.length ? sorted.map((p, i) => courseStudentRowHTML(p, i === sorted.length - 1)).join('') : (people.length ? '<div class="text-center text-sm text-gray-400 py-6">No one in this group.</div>' : empty)}`;
+          }
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto px-5 pb-8">
-<div class="-mx-5">${overlayHeader('People', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">${people.length} enrolled</div>
-                ${people.length ? people.map((p, i) => `
-                  <div class="flex items-center gap-3 py-3.5 ${i < people.length - 1 ? 'border-b border-gray-100' : ''}">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('user','w-5 h-5')}</div>
-                    <div class="flex-1 min-w-0">
-                      <div class="font-semibold text-sm truncate">${escapeHtml(p.name || 'Unnamed')}</div>
-                      <div class="text-xs text-gray-400 truncate">${p.username ? '@' + escapeHtml(p.username) : ''}${p.username && p.email ? ' &middot; ' : ''}${p.email ? escapeHtml(p.email) : ''}</div>
-                    </div>
-                  </div>`).join('') : `
-                  <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
-                    <div class="flex justify-center mb-2 text-gray-400">${Icon('personPlus','w-6 h-6')}</div>
-                    No one has enrolled yet.
-                  </div>`}
+<div class="-mx-5">${overlayHeader(manager ? 'Students' : 'People', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}</div>
+                ${body}
               </div>
             </div>`;
         }
@@ -4091,6 +4439,11 @@ try {
         const classSaveTimers = {};
         function queueSaveClassRemote(cls){
           if (!cls || !cls.id) return;
+          if (cls.virtualCourseId) {
+            const vc = allCourses.find(x => x.id === cls.virtualCourseId);
+            if (vc) { if (classSaveTimers[cls.id]) clearTimeout(classSaveTimers[cls.id]); classSaveTimers[cls.id] = setTimeout(() => postCourseInsertRemote(vc), 600); }
+            return;
+          }
           if (classSaveTimers[cls.id]) clearTimeout(classSaveTimers[cls.id]);
           classSaveTimers[cls.id] = setTimeout(() => saveClassRemoteNow(cls), 800);
         }
@@ -6300,6 +6653,42 @@ try {
           queueSaveClassRemote(cls);
         }
 
+
+        // ---- Live sessions on a course: a course acts like a "virtual space" for the call ----
+        // The existing live-session (lecture) call code is keyed by a space id. A course session
+        // uses the id "course:<courseId>", and these helpers hand that code a space-like object
+        // whose lectures live on the course itself (course.liveSessions), so calling, ringing,
+        // the countdown and ending all reuse the same machinery as a class session.
+        const courseVClassCache = {};
+        function courseVirtualClass(courseId){
+          const cur = () => allCourses.find(x => x.id === courseId);
+          if (!cur()) return null;
+          let v = courseVClassCache[courseId];
+          if (v) return v;
+          v = { id: 'course:' + courseId, virtualCourseId: courseId };
+          Object.defineProperties(v, {
+            name: { enumerable: true, get: () => (cur() ? cur().title : 'Course') },
+            role: { enumerable: true, get: () => (cur() && canManageCourse(cur()) ? 'teacher' : 'student') },
+            teacherId: { enumerable: true, get: () => (cur() ? cur().createdBy : null) },
+            members: { enumerable: true, get: () => (cur() ? (cur().enrolledUsers || []).map(u => u.id).filter(Boolean) : []) },
+            lectures: { enumerable: true, get: () => { const c = cur(); if (!c) return []; if (!Array.isArray(c.liveSessions)) c.liveSessions = []; return c.liveSessions; }, set: (val) => { const c = cur(); if (c) c.liveSessions = val; } },
+          });
+          courseVClassCache[courseId] = v;
+          return v;
+        }
+        function lectureClassById(id){
+          if (!id) return null;
+          const real = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === id) : null;
+          if (real) return real;
+          if (String(id).indexOf('course:') === 0) return courseVirtualClass(String(id).slice(7));
+          return null;
+        }
+        function lectureAllClasses(){
+          const out = (typeof myClasses !== 'undefined') ? myClasses.slice() : [];
+          (allCourses || []).forEach(c => { if (Array.isArray(c.liveSessions) && c.liveSessions.length) { const v = courseVirtualClass(c.id); if (v) out.push(v); } });
+          return out;
+        }
+
         // ---- Live lecture list + invite links ----
         function lectureActionPillsHTML(){
           return `
@@ -6354,10 +6743,10 @@ try {
           const overdue = left < -LECTURE_AUTO_START_GRACE_MS;
           return `<span data-lecture-countdown="${l.id}" class="text-xs font-bold flex-shrink-0" style="color:#1e90ff;white-space:nowrap;text-align:right;line-height:1.35;">${overdue ? '<span style="display:block;">Call starts in</span><span style="display:block;">0s</span>' : lectureCountdownInnerHTML(left)}</span>`;
         }
-        function lectureCountdownSlotHTML(l, isTeacher){
+        function lectureCountdownSlotHTML(l, isTeacher, vClassId){
           const left = lectureStartMs(l) - Date.now();
           if (left < -LECTURE_AUTO_START_GRACE_MS) {
-            return isTeacher ? `<button onclick="startScheduledLectureNow('${l.id}')" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Start now</button>` : `<span class="text-xs font-semibold text-gray-400 flex-shrink-0">Waiting for moderator</span>`;
+            return isTeacher ? `<button onclick="startScheduledLectureNow('${l.id}'${vClassId ? ",'" + vClassId + "'" : ''})" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Start now</button>` : `<span class="text-xs font-semibold text-gray-400 flex-shrink-0">Waiting for moderator</span>`;
           }
           return lectureCountdownPillHTML(l);
         }
@@ -6384,7 +6773,7 @@ try {
         }
         function sweepExpiredScheduledLectures(){
           const removed = [];
-          (typeof myClasses !== 'undefined' ? myClasses : []).forEach(cls => {
+          lectureAllClasses().forEach(cls => {
             if (!cls || cls.role !== 'teacher') return;
             const list = cls.lectures || [];
             const expired = list.filter(lectureIsExpired);
@@ -6430,7 +6819,7 @@ try {
         function lectureCountdownTick(){
           sweepExpiredScheduledLectures();
           const now = Date.now();
-          (typeof myClasses !== 'undefined' ? myClasses : []).forEach(cls => {
+          lectureAllClasses().forEach(cls => {
             (cls.lectures || []).forEach(l => {
               if (l.status !== 'scheduled') return;
               const start = lectureStartMs(l);
@@ -6669,17 +7058,17 @@ try {
         }
 
         function startScheduledLectureNow(id, classId){
-          const cls = myClasses.find(c => c.id === (classId || currentClassId));
+          const cls = lectureClassById(classId || currentClassId);
           if (!cls) return;
           const l = (cls.lectures || []).find(x => x.id === id);
           if (!l || l.status === 'live') return;
           l.status = 'live';
           // joining uses the open class, so point at this one when the countdown ends elsewhere in
           // the app
-          if (currentClassId !== cls.id) currentClassId = cls.id;
+          if (!cls.virtualCourseId && currentClassId !== cls.id) currentClassId = cls.id;
           queueSaveClassRemote(cls);
           ringClassMembersForLecture(cls, l);
-          joinLiveLecture(id);
+          joinLiveLecture(id, cls.id);
         }
 
         let incomingLectureCallChannel = null;
@@ -6774,6 +7163,15 @@ try {
           clearTimeout(incomingLectureCallRingTimeout); incomingLectureCallRingTimeout = null;
           const { classId, lecture } = incomingLectureCallInfo;
           incomingLectureCallInfo = null;
+          if (String(classId).indexOf('course:') === 0) {
+            const vcls = courseVirtualClass(String(classId).slice(7));
+            if (!vcls) { openAppAlertModal("Couldn't open that course session right now. Please try again."); return; }
+            const list = vcls.lectures;
+            const ex = list.find(l => l.id === lecture.id);
+            if (ex) ex.status = 'live'; else list.unshift(Object.assign({ status: 'live' }, lecture));
+            joinLiveLecture(lecture.id, classId);
+            return;
+          }
           let cls = myClasses.find(c => c.id === classId);
           if (!cls) {
             // Don't dead-end here: fetch the class live and join right away, so being mid-way through
@@ -6825,12 +7223,13 @@ try {
           });
         }
 
-        async function joinLiveLecture(id){
-          const cls = myClasses.find(c => c.id === currentClassId);
+        async function joinLiveLecture(id, classId){
+          const cls = lectureClassById(classId || currentClassId);
           if (!cls) return;
           const l = (cls.lectures || []).find(x => x.id === id);
           if (!l) return;
-          guestLectureMode = false;
+          // people joining a course session aren't members of a space, so they join as guests
+          guestLectureMode = !!(cls.virtualCourseId && cls.role !== 'teacher');
           await connectLectureCall(cls.id, id);
         }
 
@@ -6861,7 +7260,7 @@ try {
           pendingAutoOpenAttachmentId = null;
           // Students join muted by default and can unmute themselves if they want to talk or make a
           // contribution
-          const cls = myClasses.find(c => c.id === classId);
+          const cls = lectureClassById(classId);
           const joiningAsTeacher = !!(cls && cls.role === 'teacher');
           liveLectureState = { classId, lectureId, connected: true, seconds: 0, muted: !joiningAsTeacher, camOff: false, handRaised: false, view: 'grid', mediaError: null, screenSharing: false };
           lectureMinimized = false;
@@ -7434,7 +7833,7 @@ try {
           } else if (idx !== -1) {
             notebookNotes[idx].text = trimmed;
           } else {
-            const cls = myClasses.find(c => c.id === liveLectureState.classId);
+            const cls = lectureClassById(liveLectureState.classId);
             notebookNotes.unshift({ id, text: trimmed, time: (cls ? cls.name + ' · ' : '') + 'Just now' });
           }
           if (typeof refreshClassPadSurfaces === 'function') refreshClassPadSurfaces();
@@ -7444,7 +7843,7 @@ try {
         // (its members list, plus the teacher) can be added
         let lectureAddRinged = new Set();
         function lectureAddCandidateIds(){
-          const cls = myClasses.find(c => c.id === liveLectureState.classId);
+          const cls = lectureClassById(liveLectureState.classId);
           if (!cls) return [];
           const ids = new Set((cls.members || []).filter(Boolean));
           if (cls.teacherId) ids.add(cls.teacherId);
@@ -7484,7 +7883,7 @@ try {
           if (modal) modal.classList.add('hidden');
         }
         function ringLectureMember(uid){
-          const cls = myClasses.find(c => c.id === liveLectureState.classId);
+          const cls = lectureClassById(liveLectureState.classId);
           if (!cls || !uid) return;
           if (!lectureAddCandidateIds().includes(uid)) return;
           const l = (cls.lectures || []).find(x => x.id === liveLectureState.lectureId) || { id: liveLectureState.lectureId, title: 'Live session' };
@@ -7507,7 +7906,7 @@ try {
           clearLectureTimer();
           stopLectureLocalStream();
           stopLectureScreenStream();
-          const cls = myClasses.find(c => c.id === liveLectureState.classId);
+          const cls = lectureClassById(liveLectureState.classId);
           const isTeacher = cls && cls.role === 'teacher';
           if (isTeacher && !remoteEnded) broadcastLectureSignal({ type: 'end' });
           teardownLectureSignaling();
@@ -7542,6 +7941,7 @@ try {
           lectureAttachments = [];
           pendingAutoOpenAttachmentId = null;
           lectureSmoothSwap(() => {
+            if (cls && cls.virtualCourseId) { currentCourseId = cls.virtualCourseId; openOverlay('courseDetail'); return; }
             if (wasGuest) { closeOverlay(); return; }
             classDetailTab = 'stream';
             openOverlay('classDetail');
@@ -7678,7 +8078,7 @@ try {
         let lectureRemoteDescSet = {}; 
 
         function lectureIsTeacher(){
-          const cls = myClasses.find(c => c.id === liveLectureState.classId);
+          const cls = lectureClassById(liveLectureState.classId);
           return !!(cls && cls.role === 'teacher');
         }
 
@@ -8292,7 +8692,7 @@ try {
 
         function lectureCallHTML(){
           ensureCallUiStyles();
-          const cls = myClasses.find(c => c.id === liveLectureState.classId);
+          const cls = lectureClassById(liveLectureState.classId);
           const isTeacher = cls && cls.role === 'teacher';
           const view = liveLectureState.view;
           const isWhiteboard = view === 'whiteboard';
@@ -8749,22 +9149,25 @@ try {
         }
 
         // ---- Scheduling a future lecture ----
+        let scheduleLectureCourseId = null;
         function openScheduleLectureOverlay(){
+          scheduleLectureCourseId = null;
           openOverlay('scheduleLecture');
         }
 
         // Back arrow on Schedule Lecture returns to the class the teacher was in (same tab), not
         // the Classroom list
         function scheduleLectureBack(){
+          if (scheduleLectureCourseId) { currentCourseId = scheduleLectureCourseId; scheduleLectureCourseId = null; openOverlay('courseDetail'); return; }
           openOverlay('classDetail');
         }
 
         function scheduleLectureHTML(){
-          const cls = myClasses.find(c => c.id === currentClassId);
+          const cls = scheduleLectureCourseId ? courseVirtualClass(scheduleLectureCourseId) : myClasses.find(c => c.id === currentClassId);
           return `
             <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
 <div style="margin:-1.25rem -1.25rem 0;">${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
-              <div class="text-sm text-gray-500 mb-5">Set up an upcoming session for ${cls ? cls.name : 'your space'}; members will see it in the Stream and can join when it's live.</div>
+              <div class="text-sm text-gray-500 mb-5">Set up an upcoming session for ${cls ? cls.name : 'your space'}; ${scheduleLectureCourseId ? 'students enrolled in this course will see it on the course page and can join when it\'s live.' : 'members will see it in the Stream and can join when it\'s live.'}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Session title</label>
               <input type="text" id="lecture-title-input" placeholder="e.g. Chapter 4: Market Structures" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">
               <div class="grid grid-cols-2 gap-3 mb-6">
@@ -8785,7 +9188,7 @@ try {
         }
 
         function submitScheduleLecture(){
-          const cls = myClasses.find(c => c.id === currentClassId);
+          const cls = scheduleLectureCourseId ? courseVirtualClass(scheduleLectureCourseId) : myClasses.find(c => c.id === currentClassId);
           if (!cls) return;
           const title = document.getElementById('lecture-title-input').value.trim();
           const dateTyped = document.getElementById('lecture-date-input').value;
@@ -8800,6 +9203,7 @@ try {
           queueSaveClassRemote(cls);
           ensureNotificationPermission();
           notifyClassOfScheduledLecture(cls, lecture);
+          if (cls.virtualCourseId) { currentCourseId = cls.virtualCourseId; scheduleLectureCourseId = null; openOverlay('courseDetail'); return; }
           classDetailTab = 'stream';
           openOverlay('classDetail');
         }
