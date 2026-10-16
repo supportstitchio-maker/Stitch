@@ -2314,8 +2314,7 @@ let userPoints = 0;
             <div class="min-w-0 flex-1 text-center">
               ${hasTitle ? `<div class="text-sm text-[${NAVY}]">${escapeHtml(title)}</div>` : ''}
               <div class="${hasTitle ? 'text-xs text-gray-500' : `text-sm text-[${NAVY}]`}">${escapeHtml(message || '')}</div>
-            </div>
-            <button aria-label="Dismiss" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>`;
+            </div>`;
           document.body.appendChild(el);
           placeToastInContent(el);
           let dismissed = false;
@@ -2325,7 +2324,8 @@ let userPoints = 0;
             el.remove();
             if (typeof onClose === 'function') onClose();
           };
-          el.querySelector('button').addEventListener('click', dismiss);
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', dismiss);   // tap anywhere on the notice to close it
           enableSwipeDismiss(el, dismiss, 'translateX(-50%)');
           setTimeout(dismiss, 6000);
         }

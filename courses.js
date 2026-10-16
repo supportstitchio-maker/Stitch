@@ -10528,8 +10528,9 @@ try {
             <div class="min-w-0 flex-1">
               <div class="font-bold text-sm text-[${NAVY}] truncate">${escapeHtml(title)}</div>
               <div class="text-xs text-gray-500 break-words" style="overflow-wrap:break-word;">${escapeHtml(body)}</div>
-            </div>
-            <button onclick="this.parentElement.remove()" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>`;
+            </div>`;
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', () => el.remove());   // tap anywhere on the notice to close it
           document.body.appendChild(el);
           if (typeof placeToastInContent === 'function') placeToastInContent(el);
           enableSwipeDismiss(el, () => el.remove(), 'translateX(-50%)');
