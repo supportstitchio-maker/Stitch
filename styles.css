@@ -258,6 +258,7 @@
         .cv-upload-phase{animation:cv-upload-phase-in .35s ease;}
         @keyframes shareSheetSlideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
         .share-sheet-panel{animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);}
+        .share-sheet-actions-row > div:empty{display:none;}
         /* Row of share icons (Share/Copy link/WhatsApp/Messages/Drive/ Outlook/Gmail/Bluetooth)
            stays left-aligned and horizontally scrollable on phones, but centers itself on the
            wider desktop layout instead of hugging the left edge */
@@ -4192,6 +4193,8 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 
   /* ---- share sheets ---- */
   div:has(> .share-sheet-panel){justify-content:center !important;align-items:center !important;background:rgba(15,23,42,.45);}
+  .share-sheet-actions-row{flex-wrap:wrap !important;overflow-x:visible !important;row-gap:16px !important;gap:18px 20px !important;justify-content:flex-start;}
+  .share-sheet-actions-row > *{flex:0 0 auto;}
   .share-sheet-panel{width:min(520px,92vw) !important;border-radius:22px !important;margin:0 auto;box-shadow:0 24px 70px rgba(15,23,42,.28);animation:dskPop .18s ease-out both !important;}
 
   /* ---- comment sheet ---- */
