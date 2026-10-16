@@ -124,6 +124,10 @@
     {
       "source": "/u/:username",
       "destination": "/api/profile-api?u=:username"
+    },
+    {
+      "source": "/p/:id",
+      "destination": "/api/post-api?id=:id"
     }
   ]
 }

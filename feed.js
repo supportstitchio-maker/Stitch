@@ -7250,7 +7250,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
 
         // ---- Real link-sharing for posts ----
         function postShareLink(id){
-          return window.location.origin + window.location.pathname + '?post=' + encodeURIComponent(id);
+          return window.location.origin + '/p/' + encodeURIComponent(id);
         }
 
         function copyPostLink(id){
