@@ -1462,14 +1462,7 @@ let userPoints = 0;
           }
           if (stage === 'bizdoc') {
             return `
-              <div class="mb-2">
-                <input type="file" accept="image/*,.pdf" id="auth-bizdoc-file-input" class="hidden" onchange="authHandleBizDocSelected(this)">
-                <button type="button" onclick="document.getElementById('auth-bizdoc-file-input').click()" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold" style="background:#fff;color:#1e90ff;border:1.5px dashed #b9d4f7;border-radius:22px;min-height:64px;">
-                  ${Icon('upload','w-4 h-4')}
-                  <span id="auth-bizdoc-label">${escapeHtml(d.businessDocumentName || 'Upload a document')}</span>
-                </button>
-                <div style="font-size:11px;color:#9ca3af;margin-top:8px;">A registration certificate, permit, receipt, invoice, or anything else that shows your business is real -- required.</div>
-              </div>`;
+              ${posterAppUploadTileHTML({ label: 'Business document', inputId: 'auth-bizdoc-file-input', onSelect: 'authHandleBizDocSelected', onRemove: 'authRemoveBizDoc', file: d.businessDocumentFile, previewUrl: d.businessDocumentPreviewUrl, accept: 'image/*,.pdf', hint: 'A registration certificate, permit, receipt, invoice, or anything else that shows your business is real -- required.' })}`;
           }
           if (stage === 'photo') {
             return `
@@ -1501,7 +1494,7 @@ let userPoints = 0;
             // Automated liveness + face-match (Smile ID)
             return `
               <div class="mb-2">
-                ${posterAppUploadTileHTML({ label: 'Selfie', inputId: 'auth-selfie-input', onSelect: 'authHandleSelfieSelected', onRemove: 'authRemoveSelfie', file: d.selfieFile, previewUrl: d.selfiePreviewUrl, accept: 'image/*', capture: 'user', hint: 'Face the camera in good light, with your whole face visible and no sunglasses or hats.' })}
+                ${posterAppUploadTileHTML({ label: 'Selfie', inputId: 'auth-selfie-input', onSelect: 'authHandleSelfieSelected', onRemove: 'authRemoveSelfie', file: d.selfieFile, previewUrl: d.selfiePreviewUrl, accept: 'image/*', capture: 'user', live: true, hint: 'Face the camera in good light, with your whole face visible and no sunglasses or hats.' })}
                 <div style="font-size:11px;color:#9ca3af;margin-top:4px;">This is only used to confirm it's really you -- we automatically check that it's a live photo and that it matches the ID you just submitted.</div>
               </div>`;
           }
@@ -1569,7 +1562,7 @@ let userPoints = 0;
           const page = pages[authPosterAppStageIdx];
           const stage = page.stages[0];
           const multi = page.stages.length > 1;
-          const LABELS = { bizname: 'Business name', bizestablished: 'Established', bizcategory: 'Category', bizwebsite: 'Website or social link (optional)', bizdesc: 'In your own words', paidtype: 'Type', paidprice: 'Roughly what will most listings cost?', paidplan: 'Tell us what you will post', paidpay: '', paidpayout: 'Where should it go?', bizdoc: 'Business document' };
+          const LABELS = { bizname: 'Business name', bizestablished: 'Established', bizcategory: 'Category', bizwebsite: 'Website or social link (optional)', bizdesc: 'In your own words', paidtype: 'Type', paidprice: 'Roughly what will most listings cost?', paidplan: 'Tell us what you will post', paidpay: '', paidpayout: 'Where should it go?' };
           const container = document.getElementById('auth-poster-app-form-container');
           if (container) {
             const body = page.stages.map(st => {
@@ -1625,10 +1618,19 @@ let userPoints = 0;
         function authHandleBizDocSelected(input){
           const file = input.files && input.files[0];
           if (!file) return;
+          if (typeof validateOrRejectFile === 'function' && !validateOrRejectFile(input, file, 'bizDoc')) return;
+          if (typeof posterAppRevokePreviewUrl === 'function') posterAppRevokePreviewUrl(posterAppDraft.businessDocumentPreviewUrl);
           posterAppDraft.businessDocumentFile = file;
           posterAppDraft.businessDocumentName = 'Paperwork';
-          const label = document.getElementById('auth-bizdoc-label');
-          if (label) label.textContent = posterAppDraft.businessDocumentName;
+          posterAppDraft.businessDocumentPreviewUrl = /^image\//.test(file.type || '') ? URL.createObjectURL(file) : '';
+          authRenderPosterAppStage();
+        }
+        function authRemoveBizDoc(){
+          if (typeof posterAppRevokePreviewUrl === 'function') posterAppRevokePreviewUrl(posterAppDraft.businessDocumentPreviewUrl);
+          posterAppDraft.businessDocumentFile = null;
+          posterAppDraft.businessDocumentName = '';
+          posterAppDraft.businessDocumentPreviewUrl = '';
+          authRenderPosterAppStage();
         }
         // Front/back/proof-of-residence handlers for onboarding
         function authHandleIdFrontSelected(input){

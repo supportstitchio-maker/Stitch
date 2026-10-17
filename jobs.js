@@ -354,7 +354,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let posterAppDraft = {
           intent: 'explore', role: 'student', businessName: '', businessInfo: '',
           businessEstablished: '', businessEstablishedTyped: '', businessCategory: '', businessWebsite: '',
-          businessDocumentFile: null, businessDocumentName: '',
+          businessDocumentFile: null, businessDocumentName: '', businessDocumentPreviewUrl: '',
           // Front is required
           idDocumentFile: null, idDocumentName: '', idDocumentFrontPreviewUrl: '',
           idDocumentBackFile: null, idDocumentBackName: '', idDocumentBackPreviewUrl: '',
@@ -379,7 +379,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             businessCategory: currentUserPosterBusinessCategory || '',
             businessWebsite: currentUserPosterBusinessWebsite || '',
             // Files/photo are never pre-filled from a past application
-            businessDocumentFile: null, businessDocumentName: '',
+            businessDocumentFile: null, businessDocumentName: '', businessDocumentPreviewUrl: '',
             idDocumentFile: null, idDocumentName: '', idDocumentFrontPreviewUrl: '',
             idDocumentBackFile: null, idDocumentBackName: '', idDocumentBackPreviewUrl: '',
             proofOfResidenceFile: null, proofOfResidenceName: '', proofOfResidencePreviewUrl: '',
@@ -516,20 +516,95 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div class="mb-4">
               <label class="pa-lab">${escapeHtml(o.label)}</label>
               <input type="file" accept="${o.accept || 'image/*,.pdf'}" ${o.capture ? `capture="${o.capture}"` : ''} id="${o.inputId}" class="hidden" onchange="${o.onSelect}(this)">
-              <div onclick="${hasPreview ? '' : `document.getElementById('${o.inputId}').click()`}" style="position:relative;height:120px;border-radius:22px;overflow:hidden;background:#fff;border:1.5px dashed #b9d4f7;display:flex;align-items:center;justify-content:center;cursor:${hasPreview ? 'default' : 'pointer'};">
+              <div onclick="${hasPreview ? '' : (o.live ? `stitchLiveCamera('${o.inputId}','${o.onSelect}')` : `document.getElementById('${o.inputId}').click()`)}" style="position:relative;height:120px;border-radius:22px;overflow:hidden;background:#fff;border:1.5px dashed #b9d4f7;display:flex;align-items:center;justify-content:center;cursor:${hasPreview ? 'default' : 'pointer'};">
                 ${!hasPreview
-                  ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:${NAVY};">${Icon('camera','w-6 h-6')}<span style="font-size:12px;font-weight:700;">Tap to upload</span></span>`
+                  ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:${NAVY};">${Icon('camera','w-6 h-6')}<span style="font-size:12px;font-weight:700;">${o.live ? 'Tap to open camera' : 'Tap to upload'}</span></span>`
                   : isPdf
                     ? `<span style="display:flex;flex-direction:column;align-items:center;gap:6px;color:#6b7280;">${Icon('file','w-7 h-7')}<span style="font-size:11px;font-weight:600;">${escapeHtml(fileName)}</span></span>`
                     : `<img src="${escapeHtml(previewUrl)}" style="width:100%;height:100%;object-fit:cover;">`}
               </div>
               ${hasPreview ? `
               <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-top:6px;">
-                <button type="button" onclick="document.getElementById('${o.inputId}').click()" style="font-size:12px;font-weight:700;color:${ROYAL};background:none;border:none;padding:0;">Change</button>
+                <button type="button" onclick="${o.live ? `stitchLiveCamera('${o.inputId}','${o.onSelect}')` : `document.getElementById('${o.inputId}').click()`}" style="font-size:12px;font-weight:700;color:${ROYAL};background:none;border:none;padding:0;">Change</button>
                 <button type="button" onclick="${o.onRemove}()" style="font-size:12px;font-weight:700;color:#e11d48;background:none;border:none;padding:0;">Remove</button>
               </div>` : ''}
               ${o.hint ? `<div class="text-[11px] text-gray-400 mt-1">${escapeHtml(o.hint)}</div>` : ''}
             </div>`;
+        }
+
+
+        // Live camera for the selfie step. Falls back to the file picker if the camera can't open.
+        let stitchLiveStream = null;
+        function stitchLiveCameraClose(){
+          if (stitchLiveStream) { stitchLiveStream.getTracks().forEach(t => t.stop()); stitchLiveStream = null; }
+          const el = document.getElementById('stitch-live-cam'); if (el) el.remove();
+        }
+        async function stitchLiveCamera(inputId, onSelect){
+          const fallback = () => { const i = document.getElementById(inputId); if (i) i.click(); };
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { fallback(); return; }
+          stitchLiveCameraClose();
+          let stream;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+          } catch (e) { fallback(); return; }
+          stitchLiveStream = stream;
+          const wrap = document.createElement('div');
+          wrap.id = 'stitch-live-cam';
+          wrap.innerHTML = `
+            <video id="stitch-live-video" autoplay playsinline muted></video>
+            <img id="stitch-live-still" alt="" style="display:none;">
+            <div class="slc-shade"></div>
+            <div class="slc-oval" id="stitch-live-oval"></div>
+            <div class="slc-top">
+              <button type="button" class="slc-x" aria-label="Close" onclick="stitchLiveCameraClose()">${Icon('close','w-4 h-4')}</button>
+              <div class="slc-title">Take your selfie</div>
+              <div style="width:40px"></div>
+            </div>
+            <div class="slc-msg" id="stitch-live-msg">Fit your face inside the oval</div>
+            <div class="slc-bottom" id="stitch-live-live">
+              <div class="slc-tips"><span>Good light</span><span>No hat or glasses</span><span>Look straight</span></div>
+              <button type="button" class="slc-shot" aria-label="Take photo" id="stitch-live-shot"><i></i></button>
+            </div>
+            <div class="slc-bottom" id="stitch-live-review" style="display:none;">
+              <div class="slc-actions">
+                <button type="button" class="slc-btn slc-retake" id="stitch-live-retake">Retake</button>
+                <button type="button" class="slc-btn slc-use" id="stitch-live-use">Use this photo</button>
+              </div>
+            </div>`;
+          document.body.appendChild(wrap);
+          const v = document.getElementById('stitch-live-video');
+          const still = document.getElementById('stitch-live-still');
+          const $ = id => document.getElementById(id);
+          v.srcObject = stream;
+          try { await v.play(); } catch (e) {}
+          let shot = null;
+          const setMode = review => {
+            $('stitch-live-live').style.display = review ? 'none' : '';
+            $('stitch-live-review').style.display = review ? '' : 'none';
+            still.style.display = review ? 'block' : 'none';
+            $('stitch-live-oval').classList.toggle('ok', review);
+            $('stitch-live-msg').textContent = review ? 'Is your whole face clear?' : 'Fit your face inside the oval';
+          };
+          $('stitch-live-shot').onclick = () => {
+            if (!v.videoWidth) return;
+            const c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            c.toBlob(blob => {
+              if (!blob) return;
+              shot = blob;
+              still.src = URL.createObjectURL(blob);
+              setMode(true);
+            }, 'image/jpeg', 0.92);
+          };
+          $('stitch-live-retake').onclick = () => { try { URL.revokeObjectURL(still.src); } catch (e) {} shot = null; setMode(false); };
+          $('stitch-live-use').onclick = () => {
+            if (!shot) return;
+            const file = new File([shot], 'selfie-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+            stitchLiveCameraClose();
+            const fn = window[onSelect];
+            if (typeof fn === 'function') fn({ files: [file], value: '' });
+          };
         }
 
         // ---- File validation ----
@@ -835,13 +910,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 message: `${(typeof profileData !== 'undefined' && profileData.name) || 'A user'} wants to post opportunities on Career Space${alsoPaid ? ' and sell paid courses and meetings' : ''}.${(posterAppDraft.interests && posterAppDraft.interests.length) ? ' Picked: ' + posterAppDraft.interests.join(', ') + '.' : ''} Review it on the Admin Dashboard.`,
               });
             }
-            // Kick off the automated ID check server-side (see verify-poster-id edge function)
-            // whenever there's a new ID image to check
-            if (idChanged && posterStatus === 'pending') {
-              verifyPosterIdRemote(user.id).catch(() => {});
-            }
-            // Same idea for the selfie
-            if (selfieChanged && posterStatus === 'pending') {
+            // One Smile ID job checks the ID and the live selfie together (see verify-poster-selfie).
+            // When both come back verified, smile-id-callback approves the poster without an admin.
+            if ((idChanged || selfieChanged) && posterStatus === 'pending') {
               verifyPosterSelfieRemote(user.id).catch(() => {});
             }
             // Make sure this account's name/username/photo are in PUBLIC_PROFILES_TABLE before an
@@ -1126,7 +1197,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (stage === 'selfie') {
             // Automated liveness + face-match, via Smile ID -- see verifyPosterSelfieRemote
             return `
-            ${posterAppUploadTileHTML({ label: 'Selfie', inputId: 'poster-app-selfie-input', onSelect: 'posterAppHandleSelfieSelected', onRemove: 'posterAppRemoveSelfie', file: d.selfieFile, previewUrl: d.selfiePreviewUrl, existingUrl: currentUserPosterSelfieUrl, accept: 'image/*', capture: 'user', hint: 'Face the camera in good light, with your whole face visible and no sunglasses or hats.' })}
+            ${posterAppUploadTileHTML({ label: 'Selfie', inputId: 'poster-app-selfie-input', onSelect: 'posterAppHandleSelfieSelected', onRemove: 'posterAppRemoveSelfie', file: d.selfieFile, previewUrl: d.selfiePreviewUrl, existingUrl: currentUserPosterSelfieUrl, accept: 'image/*', capture: 'user', live: true, hint: 'Face the camera in good light, with your whole face visible and no sunglasses or hats.' })}
             <div class="text-[11px] text-gray-400 mt-1">This is only used to confirm it's really you -- we automatically check that it's a live photo and that it matches the ID you just submitted.</div>`;
           }
           if (stage === 'paidchoice') {
