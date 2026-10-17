@@ -1348,14 +1348,14 @@ let userPoints = 0;
         }
         function authPosterAppStages(){
           // The 'post' path collects everything an admin needs to review and verify a listing poster
-          if (posterAppDraft.intent !== 'post') return ['intent', 'photo'];
+          if (posterAppDraft.intent !== 'post') return ['intent', 'photo'];  // (photo is always the last page)
           // Same paid-courses question and follow-ups as the in-app form (posterAppStages in
           // jobs.js): right after the description, before any documents are requested
           const viaChips = authPaidViaChips();
           const list = ['intent', 'role', 'bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'];
           if (!viaChips) list.push('paidchoice');
           if (posterAppDraft.sellPaid) list.push(...PAID_SELLER_STAGES.filter(st => !(viaChips && st === 'paidtype')));
-          list.push('bizdoc', 'iddoc', 'selfie', 'consent');
+          list.push('bizdoc', 'iddoc', 'selfie', 'consent', 'photo');
           return list;
         }
         // Questions are grouped into pages so related ones share a screen. Stage ids are the same,
@@ -1366,7 +1366,6 @@ let userPoints = 0;
           const has = id => st.indexOf(id) >= 0;
           const add = (id, stages, extra) => { const list = stages.filter(has); if (list.length) pages.push(Object.assign({ id, stages: list }, extra || {})); };
           add('intent', ['intent'], { kicker: 'Your goals' });
-          add('photo', ['photo'], { kicker: 'Your photo' });
           add('role', ['role'], { kicker: 'About you' });
           add('business', ['bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'], { kicker: 'Your business', title: 'Tell us about it', sub: 'A few details about what you do.' });
           add('paidchoice', ['paidchoice']);
@@ -1374,7 +1373,8 @@ let userPoints = 0;
           add('paidpay', ['paidpay', 'paidpayout'], { kicker: 'Paid selling', title: 'How you get paid', sub: 'Payment plan and withdrawals.' });
           add('paidconfirm', ['paidconfirm']);
           add('verify', ['bizdoc', 'iddoc', 'selfie'], { kicker: 'Verify', title: "Prove it's really you", sub: 'Three quick uploads. An admin reviews them before you are approved.' });
-          add('review', ['consent'], { kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and send.' });
+          add('review', ['consent'], { kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and continue.' });
+          add('photo', ['photo'], { kicker: 'Your photo' });
           return pages;
         }
         function authCurrentPage(){
@@ -1414,7 +1414,7 @@ let userPoints = 0;
           authPendingPhotoBlob = null;
           authIntentPicks = new Set();
           posterAppDraft.interests = [];
-          authPosterAppStageIdx = 0;
+          authPosterAppStageIdx = 0; authLastRenderedPageId = '';
           authRenderPosterAppStage();
         }
         const authIsPaidStage = (stage) => typeof stage === 'string' && stage.indexOf('paid') === 0;
@@ -1556,6 +1556,7 @@ let userPoints = 0;
           if (stage === 'consent') return 'Almost there';
           return 'What brings you here?';
         }
+        let authLastRenderedPageId = '';
         function authRenderPosterAppStage(){
           const pages = authPosterAppPages();
           authPosterAppStageIdx = Math.min(Math.max(authPosterAppStageIdx, 0), pages.length - 1);
@@ -1564,6 +1565,13 @@ let userPoints = 0;
           const multi = page.stages.length > 1;
           const LABELS = { bizname: 'Business name', bizestablished: 'Established', bizcategory: 'Category', bizwebsite: 'Website or social link (optional)', bizdesc: 'In your own words', paidtype: 'Type', paidprice: 'Roughly what will most listings cost?', paidplan: 'Tell us what you will post', paidpay: '', paidpayout: 'Where should it go?' };
           const container = document.getElementById('auth-poster-app-form-container');
+          // Keep the scroll position when only the content inside the same page changes (a tap on a chip,
+          // a picked file); a new page starts at the top.
+          const scrollers = [document.getElementById('auth-gate'), document.querySelector('#auth-gate .auth-scroll-inner'), document.querySelector('#auth-gate .auth-form-side'), document.scrollingElement];
+          const samePage = authLastRenderedPageId === page.id;
+          const savedTops = scrollers.map(el => el ? el.scrollTop : 0);
+          if (container && samePage) { container.style.minHeight = container.offsetHeight + 'px'; }
+          authLastRenderedPageId = page.id;
           if (container) {
             const body = page.stages.map(st => {
               let html = authPosterAppStageHTML(st);
@@ -1578,6 +1586,9 @@ let userPoints = 0;
             }).join('');
             container.innerHTML = (page.id === 'review' ? authPosterAppSummaryHTML() : '') + body;
             container.classList.add('pa-flow');
+            const restore = () => scrollers.forEach((el, i) => { if (el) el.scrollTop = samePage ? savedTops[i] : 0; });
+            restore();
+            requestAnimationFrame(() => { restore(); container.style.minHeight = ''; });
           }
           const errEl = document.getElementById('auth-poster-app-error');
           if (errEl) { errEl.classList.remove('show'); errEl.textContent = "Couldn't save that. Please check your connection and try again."; }
@@ -2163,11 +2174,17 @@ let userPoints = 0;
               else if (p.joinLecture && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinLecture=' + encodeURIComponent(p.joinLecture));
               else if (p.glimpse && !window.location.search) history.replaceState(null, '', window.location.pathname + '?glimpse=' + encodeURIComponent(p.glimpse));
               else if (p.u && !window.location.search) history.replaceState(null, '', window.location.pathname + '?u=' + encodeURIComponent(p.u));
+              else if (p.joinClass && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinClass=' + encodeURIComponent(p.joinClass));
+              else if (p.course && !window.location.search) history.replaceState(null, '', window.location.pathname + '?course=' + encodeURIComponent(p.course));
+              else if (p.joinChallenge && !window.location.search) history.replaceState(null, '', window.location.pathname + '?joinChallenge=' + encodeURIComponent(p.joinChallenge));
+              if (p.joinChallenge && typeof checkPendingChallengeLinkJoin === 'function') checkPendingChallengeLinkJoin();
               if (p.joinCollab && typeof checkPendingCollabLinkJoin === 'function') checkPendingCollabLinkJoin();
             }
           } catch (e) { /* best effort */ }
           if (typeof checkPendingLectureLinkJoin === 'function') checkPendingLectureLinkJoin();
           if (typeof checkPendingGlimpseLink === 'function') checkPendingGlimpseLink();
+          if (typeof checkPendingClassLink === 'function') checkPendingClassLink();
+          if (typeof checkPendingCourseLink === 'function') checkPendingCourseLink();
           if (typeof checkPendingProfileLink === 'function') checkPendingProfileLink();
 
           // The tab bar stays locked until the Home skeleton has fully finished loading and the real

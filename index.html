@@ -191,7 +191,7 @@
         try {
           var q = new URLSearchParams(window.location.search || '');
           var keep = {}, any = false;
-          ['joinCollab','joinLecture','post','glimpse','u'].forEach(function(k){ if (q.get(k)) { keep[k] = q.get(k); any = true; } });
+          ['joinCollab','joinLecture','post','glimpse','u','joinClass','course','joinChallenge'].forEach(function(k){ if (q.get(k)) { keep[k] = q.get(k); any = true; } });
           if (any) localStorage.setItem('stitch-pending-link', JSON.stringify({ p: keep, t: Date.now() }));
         } catch (e) { /* storage unavailable: the address-bar param alone still works */ }
       })();
@@ -223,7 +223,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261018l">
+    <link rel="stylesheet" href="styles.css?v=20261018n">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -929,18 +929,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261018l"></script>
-    <script src="core.js?v=20261018l"></script>
-    <script src="feed.js?v=20261018l"></script>
-    <script src="chat.js?v=20261018l"></script>
-    <script src="study.js?v=20261018l"></script>
-    <script src="courses.js?v=20261018l"></script>
-    <script src="quizzesAndGames.js?v=20261018l"></script>
-    <script src="jobs.js?v=20261018l"></script>
-    <script src="creator.js?v=20261018l"></script>
-    <script src="settings.js?v=20261018l"></script>
-    <script src="profile.js?v=20261018l"></script>
-    <script src="overlays.js?v=20261018l"></script>
-    <script src="games.js?v=20261018l"></script>
+    <script src="analytics.js?v=20261018n"></script>
+    <script src="core.js?v=20261018n"></script>
+    <script src="feed.js?v=20261018n"></script>
+    <script src="chat.js?v=20261018n"></script>
+    <script src="study.js?v=20261018n"></script>
+    <script src="courses.js?v=20261018n"></script>
+    <script src="quizzesAndGames.js?v=20261018n"></script>
+    <script src="jobs.js?v=20261018n"></script>
+    <script src="creator.js?v=20261018n"></script>
+    <script src="settings.js?v=20261018n"></script>
+    <script src="profile.js?v=20261018n"></script>
+    <script src="overlays.js?v=20261018n"></script>
+    <script src="games.js?v=20261018n"></script>
 </body>
 </html>

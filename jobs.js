@@ -1550,7 +1550,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div class="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl p-3 text-xs mb-5">Your previous application wasn't approved. Feel free to update the details below and reapply.</div>` : '';
           const segs = isWelcome ? '' : `
             <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">
-              ${stepPages.map((pg, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNo ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('')}
+              ${stepPages.map((pg, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNo ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('')}
             </div></div>`;
           const goLabel = isWelcome ? 'Start application' : (isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Continue');
           return `
@@ -6475,7 +6475,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const meta = JOB_STATUS_META[status] || JOB_PIPELINE_META.applied;
           const dots = steps.map((k, i) => {
             const on = !term || status === 'offer_accepted' ? i <= idx : i === 0;
-            return `<div style="flex:1;height:5px;border-radius:9999px;background:${on ? meta.color : 'rgba(128,128,128,0.22)'};"></div>`;
+            return `<div style="flex:1;height:5px;border-radius:9999px;background:${on ? meta.color : 'rgba(120,130,150,0.30)'};"></div>`;
           }).join('<div style="width:4px;"></div>');
           return `<div class="flex items-center" style="margin:8px 0 4px;">${dots}</div><div class="text-xs font-semibold" style="color:${meta.color};">${escapeHtml(meta.label)}</div>`;
         }
@@ -6646,7 +6646,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const resumeBusy = isLastStep && careerStartResumeUploading;
           const nextBtnLabel = resumeBusy ? 'Fetching…' : (isLastStep ? 'Submit' : 'Continue');
           const hint = (careerStartParts(stepId).length === 1 && stepId !== 'age') ? careerStartStepHint(stepId) : '';
-          const segs = careerStartFormStepIds.map((id, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNum ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('');
+          const segs = careerStartFormStepIds.map((id, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNum ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const bg = '';
           return `
             ${bg}
@@ -8248,7 +8248,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const pg = Math.min(Math.max(newOppPage, 0), NEW_OPP_PAGES.length - 1);
           const meta = NEW_OPP_PAGES[pg];
           const isLast = pg === NEW_OPP_PAGES.length - 1;
-          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(128,128,128,0.22)'};"></i>`).join('');
+          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const goLabel = isLast ? (isEditing ? 'Save changes' : (newOppDraft.type === 'Course' ? 'Post course' : 'Post opportunity')) : 'Continue';
           return `
             <div class="flex-1 overflow-y-auto pa-flow">
@@ -8760,49 +8760,89 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const statusCls = st === 'blocked' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600';
           const field = (label, val) => val ? `<div class="py-2.5 border-b border-gray-100"><div class="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">${label}</div><div class="text-sm text-gray-800" style="white-space:pre-wrap;overflow-wrap:anywhere;">${val}</div></div>` : '';
           const attach = (url, label) => url ? `<div class="flex gap-2 mb-3">${adminAttachmentPreviewHTML(url, label)}</div>` : '';
+          const uid = app.user_id;
           let actions = '';
-          if (st === 'approved') actions = `<button onclick="revokePosterApproval('${app.user_id}')" class="w-full px-3 py-3 rounded-2xl text-sm font-semibold text-white bg-rose-500">Remove from posters</button>`;
-          else if (st === 'frozen') actions = `<button onclick="adminUnfreezePoster('${app.user_id}')" class="w-full px-3 py-3 rounded-2xl text-sm font-semibold text-white" style="background:${NAVY};">Unfreeze poster status</button>`;
-          else if (st === 'blocked') actions = `<div class="text-xs text-gray-400 text-center">This poster, their business and their ID are permanently blocked.</div>`;
-          else if (st === 'denied') actions = `<button onclick="restorePosterApproval('${app.user_id}')" class="w-full px-3 py-3 rounded-2xl text-sm font-semibold text-white" style="background:${NAVY};">Approve as poster</button>`;
-          else actions = `<div class="flex gap-2"><button onclick="reviewPosterApplication('${app.user_id}','denied')" class="flex-1 px-3 py-3 rounded-2xl text-sm font-semibold bg-gray-100 text-gray-600">Deny</button><button onclick="reviewPosterApplication('${app.user_id}','approved')" class="flex-1 px-3 py-3 rounded-2xl text-sm font-semibold text-white" style="background:${NAVY};">Approve</button></div>`;
+          if (st === 'approved') actions = `<button onclick="revokePosterApproval('${uid}')" class="cd-btn cd-danger">Remove from posters</button>`;
+          else if (st === 'frozen') actions = `<button onclick="adminUnfreezePoster('${uid}')" class="cd-btn cd-primary">Unfreeze poster status</button>`;
+          else if (st === 'blocked') actions = `<div class="cd-note">This poster, their business and their ID are permanently blocked.</div>`;
+          else if (st === 'denied') actions = `<button onclick="restorePosterApproval('${uid}')" class="cd-btn cd-primary">Approve as poster</button>`;
+          else actions = `<button onclick="reviewPosterApplication('${uid}','denied')" class="cd-btn cd-ghost">Deny</button><button onclick="reviewPosterApplication('${uid}','approved')" class="cd-btn cd-primary">Approve</button>`;
+          // One status row: icon, title, a coloured chip and a short line of detail
+          const chipFor = (status, hasFile) => {
+            if (!hasFile) return ['cd-chip-gray', 'Not provided'];
+            const m = { verified: ['cd-chip-green', 'Verified'], pending: ['cd-chip-amber', 'Checking'], needs_review: ['cd-chip-amber', 'Needs a look'], manual: ['cd-chip-amber', 'For your review'], failed: ['cd-chip-red', "Didn't match"], error: ['cd-chip-gray', 'Check unavailable'] };
+            return m[status] || ['cd-chip-gray', 'Not checked'];
+          };
+          const resultNote = (r) => {
+            try { const o = (typeof r === 'string') ? JSON.parse(r) : r; return o ? String(o.ResultText || o.result_text || o.reason || o.note || '') : ''; } catch (e) { return ''; }
+          };
+          const vrow = (icon, title, status, hasFile, detail) => {
+            const [cls, lab] = chipFor(status, hasFile);
+            return `<div class="cd-vrow"><div class="cd-vic">${Icon(icon, 'w-5 h-5')}</div><div class="cd-vmain"><div class="cd-vtitle">${title}</div>${detail ? `<div class="cd-vsub">${escapeHtml(detail)}</div>` : ''}</div><span class="cd-chip ${cls}">${lab}</span></div>`;
+          };
+          const idDetail = [app.poster_id_type ? (app.poster_id_type + (app.poster_id_country ? ' (' + app.poster_id_country + ')' : '')) : '', resultNote(app.poster_id_verification_result)].filter(Boolean).join(' · ');
+          const selfieDetail = resultNote(app.poster_selfie_verification_result) || (app.poster_selfie_url ? 'Live selfie compared with the ID photo' : '');
+          const tile = (url, label) => {
+            if (!url) return `<div class="cd-tile cd-tile-empty"><span>${Icon('doc', 'w-6 h-6')}</span><div class="cd-tile-lab">${escapeHtml(label)}</div><div class="cd-tile-sub">Not provided</div></div>`;
+            const kind = adminAttachmentKind(url);
+            const enc = encodeURIComponent(url);
+            if (kind === 'image') {
+              return `<button type="button" class="cd-tile" onclick="adminOpenPrivateFile('${enc}','image','')"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" data-src="${enc}" onload="adminHydratePrivateImg(this)" alt="${escapeHtml(label)}"><div class="cd-tile-cap"><span>${escapeHtml(label)}</span><span>${Icon('plus', 'w-3.5 h-3.5')}</span></div></button>`;
+            }
+            const fileName = `${label}${/\.pdf$/i.test(url) ? '.pdf' : ''}`;
+            return `<button type="button" class="cd-tile cd-tile-doc" onclick="adminOpenPrivateFile('${enc}','doc','${encodeURIComponent(fileName)}')"><span>${Icon('doc', 'w-7 h-7')}</span><div class="cd-tile-lab">${escapeHtml(label)}</div><div class="cd-tile-sub">View document</div></button>`;
+          };
+          const kv = (label, val) => val ? `<div class="cd-kv"><div class="cd-k">${label}</div><div class="cd-v">${val}</div></div>` : '';
+          const emailHtml = app.poster_email ? `<a href="mailto:${escapeHtml(app.poster_email)}">${escapeHtml(app.poster_email)}</a>` : '<span class="cd-muted">Not on file</span>';
+          const siteHtml = app.poster_business_website ? `<a href="${escapeHtml(app.poster_business_website)}" target="_blank" rel="noopener">${escapeHtml(app.poster_business_website)}</a>` : '';
           return `
-            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
-              <div style="margin:0 -1.25rem;">${overlayHeader('Creator details', '20px', 'closeAdminPosterDetail()', null, {center:true, pb: '10px'})}</div>
-              <div class="flex items-center gap-4 pt-4 pb-5">
-                <div class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${p.photo ? `<img src="${escapeHtml(p.photo)}" class="w-full h-full object-cover">` : Icon('user','w-9 h-9')}</div>
-                <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-lg text-gray-900 truncate">${escapeHtml(name)}</div>
-                  <div class="text-sm text-gray-400 truncate">${p.username ? '@' + escapeHtml(p.username) : ''}</div>
-                  ${statusLabel ? `<span class="inline-block mt-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${statusCls}">${statusLabel}</span>` : ''}
+            <div class="flex-1 overflow-y-auto cd-page">
+              <div>${overlayHeader('Creator details', '20px', 'closeAdminPosterDetail()', null, {center:true, pb: '10px'})}</div>
+              <div class="cd-wrap">
+                <div class="cd-hero">
+                  <div class="cd-avatar">${p.photo ? `<img src="${escapeHtml(p.photo)}" alt="">` : Icon('user', 'w-9 h-9')}</div>
+                  <div class="cd-hero-main">
+                    <div class="cd-name">${escapeHtml(name)}</div>
+                    <div class="cd-handle">${p.username ? '@' + escapeHtml(p.username) : ''}</div>
+                    <div class="cd-pills">
+                      ${statusLabel ? `<span class="cd-chip ${st === 'blocked' ? 'cd-chip-red' : 'cd-chip-amber'}">${statusLabel}</span>` : (st === 'approved' ? '<span class="cd-chip cd-chip-green">Approved poster</span>' : st === 'denied' ? '<span class="cd-chip cd-chip-gray">Not approved</span>' : '<span class="cd-chip cd-chip-amber">Awaiting review</span>')}
+                      ${applied ? `<span class="cd-chip cd-chip-gray">Applied ${applied}</span>` : ''}
+                    </div>
+                  </div>
+                  <button type="button" onclick="openAdminPosterMenu('${uid}')" aria-label="More options" class="cd-menu">${IconBold('dots', 'w-5 h-5')}</button>
                 </div>
-                <button type="button" onclick="openAdminPosterMenu('${app.user_id}')" aria-label="More options" class="w-10 h-10 flex items-center justify-center text-gray-500 flex-shrink-0">${IconBold('dots','w-5 h-5')}</button>
-              </div>
-              <div class="mb-4">
-                ${field('Email', app.poster_email ? `<a href="mailto:${escapeHtml(app.poster_email)}" style="color:${NAVY};">${escapeHtml(app.poster_email)}</a>` : '<span class="text-gray-400">Not on file (applied before emails were collected)</span>')}
-                ${field('Business / organisation', app.poster_business_name ? escapeHtml(app.poster_business_name) : '')}
-                ${field('Role', escapeHtml(roleLabel))}
-                ${field('Category', categoryLabel ? escapeHtml(categoryLabel) : '')}
-                ${field('Established', established)}
-                ${field('Website', app.poster_business_website ? `<a href="${escapeHtml(app.poster_business_website)}" target="_blank" rel="noopener" style="color:${NAVY};">${escapeHtml(app.poster_business_website)}</a>` : '')}
-                ${field('About', app.poster_business_info ? escapeHtml(app.poster_business_info) : 'No additional details provided.')}
-                ${field('Applied', applied)}
-                ${field('Last reviewed', reviewed)}
-              </div>
-              <div class="mb-4 pt-2">
-                <div class="flex items-center gap-2 mb-2 flex-wrap">
-                  ${posterIdVerificationBadgeHTML(app.poster_id_verification_status)}
-                  ${app.poster_id_type ? `<span class="text-xs text-gray-500">${escapeHtml(app.poster_id_type)}${app.poster_id_country ? ` (${escapeHtml(app.poster_id_country)})` : ''}</span>` : ''}
+
+                <div class="cd-card">
+                  <div class="cd-h">Verification</div>
+                  ${vrow('doc', 'ID document', app.poster_id_verification_status, !!app.poster_id_document_url, idDetail)}
+                  ${vrow('user', 'Selfie and face match', app.poster_selfie_verification_status, !!app.poster_selfie_url, selfieDetail)}
+                  ${vrow('doc', 'Business document', app.poster_business_document_url ? 'manual' : '', !!app.poster_business_document_url, app.poster_business_document_url ? 'Reviewed by you, not checked automatically' : '')}
                 </div>
-                <div class="flex gap-2 mb-3">
-                  ${adminAttachmentPreviewHTML(app.poster_id_document_url, 'ID front')}
-                  ${app.poster_id_document_back_url ? adminAttachmentPreviewHTML(app.poster_id_document_back_url, 'ID back') : ''}
+
+                <div class="cd-card">
+                  <div class="cd-h">About the business</div>
+                  ${kv('Business / organisation', app.poster_business_name ? escapeHtml(app.poster_business_name) : '')}
+                  ${kv('Role', escapeHtml(roleLabel))}
+                  ${kv('Category', categoryLabel ? escapeHtml(categoryLabel) : '')}
+                  ${kv('Established', established)}
+                  ${kv('Email', emailHtml)}
+                  ${kv('Website', siteHtml)}
+                  ${kv('About', app.poster_business_info ? escapeHtml(app.poster_business_info) : '<span class="cd-muted">No additional details provided.</span>')}
+                  ${kv('Last reviewed', reviewed)}
                 </div>
-                ${app.poster_selfie_url ? `<div class="flex items-center gap-2 mb-2">${posterSelfieVerificationBadgeHTML(app.poster_selfie_verification_status)}</div>${attach(app.poster_selfie_url, 'Selfie')}` : ''}
-                ${attach(app.poster_proof_of_residence_url, 'Proof of residence')}
-                ${attach(app.poster_business_document_url, 'Business doc')}
+
+                <div class="cd-card">
+                  <div class="cd-h">Documents <span class="cd-h-sub">Private. Only admins can see these.</span></div>
+                  <div class="cd-tiles">
+                    ${tile(app.poster_id_document_url, 'ID front')}
+                    ${tile(app.poster_id_document_back_url, 'ID back')}
+                    ${tile(app.poster_selfie_url, 'Selfie')}
+                    ${tile(app.poster_proof_of_residence_url, 'Proof of residence')}
+                    ${tile(app.poster_business_document_url, 'Business document')}
+                  </div>
+                </div>
               </div>
-              ${actions}
+              <div class="cd-actions"><div class="cd-actions-in">${actions}</div></div>
             </div>`;
         }
 

@@ -4355,6 +4355,71 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return !!meta && blockedAccounts.some(b => b.name === meta.name);
         }
 
+
+        // ---- Message request banner: shown at the top of a chat with someone who is not a connection ----
+        function convoConnectState(){
+          const meta = (typeof convoMeta !== 'undefined' && activeConvoId) ? convoMeta[activeConvoId] : null;
+          if (!meta || !meta.otherUserId || meta.icon === 'users') return null;
+          const id = String(activeConvoId || '');
+          if (id.indexOf('dm-') !== 0) return null;
+          if (isUserInMyNetwork(meta.otherUserId)) return null;
+          if (isConvoBlocked(meta)) return null;
+          const incoming = requestConvos.find(c => c.otherUserId === meta.otherUserId);
+          if (incoming) return { kind: 'incoming', meta, req: incoming };
+          if (isConnectionRequestPendingTo(meta.otherUserId)) return { kind: 'sent', meta };
+          return { kind: 'stranger', meta };
+        }
+        function convoConnectBannerHTML(){
+          const st = convoConnectState();
+          if (!st) return '';
+          const name = escapeHtml(convoDisplayName(st.meta));
+          if (st.kind === 'sent') {
+            return `<div id="convo-connect-banner" class="ccb ccb-note">
+              <div class="ccb-ic">${Icon('clock','w-5 h-5')}</div>
+              <div class="ccb-txt"><div class="ccb-title">Invitation sent</div><div class="ccb-sub">You will be connected as soon as ${name} accepts.</div></div>
+            </div>`;
+          }
+          const title = st.kind === 'incoming' ? `${name} wants to connect` : `${name} is not in your network`;
+          const sub = st.kind === 'incoming' ? 'Accept the invite to chat and call freely, or reject it.' : 'You are not connected yet. Send an invite to chat and call freely.';
+          const yes = st.kind === 'incoming' ? 'Accept invite' : 'Send invite';
+          const no = st.kind === 'incoming' ? 'Reject' : 'Block';
+          return `<div id="convo-connect-banner" class="ccb">
+            <div class="ccb-row">
+              <div class="ccb-ic">${Icon('personPlus','w-5 h-5')}</div>
+              <div class="ccb-txt"><div class="ccb-title">${title}</div><div class="ccb-sub">${sub}</div></div>
+            </div>
+            <div class="ccb-actions">
+              <button onclick="convoBannerAccept()" class="ccb-btn ccb-yes">${yes}</button>
+              <button onclick="convoBannerReject()" class="ccb-btn ccb-no">${no}</button>
+            </div>
+          </div>`;
+        }
+        function refreshConvoConnectBanner(){
+          const el = document.getElementById('convo-connect-banner');
+          const html = convoConnectBannerHTML();
+          if (el && html) el.outerHTML = html;
+          else if (el && !html) el.remove();
+          else if (!el && html) {
+            const wrap = document.getElementById('convo-log-wrap');
+            if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
+          }
+        }
+        function convoBannerAccept(){
+          const st = convoConnectState();
+          if (!st) return;
+          if (st.kind === 'incoming') { acceptRequest(st.req.id); }
+          else if (st.kind === 'stranger' && typeof sendConnectionRequestTo === 'function') { sendConnectionRequestTo(st.meta.otherUserId).then(() => refreshConvoConnectBanner()).catch(() => {}); }
+          refreshConvoConnectBanner();
+          setTimeout(refreshConvoConnectBanner, 400);
+        }
+        function convoBannerReject(){
+          const st = convoConnectState();
+          if (!st) return;
+          if (st.kind === 'incoming') { rejectRequest(st.req.id); }
+          else { toggleBlockConvoContact(); return; }
+          refreshConvoConnectBanner();
+        }
+
         function toggleBlockConvoContact(){
           const meta = convoMeta[activeConvoId];
           if (!meta) return;
@@ -4441,6 +4506,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100"><span style="color:#ef4444;display:inline-flex;">${Icon('trash','w-4 h-4')}</span> Clear chat</button>
                   <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} ${blocked ? 'Unblock' : 'Block'}</button>
                 </div>
+            ${convoConnectBannerHTML()}
             <div id="convo-log-wrap" class="flex-1 relative" style="min-height:0;">
               <div id="convo-log" class="overflow-y-auto p-5 flex flex-col gap-3" style="height:100%;overflow-x:hidden;">
                 ${convoLogHTML()}
@@ -7118,8 +7184,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           st.id = 'call-ui-styles';
           st.textContent = `
 
-            body{--cu-bg:#f8fafc;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e5eaf2;--cu-sheet:#ffffff;--cu-bar:#f1f3f6;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
-            body.dark-mode{--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:#9a9a9a;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#2b2b2b;--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-bar:#1e1e1e;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
+            body{--cu-glow:rgba(30,144,255,.16);--cu-bg:#ffffff;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e8eef7;--cu-sheet:#ffffff;--cu-bar:#ffffff;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
+            body.dark-mode{--cu-glow:rgba(30,144,255,.10);--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:#9a9a9a;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#2b2b2b;--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-bar:#1e1e1e;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
             ::view-transition-old(root),::view-transition-new(root){animation-duration:.18s;animation-timing-function:ease-out;}
             .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
             body.dark-mode .cu-float,body.dark-mode .cu-bsheet,body.dark-mode .cu-pip,body.dark-mode .cu-corner.cu-hand,body.dark-mode .cu-toast,body.dark-mode .cu-ctl.accept .cu-ctl-btn{box-shadow:none;}
@@ -7201,6 +7267,47 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-paper{background:var(--cu-sheet);color:var(--cu-fg);border-radius:22px;overflow:hidden;}
             .cu-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 72px);transform:translateX(-50%);z-index:99999;max-width:min(88vw,360px);padding:10px 16px;border-radius:999px;background:rgba(15,23,42,.95);color:#fff;font-size:13px;font-weight:600;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);pointer-events:none;animation:cuToast 3.2s ease forwards;}
             @keyframes cuToast{0%{opacity:0;transform:translate(-50%,-8px);}8%,86%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
+
+            /* ---- Call, meeting and lecture screens: rebuilt look (white / dark base, blue glow, lifted control sheet) ---- */
+            .cu-screen{background:var(--cu-bg) !important;}
+            .cu-screen::before{content:'';position:absolute;left:0;right:0;top:0;height:55%;background:linear-gradient(180deg,var(--cu-glow),transparent);pointer-events:none;z-index:0;}
+            .cu-glass{background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 2px 10px rgba(30,60,140,.12);}
+            body.dark-mode .cu-glass{box-shadow:none;}
+            .cu-top{padding-top:8px;padding-bottom:6px;}
+            .cu-status{background:var(--cu-sheet);border:1px solid var(--cu-line);border-radius:999px;padding:3px 12px;font-weight:600;color:var(--cu-fg);box-shadow:0 2px 8px rgba(30,60,140,.08);}
+            body.dark-mode .cu-status{box-shadow:none;}
+            .cu-tile{border-radius:26px;}
+            .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline:3px solid #1e90ff;outline-offset:-3px;}
+            .cu-pip{border:3px solid var(--cu-bg);border-radius:20px;box-shadow:0 8px 22px rgba(30,60,140,.28);}
+            .cu-voice-avatar-wrap::before{content:'';position:absolute;inset:-34px;border-radius:50%;border:2px solid rgba(30,144,255,.20);}
+            .cu-voice-avatar{background:linear-gradient(135deg,#1e90ff,#4169e1) !important;color:#fff !important;border:5px solid var(--cu-bg);box-shadow:0 14px 34px rgba(65,105,225,.38) !important;}
+            .cu-voice-avatar span,.cu-voice-avatar svg{color:#fff !important;}
+            .cu-ring{border-color:rgba(30,144,255,.32);}
+            .cu-voice-name{font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;}
+            .cu-bar{padding:6px 12px calc(env(safe-area-inset-bottom,0px) + 14px);}
+            .cu-bar-inner{width:100%;max-width:560px;flex-wrap:wrap;justify-content:space-around;gap:10px 4px;padding:14px 12px 14px;border-radius:30px;background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 12px 36px rgba(30,60,140,.18);}
+            body.dark-mode .cu-bar-inner{box-shadow:none;}
+            .cu-ctl-btn{background:var(--cu-soft);}
+            .cu-ctl.on .cu-ctl-btn{background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;}
+            .cu-bar:not(.cu-bar-incoming) .cu-ctl.end{flex:0 0 100%;flex-direction:row;justify-content:center;align-items:center;gap:10px;height:50px;margin-top:4px;border-radius:999px;background:#ef4444;color:#fff;box-shadow:0 8px 18px rgba(239,68,68,.35);}
+            .cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-btn{width:auto;height:auto;background:transparent;}
+            .cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-btn svg{width:22px;height:22px;}
+            .cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-label{font-size:14px;font-weight:700;}
+            .cu-bar-incoming .cu-bar-inner{background:transparent;border:0;box-shadow:none;flex-wrap:nowrap;max-width:none;}
+            .cu-bar-incoming .cu-ctl-btn{width:68px;height:68px;}
+            .cu-bar-incoming .cu-ctl.end .cu-ctl-btn{background:#ef4444;box-shadow:0 10px 22px rgba(239,68,68,.38);}
+            .cu-bar-incoming .cu-ctl.accept .cu-ctl-btn{background:linear-gradient(135deg,#22c55e,#16a34a);}
+            .cu-bar-incoming .cu-ctl-label{font-size:12.5px;}
+            @media (min-width:1024px){
+              .cu-bar button.cu-ctl{width:auto;height:auto;}
+              #call-controls-bar button.cu-ctl{width:auto;height:auto;}
+              #call-controls-bar button.cu-ctl .cu-ctl-btn{width:50px;height:50px;}
+              .cu-bar:not(.cu-bar-incoming) .cu-bar-inner{flex-wrap:nowrap;width:auto;max-width:none;align-items:center;padding:10px 18px;border-radius:999px;gap:18px;}
+              .cu-bar:not(.cu-bar-incoming) .cu-ctl.end{flex:0 0 auto;margin-top:0;padding:0 26px;}
+              #call-controls-bar button.cu-ctl.end .cu-ctl-btn{width:auto;height:auto;}
+              .cu-bar:not(.cu-bar-incoming) .cu-ctl:not(.end) .cu-ctl-label{display:none;}
+              .cu-bar-incoming .cu-bar-inner{gap:90px !important;}
+            }
           `;
           document.head.appendChild(st);
         }
@@ -7226,7 +7333,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="cu-voice-sub" style="max-width:86%;white-space:normal;margin-top:-6px;">${escapeHtml(o.sub)}</div>
                 </div>
               </div>
-              <div class="cu-bar">
+              <div class="cu-bar cu-bar-incoming">
                 <div class="cu-bar-inner" style="gap:56px;padding:14px 30px 12px;">
                   ${cuCtlHTML({ onclick: o.declineAction, icon: 'phoneHangup', label: 'Decline', end: true })}
                   ${cuCtlHTML({ onclick: o.acceptAction, icon: o.acceptIcon, label: o.acceptLabel, accept: true })}
@@ -7657,7 +7764,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else {
             ctls.push(cuCtlHTML({ onclick: 'openAddToCall()', icon: 'personPlus', label: 'Add' }));
           }
-          ctls.push(cuCtlHTML({ onclick: 'endCall()', icon: 'phoneHangup', label: isMeetingCall ? 'Leave' : 'End', end: true, title: isMeetingCall ? 'Leave meeting' : 'End call' }));
+          ctls.push(cuCtlHTML({ onclick: 'endCall()', icon: 'phoneHangup', label: isMeetingCall ? 'Leave meeting' : 'End call', end: true, title: isMeetingCall ? 'Leave meeting' : 'End call' }));
           return `<div class="cu-bar-inner">${ctls.join('')}</div>`;
         }
 
@@ -9055,10 +9162,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const sameSite = u.origin === window.location.origin;
             if (!sameSite) return true;
             const q = u.searchParams;
-            const post = q.get('post'), meeting = q.get('meeting'), collab = q.get('joinCollab'), lecture = q.get('joinLecture'), glimpse = q.get('glimpse');
-            if (!(post || meeting || collab || lecture || glimpse)) return true;
+            let post = q.get('post'), meeting = q.get('meeting'), collab = q.get('joinCollab'), lecture = q.get('joinLecture'), glimpse = q.get('glimpse');
+            const joinClass = q.get('joinClass'), course = q.get('course'), challenge = q.get('joinChallenge');
+            // Shared post and profile links are /p/<id> and /u/<username>
+            let uname = null;
+            const pm = /^\/p\/([^/]+)\/?$/.exec(u.pathname); if (pm && !post) post = decodeURIComponent(pm[1]);
+            const um = /^\/u\/([^/]+)\/?$/.exec(u.pathname); if (um) uname = decodeURIComponent(um[1]);
+            if (!(post || meeting || collab || lecture || glimpse || joinClass || course || challenge || uname)) return true;
             ev.preventDefault();
-            if (post) openPostById(isNaN(Number(post)) ? post : Number(post));
+            if (uname) { history.replaceState(null, '', window.location.pathname + '?u=' + encodeURIComponent(uname)); if (typeof checkPendingProfileLink === 'function') checkPendingProfileLink(); }
+            else if (joinClass && typeof openClassJoinWithCode === 'function') openClassJoinWithCode(joinClass);
+            else if (course && typeof openCourseById === 'function') openCourseById(course);
+            else if (challenge && typeof joinChallengeByCode === 'function') { joinChallengeByCode(String(challenge).trim().toUpperCase()); }
+            else if (post) openPostById(isNaN(Number(post)) ? post : Number(post));
             else if (meeting) openMeetingByCode(meeting);
             else if (collab) { history.replaceState(null, '', window.location.pathname + '?joinCollab=' + encodeURIComponent(collab)); checkPendingCollabLinkJoin(); }
             else if (lecture) { history.replaceState(null, '', window.location.pathname + '?joinLecture=' + encodeURIComponent(lecture)); if (typeof checkPendingLectureLinkJoin === 'function') checkPendingLectureLinkJoin(); }

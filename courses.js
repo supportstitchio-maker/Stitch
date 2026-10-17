@@ -2588,8 +2588,9 @@ try {
         // ---- Course page for people who have not enrolled yet ----
         function shareCourseLink(id){
           const c = allCourses.find(x => x.id === id); if (!c) return;
-          const url = location.origin + '/';
+          const url = location.origin + location.pathname + '?course=' + encodeURIComponent(id);
           if (navigator.share) { navigator.share({ title: c.title, text: c.title + ' on Stitch', url }).catch(() => {}); }
+          else if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(() => openAppAlertModal('Course link copied!')).catch(() => openAppAlertModal('Course link: ' + url)); }
           else { openAppAlertModal('Course link: ' + url); }
         }
         function courseDiscoverHTML(c, total){
@@ -8032,7 +8033,7 @@ try {
             cam: { id: 'lecture-cam-btn', onclick: "toggleLectureControl('camOff')", icon: st.camOff ? 'cameraOff' : 'video', label: st.camOff ? 'Start video' : 'Camera', on: !!st.camOff },
             hand: { id: 'lecture-hand-btn', onclick: 'toggleLectureHand()', icon: 'handRaised', label: st.handRaised ? 'Lower' : 'Raise', on: !!st.handRaised, title: 'Raise hand' },
             more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!lectureMoreSheetOpen },
-            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End session' : 'Leave' },
+            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End lecture' : 'Leave lecture', end: true, title: isTeacher ? 'End session' : 'Leave' },
           };
         }
 
@@ -11152,7 +11153,7 @@ try {
 
         function classInviteLink(){
           const cls = myClasses.find(c => c.id === currentClassId);
-          return 'https://stitch.app/join/' + (cls ? cls.code : '');
+          return window.location.origin + window.location.pathname + '?joinClass=' + encodeURIComponent(cls ? cls.code : '');
         }
 
         function copyClassInviteLink(){
@@ -11171,6 +11172,46 @@ try {
           } else {
             openAppAlertModal('Invite link: ' + link);
           }
+        }
+
+        // ---- Shared class link (?joinClass=CODE): opens Join a Space with the code filled in ----
+        function checkPendingClassLink(){
+          let code = null;
+          try { code = new URLSearchParams(window.location.search || '').get('joinClass'); } catch (e) {}
+          if (!code) return;
+          history.replaceState(null, '', window.location.pathname);
+          openClassJoinWithCode(code);
+        }
+        function openClassJoinWithCode(code){
+          const clean = String(code || '').trim().toUpperCase().slice(0, 24);
+          if (!clean) return;
+          if (typeof openJoinClassroom === 'function') openJoinClassroom();
+          let tries = 0;
+          const t = setInterval(() => {
+            tries++;
+            const el = document.getElementById('join-code-input');
+            if (el) { el.value = clean; clearInterval(t); try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {} }
+            else if (tries > 20) clearInterval(t);
+          }, 150);
+        }
+
+        // ---- Shared course link (?course=ID): opens the course page once courses have loaded ----
+        function checkPendingCourseLink(){
+          let id = null;
+          try { id = new URLSearchParams(window.location.search || '').get('course'); } catch (e) {}
+          if (!id) return;
+          history.replaceState(null, '', window.location.pathname);
+          openCourseById(id);
+        }
+        function openCourseById(id){
+          if (!id) return;
+          let tries = 0;
+          const t = setInterval(() => {
+            tries++;
+            const c = (typeof allCourses !== 'undefined') ? allCourses.find(x => String(x.id) === String(id)) : null;
+            if (c) { clearInterval(t); openCourseDetail(c.id); }
+            else if (tries > 40) { clearInterval(t); if (typeof openAppAlertModal === 'function') openAppAlertModal("This course isn't available anymore."); }
+          }, 500);
         }
 
         async function recordClassInviteRemote(classId, email){
