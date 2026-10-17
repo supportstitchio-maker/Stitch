@@ -2419,6 +2419,13 @@ let userPoints = 0;
         // middle of the content area, between the left menu and right panel.
         function placeToastInContent(el){
           if (!el) return;
+          // Several top notices at once stack neatly instead of sitting on top of each other
+          try {
+            el.classList.add('app-toast');
+            let off = 0;
+            document.querySelectorAll('.app-toast').forEach(o => { if (o !== el && o.isConnected) off = Math.max(off, o.getBoundingClientRect().bottom); });
+            if (off > 0) el.style.top = Math.round(off + 8) + 'px';
+          } catch (e) {}
           const place = () => {
             if (!el.isConnected) { window.removeEventListener('resize', place); if (el.__toastRO) { try { el.__toastRO.disconnect(); } catch (e) {} } return; }
             if (window.innerWidth < 1024) { el.style.left = ''; el.style.width = 'calc(100% - 24px)'; el.style.maxWidth = 'none'; return; }   // phones: stretch to the side margins

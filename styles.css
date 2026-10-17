@@ -4954,3 +4954,29 @@ body.dark-mode .sp-cta:active, body.dark-mode .sp-still:active{ border-color:#1e
 body.dark-mode .sp-still b{ color:#fff; } body.dark-mode .sp-still span span{ color:#9a9a9a; opacity:1; }
 body.dark-mode .sp-go{ background:#2a2a2a; color:#60a5fa; }
 body.dark-mode .sp-ok{ box-shadow:none; }
+
+/* Sidebar theme button: sun in light mode, moon in dark mode; sits beside the collapse arrow */
+#desktop-nav .dnav-theme{ margin-left:auto; margin-right:8px; }
+#desktop-nav .dnav-theme .dn-moon{ display:none; }
+body.dark-mode #desktop-nav .dnav-theme .dn-sun{ display:none; }
+body.dark-mode #desktop-nav .dnav-theme .dn-moon{ display:block; }
+#desktop-nav .dside-brand{ gap:0; }
+html.dnav-collapsed #desktop-nav .dnav-theme{ margin:0; }
+/* Notifications and Notice Board: content centred and kept to a readable width, following the sidebar and side panel */
+.notif-wrap{ max-width:42rem; margin-left:auto; margin-right:auto; width:100%; }
+/* Notification pop-up on desktop: centred over the notification panel, so it follows the sidebar and side panel */
+@media (min-width:1024px){
+  #notifDetailModal{ left:var(--nav-width,0px) !important; right:0 !important; transition:left .18s ease, right .18s ease; }
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #notifDetailModal{ right:var(--rp-width,480px) !important; }
+  #notifDetailModal > div{ padding:22px 24px 24px !important; }
+  #notifDetailModal > div .font-bold.text-base{ font-size:17px; }
+  #notifDetailModal > div button.w-full{ margin-top:20px; }
+}
+
+/* Top notices (new message, link copied, reminders): one steady look, slide in from the top, stacked when several */
+.app-toast{ border-radius:18px !important; border:1px solid #e6ecf5; box-shadow:0 12px 32px rgba(15,23,42,.16) !important; animation:appToastIn .22s ease-out both; text-align:center; z-index:80 !important; }
+@keyframes appToastIn{ from{ opacity:0; transform:translateX(-50%) translateY(-14px); } to{ opacity:1; transform:translateX(-50%) translateY(0); } }
+body.dark-mode .app-toast{ background:#1e1e1e !important; border-color:#2b2b2b; box-shadow:0 12px 32px rgba(0,0,0,.55) !important; }
+body.dark-mode .app-toast .text-gray-500{ color:#a1a1aa !important; }
+body.dark-mode .app-toast [class*="text-[#"]{ color:#fff; }
+@media (min-width:1024px){ .app-toast{ min-width:260px; } }

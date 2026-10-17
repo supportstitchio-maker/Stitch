@@ -3362,7 +3362,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
                 ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
-                <div class="px-5 pt-4 pb-8">
+                <div class="px-5 pt-4 pb-8 notif-wrap">
                   ${notifFilterChipsHTML()}
                   <div class="notif-list">${listHTML}</div>
                 </div>
@@ -3776,7 +3776,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
               ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left', sheetToggle: 'toggleNoticeBoardMenu' }), { hideBack: true, shortDashes: true, titleLeft: true, titleSize: 'text-xl', menuLeft: true, flipMenuIcon: true })}
-              <div class="p-5">
+              <div class="p-5 notif-wrap">
                 ${stitchCard}
                 <div class="space-y-2">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
               </div>

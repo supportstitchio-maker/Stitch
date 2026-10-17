@@ -23,9 +23,11 @@ let appPrefs = {
           if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           try { localStorage.setItem('stitchTheme', appPrefs.theme); } catch (e) {}
           applyThemeColorMeta();
-          rerenderOverlayKeepScroll('profileMenu');
+          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'profileMenu') rerenderOverlayKeepScroll('profileMenu');
           queueSaveUserState();
         }
+        // Sidebar sun/moon button: flips light/dark right where you are
+        function toggleThemeQuick(){ toggleTheme(); }
 
         // Re-draws a settings screen after a toggle without jumping back to the top
         function rerenderOverlayKeepScroll(kind){
@@ -417,7 +419,7 @@ let appPrefs = {
                 <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-qa"><span class="sp-qa-ic sp-b1">${Icon('comment','w-5 h-5')}</span><b>Contact support</b><span>We reply within 24 hours</span></button>
                 <button onclick="openOverlayFrom('helpCenter','reportIssue')" class="sp-qa"><span class="sp-qa-ic sp-b2">${Icon('flag','w-5 h-5')}</span><b>Report an issue</b><span>Bugs, safety, content</span></button>
               </div>
-              <div class="sp-chips">${cats.map(c => `<button onclick="setHelpCategory(this.dataset.c)" data-c="${escapeHtml(c)}" class="sp-chip${helpCategory === c ? ' on' : ''}">${escapeHtml(c)}</button>`).join('')}</div>
+              <div class="sp-chips">${cats.map(c => `<button onclick="setHelpCategory(this.dataset.c)" data-c="${escapeHtml(c)}" class="outline-pill sp-chip${helpCategory === c ? ' on' : ''}">${escapeHtml(c)}</button>`).join('')}</div>
               <div id="help-results">${helpResultsHTML()}</div>
               <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-still">
                 <span><b>Still stuck?</b><span>Talk to a real person</span></span>
@@ -561,7 +563,7 @@ let appPrefs = {
                 <span class="sp-hero-t"><b>support.stitch.io@gmail.com</b><span>We usually reply within 24 hours</span></span>
               </div>
               <div class="sp-lab" style="margin-top:4px;">What is it about?</div>
-              <div class="sp-chips" id="contact-topics" style="margin:0;">${contactTopics.map(t => `<button onclick="setContactTopic(this.dataset.t)" data-t="${t}" class="sp-chip${d.topic === t ? ' on' : ''}">${t}</button>`).join('')}</div>
+              <div class="sp-chips" id="contact-topics" style="margin:0;">${contactTopics.map(t => `<button onclick="setContactTopic(this.dataset.t)" data-t="${t}" class="outline-pill sp-chip${d.topic === t ? ' on' : ''}">${t}</button>`).join('')}</div>
               <div class="sp-lab">Name</div>
               <input type="text" value="${escapeHtml(d.name)}" oninput="updateContactField('name', this.value)" placeholder="Your name" class="sp-fld" autocomplete="name">
               <div class="sp-lab">Email for our reply</div>
@@ -647,12 +649,12 @@ let appPrefs = {
               <div class="sp-lab" style="margin-top:0;">What kind of issue?</div>
               <div class="sp-grid2" id="report-types">
                 ${reportIssueTypes.map(t => `
-                  <button onclick="setReportIssueType(this.dataset.t)" data-t="${t.id}" class="sp-tp${d.type === t.id ? ' on' : ''}">
+                  <button onclick="setReportIssueType(this.dataset.t)" data-t="${t.id}" class="outline-pill sp-tp${d.type === t.id ? ' on' : ''}">
                     <i>${Icon(t.icon,'w-4 h-4')}</i><b>${t.title}</b><small>${t.sub}</small>
                   </button>`).join('')}
               </div>
               <div class="sp-lab">Where did it happen? (optional)</div>
-              <div class="sp-chips" id="report-areas" style="margin:0;">${reportAreas.map(a => `<button onclick="setReportArea(this.dataset.a)" data-a="${a}" class="sp-chip${d.area === a ? ' on' : ''}">${a}</button>`).join('')}</div>
+              <div class="sp-chips" id="report-areas" style="margin:0;">${reportAreas.map(a => `<button onclick="setReportArea(this.dataset.a)" data-a="${a}" class="outline-pill sp-chip${d.area === a ? ' on' : ''}">${a}</button>`).join('')}</div>
               <div class="sp-lab">What happened?</div>
               <textarea oninput="updateReportIssueField('description', this.value)" placeholder="What you did, what you expected, and what you saw instead..." rows="5" class="sp-fld" style="resize:none;">${escapeHtml(d.description)}</textarea>
               <div class="sp-lab">Email for follow-up (optional)</div>

@@ -1833,23 +1833,24 @@
     <div class="dside-brand" onclick="switchTab(0)">
       <img class="dside-wordmark" src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:62px;width:auto;object-fit:contain;">
       <img class="dside-mini" src="assets/landing-1.png" alt="Stitch">
+      <button type="button" id="dnav-theme" class="dnav-toggle dnav-theme" onclick="event.stopPropagation();toggleThemeQuick()" title="Switch theme" aria-label="Switch theme"><svg class="dn-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="dn-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg></button>
       <button type="button" id="dnav-toggle" class="dnav-toggle" onclick="event.stopPropagation();toggleDesktopNav()" title="Collapse menu" aria-label="Collapse menu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></button>
     </div>
     <div id="dnav-main-list">
     <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${DNAV_WORK_ICON}<span class="dside-label">Workspace</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <div class="dside-group-label">Activity</div>
     <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
+    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dnav-settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" id="dnav-create" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
     <div class="dside-divider"></div>
     <div id="dnav-4" class="dnav-item dnav-profile" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
       <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span>
       <span class="dside-label dnav-pinfo"><b id="dnav-pname">${escapeHtml(dnavDisplayName())}</b><small>View profile</small></span>
-      <button type="button" class="dnav-gear dside-label" onclick="event.stopPropagation();openRightPanel('profile');openOverlay('profileMenu')" title="Settings" aria-label="Settings">${DNAV_GEAR_ICON}</button>
     </div>
     </div>
     <!-- Workspace sub-nav: only shown (in place of the main tabs above)
