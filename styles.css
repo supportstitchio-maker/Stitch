@@ -4433,11 +4433,10 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
     position:fixed; top:calc(env(safe-area-inset-top, 0px) + 20px); left:54px; right:20px; z-index:6; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ padding-top:0; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head{
-    position:sticky; top:calc(-1 * (env(safe-area-inset-top, 0px) + 20px)); z-index:5;
+    position:static; z-index:auto;
     margin:calc(-1 * (env(safe-area-inset-top, 0px) + 20px)) -20px 0; width:auto;
     padding:calc(env(safe-area-inset-top, 0px) + 20px + 50px) 20px 14px;
-    background:rgba(255,255,255,.97); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
-  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head{ background:rgba(11,14,19,.97); }
+    background:transparent; }
 }
 
 /* Match with CV / Apply to post / Post an Opportunity: header, progress and page title stay put */
@@ -4601,3 +4600,130 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
 @media (min-width:1440px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ width:min(780px, 100vw); }
 }
+
+/* Onboarding stays put: no re-centring when content grows, no shift when the scrollbar appears */
+@media (min-width:1024px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ justify-content:flex-start !important; padding-top:max(120px, 16vh) !important; }
+}
+#auth-gate .pa-flow, #auth-gate #auth-poster-app-form-container{ overflow-anchor:none; }
+
+/* Phones: the white strip covers only Back and the progress bar; everything else scrolls under it */
+@media (max-width:1023px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    display:block !important; position:fixed; top:0; left:0; right:0; transform:none; width:auto;
+    height:calc(env(safe-area-inset-top, 0px) + 58px); z-index:6; background:#fff; border:0; box-shadow:none; }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ background:#0b0e13; }
+}
+
+/* ---- Desktop side nav, rebuilt: one white column, grouped, Create as the main action ---- */
+html.dnav-collapsed{ --nav-width:76px; }
+#desktop-nav{
+  background:#fff !important; box-shadow:none !important; border-right:1px solid #e8edf5 !important;
+  padding:18px 14px; gap:4px; backdrop-filter:none; -webkit-backdrop-filter:none; transition:width .18s ease; }
+#desktop-nav .dside-brand{ position:relative; padding:0 4px 14px; margin-bottom:12px; border-bottom:1px solid #eef1f6; justify-content:space-between; }
+#desktop-nav .dside-brand .dside-wordmark{ height:46px !important; }
+#desktop-nav .dside-mini{ display:none; height:34px; width:auto; }
+.dnav-toggle{ width:30px; height:30px; border-radius:50%; border:1px solid #e3e9f3; background:#fff; color:#64748b; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.dnav-toggle:hover{ background:#f1f5fb; }
+html.dnav-collapsed .dnav-toggle svg{ transform:rotate(180deg); }
+.dside-group-label{ font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#9ca3af; padding:6px 14px 4px; }
+#desktop-nav .dnav-item{ height:46px; padding:0 14px; border-radius:14px !important; font-size:15px; font-weight:600; color:#334155; gap:14px; }
+#desktop-nav .dnav-item .dnav-icon{ width:22px; height:22px; }
+#desktop-nav .dnav-item.dnav-active, #desktop-nav .dnav-item.dnav-pill.dnav-active{
+  background:#e8f2ff; color:#1e90ff; font-weight:700; box-shadow:none; }
+#desktop-nav .dnav-item.dnav-active::before{
+  content:""; position:absolute; left:-14px; top:10px; bottom:10px; width:4px; border-radius:0 4px 4px 0; background:linear-gradient(180deg,#1e90ff,#4169e1); }
+#desktop-nav .dnav-item.dnav-active svg.dnav-icon:not(.dnav-avatar){ fill:rgba(30,144,255,.16); }
+#desktop-nav .dside-divider{ margin:8px 4px; background:#eef1f6; }
+/* Create: the one filled button */
+#desktop-nav #dnav-create{
+  height:50px; margin:10px 0 2px; border-radius:25px !important; justify-content:center; gap:10px;
+  background:linear-gradient(135deg,#1e90ff,#4169e1) !important; color:#fff !important; font-weight:800; font-size:15.5px;
+  box-shadow:0 10px 22px -8px rgba(30,144,255,.65); }
+#desktop-nav #dnav-create .dnav-icon{ width:20px; height:20px; color:#fff; }
+#desktop-nav #dnav-create .plus-morph-icon{ transform:none; }
+#desktop-nav #dnav-create:hover{ filter:brightness(1.05); }
+/* Unread counts as small pills */
+#dnav-msg-badge, #dnav-notif-badge, #dcnav-notif-badge{
+  margin-left:auto !important; display:inline-flex !important; align-items:center; justify-content:center;
+  min-width:22px; height:22px !important; padding:0 6px !important; border-radius:11px !important;
+  background:#1e90ff !important; color:#fff !important; font-size:12px !important; font-weight:800 !important; }
+/* Collapsed: icons only */
+html.dnav-collapsed #desktop-nav{ padding:18px 10px; align-items:center; }
+html.dnav-collapsed #desktop-nav .dside-brand{ flex-direction:column; gap:12px; border-bottom:0; padding-bottom:6px; }
+html.dnav-collapsed #desktop-nav .dside-wordmark{ display:none; }
+html.dnav-collapsed #desktop-nav .dside-mini{ display:block; }
+html.dnav-collapsed #desktop-nav .dside-label, html.dnav-collapsed #desktop-nav .dside-group-label{ display:none; }
+html.dnav-collapsed #desktop-nav .dnav-item{ width:52px; padding:0; justify-content:center; }
+html.dnav-collapsed #desktop-nav #dnav-create{ width:52px; height:52px; border-radius:50% !important; }
+html.dnav-collapsed #desktop-nav .dnav-item.dnav-active::before{ left:-10px; }
+html.dnav-collapsed #dnav-msg-badge, html.dnav-collapsed #dnav-notif-badge, html.dnav-collapsed #dcnav-notif-badge{
+  position:absolute !important; top:4px; right:2px; margin:0 !important; min-width:18px; height:18px !important; font-size:10.5px !important; padding:0 4px !important; }
+/* Dark mode */
+body.dark-mode #desktop-nav{ background:#0b0e13 !important; border-right-color:rgba(255,255,255,.08) !important; }
+body.dark-mode #desktop-nav .dside-brand, body.dark-mode #desktop-nav .dside-divider{ border-color:rgba(255,255,255,.08) !important; background-color:transparent; }
+body.dark-mode #desktop-nav .dside-divider{ background:rgba(255,255,255,.08) !important; }
+body.dark-mode #desktop-nav .dnav-item{ color:#e5e7eb !important; }
+body.dark-mode #desktop-nav .dnav-item.dnav-active{ background:rgba(30,144,255,.18) !important; color:#fff !important; }
+body.dark-mode #desktop-nav #dnav-create{ color:#fff !important; }
+body.dark-mode .dnav-toggle{ background:#161a22; border-color:rgba(255,255,255,.12); color:#cbd5e1; }
+
+/* ---- Desktop sizing: shapes carried over from the phone layout get desktop measurements ---- */
+@media (min-width:1024px){
+  /* Search bars */
+  #screen button[onclick="activateCareerSearch()"],
+  #screen div:has(> #career-search-input){ height:44px !important; padding-top:0 !important; padding-bottom:0 !important; max-width:520px; }
+  /* Profile: compact buttons that fit their text */
+  #screen button[onclick="openEditProfileModal()"], #screen button[onclick="openOverlay('profileQR')"]{
+    flex:0 0 auto !important; padding:9px 26px !important; border-radius:12px !important; }
+  #profile-admin-btn-el > div{ display:flex; flex-direction:row; }
+  #profile-admin-btn-el button{ width:auto !important; padding:9px 22px !important; border-radius:12px !important; }
+  /* Create post */
+  #media-preview > div[style*="height:14rem"]{ height:11rem !important; max-width:none; }
+  #new-post-text{ min-height:5.25rem !important; }
+  #compose-tag-row{ padding:10px 16px !important; border-radius:16px !important; max-width:420px; }
+  #create-post-footer{ display:flex; justify-content:flex-end; }
+  #post-submit-btn{ width:auto !important; min-width:150px; padding:10px 44px !important; margin:0 !important; }
+  /* Main call-to-action pills in panels: a normal button, not an edge-to-edge bar */
+  #overlay .pill-cta.w-full:not(#post-submit-btn){ width:auto !important; min-width:200px; padding:10px 40px !important; display:block; margin-left:auto; margin-right:auto; }
+  /* Settings rows */
+  .stg-row{ padding-top:10px !important; padding-bottom:10px !important; min-height:0 !important; }
+  /* Workspace placeholders */
+  .sk-card[style*="height:104px"]{ height:78px !important; border-radius:18px; }
+  .sk-card[style*="height:150px"]{ height:112px !important; border-radius:18px; }
+  .sk-card[style*="height:46px"]{ height:40px !important; }
+  /* Analytics */
+  .stat-hero-pill{ padding:16px 20px !important; border-radius:22px !important; }
+  .myact-dl-pill{ width:max-content; min-width:240px; margin-left:auto; margin-right:auto; padding:11px 28px; font-size:14.5px; }
+}
+
+/* Onboarding top strip: white that vanishes downward instead of a solid block */
+@media (min-width:1024px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    height:120px; background:linear-gradient(to bottom,#fff 0,#fff 45%,rgba(255,255,255,.88) 62%,rgba(255,255,255,0) 100%); }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    background:linear-gradient(to bottom,#0b0e13 0,#0b0e13 45%,rgba(11,14,19,.88) 62%,rgba(11,14,19,0) 100%); }
+}
+@media (max-width:1023px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    height:calc(env(safe-area-inset-top, 0px) + 104px);
+    background:linear-gradient(to bottom,#fff 0,#fff 45%,rgba(255,255,255,.88) 62%,rgba(255,255,255,0) 100%); }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    background:linear-gradient(to bottom,#0b0e13 0,#0b0e13 45%,rgba(11,14,19,.88) 62%,rgba(11,14,19,0) 100%); }
+}
+
+/* Static page headers (Match with CV, Post an opportunity, overlay pages): solid at the top, vanishing downward */
+#overlay .pa-flow .pa-sticky, #overlay .ov-sticky-head, #overlay .ov-sticky-wrap, #overlay div:has(> .ov-sticky-head:only-child){
+  background:transparent !important; }
+#overlay .pa-flow .pa-sticky::before, #overlay .ov-sticky-head::before, #overlay .ov-sticky-wrap::before, #overlay div:has(> .ov-sticky-head:only-child)::before{
+  content:""; position:absolute; left:0; right:0; top:0; bottom:-30px; z-index:-1; pointer-events:none;
+  background:linear-gradient(to bottom,#f9fafb 0,#f9fafb 70%,rgba(249,250,251,.85) 82%,rgba(249,250,251,0) 100%); }
+#overlay div:has(> .ov-sticky-head:only-child) > .ov-sticky-head::before{ display:none; }
+body.dark-mode #overlay .pa-flow .pa-sticky::before, body.dark-mode #overlay .ov-sticky-head::before, body.dark-mode #overlay .ov-sticky-wrap::before, body.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before,
+html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov-sticky-head::before, html.dark-mode #overlay .ov-sticky-wrap::before, html.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before{
+  background:linear-gradient(to bottom,#181818 0,#181818 70%,rgba(24,24,24,.85) 82%,rgba(24,24,24,0) 100%); }
+
+/* Match with CV, Post an opportunity and other overlay page headers: white that vanishes downward */
+#overlay .pa-flow .pa-sticky::before, #overlay .ov-sticky-head::before, #overlay .ov-sticky-wrap::before, #overlay div:has(> .ov-sticky-head:only-child)::before{
+  bottom:-44px;
+  background:linear-gradient(to bottom,#fff 0,#fff 62%,rgba(255,255,255,.88) 78%,rgba(255,255,255,0) 100%); }
