@@ -4984,3 +4984,4 @@ body.dark-mode .app-toast [class*="text-[#"]{ color:#fff; }
 /* Theme button now sits at the right of the profile card, beside the name */
 #desktop-nav .dnav-profile .dnav-theme{ margin:0 4px 0 auto; }
 html.dnav-collapsed #desktop-nav .dnav-profile .dnav-theme{ display:none; }
+html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
