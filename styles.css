@@ -4590,5 +4590,14 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
   #auth-gate.auth-verify-mode .auth-back{ top:14px; }
 }
 
-/* No top bar: Back floats and the progress bar sits on the white panel */
-#auth-gate .auth-topbar, #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ display:none !important; }
+/* Back floats; the progress bar sits on a white band over the top of the panel only (desktop), so scrolling text vanishes beneath it */
+#auth-gate .auth-topbar{ display:none !important; }
+@media (min-width:1024px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
+    display:block !important; position:fixed; top:0; left:50%; transform:translateX(-50%);
+    width:min(680px, 100vw); height:66px; z-index:5; background:#fff; border:0; box-shadow:none; }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ background:#0b0e13; }
+}
+@media (min-width:1440px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ width:min(780px, 100vw); }
+}
