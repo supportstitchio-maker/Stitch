@@ -690,7 +690,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const pbStyle = opts.pb ? ` style="padding-bottom:${opts.pb};"` : '';
           // Back-only headers are always left-aligned (opts.right / opts.center are ignored)
           return `
-            <div class="flex-shrink-0 w-full"${padStyle}>
+            <div class="flex-shrink-0 w-full ov-sticky-head"${padStyle}>
               <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center gap-4"${pbStyle}>
                 <button onclick="${backAction || 'overlayGoBack()'}">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
                 <div class="font-semibold ${titleSize} font-display grad-text${titleClass}">${title}</div>
@@ -879,23 +879,28 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div id="create-post-scroll" class="p-5 flex-1 overflow-y-auto no-scrollbar">
               <div id="media-preview" class="mb-4">${mediaPreviewStripHTML()}</div>
               <input type="file" id="media-input" accept="image/*,video/*" multiple class="hidden" onchange="handleMediaSelect(event)">
-              <div class="relative mb-2">
-                <textarea id="new-post-text" oninput="onComposeTextInput()" onfocus="composeAutoGrow(this)" rows="3" class="w-full p-4 border border-gray-200 rounded-2xl text-base" style="min-height:6rem;resize:none;overflow:hidden;display:block;" placeholder="Write a caption... Type @ to tag someone">${escapeHtml(captionDraft || '')}</textarea>
+              <input type="file" id="media-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleMediaSelect(event)">
+              <div class="relative" style="margin-bottom:14px;">
+                <textarea id="new-post-text" oninput="onComposeTextInput()" onfocus="composeAutoGrow(this)" rows="3" class="w-full p-4 border border-gray-200 rounded-2xl text-base" style="min-height:6rem;resize:none;overflow:hidden;display:block;background:#fff;" placeholder="Write a caption... Type @ to tag someone">${escapeHtml(captionDraft || '')}</textarea>
               </div>
-              <button type="button" onclick="openTagPeoplePicker()" class="text-xs font-semibold flex items-center gap-1.5 mb-2" style="color:${ROYAL}">${Icon('users','w-4 h-4')} Tag people</button>
-              <div id="compose-tagged-chips" class="flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}">${composeTaggedChipsHTML()}</div>
+              <button type="button" id="compose-tag-row" onclick="openTagPeoplePicker()" class="w-full text-left" style="display:flex;align-items:center;gap:12px;background:#fff;border-radius:22px;padding:13px 16px;box-shadow:0 4px 18px rgba(15,23,42,0.08);border:1px solid rgba(0,0,0,0.04);">${composeTagRowInnerHTML()}</button>
             </div>
             <div id="create-post-footer" class="px-4 pt-4 border-t flex-shrink-0" style="padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));">
-              <button id="post-submit-btn" onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);transition:transform .12s ease, opacity .15s ease;">Post</button>
+              <button id="post-submit-btn" onclick="submitPost()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="${postButtonStyle(hasMedia)}transition:transform .12s ease, opacity .15s ease;">Post</button>
             </div>`;
         }
 
         function mediaPreviewStripHTML(){
           if (!selectedMediaItems.length) {
             return `
-              <button type="button" onclick="pickMedia('image/*,video/*')" class="w-full h-48 bg-gray-100 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400">
-                ${Icon('upload','w-8 h-8')}<div class="text-sm">(tap to upload a post)</div>
-              </button>`;
+              <div class="w-full rounded-2xl flex flex-col items-center justify-center" style="height:14rem;gap:12px;border:2px dashed rgba(65,105,225,0.35);background:rgba(65,105,225,0.05);">
+                <button type="button" onclick="pickMedia('image/*,video/*')" aria-label="Add a photo or video" class="flex items-center justify-center text-white" style="width:56px;height:56px;border-radius:50%;background:${ROYAL};">${Icon('upload','w-7 h-7')}</button>
+                <div class="font-semibold" style="color:#111827;font-size:16px;">Add a photo or video</div>
+                <div style="display:flex;gap:10px;">
+                  <button type="button" onclick="pickMedia('image/*,video/*')" class="text-xs font-bold text-white" style="background:${ROYAL};border-radius:999px;padding:9px 16px;">Gallery</button>
+                  <button type="button" onclick="pickCameraMedia()" class="text-xs font-bold" style="background:#fff;color:#374151;border-radius:999px;padding:9px 16px;">Camera</button>
+                </div>
+              </div>`;
           }
           return `
             <div class="relative">
@@ -906,6 +911,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                       ? `<video src="${item.url}" controls disablePictureInPicture controlsList="nodownload noplaybackrate nofullscreen noremoteplayback" class="w-full h-auto max-h-64" style="object-fit:contain;"></video>`
                       : `<img src="${item.url}" class="w-full h-auto max-h-64" style="object-fit:contain;">`}
                     <button type="button" onclick="event.stopPropagation(); removeSelectedMediaItem(${i})" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.55);">${IconBold('close','w-3.5 h-3.5')}</button>
+                    ${item.type === 'image' ? `<button type="button" onclick="event.stopPropagation(); editSelectedPhoto(${i})" class="absolute text-xs font-bold text-white" style="left:10px;bottom:10px;background:rgba(15,23,42,0.72);border-radius:999px;padding:7px 13px;">Edit crop</button>` : ''}
                   </div>`).join('')}
                 <button type="button" onclick="pickMedia('image/*,video/*')" class="flex-shrink-0 flex flex-col items-center justify-center gap-1 text-gray-400 bg-gray-100 rounded-2xl" style="scroll-snap-align:center;width:88px;max-height:16rem;">
                   ${Icon('plus','w-6 h-6')}<span class="text-[11px]">Add more</span>
@@ -916,6 +922,26 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                   ${selectedMediaItems.map(() => `<span class="rounded-full" style="width:5px;height:5px;background:rgba(10,37,64,0.25);"></span>`).join('')}
                 </div>` : ''}
             </div>`;
+        }
+
+        function pickCameraMedia(){
+          const input = document.getElementById('media-camera-input');
+          if (input) input.click();
+        }
+
+        function editSelectedPhoto(index){
+          const ta = document.getElementById('new-post-text');
+          if (ta) composeCaptionDraft = ta.value;
+          mediaEditQueue = [index];
+          mediaEditIndexInQueue = 0;
+          openMediaEditorStep();
+        }
+
+        // Post stays grey until there is a photo or video, since the feed only shows posts with media
+        function postButtonStyle(hasMedia){
+          return hasMedia
+            ? `background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);`
+            : 'background:#d1d5db;box-shadow:none;';
         }
 
         function pickMedia(accept){
@@ -963,6 +989,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function refreshMediaPreviewStrip(){
           const el = document.getElementById('media-preview');
           if (el) el.innerHTML = mediaPreviewStripHTML();
+          const btn = document.getElementById('post-submit-btn');
+          if (btn && btn.dataset.busy !== '1') btn.setAttribute('style', postButtonStyle(selectedMediaItems.length > 0) + 'transition:transform .12s ease, opacity .15s ease;');
         }
 
         let mediaEditQueue = [];        
@@ -1010,26 +1038,37 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return `
             <div class="flex flex-col h-full bg-black text-white relative">
               <div class="flex items-center justify-between px-4 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-                <button type="button" onclick="deleteCurrentPhotoInEditor()" class="text-sm font-semibold px-2 py-1">Delete</button>
+                <button type="button" onclick="skipMediaEdit()" aria-label="Skip editing" class="px-2 py-1">${IconBold('close','w-5 h-5')}</button>
                 <div class="text-sm font-semibold">${mediaEditQueue.length > 1 ? `Edit photo ${mediaEditIndexInQueue + 1} of ${mediaEditQueue.length}` : 'Edit photo'}</div>
                 <button type="button" onclick="doneMediaEdit()" class="text-sm font-bold px-2 py-1" style="color:#4d9fff;">Done</button>
               </div>
               <div class="flex-1 flex items-center justify-center px-4 min-h-0">
                 <div id="edit-crop-frame" class="relative overflow-hidden bg-gray-900 rounded-lg" style="width:100%;max-width:420px;${mediaEditFrameAspectCss()}touch-action:none;">
+                  <div style="position:absolute;inset:0;z-index:2;pointer-events:none;border:2px solid #fff;border-radius:inherit;background-image:linear-gradient(rgba(255,255,255,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.3) 1px,transparent 1px);background-size:33.333% 33.333%;"></div>
                   <img id="edit-media-img" src="${item.url}" draggable="false" ondragstart="return false;"
                     onload="initMediaEditTransform()"
                     onpointerdown="mediaEditPointerDown(event)"
                     onpointermove="mediaEditPointerMove(event)"
                     onpointerup="mediaEditPointerUp(event)"
                     onpointercancel="mediaEditPointerUp(event)"
-                    style="position:absolute;top:50%;left:50%;user-select:none;-webkit-user-drag:none;cursor:grab;">
+                    style="position:absolute;top:50%;left:50%;max-width:none;max-height:none;user-select:none;-webkit-user-drag:none;cursor:grab;">
                 </div>
               </div>
               <div id="edit-aspect-row" class="flex items-center justify-center gap-2 px-4 pt-4 flex-shrink-0 overflow-x-auto no-scrollbar">${mediaEditAspectRowInner()}</div>
               <input type="file" id="edit-media-add-input" accept="image/*,video/*" multiple class="hidden" onchange="handleEditMediaAddSelect(event)">
-              <div class="px-6 pt-2 flex-shrink-0" style="padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
-                <div class="text-[11px] text-center text-gray-400">Drag the photo to reposition it</div>
+              <div class="px-6 flex-shrink-0" style="padding-top:18px;">
+                <div style="display:flex;align-items:center;gap:12px;color:#cbd5e1;font-weight:700;">
+                  <span>−</span>
+                  <input id="edit-zoom-slider" type="range" min="1" max="3" step="0.01" value="${mediaEditZoom}" oninput="setMediaEditZoom(this.value)" style="flex:1;accent-color:#4d9fff;">
+                  <span>+</span>
+                </div>
+                <div class="text-[11px] text-center text-gray-400" style="margin-top:10px;">Drag the photo to reposition it</div>
+                <div style="display:flex;justify-content:space-between;margin-top:14px;">
+                  <button type="button" onclick="resetMediaEdit()" class="text-xs font-bold" style="background:rgba(255,255,255,0.14);color:#e5e7eb;border-radius:999px;padding:9px 16px;">Reset</button>
+                  <button type="button" onclick="deleteCurrentPhotoInEditor()" class="text-xs font-bold" style="background:rgba(239,68,68,0.18);color:#f87171;border-radius:999px;padding:9px 16px;">Remove photo</button>
+                </div>
               </div>
+              <div style="height:calc(env(safe-area-inset-bottom, 16px) + 16px);flex-shrink:0;"></div>
             </div>`;
         }
 
@@ -1121,10 +1160,25 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           frame.style.height = h + 'px';
         }
 
+        function setMediaEditZoom(v){
+          mediaEditZoom = Math.min(3, Math.max(1, parseFloat(v) || 1));
+          applyMediaEditTransform();
+        }
+
+        function resetMediaEdit(){
+          mediaEditZoom = 1;
+          mediaEditPan = { x: 0, y: 0 };
+          const sl = document.getElementById('edit-zoom-slider');
+          if (sl) sl.value = '1';
+          applyMediaEditTransform();
+        }
+
         function setMediaEditAspect(key){
           mediaEditAspect = key;
           mediaEditZoom = 1;
           mediaEditPan = { x: 0, y: 0 };
+          const zs = document.getElementById('edit-zoom-slider');
+          if (zs) zs.value = '1';
           const row = document.getElementById('edit-aspect-row');
           if (row) row.innerHTML = mediaEditAspectRowInner();
           requestAnimationFrame(() => { fitMediaEditFrame(); applyMediaEditTransform(); });
@@ -1225,18 +1279,28 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function composeTaggedChipsHTML(){
           if (!composeTaggedUsers.length) return '';
           return composeTaggedUsers.map(u => `
-            <span class="inline-flex items-center gap-1 text-xs font-semibold pl-2.5 pr-1.5 py-1 rounded-full" style="background:rgba(65,105,225,0.12);color:${ROYAL};">
-              @${escapeHtml(u.username || u.name)}
-              <button type="button" onclick="removeComposeTag('${escapeForJsAttr(u.id)}')" class="w-4 h-4 flex items-center justify-center rounded-full" style="background:rgba(65,105,225,0.18);">${IconBold('close','w-2.5 h-2.5')}</button>
+            <span class="text-xs font-semibold" style="display:inline-flex;align-items:center;gap:12px;padding:8px 9px 8px 16px;border-radius:999px;background:rgba(65,105,225,0.12);color:${ROYAL};">
+              ${escapeHtml(u.name || u.username)}
+              <button type="button" onclick="removeComposeTag('${escapeForJsAttr(u.id)}')" aria-label="Remove tag" class="flex items-center justify-center rounded-full" style="width:20px;height:20px;background:${ROYAL};color:#fff;">${IconBold('close','w-2.5 h-2.5')}</button>
             </span>`).join('');
         }
 
-        function refreshComposeTagChips(){
-          const el = document.getElementById('compose-tagged-chips');
-          if (el) {
-            el.innerHTML = composeTaggedChipsHTML();
-            el.className = `flex flex-wrap gap-2 ${composeTaggedUsers.length ? 'mb-3' : ''}`;
+        function composeTagRowInnerHTML(){
+          const chev = `<span style="color:#9ca3af;font-size:20px;line-height:1;">›</span>`;
+          if (!composeTaggedUsers.length) {
+            return `<span style="color:${ROYAL};display:flex;">${Icon('users','w-5 h-5')}</span><span class="flex-1 font-semibold" style="font-size:15px;color:#111827;">Tag people</span>${chev}`;
           }
+          const avs = composeTaggedUsers.slice(0, 3).map((u, i) => {
+            const person = (typeof discoverPeople !== 'undefined' && discoverPeople.find(x => x.id === u.id)) || {};
+            const inner = person.photo ? `<img src="${person.photo}" class="w-full h-full object-cover">` : escapeHtml((u.name || u.username || '?').charAt(0).toUpperCase());
+            return `<div class="flex items-center justify-center overflow-hidden text-xs font-bold text-white" style="width:34px;height:34px;border-radius:50%;background:${ROYAL};border:2px solid #fff;margin-left:${i ? -10 : 0}px;">${inner}</div>`;
+          }).join('');
+          return `<div style="display:flex;">${avs}</div><div class="flex-1 min-w-0"><div class="font-semibold" style="font-size:15px;color:#111827;">Tag people</div><div class="truncate" style="font-size:12px;color:#6b7280;">${composeTaggedUsers.map(u => escapeHtml(u.name || u.username)).join(', ')}</div></div>${chev}`;
+        }
+
+        function refreshComposeTagChips(){
+          const el = document.getElementById('compose-tag-row');
+          if (el) el.innerHTML = composeTagRowInnerHTML();
         }
 
         function openTagPeoplePicker(prefillQuery){
@@ -1258,12 +1322,29 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             ${overlayHeader('Tag people', '20px', 'closeTagPeoplePicker()')}
             <div class="px-5 flex-shrink-0" style="padding-top:10px;">
               <input id="tag-picker-search-input" value="${escapeHtml(tagPickerSearchQuery)}" oninput="onTagPickerSearchInput(this.value)" placeholder="Search people to tag" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-3" autocomplete="off">
-              <div id="tag-picker-chips" class="flex flex-wrap gap-2 flex-shrink-0 ${composeTaggedUsers.length ? 'mb-3' : 'hidden'}">${composeTaggedChipsHTML()}</div>
+              <div id="tag-picker-chips" class="flex-shrink-0 ${composeTaggedUsers.length ? '' : 'hidden'}" style="display:${composeTaggedUsers.length ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;margin-bottom:12px;">${composeTaggedChipsHTML()}</div>
             </div>
             <div id="tag-picker-list" class="px-5 pb-5 flex-1 overflow-y-auto no-scrollbar">${tagPickerListHTML()}</div>
             <div class="p-4 border-t flex-shrink-0">
-              <button onclick="closeTagPeoplePicker()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Done</button>
+              <button id="tag-picker-done" onclick="closeTagPeoplePicker()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${tagPickerDoneLabel()}</button>
             </div>`;
+        }
+
+        function tagPickerDoneLabel(){
+          return composeTaggedUsers.length ? `Done · ${composeTaggedUsers.length} tagged` : 'Done';
+        }
+
+        function syncTagPickerChrome(){
+          const chips = document.getElementById('tag-picker-chips');
+          if (chips) {
+            chips.innerHTML = composeTaggedChipsHTML();
+            chips.classList.toggle('hidden', !composeTaggedUsers.length);
+            chips.style.display = composeTaggedUsers.length ? 'flex' : 'none';
+          }
+          const list = document.getElementById('tag-picker-list');
+          if (list) list.innerHTML = tagPickerListHTML();
+          const done = document.getElementById('tag-picker-done');
+          if (done) done.textContent = tagPickerDoneLabel();
         }
 
         function onTagPickerSearchInput(val){
@@ -1285,12 +1366,13 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const tagged = composeTaggedUsers.some(u => u.id === p.id);
             const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-4 h-4');
             return `
-              <button type="button" onclick="toggleComposeTagPerson('${escapeForJsAttr(p.id)}')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left mb-0.5" style="${tagged ? 'background:rgba(65,105,225,0.16);box-shadow:inset 0 0 0 1.5px rgba(65,105,225,0.55);' : ''}">
-                <div class="w-9 h-9 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0" style="${tagged ? 'box-shadow:0 0 0 2px #fff, 0 0 0 4px ' + ROYAL + ';' : ''}">${avatarInner}</div>
+              <button type="button" onclick="toggleComposeTagPerson('${escapeForJsAttr(p.id)}')" class="w-full flex items-center text-left" style="gap:12px;padding:11px 4px;border-bottom:1px solid rgba(0,0,0,0.06);">
+                <div class="w-10 h-10 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0">${avatarInner}</div>
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm font-semibold truncate" style="${tagged ? 'color:' + ROYAL + ';' : ''}">${escapeHtml(p.name)}</div>
-                  ${p.username ? `<div class="text-xs truncate ${tagged ? '' : 'text-gray-400'}" style="${tagged ? 'color:' + ROYAL + ';opacity:0.8;' : ''}">@${escapeHtml(p.username)}</div>` : ''}
+                  <div class="text-sm font-semibold truncate">${escapeHtml(p.name)}</div>
+                  ${p.username ? `<div class="text-xs truncate text-gray-400">@${escapeHtml(p.username)}</div>` : ''}
                 </div>
+                <div class="flex items-center justify-center flex-shrink-0" style="width:26px;height:26px;border-radius:50%;border:2px solid ${tagged ? ROYAL : '#d1d5db'};background:${tagged ? ROYAL : 'transparent'};color:#fff;">${tagged ? IconBold('check','w-3.5 h-3.5') : ''}</div>
               </button>`;
           }).join('');
         }
@@ -1305,19 +1387,13 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             composeTaggedUsers.push({ id: p.id, name: p.name, username: p.username });
             insertMentionIntoCaption(p.username);
           }
-          const chips = document.getElementById('tag-picker-chips');
-          if (chips) { chips.innerHTML = composeTaggedChipsHTML(); chips.classList.toggle('hidden', !composeTaggedUsers.length); }
-          const list = document.getElementById('tag-picker-list');
-          if (list) list.innerHTML = tagPickerListHTML();
+          syncTagPickerChrome();
         }
 
         function removeComposeTag(id){
           composeTaggedUsers = composeTaggedUsers.filter(u => u.id !== id);
-          const chips = document.getElementById('tag-picker-chips');
-          if (chips) { chips.innerHTML = composeTaggedChipsHTML(); chips.classList.toggle('hidden', !composeTaggedUsers.length); }
+          if (document.getElementById('tag-picker-chips')) syncTagPickerChrome();
           else refreshComposeTagChips();
-          const list = document.getElementById('tag-picker-list');
-          if (list) list.innerHTML = tagPickerListHTML();
         }
 
         function insertMentionIntoCaption(username){
@@ -1514,9 +1590,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (discoverPeopleLoaded) renderDiscoverList();
         }
 
-        // A profile that gets soft-deleted (account deletion keeps the row so existing chats still
-        // show the real name, but flips `deleted` to true) should immediately drop out of Discover
-        // for anyone currently browsing it, without needing a full reload
+        // A soft-deleted profile (the row stays so old chats keep the name, `deleted` is true)
+        // should drop out of Discover right away, no reload needed.
 
         // ---- Live profile sync: when anyone edits their name/username/bio/photo, every place
         // that shows them (feed posts, glimpses, chats, contacts, discover, notifications) updates
@@ -1770,9 +1845,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>`;
         }
 
-        // Tracks toUserId values with a send currently in flight, so a double-tap on Connect
-        // (before isConnectionRequestPendingTo below has anything local to check against) can't
-        // race its way into two pending rows to the same person
+        // Tracks toUserId values with a send in flight, so a double tap on Connect
+        // can't create two pending rows for the same person.
         const connectionRequestSendsInFlight = new Set();
         // Adds a request I just sent to the Requests > Sent list right away
         function addOptimisticSentRequest(toUserId, message){
@@ -1828,9 +1902,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const { data: userRes } = await sb.auth.getUser();
             const me = userRes && userRes.user;
             if (!me) { dropOptimistic(); setConnectionTagEverywhere(toUserId, false); return false; }
-            // The request goes out straight away. This account's name/photo are saved to the public
-            // profile alongside it (below), and the other person's app re-checks the name a moment later,
-            // so nobody waits on that first.
+            // The request goes out right away. This account's name/photo are saved to the public profile
+            // alongside it, and the other app re-checks the name a moment later.
             if (typeof syncPublicProfile === 'function') { syncPublicProfile().catch(() => {}); }
             // Belt-and-suspenders check against the DB itself, in case our local
             // sentRequestConvos/network state hasn't caught up yet (e.g. right after app load, before
@@ -2429,9 +2502,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (currentTab === 4) renderProfile(); 
         }
 
-        // Flips every in-memory "connected" flag for this person back to "not connected" (Discover
-        // list, their open profile, cached profiles, other people's network lists, feed posts) and
-        // repaints whatever is on screen, so they show Connect + Message again
+        // Flips every in-memory "connected" flag for this person back to not connected
+        // and repaints, so Connect and Message show again.
         function markUserDisconnectedLocally(userId){
           if (!userId) return;
           const dp = discoverPeople.find(p => p.id === userId);
@@ -2660,9 +2732,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           // NOTE: this used to also require p.connected, on the idea that a photo shouldn't be
           // visible to someone outside this person's network
           const showPhoto = !!p.photo;
-          // Same broken-image fallback as avatarMediaHTML in chat.js / editProfileHTML in
-          // profile.js: an image that fails to load falls back to the plain silhouette instead of
-          // showing the browser's broken-image icon
+          // Same broken-image fallback as avatarMediaHTML in chat.js and editProfileHTML in profile.js:
+          // show the plain silhouette instead of the browser's broken icon.
           const avatarInner = showPhoto
             ? `<img src="${p.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                <div class="w-full h-full items-center justify-center" style="display:none;">${Icon(p.icon || 'user','w-9 h-9')}</div>`
@@ -2926,6 +2997,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             tab: opts.tab || null,
             meetingCode: opts.meetingCode || null,
           });
+          try { showNotifBanner(notifData[0]); } catch (e) {}
           playNotifChime(opts.name || 'Stitch', opts.message || '', { icon: (typeof notifAvatarFor === 'function' ? notifAvatarFor(opts.otherUserId) : null), iconName: opts.name });
           queueSaveUserState();
           refreshNotifBadge();
@@ -3221,18 +3293,21 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const title = (latest.type === 'message' || latest.type === 'missed_call') ? latest.name : (latest.name || 'Notifications');
           const preview = latest.body || latest.message || '';
           return `
-            <div class="rounded-3xl p-4 flex items-start gap-3 ${allRead ? 'bg-gray-50' : 'bg-amber-50'}" onclick="notifOpenGroup('${g.key}')" style="cursor:pointer;">
-              ${notifAvatarHTML(latest)}
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5">
-                  <div class="font-semibold text-sm ${allRead ? 'text-gray-500' : ''}" style="${allRead ? '' : `color:${NAVY};`}">${escapeHtml(title)}</div>
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:${allRead ? '#e5e7eb' : ROYAL};color:${allRead ? '#6b7280' : '#fff'};">${allRead ? items.length : unread + ' new'}</span>
+            <div class="nrow-swipe">
+              <div class="nrow-del" onclick="event.stopPropagation(); notifDeleteGroup('${g.key}')">${Icon('trash','w-4 h-4')} Delete</div>
+              <div class="nrow-in" onclick="nrowTap('notifOpenGroup','${g.key}', this)">
+                ${notifAvatar2(latest)}
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <div class="nrow-t truncate" style="font-weight:${allRead ? 600 : 800};${allRead ? 'color:#6b7280;' : ''}">${escapeHtml(title)}</div>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:${allRead ? '#e5e7eb' : '#1e90ff'};color:${allRead ? '#6b7280' : '#fff'};">${allRead ? items.length : unread + ' new'}</span>
+                  </div>
+                  <div class="nrow-m ${allRead ? '' : 'nrow-m-u'}">${escapeHtml(preview)}</div>
                 </div>
-                <div class="text-sm ${allRead ? 'text-gray-400' : 'text-gray-600'} leading-relaxed truncate mt-0.5">${escapeHtml(preview)}</div>
-              </div>
-              <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <div class="text-[10px] text-gray-400 whitespace-nowrap">${formatNotifTime(latest.createdAt)}</div>
-                <span class="text-gray-300">${Icon('arrowRight','w-4 h-4')}</span>
+                <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <div class="text-[11px] whitespace-nowrap" style="color:${allRead ? '#9ca3af' : '#1e90ff'};font-weight:${allRead ? 500 : 700};">${formatNotifTime(latest.createdAt)}</div>
+                  ${allRead ? '' : '<span class="nrow-dot"></span>'}
+                </div>
               </div>
             </div>`;
         }
@@ -3266,20 +3341,28 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         function renderNotifTab(){
+          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind !== 'notifications') return;
           const ov = document.getElementById('overlay');
           const prevNotifScrollEl = ov.querySelector('.overflow-y-auto');
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
           let html = notifGroupOpenKey ? notifGroupDetailHTML(notifGroupOpenKey) : null;
           if (!html) {
-            const rows = notifBuildGroups();
-            const listHTML = rows.length
-              ? rows.map(r => r.group ? notifGroupRowHTML(r) : notifCards([r.n], { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' })).join('')
-              : '<div class="text-sm text-gray-400 text-center py-10">No notifications yet.</div>';
+            const allRows = notifBuildGroups();
+            const rowUnread = r => r.group ? r.items.some(n => !n.read) : !r.n.read;
+            const rows = allRows.filter(r => notifPassesFilter(r.group ? r.items : [r.n]));
+            const renderRow = r => r.group ? notifGroupRowHTML(r) : notifCards([r.n], { selected: notifSelected, longPressFn: 'notifLongPressSelect', tapFn: 'notifTap' });
+            const newRows = rows.filter(rowUnread), oldRows = rows.filter(r => !rowUnread(r));
+            const secHead = (t, action) => `<div class="nsec"><span>${t}</span>${action || ''}</div>`;
+            let listHTML = '';
+            if (newRows.length) listHTML += secHead('New', `<button onclick="notifMarkAllReadTap()">Mark all read</button>`) + `<div class="space-y-2">${newRows.map(renderRow).join('')}</div>`;
+            if (oldRows.length) listHTML += (newRows.length ? secHead('Earlier') : '') + `<div class="space-y-2">${oldRows.map(renderRow).join('')}</div>`;
+            if (!rows.length) listHTML = `<div class="text-center py-14"><div class="mx-auto mb-3 flex items-center justify-center" style="width:56px;height:56px;border-radius:50%;background:#e8f1ff;color:#1e90ff;">${Icon('bell','w-6 h-6')}</div><div class="text-sm font-semibold text-gray-500">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div><div class="text-xs text-gray-400 mt-1">${notifFilter === 'all' ? 'New messages, class updates and likes will show up here.' : 'Try another filter.'}</div></div>`;
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
                 ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
-                <div class="p-5">
-                  <div class="notif-list space-y-2">${listHTML}</div>
+                <div class="px-5 pt-4 pb-8">
+                  ${notifFilterChipsHTML()}
+                  <div class="notif-list">${listHTML}</div>
                 </div>
               </div>`;
           }
@@ -3321,6 +3404,129 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>`;
         }
 
+        // ---- Notifications: avatars with a small "what happened" badge, banner, filters, swipe-to-delete ----
+        function notifCategory(n){
+          if (!n) return 'other';
+          if (n.source === 'classroom' || n.type === 'classroom' || n.type === 'meeting_admin' || n.type === 'meeting_reminder') return 'classes';
+          if (n.type === 'message' || n.type === 'missed_call' || n.type === 'call_attempt' || n.type === 'group' || (n.type === 'info' && n.convoId)) return 'chats';
+          if (n.type === 'post' || n.type === 'comment' || n.type === 'like' || n.type === 'repost' || n.type === 'tag' || n.type === 'share') return 'posts';
+          return 'other';
+        }
+        function notifBadgeColor(n){
+          const c = notifCategory(n);
+          if (n.type === 'like') return '#ef4444';
+          if (n.type === 'missed_call' || n.type === 'call_attempt') return '#6b7280';
+          if (n.type === 'connect_request' || n.type === 'connect_accepted') return '#0ea5a4';
+          if (c === 'chats') return '#1e90ff';
+          if (c === 'classes' || c === 'posts') return '#4169e1';
+          return '#6b7280';
+        }
+        function notifAvatar2(n){
+          const uid = notifUserIdFor(n);
+          if (!uid) return `<div class="nav-av"><div class="nav-av-c">${NotifIcon(n.icon || 'bell','w-5 h-5')}</div></div>`;
+          const photo = notifPhotoFor(n);
+          return `<div class="nav-av"><div class="nav-av-c" style="color:#6b7280;">${avatarMediaHTML(photo, 'user', 'w-6 h-6')}</div><div class="nav-av-b" style="background:${notifBadgeColor(n)};">${NotifIcon(n.icon || 'bell','w-2.5 h-2.5')}</div></div>`;
+        }
+        function notifPreviewText(n){
+          return (n.message || n.body || '') + '';
+        }
+
+        // Banner: shows who and what; tapping it takes you to the chat / post / class it is about
+        function showNotifBanner(n){
+          if (!n) return;
+          try {
+            if (typeof currentOverlayKind !== 'undefined') {
+              if (currentOverlayKind === 'notifications') return;
+              if (currentOverlayKind === 'conversation' && n.convoId && typeof activeConvoId !== 'undefined' && activeConvoId === n.convoId) return;
+            }
+            if (document.visibilityState === 'hidden') return;
+          } catch (e) {}
+          const old = document.getElementById('notif-banner');
+          if (old) old.remove();
+          const el = document.createElement('div');
+          el.id = 'notif-banner';
+          el.className = 'nbn';
+          const notice = document.getElementById('app-notice-banner');
+          if (notice) { try { el.style.top = Math.round(notice.getBoundingClientRect().bottom + 8) + 'px'; } catch (e) {} }
+          el.innerHTML = notifAvatar2(n) +
+            `<div style="flex:1;min-width:0;"><div style="display:flex;justify-content:space-between;gap:8px;"><div class="nbn-t">${escapeHtml(n.name || 'Stitch')}</div><div class="nbn-time">now</div></div><div class="nbn-m">${escapeHtml(notifPreviewText(n))}</div></div>` +
+            `<span style="color:#9ca3af;flex-shrink:0;">${Icon('arrowRight','w-4 h-4')}</span>`;
+          el.addEventListener('click', () => { el.remove(); notifBannerTap(n.id); });
+          document.body.appendChild(el);
+          if (typeof enableSwipeDismiss === 'function') enableSwipeDismiss(el, () => el.remove());
+          setTimeout(() => { if (el.isConnected) el.remove(); }, 6500);
+          notifHydratePhotos([n]);
+        }
+        function notifBannerTap(id){
+          const n = notifData.find(x => x.id === id);
+          if (!n) return;
+          try { notifSelected.clear(); } catch (e) {}
+          notifTap(id);
+        }
+
+        // Filters + sections
+        let notifFilter = 'all';
+        function setNotifFilter(f){ notifFilter = f; renderNotifTab(); }
+        function notifPassesFilter(items){
+          return items.some(n => notifFilter === 'all' ? true : notifFilter === 'unread' ? !n.read : notifCategory(n) === notifFilter);
+        }
+        function notifMarkAllReadTap(){
+          markAllNotifsRead();
+          renderNotifTab();
+        }
+        function notifFilterChipsHTML(){
+          const unread = notifData.filter(n => !n.read).length;
+          const chips = [['all','All'],['unread','Unread' + (unread ? ' ' + unread : '')],['chats','Chats'],['classes','Classes'],['posts','Posts']];
+          return `<div class="nfilter">${chips.map(([k,l]) => `<button class="nchip ${notifFilter === k ? 'on' : ''}" onclick="setNotifFilter('${k}')">${l}</button>`).join('')}</div>`;
+        }
+
+        // Swipe a row left to reveal Delete (touch)
+        function nrowClose(sw){
+          if (!sw) return;
+          const inner = sw.querySelector('.nrow-in');
+          if (inner) inner.style.transform = '';
+          delete sw.dataset.open;
+        }
+        function nrowTap(fnName, id, el){
+          if (window.__nrowSwiped && Date.now() - window.__nrowSwiped < 350) return;
+          const sw = el && el.closest ? el.closest('.nrow-swipe') : null;
+          if (sw && sw.dataset.open === '1') { nrowClose(sw); return; }
+          handleRowTap(fnName, id);
+        }
+        (function initNotifSwipe(){
+          if (window.__notifSwipeInit) return;
+          window.__notifSwipeInit = true;
+          let row = null, inner = null, sx = 0, sy = 0, dx = 0, horiz = null, wasOpen = false;
+          document.addEventListener('touchstart', e => {
+            const r = e.target && e.target.closest ? e.target.closest('.nrow-swipe') : null;
+            document.querySelectorAll('.nrow-swipe[data-open="1"]').forEach(o => { if (o !== r) nrowClose(o); });
+            if (!r || e.target.closest('button, .nrow-del')) { row = null; return; }
+            row = r; inner = r.querySelector('.nrow-in');
+            sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; horiz = null; wasOpen = r.dataset.open === '1';
+            if (inner) inner.style.transition = 'none';
+          }, { passive: true });
+          document.addEventListener('touchmove', e => {
+            if (!row || !inner) return;
+            dx = e.touches[0].clientX - sx;
+            const dy = e.touches[0].clientY - sy;
+            if (horiz === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) horiz = Math.abs(dx) > Math.abs(dy);
+            if (!horiz) return;
+            const base = wasOpen ? -96 : 0;
+            inner.style.transform = 'translateX(' + Math.max(-96, Math.min(0, base + dx)) + 'px)';
+          }, { passive: true });
+          document.addEventListener('touchend', () => {
+            if (!row || !inner) { row = null; return; }
+            inner.style.transition = '';
+            if (horiz) {
+              window.__nrowSwiped = Date.now();
+              const t = (wasOpen ? -96 : 0) + dx;
+              if (t < -48) { inner.style.transform = 'translateX(-96px)'; row.dataset.open = '1'; }
+              else { inner.style.transform = ''; delete row.dataset.open; }
+            }
+            row = null;
+          }, { passive: true });
+        })();
+
         function notifCards(list, opts){
           opts = opts || {};
           const selectedSet = opts.selected || new Set();
@@ -3332,31 +3538,31 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return (list || notifData).map(n => {
             const isSel = selectedSet.has(n.id);
             const itemMenuOpen = notifItemMenuOpenId === n.id;
+            const unread = !n.read;
             return `
-            <div class="rounded-3xl p-4 flex items-start gap-3 ${isSel ? '' : (n.read ? 'bg-gray-50' : 'bg-amber-50')}"
-              style="${isSel ? `background:rgba(65,105,225,0.14);` : ''}"
-              onmousedown="startPress('${longPressFn}','${n.id}', event)" onmouseup="endPress()" onmouseleave="endPress()"
-              ontouchstart="startPress('${longPressFn}','${n.id}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
-              onclick="handleRowTap('${tapFn}','${n.id}')">
-              ${selecting
-                ? `<div class="w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0" style="${isSel ? `background:${ROYAL};border-color:${ROYAL};` : 'border-color:#d1d5db;'}">${isSel ? Icon('check','w-4 h-4 text-white') : ''}</div>`
-                : notifAvatarHTML(n)}
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5">
-                  <div class="font-semibold text-sm ${n.read ? 'text-gray-500' : ''}" style="${n.read ? '' : `color:${NAVY};`}">${escapeHtml(n.name)}</div>
-                  ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
+            <div class="nrow-swipe">
+              ${selecting ? '' : `<div class="nrow-del" onclick="event.stopPropagation(); deleteNotif('${n.id}')">${Icon('trash','w-4 h-4')} Delete</div>`}
+              <div class="nrow-in ${isSel ? 'sel' : ''}"
+                onmousedown="startPress('${longPressFn}','${n.id}', event)" onmouseup="endPress()" onmouseleave="endPress()"
+                ontouchstart="startPress('${longPressFn}','${n.id}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
+                onclick="nrowTap('${tapFn}','${n.id}', this)">
+                ${selecting
+                  ? `<div class="w-11 h-11 rounded-full border-2 flex items-center justify-center flex-shrink-0" style="${isSel ? `background:${ROYAL};border-color:${ROYAL};` : 'border-color:#d1d5db;'}">${isSel ? IconBold('check','w-5 h-5 text-white') : ''}</div>`
+                  : notifAvatar2(n)}
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <div class="nrow-t truncate" style="font-weight:${unread ? 800 : 600};${unread ? '' : 'color:#6b7280;'}">${escapeHtml(n.name)}</div>
+                    ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
+                  </div>
+                  <div class="nrow-m ${unread ? 'nrow-m-u' : ''}" style="${opts.full ? 'display:block;-webkit-line-clamp:unset;' : ''}">${escapeHtml(notifPreviewText(n))}</div>
+                  ${n.type === 'connect_request' ? `<div class="mt-2">${connectRequestActionsHTML(n)}</div>` : ''}
                 </div>
-                <div class="flex items-center justify-between gap-2 mt-0.5">
-                  <div class="text-sm ${n.read ? 'text-gray-400' : 'text-gray-600'} leading-relaxed ${opts.full ? 'break-words' : 'truncate'}" ${opts.full ? 'style="white-space:normal;overflow-wrap:anywhere;"' : ''}>${escapeHtml(opts.full && n.body ? n.body : n.message)}</div>
-                  ${n.type === 'connect_request' ? connectRequestActionsHTML(n) : ''}
+                <div class="flex flex-col items-end gap-1.5 flex-shrink-0 relative">
+                  <div class="text-[11px] whitespace-nowrap" style="color:${unread ? '#1e90ff' : '#9ca3af'};font-weight:${unread ? 700 : 500};" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
+                  ${selecting ? '' : (unread ? '<span class="nrow-dot"></span>' : '')}
+                  ${selecting ? '' : `<button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options">${Icon('dots','w-4 h-4')}</button>`}
+                  ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}
                 </div>
-              </div>
-              <div class="flex flex-col items-center gap-1 flex-shrink-0 relative">
-                ${selecting ? '' : `
-                <button onclick="event.stopPropagation(); deleteNotif('${n.id}')" class="notif-action-mobile w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500" title="Delete">${Icon('trash','w-4 h-4')}</button>
-                <button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options">${Icon('dashes','w-4 h-4')}</button>`}
-                <div class="text-[10px] text-gray-400 whitespace-nowrap" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
-                ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}
               </div>
             </div>`;
           }).join('');
@@ -3554,11 +3760,22 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function renderClassAnnouncementsTab(){
           const ov = document.getElementById('overlay');
           const classroomNotifs = notifData.filter(n => n.source === 'classroom');
+          const stitchCard = (typeof latestAppNotice !== 'undefined' && latestAppNotice && latestAppNotice.message) ? `
+            <div class="nstitch mb-4" onclick="openAppNoticeDetail()">
+              <div class="flex items-center justify-center flex-shrink-0" style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;">${NotifIcon('bell','w-5 h-5')}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[11px] font-bold" style="color:#1e90ff;">FROM STITCH</div>
+                <div class="font-extrabold text-[15px] truncate nrow-t">${escapeHtml(latestAppNotice.title || 'Notice')}</div>
+                <div class="nrow-m">${escapeHtml(latestAppNotice.message)}</div>
+              </div>
+              <span style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</span>
+            </div>` : '';
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
               ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left', sheetToggle: 'toggleNoticeBoardMenu' }), { hideBack: true, shortDashes: true, titleLeft: true, titleSize: 'text-xl', menuLeft: true, flipMenuIcon: true })}
               <div class="p-5">
-                <div class="space-y-3">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
+                ${stitchCard}
+                <div class="space-y-2">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
               </div>
             </div>`;
           attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), noticeBoardMenuOpen, 'toggleNoticeBoardMenu');

@@ -23,9 +23,8 @@ let studyFabMenuOpen = false;
           studyFabScrollCleanup = cleanup;
         }
 
-        // Close-only: a drag on the dim backdrop fires touchmove many times, and the backdrop
-        // keeps receiving those events after it has been removed, so a plain toggle would flip
-        // the menu open and shut (and re-render the page) over and over while scrolling.
+        // Close-only: dragging on the dim backdrop fires touchmove many times, so a plain toggle
+        // would flip the menu open and shut while scrolling.
         function closeStudyFabMenu(){
           if (!studyFabMenuOpen) return;
           toggleStudyFabMenu();
@@ -74,7 +73,7 @@ let studyFabMenuOpen = false;
               </div>
               <div class="classroom-tab-panel ${(window.__studyNoSlide || !classroomAreaTabSlideDir) ? '' : (classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right')}">
               ${classroomAreaTab === 'courses' ? coursesHomeHTML() : `
-                ${hasClasses ? myClassesListHTML() : `
+                ${hasClasses ? (studySub === 'resources' ? '' : myClassesListHTML()) : `
                 <div class="flex gap-2 mb-5">
                   <button onclick="openJoinClassroom()" class="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">
                     ${Icon('users','w-4 h-4')} Join a Space
@@ -89,6 +88,7 @@ let studyFabMenuOpen = false;
             ${classroomAreaTab === 'classes' && hasClasses && (studySub === 'exams' || studySub === 'resources') ? studyFabHTML() : ''}`;
           // The slide-in plays once per tab switch, not on every re-draw (re-draws look like blinking)
           classroomAreaTabSlideDir = null;
+          setTimeout(studyMiniBarSync, 0);
           const classroomNav = document.getElementById('classroom-nav');
           if (classroomNav) classroomNav.style.display = '';
           updateClassroomNav();
@@ -179,36 +179,8 @@ let studyFabMenuOpen = false;
 
         function studyContent(){
           if (studySub === 'resources') return `
-            <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
-              <div class="flex items-center gap-2 mb-1">
-                ${Icon('calendar','w-6 h-6 text-['+NAVY+']')}
-                <div class="text-base font-bold text-[${NAVY}]">Study Planner</div>
-              </div>
-              <div class="text-xs font-bold text-amber-600 mb-4">Timetable &amp; reminders</div>
-              ${plannerRow('calendar','Set Timetable','Add your weekly schedule', "openOverlay('studyTimetable')")}
-              ${plannerRow('clock','Set Reminders','Add exams, deadlines, or study sessions', "openOverlay('studyReminders')")}
-            </div>
-            <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
-              <div class="flex items-center justify-between mb-4">
-                <div class="text-base font-bold text-[${NAVY}]">Upload a resource</div>
-              </div>
-              <input type="file" id="resource-file-input" accept=".pdf,.docx,.pptx" multiple class="hidden" onchange="handleResourceFileSelect(event)">
-              <div onclick="document.getElementById('resource-file-input').click()"
-                   ondragover="event.preventDefault();this.classList.add('bg-amber-100')"
-                   ondragleave="this.classList.remove('bg-amber-100')"
-                   ondrop="handleResourceDrop(event)"
-                   class="resource-dropzone bg-amber-50 border-2 border-dashed border-gray-300 rounded-3xl p-8 flex flex-col items-center text-center cursor-pointer">
-                <div class="w-12 h-12 bg-gray-400 rounded-2xl flex items-center justify-center text-white mb-3">${Icon('upload','w-6 h-6')}</div>
-                <div class="text-sm font-bold text-gray-800 mb-1">Drag &amp; drop files here, or <span style="text-decoration:underline" class="text-amber-600">click to upload</span></div>
-                <div class="text-xs text-gray-500">Textbooks, lecture slides, practice tests. PDF, DOCX, PPTX · Max 50MB per file</div>
-              </div>
-            </div>
-            ${uploadedResources.length ? `
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Your Uploads</div>
-              ${uploadedResources.map(resourceStatusRow).join('')}
-            ` : `
-              <div class="text-sm text-gray-400 text-center py-6">Upload a PDF, DOCX, or PPTX above to unlock quizzes and flashcards built from it.</div>
-            `}
+            ${studyToolsHTML()}
+            ${myClasses.length ? myClassesListHTML() : ''}
           `;
           if (studySub === 'exams') return `
             ${studyFeatureCard('doc', 'Practice Tests', 'Full mock tests, timed or self-paced', 'Exam-ready questions sourced from your uploaded resources.', `
@@ -250,6 +222,114 @@ let studyFabMenuOpen = false;
                 <div class="text-xs text-gray-500">${sub}</div>
               </div>
             </div>`;
+        }
+
+        // Study Planner hub: what is next, then Timetable and Reminders as call-card rows
+        // ---- Workspace tools: next class (call card) + Upload / Timetable / Reminders ----
+        function studyToolsHTML(){
+          const next = (typeof getNextUpcomingClass === 'function') ? getNextUpcomingClass() : null;
+          const now = new Date();
+          const remCount = [...studyReminders].filter(r => reminderWhen(r) >= now).length;
+          const classCount = classSchedule.length;
+          const nextCard = next ? `
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white" style="margin-bottom:12px;cursor:pointer;" onclick="openStudyTimetable()">
+              <div class="flex items-center gap-3 px-4 py-3 select-none">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(next.subject)}</div>
+                  <div class="text-xs text-gray-500 truncate">${next.dayLabel === 'today' ? 'Today' : next.dayLabel === 'tomorrow' ? 'Tomorrow' : next.dayLabel} &middot; ${formatTime12(next.start)}${next.room ? ' &middot; ' + escapeHtml(next.room) : ''}</div>
+                </div>
+                <span class="text-xs font-bold flex-shrink-0" style="color:#1e90ff;white-space:nowrap;text-align:right;line-height:1.35;"><span style="display:block;">Class starts in</span><span style="display:block;">${plannerCountdownText(next.when - now)}</span></span>
+              </div>
+            </div>` : '';
+          const tile = (icon, title, sub, fn) => `
+            <button onclick="${fn}" class="stg-card" style="flex:1;min-width:0;padding:14px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+              <span class="stg-ico flex items-center justify-center">${Icon(icon,'w-6 h-6')}</span>
+              <div class="stg-title font-semibold" style="font-size:13px;margin-top:6px;">${title}</div>
+              <div class="stg-sub" style="font-size:11px;margin-top:1px;white-space:nowrap;">${sub}</div>
+            </button>`;
+          const files = uploadedResources.length;
+          return `
+            <div style="margin-bottom:6px;">
+              ${nextCard}
+              <div id="study-tools-tiles" style="display:flex;gap:10px;">
+                ${tile('upload','Upload', files ? `${files} file${files === 1 ? '' : 's'}` : 'Add a file', 'openUploadSheet()')}
+                ${tile('calendar','Timetable', classCount ? `${classCount} this week` : 'Set up', 'openStudyTimetable()')}
+                ${tile('bell','Reminders', remCount ? `${remCount} due` : 'Add one', "openOverlay('studyReminders')")}
+              </div>
+            </div>`;
+        }
+
+        // Upload lives in a sheet: picker + every upload with its status
+        function uploadSheetInnerHTML(){
+          return `
+            <div class="font-display" style="font-size:24px;color:${ROYAL};">Upload a resource</div>
+            <input type="file" id="resource-file-input" accept=".pdf,.docx,.pptx" multiple class="hidden" onchange="handleResourceFileSelect(event)">
+            <div onclick="document.getElementById('resource-file-input').click()"
+                 ondragover="event.preventDefault();this.classList.add('bg-amber-100')"
+                 ondragleave="this.classList.remove('bg-amber-100')"
+                 ondrop="handleResourceDrop(event)"
+                 class="resource-dropzone stg-card" style="margin-top:14px;border:2px dashed #d1d5db;padding:24px 16px;text-align:center;cursor:pointer;">
+              <span class="stg-ico flex items-center justify-center" style="margin:0 auto;">${Icon('upload','w-7 h-7')}</span>
+              <div class="stg-title font-semibold" style="font-size:14px;margin-top:6px;">Choose files</div>
+              <div class="stg-sub" style="font-size:12px;margin-top:2px;">Textbooks, slides, practice tests &middot; PDF, DOCX, PPTX &middot; up to 50MB</div>
+            </div>
+            ${uploadedResources.length ? `
+              <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:18px 4px 8px;">Your uploads</div>
+              ${uploadedResources.map(resourceStatusRow).join('')}
+            ` : `<div class="stg-sub" style="font-size:13px;text-align:center;padding:18px 0 4px;">Upload a PDF, DOCX or PPTX to unlock quizzes and flashcards built from it.</div>`}`;
+        }
+        function openUploadSheet(){
+          plannerSheetOpen(uploadSheetInnerHTML());
+          const w = document.getElementById('planner-sheet');
+          if (w) w.dataset.kind = 'upload';
+        }
+        function refreshUploadSheet(){
+          const w = document.getElementById('planner-sheet');
+          if (!w || w.dataset.kind !== 'upload') return;
+          const box = w.querySelector('.planner-sheet');
+          const top = box ? box.scrollTop : 0;
+          openUploadSheet();
+          const nb = document.querySelector('#planner-sheet .planner-sheet');
+          if (nb) nb.scrollTop = top;
+        }
+
+        // Slim tool bar that appears once the tiles scroll out of view
+        let studyMiniObserver = null;
+        function studyMiniBarRemove(){
+          if (studyMiniObserver) { try { studyMiniObserver.disconnect(); } catch (e) {} studyMiniObserver = null; }
+          const b = document.getElementById('study-mini-bar');
+          if (b) b.remove();
+        }
+        function studyMiniBarSync(){
+          studyMiniBarRemove();
+          const tiles = document.getElementById('study-tools-tiles');
+          if (!tiles || typeof IntersectionObserver === 'undefined' || window.innerWidth >= 1024) return;
+          const bar = document.createElement('div');
+          bar.id = 'study-mini-bar';
+          bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:20;display:none;gap:8px;padding:calc(var(--top-safe-pad, 0px) + 8px) 16px 10px;background:rgba(249,250,251,.96);box-shadow:0 6px 16px rgba(15,23,42,.08);backdrop-filter:blur(8px);justify-content:center;';
+          const pill = (icon, label, fn) => `<button onclick="${fn}" class="stg-card" style="display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;font-size:13px;font-weight:700;"><span class="stg-ico flex items-center">${Icon(icon,'w-4 h-4')}</span><span class="stg-title">${label}</span></button>`;
+          bar.innerHTML = pill('upload','Upload','openUploadSheet()') + pill('calendar','Timetable','openStudyTimetable()') + pill('bell','Reminders',"openOverlay('studyReminders')");
+          document.body.appendChild(bar);
+          studyMiniObserver = new IntersectionObserver(entries => {
+            const e = entries[entries.length - 1];
+            if (!tiles.isConnected) { studyMiniBarRemove(); return; }
+            const ov = document.getElementById('overlay');
+            const overlayOpen = ov && !ov.classList.contains('hidden') && ov.style.display !== 'none' && ov.innerHTML.trim();
+            bar.style.display = (!e.isIntersecting && !overlayOpen) ? 'flex' : 'none';
+          });
+          studyMiniObserver.observe(tiles);
+        }
+
+        function plannerHubRow(icon,title,sub,onclick){
+          return `
+            <button onclick="${onclick}" class="stg-card w-full flex items-center text-left" style="gap:12px;padding:13px 16px;margin-bottom:10px;">
+              <span class="stg-ico flex items-center justify-center flex-shrink-0">${Icon(icon,'w-5 h-5')}</span>
+              <div class="flex-1 min-w-0">
+                <div class="stg-title font-semibold" style="font-size:15px;">${title}</div>
+                <div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>
+              </div>
+              <div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>
+            </button>`;
         }
 
         function plannerRow(icon,title,sub,onclick){
@@ -449,9 +529,8 @@ let studyFabMenuOpen = false;
           }
         }
 
-        // Career AI (Match with CV / Stitch Bot). The prompts live on the server (ai-proxy);
-        // the browser only sends an action name plus plain data. Needs an active subscription.
-        // A lapsed subscription rejects with err.code === 'subscription_required'.
+        // Career AI (Match with CV / Stitch Bot). Prompts live on the server (ai-proxy), the browser only
+        // sends an action name and plain data. Needs a subscription (err.code 'subscription_required').
         async function callCareerAI(action, data){
           checkAiRateLimit();
           try {
@@ -919,7 +998,9 @@ let studyFabMenuOpen = false;
           if (studySub === 'resources') {
             const el = document.getElementById('study-content');
             if (el) el.innerHTML = studyContent();
+            studyMiniBarSync();
           }
+          refreshUploadSheet();
           if (inLectureCall) refreshClassPadUploadedResources();
         }
 
@@ -1238,9 +1319,8 @@ let studyFabMenuOpen = false;
           fcBindDrag();
         }
 
-        // Swipe handling. The card owns every touch on it (touch-action:none), so the browser can
-        // no longer steal a slightly diagonal swipe as a page scroll and cancel it halfway.
-        // Long text inside a card is scrolled by hand when the finger moves mostly vertically.
+        // Swipe handling. The card owns every touch (touch-action:none) so the browser can't steal a
+        // diagonal swipe as a scroll. Long text in a card scrolls by hand on a mostly vertical move.
         function fcBindDrag(){
           const el = document.getElementById('fcCard');
           if (!el) return;

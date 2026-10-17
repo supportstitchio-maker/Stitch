@@ -1073,9 +1073,8 @@ let userPoints = 0;
           window.addEventListener('resize', applyStableAll);
           window.addEventListener('orientationchange', function(){ setTimeout(applyStableAll, 300); });
 
-          // Lift the focused field above the keyboard. The card is centred and fits the screen, so the
-          // gate has nothing to scroll; instead the whole card is nudged up with a transform, by exactly
-          // as much as the keyboard covers the field.
+          // Lift the focused field above the keyboard. The card is centred with nothing to scroll,
+          // so nudge the whole card up by however much the keyboard covers.
           const inner = gate.querySelector('.auth-scroll-inner');
           let liftPx = 0;
           function setLift(px){
@@ -1135,9 +1134,8 @@ let userPoints = 0;
             if (next && gate.contains(next) && /^(INPUT|TEXTAREA)$/.test(next.tagName)) return;
             dropNow();
           });
-          // Keyboard dismissed with the system back gesture/button: the field stays focused and no
-          // blur fires, so watch the visual viewport growing back and treat that as "keyboard
-          // closed"
+          // Keyboard dismissed with the back gesture: the field stays focused and no blur fires,
+          // so watch the viewport grow back and treat that as keyboard closed.
           if (vv) {
             let lastVvH = vv.height;
             let closeTimer = null;
@@ -1309,8 +1307,7 @@ let userPoints = 0;
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
         }
         // Shown once, right after Complete Profile, so the Career Space "post or explore" question
-        // is answered during onboarding instead of surfacing later in Explore (see
-        // posterApplicationFormHTML / submitPosterApplication in jobs.js, which this reuses)
+        // gets answered during onboarding. Reuses the form in jobs.js.
         let authPosterAppStageIdx = 0;
         // A photo picked on the explore/network path is uploaded at final submit (once we know the
         // account exists), not the instant it's picked
@@ -1361,9 +1358,8 @@ let userPoints = 0;
           list.push('bizdoc', 'iddoc', 'selfie', 'consent');
           return list;
         }
-        // The questions are grouped into pages: related questions share one screen. Stage ids are
-        // unchanged (all the per-stage markup and checks below still apply); a page just renders and
-        // validates several of them at once.
+        // Questions are grouped into pages so related ones share a screen. Stage ids are the same,
+        // a page just renders and checks several at once.
         function authPosterAppPages(){
           const st = authPosterAppStages();
           const pages = [];
@@ -1510,16 +1506,14 @@ let userPoints = 0;
               </div>`;
           }
           if (stage === 'consent') {
-            // Same shared markup as the in-app "Apply to post" form (posterAppConsentHTML in jobs.js),
-            // but linking to the pre-login Terms/Privacy modals since the overlay system doesn't exist
-            // yet at this point in onboarding
+            // Same markup as the in-app "Apply to post" consent, but links to the pre-login
+            // Terms/Privacy modals since the overlay system isn't there yet.
             return typeof posterAppConsentHTML === 'function'
               ? posterAppConsentHTML('auth-poster-app-consent-checkbox', 'setPosterAppConsent(this.checked)', "authShowTerms()", "openFooterInfo('privacy')")
               : '';
           }
-          // stage === 'intent' -- multi-select icon chips grouped by section. Picking anything
-          // under "Post" or "Paid" switches the flow to the poster path and pre-answers the
-          // paid-seller questions (see authApplyIntentPicks).
+          // stage === 'intent': multi-select chips by section. Picking "Post" or "Paid" switches
+          // to the poster path and pre-fills the paid-seller answers.
           return `
             <div class="mb-2 auth-intent-chips">
               ${AUTH_INTENT_GROUPS.map(g => `
@@ -1931,10 +1925,8 @@ let userPoints = 0;
           await authEnterApp();
           hideAuthTransitionLoading(true);
         }
-        // Single dispatcher behind the fixed top-left arrow (#authBackBtn) across every panel that
-        // shows it
-        // The top-left arrow EXITS the whole onboarding process (from any onboarding page) -- the
-        // "Back" pill at the bottom (authFlowBack below) is what steps to the previous page.
+        // One dispatcher for the fixed top-left arrow (#authBackBtn). It EXITS onboarding from any page.
+        // The "Back" pill at the bottom (authFlowBack) is what goes one page back.
         function authGoBack(){
           authForgetPendingVerify();
           const posterPanel = document.getElementById('auth-panel-poster-app');
@@ -1944,9 +1936,8 @@ let userPoints = 0;
           authShowLogin();
         }
         // ---- An unfinished sign-up must never turn into an account ----
-        // While onboarding is on screen the account is only "pending". If the page is closed or
-        // reloaded, or the app is killed, before the very last pill, the half-made account is
-        // deleted (right away when the browser lets us, otherwise at the next open).
+        // While onboarding is on screen the account is only "pending". If the page closes before the
+        // last pill, the half-made account is deleted.
         function authOnboardingActive(){
           const a = document.getElementById('auth-panel-complete-profile');
           const b = document.getElementById('auth-panel-poster-app');
@@ -2092,9 +2083,8 @@ let userPoints = 0;
           if (typeof checkAppNotice === 'function') checkAppNotice();
           if (typeof startAppNoticeLive === 'function') startAppNoticeLive();
 
-          // Feed-specific load chain, split out from the big Promise.all below so the feed can paint
-          // the moment ITS OWN data is ready instead of waiting on a dozen unrelated boot tasks
-          // Listings/opportunities: start fetching right now, in parallel with everything
+          // Feed load chain split out of the big Promise.all so the feed paints as soon as its own
+          // data is ready. Listings start fetching right away, in parallel.
           if (typeof loadOpportunitiesRemote === 'function') loadOpportunitiesRemote();
           if (typeof subscribeToOpportunitiesRealtime === 'function') subscribeToOpportunitiesRealtime();
 
@@ -2150,9 +2140,7 @@ let userPoints = 0;
           startMessagePolling();
 
           essentialLoads.then(async () => {
-            // Deliberately NOT re-rendering the Home feed here: feedReadyLoads (above) already
-            // repaints it with real posts/glimpses the moment its own chain resolves, and
-            // essentialLoads always includes feedReadyLoads
+            // Not re-rendering Home here on purpose. feedReadyLoads already repaints it with real data.
             if (typeof currentTab !== 'undefined' && currentTab === 4 && typeof patchProfileHeaderInPlace === 'function') patchProfileHeaderInPlace();
           });
 
@@ -2408,11 +2396,8 @@ let userPoints = 0;
           if (action) action();
         }
 
-        // Heads-up alerts that only need an acknowledgement (no Yes/No decision) surface as a
-        // dismissible top banner
-        // Desktop: pop-up notices sit in the middle of the CONTENT area (between the left menu and the
-        // right-hand panel), not the whole window, and grow/shrink with it as the side panel is dragged,
-        // collapsed or the window is resized. On phones/tablets nothing changes (centred on the screen).
+        // Alerts that only need an OK show as a dismissible top banner. On desktop, pop-ups sit in the
+        // middle of the content area, between the left menu and right panel.
         function placeToastInContent(el){
           if (!el) return;
           const place = () => {
@@ -2490,9 +2475,8 @@ let userPoints = 0;
           el.classList.toggle('plain-mode', skeletonMode === 'plain');
           if (!skeletonMode) el.classList.remove('skel-desktop-mode');
           if (skeletonMode) {
-            // This skeleton can go up before authEnterApp() has had a chance to apply the saved theme
-            // (e.g. straight after a Google/Apple redirect), so it used to paint white first and only
-            // turn black later
+            // This skeleton can show before authEnterApp() applies the saved theme, so it used to
+            // flash white first and turn dark later.
             try {
               if (localStorage.getItem('stitchTheme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -2606,12 +2590,8 @@ let userPoints = 0;
             setTimeout(hideAuthTransitionLoading, 220);
           });
         }
-        function authDeleteAccount(){
-          openAppConfirmModal(
-            'Delete your account?',
-            'This will permanently delete your account and all data. This cannot be undone.',
-            'Delete',
-            function(){
+        function authDeleteAccountNow(){
+          (function(){
               overlayHistoryPushed = false;
               // Same cover as Sign Out
               showAuthTransitionLoading('Deleting account', 'trash');
@@ -2645,8 +2625,42 @@ let userPoints = 0;
                 const remaining = AUTH_TRANSITION_MIN_MS - elapsed;
                 setTimeout(() => location.reload(), Math.max(0, remaining));
               })();
-            }
-          );
+          })();
+        }
+
+        // Delete-account confirm sheet: the red button only works after typing DELETE
+        function authDeleteAccount(){
+          closeDeleteAccountSheet();
+          const wrap = document.createElement('div');
+          wrap.id = 'delete-account-sheet';
+          wrap.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,23,42,0.5);';
+          wrap.onclick = function(e){ if (e.target === wrap) closeDeleteAccountSheet(); };
+          wrap.innerHTML = `
+            <div class="del-sheet" style="width:100%;max-width:480px;background:#fff;border-radius:28px 28px 0 0;padding:22px 22px calc(env(safe-area-inset-bottom, 0px) + 24px);">
+              <div style="width:40px;height:5px;border-radius:9px;background:#e5e7eb;margin:0 auto 16px;"></div>
+              <div class="font-display" style="font-size:24px;color:#dc2626;">Delete account?</div>
+              <div class="del-sub" style="font-size:14px;line-height:1.5;margin-top:8px;color:#4b5563;">Your profile, posts, chats and course progress will be permanently removed. This can’t be undone.</div>
+              <div class="del-sub" style="font-size:12px;font-weight:700;margin:16px 0 6px;color:#6b7280;">Type DELETE to confirm</div>
+              <input id="delete-account-input" oninput="deleteAccountSheetInput(this.value)" autocomplete="off" autocapitalize="characters" placeholder="DELETE" style="width:100%;border:1.5px solid #e5e7eb;border-radius:18px;padding:12px 16px;font-size:16px;background:transparent;color:inherit;">
+              <button id="delete-account-confirm" type="button" onclick="deleteAccountSheetConfirm()" style="width:100%;margin-top:16px;border-radius:999px;background:#fca5a5;color:#fff;font-weight:700;padding:15px;">Delete my account</button>
+              <button type="button" onclick="closeDeleteAccountSheet()" class="del-cancel" style="width:100%;margin-top:10px;border-radius:999px;background:#f1f3f6;color:#374151;font-weight:700;padding:15px;">Cancel</button>
+            </div>`;
+          document.body.appendChild(wrap);
+        }
+        function deleteAccountSheetInput(v){
+          const ok = String(v || '').trim().toUpperCase() === 'DELETE';
+          const btn = document.getElementById('delete-account-confirm');
+          if (btn) { btn.style.background = ok ? '#dc2626' : '#fca5a5'; btn.dataset.ok = ok ? '1' : '0'; }
+        }
+        function deleteAccountSheetConfirm(){
+          const btn = document.getElementById('delete-account-confirm');
+          if (!btn || btn.dataset.ok !== '1') return;
+          closeDeleteAccountSheet();
+          authDeleteAccountNow();
+        }
+        function closeDeleteAccountSheet(){
+          const el = document.getElementById('delete-account-sheet');
+          if (el) el.remove();
         }
         async function authSubmitLogin(e){
           if (e) e.preventDefault();
@@ -2681,9 +2695,8 @@ let userPoints = 0;
           if (!sb) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); return; }
           err.classList.remove('show');
           authSubmittingVerify = true;
-          // No full-screen "Verifying"/"Signing you in" cover here anymore: keep the person on this
-          // same panel with just the code boxes disabled and the button showing an inline
-          // "Verifying..." state while the code is checked
+          // No full-screen "Verifying" cover here anymore. Stay on the same panel with the code
+          // boxes disabled and an inline "Verifying..." on the button.
           for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.disabled = true; }
           const verifyBtn = document.querySelector('#auth-panel-verify .auth-cta');
           const verifyBtnOriginalText = verifyBtn ? verifyBtn.textContent : '';
@@ -2699,9 +2712,8 @@ let userPoints = 0;
                   // Every test sign-in starts from scratch, even if the last session never signed out
                   await resetStitchTestAccount(true);
                   resetCachedAuthUser();
-                  // The reset can invalidate the session that was just created (and refreshing a dead
-                  // token signs the app out, which dropped the tester back to Get Started). So don't
-                  // refresh: just make sure a session exists, and sign in again if it doesn't.
+                  // The reset can kill the new session, and refreshing a dead token signs the app out.
+                  // So don't refresh: make sure a session exists, else sign in again.
                   let hasSession = false;
                   try { const { data: sd } = await sb.auth.getSession(); hasSession = !!(sd && sd.session); } catch (e) {}
                   if (!hasSession) {
@@ -2842,9 +2854,8 @@ let userPoints = 0;
         }
         let authCompletingProfile = false;
         let authProfileJustCompleted = false;
-        // Submits the one-time "tell us about yourself" step for a brand-new account (see
-        // authShowCompleteProfile), then shows the same loading cover used elsewhere in the auth
-        // Continue button on "Almost there": once tapped it locks, shows a spinner and "Let's
+        // Submits the one-time "tell us about yourself" step for a new account, then shows the same
+        // loading cover as elsewhere. The Continue button on "Almost there" locks and shows a spinner.
         function authSetCpBusy(on){
           const b = document.getElementById('auth-cp-submit');
           if (!b) return;
@@ -3047,9 +3058,8 @@ let userPoints = 0;
           // Google/Apple OAuth redirects back to this same URL, which is a fresh page load
           if (freshOAuthRedirect) {
             window.__stitchAuthRouted = true;
-            // No white "Signing you in" cover any more: a first-time sign-up goes straight to the
-            // profile screen (see authFastRouteOAuthReturn), and a returning account gets the real app
-            // shell
+            // No white "Signing you in" cover anymore. A first sign-up goes to the profile screen,
+            // a returning account gets the real app.
             const landing = document.getElementById('landing-page');
             if (landing) landing.classList.add('landing-hidden');
           }
@@ -3103,9 +3113,8 @@ let userPoints = 0;
         async function authFastRouteOAuthReturn(){
           const sb = getSupabaseClient();
           if (!sb) return;
-          // Tells the first-frame script in index.html (which asks the database whether this account
-          // already has a profile) to stand down once this routing has made its own decision, so it can
-          // never paint a skeleton / onboarding screen over the real one
+          // Tells the first-frame script in index.html to stand down once routing has decided,
+          // so it never paints a skeleton over the real screen.
           try {
             const { data } = await sb.auth.getSession();
             const session = data && data.session;
@@ -3179,9 +3188,8 @@ let userPoints = 0;
             loadRemotePosts().catch(e => console.error(e))
               .then(() => loadPostInteractions().catch(e => console.error(e))),
           ]);
-          // Only build the app shell here when the person is already inside the app. During a Google/Apple
-          // return it is built by authEnterApp(); mounting it here put the Home skeleton on screen
-          // ahead of the onboarding screens
+          // Only build the app shell here if the person is already in the app. During a Google/Apple
+          // return authEnterApp() builds it, and doing it here showed the Home skeleton too early.
           const gateNow = document.getElementById('auth-gate');
           const gateStillUp = !!(gateNow && !gateNow.classList.contains('auth-hidden'));
           if (!(window.__stitchFreshOAuthReturn === true && gateStillUp)) await renderApp();

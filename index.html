@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content">
     <meta name="theme-color" content="#ffffff">
     <meta name="color-scheme" content="light">
-    <!-- Dark-mode first paint: apply the device's last-used theme before anything paints, so the
-       page background, splash and loading skeleton (e.g. after a Google/Apple sign-in
-       redirect) are dark from the very first frame instead of flashing white -->
+    <!-- Dark-mode first paint: apply the last-used theme before anything paints, so the splash and
+         skeleton are dark from the first frame instead of flashing white. -->
     <script>
     (function(){
       try {
@@ -110,10 +109,8 @@
             }
           } catch (e) { window.__stitchOAuthUid = null; }
         } catch (e) { window.__stitchFreshOAuthReturn = false; }
-        // Splash animation plays only the very first time the app is opened on this device.
-        // It is also skipped on any return from Google/Apple sign-in or an email-verification
-        // link, because those reload the page. Decided here, before first paint, so the logo
-        // never flashes while games.js is still downloading.
+        // Splash animation plays only the first time the app opens on this device. Skipped after a
+        // Google/Apple sign-in or email link (they reload the page). Decided before first paint.
         try {
           var seen = false;
           try { seen = localStorage.getItem('stitchSplashSeen') === '1'; } catch (e) {}
@@ -138,9 +135,8 @@
       #app-splash { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: #ffffff; }
       #app-splash .app-splash-logo { width: 112px; height: auto; opacity: 0; }
     </style>
-    <!-- Content-Security-Policy: locks script/style/connect/media loading down to exactly the
-       origins this app uses (CDN libraries, Google Fonts, Supabase, Sentry, Formspree,
-       Paystack, Pixabay) -->
+    <!-- Content-Security-Policy: only lets scripts, styles, connections and media load from the origins
+         this app uses (CDNs, Google Fonts, Supabase, Sentry, Formspree, Paystack, Pixabay). -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://browser.sentry-cdn.com https://js.paystack.co;
@@ -156,14 +152,12 @@
     ">
     <title>Stitch | Thread and Grow</title>
     <meta name="description" content="Join Stitch. Share, connect, study together and discover opportunities, all in one free app.">
-    <!-- IMPORTANT: replace this with your real production domain (custom domain if you have one,
-       otherwise your *.vercel.app URL) before launch, and keep it in sync with sitemap.xml and
-       robots.txt below -->
+    <!-- IMPORTANT: replace this with your real production domain (or *.vercel.app) before launch,
+         and keep it in sync with sitemap.xml and robots.txt. -->
     <link rel="canonical" href="https://mystitch.vercel.app/">
 
-    <!-- Open Graph: controls the title/description/image shown when this link is pasted into
-       WhatsApp, Twitter/X, Slack, Facebook, iMessage, etc. Without these, sharing the bare URL
-       shows no preview at all -->
+    <!-- Open Graph: the title, description and image shown when the link is pasted into
+         WhatsApp, X, Slack, Facebook, iMessage. Without it there's no preview. -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mystitch.vercel.app/">
     <meta property="og:title" content="Stitch | Thread and Grow">
@@ -213,9 +207,8 @@
         } catch (e) { /* not running under Capacitor / detection failed -- keep the 20px web default */ }
       })();
     </script>
-    <!-- Apple sign-in ordering: on Apple hardware (iPhone/iPad/Mac, including a Capacitor-
-       wrapped iOS build) "Continue with Apple" should be the first/top button, since that's
-       the platform convention and often an App Store review requirement -->
+    <!-- Apple sign-in order: on Apple devices "Continue with Apple" goes first, which is the
+         platform convention and often an App Store review requirement. -->
     <script>
       (function(){
         try {
@@ -230,7 +223,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261016y">
+    <link rel="stylesheet" href="styles.css?v=20261017x">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -355,9 +348,8 @@
                     <label for="auth-cp-username">Username</label>
                     <input id="auth-cp-username" type="text" placeholder="kwaku_ananse" autocomplete="username">
                   </div>
-                  <!-- Pushed to the bottom of the available space to match where the poster-app panel's
-                     Continue/Next button sits (see .auth-onboarding-layout / .auth-onboarding-footer in
-                     styles.css) -->
+                  <!-- Pushed to the bottom to match where the poster-app panel's Continue/Next button sits
+                       (see .auth-onboarding-layout and .auth-onboarding-footer in styles.css). -->
                   <div class="auth-onboarding-footer">
                     <div class="auth-error" id="auth-complete-profile-error">Please fill in all fields.</div>
                     <div class="flow-pill-bar">
@@ -369,8 +361,7 @@
               </div></div>
 
               <!-- Shown once, right after Complete Profile, so every new account answers the Career Space
-                 "post or explore" question during onboarding instead of being asked mid-app later (see
-                 authShowPosterApp / authSubmitPosterApp in games.js) -->
+                   "post or explore" question during onboarding (authShowPosterApp in games.js). -->
               <div class="auth-panel" id="auth-panel-poster-app"><div class="auth-onboarding-layout">
                 <div id="auth-poster-app-form-container"></div>
                 <!-- Pushed to the bottom of the available space via .auth-onboarding-footer (margin-
@@ -433,23 +424,19 @@
 
     </div>
 
-    <!-- ================================================================ Auth transition loading
-       cover: shown the instant Sign Out / Delete Account is confirmed (see authSignOut /
-       authDeleteAccount in games.js) -->
+    <!-- ================ Auth transition loading cover: shown the moment Sign Out / Delete Account
+         is confirmed (see authSignOut / authDeleteAccount in games.js) -->
     <div id="auth-transition-loading" class="hidden"></div>
     <script>
-      // OAuth (Google/Apple) return: paint the right screen on the very first frame, before any of the
-      // app scripts have downloaded, so there is never a blank page. A returning account gets the
-      // Home skeleton; a new account goes straight to the "Almost there" profile screen.
+      // OAuth (Google/Apple) return: paint the right screen on the first frame, no blank page.
+      // Returning account gets the Home skeleton, a new one goes to "Almost there".
       (function(){
         try {
           if (window.__stitchFreshOAuthReturn !== true) return;
           var uid = window.__stitchOAuthUid, known = false, i;
           try { known = !!(uid && localStorage.getItem('stitchOnboarded:' + uid) === '1'); } catch (e) {}
-          // Existing accounts that have no "onboarded" flag on this device (older accounts, a new
-          // phone/browser, cleared storage) used to fall into the else-branch below and flash the
-          // "Almost there" onboarding screen. Their saved sign-in token carries the same flag when it
-          // was ever set on the account, so check that too.
+          // Older accounts with no "onboarded" flag on this device used to flash the "Almost there" screen.
+          // Their sign-in token carries the same flag, so check that too.
           if (!known) {
             try {
               var tk = /access_token=([^&]+)/.exec(window.location.hash || '');
@@ -466,7 +453,7 @@
             for (i = 0; i < 5; i++) story += '<div class="skel-story-wrap"><div class="skel-story-circle"><div class="skel-story skel-avatar skel-shimmer"></div>' + (i === 0 ? '<div class="skel-story-badge skel-avatar skel-shimmer"></div>' : '') + '</div></div>';
             var post = '<div class="skel-post"><div class="skel-post-head"><div class="skel-post-avatar skel-avatar skel-shimmer"></div><div class="skel-post-headlines"><div class="skel-line skel-shimmer" style="width:38%;"></div><div class="skel-line skel-shimmer" style="width:24%;"></div></div></div><div class="skel-post-line skel-line skel-shimmer" style="width:100%;"></div><div class="skel-post-line skel-line skel-shimmer" style="width:80%;"></div></div>';
             if (window.matchMedia && window.matchMedia('(min-width:1024px)').matches) {
-              // Desktop: skeleton of the whole shell (left menu + feed + right panel) so nothing jumps when the app appears
+              // Desktop: skeleton of the whole shell (left menu, feed, right panel) so nothing jumps.
               var sh = function (w, h, extra) { return '<div class="skel-line skel-shimmer" style="width:' + w + ';height:' + (h || 12) + 'px;' + (extra || '') + '"></div>'; };
               var nav = '<div class="skel-dnav"><div class="skel-shimmer" style="width:120px;height:40px;border-radius:12px;margin:6px 0 26px 10px;"></div>';
               for (i = 0; i < 6; i++) nav += '<div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>' + sh((50 + (i * 7) % 30) + '%', 12) + '</div>';
@@ -499,10 +486,8 @@
             document.documentElement.classList.add('oauth-onboarding');
           }
           if (known) { showReturningSkeleton(); return; }
-          // Not sure yet: do NOT guess "new account". Leave the plain white page up (the auth gate is
-          // hidden while oauth-returning) and ask the database right now whether this account already
-          // has a finished profile. Existing account -> only the Home skeleton. Brand-new account ->
-          // straight to onboarding. If the check fails or is slow, paint nothing and let games.js decide.
+          // Not sure yet: don't guess "new account". Keep the white page, ask the database for a profile.
+          // Existing: Home skeleton. New: onboarding. Slow or failed: games.js decides.
           var tokM = /access_token=([^&]+)/.exec(window.location.hash || '');
           if (!uid || !tokM) return;
           var settled = false;
@@ -528,13 +513,11 @@
       })();
     </script>
 
-    <!-- ================================================================ Landing page: the
-       marketing/splash-screen page shown right after the opening app-splash animation finishes
-       and before the auth gate -->
+    <!-- ================ Landing page: the marketing screen shown after the opening splash,
+         before the auth gate -->
     <script>
-      // Stub for landingGoToAuth: the real implementation lives in games.js, which is the last
-      // script tag on the page and can still be downloading when this landing markup is already
-      // visible and tappable (especially on a slow connection)
+      // Stub for landingGoToAuth. The real one is in games.js (the last script), which may still be
+      // downloading when the landing page is already tappable.
       window.landingGoToAuth = window.landingGoToAuth || function(mode){
         window.__pendingLandingAuthMode = mode;
       };
@@ -860,9 +843,8 @@
 
     </div>
 
-    <!-- Terms of Service modal and footer info modal: moved to be top-level siblings of #auth-
-       gate/#landing-page (not nested inside #auth-gate) so they render in their own stacking
-       context and open immediately on tap, instead of being trapped behind -->
+    <!-- Terms of Service and footer info modals are top-level siblings of #auth-gate/#landing-page
+         so they get their own stacking context and open right away on tap. -->
     <div id="auth-terms-modal" class="hidden" style="position:fixed;inset:0;z-index:10000;background:#fff;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="max-width:640px;width:100%;margin:0 auto;min-height:100%;padding:20px 24px 60px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-top:6px;padding-bottom:10px;">
@@ -893,9 +875,8 @@
     <!-- The ?v=... on each script below is a cache-buster, nothing more -->
     <!-- Analytics (PostHog): vendored + pinned (posthog-js 1.435.8). Must load BEFORE core.js so the
          network hook is installed before the Supabase client is created. Fill in the key in analytics.js -->
-    <!-- Third-party libraries: loaded here (after the page markup) instead of in <head> so they no longer
-       block the first paint. Without this, the page stayed blank while ~7 CDN scripts downloaded,
-       which showed up as a blank screen after a Google/Apple sign-in redirect. Order is unchanged. -->
+    <!-- Third-party libraries load here, after the markup, instead of in <head>, so they don't block
+         first paint (it was a blank screen after a Google/Apple redirect). Order is unchanged. -->
     <!-- Resource-scanning libraries: extract text from uploaded PDF / DOCX / PPTX files client-
        side -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -912,9 +893,8 @@
     <!-- Mermaid: renders the simple diagrams (flowcharts, timelines, etc.) Stitch Bot can now
        draw -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
-    <!-- Supabase client: used both to reach the ai-proxy Edge Function and, via Realtime
-       broadcast channels, as the signaling layer for real WebRTC voice/video calls (see
-       startCall/RTC_* below) -->
+    <!-- Supabase client: reaches the ai-proxy Edge Function and, through Realtime broadcast,
+         is the signaling layer for the WebRTC voice/video calls (see startCall/RTC_* below). -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <!-- Sentry: error/performance monitoring -->
     <script src="https://browser.sentry-cdn.com/8.9.2/bundle.tracing.min.js" crossorigin="anonymous"></script>
@@ -928,9 +908,8 @@
           environment: (location.protocol === 'file:' || location.hostname === 'localhost') ? 'development' : 'production',
         });
       }
-      // Safe no-op wrapper so the rest of the app can call
-      // Sentry.captureException/captureMessage even when Sentry hasn't loaded (e.g. offline, ad-
-      // blocker, or DSN not configured yet) without needing an `if (window.Sentry)` check at
+      // Safe no-op wrapper so the app can call Sentry.captureException/captureMessage even when
+      // Sentry hasn't loaded (offline, ad-blocker, no DSN), without an `if (window.Sentry)` check.
       window.reportError = function(err, context){
         try {
           console.error('[reportError]', err, context || '');
@@ -946,18 +925,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261004a"></script>
-    <script src="core.js?v=20261016e"></script>
-    <script src="feed.js?v=20261016d"></script>
-    <script src="chat.js?v=20261016j"></script>
-    <script src="study.js?v=20261016a"></script>
-    <script src="courses.js?v=20261016q"></script>
-    <script src="quizzesAndGames.js?v=20261014c"></script>
-    <script src="jobs.js?v=20261016r"></script>
-    <script src="creator.js?v=20261015d"></script>
-    <script src="settings.js?v=20261004b"></script>
-    <script src="profile.js?v=20261016b"></script>
-    <script src="overlays.js?v=20261016h"></script>
-    <script src="games.js?v=20261016k"></script>
+    <script src="analytics.js?v=20261017x"></script>
+    <script src="core.js?v=20261017x"></script>
+    <script src="feed.js?v=20261017x"></script>
+    <script src="chat.js?v=20261017x"></script>
+    <script src="study.js?v=20261017x"></script>
+    <script src="courses.js?v=20261017x"></script>
+    <script src="quizzesAndGames.js?v=20261017x"></script>
+    <script src="jobs.js?v=20261017x"></script>
+    <script src="creator.js?v=20261017x"></script>
+    <script src="settings.js?v=20261017x"></script>
+    <script src="profile.js?v=20261017x"></script>
+    <script src="overlays.js?v=20261017x"></script>
+    <script src="games.js?v=20261017x"></script>
 </body>
 </html>

@@ -266,12 +266,12 @@ try {
             <div id="ai-attach-strip" class="flex-shrink-0">${aiAttachStripHTML()}</div>
             <div id="ai-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="ai-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx" multiple class="hidden" onchange="handleAIFileSelect(event)">
-              <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
-                ${emojiButtonHTML('ai-chat-input', 'w-8 h-8 rounded-full', 'background:rgba(10,37,64,0.06);color:'+NAVY+';')}
-                <textarea id="ai-chat-input" rows="1" placeholder="Ask Stitch Bot anything..." onkeydown="handleAIChatInputKeydown(event)" oninput="autoGrowAIChatInput(this)" onfocus="handleAIChatInputFocus()" onblur="handleAIChatInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center" style="max-height:120px; overflow-y:auto;"></textarea>
-                <button onclick="document.getElementById('ai-file-input').click()" title="Attach images, PDFs, or PPTX" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('clip','w-4 h-4')}</button>
-                <button id="ai-mic-btn" onclick="toggleAIVoiceInput()" title="Ask by voice" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.06);color:${NAVY};">${Icon('mic','w-4 h-4')}</button>
-                <button onclick="sendAIMessage()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+              <div class="wa-row">
+                <div class="wa-pill convo-composer-pill">
+                  <button onclick="document.getElementById('ai-file-input').click()" title="Attach images, PDFs, or PPTX" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
+                  <textarea id="ai-chat-input" rows="1" placeholder="Ask Stitch Bot anything..." onkeydown="handleAIChatInputKeydown(event)" oninput="autoGrowAIChatInput(this)" onfocus="handleAIChatInputFocus()" onblur="handleAIChatInputBlur()" class="wa-textarea" style="max-height:120px; overflow-y:auto;"></textarea>
+                </div>
+                <button id="ai-mic-btn" data-mode="mic" onclick="aiMainAction()" title="Ask by voice" class="wa-main-btn">${Icon('mic','w-6 h-6')}</button>
               </div>
             </div>
             ${aiChatHistoryDrawerHTML()}`;
@@ -285,6 +285,7 @@ try {
         }
 
         function aiAttachStripHTML(){
+          setTimeout(aiMainSync, 0);
           if (!pendingAIAttachments.length) return '';
           return `
             <div class="px-4 pt-3 flex gap-2 flex-wrap">
@@ -491,11 +492,33 @@ try {
         function autoGrowAIChatInput(el){
           el.style.height = 'auto';
           el.style.height = el.scrollHeight + 'px';
+          aiMainSync();
+        }
+
+        // One round button: mic while the box is empty, send once you type or attach something
+        function aiMainHasContent(){
+          const i = document.getElementById('ai-chat-input');
+          return !!((i && i.value.trim()) || (typeof pendingAIAttachments !== 'undefined' && pendingAIAttachments.length));
+        }
+        function aiMainSync(){
+          const b = document.getElementById('ai-mic-btn');
+          if (!b) return;
+          const has = aiMainHasContent();
+          const mode = has ? 'send' : 'mic';
+          if (b.dataset.mode === mode) return;
+          b.dataset.mode = mode;
+          b.innerHTML = Icon(has ? 'send' : 'mic', 'w-6 h-6');
+          b.title = has ? 'Send' : 'Ask by voice';
+        }
+        function aiMainAction(){
+          if (aiMainHasContent()) sendAIMessage(); else toggleAIVoiceInput();
+          setTimeout(aiMainSync, 0);
         }
 
         function resetAIChatInputHeight(){
           const inputEl = document.getElementById('ai-chat-input');
           if (inputEl) inputEl.style.height = 'auto';
+          aiMainSync();
         }
 
         const AI_ROBOT_POSES = [
@@ -1176,68 +1199,212 @@ try {
           if (typeof queueSaveUserState === 'function') queueSaveUserState();
         }
 
-        // ---- AI chat voice input + message send ----
+        // ---- AI chat voice input: live waveform, then the text goes into the box ----
+        let aiVoiceCtx = null, aiVoiceStream = null, aiVoiceAnalyser = null, aiVoiceBuf = null;
+        let aiVoiceTimer = null, aiVoiceLevels = [];
+        let aiVoiceStopping = false, aiVoiceSendAfter = false, aiVoiceCancelled = false;
+        let aiVoiceText = '', aiVoiceBase = '', aiVoiceFinishTimer = null;
+        const AI_VOICE_BARS = 44;
+
         function toggleAIVoiceInput(){
-          if (aiVoiceRecording) { stopAIVoiceInput(); return; }
+          if (aiVoiceRecording) { stopAIVoiceInput(false); return; }
+          startAIVoiceInput();
+        }
+
+        function aiVoiceBarHTML(){
+          return `
+            <div id="ai-voice-bar" class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
+              <button type="button" onclick="cancelAIVoiceInput()" aria-label="Cancel" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('close','w-4 h-4')}</button>
+              <div id="ai-voice-wave" class="flex-1 min-w-0 flex items-center justify-center" style="height:36px;gap:2px;overflow:hidden;">
+                ${Array.from({length: AI_VOICE_BARS}).map(() => '<i style="display:block;width:3px;height:3px;border-radius:2px;background:rgba(10,37,64,0.55);flex-shrink:0;transition:height .06s linear;"></i>').join('')}
+              </div>
+              <div id="ai-voice-status" class="hidden text-sm flex-1 min-w-0" style="color:#6b7280;">Transcribing…</div>
+              <button id="ai-voice-stop" type="button" onclick="stopAIVoiceInput(false)" aria-label="Stop" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('square','w-4 h-4')}</button>
+              <button id="ai-voice-send" type="button" onclick="stopAIVoiceInput(true)" aria-label="Stop and send" class="w-9 h-9 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+            </div>`;
+        }
+
+        function aiVoiceShowBar(){
+          const wrap = document.getElementById('ai-composer-wrap');
+          if (!wrap || document.getElementById('ai-voice-bar')) return;
+          const row = wrap.querySelector(':scope > div.wa-row');
+          if (row) row.style.display = 'none';
+          wrap.insertAdjacentHTML('beforeend', aiVoiceBarHTML());
+        }
+
+        function aiVoiceHideBar(){
+          const bar = document.getElementById('ai-voice-bar');
+          if (bar) bar.remove();
+          const wrap = document.getElementById('ai-composer-wrap');
+          const row = wrap && wrap.querySelector(':scope > div.wa-row');
+          if (row) row.style.display = '';
+        }
+
+        function aiVoiceDrawLevels(){
+          const wave = document.getElementById('ai-voice-wave');
+          if (!wave) return;
+          const bars = wave.children;
+          const lv = aiVoiceLevels.slice(-AI_VOICE_BARS);
+          for (let i = 0; i < bars.length; i++) {
+            const v = lv[lv.length - bars.length + i] || 0;
+            bars[i].style.height = (3 + Math.round(v * 30)) + 'px';
+          }
+        }
+
+        async function aiVoiceStartMeter(){
+          try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+            aiVoiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return false;
+            aiVoiceCtx = new AC();
+            const src = aiVoiceCtx.createMediaStreamSource(aiVoiceStream);
+            aiVoiceAnalyser = aiVoiceCtx.createAnalyser();
+            aiVoiceAnalyser.fftSize = 512;
+            src.connect(aiVoiceAnalyser);
+            aiVoiceBuf = new Uint8Array(aiVoiceAnalyser.fftSize);
+            aiVoiceLevels = [];
+            aiVoiceTimer = setInterval(() => {
+              if (!aiVoiceAnalyser) return;
+              aiVoiceAnalyser.getByteTimeDomainData(aiVoiceBuf);
+              let sum = 0;
+              for (let i = 0; i < aiVoiceBuf.length; i++) { const d = (aiVoiceBuf[i] - 128) / 128; sum += d * d; }
+              const rms = Math.sqrt(sum / aiVoiceBuf.length);
+              aiVoiceLevels.push(Math.min(1, rms * 5));
+              if (aiVoiceLevels.length > 200) aiVoiceLevels.splice(0, aiVoiceLevels.length - 100);
+              aiVoiceDrawLevels();
+            }, 55);
+            return true;
+          } catch (e) { return false; }
+        }
+
+        function aiVoiceStopMeter(){
+          if (aiVoiceTimer) { clearInterval(aiVoiceTimer); aiVoiceTimer = null; }
+          if (aiVoiceStream) { try { aiVoiceStream.getTracks().forEach(t => t.stop()); } catch (e) {} aiVoiceStream = null; }
+          if (aiVoiceCtx) { try { aiVoiceCtx.close(); } catch (e) {} aiVoiceCtx = null; }
+          aiVoiceAnalyser = null;
+        }
+
+        async function startAIVoiceInput(){
           const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
           if (!SR) { flashAIMicMessage("Voice input isn't supported in this browser"); return; }
+          aiVoiceStopping = false; aiVoiceSendAfter = false; aiVoiceCancelled = false;
+          aiVoiceText = ''; aiVoiceBase = '';
+          aiVoiceRecording = true;
+          aiVoiceShowBar();
+          const meterOk = await aiVoiceStartMeter();
+          if (!aiVoiceRecording) { aiVoiceStopMeter(); return; }
+          if (!meterOk) aiVoiceStartIdleWave();
+          aiVoiceBeginRecognition(SR, true);
+        }
+
+        function aiVoiceBeginRecognition(SR, allowMeterFallback){
           let recognition;
-          try { recognition = new SR(); } catch (err) { flashAIMicMessage('Voice input unavailable'); return; }
-          const inputEl = document.getElementById('ai-chat-input');
+          try { recognition = new SR(); } catch (err) { aiVoiceAbort('Voice input unavailable'); return; }
           recognition.lang = (navigator.language || 'en-US');
-          recognition.continuous = false;
+          recognition.continuous = true;
           recognition.interimResults = true;
           recognition.maxAlternatives = 1;
-          let finalTranscript = '';
           recognition.onresult = (event) => {
-            let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-              const res = event.results[i];
-              if (res.isFinal) finalTranscript += res[0].transcript;
-              else interim += res[0].transcript;
-            }
-            if (inputEl) { inputEl.value = (finalTranscript + interim).trim(); autoGrowAIChatInput(inputEl); }
+            let cur = '';
+            for (let i = 0; i < event.results.length; i++) cur += event.results[i][0].transcript;
+            aiVoiceText = (aiVoiceBase + ' ' + cur).trim();
           };
           recognition.onerror = (event) => {
-            aiVoiceRecording = false;
-            aiVoiceRecognition = null;
-            setAIMicUI(false);
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') flashAIMicMessage('Mic access denied');
-            else if (event.error === 'no-speech') flashAIMicMessage("Didn't catch that, try again");
-            else flashAIMicMessage('Voice input failed');
+            if (event.error === 'aborted' || aiVoiceCancelled) return;
+            // Some phones won't let the recogniser and the level meter share the mic: drop the meter and retry
+            if (event.error === 'audio-capture' && allowMeterFallback && aiVoiceStream) {
+              aiVoiceStopMeter();
+              aiVoiceRecognition = null;
+              setTimeout(() => { if (aiVoiceRecording && !aiVoiceStopping) { aiVoiceStartIdleWave(); aiVoiceBeginRecognition(SR, false); } }, 150);
+              return;
+            }
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') aiVoiceAbort('Mic access denied');
+            else if (event.error === 'no-speech') { /* handled in onend */ }
+            else aiVoiceAbort('Voice input failed');
           };
           recognition.onend = () => {
-            aiVoiceRecording = false;
-            aiVoiceRecognition = null;
-            setAIMicUI(false);
-            const transcript = (finalTranscript || (inputEl ? inputEl.value : '')).trim();
-            if (transcript) sendAIMessage(transcript, true);
+            if (aiVoiceCancelled || !aiVoiceRecording) return;
+            if (!aiVoiceStopping) {
+              // The browser ended the session by itself (silence or time limit): keep listening.
+              aiVoiceBase = aiVoiceText;
+              try { recognition.start(); return; } catch (e) {}
+            }
+            aiVoiceFinish();
           };
-          try {
-            recognition.start();
-          } catch (err) {
-            flashAIMicMessage('Voice input unavailable');
-            return;
-          }
+          try { recognition.start(); } catch (err) { aiVoiceAbort('Voice input unavailable'); return; }
           aiVoiceRecognition = recognition;
-          aiVoiceRecording = true;
           setAIMicUI(true);
         }
 
-        function stopAIVoiceInput(){
+        // Without a live mic level, keep the bars gently moving so it still looks alive
+        function aiVoiceStartIdleWave(){
+          if (aiVoiceTimer) return;
+          aiVoiceTimer = setInterval(() => {
+            aiVoiceLevels.push(0.12 + Math.random() * 0.35);
+            if (aiVoiceLevels.length > 200) aiVoiceLevels.splice(0, aiVoiceLevels.length - 100);
+            aiVoiceDrawLevels();
+          }, 90);
+        }
+
+        function stopAIVoiceInput(sendAfter){
+          if (!aiVoiceRecording || aiVoiceStopping) return;
+          aiVoiceStopping = true;
+          aiVoiceSendAfter = !!sendAfter;
+          aiVoiceStopMeter();
+          // "Transcribing…" while the recogniser delivers its last words
+          const wave = document.getElementById('ai-voice-wave'); if (wave) wave.classList.add('hidden');
+          const status = document.getElementById('ai-voice-status'); if (status) status.classList.remove('hidden');
+          const stopBtn = document.getElementById('ai-voice-stop'); if (stopBtn) { stopBtn.disabled = true; stopBtn.style.opacity = '.4'; }
+          const sendBtn = document.getElementById('ai-voice-send'); if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
           if (aiVoiceRecognition) { try { aiVoiceRecognition.stop(); } catch (err) {} }
+          // If the browser never fires onend, don't leave the bar hanging
+          aiVoiceFinishTimer = setTimeout(aiVoiceFinish, 4000);
+        }
+
+        function aiVoiceFinish(){
+          if (aiVoiceFinishTimer) { clearTimeout(aiVoiceFinishTimer); aiVoiceFinishTimer = null; }
+          if (!aiVoiceRecording) return;
+          const text = (aiVoiceText || '').trim();
+          const sendAfter = aiVoiceSendAfter;
+          aiVoiceReset();
+          const inputEl = document.getElementById('ai-chat-input');
+          if (!text) { flashAIMicMessage("Didn't catch that, try again"); return; }
+          if (sendAfter) { sendAIMessage(text, true); return; }
+          if (inputEl) {
+            inputEl.value = (inputEl.value ? inputEl.value.trim() + ' ' : '') + text;
+            autoGrowAIChatInput(inputEl);
+            inputEl.focus();
+          }
+          aiMainSync();
+        }
+
+        function aiVoiceReset(){
+          aiVoiceRecording = false; aiVoiceStopping = false;
+          if (aiVoiceFinishTimer) { clearTimeout(aiVoiceFinishTimer); aiVoiceFinishTimer = null; }
+          aiVoiceStopMeter();
+          aiVoiceRecognition = null;
+          aiVoiceHideBar();
+          setAIMicUI(false);
+        }
+
+        function aiVoiceAbort(msg){
+          aiVoiceCancelled = true;
+          if (aiVoiceRecognition) { try { aiVoiceRecognition.abort(); } catch (e) {} }
+          aiVoiceReset();
+          if (msg) flashAIMicMessage(msg);
+        }
+
+        function cancelAIVoiceInput(){
+          aiVoiceCancelled = true;
+          if (aiVoiceRecognition) { try { aiVoiceRecognition.abort(); } catch (e) {} }
+          aiVoiceReset();
         }
 
         function setAIMicUI(on){
           const micBtn = document.getElementById('ai-mic-btn');
           if (!micBtn) return;
-          micBtn.classList.toggle('bg-red-500', on);
-          micBtn.classList.toggle('text-white', on);
-          micBtn.innerHTML = Icon(on ? 'square' : 'mic', 'w-4 h-4');
-          micBtn.style.animation = on ? 'pulse 1s infinite' : '';
-          micBtn.title = on ? 'Stop and send' : 'Ask by voice';
-          if (!on) { micBtn.style.background = 'rgba(10,37,64,0.06)'; micBtn.style.color = NAVY; }
-          else { micBtn.style.background = ''; micBtn.style.color = ''; }
+          micBtn.title = on ? 'Stop' : 'Ask by voice';
         }
 
         function flashAIMicMessage(msg){
@@ -1487,8 +1654,63 @@ try {
           }
         }
 
+        let newCourseStep = 1;
+        function courseCreateStepError(step){
+          const d = newCourseDraft;
+          if (step === 1) {
+            if (!d.photo) { window.__courseCoverErr = true; return 'Please pick a colour card or upload a cover picture to continue.'; }
+            if (d.welcomeVideo && d.welcomeVideo.uploading) return 'Your welcome video is still uploading. Please wait a moment.';
+            if (!d.welcomeVideo || !d.welcomeVideo.url) { window.__courseWelcomeErr = true; return 'Please add a welcome video to continue. Students see it first.'; }
+            if (!d.title.trim()) return 'Please add a course title.';
+            if (d.price !== '' && d.price !== undefined && !(parseFloat(d.price) >= 0)) return 'Enter a valid price, or leave it empty for a free course.';
+          }
+          if (step === 3 && (!d.modules.length || !d.modules.some(m => m.items.length))) return 'Add at least one module with at least one item.';
+          return null;
+        }
+        function courseCreateNext(){
+          const err = courseCreateStepError(newCourseStep);
+          if (err) { rerenderNewCourseOverlay(); openAppAlertModal(err); return; }
+          newCourseStep = Math.min(4, newCourseStep + 1);
+          rerenderNewCourseOverlay();
+          const sc = document.querySelector('#overlay .overflow-y-auto'); if (sc) sc.scrollTop = 0;
+        }
+        function courseCreateBack(){
+          newCourseStep = Math.max(1, newCourseStep - 1);
+          rerenderNewCourseOverlay();
+          const sc = document.querySelector('#overlay .overflow-y-auto'); if (sc) sc.scrollTop = 0;
+        }
+        function addCourseLearnPoint(){ if (!newCourseDraft.learn) newCourseDraft.learn = []; newCourseDraft.learn.push(''); rerenderNewCourseOverlay(); }
+        function removeCourseLearnPoint(i){ newCourseDraft.learn.splice(i, 1); rerenderNewCourseOverlay(); }
+        function updateCourseLearnPoint(i, v){ newCourseDraft.learn[i] = v; }
+
+        function handleCourseWelcomeSelected(e){
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          if (!/^video\//.test(file.type || '')) { openAppAlertModal('Please choose a video file.'); e.target.value = ''; return; }
+          const d = newCourseDraft;
+          const wv = { url: URL.createObjectURL(file), name: file.name, uploading: true };
+          d.welcomeVideo = wv;
+          window.__courseWelcomeErr = false;
+          rerenderNewCourseOverlay();
+          uploadCourseItemMediaToStorage(file, 'welcome' + Date.now() + Math.random().toString(36).slice(2, 6)).then(remoteUrl => {
+            if (d.welcomeVideo !== wv) return;
+            if (remoteUrl) { wv.url = remoteUrl; wv.uploading = false; }
+            else { d.welcomeVideo = null; openAppAlertModal("The welcome video couldn't be uploaded. Check your connection and try again."); }
+            rerenderNewCourseOverlay();
+          });
+        }
+        function removeCourseWelcomeVideo(){
+          newCourseDraft.welcomeVideo = null;
+          rerenderNewCourseOverlay();
+        }
+        function courseWelcomeVideoBlockHTML(c){
+          const wv = c && c.welcomeVideo;
+          if (!wv || !wv.url) return '';
+          return `<div class="rounded-3xl overflow-hidden bg-black mb-4" style="aspect-ratio:16/9;"><video src="${escapeHtml(wv.url)}" class="w-full h-full object-cover" controls controlsList="nodownload noplaybackrate" playsinline preload="metadata"></video></div>`;
+        }
+
         function resetNewCourseDraft(){
-          newCourseDraft = { title:'', description:'', deliveryType:'uploaded', modules:[], resources:[], finalItems:[], photo:null, price:'', currency:'GHS' };
+          newCourseDraft = { title:'', description:'', deliveryType:'uploaded', modules:[], resources:[], finalItems:[], photo:null, welcomeVideo:null, learn:[], audience:'', price:'', currency:'GHS' };
         }
 
         function triggerCoursePhotoUpload(){
@@ -1599,7 +1821,8 @@ try {
           const n = Math.round(Number(c && c.price) || 0);
           if (n <= 0) return 'Free';
           const cur = (c.currency || 'GHS').toUpperCase();
-          return `${cur === 'GHS' ? 'GHS ' : cur + ' '}${n}`;
+          const sym = { GHS: '₵', NGN: '₦', USD: '$', ZAR: 'R', KES: 'KSh ' }[cur];
+          return `${sym !== undefined ? sym : cur + ' '}${n.toLocaleString('en-US')}`;
         }
         function courseIsPaid(c){ return Math.round(Number(c && c.price) || 0) > 0; }
 
@@ -1732,7 +1955,8 @@ try {
           return true;
         }
         function courseBadgesHTML(c, enrolled){
-          return `${c.deliveryType === 'live' ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#dc2626;">Live</span>` : ''}${enrolled ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#059669;">Enrolled</span>` : ''}`;
+          const t = 'class="text-[10px] font-bold uppercase" style="color:#fff;letter-spacing:.04em;text-shadow:0 1px 5px rgba(0,0,0,.55);"';
+          return `${c.deliveryType === 'live' ? `<span ${t}>Live</span>` : ''}${enrolled ? `<span ${t}>Enrolled</span>` : ''}`;
         }
         function courseAdminTrashHTML(c){
           return canManageCourse(c) ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="top:8px;right:8px;background:rgba(255,255,255,.9);color:#6b7280;z-index:2;">${Icon('trash','w-3.5 h-3.5')}</button>` : '';
@@ -1777,7 +2001,7 @@ try {
                 <div class="flex-1"></div>
                 ${enrolled ? `
                   <div class="mt-2"><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div><div class="text-[11px] text-gray-400 mt-1">${pct}% complete</div></div>`
-                : `<div class="flex items-center justify-between mt-2">${courseIsPaid(c) ? `<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(30,144,255,.12);color:${NAVY};">${coursePriceLabel(c)}</span>` : `<span class="text-xs font-bold uppercase" style="color:#059669;letter-spacing:.03em;">${coursePriceLabel(c)}</span>`}<span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
+                : `<div class="flex items-center justify-between mt-2">${courseIsPaid(c) ? `<span class="text-xs font-bold" style="color:${NAVY};">${coursePriceLabel(c)}</span>` : `<span class="text-xs font-bold uppercase" style="color:#059669;letter-spacing:.03em;">${coursePriceLabel(c)}</span>`}<span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
               </div>
             </div>`;
         }
@@ -1840,6 +2064,7 @@ try {
               <div class="flex gap-2 mb-4">
                 <button onclick="openNewCourse()" class="filter-pill nowrap-pill flex-1 justify-center">${Icon('plus','w-4 h-4')} Create a Course</button>
               </div>` : ''}
+            ${courseCreatorHomeHTML()}
             ${visibleCourses().length ? `
               <div class="relative mb-3">
                 <div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;color:#9ca3af;pointer-events:none;z-index:1;">${Icon('search','w-4 h-4')}</div>
@@ -1854,6 +2079,7 @@ try {
           courseActiveModule = 0;
           courseDetailTab = 'content';
           courseDetailMenuOpen = false;
+          coursePreviewAsStudent = false;
           openOverlay('courseDetail');
         }
 
@@ -1938,7 +2164,7 @@ try {
                 </div>
 
                 <button onclick="toggleCourseEnrollAgree()" class="w-full flex items-start gap-3 bg-white rounded-2xl p-4 mb-6 shadow-sm border ${d.agreed ? 'border-transparent' : 'border-gray-200'}" style="${d.agreed ? `background:rgba(30,144,255,0.06);border-color:${NAVY};` : ''}">
-                  <span class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5" style="${d.agreed ? `background:${NAVY};border-color:${NAVY};` : 'border-color:#d1d5db;'}">${d.agreed ? Icon('check','w-3.5 h-3.5 text-white') : ''}</span>
+                  <span class="w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 mt-0.5" style="${d.agreed ? `background:${NAVY};border-color:${NAVY};` : 'border-color:#d1d5db;'}">${d.agreed ? IconBold('check','w-3.5 h-3.5 text-white') : ''}</span>
                   <span class="text-sm text-gray-700 text-left leading-relaxed">I have read and accept the enrollment terms above.</span>
                 </button>
 
@@ -2048,10 +2274,13 @@ try {
           const isLive = c.deliveryType === 'live';
           const resources = c.resources || [];
           const announcements = c.announcements || [];
+          if (canManageCourse(c)) return coursePreviewAsStudent ? courseDiscoverHTML(c, total) : courseManageHTML(c, total);
+          if (!enrolled && !canManageCourse(c)) return courseDiscoverHTML(c, total);
+          if (enrolled && !canManageCourse(c)) return courseLearnHTML(c, total, done, pct);
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
-                <div class="-mx-5">
+                <div class="-mx-5 ov-sticky-wrap">
                   ${canManageCourse(c)
                     ? menuOverlayHeader('Dashboard', courseDetailMenuOpen, 'toggleCourseDetailMenu', courseDetailMenuDropdownHTML(c.id), {backFn: 'overlayGoBack', shortDashes: true})
                     : overlayHeader(escapeHtml(c.title), '20px')}
@@ -2059,7 +2288,7 @@ try {
                 <div class="relative overflow-hidden rounded-3xl mb-4" style="height:190px;margin-top:10px;background:${courseFallbackGrad(c)};">
                   ${courseCoverFill(c)}
                   <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.6) 100%);"></div>
-                  <div class="absolute flex items-center" style="top:12px;left:12px;gap:6px;">${isLive ? '<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style="background:rgba(255,255,255,.92);color:#dc2626;">Live Teaching</span>' : ''}</div>
+                  <div class="absolute flex items-center" style="top:12px;left:12px;gap:6px;">${isLive ? '<span class="text-[10px] font-bold uppercase" style="color:#fff;letter-spacing:.04em;text-shadow:0 1px 5px rgba(0,0,0,.55);">Live Teaching</span>' : ''}</div>
                   <div class="absolute" style="left:16px;right:16px;bottom:14px;">
                     <button onclick="openCourseEnrolledPeople('${c.id}')" class="text-[11px] font-bold uppercase tracking-wide flex items-center gap-1" style="color:rgba(255,255,255,.85);">${escapeHtml(stitchOrgName(c.org))}</button>
                     <div class="font-display text-white" style="font-size:24px;line-height:1.12;text-shadow:0 1px 6px rgba(0,0,0,.35);">${escapeHtml(c.title)}</div>
@@ -2069,6 +2298,7 @@ try {
                   ${[[String((c.modules || []).length), 'Modules'], [String(total), 'Lessons'], [coursePriceLabel(c), 'Price'], [String(c.enrolledCount || 0), 'Enrolled']].map(([v, l]) => `<div class="flex-1 rounded-2xl bg-gray-50 border border-gray-100 py-2.5 text-center"><div class="font-bold text-sm" style="color:${NAVY};">${escapeHtml(v)}</div><div class="text-[10.5px] text-gray-400">${l}</div></div>`).join('')}
                 </div>
                 ${!canManageCourse(c) ? `<button onclick="openReportClass('course','${escapeForJsAttr(c.id)}','${escapeForJsAttr(c.title)}')" class="text-[11px] font-semibold text-gray-400 mb-3 inline-flex items-center gap-1">${Icon('flag','w-3 h-3')} Report this course</button>` : ''}
+                ${courseWelcomeVideoBlockHTML(c)}
                 <div class="text-sm text-gray-600 leading-relaxed mb-4">${renderRichText(c.description)}</div>
 
                 ${courseLiveSectionHTML(c)}
@@ -2090,13 +2320,13 @@ try {
                       return `
                       <button onclick="courseSwitchModule(${i})" class="flex-shrink-0 flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold ${i === courseActiveModule ? 'text-white' : 'text-gray-500 bg-gray-100'}" style="${i === courseActiveModule ? `background:${NAVY};` : ''}">
                         ${(i > 0 && !enrolled) ? Icon('lock','w-3 h-3') : ''} ${i + 1}
-                        ${modDone ? `<span class="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${Icon('check','w-2.5 h-2.5')}</span>` : ''}
+                        ${modDone ? `<span class="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${IconBold('check','w-2.5 h-2.5')}</span>` : ''}
                       </button>`;
                     }).join('')}
                   </div>
                   ${!enrolled ? `
                     <button onclick="openCourseEnrollForm('${c.id}')" class="w-full flex items-center justify-center gap-2 rounded-full font-bold text-sm text-white mb-5" style="padding:14px 0;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 6px 18px rgba(65,105,225,0.35);">
-                      ${Icon('plus','w-4 h-4')} Enroll${courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free'} to unlock all modules
+                      ${Icon('plus','w-4 h-4')} Enroll${courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free'}
                     </button>` : `
                     <div class="mb-5">
                       <div class="flex items-center gap-4 bg-white border border-gray-100 shadow-sm rounded-3xl p-4" style="padding:16px;">
@@ -2137,6 +2367,292 @@ try {
             </div>`;
         }
 
+
+
+
+        // ---- Creator side: home strip, course dashboard, content builder, preview ----
+        let coursePreviewAsStudent = false;
+        function startCoursePreview(){ coursePreviewAsStudent = true; const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = courseDetailHTML(); }
+        function exitCoursePreview(){ coursePreviewAsStudent = false; courseDetailTab = 'content'; const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = courseDetailHTML(); }
+        function courseMoneyShort(n){ n = Number(n) || 0; return '₵' + (n >= 10000 ? (Math.round(n / 100) / 10) + 'k' : Math.round(n).toLocaleString('en-US')); }
+        function courseEarnedFor(c){
+          if (typeof walletState === 'undefined' || !walletState.loaded) return null;
+          return (walletState.payments || []).filter(x => x.status === 'paid' && x.product_id === c.id).reduce((n, x) => n + Number(x.creator_net || 0), 0);
+        }
+        function courseEarnedTotal(list){
+          if (typeof walletState === 'undefined' || !walletState.loaded) return null;
+          return list.reduce((n, c) => n + (courseEarnedFor(c) || 0), 0);
+        }
+        function courseKickCreatorWallet(){
+          try {
+            if (typeof walletState === 'undefined' || walletState.loaded || walletState.loading || window.__courseWalletKick || typeof loadCreatorWallet !== 'function') return;
+            window.__courseWalletKick = true;
+            Promise.resolve(loadCreatorWallet()).then(() => {
+              document.querySelectorAll('.js-course-earned').forEach(el => {
+                const id = el.getAttribute('data-course');
+                const mine = allCourses.filter(c => c.createdBy && typeof currentUserId !== 'undefined' && c.createdBy === currentUserId);
+                const v = id === 'all' ? courseEarnedTotal(mine) : courseEarnedFor(allCourses.find(c => c.id === id) || {});
+                el.textContent = v === null ? '—' : courseMoneyShort(v);
+              });
+            }).catch(() => {});
+          } catch (e) {}
+        }
+        function courseTileHTML(label, value, extra){
+          return `<div class="flex-1 bg-white rounded-3xl" style="padding:14px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);"><div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">${label}</div><div style="font-size:22px;font-weight:800;line-height:1.2;margin-top:2px;" class="text-gray-900">${value}</div></div>`;
+        }
+        function courseCreatorHomeHTML(){
+          if (!canCreateCourses()) return '';
+          const mine = allCourses.filter(c => c.createdBy && typeof currentUserId !== 'undefined' && c.createdBy === currentUserId);
+          if (!mine.length) return '';
+          courseKickCreatorWallet();
+          const students = mine.reduce((n, c) => n + ((c.enrolledUsers || []).length || c.enrolledCount || 0), 0);
+          const done = mine.reduce((n, c) => n + courseAnalyticsCollect(c).completed.length, 0);
+          const tracked = mine.reduce((n, c) => n + (c.enrolledUsers || []).length, 0);
+          const earned = courseEarnedTotal(mine);
+          return `
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-1">Your courses</div>
+            <div class="flex gap-2 mb-3">
+              ${courseTileHTML('Earned', `<span class="js-course-earned" data-course="all">${earned === null ? '—' : courseMoneyShort(earned)}</span>`)}
+              ${courseTileHTML('Students', String(students))}
+              ${courseTileHTML('Completed', (tracked ? Math.round(done / tracked * 100) : 0) + '%')}
+            </div>
+            ${mine.map(c => `
+              <button onclick="openCourseDetail('${c.id}')" class="w-full flex items-center gap-3 bg-white rounded-3xl text-left mb-3" style="padding:12px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);">
+                <div class="relative overflow-hidden flex-shrink-0" style="width:72px;height:72px;border-radius:18px;background:${courseFallbackGrad(c)};">${courseCoverFill(c)}</div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-bold text-[15px] text-gray-800 truncate">${escapeHtml(c.title)}</div>
+                  <div class="text-xs text-gray-400 truncate" style="margin:2px 0 4px;">${(c.enrolledUsers || []).length || c.enrolledCount || 0} students · ${(c.modules || []).length} module${(c.modules || []).length === 1 ? '' : 's'}</div>
+                  <div class="text-xs font-bold" style="color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}${c.deliveryType === 'live' ? ' <span class="text-gray-400 font-semibold">· Live</span>' : ''}${(c.welcomeVideo && c.welcomeVideo.url) ? '' : ' <span style="color:#d97706;font-weight:600;">· Needs a welcome video</span>'}</div>
+                </div>
+                <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+              </button>`).join('')}
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-4">All courses</div>`;
+        }
+
+        function openCourseAddItemToModule(courseId, mi, type){
+          openCourseAddItemPage(courseId, type);
+          courseItemPageModuleIndex = mi;
+          if (typeof rerenderCourseItemPage === 'function') rerenderCourseItemPage();
+        }
+
+        function courseManageHTML(c, total){
+          const A = courseAnalyticsCollect(c);
+          const users = c.enrolledUsers || [];
+          const tab = ['resources', 'engage'].includes(courseDetailTab) ? courseDetailTab : 'content';
+          const earned = courseEarnedFor(c);
+          courseKickCreatorWallet();
+          const announcements = c.announcements || [];
+          const resources = c.resources || [];
+          const typeIcon = { video:'video', image:'camera', audio:'mic', reading:'book', assignment:'doc', project:'book', practiceQuiz:'help', gradedQuiz:'help' };
+          const tabBtn = (k, label) => `<button onclick="setCourseDetailTab('${k}')" class="flex-1 rounded-full py-2.5 text-xs font-bold whitespace-nowrap ${tab === k ? 'text-white' : 'text-gray-500'}" style="${tab === k ? 'background:#1E90FF;' : ''}">${label}</button>`;
+          const act = (label, fn) => `<button onclick="${fn}" class="flex-shrink-0 rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">${label}</button>`;
+          const worst = A.modules.length ? A.modules.reduce((m, x, i) => (x.pct < A.modules[m].pct ? i : m), 0) : -1;
+          let body;
+          if (tab === 'resources') body = courseResourcesTabHTML(c, true);
+          else if (tab === 'engage') body = courseEngageTabHTML(c);
+          else {
+            const wv = c.welcomeVideo && c.welcomeVideo.url;
+            const welcome = wv ? `
+              <div class="flex items-center gap-3 mb-3" style="padding:4px 0 12px;border-bottom:1px solid rgba(0,0,0,.06);">
+                <div class="relative overflow-hidden flex-shrink-0 bg-black" style="width:64px;height:44px;border-radius:12px;"><video src="${escapeHtml(c.welcomeVideo.url)}#t=0.1" class="w-full h-full object-cover" muted playsinline preload="metadata" style="pointer-events:none;"></video></div>
+                <div class="min-w-0 flex-1"><div class="text-sm font-bold text-gray-800">Welcome video</div><div class="text-xs text-gray-400">Shown to everyone</div></div>
+                <button onclick="openEditCourse('${c.id}')" class="text-xs font-bold flex-shrink-0" style="color:#1E90FF;">Replace</button>
+              </div>` : `
+              <button onclick="openEditCourse('${c.id}')" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-xs font-bold border border-dashed mb-3" style="border-color:#f59e0b;color:#d97706;">${Icon('video','w-4 h-4')} Add a welcome video (required)</button>`;
+            const mods = (c.modules || []).map((m, mi) => {
+              const st = A.modules[mi] || { pct: 0 };
+              const n = (m.items || []).length;
+              return `
+                <div class="bg-white rounded-3xl mb-3" style="padding:14px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);">
+                  <div class="text-sm font-bold text-gray-800">Module ${mi + 1} · ${escapeHtml(m.title || 'Untitled')}</div>
+                  <div class="text-xs text-gray-400" style="margin:2px 0 6px;">${n} part${n === 1 ? '' : 's'}${users.length ? ` · ${st.pct}% finish this${mi === worst && A.modules.length > 1 && st.pct < 100 ? ' · most people stop here' : ''}` : ''}</div>
+                  ${users.length ? `<div class="rounded-full overflow-hidden" style="height:6px;background:#eceff4;margin-bottom:6px;"><div style="height:100%;width:${st.pct}%;background:${mi === worst && A.modules.length > 1 && st.pct < 100 ? '#f59e0b' : '#1E90FF'};"></div></div>` : ''}
+                  ${(m.items || []).map((it, ii) => `
+                    <button onclick="openEngageItem('${c.id}', ${mi}, ${ii})" class="w-full flex items-center gap-3 text-left" style="padding:10px 0;border-top:1px solid rgba(0,0,0,.06);">
+                      <span class="flex items-center justify-center flex-shrink-0 overflow-hidden" style="width:38px;height:38px;border-radius:12px;background:rgba(30,144,255,.12);color:#1E90FF;">${(it.mediaUrl && it.mediaType === 'image') ? `<img src="${escapeHtml(it.mediaUrl)}" alt="" class="w-full h-full object-cover">` : Icon(typeIcon[it.type] || 'doc','w-4 h-4')}</span>
+                      <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-gray-800 truncate">${escapeHtml(it.title || 'Untitled')}</span><span class="block text-xs text-gray-400 truncate">${courseItemTypeLabel(it.type)}${it.duration ? ' · ' + escapeHtml(it.duration) : ''}</span></span>
+                      <span class="text-gray-300 flex-shrink-0">${Icon('edit','w-4 h-4')}</span>
+                    </button>`).join('')}
+                  <button onclick="openCourseAddItemToModule('${c.id}', ${mi}, 'video')" class="w-full rounded-2xl text-xs font-bold border border-dashed border-gray-300 text-gray-500" style="padding:10px 0;margin-top:4px;">+ Add to this module</button>
+                </div>`;
+            }).join('');
+            const finals = (c.finalItems || []);
+            body = `
+              ${welcome}
+              ${mods || `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-6 text-center text-gray-500 text-sm mb-3">No modules yet. Add the first one below.</div>`}
+              ${finals.length ? `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mt-4 mb-1">Final project</div>${finals.map(it => `<button onclick="openCourseItemDetail('${c.id}','${it.id}')" class="w-full flex items-center gap-3 text-left" style="padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);"><span class="min-w-0 flex-1 text-sm font-semibold text-gray-800 truncate">${escapeHtml(it.title || 'Untitled')}</span><span class="text-xs text-gray-400">${courseItemTypeLabel(it.type)}</span></button>`).join('')}` : ''}
+              <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mt-4 mb-2">Add</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <button onclick="openEngageAddModule('${c.id}')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Module</button>
+                <button onclick="openEngageAddItem('${c.id}','video')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Video</button>
+                <button onclick="openEngageAddItem('${c.id}','reading')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Reading</button>
+                <button onclick="openEngageAddItem('${c.id}','gradedQuiz')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Quiz</button>
+                <button onclick="openEngageAddItem('${c.id}','assignment')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Assignment</button>
+                <button onclick="openEngageAddItem('${c.id}','project')" class="rounded-full px-4 py-2 text-xs font-bold text-gray-500 bg-gray-100">Project</button>
+              </div>`;
+          }
+          return `
+            <div class="flex-1 flex flex-col overflow-hidden relative">
+              <div class="flex-1 overflow-y-auto no-scrollbar px-5" style="padding-bottom:96px;">
+                <div class="-mx-5 ov-sticky-wrap">${menuOverlayHeader(escapeHtml(c.title), courseDetailMenuOpen, 'toggleCourseDetailMenu', courseDetailMenuDropdownHTML(c.id), {backFn: 'overlayGoBack', shortDashes: true, titleLeft: true})}</div>
+                <div class="flex gap-2 mb-4" style="margin-top:6px;">
+                  ${courseTileHTML('Enrolled', String(users.length || c.enrolledCount || 0))}
+                  ${courseTileHTML('Completed', A.completionRate + '%')}
+                  ${courseTileHTML('Earned', `<span class="js-course-earned" data-course="${c.id}">${earned === null ? '—' : courseMoneyShort(earned)}</span>`)}
+                </div>
+                ${courseLiveSectionHTML(c)}
+                <div class="pill-bleed flex items-center gap-2 overflow-x-auto no-scrollbar mb-4 pb-1">
+                  ${act('Students', `openCourseEnrolledPeople('${c.id}')`)}
+                  ${act('Announce', `setCourseDetailTab('engage')`)}
+                  ${act('Analytics', `openCourseAnalytics('${c.id}')`)}
+                  ${act('Share', `shareCourseLink('${c.id}')`)}
+                  ${act('Edit course', `openEditCourse('${c.id}')`)}
+                </div>
+                <div class="flex gap-1 bg-gray-100 rounded-full p-1 mb-4">${tabBtn('content', 'Content')}${tabBtn('resources', 'Resources' + (resources.length ? ' (' + resources.length + ')' : ''))}${tabBtn('engage', 'Updates' + (announcements.length ? ' (' + announcements.length + ')' : ''))}</div>
+                ${body}
+              </div>
+              <div class="absolute left-0 right-0 bottom-0 px-5 pt-3 pb-4" style="background:linear-gradient(180deg,rgba(249,250,251,0) 0%,rgba(249,250,251,.96) 40%);">
+                <button onclick="startCoursePreview()" class="w-full rounded-full font-bold text-base text-white" style="padding:15px 0;background:linear-gradient(135deg,#1E90FF 0%,#4169E1 100%);box-shadow:0 8px 22px rgba(30,144,255,.4);">Preview as a student</button>
+              </div>
+            </div>`;
+        }
+
+        // ---- Learning space for people who have enrolled ----
+        function courseLearnHTML(c, total, done, pct){
+          const tab = ['quizzes', 'resources', 'engage'].includes(courseDetailTab) ? courseDetailTab : 'lessons';
+          const resources = c.resources || [];
+          const announcements = c.announcements || [];
+          const next = courseNextItem(c);
+          const sessions = (c.liveSessions || []).filter(l => !lectureIsExpired(l)).sort((a, b) => (b.status === 'live') - (a.status === 'live') || (a.date + a.time).localeCompare(b.date + b.time));
+          const ls = sessions[0];
+          const banner = ls ? courseSessionCardHTML(c, ls, false, true) : '';
+          const tabBtn = (k, label) => `<button onclick="setCourseDetailTab('${k}')" class="flex-1 rounded-full py-2.5 text-xs font-bold whitespace-nowrap ${tab === k ? 'text-white' : 'text-gray-500'}" style="${tab === k ? 'background:#1E90FF;' : ''}">${label}</button>`;
+          const row = (it, idx) => {
+            const isDone = isCourseItemComplete(it);
+            const isNext = !!(next && next.id === it.id);
+            const lead = isDone
+              ? `<span class="flex items-center justify-center flex-shrink-0" style="width:28px;height:28px;border-radius:50%;background:#10b981;color:#fff;">${IconBold('check','w-4 h-4')}</span>`
+              : isNext
+                ? `<span class="w-7 flex items-center justify-center flex-shrink-0" style="color:#1E90FF;">${Icon('play','w-4 h-4')}</span>`
+                : `<span class="w-7 text-center text-xs font-semibold text-gray-400 flex-shrink-0">${idx}</span>`;
+            const meta = [courseItemTypeLabel(it.type), it.duration].filter(Boolean).map(escapeHtml).join(' · ');
+            return `
+              <button onclick="openCourseItemDetail('${c.id}','${it.id}')" class="w-full flex items-center gap-3 text-left" style="padding:12px ${isNext ? '12px' : '0'};${isNext ? 'background:rgba(30,144,255,.1);border-radius:18px;margin:2px 0;' : 'border-bottom:1px solid rgba(0,0,0,.06);'}">
+                ${lead}
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm ${isNext ? 'font-bold' : 'font-semibold'} ${isDone ? 'text-gray-500' : 'text-gray-800'} truncate">${escapeHtml(it.title || 'Untitled')}</span>
+                  ${isNext ? `<span class="block text-xs text-gray-400">Up next${meta ? ' · ' + meta : ''}</span>` : ''}
+                </span>
+                ${isNext ? '<span class="text-[11px] font-bold uppercase flex-shrink-0" style="color:#1E90FF;">Resume</span>' : `<span class="text-xs text-gray-400 flex-shrink-0">${meta}</span>`}
+              </button>`;
+          };
+          const section = (label, items) => `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:22px 0 4px;">${label}</div>` + items.map((it, i) => row(it, i + 1)).join('');
+          const empty = (msg) => `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">${msg}</div>`;
+          let body;
+          if (tab === 'resources') body = courseResourcesTabHTML(c, true);
+          else if (tab === 'engage') body = courseEngageTabHTML(c);
+          else if (tab === 'quizzes') {
+            const isQ = it => it.type === 'practiceQuiz' || it.type === 'gradedQuiz' || it.type === 'assignment' || it.type === 'project';
+            const parts = (c.modules || []).map((m, mi) => [ 'Module ' + (mi + 1) + ' · ' + escapeHtml(m.title || ''), (m.items || []).filter(isQ) ]).concat([[ 'Final project', (c.finalItems || []).filter(isQ) ]]).filter(x => x[1].length);
+            body = parts.length ? parts.map(x => section(x[0], x[1])).join('') : empty('No quizzes or assignments in this course yet.');
+          } else {
+            const parts = (c.modules || []).map((m, mi) => [ 'Module ' + (mi + 1) + ' · ' + escapeHtml(m.title || ''), m.items || [] ]).concat([[ 'Final project', c.finalItems || [] ]]).filter(x => x[1].length);
+            body = courseWelcomeVideoBlockHTML(c) + (parts.length ? parts.map(x => section(x[0], x[1])).join('') : empty('No lessons have been added to this course yet.'));
+          }
+          return `
+            <div class="flex-1 flex flex-col overflow-hidden">
+              <div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-8">
+                <div class="-mx-5">${overlayHeader(escapeHtml(c.title), '20px')}</div>
+                <div class="flex items-center gap-4 bg-white rounded-3xl mb-4" style="margin-top:6px;padding:16px;box-shadow:0 6px 20px rgba(15,23,42,.07);border:1px solid rgba(0,0,0,.04);">
+                  <div class="relative flex-shrink-0" style="width:64px;height:64px;">
+                    <svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);"><circle cx="32" cy="32" r="27" fill="none" stroke="#eef0f4" stroke-width="7"/><circle cx="32" cy="32" r="27" fill="none" stroke="${pct === 100 ? '#059669' : '#1E90FF'}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(169.6 * pct / 100).toFixed(1)} 169.6"/></svg>
+                    <div class="absolute inset-0 flex items-center justify-center font-bold text-sm text-gray-800">${pct}%</div>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    ${pct === 100 ? `<div class="text-base font-bold text-gray-800">Course completed</div><div class="text-xs text-gray-400">Congrats on finishing the course!</div>`
+                      : `<div class="text-base font-bold text-gray-800">${done} of ${total} lessons done</div>${next ? `<div class="text-xs text-gray-400 truncate">Up next: ${escapeHtml(next.title || 'Next lesson')}</div>` : ''}`}
+                  </div>
+                </div>
+                ${banner}
+                <div class="flex gap-1 bg-gray-100 rounded-full p-1 mb-2">${tabBtn('lessons', 'Lessons')}${tabBtn('quizzes', 'Quizzes')}${tabBtn('resources', 'Resources')}${tabBtn('engage', 'Updates' + (announcements.length ? ' (' + announcements.length + ')' : ''))}</div>
+                ${body}
+                ${pct === 100 ? `<button onclick="openCourseCertificate('${c.id}')" class="w-full flex items-center justify-center gap-2 rounded-full font-bold text-sm text-white" style="margin-top:24px;padding:13px 0;background:linear-gradient(135deg,#1E90FF 0%,#4169E1 100%);box-shadow:0 6px 18px rgba(30,144,255,.3);">${Icon('trophy','w-4 h-4')} Get your certificate</button>` : ''}
+                <div class="flex items-center justify-between" style="margin-top:32px;">
+                  <button onclick="openReportClass('course','${escapeForJsAttr(c.id)}','${escapeForJsAttr(c.title)}')" class="text-[11px] font-semibold text-gray-400 inline-flex items-center gap-1">${Icon('flag','w-3 h-3')} Report this course</button>
+                  <button onclick="leaveCourse('${c.id}')" class="text-xs font-semibold inline-flex items-center gap-1.5" style="color:#DC2626;">${Icon('logout','w-4 h-4')} End Enrollment</button>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        // ---- Course page for people who have not enrolled yet ----
+        function shareCourseLink(id){
+          const c = allCourses.find(x => x.id === id); if (!c) return;
+          const url = location.origin + '/';
+          if (navigator.share) { navigator.share({ title: c.title, text: c.title + ' on Stitch', url }).catch(() => {}); }
+          else { openAppAlertModal('Course link: ' + url); }
+        }
+        function courseDiscoverHTML(c, total){
+          const isLive = c.deliveryType === 'live';
+          const mods = c.modules || [];
+          const resources = c.resources || [];
+          const tab = (courseDetailTab === 'syllabus' || courseDetailTab === 'resources') ? courseDetailTab : 'overview';
+          const stats = [[String(mods.length), 'modules'], [String(total), 'lessons'], [String(c.enrolledCount || 0), 'enrolled'], [coursePriceLabel(c), 'price']];
+          const tabBtn = (k, label) => `<button onclick="setCourseDetailTab('${k}')" class="flex-1 rounded-full py-2.5 text-xs font-bold ${tab === k ? 'text-white' : 'text-gray-500'}" style="${tab === k ? 'background:#1E90FF;box-shadow:0 4px 12px rgba(30,144,255,.3);' : ''}">${label}</button>`;
+          const modRow = (m, i, detail) => `
+            <button onclick="courseSwitchModule(${i});setCourseDetailTab('syllabus')" class="w-full flex items-center gap-3 py-3 text-left" style="border-bottom:1px solid rgba(0,0,0,.06);">
+              <span class="flex items-center justify-center flex-shrink-0" style="width:24px;${i === 0 ? 'color:#1E90FF;' : 'color:#9ca3af;'}">${i === 0 ? Icon('play','w-3.5 h-3.5') : Icon('lock','w-3.5 h-3.5')}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-bold text-gray-800 truncate">Module ${i + 1} · ${escapeHtml(m.title || 'Untitled')}</span>
+                <span class="block text-xs text-gray-400">${(m.items || []).length} lesson${(m.items || []).length === 1 ? '' : 's'}${i === 0 ? ' · free preview' : ''}</span>
+              </span>
+            </button>`;
+          let body = '';
+          if (tab === 'resources') {
+            body = courseResourcesTabHTML(c, false);
+          } else if (tab === 'syllabus') {
+            const active = Math.min(courseActiveModule || 0, Math.max(0, mods.length - 1));
+            body = !mods.length ? `<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">No modules have been added to this course yet.</div>` : `
+              <div class="mb-4">${mods.map((m, i) => modRow(m, i)).join('')}</div>
+              ${mods[0] && (mods[0].items || []).length ? `
+                <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-3">Free preview · ${escapeHtml(mods[0].title || 'Module 1')}</div>
+                ${mods[0].items.map(it => courseItemCardHTML(c, it)).join('')}` : ''}
+              ${(c.finalItems && c.finalItems.length) ? `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2 mt-4">Final project</div><div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-6 text-center text-gray-500 text-sm"><div class="flex justify-center mb-2 text-gray-400">${Icon('lock','w-5 h-5')}</div>Enroll to unlock the final project.</div>` : ''}`;
+          } else {
+            body = `
+              ${courseWelcomeVideoBlockHTML(c)}
+              <div class="text-sm text-gray-600 leading-relaxed mb-5">${renderRichText(c.description || '')}</div>
+              ${courseLiveSectionHTML(c)}
+              ${mods.length ? `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-1">What is inside</div><div class="mb-3">${mods.slice(0, 3).map((m, i) => modRow(m, i)).join('')}</div>${mods.length > 3 ? `<button onclick="setCourseDetailTab('syllabus')" class="text-xs font-bold mb-3" style="color:#1E90FF;">See all ${mods.length} modules</button>` : ''}` : ''}
+              <button onclick="openReportClass('course','${escapeForJsAttr(c.id)}','${escapeForJsAttr(c.title)}')" class="text-[11px] font-semibold text-gray-400 mt-2 inline-flex items-center gap-1">${Icon('flag','w-3 h-3')} Report this course</button>`;
+          }
+          return `
+            <div class="flex-1 flex flex-col overflow-hidden relative">
+              <button onclick="${coursePreviewAsStudent ? 'exitCoursePreview()' : 'overlayGoBack()'}" aria-label="Back" class="absolute flex items-center justify-center rounded-full" style="top:14px;left:16px;width:40px;height:40px;z-index:30;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;">${Icon('arrowLeft','w-5 h-5')}</button>
+              <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
+                <div class="relative overflow-hidden" style="height:250px;background:${courseFallbackGrad(c)};border-radius:0 0 32px 32px;">
+                  ${courseCoverFill(c)}
+                  <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.6) 100%);"></div>
+                  <div class="absolute" style="left:20px;right:20px;bottom:52px;">
+                    ${isLive ? '<div class="text-[11px] font-bold uppercase mb-1" style="color:#fff;letter-spacing:.05em;text-shadow:0 1px 5px rgba(0,0,0,.55);">Live sessions</div>' : ''}
+                    <div class="font-display text-white" style="font-size:30px;line-height:1.08;text-shadow:0 1px 8px rgba(0,0,0,.35);">${escapeHtml(c.title)}</div>
+                    <button onclick="openCourseEnrolledPeople('${c.id}')" class="text-xs font-semibold" style="color:rgba(255,255,255,.88);">by ${escapeHtml(stitchOrgName(c.org))}</button>
+                  </div>
+                </div>
+                <div class="px-5">
+                  <div class="relative grid grid-cols-4 bg-white rounded-3xl" style="padding:16px 0;margin-top:-34px;box-shadow:0 10px 28px rgba(15,23,42,.12);border:1px solid rgba(0,0,0,.04);">
+                    ${stats.map(([v, l], i) => `<div class="text-center" style="${i ? 'border-left:1px solid rgba(0,0,0,.07);' : ''}"><div class="text-gray-900" style="font-size:20px;line-height:1.2;font-weight:700;">${escapeHtml(v)}</div><div class="text-gray-400" style="font-size:12px;margin-top:2px;">${l}</div></div>`).join('')}
+                  </div>
+                  <div class="flex gap-1 bg-gray-100 rounded-full p-1" style="margin:18px 0 16px;">${tabBtn('overview', 'Overview')}${tabBtn('syllabus', 'Syllabus')}${tabBtn('resources', 'Resources')}</div>
+                  ${body}
+                </div>
+              </div>
+              <div class="flex items-center gap-3 px-5 pt-3 pb-4" style="background:linear-gradient(180deg,rgba(249,250,251,0) 0%,rgba(249,250,251,.96) 40%);">
+                ${coursePreviewAsStudent ? '' : `<button onclick="shareCourseLink('${c.id}')" aria-label="Share" class="flex items-center justify-center rounded-full bg-white flex-shrink-0" style="width:52px;height:52px;box-shadow:0 4px 14px rgba(15,23,42,.12);border:1px solid rgba(0,0,0,.05);color:#111827;">${Icon('upload','w-5 h-5')}</button>`}
+                <button onclick="${coursePreviewAsStudent ? 'exitCoursePreview()' : `openCourseEnrollForm('${c.id}')`}" class="flex-1 rounded-full font-bold text-base text-white" style="padding:15px 0;background:linear-gradient(135deg,#1E90FF 0%,#4169E1 100%);box-shadow:0 8px 22px rgba(30,144,255,.4);">${coursePreviewAsStudent ? 'Exit preview' : 'Enroll' + (courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free')}</button>
+              </div>
+            </div>`;
+        }
 
         // ---- Live sessions on the course page ----
         function openScheduleCourseSession(courseId){
@@ -2192,7 +2708,7 @@ try {
             </div>`;
         }
         function courseLiveSectionHTML(c){
-          const mgr = canManageCourse(c);
+          const mgr = canManageCourse(c) && !coursePreviewAsStudent;
           const enrolled = enrolledCourseIds.includes(c.id);
           const list = (c.liveSessions || []).filter(l => !lectureIsExpired(l)).sort((a, b) => (b.status === 'live') - (a.status === 'live') || (a.date + a.time).localeCompare(b.date + b.time));
           const pills = (mgr && c.deliveryType === 'live') ? `
@@ -2367,7 +2883,7 @@ try {
             <div class="text-sm font-bold text-gray-700 mb-2">Parts, Quizzes, Assignments &amp; Projects</div>
             ${items.length ? items.map(({ mi, ii, moduleTitle, item }) => `
               <button onclick="openEngageItem('${course.id}', ${mi}, ${ii})" class="w-full flex items-center gap-3 bg-white rounded-3xl p-4 mb-3 shadow-sm border border-gray-100 text-left">
-                <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.12);color:#1E90FF;">${Icon(typeIcon[item.type] || 'doc','w-5 h-5')}</div>
+                <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:rgba(30,144,255,0.12);color:#1E90FF;">${(item.mediaUrl && item.mediaType === 'image') ? `<img src="${escapeHtml(item.mediaUrl)}" alt="" class="w-full h-full object-cover">` : (item.mediaUrl && item.mediaType === 'video') ? `<video src="${escapeHtml(item.mediaUrl)}#t=0.1" class="w-full h-full object-cover" muted playsinline preload="metadata" style="pointer-events:none;"></video>` : Icon(typeIcon[item.type] || 'doc','w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(item.title || 'Untitled')}</div>
                   <div class="text-xs text-gray-400 truncate">${courseItemTypeLabel(item.type)} · ${escapeHtml(moduleTitle)}</div>
@@ -2786,7 +3302,7 @@ try {
         // ---- Course item detail + quiz taking ----
         function courseItemCardHTML(course, item){
           const isBigMedia = (item.mediaType === 'image' || item.mediaType === 'video') && item.mediaUrl;
-          const doneBadge = isCourseItemComplete(item) ? `<span title="Completed" class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${Icon('check','w-4 h-4')}</span>` : '';
+          const doneBadge = isCourseItemComplete(item) ? `<span title="Completed" class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">${IconBold('check','w-4 h-4')}</span>` : '';
 
           // Flush list items on the page background (divider between items, no floating white
           // card/shadow)
@@ -2801,7 +3317,7 @@ try {
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div class="w-12 h-12 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.45);">${Icon('video','w-5 h-5')}</div>
                     </div>` : ''}
-                  ${isCourseItemComplete(item) ? `<span title="Completed" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center">${Icon('check','w-4 h-4')}</span>` : ''}
+                  ${isCourseItemComplete(item) ? `<span title="Completed" class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center">${IconBold('check','w-4 h-4')}</span>` : ''}
                 </div>
                 <div class="font-bold text-gray-800 mb-1.5">${escapeHtml(item.title)}</div>
                 <div class="flex items-center gap-1.5 text-xs font-semibold ${isCourseItemComplete(item) ? 'text-emerald-700' : 'text-gray-500'} ${item.description ? 'mb-1.5' : ''}">
@@ -3008,6 +3524,8 @@ try {
         function openNewCourse(){
           if (!canCreateCourses()) return;
           resetNewCourseDraft();
+          newCourseStep = 1;
+          window.__courseWelcomeErr = false;
           newCourseEditingId = null;
           newCourseAddingItemModuleIndex = null;
           newCourseEditingItemIndex = null;
@@ -3019,8 +3537,9 @@ try {
           if (!canManageCourse(courseId)) return;
           const c = allCourses.find(x => x.id === courseId);
           if (!c) return;
-          newCourseDraft = JSON.parse(JSON.stringify({ title: c.title, description: c.description, deliveryType: c.deliveryType || 'uploaded', modules: c.modules, resources: c.resources || [], finalItems: c.finalItems || [], photo: c.photo || null, price: c.price ? String(c.price) : '', currency: c.currency || 'GHS' }));
+          newCourseDraft = JSON.parse(JSON.stringify({ title: c.title, description: c.description, deliveryType: c.deliveryType || 'uploaded', modules: c.modules, resources: c.resources || [], finalItems: c.finalItems || [], photo: c.photo || null, welcomeVideo: c.welcomeVideo || null, learn: c.learn || [], audience: c.audience || '', price: c.price ? String(c.price) : '', currency: c.currency || 'GHS' }));
           newCourseEditingId = courseId;
+          newCourseStep = 1;
           newCourseAddingItemModuleIndex = null;
           newCourseEditingItemIndex = null;
           newCourseAddingItemDraft = null;
@@ -3299,6 +3818,8 @@ try {
           const d = newCourseDraft;
           if (!d.photo) { window.__courseCoverErr = true; rerenderNewCourseOverlay(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; }
           if (!d.title.trim()) { openAppAlertModal('Please add a course title.'); return; }
+          if (d.welcomeVideo && d.welcomeVideo.uploading) { openAppAlertModal('Your welcome video is still uploading. Please wait a moment.'); return; }
+          if (!d.welcomeVideo || !d.welcomeVideo.url) { window.__courseWelcomeErr = true; rerenderNewCourseOverlay(); openAppAlertModal('Please add a welcome video to continue. Students see it first.'); return; }
           if (d.price !== '' && d.price !== undefined && !(parseFloat(d.price) >= 0)) { openAppAlertModal('Enter a valid price, or leave it empty for a free course.'); return; }
           if (!d.modules.length || !d.modules.some(m => m.items.length)) { openAppAlertModal('Add at least one module with at least one item.'); return; }
           if (newCourseEditingId) {
@@ -3311,6 +3832,8 @@ try {
               c.resources = d.resources || [];
               c.finalItems = d.finalItems || [];
               c.photo = d.photo || null;
+              c.welcomeVideo = d.welcomeVideo || null;
+              c.learn = (d.learn || []).map(x => String(x).trim()).filter(Boolean); c.audience = (d.audience || '').trim();
               c.price = coursePriceFromDraft(d); c.currency = d.currency || 'GHS';
               const synced = await postCourseInsertRemote(c);
               if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared course catalog -- it may not show up for other students or survive your next sign-in. Check the console for details.");
@@ -3344,6 +3867,9 @@ try {
             resources: d.resources || [],
             finalItems: d.finalItems || [],
             photo: d.photo || null,
+            welcomeVideo: d.welcomeVideo || null,
+            learn: (d.learn || []).map(x => String(x).trim()).filter(Boolean),
+            audience: (d.audience || '').trim(),
             price: coursePriceFromDraft(d),
             currency: d.currency || 'GHS',
             announcements: [], 
@@ -3993,11 +4519,42 @@ try {
         function newCourseHTML(){
           const d = newCourseDraft;
           const isEditing = !!newCourseEditingId;
+          const step = newCourseStep;
+          const stepLabels = ['The basics', 'About the course', 'Content', 'Review & publish'];
+          const segs = [1,2,3,4].map(n => `<div style="flex:1;height:6px;border-radius:9px;background:${n <= step ? '#1E90FF' : '#e5e7eb'};"></div>`).join('');
+          const isLast = step === 4;
           return `
+            <div class="flex-1 flex flex-col overflow-hidden">
+            <div class="flex-shrink-0 w-full">
+              ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { pb: '6px' })}
+              <div class="max-w-2xl mx-auto px-5 pb-2">
+                <div style="display:flex;gap:6px;margin-top:6px;">${segs}</div>
+                <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin-top:12px;">Step ${step} of 4 · ${stepLabels[step - 1]}</div>
+              </div>
+            </div>
             <div class="flex-1 overflow-y-auto">
-            ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { right: true, pb: '20px' })}
-            <div class="px-5 pb-8" style="padding-top:20px;">
+            <div class="px-5 pb-8" style="padding-top:12px;">
+              ${step === 1 ? `
               ${(() => { return coverPickerHTML({ cover: d.photo, label: 'Course cover', pickFn: 'pickCourseCoverColor', uploadJs: 'triggerCoursePhotoUpload()', clearJs: 'clearCourseCover()', error: !!window.__courseCoverErr }); })()}
+              ${(() => {
+                const wv = d.welcomeVideo;
+                const err = !!window.__courseWelcomeErr && !(wv && wv.url);
+                return `
+                <div class="mb-4">
+                  <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Welcome video <span style="color:#ef4444;">*</span></label>
+                  <input type="file" id="course-welcome-input" accept="video/*" class="hidden" onchange="handleCourseWelcomeSelected(event)">
+                  ${wv && wv.url ? `
+                    <div class="relative rounded-2xl overflow-hidden bg-black" style="aspect-ratio:16/9;">
+                      <video src="${escapeHtml(wv.url)}" class="w-full h-full object-cover" controls controlsList="nodownload noplaybackrate" playsinline preload="metadata"></video>
+                      ${wv.uploading ? `<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs font-semibold">Uploading...</div>` : ''}
+                      <button onclick="removeCourseWelcomeVideo()" aria-label="Remove welcome video" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center">${IconBold('close','w-4 h-4')}</button>
+                    </div>` : `
+                    <button onclick="document.getElementById('course-welcome-input').click()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-semibold text-sm border border-dashed text-gray-500" style="border-color:${err ? '#ef4444' : '#d1d5db'};${err ? 'color:#ef4444;' : ''}">
+                      ${Icon('video','w-4 h-4')} Upload a welcome video
+                    </button>`}
+                  <div class="text-xs ${err ? '' : 'text-gray-400'}" style="margin-top:3px;${err ? 'color:#ef4444;' : ''}">${err ? 'A welcome video is required.' : 'A short introduction students see first, even before they enrol.'}</div>
+                </div>`;
+              })()}
               <div class="mb-4">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Course Title</label>
                 <input type="text" value="${escapeHtml(d.title)}" oninput="updateNewCourseField('title', this.value)" placeholder="e.g. Data Analysis with R" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
@@ -4021,16 +4578,29 @@ try {
                 </div>
                 <div class="text-xs text-gray-400" style="margin-top:3px;">Stitch keeps ${PAID_SELLER_SHARE_PCT}% of each sale.</div>
               </div>
-              <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Teacher</label>
-                <div class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm text-gray-500">${TEAM_STITCH_TEACHER}${isEditing ? ' -- see who has enrolled from the course\'s People button' : ''}</div>
-              </div>
+            `: ''}
+              ${step === 2 ? `
               <div class="mb-5">
                 <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Description</label>
                 ${richTextToolbarHTML('formatNewCourseDesc')}
                 <textarea id="new-course-desc" data-autogrow oninput="updateNewCourseField('description', this.value)" placeholder="What will students learn in this course?" rows="3" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none resize-none" style="overflow:hidden;">${escapeHtml(d.description)}</textarea>
               </div>
 
+              <div class="mb-5">
+                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">What students will learn <span class="normal-case font-medium text-gray-400">(optional)</span></label>
+                ${(d.learn || []).map((t, li) => `
+                  <div class="flex items-center gap-2 mb-2">
+                    <input type="text" value="${escapeHtml(t)}" oninput="updateCourseLearnPoint(${li}, this.value)" placeholder="e.g. Run and read a regression" class="border border-gray-200 flex-1 min-w-0 bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+                    <button onclick="removeCourseLearnPoint(${li})" class="text-red-500 flex-shrink-0" aria-label="Remove">${Icon('close','w-4 h-4')}</button>
+                  </div>`).join('')}
+                <button onclick="addCourseLearnPoint()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add a point</button>
+              </div>
+              <div class="mb-4">
+                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Who it is for <span class="normal-case font-medium text-gray-400">(optional)</span></label>
+                <input type="text" value="${escapeHtml(d.audience || '')}" oninput="updateNewCourseField('audience', this.value)" placeholder="e.g. Second-year economics students" class="border border-gray-200 w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm outline-none">
+              </div>
+            `: ''}
+              ${step === 3 ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Modules <span class="normal-case font-medium text-gray-400">(add modules, parts, quizzes &amp; assignments)</span></div>
               <div class="grid grid-cols-2 gap-2 mb-4">
                 <button onclick="openCourseAddModule('${DRAFT_COURSE_ID}')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add Module</button>
@@ -4048,10 +4618,30 @@ try {
                 ${Icon('plus','w-4 h-4')} Add Resource
               </button>
 
-              <button onclick="publishNewCourse()" class="pill-cta w-full inline-flex items-center justify-center gap-2 text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">
-                ${isEditing ? 'Save Changes' : 'Publish Course'}
-              </button>
-              <div style="height:50px;"></div>
+            `: ''}
+              ${step === 4 ? (() => {
+                const parts = d.modules.reduce((n, m) => n + (m.items || []).length, 0);
+                const row = (ok, text) => `<div class="flex items-center gap-3 py-3" style="border-bottom:1px solid rgba(0,0,0,.06);"><span class="flex items-center justify-center flex-shrink-0" style="width:24px;height:24px;border-radius:50%;background:${ok ? '#10b981' : '#f59e0b'};color:#fff;font-weight:800;font-size:13px;">${ok ? IconBold('check','w-3 h-3') : '!'}</span><span class="text-sm font-semibold text-gray-800">${text}</span></div>`;
+                const price = coursePriceFromDraft(d);
+                const net = Math.round(price * (100 - PAID_SELLER_SHARE_PCT)) / 100;
+                const sym = { GHS: '₵', NGN: '₦', USD: '$', ZAR: 'R', KES: 'KSh ' }[d.currency || 'GHS'] || ((d.currency || 'GHS') + ' ');
+                return `
+                  <div class="flex gap-3 bg-white rounded-3xl p-3 mb-3" style="box-shadow:0 4px 18px rgba(15,23,42,.08);border:1px solid rgba(0,0,0,.04);">
+                    <div class="relative overflow-hidden flex-shrink-0" style="width:84px;height:84px;border-radius:18px;background:${courseFallbackGrad({ id: 'draft' })};">${d.photo ? `<img src="${escapeHtml(d.photo)}" alt="" class="absolute inset-0 w-full h-full object-cover">` : ''}</div>
+                    <div class="min-w-0 flex-1"><div class="font-bold text-base text-gray-800 truncate">${escapeHtml(d.title || 'Untitled course')}</div><div class="text-xs text-gray-400" style="margin:3px 0 6px;">${d.modules.length} module${d.modules.length === 1 ? '' : 's'} · ${parts} part${parts === 1 ? '' : 's'}</div><span class="text-xs font-bold" style="color:${price > 0 ? '#1E90FF' : '#059669'};">${price > 0 ? sym + price : 'Free'}</span></div>
+                  </div>
+                  ${row(!!(d.welcomeVideo && d.welcomeVideo.url), 'Welcome video added')}
+                  ${row(!!(d.photo && d.title.trim()), 'Cover and title set')}
+                  ${row(!!d.description.trim(), 'Description written')}
+                  ${row(parts > 0, d.modules.length + ' module' + (d.modules.length === 1 ? '' : 's') + ', ' + parts + ' part' + (parts === 1 ? '' : 's'))}
+                  ${row((d.resources || []).length > 0, (d.resources || []).length ? (d.resources.length + ' resource' + (d.resources.length === 1 ? '' : 's')) : 'No resources added yet (optional)')}
+                  ${price > 0 ? `<div class="bg-white rounded-3xl p-4 mt-4" style="box-shadow:0 4px 18px rgba(15,23,42,.08);border:1px solid rgba(0,0,0,.04);"><div class="text-[11px] font-bold uppercase tracking-wide text-gray-400">You earn</div><div class="text-sm mt-1"><b>${sym}${net}</b> from each ${sym}${price} sale <span class="text-gray-400">· Stitch keeps ${PAID_SELLER_SHARE_PCT}%</span></div></div>` : ''}`;
+              })() : ''}
+            </div>
+            </div>
+            <div class="flex-shrink-0 flex items-center gap-3 px-5 pt-3" style="padding-bottom:calc(16px + env(safe-area-inset-bottom));">
+              ${step > 1 ? `<button onclick="courseCreateBack()" class="flex-shrink-0 rounded-full font-bold text-sm bg-white" style="width:112px;padding:15px 0;border:1px solid #e5e7eb;color:#111827;">Back</button>` : ''}
+              <button onclick="${isLast ? 'publishNewCourse()' : 'courseCreateNext()'}" class="pill-cta flex-1 inline-flex items-center justify-center gap-2 text-white font-bold text-center rounded-full text-base" style="background:linear-gradient(135deg,#1E90FF 0%,#4169E1 100%);box-shadow:0 8px 22px rgba(30,144,255,.4);padding:15px 0;">${isLast ? (isEditing ? 'Save Changes' : 'Publish course') : 'Continue'}</button>
             </div>
             </div>`;
         }
@@ -4332,7 +4922,7 @@ try {
 
         const CLASSES_TABLE = 'classes';
 
-        const CLASS_FEE_CURRENCY_SYMBOLS = { GHS: 'GH₵', NGN: '₦', USD: '$', ZAR: 'R', KES: 'KSh' };
+        const CLASS_FEE_CURRENCY_SYMBOLS = { GHS: '₵', NGN: '₦', USD: '$', ZAR: 'R', KES: 'KSh' };
         function classFeeLabel(cls){
           if (!cls || !cls.paymentEnabled || !(cls.paymentAmount > 0)) return '';
           const currency = cls.paymentCurrency || 'GHS';
@@ -4772,9 +5362,8 @@ try {
             const existingIdx = myClasses.findIndex(c => c.id === found.id);
             if (existingIdx !== -1) myClasses[existingIdx] = found; else myClasses.push(found);
             runClassActionLoading('Adding you to space', 'users', async () => {
-              // The RPC's own returned row is enough to open the class right away (above), but it can be
-              // a beat ahead of the row Postgres will actually let us SELECT as a newly-added member
-              // (RLS only starts allowing full reads once the membership insert has truly
+              // The RPC's row is enough to open the class now, but Postgres may not let us SELECT it yet
+              // as a new member. Retry the fetch a moment later.
               try {
                 const sbRefetch = getSupabaseClient();
                 if (sbRefetch) {
@@ -4974,9 +5563,8 @@ try {
               callback: function(response){
                 popModalBackHandler(false);
                 const ref = response.reference || reference;
-                // Saved before the first verify attempt: if the tab dies mid-verification (or every
-                // attempt this session fails to reach the server), the next launch picks up right here
-                // instead of the payment silently vanishing
+                // Saved before the first verify attempt, so if the tab dies the next launch
+                // picks up here and the payment doesn't vanish.
                 persistPendingClassPayment(ref, classId, className);
                 verifyClassPayment(ref, classId);
               },
@@ -5748,9 +6336,8 @@ try {
         }
 
         // ---- Class messaging: teacher <-> student 1:1 text threads inside a class ----
-        // Rows live in the class_messages table (row-level security: a student only sees their own
-        // thread with the teacher, the class owner sees every thread in their class). Everything is
-        // saved server-side, so threads are back whenever either person returns.
+        // Rows live in class_messages. A student only sees their own thread with the teacher,
+        // the class owner sees all. Saved on the server so threads come back.
         let classMsgs = {};            // classId -> [rows], oldest first
         let classMsgThread = null;     // teacher only: student id of the open thread (null = list)
         let classMsgDraft = '';
@@ -6655,10 +7242,8 @@ try {
 
 
         // ---- Live sessions on a course: a course acts like a "virtual space" for the call ----
-        // The existing live-session (lecture) call code is keyed by a space id. A course session
-        // uses the id "course:<courseId>", and these helpers hand that code a space-like object
-        // whose lectures live on the course itself (course.liveSessions), so calling, ringing,
-        // the countdown and ending all reuse the same machinery as a class session.
+        // Live-session call code is keyed by a space id. A course session uses "course:<courseId>"
+        // and these helpers give it a space-like object, so calling and ending work the same.
         const courseVClassCache = {};
         function courseVirtualClass(courseId){
           const cur = () => allCourses.find(x => x.id === courseId);
@@ -6761,9 +7346,8 @@ try {
           }
           pushBellNotification(title, body);
         }
-        // A scheduled meeting that nobody has started or joined within a day of its start time is
-        // dropped from the schedule. Only the teacher's device deletes it (and gets the notice);
-        // everyone else simply stops seeing it (see classLecturesListHTML) until the update syncs.
+        // A scheduled meeting nobody started within a day of its time gets dropped.
+        // Only the teacher's device deletes it. Everyone else just stops seeing it.
         const LECTURE_EXPIRE_AFTER_MS = 24 * 60 * 60 * 1000;
         const lectureExpiryNotified = {};
         function lectureIsExpired(l){
@@ -8805,12 +9389,12 @@ try {
                 <button onclick="toggleLectureWhiteboard()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${view === 'whiteboard' ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
                   <span class="${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">${Icon('edit','w-5 h-5')}</span>
                   <span class="text-sm font-bold truncate ${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">Whiteboard</span>
-                  ${view === 'whiteboard' ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${Icon('check','w-3 h-3 text-white')}</span>` : ''}
+                  ${view === 'whiteboard' ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${IconBold('check','w-3 h-3 text-white')}</span>` : ''}
                 </button>
                 <button onclick="toggleLectureScreenShare()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${isSharingScreen ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
                   <span class="${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">${Icon('monitor','w-5 h-5')}</span>
                   <span class="text-sm font-bold truncate ${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">Share Screen</span>
-                  ${isSharingScreen ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${Icon('check','w-3 h-3 text-white')}</span>` : ''}
+                  ${isSharingScreen ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${IconBold('check','w-3 h-3 text-white')}</span>` : ''}
                 </button>
               </div>
               <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);">
@@ -10186,9 +10770,8 @@ try {
           if (cls) queueSaveClassRemote(cls);
         }
 
-        // A student who joins an open class, gets approved into one, or pays a class's entrance
-        // fee is added to cls.members (the access-control list) straight away, but only shows up
-        // in cls.students (the roster the People tab used to render from) when the teacher
+        // Students who join, get approved or pay go into cls.members straight away,
+        // but only show in cls.students (the People tab roster) once the teacher confirms.
         function classRosterList(cls){
           const knownIds = new Set((cls.students || []).map(s => s.id).filter(Boolean));
           const roster = (cls.students || []).map((s, i) => Object.assign({}, s, { _studentIndex: i }));
@@ -10614,7 +11197,7 @@ try {
                 <span class="block font-semibold text-sm text-gray-800 truncate">${escapeHtml(p.name || p.username || 'Unnamed')}</span>
                 <span class="block text-xs text-gray-400 truncate">@${escapeHtml(p.username || '')}</span>
               </span>
-              <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" style="${sel ? `background:${ROYAL};color:#fff;` : 'border:2px solid #d1d5db;'}">${sel ? Icon('check','w-3.5 h-3.5') : ''}</span>
+              <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center" style="${sel ? `background:${ROYAL};color:#fff;` : 'border:2px solid #d1d5db;'}">${sel ? IconBold('check','w-3.5 h-3.5') : ''}</span>
             </button>`;
           }).join('');
         }
@@ -10698,79 +11281,152 @@ try {
         }
 
         // ---- Study timetable (weekly class schedule) ----
+        // ---- Planner shared helpers (plain grey icons, call-card rows, bottom sheets) ----
+        const PLANNER_DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        let plannerTimetableDay = null;
+
+        function plannerIcon(name, cls){
+          return `<span class="stg-ico flex items-center justify-center flex-shrink-0">${Icon(name, cls || 'w-5 h-5')}</span>`;
+        }
+
+        function plannerDurationText(start, end){
+          if (!start || !end) return '';
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+          let mins = (eh * 60 + em) - (sh * 60 + sm);
+          if (mins <= 0) return '';
+          const h = Math.floor(mins / 60), m = mins % 60;
+          return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : '');
+        }
+
+        function plannerCountdownText(ms){
+          if (ms <= 0) return 'Now';
+          const mins = Math.round(ms / 60000);
+          if (mins < 60) return mins + 'm';
+          const hours = Math.floor(mins / 60);
+          if (hours < 24) return hours + 'h' + (mins % 60 ? ' ' + (mins % 60) + 'm' : '');
+          const days = Math.floor(hours / 24);
+          if (days < 14) return days + 'd';
+          return Math.floor(days / 7) + 'w';
+        }
+
+        function plannerSheetOpen(innerHtml){
+          plannerSheetClose();
+          const wrap = document.createElement('div');
+          wrap.id = 'planner-sheet';
+          wrap.style.cssText = 'position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,23,42,0.45);';
+          wrap.onclick = function(e){ if (e.target === wrap) plannerSheetClose(); };
+          wrap.innerHTML = `<div class="planner-sheet" style="width:100%;max-width:480px;max-height:92%;overflow-y:auto;background:#fff;border-radius:28px 28px 0 0;padding:20px 22px calc(env(safe-area-inset-bottom, 0px) + 24px);">
+            <div style="width:40px;height:5px;border-radius:9px;background:#e5e7eb;margin:0 auto 14px;"></div>
+            ${innerHtml}
+          </div>`;
+          document.body.appendChild(wrap);
+        }
+        function plannerSheetClose(){
+          const el = document.getElementById('planner-sheet');
+          if (el) el.remove();
+        }
+
+        // Chips that write into a hidden input (so the submit functions can keep reading .value)
+        function plannerChipsHTML(inputId, options, selected){
+          return `<input type="hidden" id="${inputId}" value="${selected}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">${options.map(o => {
+              const on = String(o.value) === String(selected);
+              return `<button type="button" data-chip-for="${inputId}" data-value="${o.value}" onclick="plannerPickChip('${inputId}','${o.value}',this)" class="planner-chip${on ? ' on' : ''}">${o.label}</button>`;
+            }).join('')}</div>`;
+        }
+        function plannerPickChip(inputId, value, btn){
+          const input = document.getElementById(inputId);
+          if (input) input.value = value;
+          document.querySelectorAll(`[data-chip-for="${inputId}"]`).forEach(el => el.classList.toggle('on', el === btn));
+        }
+
+        function plannerDateLabel(dateStr){
+          const d = new Date(dateStr + 'T00:00:00');
+          const now = new Date();
+          const diff = Math.round((d - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+          if (diff === 0) return 'Today';
+          if (diff === 1) return 'Tomorrow';
+          return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+
+        function openStudyTimetable(){
+          openOverlay('studyTimetable');
+          setTimeout(plannerScrollActiveDay, 30);
+        }
+        function plannerScrollActiveDay(){
+          const el = document.querySelector('#overlay .planner-chip.on');
+          if (el && el.parentElement) el.parentElement.scrollLeft = Math.max(0, el.offsetLeft - el.parentElement.clientWidth / 2 + el.offsetWidth / 2);
+        }
+
+        function plannerPickDay(day){
+          plannerTimetableDay = day;
+          const strip = document.querySelector('#overlay .planner-chip.on');
+          const keep = strip && strip.parentElement ? strip.parentElement.scrollLeft : 0;
+          openOverlay('studyTimetable');
+          const fresh = document.querySelector('#overlay .planner-chip.on');
+          if (fresh && fresh.parentElement) fresh.parentElement.scrollLeft = keep;
+        }
+
         function studyTimetableHTML(){
-          const upcoming = getNextUpcomingClass();
+          const today = WEEKDAYS[new Date().getDay()];
+          if (!plannerTimetableDay || !PLANNER_DAY_ORDER.includes(plannerTimetableDay)) plannerTimetableDay = today;
+          const day = plannerTimetableDay;
+          const classes = classSchedule.filter(c => c.day === day).sort((a,b) => a.start.localeCompare(b.start));
+          const pills = PLANNER_DAY_ORDER.map(d => {
+            const n = classSchedule.filter(c => c.day === d).length;
+            return `<button type="button" onclick="plannerPickDay('${d}')" class="planner-chip${d === day ? ' on' : ''}" style="flex-shrink:0;">${d.slice(0,3)}${n ? ` <span style="opacity:.7;">· ${n}</span>` : ''}</button>`;
+          }).join('');
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Study Timetable', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
-            <div class="px-5 pb-10">
-              <div class="text-base text-gray-500 mb-5">Your weekly schedule, all in one place; we'll notify you before each session starts.</div>
-
-              <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm">
-                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Entry · Schedule a Session</div>
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Day</label>
-                <select id="class-day-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
-                  <option value="">(Select day)</option>
-                  ${WEEKDAYS.map(d => `<option value="${d}">${d}</option>`).join('')}
-                </select>
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Subject</label>
-                <input type="text" id="class-subject-input" placeholder="e.g. Organic Chemistry" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                  <div>
-                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Start time</label>
-                    <input type="time" id="class-start-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
-                  </div>
-                  <div>
-                    <label class="text-sm font-semibold text-gray-500 mb-1 block">End time</label>
-                    <input type="time" id="class-end-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
-                  </div>
-                </div>
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Room / Location (optional)</label>
-                <input type="text" id="class-room-input" placeholder="e.g. Lecture Hall 3" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Remind me</label>
-                <select id="class-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-5">
-                  <option value="0">Right at the time</option>
-                  <option value="10" selected>10 minutes before</option>
-                  <option value="15">15 minutes before</option>
-                  <option value="30">30 minutes before</option>
-                  <option value="60">1 hour before</option>
-                </select>
-                <button onclick="submitClassSchedule()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Session</button>
-              </div>
-
-              ${upcoming ? `
-                <div class="rounded-2xl p-4 mb-5 flex items-center gap-3" style="background:rgba(217,119,6,0.12);">
-                  ${Icon('bell','w-5 h-5 text-amber-600 flex-shrink-0')}
-                  <div class="text-sm text-gray-800 flex-1"><span class="font-bold">Up next:</span> ${escapeHtml(upcoming.subject)}, ${upcoming.dayLabel} at ${formatTime12(upcoming.start)}</div>
-                  <button onclick="addClassToCalendar('${upcoming.id}')" class="text-amber-700 flex-shrink-0">${Icon('calendar','w-5 h-5')}</button>
-                </div>` : ''}
-
-              <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Weekly schedule</div>
-              ${WEEKDAYS.map(d => weekdayScheduleCard(d)).join('')}
+            ${overlayHeader('Timetable', '20px', null, null, {})}
+            <div class="px-5" style="padding-bottom:110px;">
+              ${plannerSwitchHTML('timetable')}
+              <div class="no-scrollbar" style="display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;">${pills}</div>
+              <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:16px 4px 10px;">${day}${day === today ? ' · Today' : ''}</div>
+              ${classes.length === 0
+                ? `<div class="stg-card" style="padding:26px 16px;text-align:center;"><div class="stg-title font-semibold" style="font-size:15px;">Free day</div><div class="stg-sub" style="font-size:12px;margin-top:3px;">No sessions on ${day}. Tap Add a class to set one.</div></div>`
+                : classes.map(c => `
+                  <div class="stg-card" style="display:flex;align-items:center;gap:12px;padding:13px 14px;margin-bottom:10px;">
+                    <div style="width:72px;flex-shrink:0;">
+                      <div class="stg-title" style="font-weight:800;font-size:14px;white-space:nowrap;">${formatTime12(c.start)}</div>
+                      <div class="stg-sub" style="font-size:11px;margin-top:2px;white-space:nowrap;">to ${formatTime12(c.end)}</div>
+                    </div>
+                    <div style="width:3px;align-self:stretch;border-radius:9px;background:#1E90FF;flex-shrink:0;"></div>
+                    <div class="flex-1 min-w-0">
+                      <div class="stg-title font-semibold truncate" style="font-size:15px;">${escapeHtml(c.subject)}</div>
+                      <div class="stg-sub truncate" style="font-size:12px;margin-top:2px;">${c.room ? escapeHtml(c.room) + ' · ' : ''}${plannerDurationText(c.start, c.end) || ''}</div>
+                    </div>
+                    <button onclick="addClassToCalendar('${c.id}')" aria-label="Add to calendar" class="stg-ico flex-shrink-0">${Icon('calendar','w-4 h-4')}</button>
+                    <button onclick="deleteClassEntry('${c.id}')" aria-label="Delete" class="stg-ico flex-shrink-0">${Icon('trash','w-4 h-4')}</button>
+                  </div>`).join('')}
             </div>
+            </div>
+            <div class="flex-shrink-0 px-4 pt-3 border-t" style="padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));">
+              <button onclick="openAddClassSheet()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">+ Add a class</button>
             </div>`;
         }
 
-        function weekdayScheduleCard(day){
-          const classes = classSchedule.filter(c => c.day === day).sort((a,b) => a.start.localeCompare(b.start));
-          return `
-            <div class="bg-white rounded-3xl p-5 mb-4 shadow-sm">
-              <div class="flex items-center justify-between mb-3">
-                <div class="font-bold text-lg text-[${NAVY}]">${day}</div>
-                <div class="text-sm font-bold text-gray-400">${classes.length} session${classes.length===1?'':'s'}</div>
-              </div>
-              ${classes.length === 0 ? `<div class="text-base text-gray-400 text-center py-3">No sessions, free day</div>` : classes.map(c => `
-                <div class="flex items-center justify-between bg-amber-50 rounded-2xl px-4 py-3 mb-2">
-                  <div class="min-w-0">
-                    <div class="text-sm font-bold text-amber-700">${formatTime12(c.start)} - ${formatTime12(c.end)}</div>
-                    <div class="font-semibold text-base text-gray-800 truncate">${escapeHtml(c.subject)}${c.room ? ' · ' + c.room : ''}</div>
-                  </div>
-                  <div class="flex items-center gap-3 flex-shrink-0">
-                    <button onclick="addClassToCalendar('${c.id}')" class="text-gray-400">${Icon('calendar','w-4 h-4')}</button>
-                    <button onclick="deleteClassEntry('${c.id}')" class="text-gray-400">${Icon('trash','w-4 h-4')}</button>
-                  </div>
-                </div>`).join('')}
-            </div>`;
+        function plannerFieldStyle(){
+          return 'width:100%;border:1.5px solid #e5e7eb;border-radius:18px;padding:12px 16px;font-size:16px;background:transparent;color:inherit;';
+        }
+
+        function openAddClassSheet(){
+          const day = plannerTimetableDay || WEEKDAYS[new Date().getDay()];
+          plannerSheetOpen(`
+            <div class="font-display" style="font-size:24px;color:${ROYAL};">Add a class</div>
+            <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:14px 4px 8px;">Day</div>
+            ${plannerChipsHTML('class-day-input', PLANNER_DAY_ORDER.map(d => ({value: d, label: d.slice(0,3)})), day)}
+            <input type="text" id="class-subject-input" placeholder="Subject, e.g. Organic Chemistry" style="${plannerFieldStyle()}margin-top:14px;">
+            <div style="display:flex;gap:10px;margin-top:10px;">
+              <div style="flex:1;"><div class="stg-sub" style="font-size:12px;font-weight:700;margin:0 4px 4px;">Starts</div><input type="time" id="class-start-input" style="${plannerFieldStyle()}"></div>
+              <div style="flex:1;"><div class="stg-sub" style="font-size:12px;font-weight:700;margin:0 4px 4px;">Ends</div><input type="time" id="class-end-input" style="${plannerFieldStyle()}"></div>
+            </div>
+            <input type="text" id="class-room-input" placeholder="Room or location (optional)" style="${plannerFieldStyle()}margin-top:10px;">
+            <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:16px 4px 8px;">Remind me</div>
+            ${plannerChipsHTML('class-lead-input', [{value:0,label:'At the time'},{value:10,label:'10 min'},{value:15,label:'15 min'},{value:30,label:'30 min'},{value:60,label:'1 hour'}], 10)}
+            <button type="button" onclick="submitClassSchedule()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="margin-top:20px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Save class</button>
+          `);
         }
 
         function submitClassSchedule(){
@@ -10783,6 +11439,8 @@ try {
           if (!day || !subject || !start || !end) { openAppAlertModal('Please select a day, subject, start time, and end time.'); return; }
           classSchedule.push({ id: 'cls-' + Date.now(), day, subject, start, end, room, lead });
           ensureNotificationPermission();
+          plannerSheetClose();
+          plannerTimetableDay = day;
           openOverlay('studyTimetable');
           queueSaveUserState();
         }
@@ -10812,66 +11470,82 @@ try {
         }
 
         // ---- Study reminders ----
+        function reminderWhen(r){
+          const [h, m] = (r.time || '00:00').split(':').map(Number);
+          const d = new Date(r.date + 'T00:00:00');
+          d.setHours(h || 0, m || 0, 0, 0);
+          return d;
+        }
+
         function studyRemindersHTML(){
-          const sorted = [...studyReminders].sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+          const now = new Date();
+          const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+          const endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 8);
+          const sorted = [...studyReminders].sort((a,b) => reminderWhen(a) - reminderWhen(b));
+          const groups = [
+            ['Today', sorted.filter(r => { const w = reminderWhen(r); return w >= now && w < endOfToday; })],
+            ['This week', sorted.filter(r => { const w = reminderWhen(r); return w >= endOfToday && w < endOfWeek; })],
+            ['Later', sorted.filter(r => reminderWhen(r) >= endOfWeek)],
+            ['Earlier', sorted.filter(r => reminderWhen(r) < now).reverse()]
+          ].filter(g => g[1].length);
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Set Reminders', '20px', null, null, { right: true, pb: '20px', titleSize: 'text-3xl' })}
-            <div class="px-5 pb-10">
-              <div class="text-base text-gray-500 mb-5">Add an exam, deadline, or study session and we'll prompt you as it gets close.</div>
-
-              <div class="bg-white rounded-3xl p-5 mb-5 shadow-sm">
-                <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">New Reminder · Add an Event</div>
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Event</label>
-                <input type="text" id="reminder-event-input" placeholder="e.g. Chemistry Mid-sem" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Type</label>
-                <select id="reminder-type-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-4">
-                  <option>Exam</option>
-                  <option>Deadline</option>
-                  <option>Study Session</option>
-                </select>
-                <div class="grid grid-cols-2 gap-3 mb-5">
-                  <div>
-                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Date</label>
-                    <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="reminder-date-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
-                    ${typedDateHintHTML()}
-                  </div>
-                  <div>
-                    <label class="text-sm font-semibold text-gray-500 mb-1 block">Time</label>
-                    <input type="time" id="reminder-time-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base">
-                  </div>
-                </div>
-                <label class="text-sm font-semibold text-gray-500 mb-1 block">Remind me</label>
-                <select id="reminder-lead-input" class="w-full bg-gray-100 border-2 border-gray-200 rounded-2xl px-4 py-3 text-base mb-5">
-                  <option value="0">Right at the time</option>
-                  <option value="15">15 minutes before</option>
-                  <option value="60" selected>1 hour before</option>
-                  <option value="180">3 hours before</option>
-                  <option value="1440">1 day before</option>
-                </select>
-                <button onclick="submitReminder()" class="w-full font-semibold text-base py-3 rounded-2xl border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">+ Add Reminder</button>
-              </div>
-
-              <div class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Upcoming</div>
-              ${sorted.length === 0 ? `<div class="text-sm text-gray-400 text-center py-6">No reminders yet</div>` : sorted.map(r => reminderRow(r)).join('')}
+            ${overlayHeader('Reminders', '20px', null, null, {})}
+            <div class="px-5" style="padding-bottom:110px;">
+              ${plannerSwitchHTML('reminders')}
+              ${groups.length === 0
+                ? `<div class="stg-card" style="padding:28px 16px;text-align:center;margin-top:8px;"><div class="stg-title font-semibold" style="font-size:15px;">No reminders yet</div><div class="stg-sub" style="font-size:12px;margin-top:3px;">Add an exam, deadline or study session and we'll prompt you as it gets close.</div></div>`
+                : groups.map(([label, list]) => `
+                  <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:16px 4px 8px;">${label}</div>
+                  ${list.map(r => reminderRow(r)).join('')}`).join('')}
             </div>
+            </div>
+            <div class="flex-shrink-0 px-4 pt-3 border-t" style="padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));">
+              <button onclick="openNewReminderSheet()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">+ New reminder</button>
             </div>`;
         }
 
         function reminderRow(r){
+          const ms = reminderWhen(r) - new Date();
+          const past = ms < 0;
+          const soon = !past && ms < 24 * 3600000;
           return `
-            <div class="bg-white rounded-3xl p-4 flex items-center gap-3 mb-3 shadow-sm">
-              <div class="w-12 h-12 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('bell','w-6 h-6')}</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <div class="font-semibold text-base truncate">${escapeHtml(r.title)}</div>
-                  <span class="text-xs font-bold uppercase text-gray-400 flex-shrink-0">${r.type}</span>
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white" style="margin-bottom:10px;${past ? 'opacity:.6;' : ''}">
+              <div class="flex items-center gap-3 px-4 py-3 select-none">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${escapeHtml(r.title)}</div>
+                  <div class="text-xs text-gray-500 truncate">${escapeHtml(r.type)} &middot; ${plannerDateLabel(r.date)}, ${formatTime12(r.time)}</div>
                 </div>
-                <div class="text-sm text-gray-500 mt-1">${formatReminderDate(r.date)} · ${formatTime12(r.time)}</div>
+                <span class="text-xs font-bold flex-shrink-0" style="color:${soon ? '#dc2626' : '#1e90ff'};white-space:nowrap;text-align:right;line-height:1.35;">${past ? 'Past' : `<span style="display:block;">Due in</span><span style="display:block;">${plannerCountdownText(ms)}</span>`}</span>
+                <button onclick="addReminderToCalendar('${r.id}')" aria-label="Add to calendar" class="stg-ico flex-shrink-0">${Icon('calendar','w-4 h-4')}</button>
+                <button onclick="deleteReminder('${r.id}')" aria-label="Delete" class="stg-ico flex-shrink-0">${Icon('trash','w-4 h-4')}</button>
               </div>
-              <button onclick="addReminderToCalendar('${r.id}')" class="text-gray-400 flex-shrink-0">${Icon('calendar','w-4 h-4')}</button>
-              <button onclick="deleteReminder('${r.id}')" class="text-gray-400 flex-shrink-0">${Icon('trash','w-4 h-4')}</button>
             </div>`;
+        }
+
+        // Timetable / Reminders switch shown at the top of both pages (same bar as My Spaces / Courses)
+        function plannerSwitchHTML(active){
+          return `<div class="seg-bar" style="margin:4px 0 6px;">
+            <button class="seg-btn${active === 'timetable' ? ' on' : ''}" onclick="${active === 'timetable' ? '' : 'openStudyTimetable()'}">Timetable</button>
+            <button class="seg-btn${active === 'reminders' ? ' on' : ''}" onclick="${active === 'reminders' ? '' : "openOverlay('studyReminders')"}">Reminders</button>
+          </div>`;
+        }
+
+        function openNewReminderSheet(){
+          plannerSheetOpen(`
+            <div class="font-display" style="font-size:24px;color:${ROYAL};">New reminder</div>
+            <div style="margin-top:14px;">${plannerChipsHTML('reminder-type-input', [{value:'Exam',label:'Exam'},{value:'Deadline',label:'Deadline'},{value:'Study Session',label:'Study session'}], 'Exam')}</div>
+            <input type="text" id="reminder-event-input" placeholder="e.g. Chemistry Mid-sem" style="${plannerFieldStyle()}margin-top:14px;">
+            <div style="display:flex;gap:10px;margin-top:10px;">
+              <div style="flex:1;min-width:0;">
+                <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="reminder-date-input" style="${plannerFieldStyle()}">
+              </div>
+              <div style="flex:1;min-width:0;"><input type="time" id="reminder-time-input" style="${plannerFieldStyle()}"></div>
+            </div>
+            <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:16px 4px 8px;">Remind me</div>
+            ${plannerChipsHTML('reminder-lead-input', [{value:0,label:'At the time'},{value:15,label:'15 min'},{value:60,label:'1 hour'},{value:180,label:'3 hours'},{value:1440,label:'1 day'}], 60)}
+            <button type="button" onclick="submitReminder()" class="pill-cta w-full py-3 rounded-full font-semibold text-white" style="margin-top:20px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Save reminder</button>
+          `);
         }
 
         function submitReminder(){
@@ -10886,6 +11560,7 @@ try {
           const date = dateParsed.iso;
           studyReminders.push({ id: 'rem-' + Date.now(), title, type, date, time, lead });
           ensureNotificationPermission();
+          plannerSheetClose();
           openOverlay('studyReminders');
           queueSaveUserState();
         }
@@ -10918,10 +11593,15 @@ try {
 
         // A real notification: shows the banner AND lands in the bell list (red badge + ring)
         function pushBellNotification(title, body, extra){
+          let shown = false;
           try {
-            if (typeof addNotif === 'function') addNotif(Object.assign({ type: 'info', icon: 'bell', name: title, message: body }, extra || {}));
+            if (typeof addNotif === 'function') {
+              const before = notifData.length;
+              addNotif(Object.assign({ type: 'info', icon: 'bell', name: title, message: body }, extra || {}));
+              shown = notifData.length > before;   // addNotif already pops the tappable banner
+            }
           } catch (e) {}
-          pushInAppNotification(title, body);
+          if (!shown) pushInAppNotification(title, body);
         }
 
         function pushInAppNotification(title, body){

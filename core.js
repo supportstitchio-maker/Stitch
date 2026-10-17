@@ -338,6 +338,17 @@
           el.addEventListener('pointercancel', end);
         }
 
+        let latestAppNotice = null;
+        function openAppNoticeDetail(){
+          const n = latestAppNotice;
+          if (!n) return;
+          dismissAppNotice(true);
+          if (typeof showNotifDetail !== 'function') return;
+          let when = '';
+          try { when = n.created_at ? new Date(n.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; } catch (e) {}
+          showNotifDetail({ icon: 'bell', iconBg: 'bg-blue-50', iconClass: 'text-blue-600', title: n.title || 'Notice from Stitch', time: when, body: n.message || '' });
+        }
+
         function dismissAppNotice(userAction){
           const bar = document.getElementById('app-notice-banner');
           if (bar) {
@@ -370,6 +381,9 @@
               '<div style="flex:1;">' + (notice.title ? '<strong style="margin-right:6px;">' + escapeHtml(notice.title) + '</strong>' : '') + escapeHtml(notice.message) + '</div>' +
               '<button type="button" onclick="dismissAppNotice(true)" aria-label="Dismiss" style="flex-shrink:0;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:999px;width:24px;height:24px;font-size:16px;line-height:1;cursor:pointer;">×</button>';
           }
+          latestAppNotice = notice;
+          bar.style.cursor = 'pointer';
+          bar.addEventListener('click', e => { if (e.target.closest && e.target.closest('button')) return; openAppNoticeDetail(); });
           document.body.appendChild(bar);
           enableSwipeDismiss(bar, () => dismissAppNotice(true));
         }
@@ -389,19 +403,20 @@
             if (error) return;
             const shown = document.getElementById('app-notice-banner');
             if (!data || !data.length) {
+              latestAppNotice = null;
               // Admin retired the notice -- take it down live.
               if (shown) shown.remove();
               return;
             }
             const notice = data[0];
+            latestAppNotice = notice;
             if (shown && shown.getAttribute('data-notice-id') !== String(notice.id)) shown.remove(); // a newer one replaces it
             renderAppNoticeBanner(notice);
           } catch (e) { /* a failed notice check should never block the app from loading */ }
         }
 
-        // Keeps notices live without anyone having to log out and back in: a realtime subscription
-        // (instant, if Realtime is enabled for app_notices), plus a light poll and a re-check
-        // whenever the app comes back to the foreground as the safety net
+        // Keeps notices live without logging out and in: realtime, a light poll,
+        // and a re-check when the app comes back to the foreground.
         let _noticeLiveStarted = false;
         function startAppNoticeLive(){
           if (_noticeLiveStarted) return;
@@ -443,9 +458,8 @@
 
         let _cachedAuthUser = null;
         let _cachedAuthUserPromise = null;
-        // Avatar safety net: any round profile picture whose image fails to load (dead link, file
-        // never finished uploading, ...) is swapped for the standard silhouette placeholder
-        // instead of the browser's broken-image "gallery" glyph
+        // Avatar safety net: if a round profile picture fails to load, show the plain silhouette
+        // instead of the browser's broken-image icon.
         document.addEventListener('error', function(e){
           try {
             const img = e.target;
@@ -738,9 +752,8 @@
               return true;
             }
             if ('Notification' in window && Notification.permission === 'granted') {
-              // A real (non-synthesized) notification plays the phone's / OS's own notification sound.
-              // Android Chrome and installed apps refuse "new Notification()", so go through the
-              // service worker first (works on Android, iPhone home-screen apps and desktop).
+              // A real notification plays the phone's own sound. Android Chrome and installed apps refuse
+              // "new Notification()", so go through the service worker first.
               const nopts = {
                 body: body || '', silent: false, tag: opts.tag, renotify: !!opts.tag,
                 icon: notifPhotoUrl(opts.icon) || notifInitialsIcon(opts.iconName) || '/assets/icon-192.png', badge: '/assets/badge-96.png',
@@ -986,10 +999,8 @@
           courseEnrollments = (d.courseEnrollments && typeof d.courseEnrollments === 'object') ? d.courseEnrollments : {};
           classSchedule = Array.isArray(d.classSchedule) ? d.classSchedule : [];
           studyReminders = Array.isArray(d.studyReminders) ? d.studyReminders : [];
-          // uploadedResources intentionally has no "local-only" carry-over here any more
-          // Files uploaded in this session (they still hold the File object) that the server copy
-          // doesn't have yet must survive a state load, otherwise a load finishing right after an
-          // upload wipes the new resource from the list
+          // uploadedResources has no local-only carry-over anymore. Files uploaded this session
+          // must survive a state load so a late load doesn't wipe them.
           {
             const serverRes = Array.isArray(d.uploadedResources) ? d.uploadedResources : [];
             const serverIds = new Set(serverRes.map(r => r && r.id));
@@ -1463,9 +1474,8 @@
         }
 
         const POSTER_ID_STORAGE_BUCKET = 'poster-id-documents';
-        // `side` distinguishes the front and back of the same ID so they land at separate storage
-        // paths instead of overwriting each other (pass 'front', 'back', or leave it off for the
-        // old single-file behavior)
+        // `side` ('front' or 'back') keeps the two sides of an ID in separate storage paths.
+        // Leave it off for the old single-file behavior.
         async function uploadPosterIdDocumentToStorage(file, side){
           const sb = getSupabaseClient();
           if (!sb) return null;
@@ -1653,9 +1663,8 @@
           const vk = navigator.virtualKeyboard;
           if (vk && vk.boundingRect) inset = Math.max(inset, Math.round(vk.boundingRect.height || 0));
           if (inset > 50) { __kbLastReal = inset; __kbWasOpen = true; return inset; }
-          // The keyboard was up and has now been dismissed (back gesture / hide-keyboard key) while
-          // the field kept focus: drop focus so the composer retracts with it instead of staying
-          // parked where the keyboard used to be
+          // Keyboard was dismissed (back gesture) but the field kept focus: drop the focus
+          // so the composer comes back down with it.
           if (inputFocused && __kbWasOpen) {
             __kbWasOpen = false;
             try { const ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); } catch (e) {}
@@ -2440,9 +2449,7 @@
           });
         }
 
-        // Every "+" that uses the morph animation (the topbar/bottom-nav Create buttons, and the
-        // bare plus shown on an empty Collaborations list) replays that same pop-in animation on
-        // its own every few seconds, instead of only when tapped
+        // Every "+" with the morph animation replays the pop-in every few seconds, not only on tap.
         const PULSING_PLUS_ICON_IDS = ['topbar-create-icon', 'dnav-create-icon', 'collab-create-plus-icon'];
         setInterval(() => {
           PULSING_PLUS_ICON_IDS.forEach(id => morphPlusIcon(id));
@@ -2589,9 +2596,8 @@
           } catch (e) { console.warn('Switching tab failed part-way:', e); }
 
           applyDefaultRightPanel(n);
-          // Safety net: the tab is highlighted and currentTab is set, but if anything above threw
-          // part-way, or a delayed render was skipped, the previous tab's screen can still be
-          // sitting there (e.g. Home highlighted while the Messaging inbox is showing)
+          // Safety net: if a render got skipped or threw, the old tab's screen can stay on
+          // (e.g. Home highlighted but the inbox showing). Fix the screen to match the tab.
           ensureScreenMatchesTab(n);
         }
 
@@ -2765,7 +2771,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---- Offline handling ----
-// Calls, Challenge Arena and Stitch Bot need the Internet. Practice questions and flashcards keep working offline.
+// Calls, Challenge Arena and Stitch Bot need internet. Practice and flashcards work offline.
 const NEEDS_INTERNET_MSG = 'Connect to the Internet to be able to use this service';
 function isDeviceOffline(){
   return typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -2814,11 +2820,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) real
 window.addEventListener('online', () => { realOfflineCheck(); });
 
 // ---- Pull-up panels: grey icons + slow slide-down when you tap the empty space ----
-// (1) Any red or blue icon that sits on a bottom panel (confirm sheets, menus, share/comment sheets,
-//     notification details...) is turned grey. White icons on coloured buttons and the
-//     like/dislike buttons keep their colours.
-// (2) Tapping the dimmed area outside a panel no longer makes it vanish instantly: the panel slides
-//     down slowly and the dim fades out first, then the panel's own close handler runs.
+// (1) Red or blue icons on bottom panels turn grey. White icons on coloured buttons keep their colour.
+// (2) Tapping outside a panel now slides it down slowly and fades the dim before closing.
 (function sheetPolish(){
   var GREY = '#6b7280';
   var GREY_BG = 'rgba(107,114,128,0.16)';
@@ -3013,11 +3016,10 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   document.addEventListener('touchstart', function(){}, { passive: true });
 })();
 
-/* Accessibility: give every image an alt attribute (screen readers, SEO).
-   Images created by the app's templates often have none. We only fill in a MISSING alt;
-   existing alt text is never changed. Cheap: runs on added nodes only. */
+// Accessibility: give every image an alt text. Only fills in a missing alt,
+// never changes an existing one. Runs on added nodes only.
 (function () {
-  // Typing fields: stop writing-assistant add-ons (e.g. Grammarly) from drawing their own marks inside the field.
+  // Stops writing add-ons like Grammarly from drawing their marks inside the typing fields.
   function quiet(el) {
     try {
       if (el.hasAttribute('data-gramm')) return;
@@ -3061,10 +3063,8 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   } catch (e) {}
 })();
 
-/* Upload progress bar ("slow start, fast finish").
-   A slim bar appears INSIDE the area where the file was picked/uploaded (no floating card or panel).
-   It follows the real upload slowly at first, then races to the end once the upload completes.
-   Glimpse uploads show nothing. Display only: it never changes what is uploaded or any result. */
+// Upload progress bar: slow at first, fast at the end. Sits inside the upload area,
+// display only. Glimpse uploads show nothing.
 (function () {
   var MIN_BYTES = 120 * 1024, active = [], raf = 0, lastPick = null;
   document.addEventListener('change', function (e) {
@@ -3153,9 +3153,8 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   };
 })();
 
-// Keep the phone keyboard open when a message / comment is sent. Tapping a send button used to move focus
-// off the text box, so the keyboard dropped after every send. Now it only closes when the person closes it
-// (down arrow / back gesture).
+// Keep the keyboard open after sending a message or comment. It only closes when the
+// person closes it (down arrow or back gesture).
 (function keepKeyboardOnSend(){
   var SEND_RE = /send|addStreamComment|submitGlimpse|submitMessageRequestCompose|postComment|submitComment/i;
   var lastId = '';
@@ -3258,9 +3257,8 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();
 
-/* ===== Emoji picker for the message boxes (chats, Stitch Bot, call chat, class messages) =====
-   A smiley button sits at the left of the type space. It opens a small panel just above the box; tapping an
-   emoji drops it at the cursor. The button never takes focus, so the keyboard stays up while you pick. */
+// ===== Emoji picker for the message boxes (chats, Stitch Bot, call chat, class messages) =====
+// Smiley button at the left of the box. Opens a small panel above it, keyboard stays up.
 const EMOJI_SET = [
   ['😀', 'Smileys', '😀 😃 😄 😁 😆 😅 😂 🤣 🥲 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥳 🤩 😏 😒 😞 😔 😟 😕 🙁 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🫣 🤭 🤫 🫡 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 💀 ☠️ 🤡 👻 👽 🤖'],
   ['👍', 'Gestures', '👍 👎 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐️ 🖖 👋 🤝 🙏 👏 🙌 🫶 👐 🤲 💪 🦾 ✍️ 🤳 💅 🫵 👀 👁️ 🧠 🫀 👂 👃 👄 🦷 👅'],
@@ -3450,7 +3448,7 @@ function toggleEmojiPicker(targetId, btn){
           '<input id="emoji-search-input" type="text" value="' + query.replace(/"/g, '&quot;') + '" placeholder="Search emoji" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" style="flex:1;min-width:0;height:36px;border-radius:12px;border:0;outline:0;padding:0 12px;font-size:15px;background:' + soft + ';color:inherit;">' +
           '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
         '</div>';
-      // Phones: one scrolling strip of matches sitting right above the search field, like a keyboard suggestion bar
+      // Phones: one scrolling strip of matches right above the search field, like a keyboard bar.
       el.innerHTML = strip
         ? '<div id="emoji-results" style="' + STRIP + '"></div>' + row
         : row + '<div id="emoji-results" style="' + GRID + (desk ? 'grid-template-columns:repeat(' + deskCols + ',1fr);' : '') + '"></div>';
@@ -3577,7 +3575,7 @@ function toggleEmojiPicker(targetId, btn){
   btn.style.color = '#1e90ff';
   if (desk) { deskLayout(); try { if (window.ResizeObserver) { const ro = new ResizeObserver(() => deskLayout()); ro.observe(ovEl); emojiPickerState.ro = ro; } } catch (e) {} }
   if (docked) {
-    // Stand in for the keyboard: hide the system keyboard, keep the cursor, lift the screen by the panel's height
+    // Stands in for the keyboard: hides the system one, keeps the cursor, lifts the screen.
     emojiDockedHeight = desk ? emojiDockedHeight : kbH + 0;
     btn.innerHTML = emojiKeyboardSVG(20);
     input.setAttribute('inputmode', 'none');
@@ -3590,7 +3588,7 @@ function toggleEmojiPicker(targetId, btn){
 }
 
 
-/* ===== Fluid sheets (Apple-style): drag a bottom sheet down 1:1, release with momentum, spring back or dismiss ===== */
+// ===== Fluid sheets: drag a bottom sheet down, release with momentum, spring back or close =====
 window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) navigator.vibrate(ms || 8); } catch (e) {} };
 (function(){
   if (!('ontouchstart' in window)) return;                       // touch devices only
@@ -3652,8 +3650,8 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
     var k = Math.max(0, Math.min(1, 1 - Math.max(0, y) / (s.h || 300)));
     s.bd.style.transition = 'none'; s.bd.style.backgroundColor = 'rgba(' + s.bdRGB[1] + ',' + s.bdRGB[2] + ',' + s.bdRGB[3] + ',' + (base * k) + ')';
   }
-  // Put the panel back exactly where it rests WITHOUT replaying its slide-up entrance (that was the "rebuilds from below" glitch):
-  // keep the entrance animation switched off while it is shown, and give it back once the panel is hidden or gone.
+  // Put the panel back where it rests without replaying the slide-up (the "rebuilds from below" glitch).
+  // Entrance animation stays off while shown and comes back once it's hidden.
   function settlePanel(s){
     var p = s.panel;
     if (s.savedStyle == null) p.removeAttribute('style'); else p.setAttribute('style', s.savedStyle);
@@ -3727,7 +3725,7 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
 })();
 
 
-/* ===== Empty states that show a faded ghost of the real content (same markup, same layout) with the message under it ===== */
+// ===== Empty states: a faded ghost of the real content with the message under it =====
 function ghostEmptyHTML(msg, ghostHtml){
   if (!ghostHtml) return '<div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">' + msg + '</div>';
   return '<div class="ghost-empty"><div class="ghost" aria-hidden="true">' + ghostHtml + '</div><div class="ghost-msg">' + msg + '</div></div>';

@@ -118,12 +118,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (backdrop) backdrop.remove();
         }
 
-        // Floating "Back" + "Continue" pills for the step-by-step flows (Apply to post, Match with
-        // CV/Resume). They hover over the page (no bar or panel behind them); the scrolling
-        // content leaves room underneath. Back = card pill (same look as .filter-pill),
-        // Continue = dodger-blue -> royal-blue gradient pill. Styles: .flow-float / .flow-pill in
-        // styles.css. The Continue slot is hidden with visibility (not display) so Back never
-        // stretches across the screen while a question is unanswered.
+        // Floating Back and Continue pills for the step flows (Apply to post, Match with CV).
+        // They hover over the page. Styles: .flow-float and .flow-pill in styles.css.
         function flowFloatBarHTML(o){
           return `
             <div class="flow-float">
@@ -200,9 +196,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             </div>`;
         }
 
-        // Called the instant a poster_approved/poster_denied notification arrives (see
-        // deliverRemoteNotification) so "Poster application pending" doesn't sit stale in the
-        // Career Space menu, or in the "Apply to post" overlay, until the next reload
+        // Called when a poster_approved/poster_denied notification arrives, so "application pending"
+        // doesn't stay stale in the Career Space menu or the Apply to post overlay.
         function refreshPosterStatusUI(){
           if (typeof refreshProfilePosterButton === 'function') refreshProfilePosterButton();
           const dropdown = document.getElementById('career-menu-dropdown');
@@ -247,7 +242,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let currentUserPosterProofOfResidenceUrl = ''; // optional -- utility bill, bank statement, tenancy agreement, etc.
         let currentUserPosterIdType = '';              // one of POSTER_ID_TYPE_OPTIONS, e.g. 'National ID', 'Passport'
         let currentUserPosterIdCountry = '';           // 2-letter country that issued the ID -- tells the
-                                                        // automated ID check (see verifyPosterIdRemote) which country to check against
+                                                        // Which country to check against for the
+                                                        // automated ID check (see verifyPosterIdRemote).
         let currentUserPosterIdVerificationStatus = ''; // 'not_started' | 'pending' | 'verified' | 'needs_review' | 'failed' | 'error'
         let currentUserPosterSelfieUrl = '';           // live selfie captured for the automated liveness + face-match check
         let currentUserPosterSelfieVerificationStatus = ''; // 'not_started' | 'pending' | 'verified' | 'needs_review' | 'failed' | 'error'
@@ -318,9 +314,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               currentUserPaidSellerRequested = !paidErr && !!(paidRow && paidRow.creator_wants_paid);
             } catch (e2) {}
           } catch (e) {  }
-          // The role is reset at the start of this function and only known now, so a course or
-          // listing page that was opened in the meantime was drawn without the admin Dashboard/Edit
-          // menu
+          // The role is reset when this starts and only known now, so a course or listing page opened
+          // in the meantime had no admin Dashboard/Edit menu.
           try {
             const ov = document.getElementById('overlay');
             if (ov && typeof currentOverlayKind !== 'undefined') {
@@ -573,9 +568,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           return { ok: true };
         }
-        // Runs validateSelectedFile and, on failure, alerts the person and clears the <input> so
-        // they can immediately try again with a different file (an untouched input showing the
-        // rejected filename would look like it was accepted)
+        // Runs validateSelectedFile. On failure it alerts and clears the <input> so they can
+        // pick another file right away.
         function validateOrRejectFile(input, file, profileKey){
           const result = validateSelectedFile(file, profileKey);
           if (!result.ok) {
@@ -792,9 +786,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               poster_selfie_verification_status: selfieChanged ? 'pending' : (currentUserPosterSelfieVerificationStatus || 'not_started'),
               poster_status: posterStatus,
               poster_applied_at: new Date().toISOString(),
-              // Recorded from the "consent" stage (posterAppStageHTML / authPosterAppStageHTML):
-              // agreement to the Terms/Privacy Policy, and to Stitch tracking the opportunities this
-              // person posts and the decisions (approve/deny/remove) made on them
+              // Saved from the "consent" stage: agreement to Terms/Privacy, and to Stitch tracking
+              // the opportunities they post and the decisions made on them.
               poster_consent_accepted: !!posterAppDraft.consent,
               poster_consent_at: posterAppDraft.consent ? new Date().toISOString() : (currentUserPosterConsentAt || null),
             };
@@ -910,9 +903,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           ['other', 'Other', 'dotsCircleOutline'],
         ];
 
-        // One shared look for every single-choice pill in onboarding / "Apply to post": white pill
-        // + soft shadow + optional icon, selected = blue outline (styles: .auth-intent-chip in
-        // styles.css, the same chips used on "What brings you here?")
+        // One look for every single-choice pill in onboarding and "Apply to post": white pill,
+        // soft shadow, optional icon, blue outline when selected (.auth-intent-chip).
         function stitchChipRowHTML(options, isOn, onclickFn, noIcons){
           return `<div class="auth-intent-row">${options.map(([key, label, icon]) => `
             <button type="button" aria-pressed="${isOn(key)}" onclick="${onclickFn}('${key}')" class="auth-intent-chip ${isOn(key) ? 'on' : ''}">${icon && !noIcons ? Icon(icon, 'w-4 h-4') : ''}<span>${label}</span></button>`).join('')}
@@ -957,9 +949,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function posterAppPaidOnlyApproved(){
           return !!(posterAppDraft.paidOnly && (isCurrentUserAdmin() || currentUserPosterStatus === 'approved' || currentUserPosterStatus === 'pending'));
         }
-        // The page list depends on the answers so far: the paid pages only appear when the person
-        // says they'll sell, and an already-approved poster applying for paid selling only sees
-        // the paid pages (no documents again)
+        // The page list follows the answers so far. Paid pages only show if they'll sell,
+        // and an approved poster applying for paid selling skips the documents.
         function posterAppStages(){
           const d = posterAppDraft;
           const paid = PAID_SELLER_STAGES;
@@ -971,9 +962,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return list;
         }
         let posterAppStageIdx = 0; // in the in-app form this is the PAGE index (see posterAppPages)
-        // The in-app form groups the questions into pages: welcome, about you, your business (5
-        // questions), paid selling, verify (3 uploads), review. The sign-up flow in games.js still
-        // walks posterAppStages() one question at a time.
+        // The in-app form groups questions into pages: welcome, about you, business, paid selling,
+        // verify, review. The sign-up flow in games.js still goes one question at a time.
         function posterAppPages(){
           const d = posterAppDraft;
           if (posterAppPaidOnlyApproved()) return PAID_SELLER_STAGES.map(st => ({ id: st, stages: [st] }));
@@ -1188,9 +1178,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return posterAppConsentHTML('poster-app-consent-checkbox', 'setPosterAppConsent(this.checked)', "openOverlay('termsOfService')", "openOverlay('privacyPolicy')");
         }
 
-        // Shared by both the in-app "Apply to post" form (openOverlay links to the Terms/Privacy
-        // overlays, see overlays.js) and onboarding in games.js (which links to the pre-login
-        // authShowTerms()/openFooterInfo('privacy') modals instead, since the overlay system
+        // Shared by the in-app "Apply to post" form and onboarding in games.js. The app links to the
+        // Terms/Privacy overlays, onboarding links to the pre-login modals.
         function posterAppConsentHTML(checkboxId, onChangeExpr, termsOnClick, privacyOnClick){
           const d = posterAppDraft;
           return `
@@ -1697,9 +1686,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             phone: d.phone || '',
             dob: d.dobIso || '',
             location: (d.location || '').trim(),
-            // Profile picture shown next to the applicant on the poster's/admins' side. Only a
-            // hosted URL is stored (never an inline data: image, which would bloat the row);
-            // the Dashboard also refreshes it live from the public profile.
+            // Applicant's profile picture shown to posters/admins. Only a hosted URL is stored
+            // (never an inline data: image), and the Dashboard refreshes it live.
             photo: (typeof profileData !== 'undefined' && profileData.photo && String(profileData.photo).indexOf('data:') !== 0) ? profileData.photo : null,
             status: 'applied',
             appliedAt: Date.now(),
@@ -2776,7 +2764,44 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (canSeePosterDashboard()) t.push(['listings', 'Listings']);
           if (typeof currentUserCreatorStatus !== 'undefined' && (currentUserCreatorStatus === 'approved' || currentUserCreatorStatus === 'suspended')) t.push(['wallet', 'Wallet']);
           t.push(['receipts', 'Receipts']);
+          if (t.length > 1) t.unshift(['overview', 'Overview']);
           return t;
+        }
+        function dashMoney(n){
+          const v = Number(n || 0) / (typeof CREATOR_AMOUNT_DIVISOR !== 'undefined' ? CREATOR_AMOUNT_DIVISOR : 1);
+          return '₵' + (Number.isInteger(v) ? v.toLocaleString('en-US') : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        }
+        function dashboardOverviewBodyHTML(){
+          const isCreator = typeof currentUserCreatorStatus !== 'undefined' && (currentUserCreatorStatus === 'approved' || currentUserCreatorStatus === 'suspended');
+          const card = 'background:#fff;border-radius:24px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);';
+          const tile = (k, v, sub) => `<div style="${card}flex:1;padding:14px;min-width:0;"><div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">${k}</div><div style="font-size:20px;font-weight:800;line-height:1.2;margin-top:2px;" class="text-gray-900">${v}</div>${sub ? `<div class="text-[11px] text-gray-400" style="margin-top:2px;">${sub}</div>` : ''}</div>`;
+          let html = '';
+          if (isCreator && typeof walletState !== 'undefined') {
+            const loading = walletState.loading && !walletState.loaded;
+            const b = walletState.loaded ? walletBalances() : { available: 0, pending: 0, lifetime: 0 };
+            const paid = (walletState.payments || []).filter(x => x.status === 'paid');
+            const weekAgo = Date.now() - 7 * 86400000;
+            const week = paid.filter(x => x.paid_at && new Date(x.paid_at).getTime() >= weekAgo).reduce((n, x) => n + Number(x.creator_net || 0), 0);
+            html += `
+              ${walletBalanceCardHTML(b)}
+              <div style="display:flex;gap:10px;margin-bottom:12px;">${tile('This week', dashMoney(week))}${tile('Pending', dashMoney(b.pending))}${tile('Lifetime', dashMoney(b.lifetime))}</div>`;
+            if (walletState.loaded) {
+              try { html += chartColumnsCardHTML('Your earnings per week', chartTimeline(paid, x => x.paid_at, x => Number(x.creator_net || 0) / CREATOR_AMOUNT_DIVISOR, 8, 7), '#1e90ff', chartCompact, '₵, last 8 weeks'); } catch (e) {}
+              const recent = paid.slice(0, 3);
+              if (recent.length) html += `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:16px 0 4px;">Recent sales</div>` + recent.map(x => `
+                <div class="flex items-center gap-3" style="padding:11px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+                  <div class="min-w-0 flex-1"><div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(typeof creatorProductName === 'function' ? creatorProductName(x.product_type, x.product_id) : 'Sale')}</div><div class="text-xs text-gray-400">${typeof creatorDate === 'function' && x.paid_at ? creatorDate(x.paid_at) : ''}</div></div>
+                  <div class="text-sm font-bold" style="color:#059669;">+${dashMoney(x.creator_net)}</div>
+                </div>`).join('');
+            }
+          }
+          if (canSeePosterDashboard()) {
+            const mine = allJobs().filter(j => j.mine);
+            html += `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:16px 0 8px;">Your listings</div>
+              <div style="display:flex;gap:10px;">${tile('Posted', String(mine.length))}${tile('Open', String(mine.filter(j => !j.closed && j.status !== 'closed').length))}</div>
+              <button onclick="${currentOverlayKind === 'adminDashboard' ? 'setAdminMyDashTab' : 'setDashboardTab'}('listings')" class="text-xs font-bold" style="color:#1E90FF;margin-top:10px;">See all listings</button>`;
+          }
+          return html || '<div class="text-center text-gray-400 text-sm py-8">Nothing to show yet.</div>';
         }
         function openDashboard(tab){
           posterDashboardRange = 14;
@@ -2794,7 +2819,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function dashboardLoadTab(){
           const tabs = dashboardTabs();
           if (!tabs.some(([k]) => k === dashboardTab)) dashboardTab = tabs[0][0];
-          if (dashboardTab === 'wallet' && typeof loadCreatorWallet === 'function') loadCreatorWallet();
+          if ((dashboardTab === 'wallet' || dashboardTab === 'overview') && typeof loadCreatorWallet === 'function' && typeof currentUserCreatorStatus !== 'undefined' && (currentUserCreatorStatus === 'approved' || currentUserCreatorStatus === 'suspended')) loadCreatorWallet();
           if (dashboardTab === 'receipts' && typeof loadReceipts === 'function') loadReceipts();
         }
         function setDashboardTab(k){
@@ -2969,7 +2994,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function posterDashboardHTML(){
           const tabs = dashboardTabs();
           if (!tabs.some(([k]) => k === dashboardTab)) dashboardTab = tabs[0][0];
-          const body = dashboardTab === 'listings' ? posterListingsBodyHTML()
+          const body = dashboardTab === 'overview' ? dashboardOverviewBodyHTML()
+            : dashboardTab === 'listings' ? posterListingsBodyHTML()
             : dashboardTab === 'wallet' ? creatorWalletBodyHTML()
             : receiptsBodyHTML();
           const pills = tabs.length > 1 ? `
@@ -2987,9 +3013,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             </div>`;
         }
 
-        // Analytics for everything the user has (their activity, courses and spaces), shown under the
-        // Dashboard's main content as flat graphs in the app's blue palette -- no panels. The download
-        // buttons live on the individual pages only.
+        // Analytics for everything the user has (activity, courses, spaces), shown under the Dashboard
+        // as flat graphs in the blue palette. Download buttons are on the individual pages.
         const DASH_BLUES = { red:'#1e90ff', blue:'#4169e1', green:'#0a2540', amber:'#7cc4ff', purple:'#7c8cf5', cyan:'#38bdf8', pink:'#5b8def', gray:'#cdd5e2' };
         function dashboardAnalyticsSectionHTML(title, sub, inner){
           return `
@@ -3623,9 +3648,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             </div>`;
         }
 
-        // Vertical timeline for an application that ended on a terminal status, so the applicant
-        // (and poster) can see exactly WHERE it was rejected/withdrawn, or that an offer was
-        // accepted
+        // Vertical timeline for an application that ended, so the applicant and poster can see
+        // where it was rejected or withdrawn, or that an offer was accepted.
         function jobTerminalTimelineHTML(a){
           const status = a.status || 'applied';
           const tm = JOB_TERMINAL_META[status];
@@ -3943,9 +3967,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             job.courseId = createLinkedCourse(job);
             postOpportunityInsertRemote(job);
           }
-          // Opened from Opportunities, so stay on the Opportunities tab (no switch to the classroom)
-          // and remember which opportunity page to come back to: back from the course lands on that
-          // page, or on the Opportunities list when there wasn't one
+          // Opened from Opportunities, so stay on that tab and remember which page to come back to.
+          // Back goes to that page, or the Opportunities list if there wasn't one.
           if (currentOverlayKind === 'jobDashboard') {
             jobDashboardViewingId = job.id;
             overlayReturnTo = 'jobDashboard';
@@ -4060,9 +4083,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         let activeApplyJobId = null;
-        // documents: { [docTypeId]: { file, fileName } } -- the poster-required (or optional
-        // resume) attachments. additionalDocuments: [{ file, fileName }] -- any other relevant
-        // document the applicant wants the poster/admins to see, freely added.
+        // documents: { [docTypeId]: { file, fileName } } = poster-required (or optional resume) files.
+        // additionalDocuments: [{ file, fileName }] = anything else they add.
         let jobApplyDraft = { fullName:'', email:'', phone:'', dob:'', dobIso:'', location:'', letterText:'', documents:{}, additionalDocuments:[] };
         let jobApplyErrors = { fullName:'', email:'', phone:'', dob:'', location:'' };
 
@@ -4218,9 +4240,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (ov) ov.innerHTML = jobApplyHTML();
         }
 
-        // The full "Documents" section of the apply form: the poster's required documents (resume
-        // first, if it's one of them), a resume picker even when it isn't required, a free-text
-        // cover note, and an open-ended "attach anything else relevant" list
+        // The "Documents" section of the apply form: the poster's required documents (resume first),
+        // a resume picker even if optional, a cover note, and an "attach anything else" list.
         function jobApplyDocumentsHTML(job){
           const required = job.requiredDocs || [];
           const extraRequired = required.filter(id => id !== 'resume');
@@ -4252,9 +4273,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             </div>`;
         }
 
-        // Uploads every file the applicant attached to Supabase Storage (see
-        // uploadApplicationDocumentToStorage in core.js) and resolves to the payload
-        // syncJobApplicant saves onto the applicant's record
+        // Uploads every attached file to Supabase Storage (uploadApplicationDocumentToStorage in core.js)
+        // and returns the payload that syncJobApplicant saves.
         async function jobApplyInlineFallback(file){
           try {
             if (!file || file.size > 3 * 1024 * 1024) return '';
@@ -4323,9 +4343,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           { id: 'onsite', label: 'On-site' },
           { id: 'any', label: 'No preference' },
         ];
-        // Two intro pages come first, then the seven form questions, then the plan page (shown
-        // after the CV is submitted)
-// Four question pages (each groups several questions), between the two intro pages and the plan page
+        // Flow: two intro pages, then the form questions (four pages of them), then the plan page
+        // once the CV is submitted.
 const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age', 'resume', 'plan'];
         const careerStartFormStepIds = ['interests', 'experience', 'age', 'resume'];
         const careerStartPageParts = { interests: ['interests', 'keyword'], experience: ['experience', 'education', 'workStyle'], age: ['age', 'gender'], resume: ['resume'] };
@@ -4373,7 +4392,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             if (key && winner) { try { localStorage.setItem(key, JSON.stringify(winner)); } catch (e) {  } }
           } catch (e) {  }
         }
-        // ---- City and country: asked once (Match with CV form or any application form) and reused everywhere ----
+        // ---- City and country: asked once (Match with CV or any application) and reused everywhere ----
         function careerSplitLocation(loc){
           const v = String(loc || '').trim();
           const i = v.lastIndexOf(',');
@@ -4469,9 +4488,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           resetCareerStartDraft();
           openOverlay('careerStart');
         }
-        // Unsubscribed users always begin at the intro pages, then go through the form questions
-        // (pre-filled with their saved answers if they have a profile) before reaching the plan
-        // page
+        // Unsubscribed users start at the intro pages, then the form questions (pre-filled
+        // from their profile if they have one), then the plan page.
         let careerStartIntroThenPlan = false;
         function openCareerStartIntro(){
           const hasProfile = !!(careerStartProfile && careerStartProfile.email);
@@ -4537,9 +4555,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = careerStartFormHTML();
         }
-        // Mirrors posterAppBack() in the "Apply to post" flow: the header back arrow (and the
-        // hardware/browser back button, wired through overlayBackAction) steps back one question
-        // at a time instead of leaving the whole flow, and only exits once you're already on
+        // Mirrors posterAppBack() in "Apply to post": the back arrow and hardware back go one question
+        // at a time and only exit from the first one.
         function careerStartBack(fromPopState){
           careerPlanBusy = false;
           if (careerPlanFromMatches && careerStartStepIds[careerStartStepIndex] === 'plan' && careerStartProfile && careerSubscriptionActive()) {
@@ -5013,7 +5030,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function careerIntroBulletsHTML(items){
           return `<div class="flex flex-col gap-3" style="margin-top:22px;">${items.map(t => `
             <div class="flex items-start gap-3">
-              <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('check','w-3.5 h-3.5')}</span>
+              <span class="flex-shrink-0 flex items-center justify-center" style="width:24px;height:24px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${IconBold('check','w-3.5 h-3.5')}</span>
               <div class="text-sm text-gray-700" style="padding-top:2px;">${t}</div>
             </div>`).join('')}</div>`;
         }
@@ -5052,7 +5069,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             @media (prefers-reduced-motion:reduce){.ci-hero *,.ci-bluehero *{animation-duration:.01s !important;animation-delay:0s !important;}}
           </style>`;
         }
-        function careerIntroTickHTML(){ return `<span class="ci-tick">${Icon('check','w-3 h-3')}</span>`; }
+        function careerIntroTickHTML(){ return `<span class="ci-tick">${IconBold('check','w-3 h-3')}</span>`; }
         function careerIntroChipsHTML(items){
           return `<div class="flex flex-col items-start" style="gap:9px;margin-top:20px;">${items.map(t => `<span class="ci-chip">${careerIntroTickHTML()}${t}</span>`).join('')}</div>`;
         }
@@ -6048,7 +6065,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return options.map(o => {
             const sel = current === o.v;
             return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full text-left rounded-2xl flex items-start gap-3" style="padding:14px;margin-bottom:10px;border:2px solid ${sel ? '#1e90ff' : 'rgba(128,128,128,0.2)'};background:${sel ? 'rgba(30,144,255,0.06)' : 'transparent'};">
-              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;color:#fff;' : 'border:2px solid rgba(128,128,128,0.4);'}">${sel ? Icon('check','w-3 h-3') : ''}</span>
+              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;color:#fff;' : 'border:2px solid rgba(128,128,128,0.4);'}">${sel ? IconBold('check','w-3 h-3') : ''}</span>
               <span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-gray-800">${o.l}</span><span class="block text-xs text-gray-500" style="margin-top:2px;">${o.d}</span></span>
             </button>`;
           }).join('');
@@ -7039,9 +7056,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           careerBotDocBusy = ''; rerenderCareerMatches(true);
           if (failed) openAppAlertModal(saved ? `${failed} file${failed === 1 ? '' : 's'} couldn't be saved. The others were added.` : "We couldn't save that document. Check your connection and try again.", 'Upload failed');
         }
-        // Before sending, copy every attached document under THIS listing's folder
-        // (application-documents/<jobId>/<uid>/...). Storage only lets the poster open files in
-        // their own listing's folder, so files left under career-profile/ would arrive unreadable.
+        // Before sending, copy each attached document into THIS listing's folder
+        // (application-documents/<jobId>/<uid>/). Storage only lets the poster open files there.
         async function careerBotEnsureHosted(recs, jobId){
           let uid = null;
           try { uid = await careerWithTimeout(getCurrentUserId(), 8000, null); } catch (e) {}
@@ -7127,9 +7143,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           if (docId === 'applicationLetter' || docId === 'coverLetter') return careerBotDocList('openLetter')[0] || null;
           return careerBotRequiredList(docId)[0] || null;
         }
-        // Poster-typed documents ("custom:Recommendation letter") have no slot of their own, so match
-        // them to the closest section in the person's vault by name; anything unrecognised falls back
-        // to "Other documents"
+        // Poster-typed documents like "custom:Recommendation letter" have no slot, so match them
+        // to the closest section in the vault by name, or "Other documents".
         function careerBotSlotForCustom(id){
           const label = String(typeof oppDocLabel === 'function' ? oppDocLabel(id) : id).toLowerCase();
           const rules = [
@@ -8289,7 +8304,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
 
         // ---- Admin Dashboard (Profile tab pill, admins only) ----
-        let adminDashboardTab = 'mydashboard';
+        let adminDashboardTab = 'overview';
         let adminDashboardLoading = false;
         let adminPosterApplications = [];
         let adminOpenReports = [];
@@ -8320,7 +8335,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
         function openAdminDashboard(){
           if (!isCurrentUserAdmin()) return;
-          adminDashboardTab = 'mydashboard';
+          adminDashboardTab = 'overview';
           dashboardTab = null; posterDashboardRange = 14;
           adminDetailUserId = null;
           adminMenuOpen = false;
@@ -8331,6 +8346,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           openOverlay('adminDashboard');
           try { dashboardLoadTab(); } catch (e) {}
           loadAdminDashboardData();
+          if (typeof loadAdminHistoryData === 'function' && !adminHistoryLoading) loadAdminHistoryData();
           // Creator payments data loads alongside so the tab counts (pending creators, payouts,
           // reports) are right
           if (typeof loadAdminCreatorData === 'function') { adminCreatorData.loaded = false; adminCreatorOpenId = null; adminPayoutRejectId = null; loadAdminCreatorData(); }
@@ -8406,7 +8422,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             adminPillsRefresh();
             const cs = document.getElementById('admin-chart-slot');
             if (cs) {
-              if (adminDashboardTab === 'mydashboard') cs.innerHTML = '';
+              if (adminDashboardTab === 'mydashboard' || adminDashboardTab === 'overview') cs.innerHTML = '';
               else { const jl = allJobs(), up = jl.filter(j => j.createdByRole === 'user').length; cs.innerHTML = adminListingsChartHTML(jl.length, up, jl.length - up); }
             }
             return;
@@ -8420,6 +8436,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           adminExpandedReviewedId = null;
           refreshAdminDashboardDom();
           if (tab === 'mydashboard') dashboardLoadTab();
+          if (tab === 'overview') { if (!adminHistoryLoaded && !adminHistoryLoading) loadAdminHistoryData(); if (typeof loadAdminCreatorData === 'function' && !adminCreatorData.loaded && !adminCreatorData.loading) loadAdminCreatorData(); }
           if (['approved','declined','frozen','blocked','log'].includes(tab) && !adminHistoryLoaded && !adminHistoryLoading) loadAdminHistoryData();
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab) && !adminCreatorData.loaded && !adminCreatorData.loading) loadAdminCreatorData();
         }
@@ -8811,6 +8828,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const blockedCount = adminReviewedApplications.filter(x => x.poster_status === 'blocked').length;
           const tabs = [['applications', `Pending${adminPosterApplications.length ? ` (${adminPosterApplications.length})` : ''}`], ['approved', `Approved${adminHistoryLoaded ? ` (${approvedCount})` : ''}`], ['declined', `Declined${adminHistoryLoaded ? ` (${declinedCount})` : ''}`], ['frozen', `Frozen${adminHistoryLoaded ? ` (${frozenCount})` : ''}`], ['blocked', `Blocked${adminHistoryLoaded ? ` (${blockedCount})` : ''}`], ['reports', `Reports${adminOpenReports.length ? ` (${adminOpenReports.length})` : ''}`], ['log', 'Report log']].concat(typeof creatorAdminTabs === 'function' ? creatorAdminTabs() : []);
           tabs.unshift(['mydashboard', 'My Dashboard']);
+          tabs.unshift(['overview', 'Overview']);
           return tabs;
         }
 
@@ -8984,6 +9002,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
 
         function adminBodyHTML(){
           const tab0 = adminDashboardTab;
+          if (tab0 === 'overview') return adminOverviewHTML();
           if (tab0 === 'mydashboard') return myDashboardInlineHTML();
           if (typeof CREATOR_ADMIN_TABS !== 'undefined' && CREATOR_ADMIN_TABS.includes(tab0)) return adminBodyCoreHTML();
           let charts = '';
@@ -9006,11 +9025,49 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return adminOpenReports.length ? adminOpenReports.map(adminReportCardHTML).join('') : ghostEmptyHTML('No open reports.', ghostSample(() => [0, 1].map(i => adminReportCardHTML({ id: 'g' + i, status: 'open', person: { name: 'Sample Name', username: 'sample' }, job: { title: 'Sample listing title' }, created_at: new Date().toISOString(), reason: 'Spam\nPlaceholder details of the report' })).join('')));
         }
 
+        // Admin Overview: what needs a decision first, then the headline numbers
+        function adminOverviewHTML(){
+          const d = (typeof adminCreatorData !== 'undefined') ? adminCreatorData : null;
+          const card = 'background:#fff;border-radius:24px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);';
+          const tile = (k, v, sub) => `<div style="${card}flex:1;padding:14px;min-width:0;"><div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">${k}</div><div style="font-size:22px;font-weight:800;line-height:1.2;margin-top:2px;" class="text-gray-900">${v}</div>${sub ? `<div class="text-[11px] text-gray-400" style="margin-top:2px;">${sub}</div>` : ''}</div>`;
+          const pendingPosters = adminPosterApplications.length;
+          const openReports = adminOpenReports.length;
+          const pendingPayouts = d && d.loaded ? d.payouts.filter(p => p.status === 'pending_approval') : [];
+          const spaceReports = d && d.loaded ? d.reports.filter(r => r.status === 'open' || r.status === 'reviewing').length : 0;
+          const pendingCreators = (d && d.loaded && typeof adminCreatorRows === 'function') ? adminCreatorRows().filter(c => (c.status || 'pending') === 'pending').length : 0;
+          const payoutTotal = pendingPayouts.reduce((n, p) => n + Number(p.amount || 0), 0);
+          const queue = [
+            [pendingPosters, 'Poster applications', pendingPosters ? 'Waiting for review' : 'All caught up', 'applications', '#d97706', '#fef3c7'],
+            [openReports, 'Opportunity reports', openReports ? 'Open' : 'None open', 'reports', '#dc2626', '#fee2e2'],
+            [pendingCreators, 'Creator applications', pendingCreators ? 'Waiting for review' : 'None waiting', 'creators', '#d97706', '#fef3c7'],
+            [pendingPayouts.length, 'Payout requests', pendingPayouts.length ? dashMoney(payoutTotal) + ' total' : 'None waiting', 'payouts', '#1E90FF', '#e0efff'],
+            [spaceReports, 'Space reports', spaceReports ? 'Open' : 'None open', 'classreports', '#dc2626', '#fee2e2'],
+          ];
+          const rows = queue.map(([n, t, sub, key, fg, bg]) => `
+            <button onclick="switchAdminDashboardTab('${key}')" class="w-full flex items-center gap-3 text-left" style="padding:12px 0;border-bottom:1px solid rgba(0,0,0,.06);">
+              <span class="flex items-center justify-center flex-shrink-0" style="width:40px;height:40px;border-radius:13px;font-weight:800;background:${n ? bg : '#f3f4f6'};color:${n ? fg : '#9ca3af'};">${n}</span>
+              <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-gray-800">${t}</span><span class="block text-xs text-gray-400">${sub}</span></span>
+              <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+            </button>`).join('');
+          const jl = allJobs();
+          const up = jl.filter(j => j.createdByRole === 'user').length;
+          const approved = adminHistoryLoaded ? adminReviewedApplications.filter(x => x.poster_status === 'approved').length : null;
+          const liveCourses = allCourses.filter(c => c.deliveryType === 'live').length;
+          const fees = d && d.loaded ? d.payments.filter(p => p.status === 'paid').reduce((n, p) => n + Number(p.stitch_fee || 0), 0) : null;
+          return `
+            <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:2px 0 6px;">Needs you</div>
+            <div style="${card}padding:2px 16px;margin-bottom:14px;">${rows}</div>
+            <div style="display:flex;gap:10px;margin-bottom:10px;">${tile('Posters', approved === null ? '…' : String(approved), pendingPosters ? pendingPosters + ' pending' : 'approved')}${tile('Courses', String(allCourses.length), liveCourses ? liveCourses + ' live' : '')}</div>
+            <div style="display:flex;gap:10px;margin-bottom:14px;">${tile('Live listings', String(jl.length), up + ' by users')}${tile('Stitch fees', fees === null ? '…' : dashMoney(fees), 'all time')}</div>
+            ${adminListingsChartHTML(jl.length, up, jl.length - up)}`;
+        }
+
         // "My Dashboard" shown right inside the Admin Dashboard (first pill, open by default)
         function myDashboardInlineHTML(){
           const tabs = dashboardTabs();
           if (!tabs.some(([k]) => k === dashboardTab)) dashboardTab = tabs[0][0];
-          const body = dashboardTab === 'listings' ? posterListingsBodyHTML()
+          const body = dashboardTab === 'overview' ? dashboardOverviewBodyHTML()
+            : dashboardTab === 'listings' ? posterListingsBodyHTML()
             : dashboardTab === 'wallet' ? creatorWalletBodyHTML()
             : receiptsBodyHTML();
           const pills = tabs.length > 1 ? `
@@ -9107,7 +9164,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div style="margin:0 -1.25rem;">${adminDashboardHeaderHTML()}</div>
               <div id="admin-pills" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" style="margin-top:4px;">${adminPillsHTML()}</div>
-              <div id="admin-chart-slot" style="margin-top:14px;">${adminDashboardTab === 'mydashboard' ? '' : adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
+              <div id="admin-chart-slot" style="margin-top:14px;">${(adminDashboardTab === 'mydashboard' || adminDashboardTab === 'overview') ? '' : adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
               <div id="admin-tab-body">${adminBodyHTML()}</div>
             </div>
             <div id="admin-menu-slot">${adminMenuOpen ? adminMenuHTML() : ''}</div>
@@ -9301,9 +9358,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           finally { insightsNetworkLoading = false; }
         }
 
-        // Smooth-ish line/area chart. Shapes are drawn in a stretchy SVG; the dots and labels are
-        // plain HTML so they stay round and crisp at any width.
-        // series: [{ name, color, values: number[], area?: bool }]
+        // Smooth-ish line/area chart. Shapes are a stretchy SVG, dots and labels are plain HTML
+        // so they stay round and crisp. series: [{ name, color, values, area? }]
         function insightsLineChartHTML(labels, series, opts){
           opts = opts || {};
           const W = 300, H = 120, PADX = 8, PADY = 10;
@@ -9546,7 +9602,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
 
         // ---- Small chart helpers ----
-        // Plain-language explainers shown under each chart title (Dashboard and the standalone My Activity page)
+        // Plain-language notes under each chart title (Dashboard and My Activity).
         let actDescMode = false;
         const ACT_DESCRIPTIONS = {
           'Top post vs your other posts': 'Your best performing post set against the average of the rest, so you can see how far ahead it is and what kind of reactions it earned.',

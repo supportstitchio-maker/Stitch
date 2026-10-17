@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v175';
+const OFFLINE_CACHE = 'stitch-offline-v202';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
@@ -32,9 +32,8 @@ self.addEventListener('activate', (event) => {
 
 function isMediaRequest(request){
   if (request.method !== 'GET') return false;
-  // Videos/audio are never handled here: the browser asks for them in byte ranges (206) and the
-  // Cache API can neither store those nor answer them correctly, which left feed videos stuck on
-  // their still picture. Let the browser stream them straight from the network.
+  // Videos/audio aren't handled here. Browsers ask for them in byte ranges (206) and the Cache API
+  // can't store or answer those, which left feed videos stuck on the picture. Let them stream.
   if (request.destination === 'video' || request.destination === 'audio') return false;
   if (request.headers && request.headers.has('range')) return false;
   if (request.destination === 'image') return true;
@@ -206,6 +205,7 @@ self.addEventListener('notificationclick', (event) => {
           if (postId != null) { try { client.postMessage({ type: 'open-post', postId }); } catch (e) {} }
           if (meetingCode) { try { client.postMessage({ type: 'open-meeting', code: meetingCode }); } catch (e) {} }
           if (data.kind === 'call' && data.convoId) { try { client.postMessage({ type: 'call-push', data }); } catch (e) {} }
+          if (data.convoId && data.kind !== 'call') { try { client.postMessage({ type: 'open-chat', convoId: data.convoId }); } catch (e) {} }
           if (data.type === 'connect_request') { try { client.postMessage({ type: 'open-requests' }); } catch (e) {} }
           return client.focus();
         }

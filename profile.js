@@ -11,9 +11,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         window.addEventListener('online', () => { publicProfileSyncRetries = 0; syncPublicProfile(); });
 
 
-        // Pulls the offending column name out of a "column doesn't exist" database error
-        // (PostgREST PGRST204 "Could not find the 'x' column ..." or Postgres 42703 "column x does
-        // not exist")
+        // Pulls the column name out of a "column doesn't exist" database error
+        // (PostgREST PGRST204 or Postgres 42703).
         function missingColumnFromError(err){
           if (!err) return null;
           const msg = String(err.message || '') + ' ' + String(err.details || '');
@@ -68,9 +67,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
             const isUsernameError = (err) => !!err && err.code === '23505' && /username/i.test(err.message || err.details || '');
             let error = null;
-            // Writes the row, and if the database reports a column that doesn't exist on this table
-            // (older schema: e.g. no `links`, `pronouns`, `bio` or `updated_at`), drops just that
-            // column and tries again
+            // Writes the row, and if the database says a column doesn't exist (older schema),
+            // drops just that column and tries again.
             const writeRow = async (r) => {
               let e = null;
               // 1) Upsert keyed on user_id.
@@ -368,9 +366,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
         function profilePhotoButtonHTML(){
-          // If a photo URL is set but fails to load (e.g. it was never actually finished uploading,
-          // or points at something that's since been removed), fall back to the plain silhouette
-          // placeholder instead of leaving the browser's own broken-image glyph on screen
+          // If a photo URL fails to load, fall back to the plain silhouette placeholder
+          // instead of the browser's broken-image glyph.
           const hasPhoto = !!profileData.photo && photoIsReady(profileData.photo);
           const media = hasPhoto
             ? `<img src="${profileData.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -385,10 +382,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="px-5 pb-3 flex items-center justify-between" style="padding-top:var(--top-safe-pad);">
               ${asOverlay
                 ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
-                : `<button onclick="openOverlay('create')" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('plus','w-6 h-6'))}</button>`}
-              <span id="profile-username-el" class="nm-wrap font-bold" style="flex:1;min-width:0;font-family:'Inter',sans-serif;font-size:16px;">${profileUsernameHTML()}</span>
-              <div class="flex items-center rounded-full" style="background:rgba(65,105,225,0.08)">
-                <button onclick="openOverlay('profileMenu')" class="w-8 h-8 flex items-center justify-center">${gradIcon(IconBold('settings','w-4 h-4'))}</button>
+                : ''}
+              <span id="profile-username-el" class="nm-wrap font-bold" style="flex:1;min-width:0;text-align:left;font-family:'Inter',sans-serif;font-size:16px;">${profileUsernameHTML()}</span>
+              <div class="flex items-center">
+                <button onclick="openOverlay('profileMenu')" class="w-10 h-10 flex items-center justify-center">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none"><line x1="4" y1="6.5" x2="20" y2="6.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><line x1="11" y1="17.5" x2="20" y2="17.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>')}</button>
               </div>
             </div>
 
@@ -1654,7 +1651,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return out;
         }
 
-        // Build the light picture ahead of time so tapping Share is instant (browsers only allow sharing right after a tap)
+        // Build the light picture ahead of time so Share is instant.
+        // Browsers only allow sharing right after a tap.
         window.__qrShareBlobs = window.__qrShareBlobs || {};
         function prepareQRShare(codeId, link, label, photo){
           window.__qrShareBlobs[codeId] = buildQRCardCanvas(link, label, photo)
@@ -1760,41 +1758,109 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return settingsRow('bell','Push notifications', `<span id="profile-menu-push-sub">${(typeof pushSettingsSub === 'function') ? pushSettingsSub() : ''}</span>`, "pushSettingsTap()");
         }
 
-        // ---- Profile overflow menu ----
+        // ---- Profile overflow menu ("Settings and activity") ----
+        // Grouped white cards, one tinted icon tile per row (see .stg-* in styles.css)
+        const STG_TONES = {
+          blue:  ['#e0efff', '#1E90FF'],
+          amber: ['#fef3c7', '#d97706'],
+          green: ['#dcfce7', '#15803d'],
+          purple:['#ede9fe', '#7c3aed'],
+          red:   ['#fee2e2', '#dc2626']
+        };
+        function stgTile(icon, tone){
+          // Plain icon, no coloured pill: dark grey in light mode, light grey in dark mode (.stg-ico)
+          return `<div class="stg-ico flex items-center justify-center flex-shrink-0" style="width:30px;height:38px;${tone === 'red' ? 'color:#dc2626;' : ''}">${Icon(icon,'w-5 h-5')}</div>`;
+        }
+        function stgRow(icon, tone, label, sub, onclick, opts){
+          opts = opts || {};
+          return `
+            <button onclick="${onclick}" class="stg-row w-full flex items-center text-left" style="gap:12px;padding:12px 0;">
+              ${stgTile(icon, tone)}
+              <div class="flex-1 min-w-0">
+                <div class="stg-title font-semibold" style="font-size:15px;${opts.danger ? 'color:#dc2626;' : ''}">${label}</div>
+                ${sub ? `<div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>` : ''}
+              </div>
+              ${opts.hideArrow ? '' : `<div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>`}
+            </button>`;
+        }
+        function stgToggleRow(icon, tone, label, sub, checked, onclick){
+          return `
+            <div class="stg-row w-full flex items-center" style="gap:12px;padding:12px 0;">
+              ${stgTile(icon, tone)}
+              <div class="flex-1 min-w-0">
+                <div class="stg-title font-semibold" style="font-size:15px;">${label}</div>
+                ${sub ? `<div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>` : ''}
+              </div>
+              <button onclick="${onclick}" aria-label="${label}" class="relative flex-shrink-0" style="width:44px;height:26px;border-radius:9999px;border:1px solid ${checked ? 'transparent' : '#d1d5db'};background:${checked ? `linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)` : '#e5e7eb'};transition:background .15s ease;">
+                <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);transform:translateX(${checked ? '18px' : '0'});transition:transform .15s ease;"></span>
+              </button>
+            </div>`;
+        }
+        function stgGroup(title, rowsHtml){
+          return `
+            <div style="margin-top:20px;">
+              <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:0 4px 8px;">${title}</div>
+              <div class="stg-card">${rowsHtml}</div>
+            </div>`;
+        }
+        function stgProfileCardHTML(){
+          const name = escapeHtml(profileShownName() || '');
+          const uname = (typeof profileShownUsername === 'function' ? profileShownUsername() : '') || '';
+          const photo = profileData && profileData.photo;
+          const avatar = photo
+            ? `<img src="${photo}" class="w-full h-full object-cover">`
+            : `<span style="color:${ROYAL};">${Icon('user','w-6 h-6')}</span>`;
+          return `
+            <button onclick="closeOverlay()" class="stg-card w-full text-left" style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:8px;">
+              <div class="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="width:54px;height:54px;background:#e0efff;">${avatar}</div>
+              <div class="flex-1 min-w-0">
+                <div class="stg-title font-bold truncate" style="font-size:16px;">${name}</div>
+                ${uname ? `<div class="stg-sub truncate" style="font-size:13px;">@${escapeHtml(uname)}</div>` : ''}
+                <div style="font-size:12px;font-weight:700;color:${ROYAL};margin-top:2px;">View profile</div>
+              </div>
+              <div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>
+            </button>`;
+        }
         function profileMenuHTML(){
+          const installed = (typeof stitchAppInstalled === 'function' && stitchAppInstalled());
           return `
             <div class="flex-1 overflow-y-auto">
               ${overlayHeader('Settings and activity', '20px', null, null, {right:true})}
-              <div class="p-5">
-              ${settingsSection('Your account', `
-                ${settingsRow('chart','Your activity', null, "openOverlayFrom('profileMenu','profileAnalytics')")}
-                ${settingsRow('close','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
-                ${settingsToggleRow('theme','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
+              <div class="px-5" style="padding-bottom:28px;">
+              ${stgProfileCardHTML()}
+              ${stgGroup('Your account', `
+                ${stgRow('chart','blue','Your activity','Posts, likes and time spent', "openOverlayFrom('profileMenu','profileAnalytics')")}
+                ${stgRow('close','amber','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
+                ${stgToggleRow('theme','purple','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
               `)}
-              ${settingsSection('Get the app', `
-                ${settingsRow('download','Download the app', (typeof stitchAppInstalled === 'function' && stitchAppInstalled()) ? 'Already installed on this device' : 'Add Stitch to your home screen', "installAppFromSettings()")}
+              ${stgGroup('Get the app', `
+                ${stgRow('download','green','Download the app', installed ? 'Already installed on this device' : 'Add Stitch to your home screen', "installAppFromSettings()")}
               `)}
-              ${settingsSection('Notification Preferences', `
-                ${settingsRowPush()}
-                ${settingsToggleRow('bell','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
-                ${settingsToggleRow('comment','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
-                ${settingsToggleRow('mail','Email notifications', 'Receive updates via email', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
+              ${stgGroup('Notifications', `
+                ${stgToggleRow('bell','blue','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
+                ${stgToggleRow('comment','blue','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
+                ${stgToggleRow('mail','blue','Email notifications', 'Receive updates via email', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
               `)}
-              ${settingsSection('Support', `
-                ${settingsRow('help','Help Center', 'FAQs and guides', "openOverlay('helpCenter')")}
-                ${settingsRow('flag','Report an Issue', 'Bugs, safety, or content', "openOverlayFrom('profileMenu','reportIssue')")}
-                ${settingsRow('phone','Contact Us', 'Get in touch · support.stitch.io@gmail.com', "openOverlayFrom('profileMenu','contactUs')")}
+              ${stgGroup('Support', `
+                ${stgRow('help','blue','Help Center', 'FAQs and guides', "openOverlay('helpCenter')")}
+                ${stgRow('flag','amber','Report an Issue', 'Bugs, safety, or content', "openOverlayFrom('profileMenu','reportIssue')")}
+                ${stgRow('phone','green','Contact Us', 'support.stitch.io@gmail.com', "openOverlayFrom('profileMenu','contactUs')")}
               `)}
-              ${settingsSection('Data &amp; Privacy', `
-                ${settingsRow('shield','Privacy Policy', null, "openOverlay('privacyPolicy')")}
-                ${settingsRow('doc','Terms of Use', null, "openOverlay('termsOfService')")}
+              ${stgGroup('Privacy and legal', `
+                ${stgRow('shield','purple','Privacy Policy', '', "openOverlay('privacyPolicy')")}
+                ${stgRow('doc','purple','Terms of Use', '', "openOverlay('termsOfService')")}
               `)}
-              ${settingsSection('Account', `
-                ${settingsRow('logout','Sign Out', null, "authSignOut()", false, true)}
+              ${stgGroup('Account', `
+                ${stgRow('logout','blue','Sign Out', '', "authSignOut()", {hideArrow:true})}
               `)}
-              ${dangerZoneSection(`
-                ${settingsRow('trash','Delete Account', 'Permanently remove your account and all data', "authDeleteAccount()", true, true)}
-              `)}
+              <button onclick="authDeleteAccount()" class="stg-danger w-full flex items-center text-left" style="margin-top:20px;gap:12px;padding:14px 16px;border-radius:22px;">
+                ${stgTile('trash','red')}
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold" style="font-size:15px;color:#dc2626;">Delete account</div>
+                  <div style="font-size:12px;color:#b45353;margin-top:1px;">Permanently remove your account and all data</div>
+                </div>
+                <div class="flex-shrink-0" style="color:#dc2626;">${Icon('arrowRight','w-4 h-4')}</div>
+              </button>
               </div>
             </div>`;
         }
@@ -1873,9 +1939,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         })();
 
 
-        // ---- Full-page screens (Match with CV/Resume steps, Contact Us, Report an issue, and the other pages that
-        // open in #overlay): when a text box gets focus the page makes room above the keyboard and moves the box into
-        // view; when the keyboard goes, the page drops straight back to where it was ----
+        // ---- Full-page screens in #overlay (Match with CV steps, Contact Us, Report an issue):
+        // when a text box gets focus, make room above the keyboard and scroll it into view. ----
         (function setupOverlayKeyboardAvoidance(){
           const GAP = 20;
           let state = null; // { sc, pad, top }

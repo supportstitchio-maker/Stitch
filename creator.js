@@ -19,7 +19,7 @@
         function ghs(n){
           const v = Number(n || 0) / CREATOR_AMOUNT_DIVISOR;
           const sign = v < 0 ? '-' : '';
-          return sign + 'GH₵' + Math.abs(v).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          return sign + '₵' + Math.abs(v).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
         function creatorDate(iso){
           if (!iso) return '';
@@ -170,9 +170,8 @@
           };
         }
 
-        // Display only. The database decides for real (creator_next_withdrawal_at) and refuses
-        // early requests. Schedule: 1st withdrawal 14 days after the first sale, 2nd +7 days, 3rd
-        // +7 days, then every 2 days
+        // Display only, the database decides (creator_next_withdrawal_at). Schedule: 1st withdrawal
+        // 14 days after the first sale, 2nd and 3rd +7 days, then every 2 days.
         const CREATOR_ACTIVE_PAYOUT = ['pending_approval', 'approved', 'processing', 'paid'];
         function creatorNextWithdrawalAt(){
           const active = walletState.payouts.filter(o => CREATOR_ACTIVE_PAYOUT.includes(o.status) && o.requested_at);
@@ -254,17 +253,45 @@
             </div>`).join('');
         }
 
+        // Wallet cards share the classroom call card's look: a white card, title and small line on
+        // the left, a short status or button on the right, and an optional line along the bottom
+        function walletCallCardHTML(o){
+          return `
+            <div class="call-min-card rounded-2xl overflow-hidden bg-white mb-3">
+              <div class="flex items-center gap-3 px-4 py-3 select-none">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-gray-900 truncate font-display">${o.title}</div>
+                  <div class="text-xs text-gray-500 truncate">${o.sub || ''}</div>
+                </div>
+                ${o.right || ''}
+              </div>
+              ${o.foot ? `<div class="call-min-actions flex items-center border-t border-gray-100"><div class="flex-1 py-2.5 px-4 text-xs font-semibold" style="color:${o.footColor || '#6b7280'};">${o.foot}</div></div>` : ''}
+            </div>`;
+        }
+        function walletBalanceCardHTML(b){
+          const note = (typeof creatorWithdrawalNote === 'function') ? creatorWithdrawalNote() : '';
+          return walletCallCardHTML({
+            title: dashMoney(b.available),
+            sub: 'Available to withdraw',
+            right: `<button onclick="openCreatorWithdraw()" class="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0" style="background:${NAVY};">Withdraw</button>`,
+            foot: note,
+          });
+        }
+        function walletPayoutStatusText(status){
+          const map = { pending_approval: ['Waiting for approval', '#d97706'], approved: ['Approved', '#1E90FF'], processing: ['On its way', '#1E90FF'], paid: ['Paid', '#059669'], failed: ['Failed', '#dc2626'], rejected: ['Declined', '#dc2626'], refunded: ['Refunded', '#6b7280'] };
+          const [label, color] = map[status] || [status || '', '#6b7280'];
+          return `<span class="text-xs font-bold flex-shrink-0" style="color:${color};">${label}</span>`;
+        }
+
         function walletWithdrawalsHTML(){
           if (!walletState.payouts.length) return creatorEmpty('No withdrawals yet.', ghostWith(walletState, 'payouts', [{ id: 'g1', amount: 100, status: 'paid', requested_at: GHOST_ISO, paid_at: GHOST_ISO }, { id: 'g2', amount: 100, status: 'paid', requested_at: GHOST_ISO, paid_at: GHOST_ISO }], walletWithdrawalsHTML));
-          return walletState.payouts.map(o => `
-            <div class="${creatorCard} p-4 mb-3">
-              <div class="flex items-center justify-between">
-                <div class="font-bold" style="color:${NAVY};">${ghs(o.amount)}</div>
-                ${walletStatusChip(o.status)}
-              </div>
-              <div class="text-[11px] text-gray-400 mt-1">Requested ${creatorDate(o.requested_at)}${o.paid_at ? ' · Paid ' + creatorDate(o.paid_at) : ''}</div>
-              ${o.status === 'failed' || o.status === 'rejected' ? `<div class="text-xs text-red-500 mt-2">${escapeHtml(o.failure_reason || (o.status === 'rejected' ? 'An admin declined this request.' : 'The transfer failed. The money is back in your wallet.'))}</div>` : ''}
-            </div>`).join('');
+          return walletState.payouts.map(o => walletCallCardHTML({
+            title: dashMoney(o.amount),
+            sub: `Requested ${creatorDate(o.requested_at)}${o.paid_at ? ' · Paid ' + creatorDate(o.paid_at) : ''}`,
+            right: walletPayoutStatusText(o.status),
+            foot: (o.status === 'failed' || o.status === 'rejected') ? escapeHtml(o.failure_reason || (o.status === 'rejected' ? 'An admin declined this request.' : 'The transfer failed. The money is back in your wallet.')) : '',
+            footColor: '#dc2626',
+          })).join('');
         }
 
         function creatorWalletHTML(){
@@ -281,8 +308,8 @@
             if (walletState.loading || walletState.missing) return '';
             const paid = walletState.payments.filter(x => x.status === 'paid');
             const withdrawn = Math.max(0, b.lifetime - b.available - b.pending);
-            return chartColumnsCardHTML('Your earnings per week', chartTimeline(paid, x => x.paid_at, x => Number(x.creator_net || 0) / CREATOR_AMOUNT_DIVISOR, 8, 7), '#1e90ff', chartCompact, 'GH₵, last 8 weeks') +
-              chartDonutCardHTML('Where your money is', [{ label: 'Available', n: b.available / CREATOR_AMOUNT_DIVISOR, color: '#059669' }, { label: 'Pending', n: b.pending / CREATOR_AMOUNT_DIVISOR, color: '#f59e0b' }, { label: 'Withdrawn', n: withdrawn / CREATOR_AMOUNT_DIVISOR, color: '#94a3b8' }], chartCompact(b.lifetime / CREATOR_AMOUNT_DIVISOR), 'lifetime GH₵');
+            return chartColumnsCardHTML('Your earnings per week', chartTimeline(paid, x => x.paid_at, x => Number(x.creator_net || 0) / CREATOR_AMOUNT_DIVISOR, 8, 7), '#1e90ff', chartCompact, '₵, last 8 weeks') +
+              chartDonutCardHTML('Where your money is', [{ label: 'Available', n: b.available / CREATOR_AMOUNT_DIVISOR, color: '#059669' }, { label: 'Pending', n: b.pending / CREATOR_AMOUNT_DIVISOR, color: '#f59e0b' }, { label: 'Withdrawn', n: withdrawn / CREATOR_AMOUNT_DIVISOR, color: '#94a3b8' }], chartCompact(b.lifetime / CREATOR_AMOUNT_DIVISOR), 'lifetime ₵');
           } catch (e) { return ''; }
         }
         function creatorWalletBodyHTML(){
@@ -296,14 +323,7 @@
           return `
                 ${currentUserCreatorStatus === 'suspended' ? `<div class="bg-red-50 text-red-600 text-xs rounded-2xl p-3 mb-3">Your creator access is paused. You can still see your history. Contact support to find out why.</div>` : ''}
                 ${creatorPayoutsHeld ? `<div class="bg-amber-50 text-amber-700 text-xs rounded-2xl p-3 mb-3">Withdrawals are on hold while a report is reviewed.</div>` : ''}
-                <div class="mb-5" style="padding:4px 2px 0;">
-                  <div class="text-xs" style="color:#6b7280;">Available to withdraw</div>
-                  <div class="flex items-center justify-between gap-3" style="margin-top:4px;">
-                    <div class="font-bold font-display" style="font-size:30px;line-height:1.1;color:${NAVY};min-width:0;">${ghs(b.available)}</div>
-                    <button onclick="openCreatorWithdraw()" class="flow-pill flow-pill-go flex-shrink-0" style="width:auto;padding:0.55rem 1.35rem;font-size:13px;">Withdraw</button>
-                  </div>
-                  <div class="text-[11px]" style="color:#6b7280;margin-top:8px;line-height:1.5;">${creatorWithdrawalNote()}</div>
-                </div>
+                ${walletBalanceCardHTML(b)}
                 <div class="grid grid-cols-2 gap-3 mb-2">
                   <div class="${creatorCard} p-4">
                     <div class="text-[11px] text-gray-400">Pending</div>
@@ -392,7 +412,7 @@
           const available = walletBalances().available / CREATOR_AMOUNT_DIVISOR;
           if (!d.saved) { openAppAlertModal('Save your payout account first.'); return; }
           if (!(amount > 0)) { openAppAlertModal('Enter how much you want to withdraw.'); return; }
-          if (amount < CREATOR_MIN_WITHDRAWAL_GHS) { openAppAlertModal(`The minimum withdrawal is GH₵${CREATOR_MIN_WITHDRAWAL_GHS}.`); return; }
+          if (amount < CREATOR_MIN_WITHDRAWAL_GHS) { openAppAlertModal(`The minimum withdrawal is ₵${CREATOR_MIN_WITHDRAWAL_GHS}.`); return; }
           if (amount > available) { openAppAlertModal(`You can withdraw up to ${ghs(available * CREATOR_AMOUNT_DIVISOR)} right now.`); return; }
           if (creatorPayoutsHeld) { openAppAlertModal('Withdrawals are on hold while a report is reviewed.'); return; }
           if (creatorWithdrawalInProgress()) { openAppAlertModal('You already have a withdrawal in progress. Wait for it to finish first.'); return; }
@@ -450,9 +470,9 @@
                 <div class="text-xs text-gray-400 mb-4">${creatorWithdrawalNote()} ${PAID_SELLER_SCHEDULE_TEXT}</div>
                 ${d.editing || !d.saved ? accountForm : savedCard}
                 ${d.saved && !d.editing ? `
-                  <label class="${label}">Amount (GH₵)</label>
+                  <label class="${label}">Amount (₵)</label>
                   <div class="flex gap-2 mb-2">
-                    <input type="number" inputmode="decimal" min="${CREATOR_MIN_WITHDRAWAL_GHS}" step="0.01" value="${escapeHtml(d.amount)}" oninput="setWithdrawField('amount', this.value)" placeholder="Minimum GH₵${CREATOR_MIN_WITHDRAWAL_GHS}" class="${input}">
+                    <input type="number" inputmode="decimal" min="${CREATOR_MIN_WITHDRAWAL_GHS}" step="0.01" value="${escapeHtml(d.amount)}" oninput="setWithdrawField('amount', this.value)" placeholder="Minimum ₵${CREATOR_MIN_WITHDRAWAL_GHS}" class="${input}">
                     <button onclick="withdrawAll()" class="px-4 rounded-2xl bg-gray-100 text-xs font-semibold flex-shrink-0">All</button>
                   </div>
                   <div class="text-[11px] text-gray-400 mb-5">The amount is set aside as soon as you ask. An admin approves it within ${PAID_SELLER_APPROVAL_HOURS} hours, then it is sent to your account.</div>
@@ -910,20 +930,20 @@
           if (tab === 'payouts') {
             const lab = { pending_approval: 'Waiting', approved: 'Approved', paid: 'Paid', rejected: 'Rejected', failed: 'Failed' };
             return chartDonutCardHTML('Withdrawals by status', chartCountBy(d.payouts, p => lab[p.status] || String(p.status || 'Other').replace(/_/g, ' ')), d.payouts.length, 'requests') +
-              chartColumnsCardHTML('Withdrawal requests per week', chartTimeline(d.payouts, p => p.requested_at, p => mu(p.amount), 8, 7), '#4f46e5', chartCompact, 'Amount in GH₵, last 8 weeks');
+              chartColumnsCardHTML('Withdrawal requests per week', chartTimeline(d.payouts, p => p.requested_at, p => mu(p.amount), 8, 7), '#4f46e5', chartCompact, 'Amount in ₵, last 8 weeks');
           }
           if (tab === 'classreports') {
             return chartDonutCardHTML('Space reports by status', chartCountBy(d.reports, r => String(r.status || 'open').replace(/^./, ch => ch.toUpperCase())), d.reports.length, 'reports');
           }
           if (tab === 'payments') {
-            return chartColumnsCardHTML('Sales per day', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 14, 1), '#1e90ff', money, 'GH₵, last 14 days') +
+            return chartColumnsCardHTML('Sales per day', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 14, 1), '#1e90ff', money, '₵, last 14 days') +
               chartDonutCardHTML('What people bought', chartCountBy(paid, typeLabel), paid.length, 'payments');
           }
           if (tab === 'money') {
             const gross = paid.reduce((n, p) => n + mu(p.gross_amount), 0);
             const fee = paid.reduce((n, p) => n + mu(p.stitch_fee), 0);
             return chartLineCardHTML('Sales per week', chartTimeline(paid, p => p.paid_at, p => mu(p.gross_amount), 8, 7), 'Last 8 weeks') +
-              chartColumnsCardHTML('Stitch revenue per week', chartTimeline(paid, p => p.paid_at, p => mu(p.stitch_fee), 8, 7), '#059669', money, 'GH₵, last 8 weeks') +
+              chartColumnsCardHTML('Stitch revenue per week', chartTimeline(paid, p => p.paid_at, p => mu(p.stitch_fee), 8, 7), '#059669', money, '₵, last 8 weeks') +
               (gross > 0 ? chartDonutCardHTML('Who gets the money', [{ label: 'Creators', n: Math.max(0, gross - fee), color: '#1e90ff' }, { label: 'Stitch', n: fee, color: '#059669' }], Math.round(fee / gross * 100) + '%', 'Stitch share') : '') +
               chartDonutCardHTML('Sales by type', chartCountBy(paid, typeLabel), paid.length, 'payments');
           }

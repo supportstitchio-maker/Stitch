@@ -314,7 +314,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             <button id="ch-send-${c.id}" data-name="${escapeHtml((c.name || '').toLowerCase())}" onclick="toggleChallengeSendContact('${c.id}')" class="w-full flex items-center gap-3 text-left" style="padding:8px 4px;">
               <div class="w-11 h-11 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden flex-shrink-0">${avatarInnerHTML(c,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 text-sm font-semibold truncate">${escapeHtml(c.name || '')}</div>
-              <div class="ch-send-check flex items-center justify-center rounded-full flex-shrink-0" style="width:24px;height:24px;border:2px solid rgba(65,105,225,0.35);color:#fff;">${Icon('check','w-3 h-3')}</div>
+              <div class="ch-send-check flex items-center justify-center rounded-full flex-shrink-0" style="width:24px;height:24px;border:2px solid rgba(65,105,225,0.35);color:#fff;">${IconBold('check','w-3 h-3')}</div>
             </button>`).join('');
           return `
             ${challengeSheetHeader('Send challenge', `challengeSendClose('${code}','${from}')`)}
@@ -964,12 +964,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return m + ':' + String(sec).padStart(2, '0');
         }
 
-        // Kinds of typed-answer question:
-        //   calc     maths / worked calculation -> fill in the final value (+ optional working)
-        //   fill     fill in the blank (a number, term or short phrase)
-        //   define   "What is..." / "Define..."
-        //   explain  "In your own words..." / "How..." / "Why..." / "When..."
-        //   logic    reasoning / logic puzzle (answer + the reasoning behind it)
+        // Typed-answer question kinds: calc (worked calculation, final value), fill (blank),
+        // define ("What is..."), explain ("In your own words..."), logic (answer + reasoning).
         function writtenKind(q){
           if (q && q.kind && ['calc','fill','define','explain','logic'].indexOf(q.kind) > -1) return q.kind;
           const a = String((q && q.answer) || '').trim();
@@ -1293,9 +1289,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           pill.style.display = examTimerHidden ? 'none' : '';
           btn.textContent = examTimerHidden ? 'Show' : 'Hide';
         }
-        // Updates only what changed (option highlight, mark icon, palette, progress) instead of
-        // rebuilding the whole page, so tapping an answer never blinks, replays the fade-in or
-        // jumps the scroll position. Falls back to a full render if the layout doesn't line up.
+        // Updates only what changed (highlight, mark icon, palette, progress) instead of rebuilding
+        // the page, so tapping an answer never blinks or jumps. Falls back to a full render.
         function examPatchInPlace(){
           if (examStage !== 'take' || examContext === 'weeklyQuiz' || examContext === 'dailyQuiz') { renderExamTake(true); return; }
           const ov = document.getElementById('overlay');

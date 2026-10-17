@@ -23,14 +23,26 @@ let appPrefs = {
           if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           try { localStorage.setItem('stitchTheme', appPrefs.theme); } catch (e) {}
           applyThemeColorMeta();
-          openOverlay('profileMenu');
+          rerenderOverlayKeepScroll('profileMenu');
           queueSaveUserState();
+        }
+
+        // Re-draws a settings screen after a toggle without jumping back to the top
+        function rerenderOverlayKeepScroll(kind){
+          const scroller = document.querySelector('#overlay .overflow-y-auto');
+          const top = scroller ? scroller.scrollTop : 0;
+          openOverlay(kind);
+          const fresh = document.querySelector('#overlay .overflow-y-auto');
+          if (fresh) {
+            fresh.scrollTop = top;
+            requestAnimationFrame(() => { fresh.scrollTop = top; });
+          }
         }
 
         // ---- Notification preferences screen ----
         function toggleNotifPref(key, screenKind){
           appPrefs[key] = !appPrefs[key];
-          openOverlay(screenKind || 'profileMenu');
+          rerenderOverlayKeepScroll(screenKind || 'profileMenu');
           queueSaveUserState();
         }
 
@@ -395,7 +407,7 @@ let appPrefs = {
             </div>`;
         }
 
-        // ---- Forms: everything we collect goes to us through Formspree. Never opens the user's email app. ----
+        // ---- Forms: everything we collect goes through Formspree. Never opens the user's email app. ----
         const FORM_SEND_FAIL_MSG = "We couldn't send that just now. Please check your connection and try again. Nothing was lost, your answers are still here.";
         async function sendToFormspree(fields){
           const ctrl = new AbortController();

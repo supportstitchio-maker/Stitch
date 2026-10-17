@@ -632,7 +632,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     <div class="flex-1 min-w-0">
                       <div class="text-[15px] text-gray-900 truncate">${escapeHtml(c.name)}</div>
                     </div>
-                    <div class="w-5 h-5 rounded-full ${newCollabSelected.has(c.id) ? `border-2 bg-[${ROYAL}] border-[${ROYAL}]` : 'border-[3px] border-gray-300'} flex items-center justify-center flex-shrink-0">${newCollabSelected.has(c.id) ? Icon('check','w-3.5 h-3.5 text-white') : ''}</div>
+                    <div class="w-5 h-5 rounded-full ${newCollabSelected.has(c.id) ? `border-2 bg-[${ROYAL}] border-[${ROYAL}]` : 'border-[3px] border-gray-300'} flex items-center justify-center flex-shrink-0">${newCollabSelected.has(c.id) ? IconBold('check','w-3.5 h-3.5 text-white') : ''}</div>
                   </button>`).join('')}
               </div>
             </div>
@@ -862,7 +862,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     <div class="flex-1 min-w-0">
                       <div class="text-[15px] text-gray-900 truncate">${escapeHtml(c.name)}</div>
                     </div>
-                    <div class="w-5 h-5 rounded-full border-2 ${addCollabSelected.has(c.id) ? `bg-[${ROYAL}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${addCollabSelected.has(c.id) ? Icon('check','w-3.5 h-3.5 text-white') : ''}</div>
+                    <div class="w-5 h-5 rounded-full border-2 ${addCollabSelected.has(c.id) ? `bg-[${ROYAL}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${addCollabSelected.has(c.id) ? IconBold('check','w-3.5 h-3.5 text-white') : ''}</div>
                   </button>`).join('') : `<div class="text-center text-gray-400 text-sm py-8">Everyone in your contacts is already a member.</div>`}
               </div>
             </div>
@@ -1568,6 +1568,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 if (!c.network || c.icon === 'users' || !c.otherUserId) continue;
                 if (acceptedIds.has(c.otherUserId)) continue;
                 if (c._localAt && (Date.now() - c._localAt) < 20000) continue;
+                // Never pull the chat you have open (or one with message history) out from under you
+                if (activeConvoId === c.id || (conversationMessages[c.id] && conversationMessages[c.id].length)) continue;
                 arr.splice(i, 1);
                 delete convoMeta[c.id];
                 staleIds.add(c.otherUserId);
@@ -1726,6 +1728,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         const convoMeta = {};
 
+        // The open chat should always know who it is with. If its entry was dropped (e.g. a clean-up of
+        // people you are not connected to) rebuild it from the inbox row or from the last copy we saw.
+        const convoMetaLastSeen = {};
+        function activeConvoMetaSafe(id){
+          let m = convoMeta[id];
+          if (m) { convoMetaLastSeen[id] = Object.assign({}, m); return m; }
+          const row = (typeof convoArrays === 'function' ? convoArrays().flat() : []).find(x => x && x.id === id);
+          if (row) {
+            m = { icon: row.icon, avatarBg: row.avatarBg, name: row.name, username: row.username, photo: row.photo, preview: row.preview, otherUserId: row.otherUserId };
+          } else if (convoMetaLastSeen[id]) {
+            m = Object.assign({}, convoMetaLastSeen[id]);
+          }
+          if (m) { convoMeta[id] = m; return m; }
+          return { icon: 'user', avatarBg: 'bg-gray-100', name: 'Conversation' };
+        }
+
         function convoDisplayName(c){
           if (!c) return '';
           // Was `@${c.username}`
@@ -1749,7 +1767,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               onmousedown="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" onmouseup="endPress()" onmouseleave="endPress()"
               ontouchstart="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
               onclick="handleRowTap('convoTap','${escapeForJsAttr(id)}')">
-              ${selectMode ? `<div class="w-5 h-5 rounded-full border-2 ${isSel ? `bg-[${ROYAL}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${isSel ? Icon('check','w-3.5 h-3.5 text-white') : ''}</div>` : ''}
+              ${selectMode ? `<div class="w-5 h-5 rounded-full border-2 ${isSel ? `bg-[${ROYAL}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${isSel ? IconBold('check','w-3.5 h-3.5 text-white') : ''}</div>` : ''}
               <div class="w-12 h-12 ${avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${escapeForJsAttr(id)}')">${avatarInnerHTML(c,'w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
@@ -2608,9 +2626,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 return !arr.slice(0, idx).some(prev => prev._mine && !prev.localId && prev.text === m.text && Math.abs(prev.time - m.time) < 5000);
               })
               .map(({ _mine, ...rest }) => rest);
-            // My own messages that never reached the server (e.g. a glimpse reply to someone who
-            // hasn't accepted a connection yet) used to be wiped here, so the chat opened empty.
-            // Keep them, flagged "Not delivered" once they've been waiting a while.
+            // My own messages that never reached the server used to be wiped, so the chat opened empty.
+            // Keep them and mark them "Not delivered" after a while.
             const stuck = prevLocalMsgs.filter(m => m && m.from === 'me' && m.localId && m.id == null && !serverLocalIds.has(m.localId));
             stuck.forEach(m => { if (!m.unsent && Date.now() - (m.time || 0) > 60000) m.unsent = true; });
             // Try once more in the background -- the server rules may have changed since it failed
@@ -2857,9 +2874,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             latestByConvo.forEach((row, convoId) => {
               let found = findConvoAndArray(convoId);
               if (!found) {
-                // A message that arrived while the app was closed/offline (e.g. a glimpse reply from
-                // someone who isn't a connection) has no chat here yet, so it never showed up. Start
-                // the chat from the unread message so it appears in the inbox.
+                // A message that came in while the app was closed has no chat yet, so it never showed.
+                // Start the chat from that message so it shows in the inbox.
                 const fromThem = row.sender_id && String(row.sender_id) !== String(myId);
                 if (!(fromThem && row.read === false && String(convoId).indexOf('dm-') === 0 && !(row.text || '').startsWith(SYS_MSG_PREFIX))) return;
                 const unreadCount = data.filter(r => r.convo_id === convoId && r.sender_id && String(r.sender_id) !== String(myId) && r.read === false).length;
@@ -3485,7 +3501,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (c) logCallEvent(c.id, `Missed ${kind} call`, 'in');
         }
 
-        async function sendCallRing(convoId, type, otherUserId){
+        async function sendCallRing(convoId, type, otherUserId, silent){
           const myId = await getCurrentUserId();
           if (!myId) return;
           const callerName = (typeof profileData !== 'undefined' && profileData.username) || (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
@@ -3496,7 +3512,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             callerName,
             callerPhoto: (typeof profileData !== 'undefined' && profileData.photo) || null,
             groupName: isGroup ? meta.name : null,
+            silent: !!silent,
           });
+          if (silent) {
+            // Not connected: no ringing push, just a quiet "tried to reach you"
+            sendPushTo(otherUserId, {
+              title: `${callerName} tried to reach you`,
+              body: 'Accept their connection request to talk',
+              tag: 'call-attempt-' + myId,
+              data: { kind: 'notification', type: 'connect_request' },
+            });
+            return;
+          }
           sendPushTo(otherUserId, {
             title: isGroup ? `${callerName} is calling "${meta.name}"` : `${callerName} is calling you`,
             body: type === 'video' ? 'Incoming video call' : 'Incoming voice call',
@@ -3567,10 +3594,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
-        // One-to-one calls are only for accepted connections. Sending someone a message (or a reply to
-        // their glimpse) does not make you a connection. Group calls, meetings and job interviews are
-        // separate and are not checked here. The server's connection list wins; if it can't be reached
-        // we fall back to this phone's own network list.
+        // One-to-one calls are for accepted connections only. Messaging someone doesn't connect you.
+        // Group calls, meetings and interviews skip this check. The server's list wins.
         async function isAcceptedConnectionWith(userId){
           if (!userId) return false;
           const sb = getSupabaseClient();
@@ -3602,7 +3627,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else if (!payload.groupName) {
             // A one-to-one call from someone I'm not connected to never rings.
             const ok = await isAcceptedConnectionWith(payload.fromUserId);
-            if (!ok) { sendCallResponse(payload.convoId, payload.fromUserId, 'declined'); handleCallAttempt(payload); return; }
+            // Silenced for me: no ring, no decline sent back (their side just keeps ringing as normal)
+            if (!ok) { handleCallAttempt(payload); return; }
           }
           if (callState.convoId || incomingCallInfo) {
             sendCallResponse(payload.convoId, payload.fromUserId, 'busy');
@@ -3808,6 +3834,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let convoOpenedOutsideMessaging = false;
 
         function closeConversationOverlay(fromPopState){
+          if (convoRecording) stopConvoVoiceNote(false);
           if (activeConvoId) { markGroupConvoMessagesRead(activeConvoId); saveUserStateNow(); }
           const openedOutside = convoOpenedOutsideMessaging;
           convoOpenedOutsideMessaging = false;
@@ -4017,7 +4044,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function convoMediaLinksDocsHTML(){
-          const meta = convoMeta[activeConvoId] || { name: 'Conversation' };
+          const meta = activeConvoMetaSafe(activeConvoId);
           const { images, docs, links } = collectConvoMedia(activeConvoId);
           const tab = window.__cmTab || 'media';
           const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -4107,7 +4134,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </button>`;
         }
 
-        // Full name, username, bio and links of the other person, shown on the contact page like on their profile
+        // Full name, username, bio and links of the other person, like on their profile.
         function ensureConvoContactDetails(){
           const meta = convoMeta[activeConvoId];
           if (!meta || !meta.otherUserId || meta.icon === 'users') return;
@@ -4167,7 +4194,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function convoProfileHTML(){
-          const meta = convoMeta[activeConvoId] || { icon: 'user', avatarBg: 'bg-gray-100', name: 'Conversation' };
+          const meta = activeConvoMetaSafe(activeConvoId);
           const isGroup = meta.icon === 'users';
           const blocked = isConvoBlocked(meta);
           const favorited = isConvoFavorite(activeConvoId);
@@ -4388,7 +4415,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function conversationHTML(){
-          const meta = convoMeta[activeConvoId] || { icon: 'user', avatarBg: 'bg-gray-100', name: 'Conversation' };
+          const meta = activeConvoMetaSafe(activeConvoId);
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
@@ -4424,12 +4451,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="convo-reply-bar" class="flex-shrink-0 items-center gap-2 px-4 py-2" style="display:none;"></div>
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
-              <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
-                ${emojiButtonHTML('convo-input', 'w-8 h-8 rounded-full convo-composer-icon-btn')}
-                <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
-                <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('clip','w-4 h-4')}</button>
-                <button onclick="toggleConvoVoiceNote()" id="convo-mic-btn" title="Record a voice note" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 convo-composer-icon-btn">${Icon('mic','w-4 h-4')}</button>
-                <button onclick="handleConvoSendTap()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+              <div class="wa-row">
+                <div class="wa-pill convo-composer-pill">
+                  ${emojiButtonHTML('convo-input', 'wa-pill-icon', 'color:#6b7280;')}
+                  <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="wa-textarea convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
+                  <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
+                  <button id="convo-camera-btn" onclick="document.getElementById('convo-camera-input').click()" title="Camera" class="wa-pill-icon" style="color:#6b7280;">${Icon('camera','w-6 h-6')}</button>
+                  <input type="file" id="convo-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleConvoFileSelect(event)">
+                </div>
+                <button onclick="convoMainAction()" id="convo-mic-btn" data-mode="mic" title="Record a voice note" class="wa-main-btn">${Icon('mic','w-6 h-6')}</button>
               </div>
             </div>`;
         }
@@ -4487,25 +4517,137 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           event.target.value = '';
           const strip = document.getElementById('convo-attach-strip');
           if (strip) strip.innerHTML = convoAttachStripHTML();
+          setTimeout(convoMainSync, 0);
         }
 
         function removeConvoAttachment(i){
           pendingConvoAttachments.splice(i, 1);
+          setTimeout(convoMainSync, 0);
           const strip = document.getElementById('convo-attach-strip');
           if (strip) strip.innerHTML = convoAttachStripHTML();
         }
 
+        // ---- Voice notes: WhatsApp-style recorder ----
         let convoRecorder = null;
         let convoRecordedChunks = [];
         let convoRecordStream = null;
         let convoRecording = false;
-        let convoRecordStartTs = 0;
         let convoRecordTimerInterval = null;
-
         let convoPendingVoice = null;
+        let convoRecPaused = false, convoRecElapsedMs = 0, convoRecSegStart = 0;
+        let convoRecLevels = [], convoRecCtx = null, convoRecAnalyser = null, convoRecBuf = null, convoRecMeterTimer = null;
+        let convoRecAudio = null, convoRecAudioUrl = null, convoRecPlayTimer = null, convoRecPlaying = false;
+        const CONVO_REC_BARS = 40;
+
+        function convoRecElapsed(){ return convoRecElapsedMs + (convoRecPaused ? 0 : (Date.now() - convoRecSegStart)); }
+
+        function convoRecPanelHTML(){
+          const paused = convoRecPaused;
+          const secs = Math.floor(convoRecElapsed() / 1000);
+          const iconBtn = 'width:42px;height:42px;border-radius:9999px;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+          const lead = paused
+            ? `<button type="button" onclick="toggleConvoRecPreview()" id="convo-rec-play" aria-label="Play" style="${iconBtn}width:34px;height:34px;color:${NAVY};">${Icon(convoRecPlaying ? 'pause' : 'play','w-5 h-5')}</button>`
+            : `<span id="convo-rec-time" class="font-semibold" style="font-size:15px;min-width:38px;color:#111827;font-variant-numeric:tabular-nums;">${formatCallTime(secs)}</span>`;
+          const trail = paused ? `<span id="convo-rec-time" class="font-semibold" style="font-size:13px;color:#6b7280;font-variant-numeric:tabular-nums;">${formatCallTime(secs)}</span>` : '';
+          return `
+            <div id="convo-rec-panel" class="rounded-3xl convo-composer-pill" style="padding:12px 14px 12px;">
+              <div style="display:flex;align-items:center;gap:10px;height:36px;">
+                ${lead}
+                <div id="convo-rec-wave" style="flex:1;min-width:0;height:34px;display:flex;align-items:center;gap:2px;overflow:hidden;${paused ? '' : 'justify-content:flex-end;'}">
+                  ${Array.from({length: CONVO_REC_BARS}).map(() => '<i style="display:block;width:3px;height:3px;border-radius:2px;flex-shrink:0;background:rgba(10,37,64,0.35);"></i>').join('')}
+                </div>
+                ${trail}
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;">
+                <button type="button" onclick="discardConvoRecording()" aria-label="Delete recording" style="${iconBtn}color:#ef4444;background:rgba(239,68,68,0.10);">${Icon('trash','w-5 h-5')}</button>
+                <button type="button" onclick="${paused ? 'resumeConvoRecording()' : 'pauseConvoRecording()'}" class="font-semibold" style="flex:1;height:42px;border-radius:9999px;background:rgba(10,37,64,0.07);color:${NAVY};display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;">${Icon(paused ? 'mic' : 'pause','w-4 h-4')} ${paused ? 'Resume' : 'Pause'}</button>
+                <button type="button" onclick="sendConvoRecording()" aria-label="Send voice note" class="text-white" style="${iconBtn}background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">${Icon('send','w-5 h-5')}</button>
+              </div>
+            </div>`;
+        }
+
+        function convoRecShowPanel(){
+          const wrap = document.getElementById('convo-composer-wrap');
+          if (!wrap) return;
+          const old = document.getElementById('convo-rec-panel');
+          if (old) old.remove();
+          const pill = wrap.querySelector(':scope > div.wa-row');
+          if (pill) pill.style.display = 'none';
+          wrap.insertAdjacentHTML('beforeend', convoRecPanelHTML());
+          convoRecDraw();
+        }
+
+        function convoRecHidePanel(){
+          const panel = document.getElementById('convo-rec-panel');
+          if (panel) panel.remove();
+          const wrap = document.getElementById('convo-composer-wrap');
+          const pill = wrap && wrap.querySelector(':scope > div.wa-row');
+          if (pill) pill.style.display = '';
+        }
+
+        function convoRecDraw(){
+          const wave = document.getElementById('convo-rec-wave');
+          if (!wave) return;
+          const bars = wave.children, n = bars.length;
+          if (convoRecPaused) {
+            // Whole recording squeezed into the bars, with the part already played tinted
+            const lv = convoRecLevels, per = Math.max(1, lv.length / n);
+            const total = Math.max(1, convoRecElapsed() / 1000);
+            const frac = convoRecAudio ? Math.min(1, (convoRecAudio.currentTime || 0) / total) : 0;
+            for (let i = 0; i < n; i++) {
+              let mx = 0;
+              for (let j = Math.floor(i * per); j < Math.min(lv.length, Math.floor((i + 1) * per) + 1); j++) mx = Math.max(mx, lv[j] || 0);
+              bars[i].style.height = (3 + Math.round(mx * 26)) + 'px';
+              bars[i].style.background = (i / n) < frac ? NAVY : 'rgba(10,37,64,0.35)';
+            }
+          } else {
+            const lv = convoRecLevels.slice(-n);
+            for (let i = 0; i < n; i++) {
+              const v = lv[lv.length - n + i] || 0;
+              bars[i].style.height = (3 + Math.round(v * 28)) + 'px';
+              bars[i].style.background = 'rgba(10,37,64,0.55)';
+            }
+          }
+        }
+
+        function convoRecTick(){
+          const t = document.getElementById('convo-rec-time');
+          if (t) t.textContent = formatCallTime(Math.floor(convoRecElapsed() / 1000));
+        }
+
+        function convoRecStartMeter(){
+          try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC || !convoRecordStream) return;
+            convoRecCtx = new AC();
+            const src = convoRecCtx.createMediaStreamSource(convoRecordStream);
+            convoRecAnalyser = convoRecCtx.createAnalyser();
+            convoRecAnalyser.fftSize = 512;
+            src.connect(convoRecAnalyser);
+            convoRecBuf = new Uint8Array(convoRecAnalyser.fftSize);
+          } catch (e) { convoRecAnalyser = null; }
+          convoRecMeterTimer = setInterval(() => {
+            if (convoRecPaused) return;
+            let level = 0.1 + Math.random() * 0.2;
+            if (convoRecAnalyser) {
+              convoRecAnalyser.getByteTimeDomainData(convoRecBuf);
+              let sum = 0;
+              for (let i = 0; i < convoRecBuf.length; i++) { const d = (convoRecBuf[i] - 128) / 128; sum += d * d; }
+              level = Math.min(1, Math.sqrt(sum / convoRecBuf.length) * 5);
+            }
+            convoRecLevels.push(level);
+            convoRecDraw();
+          }, 80);
+        }
+
+        function convoRecStopMeter(){
+          if (convoRecMeterTimer) { clearInterval(convoRecMeterTimer); convoRecMeterTimer = null; }
+          if (convoRecCtx) { try { convoRecCtx.close(); } catch (e) {} convoRecCtx = null; }
+          convoRecAnalyser = null;
+        }
 
         async function toggleConvoVoiceNote(){
-          if (convoRecording) { stopConvoVoiceNote(false); return; }
+          if (convoRecording) return;
           if (convoPendingVoice) { discardConvoPendingVoice(); return; }
           if (!activeConvoId) return;
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -4534,38 +4676,66 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
           convoRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) convoRecordedChunks.push(e.data); };
           convoRecorder.onstop = handleConvoVoiceNoteStop;
-          convoRecorder.start();
+          convoRecorder.start(500);
           convoRecording = true;
-          convoRecordStartTs = Date.now();
-          setConvoMicRecordingUI(true);
+          convoRecPaused = false; convoRecElapsedMs = 0; convoRecSegStart = Date.now(); convoRecLevels = [];
+          convoRecShowPanel();
+          convoRecStartMeter();
           sendRecordingBroadcast(true);
-          convoRecordTimerInterval = setInterval(updateConvoRecordTimer, 250);
+          convoRecordTimerInterval = setInterval(convoRecTick, 200);
         }
 
-        function updateConvoRecordTimer(){
-          const inputEl = document.getElementById('convo-input');
-          if (inputEl) inputEl.placeholder = `Recording... ${formatCallTime(Math.floor((Date.now() - convoRecordStartTs) / 1000))}`;
+        function convoRecStopPreview(){
+          if (convoRecPlayTimer) { clearInterval(convoRecPlayTimer); convoRecPlayTimer = null; }
+          if (convoRecAudio) { try { convoRecAudio.pause(); } catch (e) {} convoRecAudio = null; }
+          if (convoRecAudioUrl) { try { URL.revokeObjectURL(convoRecAudioUrl); } catch (e) {} convoRecAudioUrl = null; }
+          convoRecPlaying = false;
         }
 
-        function setConvoMicRecordingUI(on){
-          const micBtn = document.getElementById('convo-mic-btn');
-          const inputEl = document.getElementById('convo-input');
-          if (micBtn) {
-            const pending = !on && convoPendingVoice;
-            micBtn.classList.toggle('bg-red-500', on);
-            micBtn.classList.toggle('text-white', on);
-            micBtn.classList.toggle('bg-gray-100', !on && !pending);
-            micBtn.classList.toggle('text-[' + NAVY + ']', !on && !pending);
-            micBtn.innerHTML = Icon(on ? 'square' : (pending ? 'trash' : 'mic'), 'w-4 h-4');
-            micBtn.style.animation = on ? 'pulse 1s infinite' : '';
-            micBtn.title = on ? 'Pause recording' : (pending ? 'Discard voice note' : 'Record a voice note');
+        function pauseConvoRecording(){
+          if (!convoRecording || convoRecPaused || !convoRecorder) return;
+          convoRecElapsedMs += Date.now() - convoRecSegStart;
+          convoRecPaused = true;
+          try { convoRecorder.pause(); convoRecorder.requestData(); } catch (e) {}
+          sendRecordingBroadcast(false);
+          convoRecShowPanel();
+        }
+
+        function resumeConvoRecording(){
+          if (!convoRecording || !convoRecPaused || !convoRecorder) return;
+          convoRecStopPreview();
+          convoRecPaused = false;
+          convoRecSegStart = Date.now();
+          try { convoRecorder.resume(); } catch (e) {}
+          sendRecordingBroadcast(true);
+          convoRecShowPanel();
+        }
+
+        function toggleConvoRecPreview(){
+          if (!convoRecPaused) return;
+          if (convoRecPlaying) { if (convoRecAudio) convoRecAudio.pause(); convoRecPlaying = false; if (convoRecPlayTimer) { clearInterval(convoRecPlayTimer); convoRecPlayTimer = null; } convoRecShowPanel(); return; }
+          if (!convoRecAudio) {
+            const blob = new Blob(convoRecordedChunks, { type: (convoRecorder && convoRecorder.mimeType) || 'audio/webm' });
+            if (!blob.size) return;
+            convoRecAudioUrl = URL.createObjectURL(blob);
+            convoRecAudio = new Audio(convoRecAudioUrl);
+            convoRecAudio.onended = () => { convoRecPlaying = false; if (convoRecPlayTimer) { clearInterval(convoRecPlayTimer); convoRecPlayTimer = null; } if (convoRecAudio) convoRecAudio.currentTime = 0; convoRecShowPanel(); };
           }
-          if (inputEl) inputEl.placeholder = (!on && convoPendingVoice) ? `Voice note ready (${formatCallTime(convoPendingVoice.durationSecs)}) -- tap send` : 'Message';
+          convoRecAudio.play().then(() => {
+            convoRecPlaying = true;
+            convoRecShowPanel();
+            convoRecPlayTimer = setInterval(convoRecDraw, 100);
+          }).catch(() => {});
         }
+
+        function discardConvoRecording(){ stopConvoVoiceNote(false); }
+        function sendConvoRecording(){ stopConvoVoiceNote(true); }
 
         function stopConvoVoiceNote(send){
+          convoRecStopPreview();
           if (convoRecorder && convoRecording) {
-            convoRecorder._shouldSend = send;
+            convoRecorder._finalMs = convoRecElapsed();
+            convoRecorder._mode = send ? 'send' : 'discard';
             try { convoRecorder.stop(); } catch (e) {}
           }
           convoRecording = false;
@@ -4574,18 +4744,26 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function handleConvoVoiceNoteStop(){
-          const durationSecs = Math.max(1, Math.round((Date.now() - convoRecordStartTs) / 1000));
-          const blob = new Blob(convoRecordedChunks, { type: (convoRecorder && convoRecorder.mimeType) || 'audio/webm' });
+          const rec = convoRecorder;
+          const mode = rec && rec._mode;
+          const durationSecs = Math.max(1, Math.round(((rec && rec._finalMs) || convoRecElapsed()) / 1000));
+          const blob = new Blob(convoRecordedChunks, { type: (rec && rec.mimeType) || 'audio/webm' });
           if (convoRecordStream) { convoRecordStream.getTracks().forEach(t => t.stop()); convoRecordStream = null; }
+          convoRecStopMeter();
           convoRecorder = null;
           convoRecordedChunks = [];
-          if (blob.size === 0 || !activeConvoId) { setConvoMicRecordingUI(false); return; }
+          convoRecPaused = false; convoRecElapsedMs = 0; convoRecLevels = [];
+          convoRecHidePanel();
+          setConvoMicRecordingUI(false);
+          if (mode !== 'send' || blob.size === 0 || !activeConvoId) return;
           const reader = new FileReader();
-          reader.onload = () => {
-            convoPendingVoice = { dataUrl: reader.result, durationSecs, blob };
-            setConvoMicRecordingUI(false);
-          };
+          reader.onload = () => { sendConvoVoiceNote(reader.result, durationSecs, blob); };
           reader.readAsDataURL(blob);
+        }
+
+        function setConvoMicRecordingUI(on){
+          const inputEl = document.getElementById('convo-input');
+          if (inputEl) inputEl.placeholder = (!on && convoPendingVoice) ? `Voice note ready (${formatCallTime(convoPendingVoice.durationSecs)}) -- tap send` : 'Message';
         }
 
         function discardConvoPendingVoice(){
@@ -4594,7 +4772,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function handleConvoSendTap(){
-          if (convoRecording) { stopConvoVoiceNote(false); return; }
+          setTimeout(convoMainSync, 60);
+          setTimeout(convoMainSync, 400);
+          if (convoRecording) { stopConvoVoiceNote(true); return; }
           if (convoPendingVoice) {
             const { dataUrl, durationSecs, blob } = convoPendingVoice;
             convoPendingVoice = null;
@@ -4678,7 +4858,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoLogHTML(){ return chatMediaRewriteHtml(convoLogHTMLInner()); }
         function convoLogHTMLInner(){
           convoGlimpseCards = [];
-          const meta = convoMeta[activeConvoId] || { icon: 'user', avatarBg: 'bg-gray-100' };
+          const meta = activeConvoMetaSafe(activeConvoId);
           const msgs = conversationMessages[activeConvoId] || [];
           let lastDateKey = null;
           return msgs.map(m => {
@@ -4704,14 +4884,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ? '<path d="M15 10l4.5-2.5v9L15 14M4 7h9a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
                   : '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
                 const title = (isVideo ? 'Video call' : 'Voice call');
-                const row = `<div class="flex ${outgoing ? 'justify-end' : 'justify-start'}"><div class="flex items-center gap-3 px-3 py-2.5" style="background:${outgoing ? 'rgba(65,105,225,0.12)' : '#f3f4f6'};border-radius:${outgoing ? '20px 20px 0 20px' : '20px 20px 20px 0'};min-width:210px;max-width:78%;">
-                    <div class="flex items-center justify-center flex-shrink-0" style="width:42px;height:42px;border-radius:9999px;background:rgba(107,114,128,0.14);color:#4b5563;"><svg viewBox="0 0 24 24" width="20" height="20">${glyph}</svg></div>
-                    <div class="min-w-0 flex-1">
-                      <div class="text-sm font-semibold" style="color:#1f2937;">${title}</div>
-                      <div class="flex items-center gap-1 text-xs" style="color:${iconColor};"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg><span>${escapeHtml(detail || (outgoing ? 'Outgoing' : 'Incoming'))}</span></div>
+                // Same bubble as a normal chat message: same colour, shape, width and time underneath
+                const bubbleStyle = outgoing
+                  ? 'background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35));border-radius:20px 20px 0 20px;'
+                  : 'border-radius:20px 20px 20px 0;';
+                const bubbleCls = outgoing ? 'text-white' : 'bg-gray-100 text-gray-700';
+                const circleStyle = outgoing ? 'background:rgba(255,255,255,0.28);color:#ffffff;' : 'background:rgba(107,114,128,0.14);color:#4b5563;';
+                const statusColor = bad ? (outgoing ? '#b91c1c' : '#ef4444') : (outgoing ? '#f0fdf4' : '#16a34a');
+                const callBubble = `<div class="${bubbleCls} px-4 py-2.5 text-sm flex items-center gap-3" style="${bubbleStyle}">
+                    <div class="flex items-center justify-center flex-shrink-0" style="width:34px;height:34px;border-radius:9999px;${circleStyle}"><svg viewBox="0 0 24 24" width="18" height="18">${glyph}</svg></div>
+                    <div class="min-w-0">
+                      <div class="font-semibold">${title}</div>
+                      <div class="flex items-center gap-1 text-xs" style="color:${statusColor};"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg>${escapeHtml(detail)}</div>
                     </div>
-                    <div class="text-[10px] text-gray-400 self-end">${timeLabel}</div>
-                  </div></div>`;
+                  </div>`;
+                const callContent = `<div class="flex flex-col ${outgoing ? 'items-end' : 'items-start'} gap-1" style="max-width:75%;">${callBubble}<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div></div>`;
+                const row = outgoing
+                  ? `<div class="flex items-start justify-end gap-3">${callContent}</div>`
+                  : `<div class="flex items-start gap-3"><div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContent}</div>`;
                 return separator + row;
               }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
@@ -5165,9 +5355,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (wrap) wrap.innerHTML = '<span class="text-xs italic text-gray-400">Couldn\'t load voice note</span>';
         }
 
-        // A shared post's caption now travels with it in one tappable card (thumbnail + author +
-        // caption) instead of a bare text line, so the recipient can go straight to the post
-        // Tappable challenge invite card: opens the challenge straight away for the friend
+        // A shared post goes as one tappable card with its caption, so they can open the post.
+        // Challenge invites are a card too and open the challenge straight away.
         function convoSharedChallengeAttachmentsHTML(items, mine){
           if (!items || !items.length) return '';
           return `
@@ -5198,9 +5387,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
-        // A reply to (or share of) a glimpse is ONE bubble, like a WhatsApp status reply: a quoted
-        // glimpse block (name, "Photo"/"Video", small thumbnail) with the reply text underneath.
-        // The glimpse owner sees the same bubble, with "You" on the quote.
+        // A glimpse reply is one bubble, like a WhatsApp status reply: the quoted glimpse on top,
+        // reply text underneath. The glimpse owner sees it the same, with "You" on the quote.
         function convoGlimpseBubbleHTML(items, m, mine, filesHTML){
           const isShare = /^Shared a glimpse:/i.test(m.text || '');
           const quotes = items.map(g => {
@@ -5482,9 +5670,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return 'convoDoc' + Math.abs(h);
         }
 
-        // A round badge for the state icon, tinted to blend with whichever bubble it sits in
-        // (translucent white on a colored "mine" bubble, a soft royal tint on a plain received
-        // one) instead of a bright, disconnected solid-royal circle
+        // Small round badge for the state icon, tinted to match the bubble it sits in.
         function convoDocIconHTML(state, mine){
           const badge = (inner, tint) => `<div class="w-full h-full rounded-full flex items-center justify-center" style="background:${tint.bg};color:${tint.fg};">${inner}</div>`;
           const soft = mine ? { bg: 'rgba(255,255,255,0.22)', fg: '#fff' } : { bg: 'rgba(30,144,255,0.12)', fg: ROYAL };
@@ -5971,6 +6157,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function autoGrowConvoInput(el){
           el.style.height = 'auto';
           el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+          convoMainSync();
+        }
+
+        // One round button, like WhatsApp: mic while the box is empty, send once you type or attach something
+        function convoMainHasContent(){
+          const i = document.getElementById('convo-input');
+          return !!((i && i.value.trim()) || (typeof pendingConvoAttachments !== 'undefined' && pendingConvoAttachments.length) || convoPendingVoice);
+        }
+        function convoMainSync(){
+          const b = document.getElementById('convo-mic-btn');
+          if (!b) return;
+          const has = convoMainHasContent();
+          const mode = has ? 'send' : 'mic';
+          if (b.dataset.mode !== mode) {
+            b.dataset.mode = mode;
+            b.innerHTML = Icon(has ? 'send' : 'mic', 'w-6 h-6');
+            b.title = has ? 'Send' : 'Record a voice note';
+          }
+          const cam = document.getElementById('convo-camera-btn');
+          if (cam) cam.style.display = has ? 'none' : 'flex';
+        }
+        function convoMainAction(){
+          if (convoMainHasContent()) handleConvoSendTap(); else toggleConvoVoiceNote();
+          setTimeout(convoMainSync, 0);
         }
 
         function sendConvoMessage(){
@@ -6079,16 +6289,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!id) return;
           // No Internet: the call screen never opens, the person just gets the notification
           if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
-          // Only accepted connections can be called one-to-one (answering a call that was already allowed is fine)
+          // Only accepted connections can be called. Calling someone you're not connected to rings
+          // normally for you but silent for them. They just get a "tried to reach you" notification.
+          let silentRing = false;
           if (!answering && callNeedsConnection(id, convoMeta[id])) {
             const allowed = await isAcceptedConnectionWith(convoMeta[id].otherUserId);
-            if (!allowed) {
-              // The call never rings for them: it is silenced, and they just get a notification that you tried
-              try { sendCallAttempt(convoMeta[id].otherUserId, type, id); } catch (e) {}
-              logCallEvent(id, `${type === 'video' ? 'Video' : 'Voice'} call · Not connected`, 'out');
-              if (typeof openAppAlertModal === 'function') openAppAlertModal("You can call this person once they accept your connection request. We let them know you tried to reach them.", "Not connected yet");
-              return;
-            }
+            silentRing = !allowed;
           }
           clearCallTimers();
           stopCallLocalStream();
@@ -6157,7 +6363,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 }
               } else if (meta && meta.otherUserId) {
                 callState.pendingRingTargets = new Set([meta.otherUserId]);
-                sendCallRing(id, type, meta.otherUserId);
+                sendCallRing(id, type, meta.otherUserId, silentRing);
                 const ringingConvoId = id;
                 callAnswerTimeout = setTimeout(() => {
                   if (callState.convoId !== ringingConvoId || callState.connected) return;
@@ -6404,9 +6610,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           openConversation(callState.convoId);
         }
 
-        // Plus icon on the minimized banner: unlike messaging, adding someone to the call is
-        // itself a call-management action, so this returns to the full call screen (clearing the
-        // banner) before showing the add-to-call list, rather than leaving the banner
+        // The plus on the minimized banner goes back to the full call screen first,
+        // then shows the add-to-call list.
         function callBannerEnd(){
           if (lectureBannerActive() && !callMinimized) { endLecture(); return; }
           endCall();
@@ -6738,7 +6943,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function formatCallTime(total){
-          total = Math.max(0, Math.floor(Number(total) || 0)); // whole seconds only -- fractional input (e.g. audio.currentTime) must never leak milliseconds into the label
+          total = Math.max(0, Math.floor(Number(total) || 0)); // whole seconds only, no milliseconds in the label
           const m = Math.floor(total / 60).toString().padStart(2,'0');
           const s = (total % 60).toString().padStart(2,'0');
           return `${m}:${s}`;
@@ -6905,9 +7110,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Call screen markup (1:1, group and meeting) ----------------------------------
-        // Shared look for every call screen (also used by class lectures in courses.js):
-        // a deep-blue stage, glass top bar, rounded tiles with name chips + muted badges,
-        // and a floating labelled control bar.
+        // Shared look for every call screen (class lectures use it too): dark blue stage,
+        // glass top bar, rounded tiles with name chips, and a floating control bar.
         function ensureCallUiStyles(){
           if (document.getElementById('call-ui-styles')) return;
           const st = document.createElement('style');
@@ -7501,16 +7705,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
 
         // =====================================================================
-        // MEETINGS -- standalone calls (not tied to a class or a group chat).
-        // Create from the "+" button -> Live or Scheduled -> share the link. Anyone signed in
-        // who opens the link lands on a join screen and then the normal call screen.
-        // Backend (live Supabase): meetings + meeting_members tables and the RPCs create_meeting,
-        // get_meeting_by_code, join_meeting, end_meeting, set_meeting_reminder, list_my_meetings.
-        // They return camelCase JSON and raise errors; normalizeMeeting() below converts that to the
-        // flat shape the screens use. Admin notifications, push and reminders are sent by the database
-        // (process_meeting_reminders runs every minute), so the app does not send them itself.
-        // Calls reuse the same WebRTC-over-Supabase-broadcast
-        // signaling as group calls, on the channel `call:meeting:<code>`.
+        // MEETINGS: standalone calls, not tied to a class or group chat. Create from the +,
+        // share the link, and anyone signed in lands on a join screen. Reminders are sent by the database.
         // =====================================================================
         let meetingDraft = { kind: 'live', title: '', date: '', time: '', admins: [], search: '' };
         let meetingCreated = null;        // result of create_meeting, shown on the "ready" screen
@@ -8100,7 +8296,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <button id="meeting-share-cell-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleMeetingShareContact('${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
               <div class="relative">
                 <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
-                <div id="meeting-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+                <div id="meeting-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${IconBold('check','w-3 h-3 text-white')}</div>
               </div>
               <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
             </button>`;
@@ -8266,7 +8462,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <button id="call-share-cell-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleCallShareContact('${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
               <div class="relative">
                 <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
-                <div id="call-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+                <div id="call-share-check-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${IconBold('check','w-3 h-3 text-white')}</div>
               </div>
               <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
             </button>`;
@@ -8358,9 +8554,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Opening a meeting link / a tapped meeting ----
-        // Runs at boot (games.js) after sign-in, same as checkPendingCollabLinkJoin.
-        // The code is also stashed on first load, so it survives a sign-in / sign-up step that
-        // reloads the page and drops the query string.
+        // Runs at boot after sign-in. The code is also saved on first load so it survives a reload.
         try {
           const _mc = new URLSearchParams(window.location.search || '').get('meeting');
           if (_mc) localStorage.setItem('stitch-pending-meeting', JSON.stringify({ code: _mc, t: Date.now() }));
@@ -8524,7 +8718,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sb = getSupabaseClient();
           if (!sb) { openAppAlertModal("Couldn't join the meeting right now. Check your connection and try again."); return; }
           try {
-            // Registers me as a member (and opens a scheduled meeting early when an admin joins close to the start)
+            // Adds me as a member, and opens a scheduled meeting early if an admin joins near the start.
             const { data, error } = await sb.rpc('join_meeting', { p_code: info.code });
             if (error) {
               if (/meeting_ended/.test(error.message || '')) {
@@ -8754,9 +8948,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
 
         // ---- Call chat page: opens full-screen from the call's menu (meetings and space sessions) ----
-        // Messages are saved in Supabase (meeting_messages / lecture_messages) and delivered live
-        // (realtime) to everyone in the call, including people who join later (history loads when
-        // the page opens). Same page for both; callChatCtx() says which call we are in.
+        // Call chat messages are saved in Supabase and delivered live, including late joiners.
+        // Same page for meetings and lectures. callChatCtx() says which one.
         const meetingChat = { open: false, meetingId: null, ctx: null, ready: null, messages: [], channel: null, myId: null, unread: 0, loading: false, sending: false, vvHandler: null };
 
         function callChatCtx(){
@@ -8778,7 +8971,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           try { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
         }
 
-        // A reply is stored inside the message text (no database change): \u2063 name \u2063 quote \u2063 message
+        // A reply is stored inside the message text, no database change:
+        // \u2063 name \u2063 quote \u2063 message
         function meetingChatParse(text){
           const t = String(text || '');
           if (t.charAt(0) === '\u2063') {
@@ -8929,9 +9123,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function meetingChatPlacePage(){
           const page = document.getElementById('meeting-chat-page');
           if (!page) return;
-          // The app runs with interactive-widget=overlays-content, so the keyboard does not shrink
-          // the page by itself: measure it and end the page right above it, which keeps the
-          // message box (and everything typed in it) visible.
+          // The keyboard overlays the page, so measure it and end the page right above it.
+          // That keeps the message box visible while typing.
           const input = document.getElementById('meeting-chat-input');
           const focused = !!(input && document.activeElement === input);
           const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(focused) : 0;
@@ -9186,8 +9379,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           navigator.serviceWorker.addEventListener('message', (e) => {
             const d = e && e.data;
             if (d && d.type === 'open-meeting' && d.code) openMeetingByCode(d.code);
-            // Tapping a "wants to connect" push opens Messages > Requests
-            // A call push reached this phone while the app was open in the background: ring it like a normal call
+            // Tapping a "wants to connect" push opens Messages > Requests.
+            // A call push while the app is in the background rings like a normal call.
             if (d && d.type === 'call-push' && d.data && d.data.convoId) {
               try {
                 const cd = d.data;

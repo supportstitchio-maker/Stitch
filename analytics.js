@@ -1,19 +1,5 @@
-/* Stitch analytics (PostHog)
- * ---------------------------------------------------------------------------
- * Loaded BEFORE core.js so the fetch hook is in place before the Supabase
- * client is created. Everything here is a safe no-op until the project key
- * below is filled in, and it can never throw into the rest of the app.
- *
- * Privacy rules this file enforces:
- *   - No autocapture (nothing is recorded just because it was clicked/typed).
- *   - Users are identified by their Supabase user id only: never email/name.
- *   - Event properties are small and hand-picked; request bodies are never sent.
- *   - Session replay masks every input and fully BLOCKS sensitive screens
- *     (chat, calls, ID/poster verification, payouts, CV/career, enrolment
- *     forms, settings, sign-in).
- *   - URL query strings and #hashes are stripped everywhere (the OAuth sign-in
- *     return puts access tokens in the #hash).
- */
+// Stitch analytics (PostHog). Loads before core.js and does nothing until the key is added.
+// No autocapture, only user ids (no emails), sensitive screens blocked in replays.
 (function () {
   'use strict';
 

@@ -58,7 +58,7 @@
 
         function renderFeed() {
           const screenEl = document.getElementById('screen');
-          if (!screenEl) return; // shell not mounted yet (e.g. essentialLoads resolved before renderApp() finished) -- it will re-render once the tab is actually shown
+          if (!screenEl) return; // shell isn't mounted yet, it re-renders once the tab shows
           // Delayed calls (skeleton timers etc.) must never paint the feed over another tab.
           if (typeof currentTab !== 'undefined' && currentTab !== 0) return;
           const prevScrollTop = screenEl.scrollTop;
@@ -195,10 +195,8 @@
           syncFeedImageReadyState(list);
         }
 
-        // Right after sign-in the feed can paint before the person's connections have arrived. Until
-        // then every author counts as a stranger, and a stranger's video is held back (see
-        // feedVisiblePosts). When the connections land, bring in whatever was held back so nothing
-        // waits for a refresh.
+        // Right after sign-in the feed can paint before connections arrive, so strangers' videos wait.
+        // When connections land, bring them in so no refresh is needed.
         let feedNetworkRefreshTimer = null;
         function feedRefreshForNetworkChange(){
           if (feedNetworkRefreshTimer) return;
@@ -383,7 +381,7 @@
             users: `<defs><mask id="stwID" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><path d="M3.7 15.6H6.4C9.8 15.6 12 13.2 12 8.9" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/></mask></defs><circle cx="3.6" cy="8.2" r="3.5" fill="currentColor" fill-opacity=".4"/><circle cx="20.4" cy="8.2" r="3.5" fill="currentColor" fill-opacity=".7"/><path d="M3.7 15.6H6.4C9.8 15.6 12 13.2 12 8.9" fill="none" stroke="currentColor" stroke-opacity=".4" stroke-width="6" stroke-linecap="round"/><path d="M20.3 15.6H17.6C14.2 15.6 12 13.2 12 8.9" fill="none" stroke="currentColor" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/><path d="M20.3 15.6H17.6C14.2 15.6 12 13.2 12 8.9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" mask="url(#stwID)"/>`,
             graduate: `<path d="M12 3L1 8l11 5 9-4.1V17h2V8L12 3zM5 12.18v3.64C5 18.13 8.13 20 12 20s7-1.87 7-4.18v-3.64l-7 3.18-7-3.18z"/>`,
             bot: `<g transform="translate(12,12) scale(1.15) translate(-12,-12)"><rect x="5" y="9" width="14" height="10" rx="3"/><rect x="10.25" y="3" width="3.5" height="4" rx="1.75"/><circle cx="12" cy="4.5" r="1.1"/><circle cx="9.2" cy="14" r="1.3" fill="white"/><circle cx="14.8" cy="14" r="1.3" fill="white"/><line x1="8.5" y1="17.2" x2="15.5" y2="17.2" stroke="white" stroke-width="1" stroke-linecap="round"/><rect x="2.3" y="12.5" width="1.8" height="3.5" rx="0.9"/><rect x="19.9" y="12.5" width="1.8" height="3.5" rx="0.9"/></g>`,
-            camera: `<path fill-rule="evenodd" d="M9.344 3.07a24.66 24.66 0 015.312 0c.967.052 1.75.816 1.928 1.766l.157.837c.083.444.377.82.83.916A3.001 3.001 0 0121 9.5v8A2.5 2.5 0 0118.5 20h-13A2.5 2.5 0 013 17.5v-8a3.001 3.001 0 012.43-2.911c.452-.096.746-.472.828-.916l.158-.837c.178-.95.96-1.714 1.928-1.766zM12 16.5a4 4 0 100-8 4 4 0 000 8z" clip-rule="evenodd"/>`,
+            camera: `<g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.6 4.5h6.8l1.4 2.1H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2h2.2l1.4-2.1z"/><circle cx="12" cy="13" r="3.7"/></g>`,
             handRaised: `<path d="M8 11.25V4.75a1.5 1.5 0 013 0v6M11 10.75V3.75a1.5 1.5 0 013 0v7M14 10.75V6a1.5 1.5 0 013 0v9.5a6 6 0 01-6 6h-.75a6 6 0 01-5.196-3l-2.06-3.567a1.6 1.6 0 012.732-1.65L8 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
             cameraOff: `<rect x="2" y="5.6" width="14.3" height="12.8" rx="3.3"/><path d="M16.7 9.4l3.5-2.9c.9-.7 1.8-.3 1.8.8v9.4c0 1.1-.9 1.5-1.8.8l-3.5-2.9a.9.9 0 01-.3-.7v-3.8c0-.3.1-.5.3-.7z"/><path d="M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>`,
             video: `<rect x="2" y="5.6" width="14.3" height="12.8" rx="3.3"/><path d="M16.7 9.4l3.5-2.9c.9-.7 1.8-.3 1.8.8v9.4c0 1.1-.9 1.5-1.8.8l-3.5-2.9a.9.9 0 01-.3-.7v-3.8c0-.3.1-.5.3-.7z"/>`,
@@ -472,7 +470,7 @@
             circle: `<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/>`,
             lineTool: `<line x1="5" y1="19" x2="19" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
             textT: `<path d="M4 5h16M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-            // Whiteboard text tool: a serif T sitting inside a text-box frame, so it reads as "add a text box" rather than a bare letter
+            // Whiteboard text tool: a serif T in a text-box frame so it reads as "add a text box".
             textTool: `<path d="M4 8V6.5A2.5 2.5 0 016.5 4H8M16 4h1.5A2.5 2.5 0 0120 6.5V8M20 16v1.5a2.5 2.5 0 01-2.5 2.5H16M8 20H6.5A2.5 2.5 0 014 17.5V16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.4 10V8.4h7.2V10M12 8.4v7.2M10.4 15.6h3.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
             // Comment / send-a-message: a chat bubble holding two lines of text
             commentText: `<path d="M6 4.5h12A2.5 2.5 0 0120.5 7v8a2.5 2.5 0 01-2.5 2.5h-5.3l-3.6 3a.6.6 0 01-.98-.46V17.5H6A2.5 2.5 0 013.5 15V7A2.5 2.5 0 016 4.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.8 9.4h8.4M7.8 12.8h5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
@@ -918,8 +916,7 @@
           return null;
         }
 
-        // Finds (or starts) the chat with a real person from a glimpse, carrying their photo and
-        // user id so the chat shows their profile picture and the header opens their profile,
+        // Finds or starts the chat with someone from a glimpse, with their photo and user id,
         // whether or not they're a connection.
         async function ensureConvoForUser(u){
           const otherId = u && u.otherUserId ? String(u.otherUserId) : '';
@@ -1370,9 +1367,8 @@
           }
         }
 
-        // Pull down anywhere on a glimpse to close it. The screen follows the finger with some
-        // resistance (it shrinks and fades a little), and on release it either glides away slowly
-        // or springs back -- nothing snaps shut instantly.
+        // Pull down anywhere on a glimpse to close it. It follows the finger, then glides away
+        // slowly or springs back. Nothing snaps shut.
         let glimpsePull = null;
         let glimpsePullActive = false;
         function glimpsePullStart(e, cfg){
@@ -2472,11 +2468,8 @@
           openConversation(convo.id);
         }
 
-        // When the on-screen keyboard opens, shrink the glimpse typing screens to the area above it
-        // so the text box sits right on top of the keyboard and you can see what you type.
-        // The app runs with the keyboard OVERLAYING the page (viewport meta + VirtualKeyboard API),
-        // so visualViewport never shrinks; the keyboard height has to come from getKeyboardInset()
-        // (core.js), the same helper the chat screen uses.
+        // When the keyboard opens, shrink the glimpse typing screens to the area above it.
+        // Keyboard height comes from getKeyboardInset() in core.js, like the chat screen.
         (function glimpseKeyboardAvoid(){
           const vv = window.visualViewport;
           const ids = ['glimpse-media-caption-screen', 'glimpse-compose-screen', 'story-viewer-screen'];
@@ -2532,8 +2525,8 @@
         }, 250);
 
 
-        // Comments sheet: when the keyboard (or the emoji panel standing in for it) is up, lift the whole sheet so the
-        // typing box sits right on top of it instead of hiding behind it. Same approach as the glimpse typing screens.
+        // Comments sheet: lift the whole sheet when the keyboard or emoji panel is up,
+        // so the typing box sits on top of it. Same as the glimpse typing screens.
         (function commentSheetKeyboardAvoid(){
           const vv = window.visualViewport;
           const apply = () => {
@@ -2650,9 +2643,7 @@
 
         const GLIMPSE_MAX_SECONDS = 60;
 
-        // glimpseVideoAttrs(startSec, endSec) builds the ontimeupdate/onloadedmetadata attributes
-        // that keep a <video> looping over just the trimmed window a user selected in the crop
-        // step of the composer
+        // glimpseVideoAttrs(startSec, endSec) makes a <video> loop only over the trimmed part.
         function glimpseVideoAttrs(startSec, endSec){
           const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
           const e = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
@@ -2768,9 +2759,7 @@
         // ---- Full-screen glimpse video playback (actually *watching* a glimpse, as opposed to a
         // looping thumbnail/preview above) --
 
-        // storyVideoAttrs: for the main story viewer (someone else's glimpse), where finishing
-        // playback should also auto-advance to the next glimpse, same as the flat 60s timer used
-        // to for images
+        // storyVideoAttrs: for the main story viewer. When a video ends it moves to the next glimpse.
         function storyVideoAttrs(idx, startSec, endSec){
           const s = isFinite(startSec) && startSec > 0 ? Number(startSec) : 0;
           const requestedEnd = isFinite(endSec) && endSec > s ? Number(endSec) : (s + GLIMPSE_MAX_SECONDS);
@@ -3336,10 +3325,8 @@
           });
         }
 
-        // Feed videos always START with sound. The person can mute one while it plays (that choice
-        // is remembered only until the video scrolls away), and the next time it plays it is back
-        // on sound. If the browser refuses sound autoplay, the video plays muted instead and is
-        // switched back to sound on the person's very first tap/scroll/key press.
+        // Feed videos start with sound. You can mute one while it plays, but it's back on sound next time.
+        // If the browser blocks sound autoplay, it plays muted until your first tap or scroll.
         function syncFeedMuteIcon(video){
           const wrap = video.closest && video.closest('.feed-video-wrap');
           const muteBtn = wrap && wrap.querySelector('.feed-video-mutebtn');
@@ -3368,10 +3355,8 @@
           evs.forEach(ev => document.addEventListener(ev, unmute, true));
         }
 
-        // Only one video may be heard at a time. Whenever any recorded video (feed post, post
-        // detail, comments sheet, glimpse...) starts playing, every other one that is playing
-        // with sound is paused, so two copies of the same video can never be heard on top of each
-        // other. Live call/meeting streams (srcObject) are left alone.
+        // Only one video is heard at a time. When one starts, every other playing one is paused.
+        // Live call streams are left alone.
         (function installSingleAudibleVideo(){
           if (window.__singleAudibleVideo) return; window.__singleAudibleVideo = true;
           document.addEventListener('play', function(e){
@@ -3388,17 +3373,15 @@
         })();
 
         function attemptFeedVideoPlay(video, btn){
-          // The Home feed (which lives in #screen, behind #auth-gate) can be pre-rendered before
-          // login/signup finishes, so its IntersectionObserver can fire while the auth gate is still
-          // the only thing the person actually sees
+          // The Home feed can pre-render behind #auth-gate before login finishes, so its
+          // IntersectionObserver may fire while only the auth gate is visible.
           const gate = document.getElementById('auth-gate');
           if (gate && !gate.classList.contains('auth-hidden')) return;
           // Never start a video that isn't on the surface the person is actually looking at: the app
           // is backgrounded, or an overlay/page is open on top of the feed the video lives in
           if (document.hidden) return;
-          // A video whose post is no longer on the page (the feed was detached when the person
-          // switched tabs, or its overlay was closed) must never start: a detached <video> still
-          // plays sound in the background
+          // A video whose post is no longer on the page must never start, because a detached
+          // <video> still plays sound in the background.
           if (!video.isConnected) return;
           if (video.closest && video.closest('#feed-list') && typeof currentTab !== 'undefined' && currentTab !== 0) return;
           const activeOv = document.getElementById('overlay');
@@ -3615,9 +3598,8 @@
         });
 
         // ---- Keep post videos from playing in the background ----
-        // Feed/post videos that are playing. A video taken out of the page (leaving the feed,
-        // closing a post) keeps playing its sound but can no longer be found with
-        // document.querySelectorAll, so playing ones are tracked here to be silenced.
+        // Playing feed/post videos. One taken out of the page keeps its sound but can't be found
+        // with querySelectorAll, so playing ones are tracked here to be silenced.
         const __playingPostVideos = new Set();
         (function trackPlayingPostVideos(){
           if (window.__trackPlayingPostVideos) return; window.__trackPlayingPostVideos = true;
@@ -3784,9 +3766,8 @@
         }
 
 
-        // Feed videos start WITH sound (no muted attribute): attemptFeedVideoPlay plays them as they
-        // scroll into view and, only if the browser refuses sound autoplay, falls back to muted and
-        // flips the speaker icon. setupFeedVideoAutoplay pauses them once scrolled past the threshold.
+        // Feed videos start with sound. attemptFeedVideoPlay plays them on scroll-in, falls back to muted
+        // if blocked, and setupFeedVideoAutoplay pauses them once scrolled past.
         function simplePostVideoHtml(url, errorTarget, posterUrl){
           const uid = 'pv' + Math.random().toString(36).slice(2, 9);
           const err = errorTarget || 'Video no longer available';
@@ -4310,9 +4291,8 @@
           return loadRemotePostsInFlight;
         }
 
-        // Fires the posts table request by itself, with no dependency on feedPosts/auth state, so
-        // it can be started as early as possible (e.g. right alongside ensureUserStateLoaded on
-        // Newest posts fetched per load
+        // Fires the posts request by itself, with no feedPosts/auth dependency, so it can start early.
+        // Newest posts fetched per load.
         const FEED_FETCH_LIMIT = 300;
 
         function fetchRemotePostsRaw(){
@@ -4698,9 +4678,8 @@
           return { thumb, thumbType, body: body || null };
         }
 
-        // Fetches one specific post straight from the database and adds it to the feed, for when
-        // someone taps a "tagged you" notification (or a push) for a post that isn't in the few
-        // recent posts loaded on this device
+        // Fetches one post from the database and adds it to the feed, for when someone taps
+        // a "tagged you" notification for a post that isn't loaded on this device.
         async function fetchPostIntoFeedById(id){
           try {
             if (typeof findPost === 'function' && findPost(id)) return true;
@@ -4738,6 +4717,7 @@
           navigator.serviceWorker.addEventListener('message', (ev) => {
             const d = ev && ev.data;
             if (d && d.type === 'open-post' && d.postId != null) openPostById(d.postId);
+            if (d && d.type === 'open-chat' && d.convoId && typeof openConversation === 'function') { try { closeOverlay(); } catch (e) {} openConversation(d.convoId); }
           });
         }
         (function(){
@@ -5854,9 +5834,8 @@
               <div id="post-header-${post.id}" class="${rowCls}">
                 ${backBtn}
                 <div class="w-7 h-7 rounded-full ${post.avatarBg} overflow-hidden flex items-center justify-center flex-shrink-0 cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForPost(${post.id})">${(() => {
-                  // FIX: this used to be a bare <img src="..."> with no onerror fallback, so a profile photo
-                  // that fails to load (e.g. no internet, or the image host is unreachable) fell back to the
-                  // browser's own broken-image icon instead of the app's placeholder avatar
+                  // FIX: this was a bare <img> with no onerror, so a profile photo that fails to load
+                  // showed the browser's broken-image icon instead of the placeholder avatar.
                   const photo = post.mine ? profileData.photo : (!post.mine ? post.photo : null);
                   if (!photo) return Icon(post.avatarIcon,'w-3.5 h-3.5 text-gray-600');
                   return `<img src="${photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="w-full h-full items-center justify-center" style="display:none;">${Icon(post.avatarIcon,'w-3.5 h-3.5 text-gray-600')}</div>`;
@@ -6621,9 +6600,8 @@
           panel.style.transition = 'none';
         }
 
-        // Full-screen state: panel fills the whole screen, square corners, content pushed below
-        // the status bar, and the floating back button fades out (the sheet's own handle takes
-        // over)
+        // Full-screen state: panel fills the screen, square corners, content below the status bar,
+        // and the floating back button fades out.
         function commentSheetApplyFull(postId, full){
           const panel = document.getElementById('comment-sheet-panel-' + postId);
           if (!panel) return;
@@ -7039,7 +7017,7 @@
             <button id="share-cell-${postId}-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleShareContact(${postId}, '${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
               <div class="relative">
                 <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
-                <div id="share-check-${postId}-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+                <div id="share-check-${postId}-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${IconBold('check','w-3 h-3 text-white')}</div>
               </div>
               <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
             </button>`;
@@ -7421,7 +7399,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
             <button id="share-glimpse-cell-${glimpseId}-${c.id}" data-name="${escapeHtml(c.name.toLowerCase())}" onclick="toggleShareGlimpseContact(${glimpseId}, '${c.id}')" class="flex flex-col items-center gap-1.5 flex-shrink-0 text-center" style="width:72px;scroll-snap-align:start;">
               <div class="relative">
                 <div class="w-14 h-14 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden" style="${selected ? `box-shadow:0 0 0 2.5px ${ROYAL};` : ''}">${avatarInnerHTML(c,'w-6 h-6')}</div>
-                <div id="share-glimpse-check-${glimpseId}-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${Icon('check','w-3 h-3 text-white')}</div>
+                <div id="share-glimpse-check-${glimpseId}-${c.id}" class="${selected ? '' : 'hidden'} absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center" style="background:${ROYAL};box-shadow:0 0 0 2px #fff;">${IconBold('check','w-3 h-3 text-white')}</div>
               </div>
               <div class="text-xs font-medium truncate w-full leading-tight">${escapeHtml(c.name)}</div>
             </button>`;
