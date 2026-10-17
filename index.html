@@ -223,7 +223,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261019c">
+    <link rel="stylesheet" href="styles.css?v=20261019d">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -459,7 +459,7 @@
             if (window.matchMedia && window.matchMedia('(min-width:1024px)').matches) {
               // Desktop: skeleton of the whole shell (left menu, feed, right panel) so nothing jumps.
               var sh = function (w, h, extra) { return '<div class="skel-line skel-shimmer" style="width:' + w + ';height:' + (h || 12) + 'px;' + (extra || '') + '"></div>'; };
-              var nav = '<div class="skel-dnav"><div class="skel-shimmer" style="width:120px;height:40px;border-radius:12px;margin:6px 0 26px 10px;"></div>';
+              var nav = '<div class="skel-dnav" style="padding-top:64px;">';
               for (i = 0; i < 6; i++) nav += '<div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>' + sh((50 + (i * 7) % 30) + '%', 12) + '</div>';
               nav += '<div style="flex:1"></div><div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>' + sh('40%', 12) + '</div></div>';
               var right = '<div class="skel-dright"><div class="skel-dright-head">' + sh('90px', 14) + '</div><div style="padding:20px;">' + sh('60%', 14, 'margin-bottom:16px;') + '<div class="skel-shimmer" style="height:44px;border-radius:12px;margin-bottom:12px;"></div><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin-bottom:26px;"></div>' + sh('35%', 12, 'margin-bottom:14px;') + sh('90%', 10, 'margin-bottom:10px;') + sh('70%', 10) + '</div></div>';
@@ -929,18 +929,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261019c"></script>
-    <script src="core.js?v=20261019c"></script>
-    <script src="feed.js?v=20261019c"></script>
-    <script src="chat.js?v=20261019c"></script>
-    <script src="study.js?v=20261019c"></script>
-    <script src="courses.js?v=20261019c"></script>
-    <script src="quizzesAndGames.js?v=20261019c"></script>
-    <script src="jobs.js?v=20261019c"></script>
-    <script src="creator.js?v=20261019c"></script>
-    <script src="settings.js?v=20261019c"></script>
-    <script src="profile.js?v=20261019c"></script>
-    <script src="overlays.js?v=20261019c"></script>
-    <script src="games.js?v=20261019c"></script>
+    <script src="analytics.js?v=20261019d"></script>
+    <script src="core.js?v=20261019d"></script>
+    <script src="feed.js?v=20261019d"></script>
+    <script src="chat.js?v=20261019d"></script>
+    <script src="study.js?v=20261019d"></script>
+    <script src="courses.js?v=20261019d"></script>
+    <script src="quizzesAndGames.js?v=20261019d"></script>
+    <script src="jobs.js?v=20261019d"></script>
+    <script src="creator.js?v=20261019d"></script>
+    <script src="settings.js?v=20261019d"></script>
+    <script src="profile.js?v=20261019d"></script>
+    <script src="overlays.js?v=20261019d"></script>
+    <script src="games.js?v=20261019d"></script>
 </body>
 </html>
