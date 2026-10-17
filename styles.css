@@ -4940,3 +4940,17 @@ body.dark-mode .sp-lab, body.dark-mode .sp-qa > span:last-child, body.dark-mode 
 .sp-go{ background:rgba(255,255,255,.22); }
 body.dark-mode .sp-qa-ic, body.dark-mode .sp-tp i{ color:#e5e7eb; background:transparent !important; }
 body.dark-mode .sp-tp.on i{ color:#4da6ff; background:transparent !important; }
+/* Support pills use the app's shared option-pill look (grey, blue outline when picked; dark in dark mode) */
+.sp-chip.outline-pill, .sp-tp.outline-pill{ box-shadow:0 2px 10px rgba(15,23,42,.08) !important; }
+.sp-chip.outline-pill.on, .sp-tp.outline-pill.on{ background:var(--pill-on-fill) !important; color:var(--pill-on) !important; border-color:var(--pill-on) !important; }
+.sp-tp.outline-pill b{ color:inherit; }
+body.dark-mode .sp-chip.outline-pill, body.dark-mode .sp-tp.outline-pill{ background:#1e1e1e !important; border-color:#3a3a3a !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,.5) !important; }
+body.dark-mode .sp-chip.outline-pill.on, body.dark-mode .sp-tp.outline-pill.on{ background:rgba(30,144,255,.16) !important; border-color:#1e90ff !important; color:#60a5fa !important; }
+body.dark-mode .sp-tp.outline-pill b{ color:#f2f2f2; } body.dark-mode .sp-tp.outline-pill.on b{ color:#60a5fa; }
+body.dark-mode .sp-qa, body.dark-mode .sp-faq, body.dark-mode .sp-hero, body.dark-mode .sp-search, body.dark-mode .sp-tg, body.dark-mode .sp-ref{ background:#1a1a1a; border-color:#2b2b2b; }
+/* Support pages, dark mode only: the big bright blue pills become dark like the option pills */
+body.dark-mode .sp-cta, body.dark-mode .sp-still{ background:#1e1e1e !important; color:#60a5fa !important; border:1.5px solid #3a3a3a; box-shadow:0 2px 10px rgba(0,0,0,.5) !important; }
+body.dark-mode .sp-cta:active, body.dark-mode .sp-still:active{ border-color:#1e90ff; }
+body.dark-mode .sp-still b{ color:#fff; } body.dark-mode .sp-still span span{ color:#9a9a9a; opacity:1; }
+body.dark-mode .sp-go{ background:#2a2a2a; color:#60a5fa; }
+body.dark-mode .sp-ok{ box-shadow:none; }
