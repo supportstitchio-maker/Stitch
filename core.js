@@ -1717,11 +1717,23 @@
             : Icon(outline ? 'userOutline' : 'user', cls);
         }
 
+        function dnavDisplayName(){
+          const p = (typeof profileData !== 'undefined' && profileData) ? profileData : {};
+          return (p.name || '').trim() || (p.username ? '@' + String(p.username).replace(/^@/, '') : 'Your profile');
+        }
+        function dnavAvatarHTML(){
+          const p = (typeof profileData !== 'undefined' && profileData) ? profileData : {};
+          const photo = photoIsReady(p.photo) ? p.photo : null;
+          const ini = (dnavDisplayName().replace(/^@/, '').trim().charAt(0) || 'S').toUpperCase();
+          return `<span class="dnav-av">${photo ? `<img src="${photo}" alt="" onerror="this.remove()">` : ''}<span class="dnav-av-ini">${escapeHtml(ini)}</span></span>`;
+        }
         function updateNavProfileIcon(){
           const navBtn = document.getElementById('nav-4-icon');
           if (navBtn) navBtn.innerHTML = navProfileIconHTML(undefined, true);
           const dNavBtn = document.getElementById('dnav-4-icon');
-          if (dNavBtn) dNavBtn.innerHTML = navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false);
+          if (dNavBtn) dNavBtn.innerHTML = dnavAvatarHTML();
+          const dNavName = document.getElementById('dnav-pname');
+          if (dNavName) dNavName.textContent = dnavDisplayName();
           const dcNavBtn = document.getElementById('dcnav-profile-icon');
           if (dcNavBtn) dcNavBtn.innerHTML = navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false);
         }
@@ -1791,6 +1803,23 @@
         // this is what shows in #screen until it is
         let appShellMounted = false;
 
+        // Desktop side nav: outline icons that match the rest of the rail
+        const DNAV_SVG = (inner) => `<svg class="w-5 h-5 dnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+        const DNAV_WORK_ICON = DNAV_SVG('<rect x="4" y="4" width="4" height="16" rx="1.2"/><rect x="10" y="4" width="4" height="12" rx="1.2"/><rect x="16" y="7" width="4" height="13" rx="1.2"/>');
+        const DNAV_GEAR_ICON = DNAV_SVG('<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M6 18l1.6-1.6M16.4 7.6L18 6"/>');
+        // Collapse the side nav to icons only; the choice is remembered
+        function applyDesktopNavState(collapsed){
+          document.documentElement.classList.toggle('dnav-collapsed', !!collapsed);
+          const t = document.getElementById('dnav-toggle');
+          if (t) { t.title = collapsed ? 'Expand menu' : 'Collapse menu'; t.setAttribute('aria-label', t.title); }
+        }
+        function toggleDesktopNav(){
+          const next = !document.documentElement.classList.contains('dnav-collapsed');
+          applyDesktopNavState(next);
+          try { localStorage.setItem('stitchDnavCollapsed', next ? '1' : '0'); } catch (e) {}
+        }
+        try { applyDesktopNavState(localStorage.getItem('stitchDnavCollapsed') === '1'); } catch (e) {}
+
         // ---- Main app shell render (nav bars, floating pill, layout) ----
         function renderApp() {
             if (appShellMounted) return;
@@ -1802,20 +1831,26 @@
        the left edge instead of living in the top bar or bottom tab bar. -->
   <div id="desktop-nav">
     <div class="dside-brand" onclick="switchTab(0)">
-      <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:62px;width:auto;object-fit:contain;">
+      <img class="dside-wordmark" src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:62px;width:auto;object-fit:contain;">
+      <img class="dside-mini" src="assets/landing-1.png" alt="Stitch">
+      <button type="button" id="dnav-toggle" class="dnav-toggle" onclick="event.stopPropagation();toggleDesktopNav()" title="Collapse menu" aria-label="Collapse menu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></button>
     </div>
     <div id="dnav-main-list">
     <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${DNAV_WORK_ICON}<span class="dside-label">Workspace</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
-    <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
+    <div class="dside-group-label">Activity</div>
     <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
-    <div class="dside-divider"></div>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
-    <button onclick="switchTab(4)" class="dnav-item dnav-pill" id="dnav-4"><span id="dnav-4-icon">${navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false)}</span><span class="dside-label">Profile</span></button>
+    <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" id="dnav-create" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
+    <div class="dside-divider"></div>
+    <div id="dnav-4" class="dnav-item dnav-profile" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
+      <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span>
+      <span class="dside-label dnav-pinfo"><b id="dnav-pname">${escapeHtml(dnavDisplayName())}</b><small>View profile</small></span>
+      <button type="button" class="dnav-gear dside-label" onclick="event.stopPropagation();openRightPanel('profile');openOverlay('profileMenu')" title="Settings" aria-label="Settings">${DNAV_GEAR_ICON}</button>
+    </div>
     </div>
     <!-- Workspace sub-nav: only shown (in place of the main tabs above)
          while Workspace is the active tab. The rest of the app isn't
@@ -1828,7 +1863,7 @@
     <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <div class="dside-divider"></div>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${IconBold('settings','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
+    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${DNAV_GEAR_ICON}<span class="dside-label">Settings</span></button>
     </div>
   </div>
   <!-- Desktop-only right panel: Telegram-style info column pinned to the

@@ -346,64 +346,84 @@ let appPrefs = {
           ]},
         ];
         let helpFAQOpenIds = new Set();
-        // ---- Help center: FAQ ----
+        let helpSearchText = '', helpCategory = 'All';
+        // ---- Help center ----
+        function helpFlatFAQ(){
+          const out = [];
+          helpFAQData.forEach(sec => sec.items.forEach(it => out.push(Object.assign({ category: sec.category }, it))));
+          return out;
+        }
+        function helpVisibleItems(){
+          const q = helpSearchText.trim().toLowerCase();
+          let items = helpFlatFAQ();
+          if (helpCategory !== 'All') items = items.filter(i => i.category === helpCategory);
+          if (q) {
+            const words = q.split(/\s+/).filter(Boolean);
+            items = items.filter(i => { const hay = (i.q + ' ' + i.a + ' ' + i.category).toLowerCase(); return words.every(w => hay.includes(w)); });
+          }
+          return items;
+        }
         function toggleHelpFAQ(id){
           if (helpFAQOpenIds.has(id)) helpFAQOpenIds.delete(id); else helpFAQOpenIds.add(id);
+          renderHelpResults();
+        }
+        function helpFAQRow(item){
+          const open = helpFAQOpenIds.has(item.id);
+          return `
+            <div class="sp-faq-item">
+              <button onclick="toggleHelpFAQ('${item.id}')" class="sp-faq-q">
+                <span>${escapeHtml(item.q)}</span>
+                <span class="sp-chev" style="transform:rotate(${open ? '180deg' : '0deg'});">${Icon('chevronDown','w-4 h-4')}</span>
+              </button>
+              ${open ? `<div class="sp-faq-a">${escapeHtml(item.a)}</div>` : ''}
+            </div>`;
+        }
+        function helpResultsHTML(){
+          const items = helpVisibleItems();
+          const searching = !!helpSearchText.trim();
+          if (!items.length) {
+            return `<div class="sp-empty">
+              <div class="sp-empty-t">No answers for "${escapeHtml(helpSearchText.trim())}"</div>
+              <div class="sp-empty-s">Try other words, or ask us directly. A real person will reply.</div>
+              <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-cta sp-cta-sm">Contact support</button>
+            </div>`;
+          }
+          const head = searching ? `${items.length} ${items.length === 1 ? 'answer' : 'answers'}` : (helpCategory === 'All' ? 'Popular questions' : helpCategory);
+          return `<div class="sp-sec">${escapeHtml(head)}</div><div class="sp-faq">${items.map(helpFAQRow).join('')}</div>`;
+        }
+        function renderHelpResults(){
+          const el = document.getElementById('help-results');
+          if (el) el.innerHTML = helpResultsHTML();
+        }
+        function setHelpSearch(v){ helpSearchText = v || ''; renderHelpResults(); }
+        function setHelpCategory(c){
+          helpCategory = c;
           const ov = document.getElementById('overlay');
           if (!ov) return;
-          // Keep the page where it was scrolled -- re-rendering would otherwise jump back to the top
           const scroller = ov.querySelector('.overflow-y-auto');
           const top = scroller ? scroller.scrollTop : 0;
           ov.innerHTML = helpCenterHTML();
           const s2 = ov.querySelector('.overflow-y-auto');
           if (s2) s2.scrollTop = top;
         }
-        function helpFAQRow(item){
-          const open = helpFAQOpenIds.has(item.id);
-          return `
-            <div class="py-3">
-              <button onclick="toggleHelpFAQ('${item.id}')" class="w-full flex items-center justify-between gap-3 text-left">
-                <span class="text-[15px] text-gray-900">${escapeHtml(item.q)}</span>
-                <span class="flex-shrink-0 text-gray-400" style="transform:rotate(${open ? '180deg' : '0deg'});transition:transform .15s ease;">${Icon('chevronDown','w-4 h-4')}</span>
-              </button>
-              ${open ? `<div class="pt-2 text-xs text-gray-400 leading-relaxed">${escapeHtml(item.a)}</div>` : ''}
-            </div>`;
-        }
-        function helpCategoryCard(section){
-          return `
-            <div class="mb-5">
-              <div class="help-dodger text-xs font-semibold uppercase tracking-wide mb-2 font-display" style="color:#1e90ff;">${escapeHtml(section.category)}</div>
-              <div class="divide-y">${section.items.map(helpFAQRow).join('')}</div>
-            </div>`;
-        }
         function helpCenterHTML(){
+          const cats = ['All'].concat(helpFAQData.map(s => s.category));
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
             ${overlayHeader('Help Center', '20px', "openOverlay('profileMenu')", null, { right: true })}
-            <div class="px-5" style="padding-top:20px;padding-bottom:32px;">
-              <p class="text-sm text-gray-500 mb-5">Answers to common questions about using Stitch. Can't find what you need? Reach us below.</p>
-              ${helpFAQData.map(helpCategoryCard).join('')}
-              <div class="p-5 text-center mt-4" style="margin-bottom:50px;">
-                <div class="help-dodger font-bold text-base mb-1" style="color:${NAVY};">Still need help?</div>
-                <div class="text-sm text-gray-500 mb-4">Our support team responds within 24 hours.</div>
-                <div class="flex flex-col gap-2.5">
-                  <button onclick="openOverlayFrom('helpCenter','contactUs')" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Contact Us</button>
-                  <button onclick="openOverlayFrom('helpCenter','reportIssue')" class="w-full font-semibold text-sm py-3 rounded-full border" style="color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:#ffffff;">Report an Issue</button>
-                </div>
+            <div class="sp-wrap">
+              <label class="sp-search">${Icon('search','w-4 h-4')}<input type="search" value="${escapeHtml(helpSearchText)}" oninput="setHelpSearch(this.value)" placeholder="Search help, e.g. payment, calls, profile" autocomplete="off"></label>
+              <div class="sp-two">
+                <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-qa"><span class="sp-qa-ic sp-b1">${Icon('comment','w-5 h-5')}</span><b>Contact support</b><span>We reply within 24 hours</span></button>
+                <button onclick="openOverlayFrom('helpCenter','reportIssue')" class="sp-qa"><span class="sp-qa-ic sp-b2">${Icon('flag','w-5 h-5')}</span><b>Report an issue</b><span>Bugs, safety, content</span></button>
               </div>
+              <div class="sp-chips">${cats.map(c => `<button onclick="setHelpCategory(this.dataset.c)" data-c="${escapeHtml(c)}" class="sp-chip${helpCategory === c ? ' on' : ''}">${escapeHtml(c)}</button>`).join('')}</div>
+              <div id="help-results">${helpResultsHTML()}</div>
+              <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-still">
+                <span><b>Still stuck?</b><span>Talk to a real person</span></span>
+                <span class="sp-go">${Icon('arrowRight','w-4 h-4')}</span>
+              </button>
             </div>
-            </div>`;
-        }
-
-        let contactFormDraft = { name: '', email: '', message: '' };
-        // ---- Contact us form ----
-        function resetContactFormDraft(){ contactFormDraft = { name: '', email: '', message: '' }; }
-        function updateContactField(field, value){ contactFormDraft[field] = value; }
-        function contactInfoRow(icon, label, value){
-          return `
-            <div style="margin-bottom:16px;">
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:4px;">${label}</div>
-              <div class="text-sm font-semibold text-gray-800" style="word-break:break-word;">${value}</div>
             </div>`;
         }
 
@@ -444,6 +464,53 @@ let appPrefs = {
         }
         let contactFormSending = false, issueFormSending = false;
         const EMAIL_LOOKS_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+        // ---- Shared bits for the support forms ----
+        const SUPPORT_VERSION = (function(){ try { const m = /[?&]v=(\w+)/.exec((document.querySelector('script[src*="core.js"]') || {}).src || ''); return m ? m[1] : ''; } catch (e) { return ''; } })();
+        function supportRef(){
+          const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+          let r = '';
+          for (let i = 0; i < 4; i++) r += abc[Math.floor(Math.random() * abc.length)];
+          return 'STC-' + r;
+        }
+        function supportDeviceInfo(){
+          try { return `${navigator.userAgent} | ${window.innerWidth}x${window.innerHeight} | app ${SUPPORT_VERSION || 'n/a'}`; } catch (e) { return ''; }
+        }
+        function supportMyName(){ return ((typeof profileData !== 'undefined' && profileData && profileData.name) || '').trim(); }
+        function supportMyEmail(){ return ((typeof currentUserEmail !== 'undefined' && currentUserEmail) || '').trim(); }
+        function supportHeaderBack(){ return "overlayGoBack()"; }
+        function supportSentHTML(title, sub, ref){
+          return `
+            <div class="flex-1 overflow-y-auto no-scrollbar">
+            ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { right: true })}
+            <div class="sp-wrap" style="text-align:center;">
+              <div class="sp-ok">${IconBold('check','w-8 h-8')}</div>
+              <div class="sp-done-t">Thanks, we have it</div>
+              <div class="sp-done-s">${sub}</div>
+              <div class="sp-ref"><span>Reference</span><b>${ref}</b></div>
+              <div class="sp-steps">
+                <div><i>1</i><span><b>We review it</b>Usually within 24 hours</span></div>
+                <div><i>2</i><span><b>We reply by email</b>If you left an address</span></div>
+                <div><i>3</i><span><b>You see the fix</b>We note it in the app update</span></div>
+              </div>
+              <button onclick="openOverlay('helpCenter')" class="sp-cta" style="margin-top:22px;">Back to Help Center</button>
+            </div>
+            </div>`;
+        }
+        let supportSent = null;
+
+        // ---- Contact support ----
+        const contactTopics = ['Account', 'Payments', 'Courses', 'Technical', 'Other'];
+        let contactFormDraft = { topic: 'Account', name: '', email: '', message: '' };
+        function resetContactFormDraft(){ contactFormDraft = { topic: 'Account', name: supportMyName(), email: supportMyEmail(), message: '' }; supportSent = null; }
+        function updateContactField(field, value){
+          contactFormDraft[field] = value;
+          if (field === 'message') { const c = document.getElementById('contact-count'); if (c) c.textContent = value.length + ' / 1000'; }
+        }
+        function setContactTopic(t){
+          contactFormDraft.topic = t;
+          document.querySelectorAll('#contact-topics .sp-chip').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+        }
         async function submitContactForm(){
           if (contactFormSending) return;
           const d = contactFormDraft;
@@ -456,68 +523,80 @@ let appPrefs = {
             return;
           }
           contactFormSending = true;
-          setFormBusy('contact-send-btn', true, 'Send Message');
+          setFormBusy('contact-send-btn', true, 'Send message');
+          const ref = supportRef();
           const r = await sendToFormspree({
-            _subject: 'Stitch - Contact Us: ' + d.name.trim(),
+            _subject: `Stitch - Contact Us [${ref}] ${d.topic}: ` + d.name.trim(),
             form: 'Contact Us',
+            reference: ref,
+            topic: d.topic,
             name: d.name.trim(),
             email: d.email.trim(),
             message: d.message.trim(),
             _replyto: d.email.trim(),
+            appVersion: SUPPORT_VERSION || undefined,
             userId: (typeof currentUserId !== 'undefined' && currentUserId) || undefined
           });
           contactFormSending = false;
           if (!r.ok) {
             console.error('Contact form send failed:', r.error);
             window.reportError && window.reportError(r.error, { form: 'contact-us' });
-            setFormBusy('contact-send-btn', false, 'Send Message');
+            setFormBusy('contact-send-btn', false, 'Send message');
             openAppAlertModal(FORM_SEND_FAIL_MSG, 'Message not sent');
             return;   // keep the draft so nothing has to be retyped
           }
+          const email = d.email.trim();
           resetContactFormDraft();
-          openAppAlertModal("Thanks for reaching out! We'll get back to you at " + d.email.trim() + " within 24 hours.");
-          openOverlay('profileMenu');
+          const ov = document.getElementById('overlay');
+          if (ov) ov.innerHTML = supportSentHTML('Message sent', `We will reply to ${escapeHtml(email)}.`, ref);
         }
         function contactUsHTML(){
           const d = contactFormDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Contact Us', '20px', null, null, { right: true })}
-            <div class="px-5" style="padding-top:20px;">
-              <p class="text-sm text-gray-500 mb-5">Have a question, suggestion, or just want to say hi? We'd love to hear from you.</p>
-              ${contactInfoRow('mail', 'Email', 'support.stitch.io@gmail.com')}
-              ${contactInfoRow('clock', 'Response Time', 'We respond within 24 hours')}
-              <div class="mb-4 mt-2">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Name</label>
-                <input type="text" value="${escapeHtml(d.name)}" oninput="updateContactField('name', this.value)" placeholder="Your name" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;">
+            ${overlayHeader('Contact Support', '20px', null, null, { right: true })}
+            <div class="sp-wrap">
+              <div class="sp-hero">
+                <span class="sp-qa-ic sp-b1">${Icon('mail','w-5 h-5')}</span>
+                <span class="sp-hero-t"><b>support.stitch.io@gmail.com</b><span>We usually reply within 24 hours</span></span>
               </div>
-              <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Email</label>
-                <input type="email" value="${escapeHtml(d.email)}" oninput="updateContactField('email', this.value)" placeholder="your@email.com" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;">
-              </div>
-              <div class="mb-5">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Message</label>
-                <textarea oninput="updateContactField('message', this.value)" placeholder="How can we help you?" rows="6" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;resize:none;">${escapeHtml(d.message)}</textarea>
-              </div>
-              <button id="contact-send-btn" onclick="submitContactForm()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:10px;">Send Message</button>
+              <div class="sp-lab" style="margin-top:4px;">What is it about?</div>
+              <div class="sp-chips" id="contact-topics" style="margin:0;">${contactTopics.map(t => `<button onclick="setContactTopic(this.dataset.t)" data-t="${t}" class="sp-chip${d.topic === t ? ' on' : ''}">${t}</button>`).join('')}</div>
+              <div class="sp-lab">Name</div>
+              <input type="text" value="${escapeHtml(d.name)}" oninput="updateContactField('name', this.value)" placeholder="Your name" class="sp-fld" autocomplete="name">
+              <div class="sp-lab">Email for our reply</div>
+              <input type="email" value="${escapeHtml(d.email)}" oninput="updateContactField('email', this.value)" placeholder="your@email.com" class="sp-fld" autocomplete="email">
+              <div class="sp-lab">Message</div>
+              <textarea oninput="updateContactField('message', this.value)" placeholder="Tell us what you need help with..." rows="6" maxlength="1000" class="sp-fld" style="resize:none;">${escapeHtml(d.message)}</textarea>
+              <div class="sp-count" id="contact-count">${d.message.length} / 1000</div>
+              <div class="sp-note">${Icon('lock','w-3.5 h-3.5')}<span>We attach your account ID and app version so we can find your account faster. Nothing else.</span></div>
+              <button id="contact-send-btn" onclick="submitContactForm()" class="sp-cta">Send message</button>
             </div>
             </div>`;
         }
 
+        // ---- Report an issue ----
         const reportIssueTypes = [
-          { id: 'bug', icon: 'alertTriangle', label: 'Bug / Something Broken' },
-          { id: 'safety', icon: 'shield', label: 'Safety Concern' },
-          { id: 'content', icon: 'block', label: 'Inappropriate Content' },
-          { id: 'feature', icon: 'rocket', label: 'Feature Request' },
-          { id: 'other', icon: 'edit', label: 'Other' },
+          { id: 'bug', icon: 'alertTriangle', label: 'Bug / Something Broken', title: 'Something broken', sub: 'Bugs and crashes' },
+          { id: 'safety', icon: 'shield', label: 'Safety Concern', title: 'Safety concern', sub: 'A person or situation' },
+          { id: 'content', icon: 'block', label: 'Inappropriate Content', title: 'Inappropriate content', sub: 'Posts, messages' },
+          { id: 'feature', icon: 'rocket', label: 'Feature Request', title: 'Idea', sub: 'Feature request' },
         ];
-        let reportIssueDraft = { type: null, description: '', email: '' };
-        // ---- Report an issue form ----
-        function resetReportIssueDraft(){ reportIssueDraft = { type: null, description: '', email: '' }; }
+        const reportAreas = ['Chat', 'Calls', 'Courses', 'Feed', 'Payments', 'Profile', 'Other'];
+        let reportIssueDraft = { type: null, area: null, description: '', email: '', device: true };
+        function resetReportIssueDraft(){ reportIssueDraft = { type: null, area: null, description: '', email: supportMyEmail(), device: true }; }
         function setReportIssueType(id){
           reportIssueDraft.type = id;
-          const ov = document.getElementById('overlay');
-          if (ov) ov.innerHTML = reportIssueHTML();
+          document.querySelectorAll('#report-types .sp-tp').forEach(b => b.classList.toggle('on', b.dataset.t === id));
+        }
+        function setReportArea(a){
+          reportIssueDraft.area = reportIssueDraft.area === a ? null : a;
+          document.querySelectorAll('#report-areas .sp-chip').forEach(b => b.classList.toggle('on', b.dataset.a === reportIssueDraft.area));
+        }
+        function toggleReportDevice(){
+          reportIssueDraft.device = !reportIssueDraft.device;
+          const sw = document.getElementById('report-device-sw');
+          if (sw) sw.classList.toggle('off', !reportIssueDraft.device);
         }
         function updateReportIssueField(field, value){ reportIssueDraft[field] = value; }
         async function submitIssueReport(){
@@ -531,52 +610,55 @@ let appPrefs = {
           }
           const typeLabel = (reportIssueTypes.find(t => t.id === d.type) || {}).label || d.type;
           issueFormSending = true;
-          setFormBusy('issue-send-btn', true, 'Submit Report');
+          setFormBusy('issue-send-btn', true, 'Submit report');
+          const ref = supportRef();
           const r = await sendToFormspree({
-            _subject: 'Stitch - Report an Issue: ' + typeLabel,
+            _subject: `Stitch - Report an Issue [${ref}]: ` + typeLabel,
             form: 'Report an Issue',
+            reference: ref,
             issueType: typeLabel,
+            area: d.area || undefined,
             description: d.description.trim(),
             email: d.email.trim() || undefined,
             _replyto: d.email.trim() || undefined,
+            device: d.device ? supportDeviceInfo() : undefined,
+            appVersion: SUPPORT_VERSION || undefined,
             userId: (typeof currentUserId !== 'undefined' && currentUserId) || undefined
           });
           issueFormSending = false;
           if (!r.ok) {
             console.error('Issue report send failed:', r.error);
             window.reportError && window.reportError(r.error, { form: 'report-issue', issueType: typeLabel });
-            setFormBusy('issue-send-btn', false, 'Submit Report');
+            setFormBusy('issue-send-btn', false, 'Submit report');
             openAppAlertModal(FORM_SEND_FAIL_MSG, 'Report not sent');
             return;
           }
+          const email = d.email.trim();
           resetReportIssueDraft();
-          openAppAlertModal("Thanks for the report. Our team will look into it" + (d.email.trim() ? (" and follow up at " + d.email.trim()) : "") + ".");
-          openOverlay('profileMenu');
+          const ov = document.getElementById('overlay');
+          if (ov) ov.innerHTML = supportSentHTML('Report sent', email ? `Our team will look into it and reply to ${escapeHtml(email)}.` : 'Our team will look into it.', ref);
         }
         function reportIssueHTML(){
           const d = reportIssueDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
             ${overlayHeader('Report an Issue', '20px', null, null, { right: true })}
-            <div class="px-5" style="padding-top:20px;">
-              <p class="text-sm text-gray-500 mb-5">Help us improve Stitch by reporting bugs, safety concerns, or suggesting features.</p>
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">What type of issue?</div>
-              <div class="mb-5 flex flex-col gap-2.5">
+            <div class="sp-wrap">
+              <div class="sp-lab" style="margin-top:0;">What kind of issue?</div>
+              <div class="sp-grid2" id="report-types">
                 ${reportIssueTypes.map(t => `
-                  <button onclick="setReportIssueType('${t.id}')" class="w-full px-4 py-2.5 rounded-2xl text-sm font-semibold text-left outline-pill ${d.type === t.id ? 'is-selected' : ''}">
-                    <span>${t.label}</span>
-                  </button>
-                `).join('')}
+                  <button onclick="setReportIssueType(this.dataset.t)" data-t="${t.id}" class="sp-tp${d.type === t.id ? ' on' : ''}">
+                    <i>${Icon(t.icon,'w-4 h-4')}</i><b>${t.title}</b><small>${t.sub}</small>
+                  </button>`).join('')}
               </div>
-              <div class="mb-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Describe the issue</label>
-                <textarea oninput="updateReportIssueField('description', this.value)" placeholder="Tell us what happened, what you expected, and any steps to reproduce the issue..." rows="5" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;resize:none;">${escapeHtml(d.description)}</textarea>
-              </div>
-              <div class="mb-5">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Email for follow-up (optional)</label>
-                <input type="email" value="${escapeHtml(d.email)}" oninput="updateReportIssueField('email', this.value)" placeholder="your@email.com" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm border border-gray-300" style="outline:none;">
-              </div>
-              <button id="issue-send-btn" onclick="submitIssueReport()" class="w-full font-semibold text-sm py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);margin-bottom:50px;">Submit Report</button>
+              <div class="sp-lab">Where did it happen? (optional)</div>
+              <div class="sp-chips" id="report-areas" style="margin:0;">${reportAreas.map(a => `<button onclick="setReportArea(this.dataset.a)" data-a="${a}" class="sp-chip${d.area === a ? ' on' : ''}">${a}</button>`).join('')}</div>
+              <div class="sp-lab">What happened?</div>
+              <textarea oninput="updateReportIssueField('description', this.value)" placeholder="What you did, what you expected, and what you saw instead..." rows="5" class="sp-fld" style="resize:none;">${escapeHtml(d.description)}</textarea>
+              <div class="sp-lab">Email for follow-up (optional)</div>
+              <input type="email" value="${escapeHtml(d.email)}" oninput="updateReportIssueField('email', this.value)" placeholder="your@email.com" class="sp-fld" autocomplete="email">
+              <button type="button" onclick="toggleReportDevice()" class="sp-tg"><span>Include device details<small>Browser, screen size and app version</small></span><span id="report-device-sw" class="sp-sw${d.device ? '' : ' off'}"></span></button>
+              <button id="issue-send-btn" onclick="submitIssueReport()" class="sp-cta">Submit report</button>
             </div>
             </div>`;
         }

@@ -2116,6 +2116,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               // Run after those settle so convoArrays/sentRequestConvos are already up to date when we
               // re-derive connected/requestSent for any open network list
               if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates();
+              try { refreshConvoConnectBanner(); } catch (e) {}
             }).catch(() => {});
             if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
           };
@@ -2132,7 +2133,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('postgres_changes', { event: '*', schema: 'public', table: CONNECTION_REQUESTS_TABLE, filter: `to_user=eq.${myId}` }, onConnectionChange)
             .on('postgres_changes', { event: '*', schema: 'public', table: CONNECTION_REQUESTS_TABLE, filter: `from_user=eq.${myId}` }, onConnectionChange)
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: CONNECTION_REQUESTS_TABLE }, onConnectionDeleted)
-            .subscribe();
+            .subscribe((status) => {
+              if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                stitchResubscribeLive('connections');
+              }
+            });
           // Catch anything that changed while the app was closed / backgrounded / loading.
           reconcileNetworkWithServer().then(() => { if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates(); });
         }
@@ -2147,8 +2152,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function startConnectionsPolling(){
           if (connectionsPollInterval) return;
           // Realtime (connection_requests is in the publication) delivers changes instantly
-          connectionsPollInterval = setInterval(() => {
-            if (document.hidden) return;
+          connectionsPollInterval = setInterval(() => { if (!document.hidden) stitchPollConnectionsNow(); }, 15000);
+        }
+        function stitchPollConnectionsNow(){
+          {
             const sb = getSupabaseClient();
             if (!sb) return;
             Promise.all([
@@ -2158,9 +2165,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               loadMyPendingOutgoingRequests(),
             ]).then(() => reconcileNetworkWithServer()).then(() => {
               if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates();
+              try { refreshConvoConnectBanner(); } catch (e) {}
             }).catch(() => {});
             if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
-          }, 60000);
+          }
         }
 
         async function loadMyAcceptedOutgoingRequests(){
@@ -2944,8 +2952,57 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: MESSAGES_TABLE, filter: `sender_id=eq.${myId}` }, (payload) => {
               handleIncomingMessageDelete(payload.old);
             })
-            .subscribe();
+            .subscribe((status) => {
+              if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                stitchResubscribeLive('messages');
+              }
+            });
         }
+
+        // ---- Keep realtime alive: resubscribe when a channel drops, and catch up immediately ----
+        let __liveResubTimer = null;
+        function stitchResubscribeLive(which){
+          if (__liveResubTimer) return;
+          __liveResubTimer = setTimeout(async () => {
+            __liveResubTimer = null;
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            try {
+              if (which === 'messages' || which === 'all') {
+                if (messagesChannel) { try { sb.removeChannel(messagesChannel); } catch (e) {} messagesChannel = null; }
+                await subscribeToIncomingMessages();
+              }
+              if (which === 'connections' || which === 'all') {
+                if (connectionUpdatesChannel) { try { sb.removeChannel(connectionUpdatesChannel); } catch (e) {} connectionUpdatesChannel = null; }
+                await subscribeToConnectionUpdates();
+              }
+            } catch (e) {}
+            try { pollForNewMessages(); } catch (e) {}
+            try { stitchPollConnectionsNow(); } catch (e) {}
+          }, 1500);
+        }
+        function stitchLiveHealthCheck(){
+          const bad = (ch) => !ch || ch.state !== 'joined';
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try {
+            if (typeof sb.realtime.setAuth === 'function') {
+              sb.auth.getSession().then(({ data }) => {
+                const t = data && data.session && data.session.access_token;
+                if (t) { try { sb.realtime.setAuth(t); } catch (e) {} }
+              }).catch(() => {});
+            }
+          } catch (e) {}
+          if (bad(messagesChannel) || bad(connectionUpdatesChannel)) stitchResubscribeLive('all');
+          else { try { pollForNewMessages(); } catch (e) {} try { stitchPollConnectionsNow(); } catch (e) {} }
+        }
+        setInterval(() => { if (!document.hidden) stitchLiveHealthCheck(); }, 20000);
+        ['visibilitychange','online','focus','pageshow'].forEach(ev => {
+          (ev === 'visibilitychange' ? document : window).addEventListener(ev, () => {
+            if (ev === 'visibilitychange' && document.hidden) return;
+            setTimeout(stitchLiveHealthCheck, 300);
+          });
+        });
 
         let messagePollTimer = null;
         let lastPolledMessageId = 0;
@@ -2984,7 +3041,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (data && data[0]) lastPolledMessageId = data[0].id;
           } catch (e) {  }
           // Realtime delivers messages instantly
-          messagePollTimer = setInterval(() => { if (!document.hidden) pollForNewMessages(); }, 60000);
+          messagePollTimer = setInterval(() => { if (!document.hidden) pollForNewMessages(); }, 10000);
           document.addEventListener('visibilitychange', () => { if (!document.hidden) pollForNewMessages(); });
         }
 
@@ -3743,7 +3800,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             declineAction: 'declineIncomingCall()',
             acceptAction: 'acceptIncomingCall()',
             acceptIcon: isVideo ? 'video' : 'phoneOutline',
-            acceptLabel: 'Accept'
+            acceptLabel: 'Accept',
+            quick: !info.groupName
           });
         }
 
@@ -4379,10 +4437,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="ccb-txt"><div class="ccb-title">Invitation sent</div><div class="ccb-sub">You will be connected as soon as ${name} accepts.</div></div>
             </div>`;
           }
-          const title = st.kind === 'incoming' ? `${name} wants to connect` : `${name} is not in your network`;
-          const sub = st.kind === 'incoming' ? 'Accept the invite to chat and call freely, or reject it.' : 'You are not connected yet. Send an invite to chat and call freely.';
-          const yes = st.kind === 'incoming' ? 'Accept invite' : 'Send invite';
-          const no = st.kind === 'incoming' ? 'Reject' : 'Block';
+          const title = `${name} wants to connect`;
+          const sub = st.kind === 'incoming' ? 'Accept the invite to chat and call freely, or reject it.' : 'They messaged you and are not in your network. Accept the invite to chat and call freely, or reject it.';
+          const yes = 'Accept invite';
+          const no = 'Reject';
           return `<div id="convo-connect-banner" class="ccb">
             <div class="ccb-row">
               <div class="ccb-ic">${Icon('personPlus','w-5 h-5')}</div>
@@ -4397,8 +4455,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function refreshConvoConnectBanner(){
           const el = document.getElementById('convo-connect-banner');
           const html = convoConnectBannerHTML();
+          if (el && el.classList.contains('ccb-done')) return;
           if (el && html) el.outerHTML = html;
-          else if (el && !html) el.remove();
+          else if (el && !html) {
+            // Invite just got accepted (by either side): say so, then slide the panel away
+            const meta = (typeof convoMeta !== 'undefined' && activeConvoId) ? convoMeta[activeConvoId] : null;
+            if (meta && meta.otherUserId && isUserInMyNetwork(meta.otherUserId)) {
+              const nm = escapeHtml(convoDisplayName(meta));
+              el.className = 'ccb ccb-note ccb-done';
+              el.innerHTML = `<div class="ccb-ic ccb-ic-ok">${Icon('check','w-5 h-5')}</div><div class="ccb-txt"><div class="ccb-title">You are now connected with ${nm}</div><div class="ccb-sub">You can chat and call freely.</div></div>`;
+              setTimeout(() => { el.classList.add('ccb-out'); setTimeout(() => { try { el.remove(); } catch (e) {} }, 450); }, 2600);
+            } else el.remove();
+          }
           else if (!el && html) {
             const wrap = document.getElementById('convo-log-wrap');
             if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
@@ -4410,7 +4478,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (st.kind === 'incoming') { acceptRequest(st.req.id); }
           else if (st.kind === 'stranger' && typeof sendConnectionRequestTo === 'function') { sendConnectionRequestTo(st.meta.otherUserId).then(() => refreshConvoConnectBanner()).catch(() => {}); }
           refreshConvoConnectBanner();
-          setTimeout(refreshConvoConnectBanner, 400);
+          setTimeout(refreshConvoConnectBanner, 400); setTimeout(refreshConvoConnectBanner, 1200); setTimeout(refreshConvoConnectBanner, 2500);
         }
         function convoBannerReject(){
           const st = convoConnectState();
@@ -7276,6 +7344,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-top{padding-top:8px;padding-bottom:6px;}
             .cu-status{background:var(--cu-sheet);border:1px solid var(--cu-line);border-radius:999px;padding:3px 12px;font-weight:600;color:var(--cu-fg);box-shadow:0 2px 8px rgba(30,60,140,.08);}
             body.dark-mode .cu-status{box-shadow:none;}
+            .cu-status{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;}
+            .cu-quick{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 16px 6px;position:relative;z-index:2;}
             .cu-tile{border-radius:26px;}
             .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline:3px solid #1e90ff;outline-offset:-3px;}
             .cu-pip{border:3px solid var(--cu-bg);border-radius:20px;box-shadow:0 8px 22px rgba(30,60,140,.28);}
@@ -7301,11 +7371,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             @media (min-width:1024px){
               .cu-bar button.cu-ctl{width:auto;height:auto;}
               #call-controls-bar button.cu-ctl{width:auto;height:auto;}
-              #call-controls-bar button.cu-ctl .cu-ctl-btn{width:50px;height:50px;}
-              .cu-bar:not(.cu-bar-incoming) .cu-bar-inner{flex-wrap:nowrap;width:auto;max-width:none;align-items:center;padding:10px 18px;border-radius:999px;gap:18px;}
-              .cu-bar:not(.cu-bar-incoming) .cu-ctl.end{flex:0 0 auto;margin-top:0;padding:0 26px;}
+              .cu-bar:not(.cu-bar-incoming) .cu-bar-inner{width:100%;max-width:440px;}
+              #call-controls-bar button.cu-ctl .cu-ctl-btn{width:54px;height:54px;}
+              #call-controls-bar button.cu-ctl.end{width:100%;}
               #call-controls-bar button.cu-ctl.end .cu-ctl-btn{width:auto;height:auto;}
-              .cu-bar:not(.cu-bar-incoming) .cu-ctl:not(.end) .cu-ctl-label{display:none;}
               .cu-bar-incoming .cu-bar-inner{gap:90px !important;}
             }
           `;
@@ -7320,7 +7389,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="cu-screen" style="padding-top:var(--top-safe-pad);background:linear-gradient(180deg,var(--cu-blue-soft),var(--cu-bg) 60%);">
               <div class="cu-top">
                 <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
-                <div class="cu-title"><div class="cu-status" style="font-family:'Colmeak','Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
+                <div class="cu-title"><div class="cu-status" style="font-family:'Colmeak','Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;color:var(--cu-blue,#2563eb);">${escapeHtml(o.kicker)}</div></div>
                 <div style="width:42px;height:42px;flex-shrink:0;"></div>
               </div>
               <div class="cu-stage">
@@ -7333,6 +7402,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="cu-voice-sub" style="max-width:86%;white-space:normal;margin-top:-6px;">${escapeHtml(o.sub)}</div>
                 </div>
               </div>
+              ${o.quick ? `<div class="cu-quick"><button onclick="messageIncomingCall()" class="cu-pill">${Icon('send','w-4 h-4')}<span>Message</span></button><button onclick="remindMeIncomingCall()" class="cu-pill">${Icon('clock','w-4 h-4')}<span>Remind me</span></button></div>` : ''}
               <div class="cu-bar cu-bar-incoming">
                 <div class="cu-bar-inner" style="gap:56px;padding:14px 30px 12px;">
                   ${cuCtlHTML({ onclick: o.declineAction, icon: 'phoneHangup', label: 'Decline', end: true })}
