@@ -4980,3 +4980,7 @@ body.dark-mode .app-toast{ background:#1e1e1e !important; border-color:#2b2b2b; 
 body.dark-mode .app-toast .text-gray-500{ color:#a1a1aa !important; }
 body.dark-mode .app-toast [class*="text-[#"]{ color:#fff; }
 @media (min-width:1024px){ .app-toast{ min-width:260px; } }
+
+/* Theme button now sits at the right of the profile card, beside the name */
+#desktop-nav .dnav-profile .dnav-theme{ margin:0 4px 0 auto; }
+html.dnav-collapsed #desktop-nav .dnav-profile .dnav-theme{ display:none; }
