@@ -3136,6 +3136,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
           const n = notifData.find(x => x.id === id);
           if (!n) return;
+          // Opening a notification means it has been seen: drop it from the bell count straight away
+          if (!n.read) { n.read = true; queueSaveUserState(); refreshNotifBadge(); }
           if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId) {
             n.read = true;
             queueSaveUserState();
@@ -3356,7 +3358,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             let listHTML = '';
             if (newRows.length) listHTML += secHead('New', `<button onclick="notifMarkAllReadTap()">Mark all read</button>`) + `<div class="space-y-2">${newRows.map(renderRow).join('')}</div>`;
             if (oldRows.length) listHTML += (newRows.length ? secHead('Earlier') : '') + `<div class="space-y-2">${oldRows.map(renderRow).join('')}</div>`;
-            if (!rows.length) listHTML = `<div class="text-center py-14"><div class="mx-auto mb-3 flex items-center justify-center" style="width:56px;height:56px;border-radius:50%;background:#e8f1ff;color:#1e90ff;">${Icon('bell','w-6 h-6')}</div><div class="text-sm font-semibold text-gray-500">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div><div class="text-xs text-gray-400 mt-1">${notifFilter === 'all' ? 'New messages, class updates and likes will show up here.' : 'Try another filter.'}</div></div>`;
+            if (!rows.length) listHTML = `<div class="text-center py-14"><div class="text-sm font-semibold text-gray-500">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div></div>`;
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
                 ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
@@ -3477,7 +3479,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function notifFilterChipsHTML(){
           const unread = notifData.filter(n => !n.read).length;
           const chips = [['all','All'],['unread','Unread' + (unread ? ' ' + unread : '')],['chats','Chats'],['classes','Classes'],['posts','Posts']];
-          return `<div class="nfilter">${chips.map(([k,l]) => `<button class="nchip ${notifFilter === k ? 'on' : ''}" onclick="setNotifFilter('${k}')">${l}</button>`).join('')}</div>`;
+          return `<div class="nfilter">${chips.map(([k,l]) => `<button class="filter-pill flex-shrink-0 ${notifFilter === k ? 'on' : ''}" onclick="setNotifFilter('${k}')">${l}</button>`).join('')}</div>`;
         }
 
         // Swipe a row left to reveal Delete (touch)
@@ -3698,6 +3700,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             renderClassAnnouncementsTab();
             return;
           }
+          { const nn = notifData.find(x => x.id === id); if (nn && !nn.read) { nn.read = true; queueSaveUserState(); refreshNotifBadge(); } }
           openNotifDetail(id);
         }
 
