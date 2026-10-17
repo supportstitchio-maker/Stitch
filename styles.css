@@ -4571,3 +4571,24 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
 #stitch-live-cam .slc-btn{ flex:1; height:52px; border-radius:26px; border:0; font-size:15px; font-weight:800; }
 #stitch-live-cam .slc-retake{ background:rgba(255,255,255,.18); color:#fff; }
 #stitch-live-cam .slc-use{ background:linear-gradient(90deg,#1e90ff,#4169e1); color:#fff; box-shadow:0 8px 20px -6px rgba(30,144,255,.6); }
+
+/* Onboarding and the code page on desktop: the text column is a white panel, lifted off the swirl background */
+@media (min-width:1024px){
+  #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side,
+  #auth-gate.auth-verify-mode .auth-form-side{
+    background:#fff; position:relative; z-index:1; border-radius:0 !important; min-height:100vh; min-height:100dvh;
+    box-shadow:0 0 0 1px rgba(15,23,42,.05), 0 24px 60px -12px rgba(10,37,64,.28), 0 8px 24px -8px rgba(10,37,64,.16); }
+  #auth-gate.auth-verify-mode .auth-card{ background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+  #auth-gate.auth-verify-mode .auth-scroll-inner, #auth-gate.auth-verify-mode .auth-stage{ height:100%; }
+  body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side,
+  body.dark-mode #auth-gate.auth-verify-mode .auth-form-side{
+    background:#0b0e13; box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 24px 60px -12px rgba(0,0,0,.7); }
+}
+@media (min-width:1024px){
+  #auth-gate.auth-verify-mode{ padding:0 !important; }
+  #auth-gate.auth-verify-mode .auth-scroll-inner, #auth-gate.auth-verify-mode .auth-stage, #auth-gate.auth-verify-mode .auth-card{ height:100%; min-height:100vh; min-height:100dvh; }
+  #auth-gate.auth-verify-mode .auth-back{ top:14px; }
+}
+
+/* No top bar: Back floats and the progress bar sits on the white panel */
+#auth-gate .auth-topbar, #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ display:none !important; }
