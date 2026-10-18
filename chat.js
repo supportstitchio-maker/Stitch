@@ -1496,7 +1496,41 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function isUserInMyNetwork(userId){
           if (!userId) return false;
+          if (typeof confirmedConnectionIds !== 'undefined' && confirmedConnectionIds.has(userId)) return true;
           return convoArrays().flat().some(c => c.network && c.otherUserId === userId);
+        }
+
+        // The connections table is the source of truth. A chat can exist on this device without the local
+        // "network" flag (for example one started by a message), which made the invite banner show again for
+        // someone who is already connected. This checks the table once per person and remembers the answer.
+        const confirmedConnectionIds = new Set();
+        const connectionCheckState = {};   // userId -> 'pending' | 'done'
+        function verifyConnectionWith(userId){
+          if (!userId || connectionCheckState[userId]) return;
+          connectionCheckState[userId] = 'pending';
+          (async () => {
+            try {
+              const myId = await getCurrentUserId();
+              if (!myId) throw new Error('no user');
+              const [a, b] = await Promise.all([
+                sb.from(CONNECTION_REQUESTS_TABLE).select('id').eq('from_user', myId).eq('to_user', userId).eq('status', 'accepted').limit(1),
+                sb.from(CONNECTION_REQUESTS_TABLE).select('id').eq('from_user', userId).eq('to_user', myId).eq('status', 'accepted').limit(1),
+              ]);
+              if (a.error || b.error) throw (a.error || b.error);
+              if ((a.data && a.data.length) || (b.data && b.data.length)) {
+                confirmedConnectionIds.add(userId);
+                // Mend the local chat rows so the rest of the app agrees
+                try { convoArrays().flat().forEach(c => { if (c && c.otherUserId === userId) c.network = true; }); } catch (e) {}
+                try { for (let i = requestConvos.length - 1; i >= 0; i--) if (requestConvos[i].otherUserId === userId) requestConvos.splice(i, 1); } catch (e) {}
+                try { queueSaveUserState(); } catch (e) {}
+              }
+              connectionCheckState[userId] = 'done';
+            } catch (e) {
+              connectionCheckState[userId] = 'done';   // could not check (offline): fall back to what we know
+            }
+            try { if (typeof refreshConvoConnectBanner === 'function') refreshConvoConnectBanner(); } catch (e) {}
+            try { if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar(); } catch (e) {}
+          })();
         }
 
         // Whether *I* currently have an outgoing connection request pending to this person
@@ -4422,6 +4456,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (id.indexOf('dm-') !== 0) return null;
           if (isUserInMyNetwork(meta.otherUserId)) return null;
           if (isConvoBlocked(meta)) return null;
+          // Ask the connections table before showing an invite, so a real connection never sees one
+          if (connectionCheckState[meta.otherUserId] !== 'done') { verifyConnectionWith(meta.otherUserId); return null; }
           const incoming = requestConvos.find(c => c.otherUserId === meta.otherUserId);
           if (incoming) return { kind: 'incoming', meta, req: incoming };
           if (isConnectionRequestPendingTo(meta.otherUserId)) return { kind: 'sent', meta };
