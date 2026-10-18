@@ -5064,3 +5064,6 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-resizer,
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-reopen-tab{ display:none !important; }
 }
+
+/* My Activity: the back arrow and heading sit on the left edge of the page, in line with the cards below, however wide the window is or whether the side menu is open */
+.myact-page .ov-sticky-head > div{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; padding-left:20px; padding-right:20px; }

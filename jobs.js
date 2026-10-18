@@ -10373,7 +10373,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
 
           const dlBtnClass = 'myact-dl-circle';
           return `
-            ${embed ? '<div class="space-y-4">' : `<div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
+            ${embed ? '<div class="space-y-4">' : `<div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 myact-page">
             ${overlayHeader('My Activity', '20px', null, null, { center: true })}
             <div class="p-5 space-y-4">`}
 
