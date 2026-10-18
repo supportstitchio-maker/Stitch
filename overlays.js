@@ -3379,12 +3379,46 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         let notifItemMenuOpenId = null;
 
+        let notifItemMenuRenderFn = 'renderNotifTab';
         function toggleNotifItemMenu(id, renderFnName, event){
           if (event) event.stopPropagation();
           notifItemMenuOpenId = (notifItemMenuOpenId === id) ? null : id;
-          const fn = window[renderFnName || 'renderNotifTab'];
+          notifItemMenuRenderFn = renderFnName || 'renderNotifTab';
+          const fn = window[notifItemMenuRenderFn];
           if (typeof fn === 'function') fn();
+          // Near the bottom of the screen the menu opens upwards so it is never cut off
+          const m = document.querySelector('.notif-item-menu');
+          if (m) {
+            const r = m.getBoundingClientRect();
+            if (r.bottom > window.innerHeight - 12) m.classList.add('nmenu-up');
+          }
         }
+        function closeNotifItemMenu(){
+          if (!notifItemMenuOpenId) return false;
+          notifItemMenuOpenId = null;
+          const fn = window[notifItemMenuRenderFn || 'renderNotifTab'];
+          if (typeof fn === 'function') fn();
+          return true;
+        }
+        // Tapping anywhere that is not the menu (or a row's "more" button) folds the menu back up
+        // without also opening whatever was tapped
+        (function(){
+          const outside = (e) => {
+            if (!notifItemMenuOpenId) return;
+            const t = e.target;
+            if (t && t.closest && (t.closest('.notif-item-menu') || t.closest('.nmenu-dots'))) return;
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+            closeNotifItemMenu();
+          };
+          document.addEventListener('click', outside, true);
+          document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNotifItemMenu(); });
+          document.addEventListener('scroll', (e) => {
+            if (!notifItemMenuOpenId) return;
+            if (e.target && e.target.closest && e.target.closest('.notif-item-menu')) return;
+            closeNotifItemMenu();
+          }, true);
+        })();
 
         function notifItemAction(id, action, renderFnName){
           notifItemMenuOpenId = null;
@@ -3395,14 +3429,14 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         function notifItemMenuHTML(n, renderFn){
+          const item = (action, icon, label, cls) => `<button role="menuitem" onclick="event.stopPropagation(); notifItemAction('${n.id}','${action}','${renderFn}')" class="nmenu-item ${cls || ''}">${Icon(icon,'w-4 h-4')}<span>${label}</span></button>`;
           return `
-            <div onclick="event.stopPropagation(); toggleNotifItemMenu('${n.id}','${renderFn}')" class="fixed inset-0 z-20"></div>
-            <div onclick="event.stopPropagation()" class="notif-item-menu absolute right-0 top-9 bg-white rounded-2xl border border-gray-100 py-2 z-30" style="width:12rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
-              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','pin','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('pin','w-4 h-4')} Pin</button>
-              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','read','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('check','w-4 h-4')} Mark as read</button>
-              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','block','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('lock','w-4 h-4')} Block</button>
-              <div class="border-t border-gray-100 my-1"></div>
-              <button onclick="event.stopPropagation(); notifItemAction('${n.id}','delete','${renderFn}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete</button>
+            <div role="menu" onclick="event.stopPropagation()" class="notif-item-menu nmenu">
+              ${item('pin','pin', n.pinned ? 'Unpin' : 'Pin')}
+              ${n.read ? '' : item('read','check','Mark as read')}
+              ${item('block','lock','Block')}
+              <div class="nmenu-sep"></div>
+              ${item('delete','trash','Delete','nmenu-danger')}
             </div>`;
         }
 
@@ -3562,8 +3596,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 <div class="flex flex-col items-end gap-1.5 flex-shrink-0 relative">
                   <div class="text-[11px] whitespace-nowrap" style="color:${unread ? '#1e90ff' : '#9ca3af'};font-weight:${unread ? 700 : 500};" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
                   ${selecting ? '' : (unread ? '<span class="nrow-dot"></span>' : '')}
-                  ${selecting ? '' : `<button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options">${Icon('dots','w-4 h-4')}</button>`}
-                  ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}
+                  ${selecting ? '' : `<div class="nmenu-anchor"><button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop nmenu-dots w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options" aria-haspopup="menu" aria-expanded="${itemMenuOpen ? 'true' : 'false'}">${Icon('dots','w-4 h-4')}</button>
+                  ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}</div>`}
                 </div>
               </div>
             </div>`;

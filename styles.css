@@ -5073,3 +5073,26 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 .nrow-swipe:has(.notif-item-menu) .nrow-in{ overflow:visible; }
 .nrow-swipe:has(.notif-item-menu) .nrow-del{ display:none; }
 .notif-item-menu{ z-index:60 !important; }
+
+/* Notification "more" menu, rebuilt: sits directly under its dots button, plain rows, fades in, folds away on an outside tap */
+.nmenu-anchor{ position:relative; display:inline-flex; }
+.notif-item-menu.nmenu{
+  position:absolute; right:0; top:calc(100% + 6px); left:auto; width:12.5rem; padding:6px; z-index:60 !important;
+  background:#fff; border:1px solid rgba(15,23,42,.08); border-radius:16px;
+  box-shadow:0 16px 40px -8px rgba(15,23,42,.28), 0 2px 8px rgba(15,23,42,.06);
+  transform-origin:top right; animation:nmenuIn .14s ease-out;
+}
+.notif-item-menu.nmenu.nmenu-up{ top:auto; bottom:calc(100% + 6px); transform-origin:bottom right; }
+@keyframes nmenuIn{ from{ opacity:0; transform:translateY(-4px) scale(.97); } to{ opacity:1; transform:none; } }
+.nmenu-item{ width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:11px; background:transparent; color:#1f2937; font-size:14px; font-weight:600; text-align:left; transition:background-color .12s ease; }
+.nmenu-item:hover{ background:rgba(65,105,225,.09); }
+.nmenu-item:active{ background:rgba(65,105,225,.16); }
+.nmenu-item svg{ color:#6b7280; flex-shrink:0; }
+.nmenu-sep{ height:1px; margin:4px 6px; background:rgba(15,23,42,.08); }
+.nmenu-danger, .nmenu-danger svg{ color:#ef4444; }
+.nmenu-danger:hover{ background:rgba(239,68,68,.09); }
+body.dark-mode .notif-item-menu.nmenu{ background:#1c1f26; border-color:rgba(255,255,255,.10); box-shadow:0 16px 40px -8px rgba(0,0,0,.7); }
+body.dark-mode .nmenu-item{ color:#e5e7eb; }
+body.dark-mode .nmenu-item svg{ color:#9ca3af; }
+body.dark-mode .nmenu-sep{ background:rgba(255,255,255,.10); }
+body.dark-mode .nmenu-danger, body.dark-mode .nmenu-danger svg{ color:#f87171; }
