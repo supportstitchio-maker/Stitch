@@ -7288,7 +7288,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           st.id = 'call-ui-styles';
           st.textContent = `
 
-            body{--cu-glow:rgba(30,144,255,.16);--cu-bg:#ffffff;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e8eef7;--cu-sheet:#ffffff;--cu-bar:#ffffff;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
+            body{--cu-bg:#f8fafc;--cu-fg:#0f172a;--cu-sub:#64748b;--cu-soft:rgba(15,23,42,.07);--cu-soft2:rgba(15,23,42,.12);--cu-line:#e2e8f0;--cu-tile:#e5eaf2;--cu-sheet:#ffffff;--cu-bar:#ffffff;--cu-blue-soft:rgba(30,144,255,.1);--cu-endtxt:#dc2626;--cu-accepttxt:#16a34a;--cu-alerttxt:#92400e;}
             body.dark-mode{--cu-glow:rgba(30,144,255,.10);--cu-bg:#121212;--cu-fg:#ffffff;--cu-sub:#9a9a9a;--cu-soft:rgba(255,255,255,.09);--cu-soft2:rgba(255,255,255,.16);--cu-line:#2b2b2b;--cu-tile:#1e1e1e;--cu-sheet:#1e1e1e;--cu-bar:#1e1e1e;--cu-blue-soft:rgba(30,144,255,.16);--cu-endtxt:#fecaca;--cu-accepttxt:#bbf7d0;--cu-alerttxt:#fde68a;}
             ::view-transition-old(root),::view-transition-new(root){animation-duration:.18s;animation-timing-function:ease-out;}
             .cu-soft-btn{background:var(--cu-soft2);color:var(--cu-fg);}
@@ -7373,22 +7373,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             @keyframes cuToast{0%{opacity:0;transform:translate(-50%,-8px);}8%,86%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
 
             /* ---- Call, meeting and lecture screens: rebuilt look (white / dark base, blue glow, lifted control sheet) ---- */
-            .cu-screen{background:var(--cu-bg) !important;}
-            .cu-screen::before{content:'';position:absolute;left:0;right:0;top:0;height:55%;background:linear-gradient(180deg,var(--cu-glow),transparent);pointer-events:none;z-index:0;}
-            .cu-glass{background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 2px 10px rgba(30,60,140,.12);}
-            body.dark-mode .cu-glass{box-shadow:none;}
-            .cu-top{padding-top:8px;padding-bottom:6px;}
-            .cu-status{background:var(--cu-sheet);border:1px solid var(--cu-line);border-radius:999px;padding:3px 12px;font-weight:600;color:var(--cu-fg);box-shadow:0 2px 8px rgba(30,60,140,.08);}
-            body.dark-mode .cu-status{box-shadow:none;}
+                        .cu-top{padding-top:8px;padding-bottom:6px;}
             .cu-status{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;}
             .cu-quick{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 16px 6px;position:relative;z-index:2;}
             .cu-tile{border-radius:26px;}
             .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline:3px solid #1e90ff;outline-offset:-3px;}
             .cu-pip{border:3px solid var(--cu-bg);border-radius:20px;box-shadow:0 8px 22px rgba(30,60,140,.28);}
-            .cu-voice-avatar-wrap::before{content:'';position:absolute;inset:-34px;border-radius:50%;border:2px solid rgba(30,144,255,.20);}
-            .cu-voice-avatar{background:linear-gradient(135deg,#1e90ff,#4169e1) !important;color:#fff !important;border:5px solid var(--cu-bg);box-shadow:0 14px 34px rgba(65,105,225,.38) !important;}
-            .cu-voice-avatar span,.cu-voice-avatar svg{color:#fff !important;}
-            .cu-ring{border-color:rgba(30,144,255,.32);}
             .cu-voice-name{font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;}
             .cu-bar{padding:6px 12px calc(env(safe-area-inset-bottom,0px) + 14px);}
             .cu-bar-inner{width:100%;max-width:560px;flex-wrap:wrap;justify-content:space-around;gap:10px 4px;padding:14px 12px 14px;border-radius:30px;background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 12px 36px rgba(30,60,140,.18);}
@@ -7425,7 +7415,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="cu-screen" style="padding-top:var(--top-safe-pad);background:linear-gradient(180deg,var(--cu-blue-soft),var(--cu-bg) 60%);">
               <div class="cu-top">
                 <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
-                <div class="cu-title"><div class="cu-status" style="font-family:'Colmeak','Montserrat',sans-serif;text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;color:var(--cu-blue,#2563eb);">${escapeHtml(o.kicker)}</div></div>
+                <div class="cu-title"><div class="cu-status" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
                 <div style="width:42px;height:42px;flex-shrink:0;"></div>
               </div>
               <div class="cu-stage">
