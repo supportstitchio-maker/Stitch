@@ -3011,14 +3011,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (!convoId) return;
           let changed = false;
           notifData.forEach(n => {
-            if (n.type === 'call_attempt') {
-            n.read = true;
-            queueSaveUserState();
-            closeOverlay();
-            try { switchTab(3); inboxFilterTab('requests'); loadIncomingConnectionRequests(); } catch (e) {}
-            return;
-          }
-          if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
+            if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId === convoId && !n.read) { n.read = true; changed = true; }
           });
           if (!changed) return;
           queueSaveUserState();
@@ -3138,6 +3131,13 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (!n) return;
           // Opening a notification means it has been seen: drop it from the bell count straight away
           if (!n.read) { n.read = true; queueSaveUserState(); refreshNotifBadge(); }
+          if (n.type === 'call_attempt') {
+            n.read = true;
+            queueSaveUserState();
+            closeOverlay();
+            try { switchTab(3); inboxFilterTab('requests'); loadIncomingConnectionRequests(); } catch (e) {}
+            return;
+          }
           if ((n.type === 'message' || n.type === 'missed_call' || n.type === 'info' || n.type === 'group') && n.convoId) {
             n.read = true;
             queueSaveUserState();

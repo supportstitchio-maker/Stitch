@@ -3793,7 +3793,18 @@ function ghostWith(obj, key, sample, fn){
     document.body.appendChild(btn);
     return btn;
   }
-  function show(){ const b = ensure(); b.style.opacity = '1'; b.style.transform = 'none'; b.style.pointerEvents = 'auto'; clearTimeout(hideT); hideT = setTimeout(hide, 3500); }
+  function place(b){
+    // Desktop: sit in the middle of the free space between the left menu and the side panel
+    if (window.innerWidth < 1024) { b.style.left = ''; b.style.right = '16px'; return; }
+    let l = 0, r = window.innerWidth;
+    try {
+      const nav = document.getElementById('desktop-nav'), rp = document.getElementById('desktop-right-panel');
+      if (nav) { const x = nav.getBoundingClientRect(); if (x.width > 0 && x.right < window.innerWidth) l = x.right; }
+      if (rp) { const x = rp.getBoundingClientRect(); if (x.width > 0 && x.left > l) r = x.left; }
+    } catch (e) {}
+    b.style.right = 'auto'; b.style.left = Math.round(l + (r - l) / 2 - 22) + 'px';
+  }
+  function show(){ const b = ensure(); place(b); b.style.opacity = '1'; b.style.transform = 'none'; b.style.pointerEvents = 'auto'; clearTimeout(hideT); hideT = setTimeout(hide, 3500); }
   function hide(){ if (!btn) return; btn.style.opacity = '0'; btn.style.transform = 'translateY(8px) scale(.92)'; btn.style.pointerEvents = 'none'; }
   document.addEventListener('scroll', function(e){
     const el = e.target;
