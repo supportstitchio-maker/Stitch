@@ -3544,7 +3544,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function getRingtoneAudio(){
           if (!ringtoneAudioEl) {
             try {
-              ringtoneAudioEl = new Audio('/assets/ringtone.mp3');
+              ringtoneAudioEl = new Audio('/assets/ringtone.mp3?v=bass2');
               ringtoneAudioEl.loop = true;
               ringtoneAudioEl.preload = 'auto';
               ringtoneAudioEl.volume = 1;
@@ -3702,7 +3702,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
             c.preview = text; c.time = formatRequestTime(Date.now());
-            if (activeConvoId !== convoId) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
+            if (dir !== 'out' && !convoIsInView(convoId)) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
             found.arr.unshift(c);
           }
           if (convoMeta[convoId]) convoMeta[convoId].preview = text;
@@ -3910,6 +3910,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         // ---- Opening/reading a conversation thread ----
+        // A chat only counts as "being looked at" while it is open AND this tab/window is actually showing.
+        // Otherwise (another desktop tab, minimised window, phone locked) new messages must still raise the
+        // unread count and the notification.
+        function convoIsInView(convoId){
+          return activeConvoId === convoId && !document.hidden;
+        }
+        function clearActiveConvoUnreadIfVisible(){
+          if (!activeConvoId || document.hidden) return;
+          const f = findConvoAndArray(activeConvoId);
+          if (f && (f.arr[f.idx].unread || f.arr[f.idx].unreadCount)) {
+            f.arr[f.idx].unread = false; f.arr[f.idx].read = true; f.arr[f.idx].unreadCount = 0;
+            queueSaveUserState();
+            try { markGroupConvoMessagesRead(activeConvoId); } catch (e) {}
+            if (typeof markNotifsReadForConvo === 'function') markNotifsReadForConvo(activeConvoId);
+            const inboxList = document.getElementById('inbox-list');
+            if (inboxList) inboxList.innerHTML = inboxContent();
+            if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
+          }
+        }
+        document.addEventListener('visibilitychange', clearActiveConvoUnreadIfVisible);
+        window.addEventListener('focus', clearActiveConvoUnreadIfVisible);
         function handleIncomingMessage(row){
           // Test/reviewer account: never take in messages from real users
           if (isStitchTestAccount()) return;
@@ -3931,7 +3952,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           });
           queueSaveUserState();
           const previewText = isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : (isVoice ? '🎤 Voice message' : hasAttachments ? convoAttachmentPreviewText(row.attachments, false, row.text) : (meetingChatParse(row.text).body || 'Attachment'));
-          if (!isSysEvent && activeConvoId === convoId && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
+          if (!isSysEvent && convoIsInView(convoId) && row.sender_id) markConvoMessagesRead(convoId, row.sender_id);
 
           let found = findConvoAndArray(convoId);
           let c = null;
@@ -3948,14 +3969,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             [c] = found.arr.splice(found.idx, 1);
             c.preview = previewText;
             c.time = formatRequestTime(Date.now());
-            if (activeConvoId !== convoId) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
+            if (!convoIsInView(convoId)) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
             found.arr.unshift(c);
           }
 
           if (activeConvoId === convoId) {
             const log = document.getElementById('convo-log');
             if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
-          } else {
+          }
+          if (!convoIsInView(convoId)) {
             if (typeof addNotif === 'function') {
               const meta = convoMeta[convoId] || {};
               const isGroup = meta.icon === 'users';
