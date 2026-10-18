@@ -5008,3 +5008,11 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 .ar-lobby-av.spin i{ width:26px; height:26px; border-radius:50%; border:3px solid rgba(65,105,225,.2); border-top-color:#4169e1; animation:classroom-spin .8s linear infinite; }
 .ar-lobby-tag{ font-style:normal; font-size:.7rem; font-weight:800; color:#4169e1; background:rgba(65,105,225,.12); padding:4px 10px; border-radius:99px; }
 .ar-wrap{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* Incoming call on desktop: background fills the whole free area; the content stays centred beside the left menu */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen #overlay .cu-screen:not(#call-screen){ padding-left:var(--nav-width,246px); box-sizing:border-box; }
+}
+@media (min-width:1024px){
+  .cu-bar-incoming .cu-bar-inner{ max-width:360px !important; margin-left:auto; margin-right:auto; gap:0 !important; justify-content:space-between !important; }
+}

@@ -1497,7 +1497,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function isUserInMyNetwork(userId){
           if (!userId) return false;
           if (typeof confirmedConnectionIds !== 'undefined' && confirmedConnectionIds.has(userId)) return true;
-          return convoArrays().flat().some(c => c.network && c.otherUserId === userId);
+          return convoArrays().flat().some(c => c.network && (((convoMeta[c.id] && convoMeta[c.id].otherUserId) || c.otherUserId) === userId));
+        }
+        // The same person can show up as two chat rows (the connection row and the message chat), and older saved
+        // rows may not carry the user id. My Network lists them by the "network" flag, so the banner must agree.
+        function isConvoPersonInMyNetwork(convoId, meta){
+          const all = convoArrays().flat();
+          const self = all.find(c => c && c.id === convoId);
+          if (self && self.network) return true;
+          if (!meta) return false;
+          const nm = String(meta.name || '').trim().toLowerCase(), un = String(meta.username || '').trim().toLowerCase();
+          return all.some(c => {
+            if (!c || !c.network || c.icon === 'users' || c.id === convoId) return false;
+            const m = convoMeta[c.id] || {};
+            const cn = String(c.name || m.name || '').trim().toLowerCase(), cu = String(c.username || m.username || '').trim().toLowerCase();
+            return (un && (cu === un || cn === un)) || (nm && (cn === nm || cu === nm));
+          });
         }
 
         // The connections table is the source of truth. A chat can exist on this device without the local
@@ -4455,6 +4470,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const id = String(activeConvoId || '');
           if (id.indexOf('dm-') !== 0) return null;
           if (isUserInMyNetwork(meta.otherUserId)) return null;
+          if (isConvoPersonInMyNetwork(activeConvoId, meta)) return null;
           if (isConvoBlocked(meta)) return null;
           // Ask the connections table before showing an invite, so a real connection never sees one
           if (connectionCheckState[meta.otherUserId] !== 'done') { verifyConnectionWith(meta.otherUserId); return null; }

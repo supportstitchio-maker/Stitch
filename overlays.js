@@ -379,7 +379,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (appShellEl) {
             if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); closeRightPanel(); }
             else appShellEl.classList.remove('messaging-split');
-            if (kind === 'call') appShellEl.classList.add('call-fullscreen');
+            if (kind === 'call' || kind === 'incomingCall') appShellEl.classList.add('call-fullscreen');
             else appShellEl.classList.remove('call-fullscreen');
           }
 
