@@ -1732,6 +1732,37 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           });
         }
 
+
+        // Chats you used most recently sit at the top and stay there. The order comes from the time of the last
+        // message or call event, so background refreshes (which rebuild the lists) can no longer shuffle the rows.
+        function sortConvosByRecentActivity(arr){
+          const lastByPerson = {}, lastById = {};
+          try {
+            Object.keys(conversationMessages || {}).forEach(id => {
+              const msgs = conversationMessages[id] || [];
+              let t = 0;
+              for (let i = msgs.length - 1; i >= 0 && i >= msgs.length - 5; i--) { const mt = Number(msgs[i] && msgs[i].time) || 0; if (mt > t) t = mt; }
+              if (!t) return;
+              lastById[id] = t;
+              const oid = convoMeta[id] && convoMeta[id].otherUserId;
+              if (oid && (lastByPerson[oid] || 0) < t) lastByPerson[oid] = t;
+            });
+          } catch (e) {}
+          const tsOf = (c) => {
+            const oid = (convoMeta[c.id] && convoMeta[c.id].otherUserId) || c.otherUserId;
+            let t = Math.max(lastById[c.id] || 0, (oid && lastByPerson[oid]) || 0, Number(c._localAt) || 0, Number(c._actAt) || 0);
+            if (!t) {   // nothing loaded yet: use the clock time shown on the row ("9:13 AM"), today or yesterday
+              const m = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*$/i.exec(String(c.time || ''));
+              if (m) { const d = new Date(); let h = (parseInt(m[1], 10) % 12) + (/pm/i.test(m[3]) ? 12 : 0); d.setHours(h, parseInt(m[2], 10), 0, 0); if (d.getTime() > Date.now()) d.setDate(d.getDate() - 1); t = d.getTime(); }
+            }
+            if (t > (Number(c._actAt) || 0)) c._actAt = t;      // only ever moves forward, so it never drops back
+            return Number(c._actAt) || 0;
+          };
+          const keyed = arr.map((c, i) => ({ c, i, t: tsOf(c) }));
+          keyed.sort((a, b) => ((b.c.pinned ? 1 : 0) - (a.c.pinned ? 1 : 0)) || (b.t - a.t) || (a.i - b.i));
+          return keyed.map(k => k.c);
+        }
+
         function inboxContent(){
           purgeTestAccountForeignConvos();
           if (inboxSearchActive && inboxSearchQuery.trim()){
@@ -1757,7 +1788,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (inboxFilter === 'meetings') return inlineMeetingsHTML();
           if (inboxFilter === 'general') {
             dedupeDirectConvos();
-            const list = applyView(primaryConvos);
+            const list = sortConvosByRecentActivity(applyView(primaryConvos));
             return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');
           }
           if (inboxFilter === 'requests') {
