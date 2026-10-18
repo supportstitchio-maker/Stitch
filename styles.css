@@ -5067,3 +5067,9 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 
 /* My Activity: the back arrow and heading sit on the left edge of the page, in line with the cards below, however wide the window is or whether the side menu is open */
 .myact-page .ov-sticky-head > div{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; padding-left:20px; padding-right:20px; }
+
+/* Notification "more" menu: the row used to clip it. While a menu is open the row lets it show in full and sits above the rows below it */
+.nrow-swipe:has(.notif-item-menu){ overflow:visible !important; z-index:40; }
+.nrow-swipe:has(.notif-item-menu) .nrow-in{ overflow:visible; }
+.nrow-swipe:has(.notif-item-menu) .nrow-del{ display:none; }
+.notif-item-menu{ z-index:60 !important; }
