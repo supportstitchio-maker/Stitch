@@ -2741,7 +2741,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             stuck.forEach(m => { if (!m.unsent && Date.now() - (m.time || 0) > 60000) m.unsent = true; });
             // Try once more in the background -- the server rules may have changed since it failed
             stuck.forEach(m => { if (m.unsent) retryUnsentMessage(convoId, m.localId); });
-            conversationMessages[convoId] = fresh.concat(stuck).sort((a, b) => (a.time || 0) - (b.time || 0));
+            // Call entries ("Voice call - Cancelled", "Missed call") live only on this device, so reloading the
+            // history from the server must not wipe them
+            const callEvents = prevLocalMsgs.filter(m => m && m.from === 'system' && m.id == null && m.text);
+            conversationMessages[convoId] = fresh.concat(stuck, callEvents).sort((a, b) => (a.time || 0) - (b.time || 0));
             // The chat now holds the server's full history: make sure this conversation's inbox row
             // shows the real last message instead of an older stored preview
             const loadedConvo = (typeof findConvoAndArray === 'function') ? findConvoAndArray(convoId) : null;
