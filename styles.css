@@ -5054,3 +5054,13 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn{width:56px !important;height:56px !important;}
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming){padding:0 0 0 var(--nav-width,246px) !important;}
 }
+
+/* Desktop incoming call: the blue-fade background runs the full width of the window, exactly like on the phone, instead of stopping at the right panel */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #overlay{ right:0 !important; width:100% !important; }
+}
+@media (min-width:1024px){
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #desktop-right-panel,
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-resizer,
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-reopen-tab{ display:none !important; }
+}

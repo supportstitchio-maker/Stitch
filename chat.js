@@ -2869,7 +2869,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               // them. Without this they were wiped from the count the moment Messaging was opened.
               if (!c.unread) c.callUnread = 0;
               const localCalls = (c.unread && !c.read && c.callUnread > 0 && !convoIsInView(c.id)) ? c.callUnread : 0;
-              const serverUnread = unreadConvoIds.has(c.id) && activeConvoId !== c.id;
+              const serverUnread = unreadConvoIds.has(c.id) && !convoIsInView(c.id);
               const shouldBeUnread = serverUnread || localCalls > 0;
               if (shouldBeUnread) {
                 const exact = (serverUnread ? (unreadCounts[c.id] || 1) : 0) + localCalls;
@@ -3922,7 +3922,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return activeConvoId === convoId && !document.hidden && (typeof currentOverlayKind === 'undefined' || currentOverlayKind === 'conversation');
         }
         function clearActiveConvoUnreadIfVisible(){
-          if (!activeConvoId || document.hidden) return;
+          if (!activeConvoId || !convoIsInView(activeConvoId)) return;
           const f = findConvoAndArray(activeConvoId);
           if (f && (f.arr[f.idx].unread || f.arr[f.idx].unreadCount)) {
             f.arr[f.idx].unread = false; f.arr[f.idx].read = true; f.arr[f.idx].unreadCount = 0;
