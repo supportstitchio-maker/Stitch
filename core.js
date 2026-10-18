@@ -1864,7 +1864,10 @@
     <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
     <div style="flex:1;"></div>
     <div class="dside-divider"></div>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dcnav-settings">${DNAV_GEAR_ICON}<span class="dside-label">Settings</span></button>
+    <button onclick="toggleThemeQuick()" class="dnav-item dnav-pill" id="dcnav-theme" aria-label="Switch between light and dark mode">
+      <svg class="dn-sun dnav-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+      <svg class="dn-moon dnav-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg>
+      <span class="dside-label dn-lbl-light">Light mode</span><span class="dside-label dn-lbl-dark">Dark mode</span></button>
     </div>
   </div>
   <!-- Desktop-only right panel: Telegram-style info column pinned to the

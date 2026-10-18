@@ -7854,6 +7854,7 @@ try {
           lectureSlides = null;
           lecturePreview = null;
           lectureMoreSheetOpen = false;
+          lectureEveryoneMuted = false;
           lectureReactionsSheetOpen = false;
           lectureCommentSheetOpen = false;
           cuUnmountCommentBar();
@@ -8035,7 +8036,7 @@ try {
 
         function updateLecturePresenceTrack(){
           if (!lectureChannel || !myLecturePeerId) return;
-          lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: liveLectureState.handRaised, isTeacher: lectureIsTeacher() });
+          lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: liveLectureState.handRaised, isTeacher: lectureIsTeacher(), uid: lectureMyUid() });
         }
 
         function updateLectureLocalBadges(){
@@ -8052,7 +8053,7 @@ try {
             cam: { id: 'lecture-cam-btn', onclick: "toggleLectureControl('camOff')", icon: st.camOff ? 'cameraOff' : 'video', label: st.camOff ? 'Start video' : 'Camera', on: !!st.camOff },
             hand: { id: 'lecture-hand-btn', onclick: 'toggleLectureHand()', icon: 'handRaised', label: st.handRaised ? 'Lower' : 'Raise', on: !!st.handRaised, title: 'Raise hand' },
             more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!lectureMoreSheetOpen },
-            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End lecture' : 'Leave lecture', end: true, title: isTeacher ? 'End session' : 'Leave' },
+            end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End session' : 'Leave' },
           };
         }
 
@@ -8598,18 +8599,21 @@ try {
         }
 
         // Teacher-only: silence the whole room in one tap (students can unmute themselves again)
+        let lectureEveryoneMuted = false;
         function muteEveryoneInLecture(){
           if (!lectureIsTeacher()) return;
           if (!Object.keys(lecturePresence).length) { pushInAppNotification('Session', 'No one else has joined this session yet.'); return; }
-          broadcastLectureSignal({ type: 'mute-all' });
-          Object.keys(lecturePresence).forEach(k => { lecturePresence[k].muted = true; });
+          lectureEveryoneMuted = Object.keys(lecturePresence).some(k => !lecturePresence[k].muted);
+          broadcastLectureSignal({ type: lectureEveryoneMuted ? 'mute-all' : 'unmute-all' });
+          Object.keys(lecturePresence).forEach(k => { lecturePresence[k].muted = lectureEveryoneMuted; });
           updateLectureRemoteBadges();
-          callToast('Muted everyone');
+          callToast(lectureEveryoneMuted ? 'Muted everyone' : 'Unmuted everyone');
+          try { updateLectureSheetsRegion(); const bar = document.querySelector('.cu-adminbar'); if (bar) bar.outerHTML = lectureAdminBarHTML(); } catch (e) {}
         }
 
         function lectureAdminBarHTML(){
           if (!lectureIsTeacher() || !Object.keys(lecturePresence).length) return '';
-          return `<div class="cu-adminbar" style="padding-top:2px;"><button onclick="muteEveryoneInLecture()" class="cu-pill">${Icon('muteAll','w-4 h-4')}<span>Mute everyone</span></button></div>`;
+          return `<div class="cu-adminbar" style="padding-top:2px;"><button onclick="muteEveryoneInLecture()" class="cu-pill">${Icon('muteAll','w-4 h-4')}<span>${lectureEveryoneMuted ? 'Unmute everyone' : 'Mute everyone'}</span></button></div>`;
         }
 
         function lectureGridHTML(){
@@ -8700,10 +8704,12 @@ try {
           lectureChannel.on('presence', { event: 'sync' }, () => syncLecturePresence());
           lectureChannel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-              lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: false, isTeacher: lectureIsTeacher() });
+              lectureChannel.track({ name: (profileData && profileData.name) || 'Member', photo: (profileData && profileData.photo) || null, muted: liveLectureState.muted, camOff: liveLectureState.camOff, handRaised: false, isTeacher: lectureIsTeacher(), uid: lectureMyUid() });
             }
           });
         }
+
+        function lectureMyUid(){ try { return (_cachedAuthUser && _cachedAuthUser.id) || null; } catch (e) { return null; } }
 
         function syncLecturePresence(){
           if (!lectureChannel) return;
@@ -8713,6 +8719,8 @@ try {
           Object.keys(state).forEach(key => {
             if (key === myLecturePeerId) return;
             const meta = (state[key] && state[key][0]) || {};
+            // my own account open on another device/tab: not a second participant
+            if (meta.uid && meta.uid === lectureMyUid()) return;
             seen.add(key);
             if (!lecturePresence[key]) newlyJoined.push(key);
             lecturePresence[key] = { name: meta.name || 'Member', photo: meta.photo || null, muted: !!meta.muted, camOff: !!meta.camOff, handRaised: !!meta.handRaised, isTeacher: !!meta.isTeacher };
@@ -8860,6 +8868,21 @@ try {
               updateLectureInlinePanel();
               if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
               callToast('Your moderator muted everyone');
+            }
+            return;
+          }
+          if (payload.type === 'unmute-all') {
+            const sender = lecturePresence[payload.from];
+            if (lectureIsTeacher() || !sender || !sender.isTeacher) return;
+            if (liveLectureState.muted) {
+              liveLectureState.muted = false;
+              applyLectureTrackStates();
+              updateLectureLocalBadges();
+              updateLectureControlBarButtons();
+              updateLecturePresenceTrack();
+              updateLectureInlinePanel();
+              if (typeof updateMinimizedCallBanner === 'function') updateMinimizedCallBanner();
+              callToast('Your moderator unmuted everyone');
             }
             return;
           }
@@ -9419,7 +9442,7 @@ try {
               </div>
               <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);">
                 <span style="color:${NAVY};">${Icon('muteAll','w-5 h-5')}</span>
-                <span class="text-sm font-bold truncate" style="color:${NAVY};">Mute everyone</span>
+                <span class="text-sm font-bold truncate" style="color:${NAVY};">${lectureEveryoneMuted ? 'Unmute everyone' : 'Mute everyone'}</span>
               </button>` : ''}
               <div class="flex items-start justify-between gap-1">
                 ${grid("toggleLectureReactionsSheet()", 'reactions', 'Reactions', false)}

@@ -5135,3 +5135,20 @@ body.dark-mode .nmenu-danger, body.dark-mode .nmenu-danger svg{ color:#f87171; }
 .cu-screen:has(.cu-bar-incoming) .cu-voice-name{font-size:26px !important;font-weight:400 !important;}
 .cu-screen:has(.cu-bar-incoming) .cu-voice-sub{font-size:15px;}
 .cu-screen:has(.cu-bar-incoming) .cu-ctl-label,.cu-screen:has(.cu-bar-incoming) .cu-pill{font-weight:400 !important;}
+
+/* All call control bars (voice, video, lecture, meeting): every control shares the row evenly, End included */
+.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{flex-wrap:nowrap !important;justify-content:space-around !important;align-items:flex-start !important;gap:0 !important;}
+.cu-bar:not(.cu-bar-incoming) .cu-bar-inner > .cu-ctl,
+.cu-bar:not(.cu-bar-incoming) .cu-bar-inner > button.cu-ctl{flex:1 1 0 !important;min-width:0 !important;width:auto !important;}
+/* Desktop: sheets and menus open in the middle of the call area, not the whole window */
+@media (min-width:1024px){
+  #overlay .cu-screen{position:relative;}
+  #overlay .cu-screen .cu-bsheet{position:absolute !important;}
+}
+
+/* Classroom sidebar theme switch: shows the current mode (sun + Light mode / moon + Dark mode) */
+#dcnav-theme .dn-moon,#dcnav-theme .dn-lbl-dark{display:none !important;}
+body.dark-mode #dcnav-theme .dn-sun,body.dark-mode #dcnav-theme .dn-lbl-light{display:none !important;}
+body.dark-mode #dcnav-theme .dn-moon{display:block !important;}
+body.dark-mode #dcnav-theme .dn-lbl-dark{display:block !important;}
+html.dnav-collapsed body #desktop-nav #dcnav-theme .dside-label,html.dnav-collapsed #desktop-nav #dcnav-theme .dside-label{display:none !important;}

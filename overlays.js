@@ -3976,7 +3976,7 @@ function examFocusEnter(){
   const sh = document.getElementById('app-shell');
   if (!sh) return;
   examFocusRpWasOpen = sh.classList.contains('right-panel-open') && !sh.classList.contains('rp-collapsed');
-  sh.classList.add('nav-hidden');
+  // the left menu stays; only the right panel steps aside
   if (examFocusRpWasOpen && typeof collapseRightPanel === 'function') collapseRightPanel();
 }
 function examFocusExit(){

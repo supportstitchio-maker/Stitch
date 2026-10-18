@@ -7126,6 +7126,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             return;
           }
+          if (payload.kind === 'unmute_all') {
+            const sender = callPeers[payload.from];
+            const senderId = sender && sender.userId;
+            if (!senderId || senderId !== payload.userId || callAdminUserIds().indexOf(senderId) === -1) return;
+            if (callState.muted) {
+              callState.muted = false;
+              applyCallTrackStates();
+              broadcastMyCallState();
+              refreshCallControls();
+              if (isGroupCallConvo(callState.convoId)) refreshCallStage();
+              callToast(callMemberName(senderId) + ' unmuted everyone');
+            }
+            return;
+          }
           if (payload.kind === 'mute_all') {
             // Only honoured when it comes from someone who really is an admin of this call
             const sender = callPeers[payload.from];
@@ -7714,6 +7728,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return (m && m.name) || 'An admin';
         }
 
+        let callEveryoneMuted = false;
         function muteEveryoneInCall(){
           if (!callCanMuteAll()) return;
           const others = Object.values(callPeers).filter(e => e.connected);
@@ -7722,10 +7737,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             addNotif({ type: 'info', icon: 'users', name: 'Stitch', message: 'No one else is in the call yet', convoId: mCode ? null : callState.convoId, meetingCode: mCode });
             return;
           }
-          sendCallSignal({ kind: 'mute_all', userId: myCallUserId });
-          others.forEach(e => { e.muted = true; });
-          callToast('Muted everyone');
+          callEveryoneMuted = others.some(e => !e.muted);
+          sendCallSignal({ kind: callEveryoneMuted ? 'mute_all' : 'unmute_all', userId: myCallUserId });
+          others.forEach(e => { e.muted = callEveryoneMuted; });
+          callToast(callEveryoneMuted ? 'Muted everyone' : 'Unmuted everyone');
           refreshCallStage();
+          try { const bar = document.getElementById('call-admin-bar'); if (bar) bar.outerHTML = callAdminBarHTML(); } catch (e) {}
         }
 
 
@@ -8025,7 +8042,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function callAdminBarHTML(){
           if (!callState.connected || !callCanMuteAll()) return '';
           if (!Object.values(callPeers).some(e => e.connected)) return '';
-          return `<div id="call-admin-bar" class="cu-adminbar"><button onclick="muteEveryoneInCall()" class="cu-pill">${Icon('muteAll', 'w-4 h-4')}<span>Mute everyone</span></button></div>`;
+          return `<div id="call-admin-bar" class="cu-adminbar"><button onclick="muteEveryoneInCall()" class="cu-pill">${Icon('muteAll', 'w-4 h-4')}<span>${callEveryoneMuted ? 'Unmute everyone' : 'Mute everyone'}</span></button></div>`;
         }
 
         function callHTML(){
@@ -9212,7 +9229,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
                 ${activeMeeting.code ? row('send', 'Share invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
                 ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
-                ${activeMeeting.isAdmin ? row('muteAll', 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
+                ${activeMeeting.isAdmin ? row('muteAll', callEveryoneMuted ? 'Unmute everyone' : 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
               </div>`;
           }
