@@ -2865,9 +2865,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             });
             let changed = false;
             convoArrays().flat().forEach(c => {
-              const shouldBeUnread = unreadConvoIds.has(c.id) && activeConvoId !== c.id;
+              // Missed/declined call entries exist only on this device, so the server knows nothing about
+              // them. Without this they were wiped from the count the moment Messaging was opened.
+              if (!c.unread) c.callUnread = 0;
+              const localCalls = (c.unread && !c.read && c.callUnread > 0 && !convoIsInView(c.id)) ? c.callUnread : 0;
+              const serverUnread = unreadConvoIds.has(c.id) && activeConvoId !== c.id;
+              const shouldBeUnread = serverUnread || localCalls > 0;
               if (shouldBeUnread) {
-                const exact = unreadCounts[c.id] || 1;
+                const exact = (serverUnread ? (unreadCounts[c.id] || 1) : 0) + localCalls;
                 if (!c.unread || c.read || c.unreadCount !== exact) {
                   c.unread = true;
                   c.read = false;
@@ -3702,7 +3707,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
             c.preview = text; c.time = formatRequestTime(Date.now());
-            if (dir !== 'out' && !convoIsInView(convoId)) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
+            if (dir !== 'out' && !convoIsInView(convoId)) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; c.callUnread = (c.callUnread || 0) + 1; }
             found.arr.unshift(c);
           }
           if (convoMeta[convoId]) convoMeta[convoId].preview = text;
