@@ -3914,7 +3914,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // Otherwise (another desktop tab, minimised window, phone locked) new messages must still raise the
         // unread count and the notification.
         function convoIsInView(convoId){
-          return activeConvoId === convoId && !document.hidden;
+          return activeConvoId === convoId && !document.hidden && (typeof currentOverlayKind === 'undefined' || currentOverlayKind === 'conversation');
         }
         function clearActiveConvoUnreadIfVisible(){
           if (!activeConvoId || document.hidden) return;

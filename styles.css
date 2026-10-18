@@ -5016,3 +5016,41 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 @media (min-width:1024px){
   .cu-bar-incoming .cu-bar-inner{ max-width:360px !important; margin-left:auto; margin-right:auto; gap:0 !important; justify-content:space-between !important; }
 }
+
+/* ---- Desktop video call: the picture gets the whole screen height; the controls float over its bottom edge as one tidy row ---- */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video){position:relative;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap{
+    flex:1 1 0%;min-height:0;padding:4px 22px 22px calc(var(--nav-width,246px) + 22px);box-sizing:border-box;overflow:hidden !important;
+  }
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) .cu-stage{padding:0;height:100%;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) .cu-tile{border-radius:28px;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar{
+    position:absolute;left:0;right:0;bottom:44px;padding:0 0 0 var(--nav-width,246px);margin:0;pointer-events:none;z-index:5;
+  }
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar .cu-bar-inner{
+    pointer-events:auto;width:auto;max-width:none;flex-wrap:nowrap;justify-content:center;align-items:flex-start;gap:26px;
+    padding:12px 28px 10px;border-radius:44px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    box-shadow:0 14px 40px rgba(15,23,42,.28);
+  }
+  body.dark-mode #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar .cu-bar-inner{background:rgba(24,27,34,.86);}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar .cu-ctl-btn{width:56px;height:56px;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar button.cu-ctl{min-width:64px;gap:7px;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar button.cu-ctl.end{
+    flex:0 0 auto;width:auto !important;height:auto !important;flex-direction:column;margin:0;border-radius:0;background:transparent;box-shadow:none;color:var(--cu-endtxt);
+  }
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar button.cu-ctl.end .cu-ctl-btn{
+    width:56px !important;height:56px !important;background:#ef4444;color:#fff;box-shadow:0 8px 18px rgba(239,68,68,.4);
+  }
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar button.cu-ctl.end .cu-ctl-label{font-size:13px;font-weight:600;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) .cu-pip{width:200px;height:150px;right:20px;top:20px;}
+  /* The name and timer sit over the picture's top edge instead of eating a band above it */
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-header{padding-top:8px;padding-bottom:0;}
+}
+@media (min-width:1024px){
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{width:auto !important;max-width:none !important;flex-wrap:nowrap !important;gap:26px !important;padding:12px 28px 10px !important;justify-content:center !important;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl{flex:0 0 auto !important;min-width:64px;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end{flex:0 0 auto !important;width:auto !important;height:auto !important;margin:0 !important;padding:0 !important;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn{width:56px !important;height:56px !important;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming){padding:0 0 0 var(--nav-width,246px) !important;}
+}
