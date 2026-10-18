@@ -1519,14 +1519,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // "network" flag (for example one started by a message), which made the invite banner show again for
         // someone who is already connected. This checks the table once per person and remembers the answer.
         const confirmedConnectionIds = new Set();
-        const connectionCheckState = {};   // userId -> 'pending' | 'done'
-        function verifyConnectionWith(userId){
-          if (!userId || connectionCheckState[userId]) return;
+        const connectionCheckState = {};
+        const connectionEverChecked = new Set();   // userId -> 'pending' | 'done'
+        function verifyConnectionWith(userId, force){
+          if (!userId) return;
+          if (connectionCheckState[userId] === 'pending') return;
+          if (connectionCheckState[userId] && !force) return;
+          const firstCheck = !connectionCheckState[userId];
           connectionCheckState[userId] = 'pending';
+          let firstCheck_changed = false;
           (async () => {
             try {
+              const sb = getSupabaseClient();
               const myId = await getCurrentUserId();
-              if (!myId) throw new Error('no user');
+              if (!sb || !myId) throw new Error('no user');
               const [a, b] = await Promise.all([
                 sb.from(CONNECTION_REQUESTS_TABLE).select('id').eq('from_user', myId).eq('to_user', userId).eq('status', 'accepted').limit(1),
                 sb.from(CONNECTION_REQUESTS_TABLE).select('id').eq('from_user', userId).eq('to_user', myId).eq('status', 'accepted').limit(1),
@@ -1534,6 +1540,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (a.error || b.error) throw (a.error || b.error);
               if ((a.data && a.data.length) || (b.data && b.data.length)) {
                 confirmedConnectionIds.add(userId);
+                firstCheck_changed = true;
                 // Mend the local chat rows so the rest of the app agrees
                 try { convoArrays().flat().forEach(c => { if (c && c.otherUserId === userId) c.network = true; }); } catch (e) {}
                 try { for (let i = requestConvos.length - 1; i >= 0; i--) if (requestConvos[i].otherUserId === userId) requestConvos.splice(i, 1); } catch (e) {}
@@ -1543,10 +1550,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             } catch (e) {
               connectionCheckState[userId] = 'done';   // could not check (offline): fall back to what we know
             }
-            try { if (typeof refreshConvoConnectBanner === 'function') refreshConvoConnectBanner(); } catch (e) {}
-            try { if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar(); } catch (e) {}
+            connectionEverChecked.add(userId);
+            if (firstCheck || firstCheck_changed) {
+              try { if (typeof refreshConvoConnectBanner === 'function') refreshConvoConnectBanner(); } catch (e) {}
+              try { if (typeof refreshInboxFilterBar === 'function') refreshInboxFilterBar(); } catch (e) {}
+            }
           })();
         }
+        // While an invite banner is on screen, keep asking the connections table. The moment either side accepts,
+        // the banner turns into "You are now connected" and slides away, whatever the local lists say.
+        setInterval(() => {
+          try {
+            const el = document.getElementById('convo-connect-banner');
+            if (!el || el.classList.contains('ccb-done') || document.visibilityState === 'hidden') return;
+            const meta = (typeof convoMeta !== 'undefined' && activeConvoId) ? convoMeta[activeConvoId] : null;
+            if (meta && meta.otherUserId) verifyConnectionWith(meta.otherUserId, true);
+          } catch (e) {}
+        }, 3000);
 
         // Whether *I* currently have an outgoing connection request pending to this person
         function isConnectionRequestPendingTo(userId){
@@ -2590,6 +2610,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error) { console.warn('Message did not sync to Supabase:', error); return null; }
             const isSysEvent = text && text.startsWith(SYS_MSG_PREFIX);
             const meta = convoMeta[convoId];
+            if (!isSysEvent && String(convoId).indexOf('dm-') === 0 && otherUserId) { autoInviteAfterMessage(otherUserId); }
             sendPushTo(otherUserId, isSysEvent ? {
               title: (meta && meta.name) || 'Group update',
               body: text.slice(SYS_MSG_PREFIX.length),
@@ -4473,7 +4494,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (isConvoPersonInMyNetwork(activeConvoId, meta)) return null;
           if (isConvoBlocked(meta)) return null;
           // Ask the connections table before showing an invite, so a real connection never sees one
-          if (connectionCheckState[meta.otherUserId] !== 'done') { verifyConnectionWith(meta.otherUserId); return null; }
+          if (!connectionEverChecked.has(meta.otherUserId)) { verifyConnectionWith(meta.otherUserId); return null; }
           const incoming = requestConvos.find(c => c.otherUserId === meta.otherUserId);
           if (incoming) return { kind: 'incoming', meta, req: incoming };
           if (isConnectionRequestPendingTo(meta.otherUserId)) return { kind: 'sent', meta };
@@ -4524,11 +4545,71 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
           }
         }
+
+        // Someone texted me without a connection request: "Accept invite" connects us right away on the server
+        // (the database rule only allows it for someone who really messaged me). If that is not possible, fall back
+        // to sending my own invitation like before.
+        async function acceptMessageInvite(otherUserId){
+          if (!otherUserId) return false;
+          const sb = getSupabaseClient();
+          let result = null;
+          try {
+            if (sb) {
+              const { data, error } = await sb.rpc('accept_message_invite', { other_user: otherUserId });
+              if (!error) result = data;
+            }
+          } catch (e) {}
+          if (result === 'accepted' || result === 'already') {
+            confirmedConnectionIds.add(otherUserId);
+            connectionEverChecked.add(otherUserId);
+            try {
+              convoArrays().flat().forEach(c => {
+                const oid = (convoMeta[c.id] && convoMeta[c.id].otherUserId) || c.otherUserId;
+                if (c && oid === otherUserId) c.network = true;
+              });
+              for (let i = requestConvos.length - 1; i >= 0; i--) if (requestConvos[i].otherUserId === otherUserId) requestConvos.splice(i, 1);
+            } catch (e) {}
+            try { if (typeof removeFromDiscover === 'function') removeFromDiscover(otherUserId); } catch (e) {}
+            try { if (typeof clearRequestSentLocally === 'function') clearRequestSentLocally(otherUserId); } catch (e) {}
+            try { if (cachedNetworkCount !== null) cachedNetworkCount += 1; } catch (e) {}
+            try { queueSaveUserState(); } catch (e) {}
+            try { if (typeof refreshNetworkCount === 'function') refreshNetworkCount(); } catch (e) {}
+            try { if (typeof currentTab !== 'undefined' && currentTab === 3) renderInboxTab(); } catch (e) {}
+            try { if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges(); } catch (e) {}
+            return true;
+          }
+          if (typeof sendConnectionRequestTo === 'function') return sendConnectionRequestTo(otherUserId);
+          return false;
+        }
+
+        // Texting someone who is not connected sends them a connection invite straight away (once per person).
+        const autoInviteTried = new Set();
+        async function autoInviteAfterMessage(otherUserId){
+          try {
+            if (!otherUserId || autoInviteTried.has(otherUserId)) return;
+            autoInviteTried.add(otherUserId);
+            if (isUserInMyNetwork(otherUserId)) return;
+            const sb = getSupabaseClient();
+            const myId = await getCurrentUserId();
+            if (!sb || !myId) { autoInviteTried.delete(otherUserId); return; }
+            const { data: rows, error } = await sb.from(CONNECTION_REQUESTS_TABLE)
+              .select('status, from_user, to_user')
+              .or(`and(from_user.eq.${myId},to_user.eq.${otherUserId}),and(from_user.eq.${otherUserId},to_user.eq.${myId})`);
+            if (error) { autoInviteTried.delete(otherUserId); return; }
+            const list = rows || [];
+            if (list.some(r => r.status === 'accepted')) { confirmedConnectionIds.add(otherUserId); return; }
+            if (list.some(r => r.status === 'pending')) return;                                   // an invite is already open
+            if (list.some(r => r.status === 'rejected' && r.from_user === myId)) return;          // they said no before: do not nag
+            if (typeof sendConnectionRequestTo === 'function') await sendConnectionRequestTo(otherUserId);
+            try { refreshConvoConnectBanner(); } catch (e) {}
+          } catch (e) { autoInviteTried.delete(otherUserId); }
+        }
+
         function convoBannerAccept(){
           const st = convoConnectState();
           if (!st) return;
           if (st.kind === 'incoming') { acceptRequest(st.req.id); }
-          else if (st.kind === 'stranger' && typeof sendConnectionRequestTo === 'function') { sendConnectionRequestTo(st.meta.otherUserId).then(() => refreshConvoConnectBanner()).catch(() => {}); }
+          else if (st.kind === 'stranger') { acceptMessageInvite(st.meta.otherUserId).then(() => refreshConvoConnectBanner()).catch(() => {}); }
           refreshConvoConnectBanner();
           setTimeout(refreshConvoConnectBanner, 400); setTimeout(refreshConvoConnectBanner, 1200); setTimeout(refreshConvoConnectBanner, 2500);
         }

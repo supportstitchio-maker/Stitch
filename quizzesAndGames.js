@@ -713,14 +713,12 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           mockConfig.count = btn.getAttribute('data-v');
           const row = document.getElementById('mock-count-row');
           if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
-          const st = document.getElementById('mock-stats'); if (st) st.innerHTML = mockStatsHTML();
         }
         function setMockKind(btn){
           if (btn.disabled) return;
           mockConfig.kind = btn.getAttribute('data-v');
           const row = document.getElementById('mock-kind-row');
           if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
-          const st = document.getElementById('mock-stats'); if (st) st.innerHTML = mockStatsHTML();
         }
         function mockTestStartHTML(){
           const n = selectedCourseNames.size;
@@ -740,7 +738,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <div class="ar-h" style="margin-top:16px;">Question types</div>
               <div class="ar-wrap" id="mock-kind-row">${kinds.map(k => `<button class="ar-chip ${mockConfig.kind === k[0] ? 'on' : ''}" data-v="${k[0]}" ${k[2] ? '' : 'disabled style="opacity:.4;pointer-events:none;"'} onclick="setMockKind(this)">${k[1]}</button>`).join('')}</div>
             </div>
-            <div class="ar-stats mb-4" id="mock-stats">${mockStatsHTML()}</div>
             <button onclick="startMockTest('timed')" class="ar-btn p w-full mb-3" style="padding:.95rem 1.2rem;font-size:.95rem;">Start timed test</button>
             <button onclick="startMockTest('self')" class="ar-btn w-full mb-4" style="padding:.9rem 1.2rem;color:var(--pri);border-color:rgba(65,105,225,.3);">Self-paced, no timer</button>
             <div class="text-xs text-gray-400">Either way, leaving this tab or page ends the test early and locks in your score.</div>
