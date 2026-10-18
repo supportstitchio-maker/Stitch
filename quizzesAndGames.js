@@ -1,5 +1,5 @@
 const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
-        let challengeConfig = { timePerQ: 'No limit' };
+        let challengeConfig = { timePerQ: 'No limit', count: '10' };
 
         const CHALLENGE_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
         // ---- Challenge creation + invite/join flow ----
@@ -257,9 +257,13 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           if (challengeScorePollTimer) { clearInterval(challengeScorePollTimer); challengeScorePollTimer = null; }
         }
 
+        function challengeWantedCount(){
+          const v = challengeConfig.count;
+          return (!v || v === 'All') ? Infinity : parseInt(v, 10) || Infinity;
+        }
         function buildChallengeQuestionPool(){
           const pool = courseBank.flatMap(c => c.questions.map(q => Object.assign({ meta: c.name }, q)));
-          return shuffleArray(pool).slice(0, currentPlanLimit('challenge')).map(shuffleMcqOptions);
+          return shuffleArray(pool).slice(0, Math.min(currentPlanLimit('challenge'), challengeWantedCount())).map(shuffleMcqOptions);
         }
 
         function openInviteFriendModal(){
@@ -428,19 +432,38 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }, 2000);
         }
 
-        function waitingForChallengeFriendHTML(){
+        // Lobby: the code, how to invite, and who is in. The challenge starts by itself when your friend joins.
+        function challengeLobbyHTML(code){
+          const me = (typeof profileData !== 'undefined' && (profileData.name || profileData.username)) || 'You';
+          const nQ = Math.min(challengePoolSize(), challengeWantedCount(), 99);
+          const pace = challengeConfig.timePerQ === 'No limit' ? 'No time limit' : challengeConfig.timePerQ + ' per question';
           return `
-            <div class="flex flex-col items-center text-center py-4">
-              <div style="position:relative;width:64px;height:64px;" class="mb-4">
-                <div style="position:absolute;inset:0;border-radius:9999px;background:conic-gradient(from 90deg, ${NAVY}, ${ROYAL} 45%, rgba(65,105,225,0.15) 45%, rgba(65,105,225,0.15) 100%);-webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));animation:classroom-spin 0.9s linear infinite;"></div>
-              </div>
-              <div class="text-xl font-bold text-gray-900 mb-2">Waiting for your friend…</div>
-              <div class="text-sm text-gray-500 mb-6">The challenge starts as soon as they join with your code or link.</div>
-              <div class="w-full">${challengeCodeBoxHTML(waitingForChallengeFriendCode)}</div>
-              <button onclick="openChallengeSendPicker('${waitingForChallengeFriendCode}','waiting')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
-              <button onclick="cancelWaitingForChallengeFriend()" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">Cancel</button>
+            <div class="ar-root">
+            ${challengeSheetHeader('Challenge lobby', 'cancelWaitingForChallengeFriend()')}
+            <div class="ar-lobby-code">
+              <div class="ar-h" style="margin-bottom:6px;">Challenge code</div>
+              <div class="ar-lobby-num"><span>${escapeHtml(code)}</span>
+                <button onclick="copyChallengeCode('${code}')" aria-label="Copy code" class="ar-lobby-cp">${Icon('copy','w-4 h-4')}</button></div>
+              <div class="text-xs mt-2" style="color:var(--sub);">${pace} &middot; ${nQ} question${nQ === 1 ? '' : 's'}</div>
+            </div>
+            <div class="flex gap-3 mb-4">
+              <button onclick="openChallengeSendPicker('${code}','waiting')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
+              <button onclick="copyChallengeLink('${code}')" class="ar-btn flex-1">${Icon('link','w-4 h-4 inline-block mr-1 -mt-0.5')} Copy link</button>
+            </div>
+            <div class="ar-h">In the lobby</div>
+            <div class="ar-lobby-row">
+              <span class="ar-lobby-av" style="background:linear-gradient(135deg,#1e90ff,#4169e1);">${escapeHtml(String(me).charAt(0).toUpperCase() || 'Y')}</span>
+              <b>${escapeHtml(me)}</b><em class="ar-lobby-tag">Host</em>
+            </div>
+            <div class="ar-lobby-row wait">
+              <span class="ar-lobby-av spin"><i></i></span>
+              <b>Waiting for your friend</b>
+            </div>
+            <div class="text-xs mt-3 mb-4" style="color:var(--sub);">It starts the moment they join with your code or link. You can leave this open.</div>
+            <button onclick="cancelWaitingForChallengeFriend()" class="ar-btn w-full">Cancel challenge</button>
             </div>`;
         }
+        function waitingForChallengeFriendHTML(){ return challengeLobbyHTML(waitingForChallengeFriendCode); }
 
         function cancelWaitingForChallengeFriend(){
           clearInterval(waitingForChallengeFriendTimer);
@@ -660,14 +683,68 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           openChallengeModal(mockTestStartHTML());
         }
 
+        // ---- Mock test set up: how many questions, which kinds, then timed or self-paced ----
+        let mockConfig = { count: '20', kind: 'mixed' };
+        const mockCountOptions = ['10', '20', '40', 'All'];
+        function mockSelectedPool(){
+          return courseBank.filter(c => selectedCourseNames.has(c.name)).flatMap(c => c.questions.map(q => Object.assign({ meta: c.name }, q)));
+        }
+        function mockKindFilter(arr, kind){
+          if (kind === 'mcq') return arr.filter(q => q.type !== 'written');
+          if (kind === 'written') return arr.filter(q => q.type === 'written');
+          return arr;
+        }
+        function mockPlannedCount(){
+          const pool = mockKindFilter(mockSelectedPool(), mockConfig.kind).length;
+          const want = mockConfig.count === 'All' ? Infinity : parseInt(mockConfig.count, 10);
+          return Math.min(pool, want, currentPlanLimit('questions'));
+        }
+        function mockLastScoreText(){
+          const h = (typeof mockTestScoreHistory !== 'undefined' && mockTestScoreHistory[0]) || null;
+          return h && h.total ? Math.round(h.correct / h.total * 100) + '%' : '--';
+        }
+        function mockStatsHTML(){
+          const n = mockPlannedCount();
+          return `<div class="ar-stat"><b>${n}</b><span>question${n === 1 ? '' : 's'}</span></div>
+            <div class="ar-stat"><b>${Math.max(1, Math.round(n * examTimerSeconds / 60))}</b><span>min if timed</span></div>
+            <div class="ar-stat"><b>${mockLastScoreText()}</b><span>last score</span></div>`;
+        }
+        function setMockCount(btn){
+          mockConfig.count = btn.getAttribute('data-v');
+          const row = document.getElementById('mock-count-row');
+          if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
+          const st = document.getElementById('mock-stats'); if (st) st.innerHTML = mockStatsHTML();
+        }
+        function setMockKind(btn){
+          if (btn.disabled) return;
+          mockConfig.kind = btn.getAttribute('data-v');
+          const row = document.getElementById('mock-kind-row');
+          if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
+          const st = document.getElementById('mock-stats'); if (st) st.innerHTML = mockStatsHTML();
+        }
         function mockTestStartHTML(){
           const n = selectedCourseNames.size;
+          const all = mockSelectedPool();
+          const mcq = mockKindFilter(all, 'mcq').length, wr = mockKindFilter(all, 'written').length;
+          if (mockConfig.kind === 'written' && !wr) mockConfig.kind = 'mixed';
+          if (mockConfig.kind === 'mcq' && !mcq) mockConfig.kind = 'mixed';
+          const kinds = [['mcq', 'Multiple choice', mcq], ['written', 'Written', wr], ['mixed', 'Mixed', all.length]];
+          const who = mockTestResourceLabel ? escapeHtml(mockTestResourceLabel) : (n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's'));
           return `
+            <div class="ar-root">
             ${challengeSheetHeader('Mock Test')}
-            <div class="text-base text-gray-500 mb-5">${mockTestResourceLabel ? escapeHtml(mockTestResourceLabel) + ' selected' : (n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's')) + ' selected'}. How do you want to take this test?</div>
-            <button onclick="startMockTest('timed')" class="w-full text-white font-bold text-center py-4 rounded-full mb-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('clock','w-4 h-4 inline-block mr-1 -mt-0.5')} Timed · 60s per question</button>
-            <button onclick="startMockTest('self')" class="w-full font-bold text-center py-4 rounded-full mb-4 border" style="color:${NAVY};border-color:rgba(65,105,225,0.3);">Self-paced · no timer</button>
-            <div class="text-sm text-gray-400">Either way, leaving this tab or page ends the test early and locks in your score.</div>`;
+            <div class="text-sm text-gray-500 mb-4">${who} selected. Pick the size and the kind of questions.</div>
+            <div class="ar-card mb-3">
+              <div class="ar-h">Questions</div>
+              <div class="ar-wrap" id="mock-count-row">${mockCountOptions.map(v => `<button class="ar-chip ${mockConfig.count === v ? 'on' : ''}" data-v="${v}" onclick="setMockCount(this)">${v}</button>`).join('')}</div>
+              <div class="ar-h" style="margin-top:16px;">Question types</div>
+              <div class="ar-wrap" id="mock-kind-row">${kinds.map(k => `<button class="ar-chip ${mockConfig.kind === k[0] ? 'on' : ''}" data-v="${k[0]}" ${k[2] ? '' : 'disabled style="opacity:.4;pointer-events:none;"'} onclick="setMockKind(this)">${k[1]}</button>`).join('')}</div>
+            </div>
+            <div class="ar-stats mb-4" id="mock-stats">${mockStatsHTML()}</div>
+            <button onclick="startMockTest('timed')" class="ar-btn p w-full mb-3" style="padding:.95rem 1.2rem;font-size:.95rem;">Start timed test</button>
+            <button onclick="startMockTest('self')" class="ar-btn w-full mb-4" style="padding:.9rem 1.2rem;color:var(--pri);border-color:rgba(65,105,225,.3);">Self-paced, no timer</button>
+            <div class="text-xs text-gray-400">Either way, leaving this tab or page ends the test early and locks in your score.</div>
+            </div>`;
         }
 
         let examTest = null, examMode = 'self', examQIndex = 0, examAnswers = {}, examMarked = {};
@@ -867,10 +944,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           activeChallengeCode = null;
           activeChallengeRole = null;
           challengeOpponentScore = null;
-          const questions = shuffleArray(courseBank
-            .filter(c => selectedCourseNames.has(c.name))
-            .flatMap(c => c.questions.map(q => Object.assign({ meta: c.name }, q))))
-            .slice(0, currentPlanLimit('questions'))
+          const questions = shuffleArray(mockKindFilter(mockSelectedPool(), mockConfig.kind))
+            .slice(0, mockPlannedCount())
             .map(shuffleMcqOptions);
           examTest = { title: 'Mock Test', questions };
           examContext = 'test';
@@ -1809,15 +1884,36 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             closeChallengeModal();
           }, 2000);
         }
+        const challengeCountOptions = ['10', '20', '30', 'All'];
+        function challengePoolSize(){
+          return courseBank.reduce((a, c) => a + c.questions.length, 0);
+        }
+        function challengeCountNote(){
+          const pool = challengePoolSize();
+          const n = Math.min(pool, challengeWantedCount(), 99);
+          return n + ' question' + (n === 1 ? '' : 's') + ' will be used (' + pool + ' ready in your resources).';
+        }
+        function setChallengeCountPill(btn){
+          challengeConfig.count = btn.getAttribute('data-v');
+          const row = document.getElementById('challenge-count-row');
+          if (row) row.querySelectorAll('.ar-chip').forEach(b => b.classList.toggle('on', b === btn));
+          const note = document.getElementById('challenge-count-note');
+          if (note) note.textContent = challengeCountNote();
+        }
         function challengeSetupHTML(){
-          const q = Math.min(buildChallengeQuestionPool().length, 99);
           return `
             <div class="ar-root" style="color:var(--tx)">
             ${challengeSheetHeader('Set Up a Challenge')}
-            <div class="text-sm text-gray-500 mb-4">Questions are pulled from all your uploaded resources (${q} ready). Pick a pace, then share the code with your space.</div>
-            <div class="ar-h">Time per question</div>
-            <div class="ar-chips-row" id="challenge-time-row">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" data-t="${t}" onclick="setChallengeTimePill(this)">${t}</button>`).join('')}</div>
-            <div class="flex gap-3" style="margin-top:20px;">
+            <div class="text-sm text-gray-500 mb-4">Questions come from your uploaded resources. Pick the pace and length, then share the code.</div>
+            <div class="ar-card mb-4">
+              <div class="ar-h">Time per question</div>
+              <div class="ar-wrap" id="challenge-time-row">${challengeTimeOptions.map(t => `<button class="ar-chip ${t === challengeConfig.timePerQ ? 'on' : ''}" data-t="${t}" onclick="setChallengeTimePill(this)">${t}</button>`).join('')}</div>
+              <div class="text-xs mt-2" id="challenge-time-note" style="color:var(--sub);">${challengeTimeNote(challengeConfig.timePerQ)}</div>
+              <div class="ar-h" style="margin-top:18px;">Length</div>
+              <div class="ar-wrap" id="challenge-count-row">${challengeCountOptions.map(v => `<button class="ar-chip ${challengeConfig.count === v ? 'on' : ''}" data-v="${v}" onclick="setChallengeCountPill(this)">${v === 'All' ? 'All' : v + ' questions'}</button>`).join('')}</div>
+              <div class="text-xs mt-2" id="challenge-count-note" style="color:var(--sub);">${challengeCountNote()}</div>
+            </div>
+            <div class="flex gap-3">
               <button id="challenge-cancel-btn" onclick="cancelChallengeSetupWithSpinner()" class="ar-btn flex-1" style="display:flex;align-items:center;justify-content:center;gap:8px;">Cancel</button>
               <button id="challenge-create-btn" onclick="submitCreateChallenge()" class="ar-btn p flex-1">Create</button>
             </div></div>`;
@@ -1836,26 +1932,10 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
             if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
           });
-          openChallengeModal(challengeCreatedHTML(code));
+          startWaitingForChallengeFriend(code);
         }
 
-        function challengeCreatedHTML(code){
-          return `
-            <div class="ar-root">
-            ${challengeSheetHeader('Challenge created!')}
-            <div class="text-sm text-gray-500 mb-4">Share this code with whoever you want to challenge, then start whenever you're ready.</div>
-            <div class="ar-card text-center mb-4" style="background:var(--soft);border:0;">
-              <div class="ar-h" style="margin-bottom:6px;">Challenge code</div>
-              <div class="flex items-center justify-center gap-2" style="font-size:2rem;font-weight:800;letter-spacing:.08em;color:var(--pri);"><span>${code}</span>
-                <button onclick="copyChallengeCode('${code}')" class="p-2 rounded-full" style="background:rgba(65,105,225,.14);color:var(--pri);">${Icon('copy','w-4 h-4')}</button></div>
-              <div class="text-xs mt-2" style="color:var(--sub);">${challengeConfig.timePerQ === 'No limit' ? 'No time limit' : challengeConfig.timePerQ + ' per question'}</div>
-            </div>
-            <div class="flex gap-3 mb-3">
-              <button onclick="openChallengeSendPicker('${code}','created')" class="ar-btn flex-1">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
-              <button onclick="copyChallengeLink('${code}')" class="ar-btn flex-1">${Icon('link','w-4 h-4 inline-block mr-1 -mt-0.5')} Copy link</button>
-            </div>
-            <button onclick="startWaitingForChallengeFriend('${code}')" class="ar-btn p w-full">Wait for Friend &amp; Start</button></div>`;
-        }
+        function challengeCreatedHTML(code){ waitingForChallengeFriendCode = code; return challengeLobbyHTML(code); }
 
         // ---- Exam taking (mock test + challenge). Quiz board contexts keep their own UI ----
         function arPaletteState(i){
