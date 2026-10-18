@@ -5152,3 +5152,13 @@ body.dark-mode #dcnav-theme .dn-sun,body.dark-mode #dcnav-theme .dn-lbl-light{di
 body.dark-mode #dcnav-theme .dn-moon{display:block !important;}
 body.dark-mode #dcnav-theme .dn-lbl-dark{display:block !important;}
 html.dnav-collapsed body #desktop-nav #dcnav-theme .dside-label,html.dnav-collapsed #desktop-nav #dcnav-theme .dside-label{display:none !important;}
+
+
+
+/* Desktop 1:1 video: the picture keeps a natural 16:9 shape and sits centred, instead of stretching across the whole window */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap{display:flex;align-items:center;justify-content:center;}
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap > .cu-tile{
+    width:min(100%, calc((100vh - 125px) * 16 / 9)) !important;height:100% !important;max-width:100% !important;flex:0 0 auto;
+  }
+}

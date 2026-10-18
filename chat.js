@@ -7340,7 +7340,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           applyCallTrackStates();
           if (key === 'muted' || key === 'camOff') broadcastMyCallState();
           // Group tiles show a muted badge on your own tile, so they re-render on mute too
-          if (key === 'camOff' || (key === 'muted' && isGroupCallConvo(callState.convoId))) refreshCallStage();
+          if (key === 'camOff' || key === 'muted') refreshCallStage();
           refreshCallControls();
         }
 
@@ -7657,9 +7657,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function cuPatchCtl(id, o){
           const el = document.getElementById(id);
           if (!el) return;
-          el.className = cuCtlClass(o);
-          el.title = o.title || o.label || '';
-          el.innerHTML = cuCtlInnerHTML(o);
+          const cls = cuCtlClass(o), inner = cuCtlInnerHTML(o);
+          if (el.className !== cls) el.className = cls;
+          const ttl = o.title || o.label || '';
+          if (el.title !== ttl) el.title = ttl;
+          if (el._cuInner !== inner) { el.innerHTML = inner; el._cuInner = inner; }
         }
 
         // One participant tile. o: { media, hasVideo, avatar, bg, name, muted, hand, onclick, style, extra, large }
@@ -7846,9 +7848,38 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           sendCallSignal({ kind: 'state', muted: !!callState.muted, camOff: !!callState.camOff, hand: !!callState.handRaised });
         }
 
+        // Patch a connected 1:1 call in place (name chip, avatar, picture-in-picture, status line) so the
+        // remote video is never rebuilt, which is what made the screen blink on every Mute / Camera tap
+        function patchCallStageInPlace(stage){
+          if (typeof isGroupCallConvo === 'function' && isGroupCallConvo(callState.convoId)) return false;
+          if (!callState.connected) return false;
+          const tmp = document.createElement('div');
+          tmp.innerHTML = callStageHTML();
+          if (callState.type === 'video') {
+            const oldTile = stage.querySelector(':scope .cu-stage > .cu-tile, :scope > .cu-tile');
+            const newTile = tmp.querySelector(':scope > .cu-tile') || tmp.querySelector('.cu-tile');
+            const oldVid = oldTile && oldTile.querySelector(':scope > #call-remote-video');
+            const newVid = newTile && newTile.querySelector(':scope > #call-remote-video');
+            if (!oldTile || !newTile || !oldVid || !newVid) return false;
+            oldVid.className = newVid.className;
+            oldTile.querySelectorAll(':scope > .cu-avatar').forEach(e => e.remove());
+            const newAv = newTile.querySelector(':scope > .cu-avatar');
+            if (newAv) oldVid.after(newAv);
+            const oldChip = oldTile.querySelector(':scope > .cu-chip'), newChip = newTile.querySelector(':scope > .cu-chip');
+            if (oldChip && newChip) oldChip.replaceWith(newChip); else if (oldChip) oldChip.remove(); else if (newChip) oldTile.appendChild(newChip);
+            const oldPip = oldTile.querySelector(':scope > .cu-pip'), newPip = newTile.querySelector(':scope > .cu-pip');
+            if (oldPip && newPip) { oldPip.replaceWith(newPip); attachCallLocalVideo(); }
+            return true;
+          }
+          const oSub = stage.querySelector('.cu-voice-sub'), nSub = tmp.querySelector('.cu-voice-sub');
+          if (oSub && nSub) { oSub.innerHTML = nSub.innerHTML; return true; }
+          return false;
+        }
+
         function refreshCallStage(){
           const stage = document.getElementById('call-stage-wrap');
           if (!stage) return;
+          try { if (patchCallStageInPlace(stage)) return; } catch (e) {}
           stage.innerHTML = callStageHTML();
           attachCallLocalVideo();
           attachCallRemoteVideo();
@@ -7856,7 +7887,21 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function refreshCallControls(){
           const bar = document.getElementById('call-controls-bar');
-          if (bar) bar.innerHTML = callControlsHTML();
+          if (!bar) return;
+          // Update the buttons where they are, so tapping Mute / Camera never rebuilds (and flashes) the bar
+          const mute = document.getElementById('call-mute-btn');
+          const sec = document.getElementById('call-secondary-btn');
+          if (mute && sec && bar.querySelector('.cu-bar-inner')) {
+            const isVideo = callState.type === 'video';
+            cuPatchCtl('call-mute-btn', { id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted });
+            cuPatchCtl('call-secondary-btn', isVideo
+              ? { id: 'call-secondary-btn', onclick: "toggleCallControl('camOff')", icon: callState.camOff ? 'cameraOff' : 'video', label: callState.camOff ? 'Start video' : 'Camera', on: callState.camOff }
+              : { id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker });
+            const more = document.getElementById('meeting-more-btn');
+            if (more && typeof meetingSheet !== 'undefined') cuPatchCtl('meeting-more-btn', { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet });
+            return;
+          }
+          bar.innerHTML = callControlsHTML();
         }
 
         // ---- Stage (1:1 and group) ----
