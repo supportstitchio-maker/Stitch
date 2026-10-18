@@ -3536,7 +3536,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           document.addEventListener('touchstart', e => {
             const r = e.target && e.target.closest ? e.target.closest('.nrow-swipe') : null;
             document.querySelectorAll('.nrow-swipe[data-open="1"]').forEach(o => { if (o !== r) nrowClose(o); });
-            if (!r || e.target.closest('button, .nrow-del')) { row = null; return; }
+            if (!r || window.innerWidth >= 1024 || e.target.closest('button, .nrow-del')) { row = null; return; }
             row = r; inner = r.querySelector('.nrow-in');
             sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; horiz = null; wasOpen = r.dataset.open === '1';
             if (inner) inner.style.transition = 'none';

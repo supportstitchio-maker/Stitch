@@ -5096,3 +5096,42 @@ body.dark-mode .nmenu-item{ color:#e5e7eb; }
 body.dark-mode .nmenu-item svg{ color:#9ca3af; }
 body.dark-mode .nmenu-sep{ background:rgba(255,255,255,.10); }
 body.dark-mode .nmenu-danger, body.dark-mode .nmenu-danger svg{ color:#f87171; }
+
+/* ---- End call: red circle, in line with the other call controls (replaces the full-width bar) ---- */
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end,
+.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end,
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end{
+  flex:1 1 0 !important; width:auto !important; height:auto !important; min-width:0 !important;
+  margin:0 !important; padding:0 !important; border-radius:0 !important;
+  flex-direction:column !important; justify-content:flex-start !important; align-items:center !important;
+  gap:8px !important; background:transparent !important; box-shadow:none !important;
+}
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-btn,
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn{
+  width:56px !important; height:56px !important; border-radius:50% !important;
+  background:#ef4444 !important; color:#fff !important; box-shadow:0 8px 18px rgba(239,68,68,.35) !important;
+}
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-btn svg{width:24px !important;height:24px !important;}
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-label,
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-label{font-size:12px !important;font-weight:500 !important;color:inherit !important;}
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{flex-wrap:nowrap !important;align-items:flex-start !important;gap:0 !important;}
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl{flex:1 1 0 !important;min-width:0 !important;}
+@media (min-width:1024px){
+  #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{max-width:480px !important;}
+}
+
+/* Desktop: no swipe-to-delete on notifications (Delete stays in the three-dots menu) */
+@media (min-width:1024px){
+  .nrow-del{display:none !important;}
+  .nrow-swipe .nrow-in{transform:none !important;}
+}
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-label,
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-label{color:var(--cu-fg,#0f172a) !important;}
+.cu-bar:not(.cu-bar-incoming) .cu-ctl.end .cu-ctl-btn,
+#call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn{width:50px !important;height:50px !important;box-shadow:none !important;}
+
+/* Incoming call screens: everything in Colmeak */
+.cu-screen:has(.cu-bar-incoming), .cu-screen:has(.cu-bar-incoming) *{font-family:'Colmeak','Montserrat',sans-serif !important;}
+.cu-screen:has(.cu-bar-incoming) .cu-voice-name{font-size:26px !important;font-weight:400 !important;}
+.cu-screen:has(.cu-bar-incoming) .cu-voice-sub{font-size:15px;}
+.cu-screen:has(.cu-bar-incoming) .cu-ctl-label,.cu-screen:has(.cu-bar-incoming) .cu-pill{font-weight:400 !important;}

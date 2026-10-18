@@ -5732,18 +5732,18 @@ try {
           // Include cls.members too, not just cls.students
           const idSet = new Set((cls.students || []).map(s => s.id));
           (cls.members || []).forEach(id => { if (id && id !== cls.teacherId) idSet.add(id); });
-          const ids = Array.from(idSet).filter(id => id && !classStudentProfiles[id]);
+          const ids = Array.from(idSet).filter(id => id && !(classStudentProfiles[id] && classStudentProfiles[id].name) && !(classStudentProfiles[id] && classStudentProfiles[id]._t && Date.now() - classStudentProfiles[id]._t < 20000));
           if (!ids.length) return;
+          ids.forEach(id => { if (!classStudentProfiles[id]) classStudentProfiles[id] = {}; classStudentProfiles[id]._t = Date.now(); });
           const sb = getSupabaseClient();
           if (!sb) return;
           try {
-            const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,photo,bio').in('user_id', ids);
+            const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,username,photo,bio').in('user_id', ids);
             (data || []).forEach(p => {
-              classStudentProfiles[p.user_id] = { name: p.name || '', photo: p.photo || null, bio: p.bio || '' };
+              classStudentProfiles[p.user_id] = { name: p.name || p.username || '', photo: p.photo || null, bio: p.bio || '', _t: Date.now() };
             });
-            ids.forEach(id => { if (!classStudentProfiles[id]) classStudentProfiles[id] = {}; });
-            const ov = document.getElementById('overlay');
-            if (ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && classDetailTab === 'people') {
+                        const ov = document.getElementById('overlay');
+            if ((data || []).length && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && classDetailTab === 'people') {
               ov.innerHTML = classDetailHTML();
             }
           } catch (e) {  }
@@ -5883,7 +5883,7 @@ try {
 
         function classStudentName(cls, s){
           const p = s && s.id ? classStudentProfiles[s.id] : null;
-          const own = s && s.name && s.name !== 'Space member' ? s.name : '';
+          const own = s && s.name && s.name !== 'Space member' && s.name !== 'Member' ? s.name : '';
           return own || (p && p.name) || 'Member';
         }
         function classRound1(n){ return Math.round(n * 10) / 10; }
@@ -6415,7 +6415,7 @@ try {
           const list = (classMsgs[cls.id] || []).filter(m => m.student_id === studentId);
           if (!list.length) {
             const isT = cls.role === 'teacher';
-            return `<div class="flex flex-col items-center text-center py-16 text-gray-400 text-sm px-6">${Icon('comment','w-8 h-8')}<div class="mt-3">${isT ? 'No messages yet. Say hi to start the conversation.' : 'No messages yet. Your moderator can text you here, and you can reply.'}</div></div>`;
+            return '';
           }
           let lastDay = '';
           return list.map(m => {
@@ -6464,7 +6464,7 @@ try {
               title = s ? classStudentName(cls, s) : 'Member';
             } else title = classTeacherDisplayName(cls);
           }
-          const header = overlayHeader(`<span class="nm-wrap nm-left" style="display:block;max-width:60vw;"><span class="nm-inner">${escapeHtml(title)}</span></span>`, 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: 'text-xl' });
+          const header = overlayHeader(escapeHtml(title), 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: 'text-xl', titleClass: 'truncate min-w-0' });
           if (!inThread) {
             return `
               <div class="flex-1 flex flex-col overflow-hidden">
@@ -7705,6 +7705,24 @@ try {
           });
         }
 
+        let lectureRingVibId = null;
+        function startLectureRingtone(){
+          stopLectureRingtone();
+          try {
+            if (!(typeof soundMuted !== 'undefined' && soundMuted) && typeof getRingtoneAudio === 'function') {
+              const a = getRingtoneAudio();
+              if (a) { a.currentTime = 0; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); }
+            }
+            const buzz = () => { if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); };
+            buzz(); lectureRingVibId = setInterval(buzz, 4000);
+          } catch (e) {}
+        }
+        function stopLectureRingtone(){
+          try { if (lectureRingVibId) { clearInterval(lectureRingVibId); lectureRingVibId = null; } } catch (e) {}
+          try { if (typeof ringtoneAudioEl !== 'undefined' && ringtoneAudioEl && !(typeof incomingCallInfo !== 'undefined' && incomingCallInfo)) { ringtoneAudioEl.pause(); ringtoneAudioEl.currentTime = 0; } } catch (e) {}
+          try { if (navigator.vibrate && !(typeof incomingCallInfo !== 'undefined' && incomingCallInfo)) navigator.vibrate(0); } catch (e) {}
+        }
+
         function handleIncomingLectureRing(payload){
           if (!payload || !payload.classId || !payload.lecture || !payload.lecture.id) return;
           if (typeof callState !== 'undefined' && callState.convoId) return;
@@ -7712,6 +7730,7 @@ try {
           if (liveLectureState.connected && liveLectureState.lectureId === payload.lecture.id) return;
           incomingLectureCallInfo = payload;
           openOverlay('incomingLectureCall');
+          startLectureRingtone();
           clearTimeout(incomingLectureCallRingTimeout);
           incomingLectureCallRingTimeout = setTimeout(() => declineIncomingLectureCall(), 45000);
           if (typeof addNotif === 'function') {
@@ -7745,7 +7764,7 @@ try {
 
         async function acceptIncomingLectureCall(){
           if (!incomingLectureCallInfo) return;
-          clearTimeout(incomingLectureCallRingTimeout); incomingLectureCallRingTimeout = null;
+          clearTimeout(incomingLectureCallRingTimeout); incomingLectureCallRingTimeout = null; stopLectureRingtone();
           const { classId, lecture } = incomingLectureCallInfo;
           incomingLectureCallInfo = null;
           if (String(classId).indexOf('course:') === 0) {
@@ -7787,7 +7806,7 @@ try {
         }
 
         function declineIncomingLectureCall(fromPopState){
-          clearTimeout(incomingLectureCallRingTimeout); incomingLectureCallRingTimeout = null;
+          clearTimeout(incomingLectureCallRingTimeout); incomingLectureCallRingTimeout = null; stopLectureRingtone();
           if (!incomingLectureCallInfo) { closeOverlay(fromPopState); return; }
           incomingLectureCallInfo = null;
           closeOverlay(fromPopState);
@@ -8454,7 +8473,7 @@ try {
           } catch (e) {}
           list.innerHTML = ids.map(uid => {
             const pr = profiles[uid] || {};
-            const name = pr.name || pr.username || 'Space member';
+            const name = pr.name || pr.username || 'Member';
             const done = lectureAddRinged.has(uid);
             return `<div class="flex items-center gap-3 py-2">
               <div class="w-10 h-10 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0">${avatarMediaHTML(pr.photo || null, 'user', 'w-5 h-5')}</div>
@@ -10781,7 +10800,7 @@ try {
             const profile = classStudentProfiles[id];
             roster.push({
               id,
-              name: (profile && profile.name) || 'Space member',
+              name: (profile && profile.name) || 'Member',
               bio: (profile && profile.bio) || '',
               email: '',
               enrolled: true,
@@ -10793,6 +10812,7 @@ try {
 
         // ---- Class People tab (roster + co-teacher invites) ----
         function classPeopleTabHTML(cls){
+          try { setTimeout(() => loadClassStudentProfiles(cls), 0); } catch (e) {}
           const coTeachers = cls.coTeachers || [];
           const isTeacher = cls.role === 'teacher';
           return `
