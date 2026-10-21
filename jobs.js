@@ -83,7 +83,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           const restoredTabs = document.getElementById('career-tabs-scroller');
           if (restoredTabs && prevTabsLeft) restoredTabs.scrollLeft = prevTabsLeft;
-          scrollActiveCareerTabIntoView();
+          // Only bring the active pill into view on first open; background refreshes must not yank the row back
+          if (!prevTabsScroller) scrollActiveCareerTabIntoView();
         }
 
         let careerMenuArmed = false;
@@ -8484,13 +8485,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           adminHealBusy = false;
         }
 
+        let adminPillCenterNext = false;
         function refreshAdminDashboardDom(){
           if (currentOverlayKind !== 'adminDashboard') return;
           const body = document.getElementById('admin-tab-body');
           if (body) {
             body.innerHTML = adminBodyHTML();
             if (adminMenuOpen) renderAdminMenu();
-            adminPillsRefresh();
+            adminPillsRefresh(adminPillCenterNext); adminPillCenterNext = false;
             const cs = document.getElementById('admin-chart-slot');
             if (cs) {
               if (adminDashboardTab === 'mydashboard' || adminDashboardTab === 'overview') cs.innerHTML = '';
@@ -8505,6 +8507,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function switchAdminDashboardTab(tab){
           adminDashboardTab = tab;
           adminExpandedReviewedId = null;
+          adminPillCenterNext = true;
           refreshAdminDashboardDom();
           if (tab === 'mydashboard') dashboardLoadTab();
           if (tab === 'overview') { if (!adminHistoryLoaded && !adminHistoryLoading) loadAdminHistoryData(); if (typeof loadAdminCreatorData === 'function' && !adminCreatorData.loaded && !adminCreatorData.loading) loadAdminCreatorData(); }
@@ -9199,14 +9202,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             return `<button onclick="switchAdminDashboardTab('${key}')" ${on ? 'data-pill-active="1"' : ''} class="filter-pill flex-shrink-0 ${on ? 'on' : ''}">${label}</button>`;
           }).join('');
         }
-        function adminPillsRefresh(){
+        function adminPillsRefresh(center){
           const row = document.getElementById('admin-pills');
           if (!row) return;
           const keep = row.scrollLeft;
           row.innerHTML = adminPillsHTML();
           row.scrollLeft = keep;
           const act = row.querySelector('[data-pill-active]');
-          if (act && act.scrollIntoView) { try { act.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
+          if (center && act && act.scrollIntoView) { try { act.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
         }
 
         // Same centred header as every other page, plus a + on the right that opens "Post an

@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v265';
+const OFFLINE_CACHE = 'stitch-offline-v266';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
