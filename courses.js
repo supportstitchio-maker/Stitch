@@ -1838,24 +1838,19 @@ try {
           const NAVYD = '#0b1f4d';
           const grad = x.createLinearGradient(CX - 300, 0, CX + 300, 0); grad.addColorStop(0, '#1e90ff'); grad.addColorStop(1, '#4169e1');
           x.fillStyle = '#fffefb'; x.fillRect(0, 0, W, H);
-          // fine wavy rosette (guilloche) rings, in Stitch blue
-          const rosette = (cx, cy, rmax, alpha, n, flip) => {
-            x.save(); x.beginPath(); x.rect(0, 0, W, H); x.clip(); x.translate(cx, cy); x.lineWidth = 1.3;
-            for (let k = 0; k < 46; k++) {
-              const R = 60 + (rmax - 60) * (k / 45), amp = 10 + 26 * (k / 45), ph = k * 0.16 * (flip ? -1 : 1);
-              x.strokeStyle = 'rgba(' + (k % 2 ? '65,105,225' : '30,144,255') + ',' + alpha + ')';
-              x.beginPath();
-              for (let t = 0; t <= Math.PI * 2 + 0.01; t += 0.01) {
-                const rr = R + amp * Math.sin(n * t + ph);
-                const px = Math.cos(t) * rr, py = Math.sin(t) * rr;
-                if (t === 0) x.moveTo(px, py); else x.lineTo(px, py);
-              }
-              x.stroke();
+          // flowing thread waves, in Stitch blue
+          x.save(); x.lineWidth = 1.6;
+          for (let k = 0; k < 34; k++) {
+            const base = H * 0.12 + k * 34;
+            x.strokeStyle = 'rgba(' + (k % 2 ? '65,105,225' : '30,144,255') + ',' + (0.10 + 0.10 * Math.pow(Math.sin(k * 0.5), 2)) + ')';
+            x.beginPath();
+            for (let t = 0; t <= W; t += 8) {
+              const y = base + Math.sin(t / 190 + k * 0.35) * 34 + Math.sin(t / 70 + k) * 8;
+              if (t === 0) x.moveTo(t, y); else x.lineTo(t, y);
             }
-            x.restore();
-          };
-          rosette(W - 190, 250, 560, 0.20, 16, false);
-          rosette(190, H - 230, 520, 0.18, 14, true);
+            x.stroke();
+          }
+          x.restore();
           // soft fade so the text area stays clean
           const fade = x.createRadialGradient(CX, 520, 120, CX, 520, 620); fade.addColorStop(0, 'rgba(255,254,251,0.96)'); fade.addColorStop(1, 'rgba(255,254,251,0)');
           x.fillStyle = fade; x.fillRect(0, 0, W, H);
