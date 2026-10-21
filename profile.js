@@ -1848,7 +1848,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               `)}
               ${stgGroup('Privacy and legal', `
                 ${stgRow('shield','purple','Privacy Policy', '', "openOverlay('privacyPolicy')")}
-                ${stgRow('doc','purple','Terms of Use', '', "openOverlay('termsOfService')")}
+                ${stgRow('doc','purple','Terms of Service', '', "openOverlay('termsOfService')")}
               `)}
               ${stgGroup('Account', `
                 ${stgRow('logout','blue','Sign Out', '', "authSignOut()", {hideArrow:true})}
