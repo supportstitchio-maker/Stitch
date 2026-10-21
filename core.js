@@ -3349,6 +3349,7 @@ function closeEmojiPicker(keepKeyboardClosed){
     if (st.stopPoll) st.stopPoll();
     if (st.ro) { try { st.ro.disconnect(); } catch (e) {} }
     document.removeEventListener('pointerdown', st.outside, true);
+    if (st.outsideUp) document.removeEventListener('pointerup', st.outsideUp, true);
     window.removeEventListener('resize', st.reposition);
     if (window.visualViewport) window.visualViewport.removeEventListener('resize', st.reposition);
     if (window.visualViewport && st.searchGeo) window.visualViewport.removeEventListener('resize', st.searchGeo);
@@ -3605,12 +3606,27 @@ function toggleEmojiPicker(targetId, btn){
   paint();
   document.body.appendChild(el);
   place();
-  const outside = e => { if (el.contains(e.target) || btn.contains(e.target)) return; if (docked && anchor.contains(e.target) && e.target !== input) return; closeEmojiPicker(docked && e.target !== input); };
+  const outsideCore = target => { if (el.contains(target) || btn.contains(target)) return; if (docked && anchor.contains(target) && target !== input) return; closeEmojiPicker(docked && target !== input); };
+  // Like the phone keyboard: swiping through the messages leaves the panel open; only a real tap outside closes it
+  let downPt = null;
+  const outside = e => {
+    if (!docked || e.pointerType === 'mouse') { outsideCore(e.target); return; }
+    if (el.contains(e.target)) { downPt = null; return; }
+    downPt = { x: e.clientX, y: e.clientY, target: e.target };
+  };
+  const outsideUp = e => {
+    if (!downPt) return;
+    const d = downPt; downPt = null;
+    if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10) return;
+    outsideCore(d.target);
+  };
   document.addEventListener('pointerdown', outside, true);
+  document.addEventListener('pointerup', outsideUp, true);
+  document.addEventListener('pointercancel', () => { downPt = null; }, true);
   window.addEventListener('resize', place);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', place);
   if (docked && window.visualViewport) window.visualViewport.addEventListener('resize', searchGeometry);
-  emojiPickerState = { targetId, btn, outside, reposition: place, searchGeo: searchGeometry, stopPoll: function(){ clearInterval(geoPoll); geoPoll = null; }, docked, hadInputMode: input.getAttribute('inputmode') };
+  emojiPickerState = { targetId, btn, outside, outsideUp, reposition: place, searchGeo: searchGeometry, stopPoll: function(){ clearInterval(geoPoll); geoPoll = null; }, docked, hadInputMode: input.getAttribute('inputmode') };
   btn.style.color = '#1e90ff';
   if (desk) { deskLayout(); try { if (window.ResizeObserver) { const ro = new ResizeObserver(() => deskLayout()); ro.observe(ovEl); emojiPickerState.ro = ro; } } catch (e) {} }
   if (docked) {
