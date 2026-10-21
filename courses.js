@@ -11466,7 +11466,7 @@ try {
             ${overlayHeader('Timetable', '20px', null, null, {})}
             <div class="px-5" style="padding-bottom:110px;">
               ${plannerSwitchHTML('timetable')}
-              <div class="no-scrollbar" style="display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;">${pills}</div>
+              <div class="pill-bleed no-scrollbar" style="display:flex;gap:8px;overflow-x:auto;padding-top:10px;padding-bottom:6px;">${pills}</div>
               <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:16px 4px 10px;">${day}${day === today ? ' · Today' : ''}</div>
               ${classes.length === 0
                 ? `<div class="stg-card" style="padding:26px 16px;text-align:center;"><div class="stg-title font-semibold" style="font-size:15px;">Free day</div><div class="stg-sub" style="font-size:12px;margin-top:3px;">No sessions on ${day}. Tap Add a class to set one.</div></div>`
