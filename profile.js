@@ -589,6 +589,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (rightPanelMode === 'gameprofile') return 'Gaming Profile';
           if (rightPanelMode === 'aihistory') return 'Chat History';
           if (rightPanelMode === 'pinned') return 'Pinned Messages';
+          if (rightPanelMode === 'contact') return 'Contact details';
           if (rightPanelMode === 'file') return (lecturePreview && lecturePreview.name) || 'File';
           return '';
         }
@@ -605,6 +606,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             actions.innerHTML = `<div class="flex items-center gap-1">${modeActionsHTML}</div>`;
           }
           if (!body) return;
+          if (window.innerWidth >= 1024) { body.classList.remove('rp-swap'); void body.offsetWidth; body.classList.add('rp-swap'); }
           if (rightPanelMode === 'profile') body.innerHTML = rightPanelProfileHTML();
           else if (rightPanelMode === 'discover') body.innerHTML = rightPanelDiscoverHTML();
           else if (rightPanelMode === 'notebook') body.innerHTML = rightPanelNotebookHTML();
@@ -612,10 +614,106 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           else if (rightPanelMode === 'gameprofile') body.innerHTML = rightPanelGameProfileHTML();
           else if (rightPanelMode === 'aihistory') body.innerHTML = rightPanelAIHistoryHTML();
           else if (rightPanelMode === 'pinned') body.innerHTML = rightPanelPinnedHTML();
+          else if (rightPanelMode === 'contact') body.innerHTML = rightPanelContactHTML();
           else if (rightPanelMode === 'file') {
             body.innerHTML = lecturePreviewHTML();
             if (lecturePreview && lecturePreview.kind === 'pdf' && lecturePreview.status === 'ready') renderPreviewPdfPage();
           } else body.innerHTML = '';
+        }
+
+        // Desktop chat: the panel beside an open conversation shows who you're talking to
+        function openContactPanel(){
+          rightPanelMode = 'contact';
+          const appShellEl = document.getElementById('app-shell');
+          if (appShellEl) appShellEl.classList.add('right-panel-open');
+          try { if (typeof ensureConvoContactDetails === 'function') ensureConvoContactDetails(); } catch (e) {}
+          renderRightPanelBody();
+
+        }
+        function restoreRightPanelAfterChat(){
+          if (window.innerWidth < 1024) return;
+          if (rightPanelMode === 'contact') { if (currentTab === 3) openRightPanel('profile', false); else closeRightPanel(); }
+        }
+        // Beside an open chat: contact details. Name and bio first, then call / mute / favourite tiles,
+        // what has been shared in the chat, shared collaborations, and report / block / delete.
+        window.__rcpTab = window.__rcpTab || 'media';
+        function setContactMediaTab(t){ window.__rcpTab = t; renderRightPanelBody(); }
+        function rightPanelContactHTML(){
+          try {
+            if (typeof activeConvoId === 'undefined' || !activeConvoId) throw new Error('no chat');
+            const meta = activeConvoMetaSafe(activeConvoId);
+            if (!meta) throw new Error('no meta');
+            // Groups keep the original group page
+            if (meta.icon === 'users') return convoProfileHTML(true);
+            const pdCached = (meta.otherUserId && typeof personProfileCache !== 'undefined') ? personProfileCache[meta.otherUserId] : null;
+            const pd = pdCached && pdCached.details ? pdCached.details : null;
+            const name = (pd && pd.name) || convoDisplayName(meta) || 'Contact';
+            const handle = pd && pd.username && pd.username !== name ? '@' + String(pd.username).replace(/^@/, '') : '';
+            const subline = [pd && pd.pronouns ? pd.pronouns : '', handle].filter(Boolean).join(' \u00b7 ');
+            const status = (typeof convoLastSeenText === 'function') ? convoLastSeenText(meta) : '';
+            const photo = (pd && pd.photo) || meta.photo || null;
+            const ini = (String(name).replace(/^@/, '').trim().split(/\s+/).filter(Boolean).map((w, i, arr) => (i === 0 || i === arr.length - 1) ? w.charAt(0) : '').join('') || 'S').toUpperCase().slice(0, 2);
+            const av = photo
+              ? `<img src="${escapeHtml(photo)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()">`
+              : escapeHtml(ini);
+            const blocked = isConvoBlocked(meta);
+            const favorited = isConvoFavorite(activeConvoId);
+            const notifOn = isConvoNotifEnabled(activeConvoId);
+            const reported = isConvoReported(activeConvoId);
+            const { images, docs, links } = collectConvoMedia(activeConvoId);
+            const tab = window.__rcpTab || 'media';
+            const tile = (cls, onclick, icon, label) => `<button type="button" onclick="${onclick}" class="rcp-act ${cls || ''}">${Icon(icon,'w-5 h-5')}<span>${label}</span></button>`;
+            let body = '';
+            if (tab === 'media') {
+              const shown = images.slice(-8).reverse();
+              body = shown.length ? `<div class="rcp-grid">${shown.map(f => {
+                const u = f.url || f.dataUrl || '';
+                const isImg = f.type && f.type.startsWith('image/') && u;
+                return `<div onclick="openConvoMediaLinksDocs()" class="rcp-cell">${isImg ? `<img src="${escapeHtml(u)}" alt="" loading="lazy">` : Icon('video','w-5 h-5')}</div>`;
+              }).join('')}</div>` : '<div class="rcp-empty">No photos or videos yet.</div>';
+            } else if (tab === 'links') {
+              body = links.length ? links.slice(-6).reverse().map(l => `<button type="button" onclick="openExternalUrl('${escapeForJsAttr(String(l).startsWith('http') ? String(l) : 'https://' + String(l))}')" class="rcp-item"><span class="rcp-ic">${Icon('link','w-4 h-4')}</span><span class="rcp-it"><b>${escapeHtml(String(l).replace(/^https?:\/\//, ''))}</b></span></button>`).join('') : '<div class="rcp-empty">No links yet.</div>';
+            } else {
+              body = docs.length ? docs.slice(-6).reverse().map(d => `<button type="button" onclick="openConvoMediaLinksDocs(); setConvoMediaTab('docs')" class="rcp-item"><span class="rcp-ic">${Icon('doc','w-4 h-4')}</span><span class="rcp-it"><b>${escapeHtml(d.name || 'Document')}</b></span></button>`).join('') : '<div class="rcp-empty">No documents yet.</div>';
+            }
+            const tabBtn = (key, label, n) => `<button type="button" onclick="setContactMediaTab('${key}')" class="rcp-tab ${tab === key ? 'on' : ''}">${label}<em>${n}</em></button>`;
+            const collabs = (typeof collabConvos !== 'undefined') ? collabConvos : [];
+            const collabHtml = collabs.length
+              ? collabs.map(c => `<button type="button" onclick="openConversation('${c.id}')" class="rcp-item"><span class="rcp-ic">${Icon('users','w-4 h-4')}</span><span class="rcp-it"><b>${escapeHtml(c.name)}</b>${c.members ? `<small>${c.members.length} members</small>` : ''}</span></button>`).join('')
+              : `<div class="rcp-empty">No collaborations with ${escapeHtml(meta.name)} yet.</div>`;
+            const row = (cls, fn, icon, label) => `<button type="button" onclick="${fn}" class="rcp-row ${cls}">${Icon(icon,'w-4 h-4')}<span>${label}</span></button>`;
+            return `
+              <div class="rcp">
+                <div class="rcp-top">
+                  <div class="rcp-av">${av}</div>
+                  <div class="rcp-id">
+                    <div class="rcp-nm">${escapeHtml(name)}</div>
+                    ${subline ? `<div class="rcp-sub">${escapeHtml(subline)}</div>` : ''}
+                    ${status ? `<div id="convo-profile-status" class="rcp-sub">${escapeHtml(status)}</div>` : ''}
+                  </div>
+                </div>
+                ${pd && pd.bio ? `<div class="rcp-bio">${escapeHtml(pd.bio)}</div>` : ''}
+                ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
+                <div class="rcp-acts">
+                  ${tile('', `startCall(activeConvoId,'video')`, 'video', 'Video')}
+                  ${tile('', `startCall(activeConvoId,'audio')`, 'phoneOutline', 'Voice')}
+                  ${tile(notifOn ? '' : 'on', 'toggleConvoNotifPref()', 'bellOutline', notifOn ? 'Mute' : 'Muted')}
+                  ${tile(favorited ? 'on' : '', 'toggleFavoriteConvo()', 'star', favorited ? 'Favourited' : 'Favourite')}
+                </div>
+                <div class="rcp-sec"><b>Shared in this chat</b><button type="button" onclick="openConvoMediaLinksDocs()">See all</button></div>
+                <div class="rcp-tabs">${tabBtn('media','Media',images.length)}${tabBtn('links','Links',links.length)}${tabBtn('docs','Docs',docs.length)}</div>
+                ${body}
+                <div class="rcp-sec" style="margin-top:20px"><b>Collaborations together</b></div>
+                ${collabHtml}
+                <div class="rcp-danger">
+                  ${row('', 'reportConvo()', 'flag', reported ? 'Reported' : 'Report')}
+                  ${row('red', 'toggleBlockFromConvoProfile()', 'block', blocked ? 'Unblock ' + escapeHtml(meta.name || '') : 'Block ' + escapeHtml(meta.name || ''))}
+                  ${row('red', 'deleteConvoChat()', 'trash', 'Delete chat')}
+                </div>
+              </div>`;
+          } catch (e) {
+            return '<div class="p-5 text-sm text-gray-500 text-center">Open a conversation to see the contact here.</div>';
+          }
         }
 
         function rightPanelProfileHTML(){

@@ -68,7 +68,7 @@ let studyFabMenuOpen = false;
                 <h1 class="text-3xl font-bold font-display grad-text truncate">Workspace</h1>
               </div>`}
               <div class="classroom-toggle-wrap seg-bar mb-5">
-                <button onclick="setClassroomAreaTab('classes')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'classes' ? 'on' : ''}">My Spaces</button>
+                <button onclick="setClassroomAreaTab('classes')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'classes' ? 'on' : ''}"><span class="seg-lbl-m">My Spaces</span><span class="seg-lbl-d">Spaces</span></button>
                 <button onclick="setClassroomAreaTab('courses')" class="seg-btn classroom-toggle-pill ${classroomAreaTab === 'courses' ? 'on' : ''}">Courses</button>
               </div>
               <div class="classroom-tab-panel ${(window.__studyNoSlide || !classroomAreaTabSlideDir) ? '' : (classroomAreaTabSlideDir === 'left' ? 'classroom-tab-slide-left' : 'classroom-tab-slide-right')}">

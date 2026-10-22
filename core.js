@@ -1721,11 +1721,33 @@
           const p = (typeof profileData !== 'undefined' && profileData) ? profileData : {};
           return (p.name || '').trim() || (p.username ? '@' + String(p.username).replace(/^@/, '') : 'Your profile');
         }
+        function dnavInitials(){
+          const nm = dnavDisplayName().replace(/^@/, '').trim();
+          const parts = nm.split(/\s+/).filter(Boolean);
+          let ini = '';
+          if (parts.length >= 2) ini = parts[0].charAt(0) + parts[parts.length - 1].charAt(0);
+          else if (parts.length === 1) ini = parts[0].slice(0, 2);
+          return (ini || 'S').toUpperCase();
+        }
         function dnavAvatarHTML(){
           const p = (typeof profileData !== 'undefined' && profileData) ? profileData : {};
           const photo = photoIsReady(p.photo) ? p.photo : null;
-          const ini = (dnavDisplayName().replace(/^@/, '').trim().charAt(0) || 'S').toUpperCase();
+          const ini = dnavInitials();
           return `<span class="dnav-av">${photo ? `<img src="${photo}" alt="" onerror="this.remove()">` : ''}<span class="dnav-av-ini">${escapeHtml(ini)}</span></span>`;
+        }
+        // Top-strip search: opens the Discover panel and filters it as you type
+        function dtopSearchFocus(){
+          if (typeof rightPanelMode !== 'undefined' && rightPanelMode !== 'discover' && typeof openRightPanel === 'function') openRightPanel('discover', false);
+        }
+        function dtopSearchInput(v){
+          if (typeof rightPanelMode === 'undefined' || rightPanelMode !== 'discover') dtopSearchFocus();
+          if (typeof onDiscoverSearchInput === 'function') onDiscoverSearchInput(v);
+          const side = document.getElementById('discover-search-input');
+          if (side && side.value !== v) side.value = v;
+        }
+        function dtopGreeting(){
+          const h = new Date().getHours();
+          return h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
         }
         function updateNavProfileIcon(){
           const navBtn = document.getElementById('nav-4-icon');
@@ -1734,6 +1756,12 @@
           if (dNavBtn) dNavBtn.innerHTML = dnavAvatarHTML();
           const dNavName = document.getElementById('dnav-pname');
           if (dNavName) dNavName.textContent = dnavDisplayName();
+          const dTopAv = document.getElementById('dtop-av');
+          if (dTopAv) dTopAv.innerHTML = dnavAvatarHTML();
+          const dTopName = document.getElementById('dtop-name');
+          if (dTopName) dTopName.textContent = dnavDisplayName();
+          const dTopGreet = document.getElementById('dtop-greet');
+          if (dTopGreet) dTopGreet.textContent = dtopGreeting();
           const dcNavBtn = document.getElementById('dcnav-profile-icon');
           if (dcNavBtn) dcNavBtn.innerHTML = navProfileIconHTML('w-5 h-5 dnav-icon dnav-avatar', false);
         }
@@ -1818,7 +1846,7 @@
           applyDesktopNavState(next);
           try { localStorage.setItem('stitchDnavCollapsed', next ? '1' : '0'); } catch (e) {}
         }
-        try { applyDesktopNavState(localStorage.getItem('stitchDnavCollapsed') === '1'); } catch (e) {}
+        try { applyDesktopNavState(false); } catch (e) {}
 
         // ---- Main app shell render (nav bars, floating pill, layout) ----
         function renderApp() {
@@ -1830,44 +1858,44 @@
        pulls out to show labels on hover, Instagram-sidebar style, pinned to
        the left edge instead of living in the top bar or bottom tab bar. -->
   <div id="desktop-nav">
-    <div class="dside-brand" onclick="switchTab(0)">
-      <img class="dside-wordmark" src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:62px;width:auto;object-fit:contain;">
-      <img class="dside-mini" src="assets/landing-1.png" alt="Stitch">
-      <button type="button" id="dnav-toggle" class="dnav-toggle" onclick="event.stopPropagation();toggleDesktopNav()" title="Collapse menu" aria-label="Collapse menu"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg></button>
+    <div id="dnav-main-list" class="dn-grp">
+    <button onclick="switchTab(0)" class="dnav-item" id="dnav-0" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
+    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1" title="Explore">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
+    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3" title="Messages">${Icon('commentOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace">${Icon('gridOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="openOverlay('profileAnalytics')" class="dnav-item" id="dnav-analytics" title="Analytics">${Icon('trendingOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
     </div>
-    <div id="dnav-main-list">
-    <button onclick="switchTab(0)" class="dnav-item" id="dnav-0">${IconBold('home','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
-    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
-    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3">${IconBold('comment','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
-    <div style="flex:1;"></div>
-    <div class="dside-group-label">Activity</div>
-    <button onclick="openRightPanel('profile');openOverlay('notifications')" class="dnav-item" id="dnav-notif" title="Notifications">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadNotifCount() ? `<span id="dnav-notif-badge">${unreadNotifCount()}</span>` : ''}</button>
-    <button onclick="openOverlay('profileAnalytics')" class="dnav-item dnav-pill">${IconBold('trending','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item dnav-pill" id="dnav-settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
-    <button onclick="morphPlusIcon('dnav-create-icon');openOverlay('create')" class="dnav-item" id="dnav-create" title="Create"><span id="dnav-create-icon" class="plus-morph-icon">${IconBold('plus','dnav-icon dnav-icon-lg')}</span><span class="dside-label">Create</span></button>
-    <div class="dside-divider"></div>
+    <!-- Space tools: shown in place of the main group while a Space is open.
+         Workspace sits on top and takes you back out to the Spaces list. -->
+    <div id="dnav-classroom-list" class="dn-grp">
+    <button onclick="switchTab(0)" class="dnav-item" id="dcnav-back" title="Back to main menu">${Icon('gridOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources" title="Resources">${Icon('folderOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
+    <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice" title="Practice">${Icon('editOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
+    <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai" title="Stitch Bot">${Icon('botOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
+    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif" title="Notice Board">${Icon('bellOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
+    </div>
+    <div id="dnav-bottom" class="dn-grp">
+    <div id="dnav-themepair" role="group" aria-label="Theme">
+      <button type="button" id="dnav-theme-light" class="dnav-item dn-th" onclick="setThemeQuick('light')" title="Light mode" aria-label="Light mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="dnav-icon"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button>
+      <button type="button" id="dnav-theme-dark" class="dnav-item dn-th" onclick="setThemeQuick('dark')" title="Dark mode" aria-label="Dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="dnav-icon"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg></button>
+    </div>
+    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item" id="dnav-settings" title="Settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <div id="dnav-4" class="dnav-item dnav-profile" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
       <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span>
-      <span class="dside-label dnav-pinfo"><b id="dnav-pname">${escapeHtml(dnavDisplayName())}</b><small>View profile</small></span>
-      <button type="button" id="dnav-theme" class="dnav-toggle dnav-theme" onclick="event.stopPropagation();toggleThemeQuick()" title="Switch theme" aria-label="Switch theme"><svg class="dn-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><svg class="dn-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg></button>
     </div>
     </div>
-    <!-- Workspace sub-nav: only shown (in place of the main tabs above)
-         while Workspace is the active tab. The rest of the app isn't
-         reachable from the rail while this is showing -- clicking the
-         Stitch logo (always visible above) is the way back to Home. -->
-    <div id="dnav-classroom-list">
-    <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources">${IconBold('folder','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
-    <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice">${IconBold('edit','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
-    <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai">${IconBold('bot','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
-    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif">${IconBold('bell','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
-    <div style="flex:1;"></div>
-    <div class="dside-divider"></div>
-    <button onclick="toggleThemeQuick()" class="dnav-item dnav-pill" id="dcnav-theme" aria-label="Switch between light and dark mode">
-      <svg class="dn-sun dnav-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
-      <svg class="dn-moon dnav-icon w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg>
-      <span class="dside-label dn-lbl-light">Light mode</span><span class="dside-label dn-lbl-dark">Dark mode</span></button>
+  </div>
+  <!-- Desktop top strip: logo, search, bell, New and the person's name sit straight on the page
+       background (no bar). Hidden on phones, which keep #top-bar. -->
+  <div id="dtop">
+    <img id="dtop-logo" class="dtop-logo" src="${STITCH_WORDMARK_GRADIENT}" data-logo-light="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" onclick="switchTab(0)">
+    <label id="dtop-search" class="dtop-search" aria-label="Search people">${Icon('search','w-4 h-4')}<input id="dtop-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search people" onfocus="dtopSearchFocus()" oninput="dtopSearchInput(this.value)"></label>
+    <div class="dtop-spacer"></div>
+    <button type="button" id="dtop-bell" class="dtop-bell" onclick="openRightPanel('profile');openOverlay('notifications')" title="Notifications" aria-label="Notifications">${Icon('bellOutline','w-5 h-5')}${unreadNotifCount() ? `<span id="dtop-bell-badge">${unreadNotifCount()}</span>` : ''}</button>
+    <button type="button" id="dtop-new" class="dtop-new" onclick="morphPlusIcon('dtop-new-icon');openOverlay('create')">${IconBold('plus','w-4 h-4')}<span>New</span></button>
+    <div id="dtop-me" class="dtop-me" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
+      <span id="dtop-av" class="dtop-av">${dnavAvatarHTML()}</span>
+      <span class="dtop-who"><small id="dtop-greet">${dtopGreeting()}</small><b id="dtop-name">${escapeHtml(dnavDisplayName())}</b></span>
     </div>
   </div>
   <!-- Desktop-only right panel: Telegram-style info column pinned to the
@@ -2508,7 +2536,15 @@
         }
 
         // ---- Tab switching ----
+        // Desktop: the page panel eases in when you change tabs (see .pg-in in styles.css)
+        function deskPageAnim(){
+          if (window.innerWidth < 1024) return;
+          const sc = document.getElementById('screen');
+          if (!sc) return;
+          sc.classList.remove('pg-in'); void sc.offsetWidth; sc.classList.add('pg-in');
+        }
         function switchTab(n, fromPopState) {
+          try { if (n !== currentTab) deskPageAnim(); } catch (e) {}
           // Tabs are locked while the Home skeleton is still loading after login/sign-up
           const lockedShell = document.getElementById('app-shell');
           if (lockedShell && lockedShell.classList.contains('boot-locked') && n !== 0) return;
@@ -3257,7 +3293,7 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   function place(el){
     var w = el.offsetWidth || 272, h = el.offsetHeight || 200, vw = window.innerWidth, vh = window.innerHeight;
     var r = (lastRect && Date.now() - lastAt < 4000) ? lastRect : { left: vw - 60, right: vw - 24, top: 56, bottom: 72 };
-    var left = (r.left + r.right) / 2 > vw / 2 ? r.right - w : r.left;
+    var left = (r.right - w >= 12 || (r.left + r.right) / 2 > vw / 2) ? r.right - w : r.left;
     left = Math.max(12, Math.min(left, vw - w - 12));
     var top = r.bottom + 8;
     if (top + h > vh - 12) top = Math.max(12, r.top - h - 8);

@@ -92,6 +92,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;meetingInline=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
               ${row("toggleInboxViewFilter('pinned')", 'pin', 'Pinned', inboxViewFilter === 'pinned')}
+              ${row("closeInboxFilterMenuDom();selectMode=true;selectedConvos.clear();renderInboxTab()", 'check', 'Select chats', false)}
             </div>`;
         }
 
@@ -1313,10 +1314,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // Puts the filter pills back where they were, then nudges the selected pill fully into view
         // (e.g. tapping "Requests" at the right edge no longer jumps the row back to the start).
-        function restoreInboxPillScroll(prevLeft){
+        let inboxPillNudge = false;
+        function restoreInboxPillScroll(prevLeft, nudge){
           const row = document.getElementById('inbox-filterbar-row');
           if (!row) return;
           if (prevLeft != null) row.scrollLeft = prevLeft;
+          // Only bring the selected pill into view right after tapping a pill; background refreshes must leave the row where the finger left it
+          if (!nudge) return;
           const active = row.querySelector('[data-pill-active="1"]');
           if (!active) return;
           const rowRect = row.getBoundingClientRect();
@@ -1360,7 +1364,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>
             <div class="divide-y" id="inbox-list">${inboxContent()}</div>`;
           stickBarsStack(['inbox-titlebar','inbox-searchbar','inbox-filterbar']);
-          restoreInboxPillScroll(prevPillScrollLeft);
+          restoreInboxPillScroll(prevPillScrollLeft, inboxPillNudge); inboxPillNudge = false;
           if (prevInboxScrollTop) {
             const restoredScreenEl = document.getElementById('screen');
             if (restoredScreenEl) {
@@ -1712,6 +1716,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function inboxFilterTab(key){
           // "Meetings" shows Live / Scheduled + your meetings right here under the tab (no extra page)
           inboxFilter = key;
+          inboxPillNudge = true;
           inboxViewFilter = 'all';
           if (key === 'meetings') loadMyUpcomingMeetings();
           renderInboxTab();
@@ -2047,20 +2052,37 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
             const stillPendingIds = new Set(rows.map(r => r.id));
             let removedAny = false;
+            const goneNotifIds = [];
             for (let i = requestConvos.length - 1; i >= 0; i--) {
               const c = requestConvos[i];
               if (c.connectionRequestId && !stillPendingIds.has(c.connectionRequestId)) {
                 requestConvos.splice(i, 1);
-                if (typeof syncConnectNotif === 'function') syncConnectNotif({ requestId: c.connectionRequestId || c.id }, 'remove');
-                else if (typeof deleteNotif === 'function') deleteNotif(c.id);
+                goneNotifIds.push(c.connectionRequestId || c.id);
                 removedAny = true;
               }
             }
-            // Orphans: an unanswered request notification whose request is no longer pending (the
-            // sender withdrew it) must not linger even if its Requests row is already gone
-            if (typeof notifData !== 'undefined' && Array.isArray(notifData) && typeof syncConnectNotif === 'function') {
+            // Orphans: a notification still waiting for an answer whose request is no longer pending
+            if (typeof notifData !== 'undefined' && Array.isArray(notifData)) {
               notifData.filter(n => n && n.type === 'connect_request' && !n.connectionStatus && !stillPendingIds.has(n.connectionRequestId || n.id))
-                .forEach(n => syncConnectNotif({ requestId: n.id }, 'remove'));
+                .forEach(n => goneNotifIds.push(n.connectionRequestId || n.id));
+            }
+            // A request that is no longer pending was either answered (the notification stays, shown as
+            // Accepted / Declined) or withdrawn by the sender (the notification goes). Ask the database which.
+            if (goneNotifIds.length && typeof syncConnectNotif === 'function') {
+              const ids = Array.from(new Set(goneNotifIds));
+              let statusById = null;
+              try {
+                const { data: goneRows, error: goneErr } = await sb.from(CONNECTION_REQUESTS_TABLE).select('id,status').in('id', ids);
+                if (!goneErr && Array.isArray(goneRows)) { statusById = {}; goneRows.forEach(r => { statusById[r.id] = r.status; }); }
+              } catch (e) {}
+              if (statusById) {
+                ids.forEach(id => {
+                  const st = statusById[id];
+                  if (st === 'accepted') syncConnectNotif({ requestId: id }, 'accepted');
+                  else if (st === 'rejected') syncConnectNotif({ requestId: id }, 'declined');
+                  else if (!st) syncConnectNotif({ requestId: id }, 'remove');
+                });
+              }
             }
             if (removedAny) { queueSaveUserState(); renderInboxTab(); }
 
@@ -4122,6 +4144,71 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
         }
 
+
+        // ---- Search in chat ----
+        let __csHits = [], __csIdx = -1;
+        function convoSearchClearMarks(){
+          const log = document.getElementById('convo-log'); if (!log) return;
+          log.querySelectorAll('mark.csearch-hit').forEach(m => { const t = document.createTextNode(m.textContent); m.replaceWith(t); });
+          log.normalize();
+          __csHits = []; __csIdx = -1;
+        }
+        function openConvoSearch(){
+          const wrap = document.getElementById('convo-log-wrap'); if (!wrap) return;
+          let bar = document.getElementById('convo-search-bar');
+          if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'convo-search-bar';
+            bar.innerHTML = `<span class="csb-ic">${Icon('search','w-4 h-4')}</span>
+              <input id="convo-search-input" type="text" placeholder="Search in this chat" autocomplete="off" oninput="convoSearchRun(this.value)" onkeydown="if(event.key==='Enter'){convoSearchStep(event.shiftKey?-1:1)}else if(event.key==='Escape'){closeConvoSearch()}">
+              <span id="convo-search-count" class="csb-count"></span>
+              <button onclick="convoSearchStep(-1)" title="Previous" class="csb-b">&#8593;</button>
+              <button onclick="convoSearchStep(1)" title="Next" class="csb-b">&#8595;</button>
+              <button onclick="closeConvoSearch()" title="Close" class="csb-b">${Icon('close','w-4 h-4')}</button>`;
+            wrap.appendChild(bar);
+          }
+          bar.style.display = 'flex';
+          const inp = document.getElementById('convo-search-input'); if (inp) { inp.focus(); inp.select(); }
+        }
+        function closeConvoSearch(){
+          convoSearchClearMarks();
+          const bar = document.getElementById('convo-search-bar'); if (bar) bar.remove();
+        }
+        function convoSearchRun(q){
+          convoSearchClearMarks();
+          const cnt = document.getElementById('convo-search-count');
+          q = String(q || '').trim().toLowerCase();
+          const log = document.getElementById('convo-log');
+          if (!q || !log) { if (cnt) cnt.textContent = ''; return; }
+          const walker = document.createTreeWalker(log, NodeFilter.SHOW_TEXT, { acceptNode: n => (n.nodeValue && n.nodeValue.toLowerCase().includes(q) && !/^(SCRIPT|STYLE|BUTTON)$/.test(n.parentNode.nodeName)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+          const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+          nodes.forEach(n => {
+            const txt = n.nodeValue, low = txt.toLowerCase(), frag = document.createDocumentFragment();
+            let i = 0, at;
+            while ((at = low.indexOf(q, i)) !== -1) {
+              if (at > i) frag.appendChild(document.createTextNode(txt.slice(i, at)));
+              const m = document.createElement('mark'); m.className = 'csearch-hit'; m.textContent = txt.slice(at, at + q.length); frag.appendChild(m);
+              i = at + q.length;
+            }
+            if (i < txt.length) frag.appendChild(document.createTextNode(txt.slice(i)));
+            n.replaceWith(frag);
+          });
+          __csHits = Array.from(log.querySelectorAll('mark.csearch-hit'));
+          __csIdx = __csHits.length ? __csHits.length - 1 : -1;
+          convoSearchShow();
+        }
+        function convoSearchStep(d){
+          if (!__csHits.length) return;
+          __csIdx = (__csIdx + d + __csHits.length) % __csHits.length;
+          convoSearchShow();
+        }
+        function convoSearchShow(){
+          const cnt = document.getElementById('convo-search-count');
+          __csHits.forEach((m, i) => m.classList.toggle('on', i === __csIdx));
+          if (cnt) cnt.textContent = __csHits.length ? ((__csIdx + 1) + ' of ' + __csHits.length) : 'No results';
+          const m = __csHits[__csIdx]; if (m && m.scrollIntoView) m.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+
         function closeConvoOptionsMenuThen(fn){
           const menu = document.getElementById('convo-options-menu');
           const backdrop = document.getElementById('convo-options-menu-backdrop');
@@ -4219,6 +4306,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return { images, docs, links };
         }
 
+        // Back from the shared-media page: beside the chat list (desktop) it returns to the chat, otherwise to the contact page
+        function convoMediaBack(){
+          if (typeof rightPanelMode !== 'undefined' && rightPanelMode === 'contact') { closeConvoProfile(); return; }
+          openConvoProfile();
+        }
         function openConvoMediaLinksDocs(){
           window.__cmTab = 'media';
           const ov = document.getElementById('overlay');
@@ -4302,7 +4394,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </style>
             <div class="flex-1 overflow-y-auto pb-8" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
               <div class="flex items-center gap-4 px-5" style="padding-top:var(--top-safe-pad);padding-bottom:10px;">
-                <button onclick="openConvoProfile()" class="cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <button onclick="convoMediaBack()" class="cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <div class="font-semibold text-lg font-display truncate grad-text">${escapeHtml(meta.name || 'Conversation')}</div>
               </div>
               <div class="cm-tabs flex gap-2 px-5 py-2 overflow-x-auto">${tabBtn('media','Media',images.length)}${tabBtn('docs','Docs',docs.length)}${tabBtn('links','Links',links.length)}</div>
@@ -4344,6 +4436,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               links: Array.isArray(data.links) ? data.links : []
             });
             personProfileCache[uid] = { ts: Date.now(), network: prev ? prev.network : undefined, details };
+            if (typeof rightPanelMode !== 'undefined' && rightPanelMode === 'contact' && activeConvoId && convoMeta[activeConvoId] && convoMeta[activeConvoId].otherUserId === uid) renderRightPanelBody();
             const m2 = convoMeta[activeConvoId];
             const sc = document.getElementById('convo-profile-scroll');
             if (collabProfileOverlayOpen && sc && m2 && m2.otherUserId === uid) {
@@ -4364,6 +4457,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function renderConvoProfile(){
+          if (typeof rightPanelMode !== 'undefined' && rightPanelMode === 'contact') { renderRightPanelBody(); return; }
           collabProfileOverlayOpen = true;
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = convoProfileHTML();
@@ -4382,7 +4476,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           initConvoJumpToLatestButton();
         }
 
-        function convoProfileHTML(){
+        function convoProfileHTML(embed){
           const meta = activeConvoMetaSafe(activeConvoId);
           const isGroup = meta.icon === 'users';
           const blocked = isConvoBlocked(meta);
@@ -4411,11 +4505,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               body.dark-mode .cp-chip{background:#2a2a2a;color:#d1d5db;}
               @media (prefers-reduced-motion: reduce){.cp-rise{animation:none;}}
             </style>
-            <div id="convo-profile-scroll" class="flex-1 overflow-y-auto" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
-              <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
+            <div id="convo-profile-scroll" class="${embed ? '' : 'flex-1 overflow-y-auto'}" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+              ${embed ? '' : `<div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
                 <button onclick="closeConvoProfile()" class="w-10 h-10 flex items-center justify-center cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <span class="font-bold truncate grad-text" style="margin-left:6px;text-align:left;font-family:'Colmeak','Montserrat',sans-serif;font-size:20px;">${isGroup ? 'Group info' : 'Contact info'}</span>
-              </div>
+              </div>`}
               <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;">
                 <div class="flex items-center gap-5 mb-4">
                   <div class="relative flex-shrink-0">
@@ -4443,7 +4537,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
                 `}
                 <div class="flex w-full" style="gap:12px;">
-                  <button onclick="closeConvoProfile()" class="cp-act cp-press">${gradIcon(Icon('comment','w-6 h-6'))}<span class="l">Message</span></button>
+                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-act cp-press">${gradIcon(Icon('comment','w-6 h-6'))}<span class="l">Message</span></button>`}
                   ${isGroup ? `
                     <button onclick="openCollabMembers()" class="cp-act cp-press">${gradIcon(Icon('users','w-6 h-6'))}<span class="l">Members</span></button>
                     <button onclick="shareCollabInviteLink()" class="cp-act cp-press">${gradIcon(Icon('send','w-6 h-6'))}<span class="l">Invite</span></button>
@@ -4763,10 +4857,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="convo-options-menu-backdrop" class="hidden convo-sheet-scrim" onclick="closeConvoOptionsMenuThen()" style="position:fixed;inset:0;z-index:25;"></div>
             <div id="convo-options-menu" class="hidden bg-white convo-sheet" style="position:fixed;left:0;right:0;bottom:0;z-index:30;">
                   <div class="convo-sheet-grabber"></div>
-                  <button onclick="closeConvoOptionsMenuThen(() => openConvoProfile())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('user','w-4 h-4')} View profile</button>
-                  <button onclick="${reported ? '' : `closeConvoOptionsMenuThen(() => reportConvo())`}" ${reported ? 'disabled' : ''} class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium border-b border-gray-100 ${reported ? 'text-gray-400' : 'text-gray-800'}">${Icon('flag','w-4 h-4')} ${reported ? 'Reported' : 'Report'}</button>
-                  <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100"><span style="color:#ef4444;display:inline-flex;">${Icon('trash','w-4 h-4')}</span> Clear chat</button>
-                  <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} ${blocked ? 'Unblock' : 'Block'}</button>
+                  <button onclick="closeConvoOptionsMenuThen(() => openConvoProfile())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('user','w-4 h-4')} <span>Contact details</span></button>
+                  <button onclick="closeConvoOptionsMenuThen(() => openConvoSearch())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('search','w-4 h-4')} <span>Search in chat</span></button>
+                  <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('trash','w-4 h-4')} <span>Clear chat</span></button>
+                  <button onclick="${reported ? '' : `closeConvoOptionsMenuThen(() => reportConvo())`}" ${reported ? 'disabled' : ''} class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium border-b border-gray-100 ${reported ? 'text-gray-400' : 'text-red-500'}">${Icon('flag','w-4 h-4')} <span>${reported ? 'Reported' : 'Report'}</span></button>
+                  <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} <span>${blocked ? 'Unblock' : 'Block'}</span></button>
                 </div>
             ${convoConnectBannerHTML()}
             <div id="convo-log-wrap" class="flex-1 relative" style="min-height:0;">
@@ -6859,6 +6954,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (ov) { ov.classList.add('hidden'); ov.innerHTML = ''; ov.style.top = OVERLAY_TOP; ov.style.bottom = '0'; ov.style.paddingTop = ''; }
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
+          if (typeof restoreRightPanelAfterChat === 'function') restoreRightPanelAfterChat();
           resetBottomNav();
           const isClassroomTab = currentTab === 2;
           const bottomNavEl = document.getElementById('bottom-nav');

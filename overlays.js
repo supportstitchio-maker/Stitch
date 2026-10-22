@@ -377,7 +377,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) {
-            if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); closeRightPanel(); }
+            if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); if (window.innerWidth >= 1024 && typeof openContactPanel === 'function') openContactPanel(); else closeRightPanel(); }
             else appShellEl.classList.remove('messaging-split');
             if (kind === 'call' || kind === 'incomingCall') appShellEl.classList.add('call-fullscreen');
             else appShellEl.classList.remove('call-fullscreen');
@@ -589,6 +589,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (navBackdropElClose) navBackdropElClose.style.display = 'none';
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
+          if (typeof restoreRightPanelAfterChat === 'function') restoreRightPanelAfterChat();
           examFocusExit();
           clearQuizBackground();
           if (typeof stopQuizMusic === 'function') stopQuizMusic();
@@ -2137,6 +2138,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         function renderPersonProfile(){
+          if (typeof rightPanelMode !== 'undefined' && rightPanelMode === 'contact' && currentOverlayKind !== 'personProfile' && typeof renderRightPanelBody === 'function') { renderRightPanelBody(); return; }
           const ov = document.getElementById('overlay');
           if (ov && currentOverlayKind === 'personProfile') ov.innerHTML = personProfileHTML();
         }
@@ -2726,7 +2728,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>`;
         }
 
-        function personProfileHTML(){
+        function personProfileHTML(embed){
           const p = viewedProfile || {};
           if (!(p.loaded && p.networkLoaded)) return personProfileSkeletonHTML();
           // NOTE: this used to also require p.connected, on the idea that a photo shouldn't be
@@ -2743,11 +2745,11 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const networkCount = typeof p.networkCount === 'number' ? p.networkCount : '\u00b7\u00b7\u00b7';
           // The header (back arrow + username) lives INSIDE the scrolling area so the whole profile
           return `
-            <div class="flex-1 overflow-y-auto">
-            <div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
+            <div class="${embed ? '' : 'flex-1 overflow-y-auto'}">
+            ${embed ? '' : `<div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <span class="nm-wrap font-bold absolute left-1/2 -translate-x-1/2" style="max-width:60%;font-family:'Montserrat',sans-serif;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
-            </div>
+            </div>`}
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">
                 <div class="relative flex-shrink-0">
@@ -3070,6 +3072,17 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             }
           } else if (existing) {
             existing.remove();
+          }
+
+          const dtopBell = document.getElementById('dtop-bell');
+          if (dtopBell) {
+            const dtopExisting = document.getElementById('dtop-bell-badge');
+            if (count) {
+              if (dtopExisting) dtopExisting.textContent = count;
+              else dtopBell.insertAdjacentHTML('beforeend', `<span id="dtop-bell-badge">${count}</span>`);
+            } else if (dtopExisting) {
+              dtopExisting.remove();
+            }
           }
 
           const dnavBtn = document.getElementById('dnav-notif');

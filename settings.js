@@ -28,6 +28,8 @@ let appPrefs = {
         }
         // Sidebar sun/moon button: flips light/dark right where you are
         function toggleThemeQuick(){ toggleTheme(); }
+        // Sun / moon pair in the desktop rail: pick a mode directly
+        function setThemeQuick(mode){ if ((appPrefs.theme === 'dark') !== (mode === 'dark')) toggleTheme(); }
 
         // Re-draws a settings screen after a toggle without jumping back to the top
         function rerenderOverlayKeepScroll(kind){
