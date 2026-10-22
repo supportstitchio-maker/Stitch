@@ -2548,6 +2548,8 @@
           // Tabs are locked while the Home skeleton is still loading after login/sign-up
           const lockedShell = document.getElementById('app-shell');
           if (lockedShell && lockedShell.classList.contains('boot-locked') && n !== 0) return;
+          // Workspace skeleton on screen: nav is frozen until it finishes loading
+          if (lockedShell && lockedShell.classList.contains('ws-locked') && n !== currentTab) return;
           autoSaveEditProfileDraft();
           const prevTab = typeof currentTab !== 'undefined' ? currentTab : null;
           if (prevTab === 0 && n !== 0) {
@@ -2759,6 +2761,8 @@
 
           screenEl.style.position = 'relative';
           screenEl.innerHTML = classroomLoadingMarkup();
+          const wsLockShell = document.getElementById('app-shell');
+          if (wsLockShell) wsLockShell.classList.add('ws-locked');
 
           let dots = 0;
           const dotTimer = setInterval(() => {
@@ -2771,6 +2775,8 @@
           const CLASSROOM_LOAD_MS = 5000; 
           setTimeout(() => {
             clearInterval(dotTimer);
+            const wsUnlockShell = document.getElementById('app-shell');
+            if (wsUnlockShell) wsUnlockShell.classList.remove('ws-locked');
             if (myToken === classroomLoadToken && currentTab === 2) {
               classroomNeedsLoadingAnimation = false;
               revealClassroom(myToken);

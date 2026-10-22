@@ -5592,3 +5592,59 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
   *:hover{ scrollbar-color:rgba(100,116,139,.45) transparent; }
   body.dark-mode *:hover, html.dark-mode *:hover{ scrollbar-color:rgba(255,255,255,.28) transparent; }
 }
+
+/* Top search bar nudged left of dead-centre so it lines up better over the feed panel */
+@media (min-width:1280px){
+  #dtop .dtop-search{ left:calc(50% - 170px); }
+}
+
+/* Profile photo in the left rail: no blue pill behind it, just a soft ring when active */
+@media (min-width:1024px){
+  #desktop-nav .dnav-item.dnav-profile.dnav-active,
+  #desktop-nav .dnav-item.dnav-profile.dnav-pill.dnav-active,
+  body.dark-mode #desktop-nav .dnav-item.dnav-profile.dnav-active{
+    background:transparent !important; box-shadow:0 0 0 3px rgba(30,144,255,.45) !important; border-radius:50% !important;
+  }
+}
+@media (min-width:1024px){
+  #desktop-nav #dnav-4.dnav-active:has(img),
+  body.dark-mode #desktop-nav #dnav-4.dnav-active:has(img){
+    background:transparent !important; background-image:none !important; box-shadow:0 0 0 3px rgba(30,144,255,.45) !important; border-radius:50% !important;
+  }
+}
+
+/* ===== Desktop: no big white panel behind Home, Workspace and overlay pages (My Activity, Settings,
+   Notifications, ...). Content rests on the page background. Posts stay one long feed with thin dividers. ===== */
+@media (min-width:1024px){
+  #app-shell.home-active #screen,
+  #app-shell.classroom-active #screen,
+  body.dark-mode #app-shell.home-active #screen,
+  body.dark-mode #app-shell.classroom-active #screen,
+  #app-shell:not(.messaging-split) #overlay,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay{ background:transparent !important; box-shadow:none !important; }
+  #app-shell:not(.messaging-split) #overlay .ov-sticky-head,
+  #app-shell.home-active #screen .sticky,
+  #app-shell.classroom-active #screen .sticky{ background-color:transparent !important; }
+  #app-shell.home-active #screen [id^="post-"]{ border-bottom:1px solid rgba(15,23,42,.08) !important; padding-bottom:14px; }
+  body.dark-mode #app-shell.home-active #screen [id^="post-"]{ border-bottom-color:rgba(255,255,255,.08) !important; }
+}
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #overlay > div,
+  #app-shell:not(.messaging-split) #overlay div.overflow-y-auto.flex-1,
+  #app-shell:not(.messaging-split) #overlay .bg-gray-50,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay > div,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay div.overflow-y-auto.flex-1,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay .bg-gray-50{ background-color:transparent !important; }
+}
+@media (min-width:1024px){
+  #app-shell.home-active #screen [id^="post-"],
+  #app-shell.home-active #screen [id^="post-"] > .bg-white,
+  body.dark-mode #app-shell.home-active #screen [id^="post-"]{ background-color:transparent !important; }
+}
+
+/* Workspace skeleton on screen: nav bar, top bar and side rail are frozen so nobody switches mid-load */
+#app-shell.ws-locked #desktop-nav,
+#app-shell.ws-locked #top-bar,
+#app-shell.ws-locked #bottom-nav,
+#app-shell.ws-locked #classroom-nav,
+#app-shell.ws-locked #dtop{ pointer-events:none; opacity:.55; }
