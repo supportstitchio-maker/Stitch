@@ -1867,8 +1867,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const showUnread = c.unread && !c.read;
           const isActiveChat = activeConvoId === id && document.getElementById('app-shell') && document.getElementById('app-shell').classList.contains('messaging-split');
           return `
-            <div class="flex items-center gap-4 px-5 py-4 cursor-pointer ${isSel ? '' : (c.read ? 'bg-gray-50' : 'bg-white')}"
-              style="${isSel ? `background:rgba(65,105,225,0.14);` : (isActiveChat ? `background:rgba(65,105,225,0.09);` : '')}"
+            <div class="flex items-center gap-4 px-5 py-4 cursor-pointer ${isSel ? '' : (c.read ? 'bg-gray-50' : 'bg-white')}${isActiveChat ? ' convo-active' : ''}"
+              style="${isSel ? `background:rgba(65,105,225,0.14);` : ''}"
               onmousedown="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" onmouseup="endPress()" onmouseleave="endPress()"
               ontouchstart="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
               onclick="handleRowTap('convoTap','${escapeForJsAttr(id)}')">
@@ -4252,6 +4252,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (isConvoBlocked(meta)) unblockAccount(meta.name);
           else blockAccount(meta.name, meta.icon, meta.avatarBg, meta.photo);
           renderConvoProfile();
+          try {
+            const sh = document.getElementById('app-shell');
+            if (sh && sh.classList.contains('messaging-split') && !collabProfileOverlayOpen) { const ov = document.getElementById('overlay'); if (ov) { ov.innerHTML = conversationHTML(); initConvoJumpToLatestButton(); } }
+          } catch (e) {}
         }
 
         function performDeleteConvoChat(id){
@@ -4449,6 +4453,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function openConvoProfile(){
+          // Desktop split view: the contact details live in the right panel, so just show it (never replace the chat)
+          try {
+            const sh = document.getElementById('app-shell');
+            if (window.innerWidth >= 1024 && sh && sh.classList.contains('messaging-split') && typeof openContactPanel === 'function') {
+              const meta = activeConvoMetaSafe(activeConvoId);
+              if (!(meta && meta.icon === 'users')) {
+                sh.classList.remove('rp-collapsed');
+                openContactPanel();
+                return;
+              }
+            }
+          } catch (e) {}
           collabProfileOverlayOpen = true;
           window.__cpNoRise = false;
           const ov = document.getElementById('overlay');
@@ -4625,6 +4641,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = conversationHTML();
           initConvoJumpToLatestButton();
+          syncContactPanelAfterChange();
+        }
+
+        // Desktop: keep the right-hand contact panel in step after report / block from the chat menu
+        function syncContactPanelAfterChange(){
+          try { if (typeof rightPanelMode !== 'undefined' && rightPanelMode === 'contact' && typeof renderRightPanelBody === 'function') renderRightPanelBody(); } catch (e) {}
         }
 
         function clearConvoChat(){
@@ -4787,6 +4809,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = conversationHTML();
           initConvoJumpToLatestButton();
+          syncContactPanelAfterChange();
         }
 
         function convoLastSeenText(meta){
@@ -4850,7 +4873,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
                 <button onclick="startCall('${activeConvoId}','video')" title="Video call" class="p-1">${gradIcon(Icon('video','w-5 h-5'))}</button>
                 <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" class="p-1">${gradIcon(Icon('phoneOutline','w-4 h-4'))}</button>
-                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon(IconBold('dots','w-5 h-5'))}</button>
+                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon(IconBold((typeof isDesktopLayout === 'function' && isDesktopLayout()) ? 'dashesShortRight' : 'dots','w-5 h-5'))}</button>
 
               </div>
             </div>

@@ -4187,3 +4187,52 @@ function coverPickerHTML(o){
     failed.clear();
   });
 })();
+
+/* ---- Desktop rail: the selected pill flows from one option to the next (leading edge reaches the new icon first, trailing edge follows) ---- */
+(function(){
+  var GROUPS = ['dnav-main-list', 'dnav-classroom-list'];
+  function ensureFlow(grp){
+    var f = grp.querySelector(':scope > .dnav-flow');
+    if (!f) { f = document.createElement('span'); f.className = 'dnav-flow'; f.setAttribute('aria-hidden', 'true'); grp.insertBefore(f, grp.firstChild); }
+    return f;
+  }
+  function syncGroup(grp){
+    var f = ensureFlow(grp);
+    if (!grp.offsetParent) { grp._ft = null; f.classList.remove('on'); return; }
+    var act = grp.querySelector('.dnav-item.dnav-active');
+    if (!act) { f.classList.remove('on'); grp._ft = null; return; }
+    var top = act.offsetTop, h = act.offsetHeight, bottom = grp.clientHeight - top - h;
+    if (grp._ft && grp._ft.top === top && grp._ft.h === h) return;
+    var first = !grp._ft || !f.classList.contains('on');
+    var down = !first && top > grp._ft.top;
+    var EASE = 'cubic-bezier(.25,.9,.3,1)';
+    var ld = '.2s ' + EASE, tr = '.32s ' + EASE + ' .07s';
+    if (first) { f.style.transition = 'none'; }
+    else { f.style.transition = 'top ' + (down ? tr : ld) + ', bottom ' + (down ? ld : tr) + ', opacity .15s ease'; }
+    f.style.top = top + 'px'; f.style.bottom = bottom + 'px';
+    f.classList.add('on');
+    grp._ft = { top: top, h: h };
+    if (first) { void f.offsetWidth; f.style.transition = ''; }
+  }
+  var raf = 0;
+  function sync(){
+    if (window.innerWidth < 1024) return;
+    var nav = document.getElementById('desktop-nav'); if (!nav) return;
+    GROUPS.forEach(function(id){ var g = document.getElementById(id); if (g) syncGroup(g); });
+    nav.classList.add('dnav-flow-ready');
+  }
+  function queue(){ if (raf) return; raf = requestAnimationFrame(function(){ raf = 0; sync(); }); }
+  var attached = false;
+  setInterval(function(){
+    var nav = document.getElementById('desktop-nav');
+    if (nav && !attached) {
+      attached = true;
+      new MutationObserver(queue).observe(nav, { attributes: true, attributeFilter: ['class'], subtree: true });
+      var sh = document.getElementById('app-shell');
+      if (sh) new MutationObserver(queue).observe(sh, { attributes: true, attributeFilter: ['class'] });
+      queue();
+    }
+    if (nav && !nav.classList.contains('dnav-flow-ready')) queue();
+  }, 500);
+  window.addEventListener('resize', function(){ GROUPS.forEach(function(id){ var g = document.getElementById(id); if (g) g._ft = null; }); queue(); });
+})();

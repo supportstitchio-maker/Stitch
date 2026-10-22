@@ -5534,7 +5534,6 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
   #app-shell.classroom-active #screen{ border-radius:0; }
   .my-spaces-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
   .my-spaces-grid > .class-color-card{ margin-bottom:0 !important; }
-  #screen{ contain:layout; }
   #study-fab-btn{ right:24px !important; bottom:24px !important; width:48px !important; height:48px !important; border-radius:16px !important; }
   #study-fab-menu{ right:24px !important; bottom:84px !important; }
 }
@@ -5715,4 +5714,103 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   body.dark-mode #app-shell:not(.messaging-split) #overlay .ov-sticky-wrap::before,
   body.dark-mode #app-shell:not(.messaging-split) #overlay div:has(> .ov-sticky-head:only-child)::before{
     background:linear-gradient(to bottom,#181818 0,#181818 calc(100% - 22px),rgba(24,24,24,.85) calc(100% - 12px),rgba(24,24,24,0) 100%) !important; }
+}
+/* Settings and activity (desktop): back arrow and title line up with the cards below, not centred in the wide panel */
+@media (min-width:1024px){
+  #overlay:has(.stg-title) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; }
+}
+/* Every overlay page header (back arrow + title) sits on the same left margin as the page content on desktop,
+   instead of being centred in the wide panel */
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #overlay .ov-sticky-head > div{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; }
+}
+/* Centred content blocks on overlay pages start on the same left margin as the header on desktop */
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #overlay .sp-wrap,
+  #app-shell:not(.messaging-split) #overlay .max-w-2xl.mx-auto:not(.ov-sticky-head > div){ margin-left:0 !important; margin-right:0 !important; }
+}
+
+/* Open chat in the Messaging list (desktop): white outlined card with a soft blue glow */
+@media (min-width:1024px){
+  #inbox-list > .convo-active{ margin:6px 10px !important; padding-left:10px !important; padding-right:10px !important; border-radius:18px !important; border-top-width:0 !important;
+    background:#fff !important; box-shadow:0 0 0 1.5px #1e90ff inset, 0 6px 16px -8px rgba(30,144,255,.5) !important; }
+  #inbox-list > .convo-active + *{ border-top-width:0 !important; }
+  body.dark-mode #inbox-list > .convo-active{ background:#2a2a2a !important; box-shadow:0 0 0 1.5px #3b82f6 inset !important; }
+}
+
+/* ===== Desktop: no big white panel on ANY page (Messaging, Career, Profile, Stitch Bot, ...). Content rests on the page background. ===== */
+@media (min-width:1024px){
+  #screen, body.dark-mode #screen,
+  #overlay, body.dark-mode #overlay,
+  #app-shell.messaging-split #screen, #app-shell.messaging-split #overlay{ background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+}
+@media (min-width:1024px){
+  /* sticky header bars take the page colour, so scrolling rows still hide behind them */
+  #inbox-titlebar, #inbox-searchbar, #inbox-filterbar, #career-titlebar, #career-searchbar, #career-filterbar{ background:var(--pg-bg,#f1f4f9) !important; border-bottom-color:transparent !important; }
+  body.dark-mode #inbox-titlebar, body.dark-mode #inbox-searchbar, body.dark-mode #inbox-filterbar, body.dark-mode #career-titlebar, body.dark-mode #career-searchbar, body.dark-mode #career-filterbar{ background:#181818 !important; }
+  /* chat list rows rest on the background */
+  #inbox-list > div:not(.convo-active), body.dark-mode #inbox-list > div:not(.convo-active){ background-color:transparent !important; }
+  /* floating type boxes (Stitch Bot, chats): no strip behind them */
+  #ai-composer-wrap, .convo-composer-anim, #ai-attach-strip{ background:transparent !important; }
+}
+/* Inside the main column and overlay pages "panel colour" IS the page colour (right panel and rail keep their own) */
+@media (min-width:1024px){
+  #screen, #overlay{ --pn-bg:var(--pg-bg,#f1f4f9); }
+  body.dark-mode #screen, body.dark-mode #overlay{ --pn-bg:#181818; }
+  body.dark-mode #screen .sticky{ background-color:#181818 !important; }
+}
+@media (min-width:1024px){
+  #inbox-searchbar > button, #inbox-searchbar > div, #career-searchbar > button, #career-searchbar > div, #career-searchbar input{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.06); }
+  body.dark-mode #inbox-searchbar > button, body.dark-mode #inbox-searchbar > div, body.dark-mode #career-searchbar > button, body.dark-mode #career-searchbar > div, body.dark-mode #career-searchbar input{ background-color:#2a2a2a !important; box-shadow:none; }
+}
+
+/* Workspace: the + button stays fixed in the corner of the main column while the page scrolls; space cards get room below */
+@media (min-width:1024px){
+  #study-fab-btn{ position:fixed !important; right:calc(var(--rp-width,480px) + 32px + 24px) !important; bottom:24px !important; }
+  #app-shell.right-panel-open.rp-collapsed #study-fab-btn{ right:40px !important; }
+  #study-fab-menu{ position:fixed !important; right:calc(var(--rp-width,480px) + 32px + 24px) !important; bottom:84px !important; }
+  #study-fab-icon, #study-fab-btn *{ animation:none !important; transition:none !important; }
+  .my-spaces-grid{ margin-bottom:28px; }
+}
+@media (min-width:1024px){ #screen{ animation-fill-mode:backwards !important; } }
+/* The white strip under floating type boxes (Stitch Bot, chats) is a mobile bottom-nav backdrop: not needed on desktop */
+@media (min-width:1024px){ #nav-bottom-backdrop{ display:none !important; } }
+/* Messaging: the chat list (only this) keeps its white panel */
+@media (min-width:1024px){
+  #screen:has(#inbox-list){ background:#fff !important; border-radius:28px !important; box-shadow:0 1px 3px rgba(30,60,140,.05) !important; --pn-bg:#fff; overflow:hidden; }
+  #app-shell.messaging-split #screen:has(#inbox-list){ border-right:0 !important; margin-right:12px !important; }
+  #screen:has(#inbox-list) #inbox-titlebar, #screen:has(#inbox-list) #inbox-searchbar, #screen:has(#inbox-list) #inbox-filterbar{ background:#fff !important; }
+  #screen:has(#inbox-list) #inbox-searchbar > button, #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#f1f4f9 !important; box-shadow:none !important; }
+  #screen:has(#inbox-list) #inbox-filterbar button{ box-shadow:0 1px 6px rgba(30,60,140,.10); }
+  #screen:has(#inbox-list) .convo-active{ background:#f1f6ff !important; }
+  body.dark-mode #screen:has(#inbox-list){ background:#1e1e1e !important; --pn-bg:#1e1e1e; }
+  body.dark-mode #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #screen:has(#inbox-list) #inbox-filterbar{ background:#1e1e1e !important; }
+  body.dark-mode #screen:has(#inbox-list) .convo-active{ background:#2a2a2a !important; }
+}
+@media (min-width:1024px){
+  #app-shell.messaging-split #screen:has(#inbox-list), #app-shell #screen:has(#inbox-list){ background:#fff !important; border-radius:28px !important; box-shadow:0 1px 3px rgba(30,60,140,.05) !important; }
+  body.dark-mode #app-shell.messaging-split #screen:has(#inbox-list), body.dark-mode #app-shell #screen:has(#inbox-list){ background:#1e1e1e !important; }
+}
+@media (min-width:1024px){
+  body.dark-mode #screen:has(#inbox-list) #inbox-searchbar > button, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#2a2a2a !important; }
+  body.dark-mode #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #screen:has(#inbox-list) #inbox-filterbar{ border-color:transparent !important; }
+}
+/* Contact details: call / mute / favourite are just icon + label, no square pills */
+.rcp-act, body.dark-mode .rcp-act{ background:transparent !important; box-shadow:none !important; }
+.rcp-act.on, body.dark-mode .rcp-act.on{ background:transparent !important; }
+.rcp-act:hover{ background:transparent !important; transform:none; }
+.rcp-act:hover svg{ color:#2f6df0; }
+/* Create a Course pill: not full width on desktop */
+@media (min-width:1024px){
+  button.filter-pill[onclick="openNewCourse()"]{ flex:0 0 auto !important; width:auto !important; min-width:240px; padding-left:28px !important; padding-right:28px !important; }
+}
+/* Rail: one pill that flows between options (see dnav flow in core.js) */
+@media (min-width:1024px){
+  #desktop-nav .dn-grp{ position:relative; }
+  #desktop-nav .dnav-flow{ position:absolute; left:7px; width:50px; border-radius:15px; background:linear-gradient(135deg,#1e90ff,#4169e1); box-shadow:0 8px 16px -8px rgba(30,144,255,.7); z-index:0; pointer-events:none; opacity:0; }
+  #desktop-nav .dnav-flow.on{ opacity:1; }
+  body.dark-mode #desktop-nav .dnav-flow{ background:#2f5db3; box-shadow:none; }
+  #desktop-nav .dnav-item{ z-index:1; }
+  #desktop-nav.dnav-flow-ready .dn-grp:not(#dnav-bottom) .dnav-item.dnav-active,
+  body.dark-mode #desktop-nav.dnav-flow-ready .dn-grp:not(#dnav-bottom) .dnav-item.dnav-active{ background:transparent !important; box-shadow:none !important; }
 }
