@@ -1347,7 +1347,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${inboxMenuOpen ? `<div onclick="closeInboxActionsMenu()" onwheel="closeInboxActionsMenu()" ontouchmove="closeInboxActionsMenu()" class="fixed inset-0 z-10"></div>${notifActionsDropdownHTML('handleInboxAction')}` : ''}
             </div>
             <div id="inbox-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
-              ${inboxSearchActive ? `
+              ${(inboxSearchActive || window.innerWidth >= 1024) ? `
                 <div class="w-full flex items-center gap-2.5 bg-gray-100 text-gray-500 rounded-full px-4 py-2.5 text-sm">
                   ${Icon('search','w-4 h-4')}
                   <input id="inbox-search-input" type="text" value="${escapeHtml(inboxSearchQuery)}" oninput="onInboxSearchInput(this.value)" placeholder="Search contacts and collaborations..." class="flex-1 min-w-0 bg-transparent outline-none text-gray-800" autocomplete="off">

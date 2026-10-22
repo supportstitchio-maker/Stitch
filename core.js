@@ -1879,7 +1879,7 @@
       <button type="button" id="dnav-theme-light" class="dnav-item dn-th" onclick="setThemeQuick('light')" title="Light mode" aria-label="Light mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="dnav-icon"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></button>
       <button type="button" id="dnav-theme-dark" class="dnav-item dn-th" onclick="setThemeQuick('dark')" title="Dark mode" aria-label="Dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="dnav-icon"><path d="M20.5 14.2A8.5 8.5 0 019.8 3.5a8.5 8.5 0 1010.7 10.7z"/></svg></button>
     </div>
-    <button onclick="openRightPanel('profile');openOverlay('profileMenu')" class="dnav-item" id="dnav-settings" title="Settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
+    <button onclick="openRightPanel('profile', false);openOverlay('profileMenu')" class="dnav-item" id="dnav-settings" title="Settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <div id="dnav-4" class="dnav-item dnav-profile" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
       <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span>
     </div>
@@ -2415,6 +2415,22 @@
             const el = document.getElementById(id);
             if (el) el.classList.toggle('dnav-active', currentOverlayKind === map[id]);
           });
+          // Analytics and Settings take the selected pill from the page buttons while their page is open
+          const railKinds = { profileAnalytics: 'dnav-analytics', profileMenu: 'dnav-settings' };
+          const want = railKinds[currentOverlayKind] || null;
+          ['dnav-analytics', 'dnav-settings'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('dnav-active', id === want);
+          });
+          if (want) {
+            if (!window.__dnavSaved) {
+              window.__dnavSaved = [0, 1, 2, 3, 4].map(i => 'dnav-' + i).filter(id => { const e = document.getElementById(id); return e && e.classList.contains('dnav-active'); });
+            }
+            [0, 1, 2, 3, 4].forEach(i => { const e = document.getElementById('dnav-' + i); if (e) e.classList.remove('dnav-active'); });
+          } else if (window.__dnavSaved) {
+            window.__dnavSaved.forEach(id => { const e = document.getElementById(id); if (e) e.classList.add('dnav-active'); });
+            window.__dnavSaved = null;
+          }
         }
 
         function updateClassroomNav(){
@@ -4190,7 +4206,8 @@ function coverPickerHTML(o){
 
 /* ---- Desktop rail: the selected pill flows from one option to the next (leading edge reaches the new icon first, trailing edge follows) ---- */
 (function(){
-  var GROUPS = ['dnav-main-list', 'dnav-classroom-list'];
+  var GROUPS = ['dnav-main-list', 'dnav-classroom-list', 'dnav-bottom'];
+  var lastGrp = null;
   function ensureFlow(grp){
     var f = grp.querySelector(':scope > .dnav-flow');
     if (!f) { f = document.createElement('span'); f.className = 'dnav-flow'; f.setAttribute('aria-hidden', 'true'); grp.insertBefore(f, grp.firstChild); }
@@ -4199,20 +4216,43 @@ function coverPickerHTML(o){
   function syncGroup(grp){
     var f = ensureFlow(grp);
     if (!grp.offsetParent) { grp._ft = null; f.classList.remove('on'); return; }
-    var act = grp.querySelector('.dnav-item.dnav-active');
-    if (!act) { f.classList.remove('on'); grp._ft = null; return; }
+    var act = grp.querySelector('.dnav-item.dnav-active:not(.dnav-profile):not(.dn-th)');
+    if (!act) {
+      if (f.classList.contains('on') && grp._ft) {
+        // hand the pill over: shrink toward the group that now has it
+        var other = null; GROUPS.forEach(function(id){ var g = document.getElementById(id); if (g && g !== grp && g.offsetParent && g.querySelector('.dnav-item.dnav-active:not(.dnav-profile):not(.dn-th)')) other = g; });
+        if (other) {
+          var below = other.getBoundingClientRect().top > grp.getBoundingClientRect().top, Hh = grp.clientHeight;
+          f.style.transition = 'top .24s cubic-bezier(.25,.9,.3,1), bottom .24s cubic-bezier(.25,.9,.3,1), opacity .2s ease .08s';
+          if (below) { f.style.top = Hh + 'px'; f.style.bottom = '0px'; } else { f.style.top = '0px'; f.style.bottom = Hh + 'px'; }
+          f.classList.remove('on'); grp._ft = null; return;
+        }
+      }
+      f.classList.remove('on'); grp._ft = null; return;
+    }
     var top = act.offsetTop, h = act.offsetHeight, bottom = grp.clientHeight - top - h;
     if (grp._ft && grp._ft.top === top && grp._ft.h === h) return;
     var first = !grp._ft || !f.classList.contains('on');
+    var enterFrom = 0;
+    if (first && lastGrp && lastGrp !== grp && lastGrp.offsetParent) { enterFrom = (grp.getBoundingClientRect().top > lastGrp.getBoundingClientRect().top) ? -1 : 1; }
     var down = !first && top > grp._ft.top;
     var EASE = 'cubic-bezier(.25,.9,.3,1)';
     var ld = '.2s ' + EASE, tr = '.32s ' + EASE + ' .07s';
-    if (first) { f.style.transition = 'none'; }
+    if (enterFrom) {
+      // arrives from the group that held the pill: starts as a sliver at the near edge, then grows into place
+      f.style.transition = 'none'; f.classList.add('on');
+      var H = grp.clientHeight;
+      if (enterFrom < 0) { f.style.top = '0px'; f.style.bottom = (H - 0) + 'px'; } else { f.style.top = H + 'px'; f.style.bottom = '0px'; }
+      void f.offsetWidth;
+      f.style.transition = 'top .3s ' + EASE + ' .08s, bottom .3s ' + EASE + ' .08s, opacity .15s ease';
+    }
+    else if (first) { f.style.transition = 'none'; }
     else { f.style.transition = 'top ' + (down ? tr : ld) + ', bottom ' + (down ? ld : tr) + ', opacity .15s ease'; }
     f.style.top = top + 'px'; f.style.bottom = bottom + 'px';
     f.classList.add('on');
     grp._ft = { top: top, h: h };
-    if (first) { void f.offsetWidth; f.style.transition = ''; }
+    lastGrp = grp;
+    if (first && !enterFrom) { void f.offsetWidth; f.style.transition = ''; }
   }
   var raf = 0;
   function sync(){

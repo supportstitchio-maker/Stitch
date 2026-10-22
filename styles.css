@@ -5811,6 +5811,33 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #desktop-nav .dnav-flow.on{ opacity:1; }
   body.dark-mode #desktop-nav .dnav-flow{ background:#2f5db3; box-shadow:none; }
   #desktop-nav .dnav-item{ z-index:1; }
-  #desktop-nav.dnav-flow-ready .dn-grp:not(#dnav-bottom) .dnav-item.dnav-active,
-  body.dark-mode #desktop-nav.dnav-flow-ready .dn-grp:not(#dnav-bottom) .dnav-item.dnav-active{ background:transparent !important; box-shadow:none !important; }
+  #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile),
+  body.dark-mode #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile){ background:transparent !important; box-shadow:none !important; }
+}
+/* Chat list keeps its white panel ONLY beside an open chat; the full-width list rests on the page background */
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #screen:has(#inbox-list), body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list){ background:transparent !important; border-radius:0 !important; box-shadow:none !important; overflow:visible; --pn-bg:var(--pg-bg,#f1f4f9); }
+  #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:var(--pg-bg,#f1f4f9) !important; }
+  #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > button, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.08) !important; }
+  body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:#181818 !important; }
+  body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > button, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#2a2a2a !important; box-shadow:none !important; }
+  /* Search bars are always ready to type (text cursor on hover, no tap needed first), and clearly visible */
+  #screen #career-searchbar > div.bg-gray-100, #screen #inbox-searchbar > div.bg-gray-100{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.08); cursor:text; }
+  #screen #career-searchbar input, #screen #inbox-searchbar input{ cursor:text; }
+  #career-searchbar button[onclick="deactivateCareerSearch()"], #inbox-searchbar button[onclick="deactivateInboxSearch()"]{ display:none !important; }
+  body.dark-mode #screen #career-searchbar > div.bg-gray-100, body.dark-mode #screen #inbox-searchbar > div.bg-gray-100{ background-color:#2a2a2a !important; box-shadow:none; }
+  #app-shell.messaging-split #screen #inbox-searchbar > div.bg-gray-100{ background-color:#f1f4f9 !important; box-shadow:none; }
+  body.dark-mode #app-shell.messaging-split #screen #inbox-searchbar > div.bg-gray-100{ background-color:#2a2a2a !important; }
+}
+@media (min-width:1024px){ #screen #career-searchbar input, #screen #inbox-searchbar input, body.dark-mode #screen #career-searchbar input{ background-color:transparent !important; box-shadow:none !important; } }
+/* Search bars: not full width on desktop */
+@media (min-width:1024px){
+  #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:420px; }
+}
+@media (min-width:1024px){
+  #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:420px !important; width:100% !important; }
+}
+/* Career and Messaging search bars share one width (the width that fits the chat list beside an open chat) */
+@media (min-width:1024px){
+  #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:320px !important; }
 }
