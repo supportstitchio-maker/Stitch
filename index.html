@@ -223,7 +223,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261023j">
+    <link rel="stylesheet" href="styles.css?v=20261023l">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -458,13 +458,17 @@
             var post = '<div class="skel-post"><div class="skel-post-head"><div class="skel-post-avatar skel-avatar skel-shimmer"></div><div class="skel-post-headlines"><div class="skel-line skel-shimmer" style="width:38%;"></div><div class="skel-line skel-shimmer" style="width:24%;"></div></div></div><div class="skel-post-line skel-line skel-shimmer" style="width:100%;"></div><div class="skel-post-line skel-line skel-shimmer" style="width:80%;"></div></div>';
             if (window.matchMedia && window.matchMedia('(min-width:1024px)').matches) {
               // Desktop: skeleton of the whole shell (left menu, feed, right panel) so nothing jumps.
+              // Same markup as desktopShellSkeletonHTML() in feed.js (that file loads later than this script).
               var sh = function (w, h, extra) { return '<div class="skel-line skel-shimmer" style="width:' + w + ';height:' + (h || 12) + 'px;' + (extra || '') + '"></div>'; };
-              var nav = '<div class="skel-dnav" style="padding-top:64px;">';
-              for (i = 0; i < 6; i++) nav += '<div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>' + sh((50 + (i * 7) % 30) + '%', 12) + '</div>';
-              nav += '<div style="flex:1"></div><div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>' + sh('40%', 12) + '</div></div>';
-              var right = '<div class="skel-dright"><div class="skel-dright-head">' + sh('90px', 14) + '</div><div style="padding:20px;">' + sh('60%', 14, 'margin-bottom:16px;') + '<div class="skel-shimmer" style="height:44px;border-radius:12px;margin-bottom:12px;"></div><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin-bottom:26px;"></div>' + sh('35%', 12, 'margin-bottom:14px;') + sh('90%', 10, 'margin-bottom:10px;') + sh('70%', 10) + '</div></div>';
-              var main = '<div class="skel-dmain"><div class="skel-dmain-in"><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin:6px 0 22px;"></div><div class="skel-story-row">' + story + '</div><div>' + post + post + post + '</div></div></div>';
-              el.innerHTML = '<div class="skel-desk">' + nav + main + right + '</div>';
+              var icon = '<div style="height:46px;display:flex;align-items:center;justify-content:center;"><div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div></div>';
+              var top = '<div class="skd-top"><div class="skel-shimmer" style="width:104px;height:34px;border-radius:12px;"></div><div class="skd-search skel-shimmer"></div><div class="skd-top-right"><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div class="skel-shimmer" style="width:96px;height:42px;border-radius:9999px;"></div><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div>' + sh('70px', 9, 'margin-bottom:7px;') + sh('96px', 12) + '</div></div></div>';
+              var rail = '<div class="skd-rail"><div class="skd-rail-grp skd-rail-main">' + new Array(6).join(icon) + '</div><div class="skd-rail-grp skd-rail-bot">' + new Array(4).join(icon) + '<div style="height:36px;display:flex;align-items:center;justify-content:center;"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div></div></div></div>';
+              var dpost = '<div class="skd-post"><div class="skd-post-head"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div><div style="flex:1;">' + sh('26%', 11, 'margin-bottom:7px;') + sh('14%', 9) + '</div></div><div class="skd-post-media skel-shimmer"></div><div class="skd-post-acts">' + sh('44px', 12) + sh('44px', 12) + sh('44px', 12) + '</div>' + sh('30%', 11, 'margin:12px 0 8px;') + sh('70%', 10) + '</div>';
+              var main = '<div class="skd-main"><div class="skd-main-in"><div class="skel-story-row">' + story + '</div><div>' + dpost + dpost + '</div></div></div>';
+              var rows = '';
+              for (i = 0; i < 5; i++) rows += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">' + sh('45%', 12, 'margin-bottom:9px;') + sh('70%', 10) + '</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:9999px;"></div></div>';
+              var right = '<div class="skd-right"><div style="padding:26px 20px 0;">' + sh('90px', 14, 'margin-bottom:28px;') + '<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>' + rows + '</div></div>';
+              el.innerHTML = '<div class="skd-wrap">' + top + rail + main + right + '</div>';
               el.classList.add('skeleton-mode', 'skel-desktop-mode');
               el.classList.remove('hidden');
               return;
@@ -929,18 +933,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261023j"></script>
-    <script src="core.js?v=20261023j"></script>
-    <script src="feed.js?v=20261023j"></script>
-    <script src="chat.js?v=20261023j"></script>
-    <script src="study.js?v=20261023j"></script>
-    <script src="courses.js?v=20261023j"></script>
-    <script src="quizzesAndGames.js?v=20261023j"></script>
-    <script src="jobs.js?v=20261023j"></script>
-    <script src="creator.js?v=20261023j"></script>
-    <script src="settings.js?v=20261023j"></script>
-    <script src="profile.js?v=20261023j"></script>
-    <script src="overlays.js?v=20261023j"></script>
-    <script src="games.js?v=20261023j"></script>
+    <script src="analytics.js?v=20261023l"></script>
+    <script src="core.js?v=20261023l"></script>
+    <script src="feed.js?v=20261023l"></script>
+    <script src="chat.js?v=20261023l"></script>
+    <script src="study.js?v=20261023l"></script>
+    <script src="courses.js?v=20261023l"></script>
+    <script src="quizzesAndGames.js?v=20261023l"></script>
+    <script src="jobs.js?v=20261023l"></script>
+    <script src="creator.js?v=20261023l"></script>
+    <script src="settings.js?v=20261023l"></script>
+    <script src="profile.js?v=20261023l"></script>
+    <script src="overlays.js?v=20261023l"></script>
+    <script src="games.js?v=20261023l"></script>
 </body>
 </html>

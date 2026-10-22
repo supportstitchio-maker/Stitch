@@ -5702,3 +5702,17 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 .skd-rail-grp{position:static !important;}
 .skd-rail-main{margin:auto 0;padding:16px 0;gap:16px;}
 .skd-rail-bot{padding:8px 0;gap:6px;}
+
+/* Desktop pages that rest on the page background: header strip (and its fade) uses the page colour, not white */
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #overlay .pa-flow .pa-sticky::before,
+  #app-shell:not(.messaging-split) #overlay .ov-sticky-head::before,
+  #app-shell:not(.messaging-split) #overlay .ov-sticky-wrap::before,
+  #app-shell:not(.messaging-split) #overlay div:has(> .ov-sticky-head:only-child)::before{
+    background:linear-gradient(to bottom,#f1f4f9 0,#f1f4f9 calc(100% - 22px),rgba(241,244,249,.85) calc(100% - 12px),rgba(241,244,249,0) 100%) !important; }
+  body.dark-mode #app-shell:not(.messaging-split) #overlay .pa-flow .pa-sticky::before,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay .ov-sticky-head::before,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay .ov-sticky-wrap::before,
+  body.dark-mode #app-shell:not(.messaging-split) #overlay div:has(> .ov-sticky-head:only-child)::before{
+    background:linear-gradient(to bottom,#181818 0,#181818 calc(100% - 22px),rgba(24,24,24,.85) calc(100% - 12px),rgba(24,24,24,0) 100%) !important; }
+}
