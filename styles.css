@@ -5648,3 +5648,57 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
 #app-shell.ws-locked #bottom-nav,
 #app-shell.ws-locked #classroom-nav,
 #app-shell.ws-locked #dtop{ pointer-events:none; opacity:.55; }
+
+/* ===== Desktop Home skeleton: same layout as the real shell (no panel, flat posts) ===== */
+.skd-wrap{position:absolute;inset:0;background:var(--pg-bg,#f1f4f9);overflow:hidden;}
+.skd-top{position:absolute;top:0;left:0;right:0;height:76px;display:flex;align-items:center;padding:0 24px;}
+.skd-search{position:absolute;left:calc(50% - 170px);top:17px;width:340px;height:42px;border-radius:9999px;background:#fff !important;}
+.skd-top-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.skd-rail{position:absolute;left:16px;top:76px;bottom:16px;width:64px;}
+.skd-rail-grp{position:absolute;left:0;width:64px;background:#fff;border-radius:28px;display:flex;flex-direction:column;align-items:center;padding:6px 0;box-shadow:0 4px 18px rgba(30,60,140,.06);}
+.skd-main{position:absolute;left:96px;top:76px;bottom:0;right:calc(var(--rp-width,480px) + 32px);overflow:hidden;}
+.skd-main-in{padding:20px 21px 0;}
+.skd-feed{padding:0;}
+.skd-feed .skd-main-in{padding:20px 21px 0;}
+.skd-feed .skel-story-row{border-bottom:0;}
+.skd-post{padding:14px 16px 16px;border-bottom:1px solid rgba(15,23,42,.08);}
+.skd-post-head{display:flex;align-items:center;gap:12px;margin-bottom:22px;}
+.skd-post-media{width:100%;aspect-ratio:4/3;max-height:520px;border-radius:20px;}
+.skd-post-acts{display:flex;gap:28px;margin-top:12px;}
+.skd-right{position:absolute;top:76px;right:16px;bottom:16px;width:var(--rp-width,480px);background:#fff;border-radius:28px;box-shadow:0 4px 18px rgba(30,60,140,.06);overflow:hidden;}
+body.dark-mode .skd-wrap{background:#181818;}
+body.dark-mode .skd-rail-grp,body.dark-mode .skd-right{background:#222222;box-shadow:none;}
+body.dark-mode .skd-search{background:#2a2a2a !important;}
+body.dark-mode .skd-post{border-bottom-color:rgba(255,255,255,.08);}
+#auth-transition-loading.skel-desktop-mode{background:var(--pg-bg,#f1f4f9) !important;}
+body.dark-mode #auth-transition-loading.skel-desktop-mode{background:#181818 !important;}
+
+.skd-wrap .skel-story-row,.skd-feed .skel-story-row{border-bottom:0;margin-bottom:0;padding-bottom:22px;}
+.skd-wrap .skel-story-wrap::after,.skd-feed .skel-story-wrap::after{content:'';width:48px;height:9px;border-radius:6px;background:#e7ebf3;}
+body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-story-wrap::after{background:var(--c-charcoal,#2b2b2b);}
+
+/* Desktop "+ New": the plus does a full spin every 5 seconds (and on tap) */
+@keyframes dtopPlusSpin{ 0%{ transform:rotate(-180deg) scale(.6); } 60%{ transform:rotate(20deg) scale(1.15); } 100%{ transform:rotate(0) scale(1); } }
+#dtop-new-icon.dtop-plus-spin{ animation:dtopPlusSpin .75s cubic-bezier(.34,1.56,.64,1); }
+@media (prefers-reduced-motion:reduce){ #dtop-new-icon.dtop-plus-spin{ animation:none; } }
+/* The divider belongs between posts only: no line under the post header (name/date row) */
+@media (min-width:1024px){
+  #app-shell.home-active #screen [id^="post-header-"],
+  body.dark-mode #app-shell.home-active #screen [id^="post-header-"]{ border-bottom:0 !important; padding-bottom:8px; }
+}
+
+/* Top search bar sits over the middle of the main column (between the rail and the right panel) */
+@media (min-width:1024px){
+  #dtop .dtop-search{ left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - 16px) / 2) !important; }
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #dtop .dtop-search{
+    left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - var(--rp-width,480px) - 32px) / 2) !important; }
+  /* the loading skeleton copies this exactly (it always shows the right panel) */
+  .skd-search{ left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - var(--rp-width,480px) - 32px) / 2) !important; transform:translateX(-50%); }
+}
+@media (min-width:1024px) and (max-width:1279px){ .skd-search{ width:250px !important; } }
+
+/* skeleton rail copies the real one: main group vertically centred, bottom group pinned to the bottom */
+.skd-rail{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.skd-rail-grp{position:static !important;}
+.skd-rail-main{margin:auto 0;padding:16px 0;gap:16px;}
+.skd-rail-bot{padding:8px 0;gap:6px;}

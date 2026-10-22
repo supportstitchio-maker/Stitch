@@ -1892,7 +1892,7 @@
     <label id="dtop-search" class="dtop-search" aria-label="Search people">${Icon('search','w-4 h-4')}<input id="dtop-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search people" onfocus="dtopSearchFocus()" oninput="dtopSearchInput(this.value)"></label>
     <div class="dtop-spacer"></div>
     <button type="button" id="dtop-bell" class="dtop-bell" onclick="openRightPanel('profile');openOverlay('notifications')" title="Notifications" aria-label="Notifications">${Icon('bellOutline','w-5 h-5')}${unreadNotifCount() ? `<span id="dtop-bell-badge">${unreadNotifCount()}</span>` : ''}</button>
-    <button type="button" id="dtop-new" class="dtop-new" onclick="morphPlusIcon('dtop-new-icon');openOverlay('create')">${IconBold('plus','w-4 h-4')}<span>New</span></button>
+    <button type="button" id="dtop-new" class="dtop-new" onclick="spinDeskPlus();openOverlay('create')"><span id="dtop-new-icon" class="plus-morph-icon is-plus" style="display:inline-flex;">${IconBold('plus','w-4 h-4')}</span><span>New</span></button>
     <div id="dtop-me" class="dtop-me" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
       <span id="dtop-av" class="dtop-av">${dnavAvatarHTML()}</span>
       <span class="dtop-who"><small id="dtop-greet">${dtopGreeting()}</small><b id="dtop-name">${escapeHtml(dnavDisplayName())}</b></span>
@@ -2521,6 +2521,14 @@
         setInterval(() => {
           PULSING_PLUS_ICON_IDS.forEach(id => morphPlusIcon(id));
         }, 3000);
+
+        // Desktop "+ New" button: same spin as the mobile plus, replayed every 5 seconds
+        function spinDeskPlus(){
+          const el = document.getElementById('dtop-new-icon');
+          if (!el) return;
+          el.classList.remove('dtop-plus-spin'); void el.offsetWidth; el.classList.add('dtop-plus-spin');
+        }
+        setInterval(spinDeskPlus, 5000);
 
         let cachedHomeFeedNode = null;
         let cachedProfileScreenNode = null;

@@ -1,17 +1,38 @@
 // ---- Feed render + pull-to-refresh ----
         // Desktop loading cover: the whole app shell (left menu, feed, right panel) in grey placeholders
+        function skeletonPostDeskHTML(){
+          return `
+            <div class="skd-post">
+              <div class="skd-post-head">
+                <div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div>
+                <div style="flex:1;"><div class="skel-line skel-shimmer" style="width:26%;height:11px;margin-bottom:7px;"></div><div class="skel-line skel-shimmer" style="width:14%;height:9px;"></div></div>
+              </div>
+              <div class="skd-post-media skel-shimmer"></div>
+              <div class="skd-post-acts"><div class="skel-line skel-shimmer" style="width:44px;height:12px;"></div><div class="skel-line skel-shimmer" style="width:44px;height:12px;"></div><div class="skel-line skel-shimmer" style="width:44px;height:12px;"></div></div>
+              <div class="skel-line skel-shimmer" style="width:30%;height:11px;margin:12px 0 8px;"></div>
+              <div class="skel-line skel-shimmer" style="width:70%;height:10px;"></div>
+            </div>`;
+        }
+        // Desktop loading cover: mirrors the real desktop shell (top strip with centred search, floating
+        // rail, posts resting on the background, floating right panel) in grey placeholders
         function desktopShellSkeletonHTML(){
           const bar = (w, h, extra) => `<div class="skel-line skel-shimmer" style="width:${w};height:${h || 12}px;${extra || ''}"></div>`;
-          let nav = `<div class="skel-dnav"><div class="skel-shimmer" style="width:120px;height:40px;border-radius:12px;margin:6px 0 26px 10px;"></div>`;
-          for (let i = 0; i < 6; i++) nav += `<div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>${bar((50 + (i * 7) % 30) + '%', 12)}</div>`;
-          nav += `<div style="flex:1"></div><div class="skel-dnav-item"><div class="skel-avatar skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div>${bar('40%', 12)}</div></div>`;
-          const right = `<div class="skel-dright"><div class="skel-dright-head">${bar('90px', 14)}</div><div style="padding:20px;">${bar('60%', 14, 'margin-bottom:16px;')}<div class="skel-shimmer" style="height:44px;border-radius:12px;margin-bottom:12px;"></div><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin-bottom:26px;"></div>${bar('35%', 12, 'margin-bottom:14px;')}${bar('90%', 10, 'margin-bottom:10px;')}${bar('70%', 10)}</div></div>`;
-          const main = `<div class="skel-dmain"><div class="skel-dmain-in"><div class="skel-shimmer" style="height:44px;border-radius:9999px;margin:6px 0 22px;"></div>${skeletonStoryRowHTML(5)}<div>${skeletonPostHTML()}${skeletonPostHTML()}${skeletonPostHTML()}</div></div></div>`;
-          return `<div class="skel-desk">${nav}${main}${right}</div>`;
+          const sq = (n, m) => Array.from({ length: n }).map(() => `<div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;margin:${m}px 0;"></div>`).join('');
+          const top = `<div class="skd-top">
+            <div class="skel-shimmer" style="width:104px;height:34px;border-radius:12px;"></div>
+            <div class="skd-search skel-shimmer"></div>
+            <div class="skd-top-right"><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div class="skel-shimmer" style="width:96px;height:42px;border-radius:9999px;"></div><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div><div class="skel-line skel-shimmer" style="width:70px;height:9px;margin-bottom:7px;"></div><div class="skel-line skel-shimmer" style="width:96px;height:12px;"></div></div></div>
+          </div>`;
+          const icon = `<div style="height:46px;display:flex;align-items:center;justify-content:center;"><div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div></div>`;
+          const rail = `<div class="skd-rail"><div class="skd-rail-grp skd-rail-main">${icon.repeat(5)}</div><div class="skd-rail-grp skd-rail-bot">${icon.repeat(3)}<div style="height:36px;display:flex;align-items:center;justify-content:center;"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div></div></div></div>`;
+          const main = `<div class="skd-main"><div class="skd-main-in">${skeletonStoryRowHTML(5)}<div>${skeletonPostDeskHTML()}${skeletonPostDeskHTML()}</div></div></div>`;
+          const right = `<div class="skd-right"><div style="padding:26px 20px 0;">${bar('90px', 14, 'margin-bottom:28px;')}<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>${[0,1,2,3,4].map(() => `<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">${bar('45%', 12, 'margin-bottom:9px;')}${bar('70%', 10)}</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:9999px;"></div></div>`).join('')}</div></div>`;
+          return `<div class="skd-wrap">${top}${rail}${main}${right}</div>`;
         }
         function isDesktopLayout(){ return !!(window.matchMedia && window.matchMedia('(min-width:1024px)').matches); }
 
         function feedSkeletonHTML(){
+          if (isDesktopLayout()) return `<div class="feed-skeleton-marker skd-feed"><div class="skd-main-in">${skeletonStoryRowHTML(5)}<div>${skeletonPostDeskHTML()}${skeletonPostDeskHTML()}</div></div></div>`;
           return `
             <div class="px-5 pb-5 feed-skeleton-marker" style="padding-top:var(--top-safe-pad);">
               <div class="-mx-5 mb-6 border-b border-gray-100">
