@@ -132,7 +132,7 @@ let studyFabMenuOpen = false;
           if (!myClasses.length) return '';
           return `
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">My Spaces</div>
-            ${myClasses.map((c, i) => {
+            <div class="my-spaces-grid">${myClasses.map((c, i) => {
               const motif = classCardMotifs[classCardMotifIndex(c, i) % classCardMotifs.length];
               return `
               <div onclick="openClassDetailWithLoading('${c.id}')" class="class-color-card ${i % 2 ? 'class-tone-b' : 'class-tone-a'} rounded-3xl p-5 text-white relative overflow-hidden mb-3 cursor-pointer" style="${c.photo ? `background-image:linear-gradient(rgba(10,37,64,0.45),rgba(10,37,64,0.45)),url('${c.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(c)}min-height:104px;">
@@ -146,7 +146,7 @@ let studyFabMenuOpen = false;
                   ${classFeeLabel(c) ? `<div class="text-sm font-bold text-white/95 flex-shrink-0">${classFeeLabel(c)}</div>` : ''}
                 </div>` : ''}
               </div>`;
-            }).join('')}
+            }).join('')}</div>
           `;
         }
 

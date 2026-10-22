@@ -5520,3 +5520,75 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
   /* Group calls: the grid stops above the control bar so names are never covered */
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap:has(.cu-tile ~ .cu-tile){ padding-bottom:124px !important; box-sizing:border-box; }
 }
+/* Career search bar runs the full width of its panel (desktop) */
+@media (min-width:1024px){
+  #screen button[onclick="activateCareerSearch()"],
+  #screen div:has(> #career-search-input){ max-width:none !important; width:100% !important; }
+}
+@media (min-width:1024px){
+  #career-searchbar{ padding-bottom:18px !important; }
+}
+
+/* ===== Workspace (desktop): flat-edged middle panel, Space cards in two columns, plus button in the panel corner ===== */
+@media (min-width:1024px){
+  #app-shell.classroom-active #screen{ border-radius:0; }
+  .my-spaces-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .my-spaces-grid > .class-color-card{ margin-bottom:0 !important; }
+  #screen{ contain:layout; }
+  #study-fab-btn{ right:24px !important; bottom:24px !important; width:48px !important; height:48px !important; border-radius:16px !important; }
+  #study-fab-menu{ right:24px !important; bottom:84px !important; }
+}
+/* Same roomy spacing under the Messaging search bar (desktop) */
+@media (min-width:1024px){
+  #inbox-searchbar{ padding-bottom:18px !important; }
+  #inbox-searchbar > button, #inbox-searchbar > div{ max-width:none !important; width:100% !important; }
+}
+/* New post (desktop): the close button and "New post" line up with the "Tag people" icon and label below */
+@media (min-width:1024px){
+  #overlay:has(#create-post-scroll) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; padding-left:38px !important; gap:12px !important; }
+}
+@media (min-width:1024px){
+  #overlay:has(#tag-picker-list) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; padding-left:21px !important; gap:12px !important; }
+}
+/* Overlay pages (My Activity, New post, Tag people, ...): flat-edged panel on desktop, like Home and Workspace */
+@media (min-width:1024px){
+  #app-shell:not(.messaging-split) #overlay{ border-radius:0 !important; }
+}
+/* Discover search bar in dark mode: rounded field on the panel colour, not a square dark block */
+body.dark-mode #desktop-right-panel-body .sticky:has(> #discover-search-input){ background:var(--pn-bg,#222) !important; }
+body.dark-mode #discover-search-input{ border:1px solid #3a3a3a !important; background:#2a2a2a !important; border-radius:18px !important; color:#e5e7eb; }
+body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
+/* Filter pills (Notifications, Career, Messaging) on desktop: room below them, shadows not clipped */
+@media (min-width:1024px){
+  .nfilter{ padding:4px 0 14px !important; margin-bottom:10px; }
+  #career-filterbar, #inbox-filterbar{ padding-bottom:22px !important; }
+  #career-tabs-scroller{ padding-bottom:6px; }
+}
+/* Every row of filter pills (Media/Links/Docs tabs, admin tabs, quiz filters, ...) gets the same room below on desktop */
+@media (min-width:1024px){
+  div:has(> .filter-pill.flex-shrink-0):not(.nfilter):not(#career-tabs-scroller):not(.sticky),
+  div:has(> .filter-pill[data-k]){ padding-bottom:14px; margin-bottom:10px; }
+}
+
+/* Once the person is in the app the Get Started gate is removed from rendering entirely (no fade, no
+   panel animation), so it can never flash back in over the Home skeleton */
+#auth-gate.auth-gone{display:none !important;transition:none !important;}
+#auth-gate.auth-gone *{animation:none !important;}
+
+/* Desktop top bar: main search sits in the middle of the strip */
+@media (min-width:1280px){
+  #dtop .dtop-search{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); margin:0; }
+  #dtop .dtop-search:hover{ transform:translate(-50%,-50%); }
+}
+@media (min-width:1024px) and (max-width:1279px){
+  #dtop .dtop-search{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); margin:0; width:250px; }
+  #dtop .dtop-search:hover{ transform:translate(-50%,-50%); }
+}
+
+/* Desktop scrollbars: slim, no arrow buttons, thumb only shows while hovering the scroll area
+   (same feel as WhatsApp / Claude). Phones keep their own overlay scrollbars. */
+@media (hover:hover) and (pointer:fine){
+  *{ scrollbar-width:thin; scrollbar-color:transparent transparent; }
+  *:hover{ scrollbar-color:rgba(100,116,139,.45) transparent; }
+  body.dark-mode *:hover, html.dark-mode *:hover{ scrollbar-color:rgba(255,255,255,.28) transparent; }
+}

@@ -1198,6 +1198,7 @@ let userPoints = 0;
         }
         function authOnboardingTotal(){ try { return 1 + authPosterAppPages().length; } catch (e) { return 3; } }
         function authShowLogin(){
+          if (window.__stitchInApp) return;
           authHideAllPanels();
           document.getElementById('auth-panel-login').classList.add('active');
           const loginErr = document.getElementById('auth-login-error');
@@ -1249,6 +1250,7 @@ let userPoints = 0;
           return !!(panel && panel.classList.contains('active') && gate && !gate.classList.contains('auth-hidden'));
         }
         function authShowVerify(email, restoring){
+          if (window.__stitchInApp) return;
           authPendingEmail = email;
           authRememberPendingVerify(email);
           authHideAllPanels();
@@ -1276,6 +1278,7 @@ let userPoints = 0;
         // Shown once, right after the email code is verified, only when this email has no existing
         // Stitch account yet (see authCheckNeedsProfileSetup)
         function authShowCompleteProfile(){
+          if (window.__stitchInApp) return;
           // A first-time account: its first Home open skips the shimmer skeleton (see renderFeed).
           window.__stitchFreshSignup = true;
           authMarkOnboardingPending();
@@ -2045,8 +2048,12 @@ let userPoints = 0;
               if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();
             }
           } catch (e) {}
+          // Put the Home skeleton cover up FIRST, then drop the Get Started gate underneath it with no
+          // fade, so the gate can never be seen dissolving or re-appearing between login and the feed
+          window.__stitchInApp = true;
+          try { if (typeof showAuthTransitionLoading === 'function') showAuthTransitionLoading('', '', true); } catch (e) {}
           const gate = document.getElementById('auth-gate');
-          if (gate) gate.classList.add('auth-hidden');
+          if (gate) { gate.classList.add('auth-hidden'); gate.classList.add('auth-gone'); }
           resetCachedAuthUser();
           // Belt-and-suspenders alongside the same call in authSignOut(): make sure no stale cached
           // feed/profile DOM from a previous session can survive into this login either
@@ -2606,9 +2613,10 @@ let userPoints = 0;
             if (typeof careerStartProfile !== 'undefined') careerStartProfile = null;
             // Show the login screen (full-screen, on top of everything) BEFORE closing the settings
             // overlay
+            window.__stitchInApp = false;
             authShowLogin();
             const gate = document.getElementById('auth-gate');
-            if (gate) gate.classList.remove('auth-hidden');
+            if (gate) { gate.classList.remove('auth-gone'); gate.classList.remove('auth-hidden'); }
             closeOverlay();
             // Reset the tab underneath the (now-covering) login screen back to Home
             if (typeof switchTab === 'function') switchTab(0);
