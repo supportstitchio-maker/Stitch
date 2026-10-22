@@ -5846,3 +5846,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #app-shell.messaging-split #screen:has(#inbox-list), body.dark-mode #app-shell.messaging-split #screen:has(#inbox-list){ border-radius:0 !important; }
   #app-shell.messaging-split #desktop-right-panel{ border-radius:0 !important; }
 }
+/* Messaging with the right panel retracted: the chat list stays a 360px column beside the chat (never stretches under it) */
+@media (min-width:1024px){
+  #app-shell.messaging-split.right-panel-open.rp-collapsed #screen, #app-shell.messaging-split #screen{ width:360px !important; max-width:360px !important; flex-shrink:0 !important; margin-left:0 !important; }
+}
