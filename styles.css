@@ -5472,3 +5472,9 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
   .dsk-menu button.text-red-500 *{ color:#e11d48 !important; }
   body.dark-mode .dsk-menu button.text-red-500 *{ color:#fb7185 !important; }
 }
+/* Inbox search pill: always one line */
+#inbox-searchbar button > span, #inbox-searchbar input{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+#inbox-searchbar button svg, #inbox-searchbar > div > svg{ flex-shrink:0; }
+@media (min-width:1024px){
+  #inbox-searchbar button, #inbox-searchbar > div{ padding-top:9px !important; padding-bottom:9px !important; font-size:13.5px !important; line-height:20px; }
+}
