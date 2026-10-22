@@ -4099,3 +4099,41 @@ function coverPickerHTML(o){
     clearInterval(iv); showPushPrompt();
   }, 1500);
 })();
+
+/* Video safety net: any <video>/<audio> that fails to load (a flaky mobile connection right after
+   login, a stale cache entry) quietly retries a few times instead of staying stuck on a blank frame.
+   Players that already handle their own errors (onerror attribute) are left alone. */
+(function(){
+  if (window.__vidSafetyNet) return; window.__vidSafetyNet = true;
+  var MAX = 3, failed = new Set();
+  function bust(url, n){
+    if (!url || url.indexOf('blob:') === 0 || url.indexOf('data:') === 0) return url;
+    var hash = '', i = url.indexOf('#'); if (i >= 0) { hash = url.slice(i); url = url.slice(0, i); }
+    url = url.replace(/([?&])_vr=\d+&?/, '$1').replace(/[?&]$/, '');
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_vr=' + n + hash;
+  }
+  function retry(el){
+    var n = (+el.dataset.vidRetry || 0) + 1;
+    if (n > MAX) { failed.add(el); return; }
+    el.dataset.vidRetry = String(n);
+    if (!el.dataset.vidBase) el.dataset.vidBase = el.getAttribute('src') || '';
+    setTimeout(function(){
+      if (!el.isConnected) return;
+      var wasPlaying = el.autoplay;
+      el.setAttribute('src', bust(el.dataset.vidBase, n));
+      try { el.load(); if (wasPlaying) { var p = el.play(); if (p && p.catch) p.catch(function(){}); } } catch (e) {}
+    }, 600 * n);
+  }
+  document.addEventListener('error', function(e){
+    var el = e.target;
+    if (!el || (el.tagName !== 'VIDEO' && el.tagName !== 'AUDIO')) return;
+    if (el.hasAttribute('onerror') || el.srcObject) return;
+    if (!el.getAttribute('src')) return;
+    retry(el);
+  }, true);
+  document.addEventListener('loadeddata', function(e){ if (e.target && e.target.dataset) { delete e.target.dataset.vidRetry; failed.delete(e.target); } }, true);
+  window.addEventListener('online', function(){
+    failed.forEach(function(el){ if (el.isConnected) { el.dataset.vidRetry = '0'; retry(el); } });
+    failed.clear();
+  });
+})();

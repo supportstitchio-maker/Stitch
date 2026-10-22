@@ -3302,13 +3302,12 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
                     <div class="nrow-t truncate" style="font-weight:${allRead ? 600 : 800};${allRead ? 'color:#6b7280;' : ''}">${escapeHtml(title)}</div>
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:${allRead ? '#e5e7eb' : '#1e90ff'};color:${allRead ? '#6b7280' : '#fff'};">${allRead ? items.length : unread + ' new'}</span>
                   </div>
                   <div class="nrow-m ${allRead ? '' : 'nrow-m-u'}">${escapeHtml(preview)}</div>
                 </div>
                 <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
                   <div class="text-[11px] whitespace-nowrap" style="color:${allRead ? '#9ca3af' : '#1e90ff'};font-weight:${allRead ? 500 : 700};">${formatNotifTime(latest.createdAt)}</div>
-                  ${allRead ? '' : '<span class="nrow-dot"></span>'}
+                  ${allRead ? '' : `<span class="nrow-dot nrow-count">${unread > 99 ? '99+' : unread}</span>`}
                 </div>
               </div>
             </div>`;
@@ -3595,7 +3594,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 </div>
                 <div class="flex flex-col items-end gap-1.5 flex-shrink-0 relative">
                   <div class="text-[11px] whitespace-nowrap" style="color:${unread ? '#1e90ff' : '#9ca3af'};font-weight:${unread ? 700 : 500};" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
-                  ${selecting ? '' : (unread ? '<span class="nrow-dot"></span>' : '')}
+                  ${selecting ? '' : (unread ? '<span class="nrow-dot nrow-count">1</span>' : '')}
                   ${selecting ? '' : `<div class="nmenu-anchor"><button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop nmenu-dots w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options" aria-haspopup="menu" aria-expanded="${itemMenuOpen ? 'true' : 'false'}">${Icon('dots','w-4 h-4')}</button>
                   ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}</div>`}
                 </div>
