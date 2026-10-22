@@ -5841,3 +5841,8 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 @media (min-width:1024px){
   #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:320px !important; }
 }
+/* Messaging panels (chat list, contact details): flat, square edges */
+@media (min-width:1024px){
+  #app-shell.messaging-split #screen:has(#inbox-list), body.dark-mode #app-shell.messaging-split #screen:has(#inbox-list){ border-radius:0 !important; }
+  #app-shell.messaging-split #desktop-right-panel{ border-radius:0 !important; }
+}

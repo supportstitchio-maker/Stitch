@@ -340,6 +340,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const prevKindForScroll = currentOverlayKind;
           currentOverlayKind = kind;
           if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[kind]) setStitchPageTitle(STITCH_PAGE_TITLES[kind]);
+          // My Activity always sits beside the Profile panel on desktop
+          if (kind === 'profileAnalytics' && window.innerWidth >= 1024 && typeof openRightPanel === 'function') { try { openRightPanel('profile', false); } catch (e) {} }
           updateUtilityNavActive();
           if (typeof updateClassroomNav === 'function') updateClassroomNav();
           const ov = document.getElementById('overlay');
