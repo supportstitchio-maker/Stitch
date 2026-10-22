@@ -5478,3 +5478,45 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
 @media (min-width:1024px){
   #inbox-searchbar button, #inbox-searchbar > div{ padding-top:9px !important; padding-bottom:9px !important; font-size:13.5px !important; line-height:20px; }
 }
+
+/* ===== Desktop call screens, new style: round-button pill bar, no labels, no green dots (>=1024px) ===== */
+@media (min-width:1024px){
+  .cu-dot,.cu-dot-warn{display:none !important;}
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner,
+  #overlay .cu-bar:not(.cu-bar-incoming) .cu-bar-inner{ width:auto !important; max-width:none !important; flex-wrap:nowrap !important; gap:10px !important; padding:10px !important; border-radius:999px !important; justify-content:center !important; align-items:center !important; margin:0 auto; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl,
+  #overlay .cu-bar:not(.cu-bar-incoming) button.cu-ctl{ flex:0 0 auto !important; min-width:0 !important; width:auto !important; height:auto !important; gap:0 !important; margin:0 !important; padding:0 !important; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-btn,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-btn,
+  #overlay .cu-bar:not(.cu-bar-incoming) .cu-ctl-btn{ width:48px !important; height:48px !important; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-btn svg,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-btn svg,
+  #overlay .cu-bar:not(.cu-bar-incoming) .cu-ctl-btn svg{ width:20px !important; height:20px !important; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-label,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-ctl-label,
+  #overlay .cu-bar:not(.cu-bar-incoming) .cu-ctl-label{ display:none !important; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end,
+  #overlay .cu-bar:not(.cu-bar-incoming) button.cu-ctl.end{ flex-direction:row !important; background:transparent !important; box-shadow:none !important; }
+  #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn,
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn,
+  #overlay .cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-btn{ width:68px !important; height:48px !important; border-radius:999px !important; background:#ef4444 !important; color:#fff !important; box-shadow:none !important; }
+  .cu-bar-incoming .cu-ctl.accept .cu-ctl-btn{ background:linear-gradient(135deg,#1e90ff,#4169e1) !important; box-shadow:0 10px 22px rgba(65,105,225,.38) !important; }
+  .cu-bar-incoming .cu-bar-inner{ gap:56px !important; }
+  .cu-bar-incoming .cu-ctl-btn{ width:60px !important; height:60px !important; }
+}
+@media (min-width:1024px){
+  /* Calls take the whole stage even when the side panel was open */
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen) #overlay{ left:0 !important; right:0 !important; width:100% !important; }
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen) #desktop-right-panel{ display:none !important; }
+  .cu-ctl.accept, .cu-bar-incoming .cu-ctl.accept .cu-ctl-label{ color:#4169e1 !important; }
+}
+@media (min-width:1024px){
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)){ width:100% !important; }
+}
+@media (min-width:1024px){
+  /* Group calls: the grid stops above the control bar so names are never covered */
+  #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap:has(.cu-tile ~ .cu-tile){ padding-bottom:124px !important; box-sizing:border-box; }
+}
