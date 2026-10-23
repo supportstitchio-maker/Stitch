@@ -2461,6 +2461,9 @@
             const el = document.getElementById(dActiveId);
             if (el) el.classList.add('dnav-active');
           }
+          // Inside Resources the top strip (search, bell, New, profile) is not tappable
+          const rsShell = document.getElementById('app-shell');
+          if (rsShell) rsShell.classList.toggle('ws-resources', dActiveId === 'dcnav-resources');
         }
 
         function enterClassroomTab(){

@@ -5850,3 +5850,15 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 @media (min-width:1024px){
   #app-shell.messaging-split.right-panel-open.rp-collapsed #screen, #app-shell.messaging-split #screen{ width:360px !important; max-width:360px !important; flex-shrink:0 !important; margin-left:0 !important; }
 }
+/* New announcement button: compact on desktop */
+@media (min-width:1024px){
+  button.flex-1[onclick="openNewAnnouncementOverlay()"]{ flex:0 0 auto !important; width:auto !important; min-width:220px; padding-left:28px !important; padding-right:28px !important; }
+}
+/* Start Session / Schedule one pills: compact on desktop */
+@media (min-width:1024px){
+  button.filter-pill.flex-1[onclick^="startCourseSessionNow"], button.filter-pill.flex-1[onclick^="openScheduleCourseSession"],
+  button.filter-pill.flex-1[onclick="startLiveLectureNow()"], button.filter-pill.flex-1[onclick="openScheduleLectureOverlay()"]{ flex:0 0 auto !important; width:auto !important; min-width:190px; padding-left:26px !important; padding-right:26px !important; }
+}
+/* Inside a Space's Resources, the top strip is not tappable */
+@media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop{ pointer-events:none; } }
+@media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop, #app-shell.classroom-active.ws-resources #dtop *{ pointer-events:none !important; } }
