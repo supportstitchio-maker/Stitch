@@ -5876,3 +5876,42 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #auth-gate:has(#auth-panel-login.active) .auth-card{padding-bottom:0 !important;}
   #auth-gate:has(#auth-panel-login.active) .auth-body{padding-bottom:15px !important;}
 }
+
+/* Get Started page is always light, even when the app is in dark mode */
+body.dark-mode #auth-gate:has(#auth-panel-login.active){ background:#ffffff !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card,
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-body{ background:#ffffff !important; }
+@media (max-width:1023px){
+  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
+}
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head::after{ background:#ffffff !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub{ color:#55688a !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid{ color:#55688a !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid::before,
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid::after{ background:#e6eaf3 !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field input{ background:#f4f6fb !important; border-color:#e6eaf3 !important; color:#0f1f33 !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field input::placeholder{ color:#9aa3b5 !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field-icon .auth-field-ic{ color:#4b5568 !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-cta{
+  background:linear-gradient(135deg,#1e90ff,#4169e1) !important; color:#fff !important; border:0 !important;
+  box-shadow:0 12px 22px -10px rgba(65,105,225,.6) !important;
+}
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-google-cta{ background:#f4f6fb !important; color:#0f1f33 !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-terms{ color:#55688a !important; }
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-terms a{ color:#4169e1 !important; }
+
+/* Get Started: "Welcome" (Montserrat, big + bold) over "Sign in or register" */
+#auth-gate .auth-login-sub .auth-wel{display:block;font-family:'Montserrat',system-ui,sans-serif;font-weight:800;font-size:30px;line-height:1.15;letter-spacing:-.01em;color:#0f1f33;}
+#auth-gate .auth-login-sub .auth-wel-sub{display:block;font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;margin-top:4px;color:#55688a;}
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-wel{color:#0f1f33 !important;}
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-wel-sub{color:#55688a !important;}
+
+/* "Welcome": Colmeak, bold, dodger blue to royal blue */
+#auth-gate .auth-login-sub .auth-wel,
+body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-wel{
+  font-family:'Colmeak','Montserrat',sans-serif !important;font-weight:700 !important;letter-spacing:.01em;
+  background:linear-gradient(135deg,#1e90ff,#4169e1);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent !important;
+  display:block;width:fit-content;margin:0 auto;
+}
