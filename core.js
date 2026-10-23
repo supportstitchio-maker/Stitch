@@ -1862,13 +1862,13 @@
     <button onclick="switchTab(0)" class="dnav-item" id="dnav-0" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="switchTab(1)" class="dnav-item" id="dnav-1" title="Explore">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3" title="Messages">${Icon('commentOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace">${Icon('gridOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item" id="dnav-analytics" title="Analytics">${Icon('trendingOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
     </div>
     <!-- Space tools: shown in place of the main group while a Space is open.
          Workspace sits on top and takes you back out to the Spaces list. -->
     <div id="dnav-classroom-list" class="dn-grp">
-    <button onclick="switchTab(0)" class="dnav-item" id="dcnav-back" title="Back to main menu">${Icon('gridOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="switchTab(0)" class="dnav-item" id="dcnav-back" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources" title="Resources">${Icon('folderOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
     <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice" title="Practice">${Icon('editOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
     <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai" title="Stitch Bot">${Icon('botOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
