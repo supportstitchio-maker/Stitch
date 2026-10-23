@@ -5862,3 +5862,11 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 /* Inside a Space's Resources, the top strip is not tappable */
 @media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop{ pointer-events:none; } }
 @media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop, #app-shell.classroom-active.ws-resources #dtop *{ pointer-events:none !important; } }
+/* Login panel: no "Get Started" heading; the welcome line is centred */
+#auth-gate:has(#auth-panel-login.active) .auth-login-title, body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{ display:none !important; }
+#auth-gate:has(#auth-panel-login.active) .auth-login-sub{ text-align:center !important; margin:2px 0 22px !important; font-size:15px !important; }
+/* Phone sign-up (login) page: real photo background, day photo in light mode and dusk photo in dark mode */
+@media (max-width:1023px){
+  #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') center 50% / cover no-repeat, #8fb6dc !important; }
+  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-dusk.webp') center 50% / cover no-repeat, #0b0d18 !important; }
+}
