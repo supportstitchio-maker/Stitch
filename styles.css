@@ -5867,6 +5867,12 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 #auth-gate:has(#auth-panel-login.active) .auth-login-sub{ text-align:center !important; margin:2px 0 22px !important; font-size:15px !important; }
 /* Phone sign-up (login) page: real photo background, day photo in light mode and dusk photo in dark mode */
 @media (max-width:1023px){
-  #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') center 50% / cover no-repeat, #8fb6dc !important; }
-  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-dusk.webp') center 50% / cover no-repeat, #0b0d18 !important; }
+  #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
+  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-dusk.webp') 44% 66% / 158% auto no-repeat, #0b0d18 !important; }
+}
+
+/* Phone sign-up: only 15px of white below the terms/privacy line (panel sits lower) */
+@media (max-width:1023px){
+  #auth-gate:has(#auth-panel-login.active) .auth-card{padding-bottom:0 !important;}
+  #auth-gate:has(#auth-panel-login.active) .auth-body{padding-bottom:15px !important;}
 }
