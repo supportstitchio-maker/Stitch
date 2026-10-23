@@ -5915,3 +5915,17 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-we
   -webkit-text-fill-color:transparent;color:transparent !important;
   display:block;width:fit-content;margin:0 auto;
 }
+
+/* Verify page (phone): full-width white panel at the top, plain "We emailed a code" text (no blue box) */
+@media (max-width:1023px){
+  #auth-gate.auth-verify-mode .auth-card{
+    background:#fff !important;
+    box-shadow:0 18px 40px -14px rgba(10,37,64,.28),0 6px 16px -8px rgba(10,37,64,.14) !important;
+    border-radius:0 0 28px 28px !important;
+    margin:0 -16px !important; width:calc(100% + 32px) !important; overflow:visible !important; padding-bottom:22px !important;
+  }
+  #auth-gate.auth-verify-mode .auth-body{padding-left:34px !important;padding-right:34px !important;}
+  #auth-gate.auth-verify-mode .auth-info-banner{
+    background:transparent !important; border:0 !important; box-shadow:none !important; padding:6px 8px !important;
+  }
+}
