@@ -5929,3 +5929,32 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-we
     background:transparent !important; border:0 !important; box-shadow:none !important; padding:6px 8px !important;
   }
 }
+
+/* Verify page (phone): bigger text, back arrow lined up with the code boxes' left edge */
+@media (max-width:1023px){
+  #auth-gate.auth-verify-mode .auth-info-banner{font-size:17px !important;line-height:1.45 !important;padding:6px 4px 10px !important;margin-bottom:14px !important;}
+  #auth-gate.auth-verify-mode .auth-info-banner b,#auth-gate.auth-verify-mode #auth-verify-email-label{font-weight:700;}
+  #auth-gate.auth-verify-mode .auth-resend{font-size:15px !important;line-height:1.5 !important;}
+  #auth-gate.auth-verify-mode .auth-resend button{font-size:15px !important;}
+  #auth-gate.auth-verify-mode .auth-error{font-size:14px !important;}
+}
+@media (max-width:1023px){
+  #auth-gate.auth-verify-mode .auth-back{left:-1px !important;}
+}
+
+/* Desktop: messaging search bar matches Career Space (same 44px height, same text size); bigger username */
+@media (min-width:1024px){
+  #screen #inbox-searchbar > div, #screen #inbox-searchbar > button{ height:44px !important; padding-top:0 !important; padding-bottom:0 !important; font-size:1.15rem !important; line-height:normal !important; }
+  #screen #inbox-searchbar input{ font-size:1.15rem !important; }
+  #inbox-username-el{ font-size:1.3rem !important; }
+}
+
+/* Desktop flashcards: no back arrow (End leaves the session); the Stitch logo + wordmark float on a white pill */
+@media (min-width:1024px){
+  #app-shell:has(.fc-end-btn) .fc-round-btn[aria-label="Back"]{ display:none !important; }
+  #app-shell:has(.fc-end-btn) #dtop-logo{
+    box-sizing:content-box; height:34px; padding:10px 20px; background:#fff; border-radius:999px;
+    box-shadow:0 2px 10px rgba(30,60,140,.08);
+  }
+  body.dark-mode #app-shell:has(.fc-end-btn) #dtop-logo{ background:#2a2a2a; box-shadow:none; }
+}
