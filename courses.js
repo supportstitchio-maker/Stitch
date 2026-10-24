@@ -220,11 +220,10 @@ try {
         }
 
         function rightPanelAIHistoryActionsHTML(){
-          const activeStyle = `background:rgba(30,144,255,0.12);color:${NAVY};`;
+          const activeStyle = `color:#1e90ff;`;
           const inactiveStyle = `color:#9ca3af;`;
           return `
             <div class="flex items-center gap-1">
-              <button onclick="startNewAIChat()" title="New chat" class="w-7 h-7 rounded-lg flex items-center justify-center" style="${inactiveStyle}">${Icon('plus','w-4 h-4')}</button>
               <button onclick="setAIHistoryPanelView('history')" title="Chat history" class="w-7 h-7 rounded-lg flex items-center justify-center" style="${aiHistoryPanelView === 'history' ? activeStyle : inactiveStyle}">${Icon('comment','w-4 h-4')}</button>
               <button onclick="setAIHistoryPanelView('delete')" title="Delete chat" class="w-7 h-7 rounded-lg flex items-center justify-center" style="${aiHistoryPanelView === 'delete' ? activeStyle : inactiveStyle}">${Icon('trash','w-4 h-4')}</button>
             </div>`;
@@ -1954,7 +1953,7 @@ try {
           return `${c.deliveryType === 'live' ? `<span ${t}>Live</span>` : ''}${enrolled ? `<span ${t}>Enrolled</span>` : ''}`;
         }
         function courseAdminTrashHTML(c){
-          return canManageCourse(c) ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="top:8px;right:8px;background:rgba(255,255,255,.9);color:#6b7280;z-index:2;">${Icon('trash','w-3.5 h-3.5')}</button>` : '';
+          return canManageCourse(c) ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="top:8px;right:8px;background:transparent;color:#fff;filter:drop-shadow(0 1px 4px rgba(0,0,0,.55));z-index:2;">${Icon('trash','w-4 h-4')}</button>` : '';
         }
 
         function courseFeaturedCardHTML(c){
