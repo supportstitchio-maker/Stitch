@@ -245,12 +245,24 @@
                   resetCachedAuthUser();
                   // Someone mid-way through the email code screen isn't signed in yet, so a stray sign-out
                   // event must not yank them back to Get Started
+                  try {
+                    // Mid sign-up (code screen, profile steps): a stray sign-out event must never throw them back to Get Started
+                    const __g = document.getElementById('auth-gate');
+                    const __ap = document.querySelector('#auth-gate .auth-panel.active');
+                    if (__g && !__g.classList.contains('auth-hidden') && __ap && __ap.id !== 'auth-panel-login') return;
+                  } catch (e) {}
                   if (typeof window.authIsVerifyScreenActive === 'function' && window.authIsVerifyScreenActive()) return;
                   if (typeof window.authShowLogin === 'function') window.authShowLogin();
                 }).catch(() => {
                   // If even the local session check throws, fall back to the old behavior rather than
                   // silently doing nothing
                   resetCachedAuthUser();
+                  try {
+                    // Mid sign-up (code screen, profile steps): a stray sign-out event must never throw them back to Get Started
+                    const __g = document.getElementById('auth-gate');
+                    const __ap = document.querySelector('#auth-gate .auth-panel.active');
+                    if (__g && !__g.classList.contains('auth-hidden') && __ap && __ap.id !== 'auth-panel-login') return;
+                  } catch (e) {}
                   if (typeof window.authIsVerifyScreenActive === 'function' && window.authIsVerifyScreenActive()) return;
                   if (typeof window.authShowLogin === 'function') window.authShowLogin();
                 });

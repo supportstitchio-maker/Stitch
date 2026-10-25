@@ -3361,6 +3361,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const ov = document.getElementById('overlay');
           const prevNotifScrollEl = ov.querySelector('.overflow-y-auto');
           const prevNotifScrollTop = prevNotifScrollEl ? prevNotifScrollEl.scrollTop : 0;
+          const prevNfilterEl = ov.querySelector('.nfilter');
+          const prevNfilterLeft = prevNfilterEl ? prevNfilterEl.scrollLeft : null;
           let html = notifGroupOpenKey ? notifGroupDetailHTML(notifGroupOpenKey) : null;
           if (!html) {
             const allRows = notifBuildGroups();
@@ -3383,6 +3385,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               </div>`;
           }
           ov.innerHTML = html;
+          // Keep the filter pills where they were (tapping the last one used to snap the row back to "All")
+          const newNfilterEl = ov.querySelector('.nfilter');
+          if (newNfilterEl && prevNfilterLeft !== null) {
+            newNfilterEl.style.scrollBehavior = 'auto';
+            newNfilterEl.scrollLeft = prevNfilterLeft;
+            const onPill = newNfilterEl.querySelector('.filter-pill.on');
+            if (onPill) {
+              const pr = onPill.getBoundingClientRect(), rr = newNfilterEl.getBoundingClientRect();
+              if (pr.right > rr.right - 8) newNfilterEl.scrollLeft += pr.right - rr.right + 16;
+              else if (pr.left < rr.left + 8) newNfilterEl.scrollLeft -= rr.left - pr.left + 16;
+            }
+          }
           notifHydratePhotos();
           if (prevNotifScrollTop) {
             const restoredNotifScrollEl = ov.querySelector('.overflow-y-auto');

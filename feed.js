@@ -3233,8 +3233,15 @@
             video.playsInline = true;
             video.preload = 'metadata';
             video.src = url;
+            // Try a few moments in: many videos start on a black fade-in frame, which made black posters
+            const tries = [0.3, 1, 2, 3.5];
+            let tryIdx = 0;
+            const seekTo = () => {
+              const dur = video.duration || 1;
+              video.currentTime = Math.min(tries[tryIdx], Math.max(0, dur - 0.1));
+            };
             video.addEventListener('loadedmetadata', () => {
-              try { video.currentTime = Math.min(0.3, (video.duration || 1) / 2); }
+              try { seekTo(); }
               catch (e) { clearTimeout(timer); finish(null); }
             }, { once: true });
             video.addEventListener('seeked', () => {
@@ -3243,9 +3250,12 @@
                 canvas.width = video.videoWidth || 720;
                 canvas.height = video.videoHeight || 1280;
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                if (canvasLooksBlack(canvas) && tryIdx < tries.length - 1 && (video.duration || 0) > tries[tryIdx + 1] + 0.2) {
+                  tryIdx++; seekTo(); return;
+                }
                 canvas.toBlob((b) => { clearTimeout(timer); finish(b); }, 'image/jpeg', 0.82);
               } catch (e) { clearTimeout(timer); finish(null); }
-            }, { once: true });
+            });
             video.addEventListener('error', () => { clearTimeout(timer); finish(null); }, { once: true });
           });
         }
@@ -3288,13 +3298,26 @@
 
         // Draws whatever frame the <video> currently has decoded onto an off-screen canvas and
         // reads it back out as a jpeg data URL
+        // True when a canvas holds an (almost) all-black picture: a frame grabbed before the browser
+        // had decoded anything, or a fade-in first frame. Such a frame must never become a poster.
+        function canvasLooksBlack(canvas){
+          try {
+            const t = document.createElement('canvas'); t.width = 16; t.height = 16;
+            const c = t.getContext('2d'); c.drawImage(canvas, 0, 0, 16, 16);
+            const d = c.getImageData(0, 0, 16, 16).data;
+            let sum = 0;
+            for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+            return (sum / 256) < 12;
+          } catch (e) { return false; }
+        }
         function captureFeedVideoFrame(video){
           try {
-            if (!video.videoWidth || !video.videoHeight) return null;
+            if (!video.videoWidth || !video.videoHeight || video.readyState < 2) return null;
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            if (canvasLooksBlack(canvas)) return null;
             return canvas.toDataURL('image/jpeg', 0.75);
           } catch (e) {
             return null;
@@ -3324,7 +3347,7 @@
           // paint the first frame (same trick the grid tiles use) without downloading the whole video.
           if (video.paused && !video.getAttribute('poster') && (video.currentTime || 0) < 0.05) {
             video.addEventListener('seeked', reveal, { once: true });
-            try { video.currentTime = 0.05; } catch (e) {}
+            try { video.currentTime = Math.min(0.5, Math.max(0.05, (video.duration || 1) / 2)); } catch (e) {}
           }
           // 'canplay' means the browser genuinely has enough buffered to render and keep playing
           // without immediately stalling again

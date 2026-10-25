@@ -227,10 +227,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           try {
             const { data: row } = await sb.from(PUBLIC_PROFILES_TABLE).select('photo,username,name,last_active').eq('user_id', meta.otherUserId).maybeSingle();
             // A chat started before the person's details were known only has a placeholder name
-            if (row && row.name && meta.name === 'Stitch member' && convoMeta[convoId]) {
-              convoMeta[convoId].name = row.name;
+            let nameFixed = false;
+            const realName = row && (row.name || row.username);
+            if (realName && (!meta.name || meta.name === 'Stitch member' || meta.name === 'Someone') && convoMeta[convoId]) {
+              convoMeta[convoId].name = realName;
               const ph = convoArrays().flat().find(x => x.id === convoId);
-              if (ph) ph.name = row.name;
+              if (ph) ph.name = realName;
+              nameFixed = true;
             }
             const freshPhoto = (row && row.photo) || null;
             const freshUsername = (row && row.username) || '';
@@ -241,7 +244,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (!convoMeta[convoId]) return;
             if (lastActiveChanged) convoMeta[convoId].lastActive = freshLastActive;
             if (activeConvoId === convoId) refreshConvoStatusLine(convoId);
-            if (!photoChanged && !usernameChanged) return; 
+            if (!photoChanged && !usernameChanged && !nameFixed) { if (nameFixed) queueSaveUserState(); return; } 
             convoMeta[convoId].photo = freshPhoto;
             if (usernameChanged) convoMeta[convoId].username = freshUsername;
             const entry = convoArrays().flat().find(c => c.id === convoId);
@@ -1338,6 +1341,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           syncAllConvoPreviewsFromMessages();
           const prevInboxScreenEl = document.getElementById('screen');
           const prevInboxScrollTop = prevInboxScreenEl ? prevInboxScreenEl.scrollTop : 0;
+          // Chats that only have the placeholder name fetch the person's real name from their profile
+          try {
+            window.__nameHydrating = window.__nameHydrating || {};
+            convoArrays().flat().forEach(c => {
+              if (c && c.otherUserId && (!c.name || c.name === 'Stitch member') && !window.__nameHydrating[c.id]) {
+                window.__nameHydrating[c.id] = 1;
+                refreshConvoAvatarFromProfile(c.id);
+              }
+            });
+          } catch (e) {}
           // Remember how far the filter pills were scrolled so a re-render doesn't snap them back to "General"
           const prevPillRowEl = document.getElementById('inbox-filterbar-row');
           const prevPillScrollLeft = prevPillRowEl ? prevPillRowEl.scrollLeft : null;
