@@ -4017,11 +4017,24 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const log = document.getElementById('convo-log');
             if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
           }
-          if (!convoIsInView(convoId)) {
+          if (!convoIsInView(convoId)) (async () => {
             if (typeof addNotif === 'function') {
               const meta = convoMeta[convoId] || {};
               const isGroup = meta.icon === 'users';
-              const senderName = meta.name || (c && c.name) || 'someone';
+              let senderName = meta.name || (c && c.name) || '';
+              // No real name known yet (placeholder or empty): look the person up so the alert names them
+              if (!isGroup && (!senderName || senderName === 'Stitch member' || senderName === 'someone')) {
+                try {
+                  const uid = meta.otherUserId || (c && c.otherUserId) || row.sender_id;
+                  const sb = getSupabaseClient();
+                  if (sb && uid) {
+                    const { data: prof } = await sb.from(PUBLIC_PROFILES_TABLE).select('name,username').eq('user_id', uid).maybeSingle();
+                    senderName = (prof && (prof.name || prof.username)) || '';
+                    if (senderName && convoMeta[convoId]) { convoMeta[convoId].name = senderName; if (c) c.name = senderName; }
+                  }
+                } catch (e) {}
+              }
+              if (!senderName) senderName = 'New message';
               addNotif(isSysEvent ? {
                 type: 'group',
                 source: 'messages',
@@ -4038,13 +4051,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 iconBg: 'bg-emerald-50',
                 iconClass: 'text-emerald-600',
                 name: senderName,
-                message: isGroup ? `New message in "${senderName}"` : `New message from ${senderName}`,
+                message: isGroup ? `New message in "${senderName}"` : (senderName === 'New message' ? 'You have a new message' : `New message from ${senderName}`),
                 body: previewText,
                 convoId,
                 otherUserId: meta.otherUserId || (c && c.otherUserId),
               });
             }
-          }
+          })();
           if (convoMeta[convoId]) convoMeta[convoId].preview = previewText;
           const inboxList = document.getElementById('inbox-list');
           if (inboxList) inboxList.innerHTML = inboxContent();

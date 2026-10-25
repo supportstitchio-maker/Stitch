@@ -5958,3 +5958,8 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-we
   }
   body.dark-mode #app-shell:has(.fc-end-btn) #dtop-logo{ background:#2a2a2a; box-shadow:none; }
 }
+
+/* Notification banner and list: icon-only entries have no circle behind them, and the icon is grey */
+.nav-av-c.nav-av-icon{ background:transparent !important; color:#9ca3af !important; }
+.nav-av-c.nav-av-icon svg{ color:#9ca3af !important; stroke:currentColor; }
+body.dark-mode .nav-av-c.nav-av-icon{ background:transparent !important; color:#9ca3af !important; }

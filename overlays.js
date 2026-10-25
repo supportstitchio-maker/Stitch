@@ -2928,7 +2928,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         // everything else keeps its themed icon tile.
         function notifAvatarHTML(n){
           const uid = notifUserIdFor(n);
-          if (!uid) return `<div class="w-10 h-10 ${n.iconBg} rounded-2xl flex items-center justify-center ${n.iconClass} flex-shrink-0">${NotifIcon(n.icon,'w-5 h-5')}</div>`;
+          if (!uid) return `<div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style="color:#9ca3af;">${NotifIcon(n.icon,'w-5 h-5')}</div>`;
           const photo = notifPhotoFor(n);
           return `<div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarMediaHTML(photo, 'user', 'w-5 h-5')}</div>`;
         }
@@ -3487,7 +3487,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
         function notifAvatar2(n){
           const uid = notifUserIdFor(n);
-          if (!uid) return `<div class="nav-av"><div class="nav-av-c">${NotifIcon(n.icon || 'bell','w-5 h-5')}</div></div>`;
+          if (!uid) return `<div class="nav-av"><div class="nav-av-c nav-av-icon">${NotifIcon(n.icon || 'bell','w-5 h-5')}</div></div>`;
           const photo = notifPhotoFor(n);
           return `<div class="nav-av"><div class="nav-av-c" style="color:#6b7280;">${avatarMediaHTML(photo, 'user', 'w-6 h-6')}</div><div class="nav-av-b" style="background:${notifBadgeColor(n)};">${NotifIcon(n.icon || 'bell','w-2.5 h-2.5')}</div></div>`;
         }
