@@ -6772,7 +6772,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           stopCallLocalStream();
           teardownCallSignaling();
           groupCallFullscreenId = null;
+          groupCallSpotlightId = null;
+          callSheetOpen = false;
           callState = { callDir: answering ? 'in' : 'out', convoId: id, type, connected: false, seconds: 0, muted: false, speaker: false, camOff: !!(opts && opts.camOff), mediaError: null, statusOverride: null, pendingRingTargets: null };
+          if (opts && opts.micOff) callState.muted = true;
           openOverlay('call');
           refreshConvoAvatarFromProfile(id);
 
@@ -7475,6 +7478,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (endedWasMeeting) meetingOnCallEnded();
           callState = { convoId: null, type: 'audio', connected: false, seconds: 0, muted: false, speaker: false, camOff: false, mediaError: null, statusOverride: null, pendingRingTargets: null };
           groupCallFullscreenId = null;
+          callSheetOpen = false;
           if (wasMinimized) return;
           if (endedId && !endedWasMeeting) openConversation(endedId); else closeOverlay();
         }
@@ -7720,6 +7724,89 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               #call-controls-bar button.cu-ctl.end .cu-ctl-btn{width:auto;height:auto;}
               .cu-bar-incoming .cu-bar-inner{gap:90px !important;}
             }
+
+            /* ---- Rebuilt layouts: pill control bar, labelled voice panel, tile sheets, speaker view ---- */
+            body{--cu-ic:#4b5563;--cu-g1:#1e90ff;--cu-g2:#4169e1;}
+            body.dark-mode{--cu-ic:#c4c4c4;--cu-g1:#1457a8;--cu-g2:#263f8c;--cu-blue-soft:rgba(20,87,168,.18);}
+            .cu-glass,.cu-pill{color:var(--cu-ic);}
+            .cu-ctl:not(.end):not(.accept):not(.on):not(.accent) .cu-ctl-btn{color:var(--cu-ic);}
+            .cu-glass .cu-count,.cu-ctl.accent .cu-ctl-btn,.cu-tg{background:var(--cu-g1);}
+            .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline-color:var(--cu-g1);}
+            .cu-avatar,.cu-voice-avatar{background:linear-gradient(135deg,var(--cu-g1),var(--cu-g2)) !important;}
+            .cu-avatar span[style*="letter-spacing"],.cu-voice-avatar span[style*="letter-spacing"]{color:#fff !important;}
+            .cu-voice-avatar span[style*="letter-spacing"]{font-size:clamp(40px,13vw,66px) !important;}
+            .cu-voice-avatar{box-shadow:0 0 0 14px rgba(30,100,200,.10),0 0 0 30px rgba(30,100,200,.05);}
+            body.dark-mode .cu-voice-avatar{box-shadow:0 0 0 14px rgba(255,255,255,.05),0 0 0 30px rgba(255,255,255,.025);}
+            body.dark-mode .cu-ring{border-color:rgba(255,255,255,.16);}
+            .cu-incoming{background:var(--cu-bg) !important;}
+            .cu-inpanel{flex-shrink:0;margin:0 12px calc(env(safe-area-inset-bottom,0px) + 14px);padding:16px 12px 14px;border-radius:30px;background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 12px 36px rgba(0,0,0,.10);}
+            body.dark-mode .cu-inpanel{box-shadow:none;}
+            .cu-inpanel .cu-bar{padding:0;}
+            .cu-inpanel .cu-bar-incoming .cu-bar-inner{gap:64px !important;padding:0;justify-content:center;}
+            .cu-inpanel .cu-quick{padding:14px 0 0;}
+            @media (min-width:700px){.cu-inpanel{width:100%;max-width:440px;align-self:center;}}
+            /* pill bar (video calls, meetings, class sessions) */
+            .cu-bar .cu-bar-inner.cu-pillbar{display:flex;flex-wrap:nowrap;width:auto;max-width:100%;justify-content:center;gap:10px;padding:8px;border-radius:999px;box-shadow:0 10px 28px rgba(0,0,0,.14);overflow:visible;}
+            body.dark-mode .cu-bar .cu-bar-inner.cu-pillbar{box-shadow:0 10px 28px rgba(0,0,0,.45);}
+            .cu-pillbar .cu-ctl{min-width:0;gap:0;}
+            .cu-pillbar .cu-ctl-label{display:none;}
+            .cu-pillbar .cu-ctl-btn{width:46px;height:46px;background:var(--cu-soft);}
+            .cu-pillbar .cu-ctl.on .cu-ctl-btn{background:var(--cu-fg);color:var(--cu-bg);}
+            .cu-bar .cu-bar-inner.cu-pillbar .cu-ctl.end{flex:none;width:auto;height:auto;margin:0;padding:0;border-radius:50%;background:transparent;box-shadow:none;}
+            .cu-bar .cu-bar-inner.cu-pillbar .cu-ctl.end .cu-ctl-btn{width:46px;height:46px;background:#ef4444;color:#fff;}
+            /* labelled panel for voice calls */
+            .cu-bar .cu-bar-inner.cu-voicegrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:100%;max-width:420px;padding:16px 10px 14px;border-radius:28px;overflow:visible;}
+            .cu-voicegrid .cu-ctl{min-width:0;width:100%;}
+            .cu-voicegrid .cu-ctl-btn{width:56px;height:56px;}
+            .cu-voicegrid .cu-ctl.on .cu-ctl-btn{background:var(--cu-fg);color:var(--cu-bg);}
+            .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end{flex:none;width:100%;height:auto;margin:0;padding:0;border-radius:0;background:transparent;box-shadow:none;flex-direction:column;}
+            .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end .cu-ctl-btn{width:56px;height:56px;background:#ef4444;color:#fff;}
+            .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end .cu-ctl-label{font-size:10.5px;font-weight:600;}
+            @media (min-width:1024px){
+              #call-controls-bar .cu-bar-inner.cu-pillbar,#lecture-controls-bar .cu-bar-inner.cu-pillbar{width:auto;max-width:none;gap:14px;padding:10px 14px;}
+              #call-controls-bar .cu-pillbar button.cu-ctl,#lecture-controls-bar .cu-pillbar button.cu-ctl{width:auto;height:auto;}
+              #call-controls-bar .cu-pillbar button.cu-ctl .cu-ctl-btn,#lecture-controls-bar .cu-pillbar button.cu-ctl .cu-ctl-btn{width:50px;height:50px;}
+              #call-controls-bar .cu-pillbar button.cu-ctl.end,#lecture-controls-bar .cu-pillbar button.cu-ctl.end{width:auto;}
+              #call-controls-bar .cu-pillbar button.cu-ctl.end .cu-ctl-btn,#lecture-controls-bar .cu-pillbar button.cu-ctl.end .cu-ctl-btn{width:50px;height:50px;}
+              #call-controls-bar .cu-voicegrid button.cu-ctl{width:100%;}
+              #call-controls-bar .cu-voicegrid button.cu-ctl .cu-ctl-btn,#call-controls-bar .cu-voicegrid button.cu-ctl.end .cu-ctl-btn{width:56px;height:56px;}
+              #call-controls-bar .cu-voicegrid button.cu-ctl.end{width:100%;}
+              .cu-grid{gap:12px;}
+            }
+            /* sheets: plain grey icons, tile grid, raise-hand pill */
+            .cu-bsheet-row > :first-child{background:none !important;color:var(--cu-ic) !important;width:24px !important;height:24px !important;padding:0 !important;border-radius:0 !important;}
+            .cu-bsheet-row.red > :first-child{background:none !important;color:#ef4444 !important;}
+            .cu-bsheet{max-width:560px;}
+            .cu-sheet-title{font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;font-size:20px;padding:6px 8px 4px;}
+            .cu-tilegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 6px;}
+            .cu-tilegrid4{grid-template-columns:repeat(4,minmax(0,1fr));}
+            .cu-tile2{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 4px;border-radius:16px;background:var(--cu-soft);color:var(--cu-fg);font-size:11px;font-weight:600;text-align:center;line-height:1.15;}
+            .cu-tile2:active{background:var(--cu-soft2);}
+            .cu-tile2-ic{color:var(--cu-ic);display:flex;}
+            .cu-handpill{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 12px);margin:8px 6px 0;height:46px;border-radius:999px;background:var(--cu-soft);color:var(--cu-fg);font-weight:700;font-size:14px;}
+            .cu-handpill svg{color:var(--cu-ic);}
+            .cu-handpill.on{background:var(--cu-fg);color:var(--cu-bg);}
+            .cu-handpill.on svg{color:var(--cu-bg);}
+            .cu-rowon{color:var(--cu-ic);display:flex;}
+            .cu-wide-out{margin:10px 6px 0;height:46px;border-radius:999px;border:1px solid var(--cu-line);font-weight:600;font-size:14px;color:var(--cu-fg);width:calc(100% - 12px);}
+            .cu-plist{overflow-y:auto;flex:1;min-height:0;padding:4px 0;}
+            .cu-prow{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--cu-line);}
+            .cu-prow:last-child{border-bottom:0;}
+            .cu-prow-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--cu-g1),var(--cu-g2));color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+            .cu-prow-tx{flex:1;min-width:0;display:flex;flex-direction:column;}
+            .cu-prow-tx b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .cu-prow-tx small{font-size:12px;color:var(--cu-sub);}
+            .cu-prow-ic{display:flex;gap:10px;color:var(--cu-ic);}
+            /* speaker view */
+            .cu-spk{width:100%;height:100%;display:flex;flex-direction:column;gap:8px;min-height:0;}
+            .cu-spk-main{flex:1 1 0%;min-height:0;}
+            .cu-spk-strip{display:flex;gap:8px;height:92px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+            .cu-spk-strip::-webkit-scrollbar{display:none;}
+            .cu-spk-cell{width:92px;height:100%;flex-shrink:0;}
+            .cu-spk-cell .cu-chip{font-size:10px;padding:2px 7px;left:5px;bottom:5px;}
+            .cu-spk-cell .cu-corner{width:20px;height:20px;top:5px;right:5px;}
+            .cu-spk-cell .cu-corner.cu-hand{left:5px;width:22px;height:22px;font-size:12px;}
+            @media (min-width:1024px){.cu-spk-strip{height:120px;}.cu-spk-cell{width:150px;}}
           `;
           document.head.appendChild(st);
         }
@@ -7729,7 +7816,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function cuIncomingHTML(o){
           ensureCallUiStyles();
           return `
-            <div class="cu-screen" style="padding-top:var(--top-safe-pad);background:linear-gradient(180deg,var(--cu-blue-soft),var(--cu-bg) 60%);">
+            <div class="cu-screen cu-incoming" style="padding-top:var(--top-safe-pad);">
               <div class="cu-top">
                 <button onclick="${o.declineAction}" title="Back" class="cu-glass">${IconBold('back', 'w-5 h-5')}</button>
                 <div class="cu-title"><div class="cu-status" style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:12px;">${escapeHtml(o.kicker)}</div></div>
@@ -7745,12 +7832,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="cu-voice-sub" style="max-width:86%;white-space:normal;margin-top:-6px;">${escapeHtml(o.sub)}</div>
                 </div>
               </div>
-              ${o.quick ? `<div class="cu-quick"><button onclick="messageIncomingCall()" class="cu-pill">${Icon('send','w-4 h-4')}<span>Message</span></button><button onclick="remindMeIncomingCall()" class="cu-pill">${Icon('clock','w-4 h-4')}<span>Remind me</span></button></div>` : ''}
-              <div class="cu-bar cu-bar-incoming">
-                <div class="cu-bar-inner" style="gap:56px;padding:14px 30px 12px;">
-                  ${cuCtlHTML({ onclick: o.declineAction, icon: 'phoneHangup', label: 'Decline', end: true })}
-                  ${cuCtlHTML({ onclick: o.acceptAction, icon: o.acceptIcon, label: o.acceptLabel, accept: true })}
+              <div class="cu-inpanel">
+                <div class="cu-bar cu-bar-incoming">
+                  <div class="cu-bar-inner">
+                    ${cuCtlHTML({ onclick: o.declineAction, icon: 'phoneHangup', label: 'Decline', end: true })}
+                    ${cuCtlHTML({ onclick: o.acceptAction, icon: o.acceptIcon, label: o.acceptLabel, accept: true })}
+                  </div>
                 </div>
+                ${o.quick ? `<div class="cu-quick"><button onclick="messageIncomingCall()" class="cu-pill">${Icon('send','w-4 h-4')}<span>Message</span></button><button onclick="remindMeIncomingCall()" class="cu-pill">${Icon('clock','w-4 h-4')}<span>Remind me</span></button></div>` : ''}
               </div>
             </div>`;
         }
@@ -7791,7 +7880,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // One labelled round control. o: { id, onclick, icon, label, on, end, accent, title }
         function cuCtlInnerHTML(o){
-          return `<span class="cu-ctl-btn">${cuEmoji(o.icon) ? `<span style="font-size:26px;line-height:1;">${cuEmoji(o.icon)}</span>` : Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
+          return `<span class="cu-ctl-btn">${Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
         }
         function cuCtlClass(o){
           return 'cu-ctl' + (o.on ? ' on' : '') + (o.accent ? ' accent' : '') + (o.accept ? ' accept' : '') + (o.end ? ' end' : '');
@@ -7816,7 +7905,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <${tag} ${o.onclick ? `onclick="${o.onclick}"` : ''} ${o.speakKey ? `data-speak="${o.speakKey}"` : ''} class="cu-tile" style="${o.style || ''}">
               ${o.media || ''}
               ${!o.hasVideo ? `<div class="cu-avatar ${o.large ? 'cu-avatar-lg' : ''} ${o.bg || 'bg-blue-50'}">${o.avatar || ''}</div>` : ''}
-              ${o.hand ? `<span class="cu-corner cu-hand">${cuEmoji('handRaised')}</span>` : ''}
+              ${o.hand ? `<span class="cu-corner cu-hand" style="color:#f59e0b;">${Icon('handRaised', 'w-4 h-4')}</span>` : ''}
               ${o.muted ? `<span class="cu-corner cu-mute">${Icon('micOff', 'w-3.5 h-3.5')}</span>` : ''}
               ${o.name ? `<span class="cu-chip">${escapeHtml(o.name)}</span>` : ''}
               ${o.extra || ''}
@@ -8042,6 +8131,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             cuPatchCtl('call-secondary-btn', isVideo
               ? { id: 'call-secondary-btn', onclick: "toggleCallControl('camOff')", icon: callState.camOff ? 'cameraOff' : 'video', label: callState.camOff ? 'Start video' : 'Camera', on: callState.camOff }
               : { id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker });
+            cuPatchCtl('call-more-btn', callMoreBtnSpec());
             const more = document.getElementById('meeting-more-btn');
             if (more && typeof meetingSheet !== 'undefined') cuPatchCtl('meeting-more-btn', { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet });
             return;
@@ -8128,6 +8218,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // Which participant (if any) is pinned full screen inside a group call
         let groupCallFullscreenId = null;
+        let groupCallSpotlightId = null;
+        function setGroupCallSpotlight(id){ groupCallSpotlightId = id; refreshCallStage(); }
 
         function openGroupCallFullscreen(id){
           groupCallFullscreenId = id;
@@ -8199,6 +8291,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }));
           }
 
+          // Three or more people: one big speaker view with everyone else in a strip underneath.
+          // Tap a small tile to bring that person up; tap the big one to fill the screen.
+          if (tileCount >= 3) {
+            if (!groupCallSpotlightId || groupCallSpotlightId === 'local' || !connected.some(e => e.peerId === groupCallSpotlightId)) groupCallSpotlightId = connected[0].peerId;
+            const mainEntry = connected.find(e => e.peerId === groupCallSpotlightId);
+            const mainTile = cuTileHTML(Object.assign(remoteSpec(mainEntry), { large: true, onclick: `openGroupCallFullscreen('${mainEntry.peerId}')`, style: 'width:100%;height:100%;border-radius:26px;' }));
+            const strip = [cuTileHTML(Object.assign(localSpec(), { onclick: "openGroupCallFullscreen('local')", style: 'width:100%;height:100%;border-radius:18px;' }))]
+              .concat(connected.filter(e => e.peerId !== groupCallSpotlightId).map(e => cuTileHTML(Object.assign(remoteSpec(e), { onclick: `setGroupCallSpotlight('${e.peerId}')`, style: 'width:100%;height:100%;border-radius:18px;' }))));
+            const waitingN = others.length - connected.length;
+            return `
+              <div class="cu-spk">
+                <div class="cu-spk-main">${mainTile}</div>
+                <div class="cu-spk-strip">${strip.map(t => `<div class="cu-spk-cell">${t}</div>`).join('')}</div>
+                ${waitingN > 0 ? `<div style="text-align:center;font-size:12px;color:var(--cu-sub);flex-shrink:0;">Waiting on ${waitingN} more member${waitingN === 1 ? '' : 's'}\u2026</div>` : ''}
+              </div>`;
+          }
+
           const tiles = [cuTileHTML(Object.assign(localSpec(), { onclick: "openGroupCallFullscreen('local')" }))]
             .concat(connected.map(e => cuTileHTML(Object.assign(remoteSpec(e), { onclick: `openGroupCallFullscreen('${e.peerId}')` }))));
 
@@ -8210,23 +8319,51 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        // The "More" sheet on a normal call (add people, notes, messages, flip camera)
+        let callSheetOpen = false;
+        function callMoreBtnSpec(){
+          return { id: 'call-more-btn', onclick: 'toggleCallMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!callSheetOpen };
+        }
+        function callMoreSheetHTML(){
+          if (!callSheetOpen || !callState.convoId || isMeetingConvo(callState.convoId)) return '';
+          const isVideo = callState.type === 'video';
+          const canFlip = isVideo && callLocalStream && !callState.camOff && !callState.mediaError;
+          const tile = (icon, label, action) => `<button onclick="${action}" class="cu-tile2"><span class="cu-tile2-ic">${Icon(icon, 'w-6 h-6')}</span><span>${label}</span></button>`;
+          return `<div class="cu-backdrop" onclick="closeCallMoreSheet()"></div>
+            <div class="cu-bsheet">
+              <div class="cu-bsheet-grab"></div>
+              <div class="cu-tilegrid cu-tilegrid4">
+                ${tile('personPlus', 'Add people', 'closeCallMoreSheet();openAddToCall()')}
+                ${tile('edit', 'Call notes', 'closeCallMoreSheet();openCallNotes()')}
+                ${tile('commentText', 'Messages', 'closeCallMoreSheet();callBannerMessage()')}
+                ${canFlip ? tile('shuffle', 'Flip camera', 'closeCallMoreSheet();flipCallCamera()') : ''}
+              </div>
+            </div>`;
+        }
+        function updateCallMoreSheet(){
+          const el = document.getElementById('call-sheets-region');
+          if (el) el.innerHTML = callMoreSheetHTML();
+          cuPatchCtl('call-more-btn', callMoreBtnSpec());
+        }
+        function toggleCallMoreSheet(){ callSheetOpen = !callSheetOpen; updateCallMoreSheet(); }
+        function closeCallMoreSheet(){ callSheetOpen = false; updateCallMoreSheet(); }
+
         function callControlsHTML(){
           const isVideo = callState.type === 'video';
           const isMeetingCall = isMeetingConvo(callState.convoId);
           const ctls = [];
-          ctls.push(cuCtlHTML({ id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted }));
-          if (isVideo) {
+          // Video calls and meetings: one pill of round icons. Voice calls: a labelled panel.
+          if (isVideo || isMeetingCall) {
+            ctls.push(cuCtlHTML(isMeetingCall ? { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet } : callMoreBtnSpec()));
             ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('camOff')", icon: callState.camOff ? 'cameraOff' : 'video', label: callState.camOff ? 'Start video' : 'Camera', on: callState.camOff }));
+            ctls.push(cuCtlHTML({ id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted }));
           } else {
+            ctls.push(cuCtlHTML({ id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted }));
             ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker }));
+            ctls.push(cuCtlHTML(callMoreBtnSpec()));
           }
-          if (isMeetingCall) {
-            ctls.push(cuCtlHTML({ id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet }));
-          } else {
-            ctls.push(cuCtlHTML({ onclick: 'openAddToCall()', icon: 'personPlus', label: 'Add' }));
-          }
-          ctls.push(cuCtlHTML({ onclick: 'endCall()', icon: 'phoneHangup', label: isMeetingCall ? 'Leave meeting' : 'End call', end: true, title: isMeetingCall ? 'Leave meeting' : 'End call' }));
-          return `<div class="cu-bar-inner">${ctls.join('')}</div>`;
+          ctls.push(cuCtlHTML({ onclick: 'endCall()', icon: 'phoneHangup', label: isMeetingCall ? 'Leave' : 'End', end: true, title: isMeetingCall ? 'Leave meeting' : 'End call' }));
+          return `<div class="cu-bar-inner ${(isVideo || isMeetingCall) ? 'cu-pillbar' : 'cu-voicegrid'}">${ctls.join('')}</div>`;
         }
 
         function callAdminBarHTML(){
@@ -8267,7 +8404,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${callAdminBarHTML()}
               <div class="cu-stage" id="call-stage-wrap">${callStageHTML()}</div>
               <div id="call-controls-bar" class="cu-bar">${callControlsHTML()}</div>
-              ${isMeetingCall ? meetingOverlaysHTML() : ''}
+              ${isMeetingCall ? meetingOverlaysHTML() : `<div id="call-sheets-region">${callMoreSheetHTML()}</div>`}
             </div>`;
         }
 
@@ -8284,6 +8421,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let pendingMeetingError = null;   // 'not_found' | 'offline' | null
         let meetingJoinPollTimer = null;
         let meetingJoinCamOn = true;
+        let meetingJoinMicOn = true;
         let meetingJoinPreviewStream = null;
         function stopMeetingJoinPreview(){
           if (meetingJoinPreviewStream) {
@@ -8305,6 +8443,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
           const cur = document.getElementById('mj-preview-video');
           if (cur && cur.srcObject !== meetingJoinPreviewStream) { cur.srcObject = meetingJoinPreviewStream; try { cur.play(); } catch (e) {} }
+        }
+        function toggleMeetingJoinMic(){
+          meetingJoinMicOn = !meetingJoinMicOn;
+          const ov = document.getElementById('overlay');
+          if (ov && currentOverlayKind === 'meetingJoin') ov.innerHTML = meetingJoinHTML();
         }
         function toggleMeetingJoinCamera(){
           meetingJoinCamOn = !meetingJoinCamOn;
@@ -8457,13 +8600,63 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 `;
         }
 
-        // Inbox "Meetings" tab: Live + Scheduled options and your meetings, all under the tab
+        // Inbox "Meetings" tab: start a meeting, join with a code, your upcoming meetings, schedule
+        function meetingMonthDay(iso){
+          const d = new Date(iso);
+          if (!isFinite(d.getTime())) return { day: '', mon: '' };
+          return { day: String(d.getDate()), mon: d.toLocaleString(undefined, { month: 'short' }).toUpperCase() };
+        }
+        function meetingCodeFromTyped(v){
+          v = String(v || '').trim();
+          if (!v) return '';
+          const q = /[?&]meeting=([^&#\s]+)/i.exec(v);
+          if (q) return decodeURIComponent(q[1]);
+          const seg = v.replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').pop();
+          return seg || '';
+        }
+        function joinMeetingFromTypedCode(){
+          const el = document.getElementById('meetings-code-input');
+          const code = meetingCodeFromTyped(el ? el.value : '');
+          if (!code) { if (el) el.focus(); return; }
+          openMeetingByCode(code);
+        }
+        function meetingsHomeCardsHTML(){
+          const upcoming = (myUpcomingMeetings || []);
+          if (upcoming.length) setTimeout(startMeetingCountdownTicker, 0);
+          if (!upcoming.length) return `<div class="mh-empty">Meetings you schedule or ask to be reminded about show up here.</div>`;
+          return upcoming.map(m => {
+            const dp = meetingMonthDay(m.starts_at);
+            const act = (m.is_admin || m.state === 'live') ? (m.state === 'live' ? 'Join' : 'Start') : 'Details';
+            const sub = `<span data-meeting-countdown="${escapeHtml(m.starts_at)}" style="font-variant-numeric:tabular-nums;">${escapeHtml(meetingCountdownText(m.starts_at))}</span>${m.is_host ? '' : (m.is_admin ? ' \u00b7 Admin' : ' \u00b7 Reminder on')}`;
+            return `
+              <div class="mh-card">
+                <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="mh-main">
+                  <span class="mh-date"><b>${dp.day}</b><small>${dp.mon}</small></span>
+                  <span class="mh-info"><b>${escapeHtml(m.title)}</b><small>${sub}</small></span>
+                  <span class="mh-act ${act === 'Details' ? 'out' : ''}">${act}</span>
+                </button>
+                <div class="mh-links">
+                  <button onclick="copyMeetingLink('${escapeHtml(m.code)}')">Copy link</button>
+                  <button onclick="shareMeetingLink('${escapeHtml(m.code)}', '${escapeHtml(m.title).replace(/'/g, '&#39;')}')">Share</button>
+                  ${m.is_admin ? `<button class="red" onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')">${m.state === 'live' ? 'End' : 'Cancel meeting'}</button>` : ''}
+                </div>
+              </div>`;
+          }).join('');
+        }
         function inlineMeetingsHTML(){
           return `
-            <div class="meetings-fill bg-gray-50 px-5" style="padding-top:16px;padding-bottom:24px;">
-              ${meetingChoiceCard("pickInlineMeeting('live')", 'Live meeting', 'Start right now and share the link.', 'You join the call straight away. Anyone with the link can join you.')}
-              ${meetingChoiceCard("pickInlineMeeting('scheduled')", 'Scheduled meeting', 'Pick a date and time.', 'People who open the link can ask for a reminder before it starts.')}
-              ${meetingsListHTML()}
+            <div class="meetings-fill mh-wrap">
+              <button onclick="pickInlineMeeting('live')" class="mh-start">
+                <span class="mh-start-tx"><b>Start a meeting</b><small>Get a link to share in one tap</small></span>
+                <span class="mh-start-ic">${Icon('video', 'w-5 h-5')}</span>
+              </button>
+              <div class="mh-code">
+                <input id="meetings-code-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Enter a meeting code or link" onkeydown="if(event.key==='Enter'){event.preventDefault();joinMeetingFromTypedCode();}">
+                <button onclick="joinMeetingFromTypedCode()" class="mh-join">Join</button>
+              </div>
+              <div class="mh-label">Upcoming</div>
+              <div id="meetings-home-cards">${meetingsHomeCardsHTML()}</div>
+              <button onclick="pickInlineMeeting('scheduled')" class="mh-fab">${Icon('plus', 'w-4 h-4')}<span>Schedule</span></button>
             </div>`;
         }
 
@@ -8685,6 +8878,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               pendingMeetingError = null;
               meetingJoinStep = 'info';
               meetingJoinCamOn = true;
+              meetingJoinMicOn = true;
               openOverlay('meetingJoin');
               pushInAppNotification('Meeting link ready', 'Tap the link button on the call screen to share it.');
             } else {
@@ -8706,19 +8900,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const m = meetingCreated;
           if (!m) return '';
           const link = buildMeetingLink(m.code);
-          const grey = 'background:var(--cu-soft,#eef0f3);color:var(--cu-fg,#374151);border:1px solid var(--cu-line,#e2e8f0);';
           return `
-            ${meetingScreenHeader('Meeting scheduled', 'openCreateMenu()')}
-            <div class="flex-1 overflow-y-auto px-6 flex flex-col items-center text-center" style="padding-top:28px;">
-              <div class="text-base font-semibold mb-1 break-words max-w-full">${escapeHtml(m.title)}</div>
-              <div class="text-sm text-gray-500 mb-6">${escapeHtml(meetingWhenText(m.starts_at))}</div>
-              <div class="w-full max-w-sm rounded-2xl px-4 py-3 text-xs break-all text-left mb-4" style="background:var(--cu-soft,#f1f5f9);color:var(--cu-sub,#64748b);border:1px solid var(--cu-line,#e2e8f0);">${escapeHtml(link)}</div>
-              <div class="text-xs text-gray-400 leading-relaxed max-w-xs">Anyone with this link can join. We'll remind you shortly before it starts.</div>
-            </div>
-            <div class="flex-shrink-0 px-6 flex justify-center" style="padding-top:12px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
-              <div class="w-full max-w-sm flex gap-3">
-                <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Copy link</button>
-                <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="flex-1 font-semibold py-3 rounded-full text-sm font-display" style="${grey}">Share</button>
+            <div class="mj-screen" style="padding-top:var(--top-safe-pad);">
+              <div class="mj-top">
+                <button onclick="openCreateMenu()" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
+                <div class="mj-topt">Meeting ready</div>
+                <div style="width:42px;flex-shrink:0;"></div>
+              </div>
+              <div class="mj-center">
+                <div class="mj-title" style="font-size:24px;">${escapeHtml(m.title)}</div>
+                <div class="mj-sub">${escapeHtml(meetingWhenText(m.starts_at))}</div>
+                <div class="mj-sub" style="margin-top:6px;">Anyone with the link can join. We will remind you shortly before it starts.</div>
+              </div>
+              <div class="mj-panel">
+                <div class="mj-label">Share this link with people you want in</div>
+                <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="mj-link"><span>${escapeHtml(link.replace(/^https?:\/\//, ''))}</span>${Icon('copy','w-5 h-5')}</button>
+                <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="mj-share">${Icon('send','w-4 h-4')}<span>Share invite link</span></button>
+                <button onclick="openCreateMenu()" class="mj-out">Done</button>
               </div>
             </div>`;
         }
@@ -9149,6 +9347,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           pendingMeetingInfo = null;
           pendingMeetingError = null;
           meetingJoinStep = 'info';
+          meetingJoinMicOn = true;
           openOverlay('meetingJoin');
           refreshPendingMeeting();
         }
@@ -9219,28 +9418,33 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (m.state === 'live' || isAdmin) {
             const label = m.state === 'live' ? 'Join meeting' : 'Start meeting now';
             const sub = m.state === 'live' ? '' : `Scheduled for ${escapeHtml(meetingWhenText(m.starts_at))}. As an admin you can open it early.`;
-            const camRow = `
-              <button onclick="toggleMeetingJoinCamera()" class="w-full max-w-xs flex items-center justify-between rounded-2xl px-4 py-3 mb-4" style="background:rgba(30,144,255,0.08);">
-                <span class="text-sm font-semibold" style="color:${NAVY};">Camera</span>
-                <span style="width:46px;height:28px;border-radius:999px;position:relative;flex-shrink:0;transition:background .2s;background:${meetingJoinCamOn ? '#1e90ff' : '#c4c9d2'};">
-                  <span style="position:absolute;top:3px;left:${meetingJoinCamOn ? '21px' : '3px'};width:22px;height:22px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);"></span>
-                </span>
-              </button>`;
             const preview = `
-              <div class="w-full rounded-3xl overflow-hidden relative" style="background:#1e1e1e;max-width:230px;aspect-ratio:3/4;flex:none;margin:auto 0;">
+              <div class="mj-preview">
                 <video id="mj-preview-video" autoplay playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);${meetingJoinCamOn ? '' : 'display:none;'}"></video>
-                ${meetingJoinCamOn ? '' : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-3" style="color:#9ca3af;"><div class="flex items-center justify-center overflow-hidden" style="width:96px;height:96px;border-radius:50%;background:#e5e7eb;">${myCallAvatarHTML('w-24 h-24')}</div><div class="text-sm font-semibold">Camera is off</div></div>`}
+                ${meetingJoinCamOn ? '' : `<div class="mj-off"><div class="mj-off-av">${myCallAvatarHTML('w-24 h-24')}</div><span>Camera is off</span></div>`}
+                <span class="mj-you">You</span>
               </div>`;
             setTimeout(syncMeetingJoinPreview, 0);
-            return `<div class="flex-1 flex flex-col items-center px-6 pb-6 text-center min-h-0" style="padding-top:var(--top-safe-pad);">
-              <div class="w-full flex items-center gap-3 pt-3">
-                <button onclick="closeOverlay()" title="Back" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.06);">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 min-w-0 text-xl font-bold font-display truncate" style="text-align:left;">${escapeHtml(m.title)}</div>
+            const tgl = (on, onclick, icon, offIcon, label) => `<button onclick="${onclick}" class="mj-tg ${on ? '' : 'off'}"><span class="mj-tg-b">${Icon(on ? icon : offIcon, 'w-6 h-6')}</span><small>${label}</small></button>`;
+            return `<div class="mj-screen" style="padding-top:var(--top-safe-pad);">
+              <div class="mj-top">
+                <button onclick="closeOverlay()" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
+                <div class="mj-topt">Join meeting</div>
+                <div style="width:42px;flex-shrink:0;"></div>
               </div>
-              ${hostLine ? `<div class="text-xs text-gray-400 mt-1">${hostLine}</div>` : ''}
-              ${sub ? `<div class="text-sm text-gray-500 mt-2 leading-relaxed">${sub}</div>` : ''}
+              <div class="mj-head">
+                <div class="mj-title">${escapeHtml(m.title)}</div>
+                ${hostLine ? `<div class="mj-sub">${hostLine}</div>` : ''}
+                ${sub ? `<div class="mj-sub">${sub}</div>` : ''}
+              </div>
               ${preview}
-              ${camRow}${primary(label, 'joinPendingMeeting(meetingJoinCamOn)')}
+              <div class="mj-tgls">
+                ${tgl(meetingJoinMicOn, 'toggleMeetingJoinMic()', 'mic', 'micOff', meetingJoinMicOn ? 'Mic on' : 'Mic off')}
+                ${tgl(meetingJoinCamOn, 'toggleMeetingJoinCamera()', 'video', 'cameraOff', meetingJoinCamOn ? 'Camera on' : 'Camera off')}
+              </div>
+              <div class="mj-panel">
+                <button onclick="joinPendingMeeting(meetingJoinCamOn)" class="mj-join">${label}</button>
+              </div>
             </div>`;
           }
           // Upcoming, regular guest: ask whether to be reminded
@@ -9299,7 +9503,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               throw error;
             }
             const m = normalizeMeeting(data);
-            openMeetingCall(m ? Object.assign({ status: 'ok' }, m) : info, { camOff: camOn === false });
+            openMeetingCall(m ? Object.assign({ status: 'ok' }, m) : info, { camOff: camOn === false, micOff: meetingJoinMicOn === false });
           } catch (e) {
             console.warn('join_meeting failed:', e);
             openAppAlertModal("Couldn't join the meeting. Please try again.");
@@ -9409,16 +9613,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (meetingSheet === 'menu') {
             const row = (icon, label, action, red) => `
               <button onclick="${action}" class="cu-bsheet-row ${red ? 'red' : ''}">
-                ${cuEmoji(icon) ? `<span style="font-size:22px;line-height:1;width:20px;text-align:center;">${cuEmoji(icon)}</span>` : Icon(icon, 'w-5 h-5')}<span>${label}</span>
+                ${Icon(icon, 'w-5 h-5')}<span>${label}</span>
               </button>`;
+            const tile = (icon, label, action) => `<button onclick="${action}" class="cu-tile2"><span class="cu-tile2-ic">${Icon(icon, 'w-6 h-6')}</span><span>${label}</span></button>`;
             return `${backdrop}
               <div class="cu-bsheet">
                 <div class="cu-bsheet-grab"></div>
-                ${row('reactions', 'Reactions', "setMeetingSheet('reactions')")}
-                ${row('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread} new)` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}
-                ${row('handRaised', callState.handRaised ? 'Lower hand' : 'Raise hand', 'closeMeetingSheet();toggleCallHand()')}
-                ${activeMeeting.code ? row('send', 'Share invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
-                ${activeMeeting.code ? row('link', 'Copy invite link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
+                <button onclick="closeMeetingSheet();toggleCallHand()" class="cu-handpill ${callState.handRaised ? 'on' : ''}">${Icon('handRaised', 'w-5 h-5')}<span>${callState.handRaised ? 'Lower hand' : 'Raise hand'}</span></button>
+                <div class="cu-tilegrid">
+                  ${tile('laugh', 'Reactions', "setMeetingSheet('reactions')")}
+                  ${tile('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread})` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}
+                  ${activeMeeting.code ? tile('send', 'Invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
+                  ${activeMeeting.code ? tile('copy', 'Copy link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
+                  ${callState.type === 'video' && callLocalStream && !callState.camOff && !callState.mediaError ? tile('shuffle', 'Flip camera', 'closeMeetingSheet();flipCallCamera()') : ''}
+                </div>
                 ${activeMeeting.isAdmin ? row('muteAll', callEveryoneMuted ? 'Unmute everyone' : 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}
               </div>`;

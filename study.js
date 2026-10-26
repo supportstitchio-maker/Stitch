@@ -402,7 +402,7 @@ let studyFabMenuOpen = false;
         }
 
         // ---- Stitch Bot prompt usage/rate limiting (daily + weekly + monthly) ----
-        const AI_PROMPT_LIMITS = { daily: 50, weekly: 250, monthly: 1000 };
+        const AI_PROMPT_LIMITS = { daily: 30, weekly: 150, monthly: 500 };
         let aiPromptCount = 0;
         let aiPromptDate = null;     // 'YYYY-MM-DD'
         let aiPromptWeekCount = 0;
@@ -498,13 +498,14 @@ let studyFabMenuOpen = false;
           aiCallTimestamps.push(now);
         }
 
-        async function callClaude(systemPrompt, userPrompt, task, images){
+        async function callClaude(systemPrompt, userPrompt, task, images, purpose){
           checkAiRateLimit();
           try {
             const accessToken = await getAuthAccessToken();
             if (!accessToken) throw new Error('You need to be signed in to use AI features: please log in again.');
             const body = { systemPrompt, userPrompt, task: task || 'chat' };
             if (Array.isArray(images) && images.length) body.images = images;
+            if (purpose) body.purpose = purpose;
             const res = await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/ai-proxy`, {
               method: 'POST',
               headers: {
@@ -517,6 +518,12 @@ let studyFabMenuOpen = false;
             if (res.status === 401) throw new Error('Your session expired, please log in again.');
             let data;
             try { data = await res.json(); } catch { data = null; }
+            if (res.status === 429 && data && data.code === 'feature_limit') {
+              const limErr = new Error(data.error || 'You have reached your limit.');
+              limErr.featureLimit = true;
+              if (!data.pro && typeof openProSheet === 'function') openProSheet(data.feature || 'ai_generate');
+              throw limErr;
+            }
             if (!res.ok) throw new Error((data && data.error) || ('AI request failed (' + res.status + ')'));
             if (data && data.error) throw new Error(data.error);
             return (data && data.text) || '';
@@ -1522,4 +1529,239 @@ let studyFabMenuOpen = false;
           const st = document.querySelector('.fc-stack');
           if (st) { st.classList.add('fc-shuffling'); setTimeout(() => st.classList.remove('fc-shuffling'), 420); }
           fcBuzz(10);
+        }
+
+
+        // =====================================================================
+        // Stitch Pro: Free / Monthly / Yearly plans for Practice and Challenge Arena.
+        // The real limits live on the server (table feature_limits, functions feature_take / feature_status,
+        // the ai-proxy function and a database trigger on challenge_invites). The numbers below are for display only.
+        // Keep prices in sync with PRO_PLANS in the paystack-verify and paystack-webhook functions.
+        // =====================================================================
+        const PRO_PLANS = {
+          monthly: { id: 'monthly', label: 'Monthly', price: 40,  unit: 'month' },
+          yearly:  { id: 'yearly',  label: 'Yearly',  price: 399, unit: 'year'  }
+        };
+        const PRO_FEATURES = [
+          { key: 'mock_test',   label: 'Mock tests',                    per: 'week',  free: 3, pro: 30 },
+          { key: 'ai_grade',    label: 'AI-marked written answers',     per: 'week',  free: 3, pro: 30 },
+          { key: 'arena',       label: 'Challenge Arena games',         per: 'week',  free: 2, pro: 20 },
+          { key: 'ai_generate', label: 'Uploads turned into questions', per: 'month', free: 3, pro: 30 }
+        ];
+        let proState = { loaded: false, pro: false, plan: null, expiresAt: null, cancelled: false, startedAt: null, features: {} };
+        let proView = 'auto'; // 'auto' (manage when active, plans otherwise) | 'plans' | 'cancel'
+        let proPlanChoice = 'yearly';
+        let proPayBusy = false;
+
+        async function refreshProStatus(){
+          try {
+            const sb = getSupabaseClient();
+            if (!sb) return proState;
+            const { data, error } = await sb.rpc('feature_status');
+            if (error || !data) return proState;
+            proState = { loaded: true, pro: !!data.pro, plan: data.plan || null, expiresAt: data.expiresAt ? new Date(data.expiresAt).getTime() : null, cancelled: !!data.cancelled, startedAt: data.startedAt ? new Date(data.startedAt).getTime() : null, features: data.features || {} };
+          } catch (e) { /* keep last known state */ }
+          return proState;
+        }
+        function isProActive(){ return !!(proState.pro && proState.expiresAt && proState.expiresAt > Date.now()); }
+
+        // Asks the server for one use of a limited feature. true = go ahead. false = limit reached (the plans sheet opens).
+        async function gateFeature(feature){
+          try {
+            const sb = getSupabaseClient();
+            if (!sb) return true;
+            const { data, error } = await sb.rpc('feature_take', { p_feature: feature });
+            if (error) { console.warn('feature gate unavailable:', error.message); return true; } // no AI cost here, so never block on a network hiccup
+            if (data && data.ok === true) return true;
+            if (data && data.reason === 'daily') { openAppAlertModal('You have reached today\'s limit for this. It resets tomorrow.', 'Daily limit'); return false; }
+            if (data && data.pro) { openAppAlertModal('You have used all of this ' + (data.period === 'month' ? 'month' : 'week') + '\'s allowance. It resets soon.', 'Limit reached'); return false; }
+            openProSheet(feature);
+            return false;
+          } catch (e) { return true; }
+        }
+
+        function proPlanDateLabel(ms){
+          try { return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; }
+        }
+        function proManageHTML(){
+          const plan = PRO_PLANS[proState.plan] || PRO_PLANS.monthly;
+          const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
+          const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
+          const usage = PRO_FEATURES.map(f => { const u = proState.features && proState.features[f.key]; return u ? row(escapeHtml(f.label), u.used + ' of ' + u.limit + ' this ' + (u.period === 'month' ? 'month' : 'week')) : ''; }).join('');
+          return `
+            <div class="text-center mb-3">
+              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">Your subscription</div>
+              <div class="text-sm text-gray-500">${proState.cancelled ? 'Cancelled. You keep Stitch Pro until ' + end + '.' : 'Stitch Pro is active.'}</div>
+            </div>
+            <div class="mb-3">
+              ${row('Plan', escapeHtml(plan.label) + ' · GH₵' + plan.price + ' per ' + plan.unit)}
+              ${proState.startedAt ? row('Last paid', escapeHtml(proPlanDateLabel(proState.startedAt))) : ''}
+              ${row(proState.cancelled ? 'Ends on' : 'Access until', end)}
+              ${row('Status', proState.cancelled ? 'Cancelled' : 'Active')}
+            </div>
+            <div class="text-xs text-gray-400 mb-3">Stitch Pro does not renew by itself, so you are never charged again unless you pay again. You can cancel at any time and keep access until the date above.</div>
+            <div class="mb-4">${usage}</div>
+            <div class="flex gap-3">
+              ${proState.cancelled
+                ? `<button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Close</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe again</button>`
+                : `<button onclick="proShowCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Extend</button>`}
+            </div>`;
+        }
+        function proCancelHTML(){
+          const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
+          return `
+            <div class="text-center">
+              <div class="text-lg font-bold font-display mb-2" style="color:${NAVY};">Cancel Stitch Pro?</div>
+              <div class="text-sm text-gray-500 mb-5">You keep every Pro benefit until ${end}. After that your account goes back to the free plan. You can subscribe again whenever you like.</div>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="proShowManage()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>
+              <button id="pro-cancel-btn" onclick="confirmProCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel it</button>
+            </div>`;
+        }
+        function proRender(){
+          const box = document.getElementById('careerSubscribeModalContent');
+          const modal = document.getElementById('careerSubscribeModal');
+          if (box && modal && !modal.classList.contains('hidden')) box.innerHTML = proSheetHTML(window.__proSheetReason || '');
+        }
+        function proShowPlans(){ proView = 'plans'; proRender(); }
+        function proShowCancel(){ proView = 'cancel'; proRender(); }
+        function proShowManage(){ proView = 'auto'; proRender(); }
+        async function confirmProCancel(){
+          const btn = document.getElementById('pro-cancel-btn');
+          if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+          try {
+            const sb = getSupabaseClient();
+            const { data, error } = await sb.rpc('cancel_pro');
+            if (error || data !== true) throw new Error((error && error.message) || 'Could not cancel right now.');
+            await refreshProStatus();
+            proView = 'auto';
+            proRender();
+            openAppAlertModal('Cancelled. You keep Stitch Pro until ' + proPlanDateLabel(proState.expiresAt) + '.', 'Subscription cancelled');
+            if (typeof stgRefreshProRow === 'function') stgRefreshProRow();
+          } catch (err) {
+            if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+            openAppAlertModal('Could not cancel right now. Please try again.', 'Not cancelled');
+          }
+        }
+        function proSheetHTML(reason){
+          if (isProActive() && proView !== 'plans') return proView === 'cancel' ? proCancelHTML() : proManageHTML();
+          return proPlansHTML(reason);
+        }
+        function proPlansHTML(reason){
+          const active = isProActive();
+          const why = {
+            mock_test: 'You have used this week\'s free mock tests.',
+            ai_grade: 'You have used this week\'s free AI marking.',
+            arena: 'You have used this week\'s free Challenge Arena games.',
+            ai_generate: 'You have used this month\'s free upload-to-question sets.'
+          }[reason] || '';
+          const rows = PRO_FEATURES.map(f => {
+            const u = proState.features && proState.features[f.key];
+            const used = u ? ` <span class="text-xs text-gray-400">(${u.used} of ${u.limit} used)</span>` : '';
+            return `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);">
+              <span class="text-sm text-gray-700">${f.label}${used}</span>
+              <span class="text-sm text-right"><span class="text-gray-400">${f.free}</span> <span class="text-gray-300">/</span> <span class="font-semibold" style="color:${NAVY};">${f.pro}</span> <span class="text-xs text-gray-400">a ${f.per}</span></span>
+            </div>`;
+          }).join('');
+          const planCard = (p, note) => {
+            const on = proPlanChoice === p.id;
+            return `<button type="button" onclick="setProPlan('${p.id}')" class="w-full text-left" style="padding:12px 14px;border-radius:16px;border:2px solid ${on ? NAVY : 'rgba(128,128,128,0.25)'};background:${on ? 'rgba(30,144,255,0.08)' : 'transparent'};">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-gray-800">${p.label}</span>
+                <span class="text-sm font-bold" style="color:${NAVY};">GH₵${p.price} <span class="text-xs font-medium text-gray-400">/ ${p.unit}</span></span>
+              </div>
+              ${note ? `<div class="text-xs text-gray-500 mt-0.5">${note}</div>` : ''}
+            </button>`;
+          };
+          const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.yearly;
+          return `
+            <div class="text-center mb-3">
+              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">Stitch Pro</div>
+              <div class="text-sm text-gray-500">${active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.')}</div>
+            </div>
+            <div class="flex items-center justify-end text-xs text-gray-400 mb-1" style="gap:6px;"><span>Free</span><span class="text-gray-300">/</span><span style="color:${NAVY};font-weight:600;">Pro</span></div>
+            <div class="mb-3">${rows}</div>
+            <div class="text-xs text-gray-400 mb-4">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
+            <div class="flex flex-col mb-4" style="gap:10px;">
+              ${planCard(PRO_PLANS.yearly, 'Best value. Saves GH₵81 against paying monthly.')}
+              ${planCard(PRO_PLANS.monthly, 'Pay month by month.')}
+            </div>
+            <div class="flex gap-3">
+              <button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
+              <button id="pro-pay-btn" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Continue</button>
+            </div>`;
+        }
+        function setProPlan(id){
+          if (!PRO_PLANS[id] || proPayBusy) return;
+          proPlanChoice = id;
+          const box = document.getElementById('careerSubscribeModalContent');
+          proRender();
+        }
+        async function openProSheet(reason){
+          window.__proSheetReason = reason || '';
+          proView = 'auto';
+          const modal = document.getElementById('careerSubscribeModal');
+          const box = document.getElementById('careerSubscribeModalContent');
+          if (!modal || !box) return;
+          box.innerHTML = proSheetHTML(reason);
+          const wasHidden = modal.classList.contains('hidden');
+          modal.classList.remove('hidden');
+          if (wasHidden && typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeCareerSubscribeSheet(fromPopState));
+          // fill in the live usage numbers once they arrive
+          refreshProStatus().then(() => proRender());
+        }
+        async function startProPayment(){
+          if (proPayBusy) return;
+          const plan = PRO_PLANS[proPlanChoice];
+          if (!plan) return;
+          const payEmail = String((typeof currentUserEmail !== 'undefined' && currentUserEmail) || '').trim();
+          if (!payEmail) { openAppAlertModal('Please sign in again to pay.', 'Payment unavailable'); return; }
+          proPayBusy = true;
+          try { await loadPaystackScript(); } catch (err) {
+            proPayBusy = false;
+            openAppAlertModal('Could not load the payment popup. Check your connection and try again.', 'Payment unavailable');
+            return;
+          }
+          closeCareerSubscribeSheet();
+          function closeProPopup(fromPopState){ teardownPaystackPopup(fromPopState); proPayBusy = false; }
+          const reference = 'stitchpro_' + plan.id + '_' + Date.now();
+          const handler = window.PaystackPop.setup({
+            key: PAYSTACK_PUBLIC_KEY,
+            email: payEmail,
+            amount: plan.price * 100,
+            currency: 'GHS',
+            ref: reference,
+            metadata: { type: 'pro_subscription', plan: plan.id, user_id: (typeof currentUserId !== 'undefined' && currentUserId) || '' },
+            callback: function(response){
+              popModalBackHandler(false);
+              verifyProPayment(plan, response.reference);
+            },
+            onClose: function(){ closeProPopup(false); }
+          });
+          pushModalBackHandler(closeProPopup);
+          handler.openIframe();
+        }
+        async function verifyProPayment(plan, reference){
+          try {
+            const accessToken = await getAuthAccessToken();
+            if (!accessToken) throw new Error('You need to be signed in to complete payment: please log in again.');
+            const res = await fetch(`https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/paystack-verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken, 'apikey': SUPABASE_ANON_KEY },
+              body: JSON.stringify({ reference })
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Payment verification failed (' + res.status + ')');
+            if (!data.verified) throw new Error('We could not confirm this payment. If you were charged, contact support with reference ' + reference + '.');
+            proPayBusy = false;
+            await refreshProStatus();
+            proView = 'auto';
+            openAppAlertModal('Stitch Pro is active until ' + proPlanDateLabel(proState.expiresAt) + '.', 'Payment confirmed');
+            if (typeof stgRefreshProRow === 'function') stgRefreshProRow();
+          } catch (err) {
+            proPayBusy = false;
+            window.reportError && window.reportError(err, { call: 'verifyProPayment', plan: plan.id });
+            openAppAlertModal(err.message || 'Payment verification failed. Please try again.', 'Payment not confirmed');
+          }
         }

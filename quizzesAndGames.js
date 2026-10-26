@@ -114,15 +114,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const sb = getSupabaseClient();
           if (!sb) return false;
           try {
+            window.__arenaLimitHit = false;
             let { error } = await sb.from(CHALLENGE_INVITES_TABLE).insert({ code, subject, time_per_q: timePerQ, questions, joined: false });
             if (error) {
               // one quick retry (flaky mobile connections); a duplicate code is not retried
-              if (!/duplicate|unique/i.test(error.message || '')) {
+              if (!/duplicate|unique|arena_limit/i.test(error.message || '')) {
                 await new Promise(r => setTimeout(r, 600));
                 ({ error } = await sb.from(CHALLENGE_INVITES_TABLE).insert({ code, subject, time_per_q: timePerQ, questions, joined: false }));
               }
             }
-            if (error) { console.warn('Challenge invite create failed:', error.message); return false; }
+            if (error) { window.__arenaLimitHit = /arena_limit/i.test(error.message || ''); console.warn('Challenge invite create failed:', error.message); return false; }
             return true;
           } catch (err) {
             console.warn('Challenge invite create failed:', err);
@@ -276,7 +277,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
           insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
-            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
+            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); if (window.__arenaLimitHit && typeof openProSheet === 'function') { window.__arenaLimitHit = false; openProSheet('arena'); } else pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
           });
           openChallengeModal(inviteFriendHTML(code));
         }
@@ -936,6 +937,10 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // ---- Mock test start + timer ----
         function startMockTest(mode){
+          if (!window.__mockGateOk && typeof gateFeature === 'function') {
+            gateFeature('mock_test').then(ok => { if (ok) { window.__mockGateOk = true; try { startMockTest(mode); } finally { window.__mockGateOk = false; } } });
+            return;
+          }
           dismissChallengeModalForExam();
           stopChallengeScorePolling();
           activeChallengeCode = null;
@@ -1517,7 +1522,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             studentWorkings: examWorkings[i] ? String(examWorkings[i]) : ''
           })));
           try {
-            const raw = await callClaude(system, user, 'materials');
+            const raw = await callClaude(system, user, 'materials', undefined, 'grade');
             const cleaned = raw.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
             const results = JSON.parse(cleaned);
             if (myToken !== examGradingToken) return; 
@@ -1927,7 +1932,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
           insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
-            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
+            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); if (window.__arenaLimitHit && typeof openProSheet === 'function') { window.__arenaLimitHit = false; openProSheet('arena'); } else pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
           });
           startWaitingForChallengeFriend(code);
         }

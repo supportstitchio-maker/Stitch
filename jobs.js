@@ -183,7 +183,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `
             <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
             ${careerMenuRowHTML("closeCareerMenuThen(() => jobsSubTab('saved'))", 'bookmarkOutline', 'Saved')}
-            ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerStartForm())", 'file', 'Match with CV')}
+            ${CAREER_MATCH_ENABLED ? careerMenuRowHTML("closeCareerMenuThen(() => openCareerStartForm())", 'file', 'Match with CV') : ''}
             ${careerMenuPostItemHTML()}
             ${careerMenuPaidItemHTML()}
             ${careerMenuRowHTML("closeCareerMenuThen(() => openOverlay('careerAnalytics'))", 'trending', 'Analytics')}`;
@@ -4552,6 +4552,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           careerStartResumeUploadPhaseIndex = 0;
         }
         function openCareerStartForm(){
+          if (!CAREER_MATCH_ENABLED) return;
           if (careerStartProfile && careerStartProfile.email) {
             if (careerSubscriptionActive()) openCareerMatchesPage(false);
             else openCareerStartIntro();
@@ -5075,6 +5076,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             </div>`;
         }
 
+        // Match with CV is switched off for now (kept in the code for when there are many opportunities). Set to true to bring it back.
+        const CAREER_MATCH_ENABLED = false;
         // ---- Intro pages + subscription plans for "Match with CV/Resume" ----
         const CAREER_PLANS = {
           daily:   { id: 'daily',   label: 'Daily',   price: 20,  unit: 'day',   months: 0, days: 1 },
@@ -5476,6 +5479,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
         // The pill pinned to the very bottom of the matches page
         function careerSubscribePillHTML(){
+          if (!CAREER_MATCH_ENABLED) return '';
           const sub = careerStartProfile && careerStartProfile.subscription;
           if (!sub) return '';
           const active = careerSubscriptionActive();
@@ -5512,6 +5516,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           }
         }
         function careerCheckSubscriptionExpiry(){
+          if (!CAREER_MATCH_ENABLED) return;
           try {
             const p = careerStartProfile;
             const sub = p && p.subscription;
@@ -6339,6 +6344,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         // Applies once to every ready match that Stitch Bot hasn't already tried
         let careerAutoApplyRunning = false;
         async function careerBotAutoApplyRun(){
+          if (!CAREER_MATCH_ENABLED) return;
           const p = careerBotEnsure();
           if (!p || !p.autoApply || careerAutoApplyRunning || careerBotBusy || !careerSubscriptionActive()) return;
           careerAutoApplyRunning = true;
@@ -6685,6 +6691,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
 
         function openCareerMatchesPage(forceRecompute){
+          if (!CAREER_MATCH_ENABLED) return;
           if (careerStartProfile && !careerSubscriptionActive()) { openCareerStartIntro(); return; }
           careerMatchesError = '';
           careerBotCheckUpdates();

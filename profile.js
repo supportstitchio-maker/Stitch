@@ -1917,6 +1917,15 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>
             </button>`;
         }
+        function stgProRowHTML(){
+          const on = (typeof isProActive === 'function' && isProActive());
+          const sub = on ? (proState.cancelled ? 'Cancelled, ends ' : 'Active until ') + proPlanDateLabel(proState.expiresAt) : 'Free plan. See plans, manage or cancel';
+          return stgRow('trending','blue','Subscription', sub, "openProSheet()");
+        }
+        function stgRefreshProRow(){
+          const el = document.getElementById('stg-pro-row');
+          if (el) el.innerHTML = stgProRowHTML();
+        }
         function profileMenuHTML(){
           const installed = (typeof stitchAppInstalled === 'function' && stitchAppInstalled());
           return `
@@ -1925,6 +1934,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div class="px-5" style="padding-bottom:28px;">
               ${stgProfileCardHTML()}
               ${stgGroup('Your account', `
+                <div id="stg-pro-row">${stgProRowHTML()}</div>${(typeof proState !== 'undefined' && !proState.loaded && typeof setTimeout === 'function') ? (setTimeout(function(){ refreshProStatus().then(function(){ if (typeof stgRefreshProRow === 'function') stgRefreshProRow(); }); }, 0), '') : ''}
                 ${stgRow('chart','blue','Your activity','Posts, likes and time spent', "openOverlayFrom('profileMenu','profileAnalytics')")}
                 ${stgRow('close','amber','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
                 ${stgToggleRow('theme','purple','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}

@@ -7506,6 +7506,7 @@ try {
         let lectureLocalStream = null; 
         let lectureScreenStream = null;
         let lectureMoreSheetOpen = false;
+        let lecturePeopleSheetOpen = false;
         let lectureReactionsSheetOpen = false;
         let lectureFloatingReactions = []; 
         let lectureCommentSheetOpen = false;
@@ -8053,7 +8054,7 @@ try {
 
         function lectureControlsHTML(){
           const c = lectureCtlSpecs();
-          return `<div class="cu-bar-inner">${[c.mute, c.cam, c.hand, c.more, c.end].map(cuCtlHTML).join('')}</div>`;
+          return `<div class="cu-bar-inner cu-pillbar">${[c.mute, c.cam, c.hand, c.more, c.end].map(cuCtlHTML).join('')}</div>`;
         }
 
         function updateLectureControlBarButtons(){
@@ -8073,6 +8074,7 @@ try {
         }
 
         function toggleLectureReactionsSheet(){
+          lecturePeopleSheetOpen = false;
           lectureMoreSheetOpen = false;
           lectureCommentSheetOpen = false;
           lectureReactionsSheetOpen = !lectureReactionsSheetOpen;
@@ -8080,6 +8082,7 @@ try {
         }
 
         function toggleLectureMoreSheet(){
+          lecturePeopleSheetOpen = false;
           lectureReactionsSheetOpen = false;
           lectureCommentSheetOpen = false;
           lectureMoreSheetOpen = !lectureMoreSheetOpen;
@@ -8087,6 +8090,7 @@ try {
         }
 
         function toggleLectureCommentSheet(){
+          lecturePeopleSheetOpen = false;
           lectureReactionsSheetOpen = false;
           lectureMoreSheetOpen = false;
           lectureCommentSheetOpen = !lectureCommentSheetOpen;
@@ -8095,6 +8099,7 @@ try {
         }
 
         function closeLectureSheets(){
+          lecturePeopleSheetOpen = false;
           lectureMoreSheetOpen = false;
           lectureReactionsSheetOpen = false;
           lectureCommentSheetOpen = false;
@@ -8582,7 +8587,7 @@ try {
           return `
             ${p.sharingScreen ? `<span class="cu-chip" style="top:8px;left:8px;bottom:auto;display:inline-flex;align-items:center;gap:5px;background:rgba(30,144,255,.88);">${Icon('monitor','w-3 h-3')} Presenting</span>` : ''}
             ${p.muted ? `<span class="cu-corner cu-mute">${Icon('micOff','w-3.5 h-3.5')}</span>` : ''}
-            ${p.handRaised ? `<span class="cu-corner cu-hand" style="top:${p.sharingScreen ? '40px' : '8px'};">${cuEmoji('handRaised')}</span>` : ''}`;
+            ${p.handRaised ? `<span class="cu-corner cu-hand" style="top:${p.sharingScreen ? '40px' : '8px'};color:#f59e0b;">${Icon('handRaised','w-4 h-4')}</span>` : ''}`;
         }
 
         function updateLectureRemoteBadges(){
@@ -9306,9 +9311,10 @@ try {
         // ---- Lecture bottom sheets (reactions/comments/more) ----
         function lectureSheetsRegionHTML(view){
           return `
-            ${(lectureReactionsSheetOpen || lectureMoreSheetOpen) ? `<div onclick="closeLectureSheets()" class="cu-backdrop"></div>` : ''}
+            ${(lectureReactionsSheetOpen || lectureMoreSheetOpen || lecturePeopleSheetOpen) ? `<div onclick="closeLectureSheets()" class="cu-backdrop"></div>` : ''}
             ${lectureReactionsSheetOpen ? lectureReactionsSheetHTML() : ''}
-            ${lectureMoreSheetOpen ? lectureMoreSheetHTML(view) : ''}`;
+            ${lectureMoreSheetOpen ? lectureMoreSheetHTML(view) : ''}
+            ${lecturePeopleSheetOpen ? lecturePeopleSheetHTML() : ''}`;
         }
 
         function lectureCallHTML(){
@@ -9409,41 +9415,58 @@ try {
           window.visualViewport.addEventListener('scroll', scheduleLectureCommentKeyboardInsetSync);
         }
 
+        function openLecturePeopleSheet(){
+          lectureReactionsSheetOpen = false;
+          lectureCommentSheetOpen = false;
+          lectureMoreSheetOpen = false;
+          lecturePeopleSheetOpen = true;
+          updateLectureSheetsRegion();
+        }
+        function lecturePeopleSheetHTML(){
+          const iAmTeacher = lectureIsTeacher();
+          const me = (typeof profileData !== 'undefined' && profileData) ? ((profileData.name || '').trim() || (profileData.username || '').trim() || 'You') : 'You';
+          const peers = Object.keys(lecturePresence).map(id => lecturePresence[id]).sort((a, b) => (b.isTeacher ? 1 : 0) - (a.isTeacher ? 1 : 0));
+          const row = (name, role, muted, hand, isMe) => `
+            <div class="cu-prow">
+              <span class="cu-prow-av">${escapeHtml(userInitials(name) || '?')}</span>
+              <span class="cu-prow-tx"><b>${escapeHtml(name)}${isMe ? ' (you)' : ''}</b>${role ? `<small>${role}</small>` : ''}</span>
+              <span class="cu-prow-ic">${hand ? Icon('handRaised', 'w-5 h-5') : ''}${muted ? Icon('micOff', 'w-5 h-5') : Icon('mic', 'w-5 h-5')}</span>
+            </div>`;
+          const rows = [row(me, iAmTeacher ? 'Host' : '', !!liveLectureState.muted, !!liveLectureState.handRaised, true)]
+            .concat(peers.map(p => row(p.name || 'Member', p.isTeacher ? 'Host' : (p.handRaised ? 'Hand raised' : ''), !!p.muted, !!p.handRaised)));
+          return `
+            <div class="cu-bsheet" style="max-height:72vh;display:flex;flex-direction:column;">
+              <div class="cu-bsheet-grab"></div>
+              <div class="cu-sheet-title">People (${rows.length})</div>
+              <div class="cu-plist">${rows.join('')}</div>
+              ${iAmTeacher && peers.length ? `<button onclick="closeLectureSheets();muteEveryoneInLecture()" class="cu-wide-out">${lectureEveryoneMuted ? 'Unmute all' : 'Mute all'}</button>` : ''}
+            </div>`;
+        }
+
         function lectureMoreSheetHTML(view){
-          const grid = (onclick, icon, label, active) => `
-            <button onclick="${onclick}" class="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-1">
-              <span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="${active ? 'background:' + NAVY + ';' : 'background:var(--cu-soft);'}">
-                ${cuEmoji(icon) ? `<span style="font-size:20px;line-height:1;">${cuEmoji(icon)}</span>` : Icon(icon, `w-5 h-5 ${active ? 'text-white' : ''}`)}
-              </span>
-              <span class="text-[10px] font-bold truncate" style="${active ? 'color:' + NAVY + ';' : ''}">${label}</span>
-            </button>`;
           const isTeacher = lectureIsTeacher();
           const isSharingScreen = !!liveLectureState.screenSharing;
+          const peerCount = Object.keys(lecturePresence).length + 1;
+          const row = (onclick, icon, title, desc, active, red) => `
+            <button onclick="${onclick}" class="cu-bsheet-row ${red ? 'red' : ''}">
+              ${Icon(icon, 'w-5 h-5')}
+              <span style="flex:1;min-width:0;">${title}${desc ? `<small>${desc}</small>` : ''}</span>
+              ${active ? `<span class="cu-rowon">${IconBold('check','w-3.5 h-3.5')}</span>` : ''}
+            </button>`;
+          const tile = (onclick, icon, label) => `<button onclick="${onclick}" class="cu-tile2"><span class="cu-tile2-ic">${Icon(icon, 'w-6 h-6')}</span><span>${label}</span></button>`;
           return `
-            <div class="cu-bsheet" style="padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 18px);"><div class="cu-bsheet-grab"></div>
-              ${isTeacher ? `
-              <div class="flex items-center gap-2.5 mb-4">
-                <button onclick="toggleLectureWhiteboard()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${view === 'whiteboard' ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
-                  <span class="${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">${Icon('edit','w-5 h-5')}</span>
-                  <span class="text-sm font-bold truncate ${view === 'whiteboard' ? 'text-white' : ''}" style="${view === 'whiteboard' ? '' : `color:${NAVY};`}">Whiteboard</span>
-                  ${view === 'whiteboard' ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${IconBold('check','w-3 h-3 text-white')}</span>` : ''}
-                </button>
-                <button onclick="toggleLectureScreenShare()" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 rounded-2xl border" style="padding:8px 0.5px;${isSharingScreen ? `background:${NAVY};border-color:${NAVY};` : `color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);`}">
-                  <span class="${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">${Icon('monitor','w-5 h-5')}</span>
-                  <span class="text-sm font-bold truncate ${isSharingScreen ? 'text-white' : ''}" style="${isSharingScreen ? '' : `color:${NAVY};`}">Share Screen</span>
-                  ${isSharingScreen ? `<span class="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">${IconBold('check','w-3 h-3 text-white')}</span>` : ''}
-                </button>
+            <div class="cu-bsheet"><div class="cu-bsheet-grab"></div>
+              <div class="cu-sheet-title">Class tools</div>
+              <div class="cu-tilegrid cu-tilegrid4">
+                ${tile("toggleLectureReactionsSheet()", 'laugh', 'Reactions')}
+                ${tile("openLecturePeopleSheet()", 'users', `People (${peerCount})`)}
+                ${tile("closeLectureSheets();openMeetingChatPage()", 'commentText', 'Messages')}
+                ${tile(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share link')}
               </div>
-              <button onclick="closeLectureSheets();muteEveryoneInLecture()" class="w-full flex items-center justify-center gap-1.5 rounded-2xl border mb-4" style="padding:8px 0.5px;color:${NAVY};border-color:rgba(30,144,255,0.09);background-image:linear-gradient(135deg, rgba(30,144,255,0.09) 0%, rgba(65,105,225,0.09) 100%);background-color:var(--cu-sheet);">
-                <span style="color:${NAVY};">${Icon('muteAll','w-5 h-5')}</span>
-                <span class="text-sm font-bold truncate" style="color:${NAVY};">${lectureEveryoneMuted ? 'Unmute everyone' : 'Mute everyone'}</span>
-              </button>` : ''}
-              <div class="flex items-start justify-between gap-1">
-                ${grid("toggleLectureReactionsSheet()", 'reactions', 'Reactions', false)}
-                ${grid("lectureAttachDocuments()", 'doc', 'PDF', false)}
-                ${grid("closeLectureSheets();openMeetingChatPage()", 'commentText', 'Messages', false)}
-                ${grid(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share', false)}
-              </div>
+              ${isTeacher ? row('toggleLectureWhiteboard()', 'edit', 'Whiteboard', 'Draw for the class', view === 'whiteboard') : ''}
+              ${isTeacher ? row('toggleLectureScreenShare()', 'monitor', 'Share screen', '', isSharingScreen) : ''}
+              ${row('lectureAttachDocuments()', 'doc', 'Slides and resources', 'Share a PDF with the class', false)}
+              ${isTeacher ? row("closeLectureSheets();muteEveryoneInLecture()", 'muteAll', lectureEveryoneMuted ? 'Unmute everyone' : 'Mute everyone', '', false) : ''}
             </div>`;
         }
 
