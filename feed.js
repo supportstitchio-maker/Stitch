@@ -632,7 +632,7 @@
               <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-20">
                 <div class="relative">
                   <button onclick="${openMine}" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="padding:3.5px;background:${mineRingBg};">
-                    <div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center border-2 border-white" style="color:${NAVY};background:rgba(10,37,64,0.14);">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="w-full h-full items-center justify-center" style="display:none;">${silhouetteIcon(s.icon,'w-9 h-9')}</div>` : silhouetteIcon(s.icon,'w-9 h-9')}</div>
+                    <div class="ph-av w-full h-full rounded-full overflow-hidden flex items-center justify-center border-2 border-white" style="color:${NAVY};background:rgba(10,37,64,0.14);">${profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="w-full h-full items-center justify-center" style="display:none;">${silhouetteIcon(s.icon,'w-9 h-9')}</div>` : silhouetteIcon(s.icon,'w-9 h-9')}</div>
                   </button>
                   <button onclick="event.stopPropagation(); openMyGlimpses()" title="Add to your glimpse" class="absolute z-10 rounded-full flex items-center justify-center shadow" style="top:0;left:0;width:1.5rem;height:1.5rem;box-sizing:border-box;color:${NAVY};background:#ffffff;border:3px solid #ffffff;">${Icon('plus','w-3 h-3')}</button>
                 </div>

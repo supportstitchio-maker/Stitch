@@ -6105,3 +6105,38 @@ body.dark-mode .mh-start-ic{ background:#2b2b2b !important; color:#f2f2f2 !impor
 /* Minimized call / session card: the mute circle is the same plain tappable pill (no black fill) */
 .call-min-card .call-min-mute-btn, #call-minimized-banner .call-min-mute-btn, #lecture-inline-panel .call-min-mute-btn{ background:#fff !important; color:#1f2937 !important; box-shadow:0 2px 10px rgba(15,23,42,0.14); border:1px solid rgba(15,23,42,0.06); }
 body.dark-mode .call-min-card .call-min-mute-btn, body.dark-mode #call-minimized-banner .call-min-mute-btn, body.dark-mode #lecture-inline-panel .call-min-mute-btn{ background:#2b2b2b !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,0.5); border-color:rgba(255,255,255,0.06); }
+/* Desktop calls: use the whole window right of the menu, so the call page sits in the middle (the empty right-hand panel no longer takes its width) */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen.right-panel-open:not(.rp-collapsed){ width:100% !important; }
+  #app-shell.call-fullscreen.right-panel-open #overlay{ right:0 !important; width:100% !important; max-width:none !important; left:0 !important; transform:none !important; }
+}
+/* Call avatars are plain grey rings (no blue tint), light and dark */
+#call-screen .cu-voice-avatar{ box-shadow:0 0 0 18px rgba(100,110,125,.12),0 0 0 38px rgba(100,110,125,.06); }
+body.dark-mode #call-screen .cu-voice-avatar{ box-shadow:0 0 0 18px rgba(255,255,255,.05),0 0 0 38px rgba(255,255,255,.025); }
+/* Profile picture placeholders: plain grey, light and dark */
+.ph-av{ background:#e2e5ea !important; color:#4b5563 !important; }
+body.dark-mode .ph-av{ background:#2b2b2b !important; color:#c4c4c4 !important; }
+.cd-avatar,#desktop-nav .dnav-av{ background:#e2e5ea; color:#4b5563; }
+body.dark-mode .cd-avatar,body.dark-mode #desktop-nav .dnav-av{ background:#2b2b2b; color:#c4c4c4; }
+/* Desktop: all profile-picture placeholders grey (top bar, side nav, right panel) */
+.dnav-av,.dtop-av .dnav-av,#desktop-nav .dnav-av{ background:#e2e5ea !important; color:#4b5563 !important; }
+body.dark-mode .dnav-av,body.dark-mode .dtop-av .dnav-av,body.dark-mode #desktop-nav .dnav-av{ background:#2b2b2b !important; color:#c4c4c4 !important; }
+/* Side-nav profile item: active highlight behind the avatar is grey, not blue */
+#desktop-nav .dnav-item.dnav-active:has(.dnav-av){ background:#e2e5ea !important; box-shadow:none !important; }
+body.dark-mode #desktop-nav .dnav-item.dnav-active:has(.dnav-av){ background:#2b2b2b !important; }
+#desktop-nav .dnav-item:has(.dnav-av)::before{ background:#9ca3af !important; }
+@media (min-width:1024px){
+  #desktop-nav .dnav-item.dnav-profile.dnav-active,
+  #desktop-nav .dnav-item.dnav-profile.dnav-pill.dnav-active,
+  body.dark-mode #desktop-nav .dnav-item.dnav-profile.dnav-active,
+  #desktop-nav .dnav-profile.dnav-active{
+    background:transparent !important; box-shadow:0 0 0 3px rgba(120,128,142,.45) !important;
+  }
+}
+/* Side-nav: when the profile avatar is the active item, its highlight is grey */
+#desktop-nav .dn-grp:has(#dnav-4.dnav-active) .dnav-flow,
+#desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ background:#d5d9e0 !important; box-shadow:none !important; }
+body.dark-mode #desktop-nav .dn-grp:has(#dnav-4.dnav-active) .dnav-flow,
+body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ background:#3a3a3a !important; }
+/* Desktop call: keep the Mute everyone pill centred under the title (content sits right of the side rail) */
+@media (min-width:1024px){ #call-screen .cu-adminbar{ padding-left:110px; } }

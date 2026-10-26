@@ -373,7 +373,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             ? `<img src="${profileData.photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                <div class="w-full h-full items-center justify-center" style="display:none;">${Icon('user','w-9 h-9')}</div>`
             : Icon('user','w-9 h-9');
-          return `<button id="profile-photo-el" ${hasPhoto ? `onclick="viewProfilePhoto('${escapeForJsAttr(profileData.photo)}', '${escapeForJsAttr(profileData.name || '')}')"` : ''} class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="color:${NAVY};background:rgba(10,37,64,0.14);">${media}</button>`;
+          return `<button id="profile-photo-el" ${hasPhoto ? `onclick="viewProfilePhoto('${escapeForJsAttr(profileData.photo)}', '${escapeForJsAttr(profileData.name || '')}')"` : ''} class="ph-av w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="color:${NAVY};background:rgba(10,37,64,0.14);">${media}</button>`;
         }
 
         function profileScreenHTML(asOverlay){
@@ -1111,7 +1111,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             </div>
             <div class="flex items-center gap-4 mb-5">
               <button onclick="viewProfilePhoto()" class="relative w-20 h-20 flex-shrink-0">
-                <div class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="color:${NAVY};background:rgba(10,37,64,0.14);">${avatarInner}</div>
+                <div class="ph-av w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="color:${NAVY};background:rgba(10,37,64,0.14);">${avatarInner}</div>
               </button>
               <div class="flex flex-col items-start gap-1">
                 <button onclick="triggerProfilePhotoUpload()" class="text-sm font-semibold" style="color:${ROYAL}">Upload picture</button>

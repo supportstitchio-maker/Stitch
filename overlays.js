@@ -141,12 +141,12 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             return `<div class="w-full h-full flex items-center justify-center" style="background:${gameProfileAvatar.bg};color:${gameProfileAvatar.fg};">${Icon(gameProfileAvatar.icon,'w-4 h-4')}</div>`;
           }
           if (gameProfileAvatar && gameProfileAvatar.type === 'none') {
-            return `<div class="w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
+            return `<div class="ph-av w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
           }
           if (profileData.photo) {
             return `<img src="${profileData.photo}" class="w-full h-full object-cover">`;
           }
-          return `<div class="w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
+          return `<div class="ph-av w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
         }
         function gameProfileHTML(){
           const canRemove = (gameProfileAvatar && (gameProfileAvatar.type === 'photo' || gameProfileAvatar.type === 'icon'))

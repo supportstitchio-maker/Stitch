@@ -5358,10 +5358,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const title = (isVideo ? 'Video call' : 'Voice call');
                 // Same bubble as a normal chat message: same colour, shape, width and time underneath
                 const bubbleStyle = outgoing
-                  ? 'background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35));border-radius:20px 20px 0 20px;'
+                  ? 'background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;'
                   : 'border-radius:20px 20px 20px 0;';
                 const bubbleCls = outgoing ? 'text-white' : 'bg-gray-100 text-gray-700';
-                const circleStyle = outgoing ? 'background:rgba(255,255,255,0.28);color:#ffffff;' : 'background:rgba(107,114,128,0.14);color:#4b5563;';
+                const circleStyle = outgoing ? 'color:#ffffff;' : 'color:#8b93a1;';
                 const statusColor = bad ? (outgoing ? '#b91c1c' : '#ef4444') : (outgoing ? '#f0fdf4' : '#16a34a');
                 const callBubble = `<div class="${bubbleCls} px-4 py-2.5 text-sm flex items-center gap-3" style="${bubbleStyle}">
                     <div class="flex items-center justify-center flex-shrink-0" style="width:34px;height:34px;border-radius:9999px;${circleStyle}"><svg viewBox="0 0 24 24" width="18" height="18">${glyph}</svg></div>
@@ -5371,9 +5371,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     </div>
                   </div>`;
                 const callContent = `<div class="flex flex-col ${outgoing ? 'items-end' : 'items-start'} gap-1" style="max-width:75%;">${callBubble}<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div></div>`;
+                const cPressKey = `${activeConvoId}|${ts}`;
+                const cPress = `onmousedown="startPress('messageLongPress','${cPressKey}', event)" onmouseup="endPress()" onmouseleave="endPress()" ontouchstart="startPress('messageLongPress','${cPressKey}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"`;
+                const cMenuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${cPressKey}', event)" class="desktop-msg-menu-btn w-7 h-7 rounded-full items-center justify-center text-gray-400 hover:bg-gray-100 flex-shrink-0" style="align-self:center;" title="Call options" aria-label="Call options">${Icon('dots','w-4 h-4')}</button>`;
+                const callTap = `onclick="callBackFromEntry('${isVideo ? 'video' : 'audio'}')"`;
+                const callContentTap = callContent.replace('<div class="flex flex-col', `<div ${callTap} class="cursor-pointer flex flex-col`);
                 const row = outgoing
-                  ? `<div class="flex items-start justify-end gap-3">${callContent}</div>`
-                  : `<div class="flex items-start gap-3"><div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContent}</div>`;
+                  ? `<div class="flex items-start justify-end gap-3" data-cv-key="${cPressKey}" ${cPress}>${cMenuBtn}${callContentTap}</div>`
+                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}${cMenuBtn}</div>`;
                 return separator + row;
               }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
@@ -5389,7 +5394,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const voiceHTML = m.voice ? convoVoiceNoteHTML(m.voice, mine, m) : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
-                ? `<div class="text-white px-4 py-2.5 text-sm" style="background:linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35)); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}</div>`
+                ? `<div class="text-white px-4 py-2.5 text-sm" style="background:rgba(65,105,225,0.45); border-radius:20px 20px 0 20px;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}</div>`
                 : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}</div>`
             ) : '';
             const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
@@ -5434,7 +5439,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         let messageActionTime = null;
 
         // ---- Message long-press actions (delete for me/everyone) ----
+        let lastMsgLongPressAt = 0;
+        function callBackFromEntry(type){
+          // A long-press that opened the options sheet must not also start a call
+          if (Date.now() - lastMsgLongPressAt < 800 || document.getElementById('message-action-sheet')) return;
+          if (!activeConvoId) return;
+          startCall(activeConvoId, type);
+        }
         function messageLongPress(key){
+          lastMsgLongPressAt = Date.now();
           const sep = key.lastIndexOf('|');
           if (sep === -1) return;
           messageActionConvoId = key.slice(0, sep);
@@ -5463,13 +5476,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const msgs = (messageActionConvoId && conversationMessages[messageActionConvoId]) || [];
           const msg = msgs.find(m => m.time === messageActionTime);
           const canDeleteForEveryone = canDeleteMessageForEveryone(msg);
-          const canCopy = !!(msg && msg.text);
+          const isCallEntry = !!(msg && msg.from === 'system');
+          const canCopy = !!(msg && msg.text) && !isCallEntry;
           return `
             <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
               <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
                 <div class="convo-sheet-grabber"></div>
                 ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Copy</button>` : ''}
-                <button onclick="openForwardMessagePicker()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Forward</button>
+                ${isCallEntry ? '' : `<button onclick="openForwardMessagePicker()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Forward</button>`}
                 <button onclick="deleteActionMessageForMe()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Delete for me</button>
                 ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-red-500 border-b border-gray-100" style="font-family:inherit;">Delete for everyone</button>` : ''}
                 <button onclick="closeMessageActionSheet()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-500" style="font-family:inherit;">Cancel</button>
@@ -5496,7 +5510,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const msgs = (messageActionConvoId && conversationMessages[messageActionConvoId]) || [];
           const msg = msgs.find(m => m.time === messageActionTime);
           const canDeleteForEveryone = canDeleteMessageForEveryone(msg);
-          const canCopy = !!(msg && msg.text);
+          const isCallEntry = !!(msg && msg.from === 'system');
+          const canCopy = !!(msg && msg.text) && !isCallEntry;
 
           const btn = evt.currentTarget;
           const rect = btn.getBoundingClientRect();
@@ -5512,7 +5527,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="fixed inset-0" style="z-index:59;" onclick="closeMessageActionSheet()"></div>
             <div class="fixed bg-white rounded-2xl border border-gray-100 py-2 menu-dropdown-inset" style="z-index:60;top:${Math.max(8, top)}px;left:${left}px;width:${menuWidth}px;box-shadow:0 10px 30px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
               ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Copy</button>` : ''}
-              <button onclick="openForwardMessagePicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Forward</button>
+              ${isCallEntry ? '' : `<button onclick="openForwardMessagePicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Forward</button>`}
               <button onclick="deleteActionMessageForMe()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Delete for me</button>
               ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-4 py-2.5 text-sm text-red-500 menu-item-pill">Delete for everyone</button>` : ''}
             </div>`;
@@ -5733,7 +5748,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoVoiceNoteHTML(voice, mine, m){
           const uid = 'voice-' + Math.random().toString(36).slice(2, 9);
           // Sent notes echo the outgoing text-bubble treatment
-          const bubbleBg = mine ? 'linear-gradient(135deg, rgba(65,105,225,0.55), rgba(65,105,225,0.35))' : '#f3f4f6';
+          const bubbleBg = mine ? 'rgba(65,105,225,0.45)' : '#f3f4f6';
           const subColor = mine ? 'rgba(255,255,255,0.8)' : '#6b7280';
           const waveBg = mine ? 'rgba(255,255,255,0.4)' : '#d1d5db';
           const waveFg = mine ? '#ffffff' : NAVY;
@@ -7734,16 +7749,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
 
             /* ---- Rebuilt layouts: pill control bar, labelled voice panel, tile sheets, speaker view ---- */
-            body{--cu-ic:#4b5563;--cu-g1:#1e90ff;--cu-g2:#4169e1;}
-            body.dark-mode{--cu-ic:#c4c4c4;--cu-g1:#1457a8;--cu-g2:#263f8c;--cu-blue-soft:rgba(20,87,168,.18);}
+            body{--cu-ic:#4b5563;--cu-g1:#1e90ff;--cu-g2:#4169e1;--cu-av-bg:#e2e5ea;--cu-av-fg:#4b5563;}
+            body.dark-mode{--cu-av-bg:#2b2b2b;--cu-av-fg:#c4c4c4;--cu-ic:#c4c4c4;--cu-g1:#1457a8;--cu-g2:#263f8c;--cu-blue-soft:rgba(20,87,168,.18);}
             .cu-glass,.cu-pill{color:var(--cu-ic);}
             .cu-ctl:not(.end):not(.accept):not(.on):not(.accent) .cu-ctl-btn{color:var(--cu-ic);}
             .cu-glass .cu-count,.cu-ctl.accent .cu-ctl-btn,.cu-tg{background:var(--cu-g1);}
             .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline-color:var(--cu-g1);}
-            .cu-avatar,.cu-voice-avatar{background:linear-gradient(135deg,var(--cu-g1),var(--cu-g2)) !important;}
-            .cu-avatar span[style*="letter-spacing"],.cu-voice-avatar span[style*="letter-spacing"]{color:#fff !important;}
+            .cu-avatar,.cu-voice-avatar{background:var(--cu-av-bg) !important;color:var(--cu-av-fg) !important;}
+            .cu-avatar span[style*="letter-spacing"],.cu-voice-avatar span[style*="letter-spacing"]{color:var(--cu-av-fg) !important;}
             .cu-voice-avatar span[style*="letter-spacing"]{font-size:clamp(40px,13vw,66px) !important;}
-            .cu-voice-avatar{box-shadow:0 0 0 14px rgba(30,100,200,.10),0 0 0 30px rgba(30,100,200,.05);}
+            .cu-voice-avatar{box-shadow:0 0 0 14px rgba(100,110,125,.12),0 0 0 30px rgba(100,110,125,.06);}
+            .cu-ring{border-color:rgba(100,110,125,.30);}
             body.dark-mode .cu-voice-avatar{box-shadow:0 0 0 14px rgba(255,255,255,.05),0 0 0 30px rgba(255,255,255,.025);}
             body.dark-mode .cu-ring{border-color:rgba(255,255,255,.16);}
             .cu-incoming{background:var(--cu-bg) !important;}
@@ -7801,7 +7817,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-plist{overflow-y:auto;flex:1;min-height:0;padding:4px 0;}
             .cu-prow{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--cu-line);}
             .cu-prow:last-child{border-bottom:0;}
-            .cu-prow-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--cu-g1),var(--cu-g2));color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+            .cu-prow-av{width:38px;height:38px;border-radius:50%;background:var(--cu-av-bg);color:var(--cu-av-fg);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
             .cu-prow-tx{flex:1;min-width:0;display:flex;flex-direction:column;}
             .cu-prow-tx b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
             .cu-prow-tx small{font-size:12px;color:var(--cu-sub);}
