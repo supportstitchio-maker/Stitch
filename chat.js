@@ -3653,6 +3653,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .on('broadcast', { event: 'response' }, ({ payload }) => handleCallResponse(payload))
             .on('broadcast', { event: 'cancel' }, ({ payload }) => handleCallCancel(payload))
             .on('broadcast', { event: 'attempt' }, ({ payload }) => handleCallAttempt(payload))
+            .on('broadcast', { event: 'ended' }, ({ payload }) => handleCallEndedByPeer(payload))
             .subscribe();
         }
 
@@ -3660,14 +3661,29 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function broadcastToUserChannel(userId, event, payload){
           const sb = getSupabaseClient();
           if (!sb || !userId) return;
-          const ch = sb.channel('incoming-calls:' + userId, { config: { broadcast: { self: false } } });
-          ch.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              ch.send({ type: 'broadcast', event, payload });
-              setTimeout(() => { try { sb.removeChannel(ch); } catch (e) {  } }, 1000);
-            }
-          });
+          // Keep one open channel per person we signal. A fresh subscribe for every message added a
+          // visible delay to cancel / decline / end, so ring and cancel now go out the moment you tap.
+          const drop = (uid) => { const x = outboundCallChannels[uid]; if (!x) return; clearTimeout(x.t); delete outboundCallChannels[uid]; try { sb.removeChannel(x.ch); } catch (e) {  } };
+          let e = outboundCallChannels[userId];
+          if (!e) {
+            const ch = sb.channel('incoming-calls:' + userId, { config: { broadcast: { self: false } } });
+            e = { ch, ready: false, queue: [], t: null };
+            outboundCallChannels[userId] = e;
+            ch.subscribe((status) => {
+              if (status === 'SUBSCRIBED') {
+                e.ready = true;
+                e.queue.splice(0).forEach(m => { try { ch.send(m); } catch (err) {  } });
+              } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                if (outboundCallChannels[userId] === e) drop(userId);
+              }
+            });
+          }
+          const msg = { type: 'broadcast', event, payload };
+          if (e.ready) { try { e.ch.send(msg); } catch (err) { drop(userId); } } else e.queue.push(msg);
+          clearTimeout(e.t);
+          e.t = setTimeout(() => drop(userId), 180000);
         }
+        const outboundCallChannels = {};
 
         // Someone who isn't a connection never gets a ringing phone: they get a silent notice instead
         async function sendCallAttempt(otherUserId, type, convoId){
@@ -3856,6 +3872,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (screen) screen.outerHTML = callHTML();
             setTimeout(() => endCall(), 1400);
           }
+        }
+
+        // The other person hung up a connected one-to-one call: end it here at once, without waiting
+        // for the media connection to notice
+        function handleCallEndedByPeer(payload){
+          if (!payload || !callState.convoId || payload.convoId !== callState.convoId || !callState.connected) return;
+          if (isMeetingConvo(callState.convoId)) return;
+          const peers = Object.values(callPeers);
+          if (peers.length > 1) return;
+          endCall(true);
         }
 
         function handleCallCancel(payload){
@@ -7394,7 +7420,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (callChannel) {
             sendCallSignal({ kind: 'hangup' });
             const sb = getSupabaseClient();
-            if (sb) sb.removeChannel(callChannel);
+            // Give the hang-up a moment to leave before the channel closes
+            const dying = callChannel;
+            if (sb) setTimeout(() => { try { sb.removeChannel(dying); } catch (e) {  } }, 1200);
             callChannel = null;
           }
           Object.values(callPeers).forEach(entry => {
@@ -7474,6 +7502,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           clearCallTimers();
           stopCallLocalStream();
           if (!remoteInitiated) {
+            if (wasConnected && !isMeetingConvo(callState.convoId)) {
+              const endPeerIds = Object.values(callPeers).map(en => en && en.userId).filter(Boolean);
+              const metaOther = convoMeta[hungUpConvo] && convoMeta[hungUpConvo].otherUserId;
+              if (!endPeerIds.length && metaOther) endPeerIds.push(metaOther);
+              getCurrentUserId().then(myId => {
+                endPeerIds.forEach(uid => broadcastToUserChannel(uid, 'ended', { convoId: hungUpConvo, fromUserId: myId }));
+              }).catch(() => {});
+            }
             if (callState.pendingRingTargets) {
               Array.from(callState.pendingRingTargets).forEach(uid => sendCallCancel(callState.convoId, uid));
             }
@@ -7502,6 +7538,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           callState = { convoId: null, type: 'audio', connected: false, seconds: 0, muted: false, speaker: false, camOff: false, mediaError: null, statusOverride: null, pendingRingTargets: null };
           groupCallFullscreenId = null;
           callSheetOpen = false;
+          if (window.__callOpenedRP) { window.__callOpenedRP = false; if (typeof closeRightPanel === 'function') closeRightPanel(); }
           if (wasMinimized) return;
           if (endedId && !endedWasMeeting) openConversation(endedId); else closeOverlay();
         }

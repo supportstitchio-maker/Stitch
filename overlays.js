@@ -383,6 +383,10 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             else appShellEl.classList.remove('messaging-split');
             if (kind === 'call' || kind === 'incomingCall') appShellEl.classList.add('call-fullscreen');
             else appShellEl.classList.remove('call-fullscreen');
+            // Desktop calls keep the side panel: it can be collapsed / expanded and the call page resizes with it
+            if (kind === 'call' && window.innerWidth >= 1024 && !appShellEl.classList.contains('right-panel-open') && typeof openRightPanel === 'function') {
+              try { openRightPanel('profile', false); window.__callOpenedRP = true; } catch (e) {}
+            }
           }
 
           ov.style.top = OVERLAY_TOP;
@@ -591,6 +595,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (navBackdropElClose) navBackdropElClose.style.display = 'none';
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) { appShellEl.classList.remove('messaging-split'); appShellEl.classList.remove('call-fullscreen'); }
+          if (window.__callOpenedRP) { window.__callOpenedRP = false; if (typeof closeRightPanel === 'function') closeRightPanel(); }
           if (typeof restoreRightPanelAfterChat === 'function') restoreRightPanelAfterChat();
           examFocusExit();
           clearQuizBackground();

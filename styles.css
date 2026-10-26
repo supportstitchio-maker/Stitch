@@ -6140,3 +6140,15 @@ body.dark-mode #desktop-nav .dn-grp:has(#dnav-4.dnav-active) .dnav-flow,
 body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ background:#3a3a3a !important; }
 /* Desktop call: keep the Mute everyone pill centred under the title (content sits right of the side rail) */
 @media (min-width:1024px){ #call-screen .cu-adminbar{ padding-left:110px; } }
+/* Desktop voice/video call: the side panel stays, retracts and expands, and the call page resizes with it */
+@media (min-width:1024px){
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen):not(.rp-collapsed){ width:calc(100% - var(--rp-width,480px) - 32px) !important; }
+  #app-shell.call-fullscreen.right-panel-open.rp-collapsed:has(#overlay #call-screen){ width:calc(100% - 16px) !important; }
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen) #overlay{ left:0 !important; right:0 !important; width:100% !important; }
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen) #desktop-right-panel{ display:flex !important; }
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen) #rp-resizer{ display:block !important; }
+  #app-shell.call-fullscreen.right-panel-open.rp-collapsed:has(#overlay #call-screen) #rp-resizer{ display:none !important; }
+  #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen) #rp-reopen-tab{ display:flex !important; }
+  #app-shell.call-fullscreen.right-panel-open:not(.rp-collapsed):has(#overlay #call-screen) #rp-reopen-tab{ display:none !important; }
+  #call-screen .cu-adminbar{ padding-left:0 !important; }
+}
