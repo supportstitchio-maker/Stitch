@@ -6152,3 +6152,9 @@ body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ b
   #app-shell.call-fullscreen.right-panel-open:not(.rp-collapsed):has(#overlay #call-screen) #rp-reopen-tab{ display:none !important; }
   #call-screen .cu-adminbar{ padding-left:0 !important; }
 }
+/* Desktop sheets and pop-ups sit in the main area beside the open side panel, not across the whole window */
+@media (min-width:1024px){
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) :is(#planner-sheet, #delete-account-sheet, #cert-modal, #job-sheet-backdrop, #admin-menu-backdrop){ left:96px !important; right:calc(var(--rp-width,480px) + 16px) !important; }
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #job-sheet-menu{ left:96px !important; right:calc(var(--rp-width,480px) + 16px) !important; }
+  body:has(#app-shell.right-panel-open.rp-collapsed) :is(#planner-sheet, #delete-account-sheet, #cert-modal, #job-sheet-backdrop, #admin-menu-backdrop, #job-sheet-menu){ left:96px !important; }
+}

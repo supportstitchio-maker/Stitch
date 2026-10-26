@@ -557,7 +557,32 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             overlayHistoryPushed = true;
           }
         }
+        // Desktop top-strip buttons (bell, New, profile) opened while another page is showing: they open on
+        // top of it, and the back arrow returns to that page instead of dropping to the tab underneath
+        let dtopReturnKind = null, dtopViaKind = null;
+        const DTOP_NO_RETURN_KINDS = ['notifications', 'create', 'createMenu', 'myFullProfile', 'call', 'addToCall', 'incomingCall', 'incomingLectureCall', 'lectureCall', 'conversation', 'aiClass', 'examTake'];
+        function dtopOpenFromHere(via, go){
+          const ov = document.getElementById('overlay');
+          const open = ov && !ov.classList.contains('hidden') && currentOverlayKind && !DTOP_NO_RETURN_KINDS.includes(currentOverlayKind);
+          dtopReturnKind = open ? currentOverlayKind : null;
+          dtopViaKind = open ? via : null;
+          go();
+        }
+        function dtopProfileClick(){
+          const ov = document.getElementById('overlay');
+          const open = ov && !ov.classList.contains('hidden') && currentOverlayKind && !DTOP_NO_RETURN_KINDS.includes(currentOverlayKind);
+          if (open) { dtopOpenFromHere('myFullProfile', function(){ openOverlay('myFullProfile'); }); return; }
+          switchTab(4);
+        }
         function closeOverlay(fromPopState){
+          if (dtopReturnKind && currentOverlayKind === dtopViaKind) {
+            const back = dtopReturnKind;
+            dtopReturnKind = null; dtopViaKind = null;
+            if (fromPopState) overlayHistoryPushed = false;
+            openOverlay(back);
+            return;
+          }
+          dtopReturnKind = null; dtopViaKind = null;
           try { const _ovEl = document.getElementById('overlay'); if (_ovEl) _ovEl.classList.remove('kb-fill'); } catch (e) {}
           if (currentOverlayKind === 'examTake' && typeof examStage !== 'undefined' && examStage === 'take'
               && typeof examTest !== 'undefined' && examTest && typeof finishExam === 'function') {
