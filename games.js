@@ -2210,6 +2210,7 @@ let userPoints = 0;
           // skeleton forever (the media preload's own hard timeout is 60s)
           setTimeout(() => { if (typeof unlockBootShell === 'function') unlockBootShell(); }, 70000);
 
+          setTimeout(() => { if (!window.__msgBadgeSynced) { window.__msgBadgeSynced = true; try { refreshMessagingBadges(); } catch (e) {} } }, 20000);
           essentialLoads
             .then(() => applyGoogleProfileInfo())
             .then(() => {
@@ -2225,7 +2226,9 @@ let userPoints = 0;
               reconcileUnreadMessages(),
               (typeof reconcileConvoOrder === 'function' ? reconcileConvoOrder() : Promise.resolve()),
             ]))
+            .catch(() => {})
             .then(() => {
+              window.__msgBadgeSynced = true;
               // Connections are loaded now: show any feed posts that were held back until then
               if (typeof feedRefreshForNetworkChange === 'function') feedRefreshForNetworkChange();
               refreshMessagingBadges();

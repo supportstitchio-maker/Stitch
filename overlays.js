@@ -562,6 +562,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         let dtopReturnKind = null, dtopViaKind = null;
         const DTOP_NO_RETURN_KINDS = ['notifications', 'create', 'createMenu', 'myFullProfile', 'call', 'addToCall', 'incomingCall', 'incomingLectureCall', 'lectureCall', 'conversation', 'aiClass', 'examTake'];
         function dtopOpenFromHere(via, go){
+          // The top strip is switched off only while a test is being taken
+          if (typeof examFocusActive !== 'undefined' && examFocusActive) return;
           const ov = document.getElementById('overlay');
           const open = ov && !ov.classList.contains('hidden') && currentOverlayKind && !DTOP_NO_RETURN_KINDS.includes(currentOverlayKind);
           dtopReturnKind = open ? currentOverlayKind : null;
@@ -569,6 +571,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           go();
         }
         function dtopProfileClick(){
+          if (typeof examFocusActive !== 'undefined' && examFocusActive) return;
           const ov = document.getElementById('overlay');
           const open = ov && !ov.classList.contains('hidden') && currentOverlayKind && !DTOP_NO_RETURN_KINDS.includes(currentOverlayKind);
           // Opens your profile on top of whatever page you are on; the back arrow returns to that page
@@ -4034,6 +4037,7 @@ function examFocusEnter(){
   examFocusActive = true;
   const sh = document.getElementById('app-shell');
   if (!sh) return;
+  sh.classList.add('exam-focus');
   examFocusRpWasOpen = sh.classList.contains('right-panel-open') && !sh.classList.contains('rp-collapsed');
   // the left menu stays; only the right panel steps aside
   if (examFocusRpWasOpen && typeof collapseRightPanel === 'function') collapseRightPanel();
@@ -4044,6 +4048,7 @@ function examFocusExit(){
   const sh = document.getElementById('app-shell');
   if (!sh) return;
   sh.classList.remove('nav-hidden');
+  sh.classList.remove('exam-focus');
   if (examFocusRpWasOpen && typeof expandRightPanel === 'function') expandRightPanel();
   examFocusRpWasOpen = false;
 }

@@ -1789,9 +1789,35 @@
           return sumUnread(primaryConvos) + (typeof collabConvos !== 'undefined' ? sumUnread(collabConvos) : 0);
         }
 
+        // Phone-tray clean-up: message / group-event push notifications for chats that are no longer unread
+        let _seenNotifTimer = null;
+        function clearSeenMessageNotifications(){
+          clearTimeout(_seenNotifTimer);
+          _seenNotifTimer = setTimeout(function(){
+            try {
+              if (!window.__msgBadgeSynced || !navigator.serviceWorker || typeof convoArrays !== 'function') return;
+              const unreadIds = new Set();
+              convoArrays().flat().forEach(c => { if (c.unread && !c.read) unreadIds.add(String(c.id)); });
+              navigator.serviceWorker.getRegistration().then(reg => {
+                if (!reg || !reg.getNotifications) return;
+                return reg.getNotifications().then(list => list.forEach(n => {
+                  const d = n.data || {}, tag = n.tag || '';
+                  const isMsg = d.kind === 'message' || d.kind === 'group_event' || /^(msg-|group-event-)/.test(tag);
+                  if (!isMsg) return;
+                  const id = String(d.convoId || tag.replace(/^(msg-|group-event-)/, ''));
+                  if (!unreadIds.has(id)) n.close();
+                }));
+              }).catch(function(){});
+              if (navigator.clearAppBadge && !unreadIds.size) navigator.clearAppBadge().catch(function(){});
+            } catch (e) {}
+          }, 400);
+        }
+
         function refreshMessagingBadges(){
           if (typeof unreadMessageCount !== 'function') return;
-          const count = unreadMessageCount();
+          // Until the first server sync finishes the cached unread numbers can be stale, so show nothing
+          const count = window.__msgBadgeSynced ? unreadMessageCount() : 0;
+          clearSeenMessageNotifications();
           const navBtn = document.getElementById('nav-3');
           if (navBtn) {
             const iconWrap = navBtn.querySelector('span.relative');

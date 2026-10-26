@@ -6164,3 +6164,26 @@ body.dark-mode .cv-bad-out{ color:#ef4444 !important; }
 .cv-meta-mine > span{ color:#ffffff !important; }
 body.dark-mode .cv-meta-mine > span{ color:#9ca3af !important; }
 body.dark-mode .cv-meta-mine > span[title="Read"]{ color:#34b7f1 !important; }
+/* Workspace (desktop): no people search in the top strip, and the bell, New and profile always respond (also while the workspace is still loading) */
+@media (min-width:1024px){
+  #app-shell.classroom-active #dtop .dtop-search{ display:none !important; }
+  #app-shell.ws-locked #dtop{ opacity:1 !important; }
+  #app-shell.ws-locked #dtop #dtop-bell, #app-shell.ws-locked #dtop #dtop-new, #app-shell.ws-locked #dtop #dtop-me{ pointer-events:auto !important; }
+}
+/* Workspace on desktop: no people search; the bell, New and profile work (also while it loads); they switch off only during a test */
+@media (min-width:1024px){
+  #app-shell.classroom-active #dtop-search{ display:none !important; }
+  #app-shell.classroom-active.ws-resources #dtop :is(button,.dtop-me,.dtop-new,.dtop-bell,.dtop-logo,.dtop-av,.dtop-who){ pointer-events:auto !important; }
+  #app-shell.ws-locked #dtop{ opacity:1 !important; }
+  #app-shell.ws-locked #dtop > :is(.dtop-bell,.dtop-new,.dtop-me,.dtop-logo){ pointer-events:auto !important; }
+  #app-shell.exam-focus #dtop{ opacity:.55; pointer-events:none !important; }
+  #app-shell.exam-focus #dtop > *, #app-shell.exam-focus #dtop :is(button,.dtop-me,.dtop-new,.dtop-bell){ pointer-events:none !important; }
+}
+@media (min-width:1024px){
+  #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop, #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop *{ pointer-events:none !important; }
+  #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop{ opacity:.55 !important; }
+}
+@media (min-width:1024px){
+  #app-shell#app-shell#app-shell.exam-focus #dtop, #app-shell#app-shell#app-shell.exam-focus #dtop *{ pointer-events:none !important; }
+  #app-shell#app-shell#app-shell.exam-focus #dtop{ opacity:.55 !important; }
+}
