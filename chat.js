@@ -5393,7 +5393,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                     <div class="flex items-center justify-center flex-shrink-0" style="width:34px;height:34px;border-radius:9999px;${circleStyle}"><svg viewBox="0 0 24 24" width="18" height="18">${glyph}</svg></div>
                     <div class="min-w-0 flex-1">
                       <div class="font-semibold">${title}</div>
-                      <div class="flex items-center gap-1 text-xs" style="color:${statusColor};"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg>${escapeHtml(detail)}</div>
+                      <div class="flex items-center gap-1 text-xs ${bad && outgoing ? 'cv-bad-out' : ''}" style="color:${statusColor};"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg>${escapeHtml(detail)}</div>
                     </div>
                     <span style="align-self:flex-end;margin:0 0 -2px 8px;font-size:10px;line-height:1;white-space:nowrap;${outgoing ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}</span>
                   </div>`;
@@ -5424,7 +5424,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const timeInBubble = hasBubbleContent && !glimpseReplies.length && !m.voice && !m.unsent
               && !(m.attachments || []).some(f => f && (f.type === 'stitch/post' || f.type === 'stitch/challenge' || (f.type && (f.type.startsWith('image/') || f.type.startsWith('video/')) && (f.dataUrl || f.url || f.file))));
             const inMeta = timeInBubble
-              ? `<span style="float:right;display:inline-flex;align-items:center;gap:3px;margin:7px 0 -3px 12px;font-size:10px;line-height:1;white-space:nowrap;${mine ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}${mine ? convoReadTicksHTML(m) : ''}</span>`
+              ? `<span class="${mine ? 'cv-meta-mine' : ''}" style="float:right;display:inline-flex;align-items:center;gap:3px;margin:7px 0 -3px 12px;font-size:10px;line-height:1;white-space:nowrap;${mine ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}${mine ? convoReadTicksHTML(m) : ''}</span>`
               : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine

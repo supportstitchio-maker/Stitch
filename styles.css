@@ -6158,3 +6158,9 @@ body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ b
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #job-sheet-menu{ left:96px !important; right:calc(var(--rp-width,480px) + 16px) !important; }
   body:has(#app-shell.right-panel-open.rp-collapsed) :is(#planner-sheet, #delete-account-sheet, #cert-modal, #job-sheet-backdrop, #admin-menu-backdrop, #job-sheet-menu){ left:96px !important; }
 }
+/* Light mode: failed-call status and read ticks inside your own (blue) bubbles are white so they don't clash; dark mode keeps its colours */
+.cv-bad-out{ color:#ffffff !important; }
+body.dark-mode .cv-bad-out{ color:#ef4444 !important; }
+.cv-meta-mine > span{ color:#ffffff !important; }
+body.dark-mode .cv-meta-mine > span{ color:#9ca3af !important; }
+body.dark-mode .cv-meta-mine > span[title="Read"]{ color:#34b7f1 !important; }

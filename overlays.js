@@ -571,8 +571,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function dtopProfileClick(){
           const ov = document.getElementById('overlay');
           const open = ov && !ov.classList.contains('hidden') && currentOverlayKind && !DTOP_NO_RETURN_KINDS.includes(currentOverlayKind);
-          if (open) { dtopOpenFromHere('myFullProfile', function(){ openOverlay('myFullProfile'); }); return; }
-          switchTab(4);
+          // Opens your profile on top of whatever page you are on; the back arrow returns to that page
+          if (typeof currentTab !== 'undefined' && currentTab === 4 && !open) { switchTab(4); return; }
+          dtopOpenFromHere('myFullProfile', function(){ openOverlay('myFullProfile'); });
         }
         function closeOverlay(fromPopState){
           if (dtopReturnKind && currentOverlayKind === dtopViaKind) {
