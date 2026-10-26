@@ -6763,10 +6763,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           // Only accepted connections can be called. Calling someone you're not connected to rings
           // normally for you but silent for them. They just get a "tried to reach you" notification.
-          let silentRing = false;
+          // The screen opens straight away; whether the person is an accepted connection is checked
+          // alongside the mic/camera set-up and only decides whether the ring is silent.
+          let silentRingP = Promise.resolve(false);
           if (!answering && callNeedsConnection(id, convoMeta[id])) {
-            const allowed = await isAcceptedConnectionWith(convoMeta[id].otherUserId);
-            silentRing = !allowed;
+            silentRingP = Promise.resolve(isAcceptedConnectionWith(convoMeta[id].otherUserId)).then(a => !a).catch(() => false);
           }
           clearCallTimers();
           stopCallLocalStream();
@@ -6810,6 +6811,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             attachCallLocalVideo();
           }
 
+          let silentRing = false;
+          try { silentRing = await silentRingP; } catch (e) {}
+          if (callState.convoId !== id) return;
           const sb = getSupabaseClient();
           if (sb) {
             joinCallSignaling(id, sb);
@@ -7146,9 +7150,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function callNotesPlace(){
           const modal = document.getElementById('callNotesModal');
           if (!modal || modal.classList.contains('hidden')) return;
-          const ta = document.getElementById('callNotesTextarea');
-          const focused = !!(ta && document.activeElement === ta);
-          const inset = (typeof getKeyboardInset === 'function') ? getKeyboardInset(focused) : 0;
+          // Lift the panel by the real keyboard height only while the keyboard is actually showing;
+          // the moment it closes the space goes back to nothing, even if the text box still has focus
+          const vv = window.visualViewport;
+          let inset = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+          if (inset < 50) inset = 0;
           modal.style.paddingBottom = inset + 'px';
           const panel = document.getElementById('callNotesPanel');
           if (panel) panel.style.paddingBottom = inset > 0 ? '16px' : 'calc(env(safe-area-inset-bottom, 16px) + 16px)';
@@ -7158,11 +7164,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (ta && !ta.dataset.cnw) {
             ta.dataset.cnw = '1';
             ta.addEventListener('focus', () => { setTimeout(callNotesPlace, 60); setTimeout(callNotesPlace, 300); });
-            ta.addEventListener('blur', () => setTimeout(callNotesPlace, 60));
+            ta.addEventListener('blur', () => { setTimeout(callNotesPlace, 60); setTimeout(callNotesPlace, 350); });
           }
           if (window.visualViewport && !window.__cnVV) {
             window.__cnVV = true;
             window.visualViewport.addEventListener('resize', callNotesPlace);
+            window.visualViewport.addEventListener('scroll', callNotesPlace);
+            window.addEventListener('resize', callNotesPlace);
           }
           callNotesPlace();
         }
@@ -7778,8 +7786,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bsheet-row.red > :first-child{background:none !important;color:#ef4444 !important;}
             .cu-bsheet{max-width:560px;}
             .cu-sheet-title{font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;font-size:20px;padding:6px 8px 4px;}
-            .cu-tilegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 6px;}
-            .cu-tilegrid4{grid-template-columns:repeat(4,minmax(0,1fr));}
+            .cu-tilegrid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:10px 6px;}
+            .cu-tilegrid .cu-tile2{flex:0 0 calc((100% - 16px) / 3);min-width:0;}
+            .cu-tilegrid4 .cu-tile2{flex-basis:calc((100% - 24px) / 4);}
             .cu-tile2{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 4px;border-radius:16px;background:var(--cu-soft);color:var(--cu-fg);font-size:11px;font-weight:600;text-align:center;line-height:1.15;}
             .cu-tile2:active{background:var(--cu-soft2);}
             .cu-tile2-ic{color:var(--cu-ic);display:flex;}
@@ -7880,7 +7889,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         // One labelled round control. o: { id, onclick, icon, label, on, end, accent, title }
         function cuCtlInnerHTML(o){
-          return `<span class="cu-ctl-btn">${Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
+          return `<span class="cu-ctl-btn">${o.icon === 'dotsH' ? '<svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>' : Icon(o.icon, 'w-6 h-6')}</span><span class="cu-ctl-label">${escapeHtml(o.label || '')}</span>`;
         }
         function cuCtlClass(o){
           return 'cu-ctl' + (o.on ? ' on' : '') + (o.accent ? ' accent' : '') + (o.accept ? ' accept' : '') + (o.end ? ' end' : '');
@@ -8133,7 +8142,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : { id: 'call-secondary-btn', onclick: "toggleCallControl('speaker')", icon: 'volume', label: 'Speaker', on: callState.speaker });
             cuPatchCtl('call-more-btn', callMoreBtnSpec());
             const more = document.getElementById('meeting-more-btn');
-            if (more && typeof meetingSheet !== 'undefined') cuPatchCtl('meeting-more-btn', { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet });
+            if (more && typeof meetingSheet !== 'undefined') cuPatchCtl('meeting-more-btn', { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dotsH', label: 'More', on: !!meetingSheet });
             return;
           }
           bar.innerHTML = callControlsHTML();
@@ -8322,7 +8331,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // The "More" sheet on a normal call (add people, notes, messages, flip camera)
         let callSheetOpen = false;
         function callMoreBtnSpec(){
-          return { id: 'call-more-btn', onclick: 'toggleCallMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!callSheetOpen };
+          return { id: 'call-more-btn', onclick: 'toggleCallMoreSheet()', icon: 'dotsH', label: 'More', on: !!callSheetOpen };
         }
         function callMoreSheetHTML(){
           if (!callSheetOpen || !callState.convoId || isMeetingConvo(callState.convoId)) return '';
@@ -8354,7 +8363,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const ctls = [];
           // Video calls and meetings: one pill of round icons. Voice calls: a labelled panel.
           if (isVideo || isMeetingCall) {
-            ctls.push(cuCtlHTML(isMeetingCall ? { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dashesShortRight', label: 'More', on: !!meetingSheet } : callMoreBtnSpec()));
+            ctls.push(cuCtlHTML(isMeetingCall ? { id: 'meeting-more-btn', onclick: 'toggleMeetingMenu()', icon: 'dotsH', label: 'More', on: !!meetingSheet } : callMoreBtnSpec()));
             ctls.push(cuCtlHTML({ id: 'call-secondary-btn', onclick: "toggleCallControl('camOff')", icon: callState.camOff ? 'cameraOff' : 'video', label: callState.camOff ? 'Start video' : 'Camera', on: callState.camOff }));
             ctls.push(cuCtlHTML({ id: 'call-mute-btn', onclick: "toggleCallControl('muted')", icon: callState.muted ? 'micOff' : 'mic', label: callState.muted ? 'Unmute' : 'Mute', on: callState.muted }));
           } else {

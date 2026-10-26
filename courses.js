@@ -8047,7 +8047,7 @@ try {
             mute: { id: 'lecture-mute-btn', onclick: "toggleLectureControl('muted')", icon: st.muted ? 'micOff' : 'mic', label: st.muted ? 'Unmute' : 'Mute', on: !!st.muted },
             cam: { id: 'lecture-cam-btn', onclick: "toggleLectureControl('camOff')", icon: st.camOff ? 'cameraOff' : 'video', label: st.camOff ? 'Start video' : 'Camera', on: !!st.camOff },
             hand: { id: 'lecture-hand-btn', onclick: 'toggleLectureHand()', icon: 'handRaised', label: st.handRaised ? 'Lower' : 'Raise', on: !!st.handRaised, title: 'Raise hand' },
-            more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dashesShortRight', label: 'More', on: !!lectureMoreSheetOpen },
+            more: { id: 'lecture-more-btn', onclick: 'toggleLectureMoreSheet()', icon: 'dotsH', label: 'More', on: !!lectureMoreSheetOpen },
             end: { onclick: 'endLecture()', icon: 'phoneHangup', label: isTeacher ? 'End' : 'Leave', end: true, title: isTeacher ? 'End session' : 'Leave' },
           };
         }
