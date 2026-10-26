@@ -2618,6 +2618,11 @@
           if (lockedShell && lockedShell.classList.contains('boot-locked') && n !== 0) return;
           // Workspace skeleton on screen: nav is frozen until it finishes loading
           if (lockedShell && lockedShell.classList.contains('ws-locked') && n !== currentTab) return;
+          // Leaving mid-flashcards: end the session right away so the tapped page shows immediately
+          try {
+            const fm = document.getElementById('flashModal');
+            if (fm && !fm.classList.contains('hidden') && typeof closeFlashModal === 'function') closeFlashModal(true);
+          } catch (e) {}
           autoSaveEditProfileDraft();
           const prevTab = typeof currentTab !== 'undefined' ? currentTab : null;
           if (prevTab === 0 && n !== 0) {

@@ -6187,3 +6187,7 @@ body.dark-mode .cv-meta-mine > span[title="Read"]{ color:#34b7f1 !important; }
   #app-shell#app-shell#app-shell.exam-focus #dtop, #app-shell#app-shell#app-shell.exam-focus #dtop *{ pointer-events:none !important; }
   #app-shell#app-shell#app-shell.exam-focus #dtop{ opacity:.55 !important; }
 }
+
+/* Search people bar stays out of the way while a sheet (e.g. Stitch Pro) is open */
+body:has(#careerSubscribeModal:not(.hidden)) #dtop .dtop-search,
+body:has(#careerSubscribeModal:not(.hidden)) #dtop-search{ display:none !important; }
