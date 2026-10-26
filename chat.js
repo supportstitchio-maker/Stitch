@@ -8642,12 +8642,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="mh-main">
                   <span class="mh-date"><b>${dp.day}</b><small>${dp.mon}</small></span>
                   <span class="mh-info"><b>${escapeHtml(m.title)}</b><small>${sub}</small></span>
-                  <span class="mh-act ${act === 'Details' ? 'out' : ''}">${act}</span>
+                  <span class="mh-act filter-pill">${act}</span>
                 </button>
                 <div class="mh-links">
-                  <button onclick="copyMeetingLink('${escapeHtml(m.code)}')">Copy link</button>
-                  <button onclick="shareMeetingLink('${escapeHtml(m.code)}', '${escapeHtml(m.title).replace(/'/g, '&#39;')}')">Share</button>
-                  ${m.is_admin ? `<button class="red" onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')">${m.state === 'live' ? 'End' : 'Cancel meeting'}</button>` : ''}
+                  <button onclick="copyMeetingLink('${escapeHtml(m.code)}')">${Icon('copy', 'w-4 h-4')}<span>Copy link</span></button>
+                  <button onclick="shareMeetingLink('${escapeHtml(m.code)}', '${escapeHtml(m.title).replace(/'/g, '&#39;')}')">${Icon('send', 'w-4 h-4')}<span>Share</span></button>
+                  ${m.is_admin ? `<button class="red" onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')">${Icon('phoneHangup', 'w-4 h-4')}<span>${m.state === 'live' ? 'End' : 'Cancel'}</span></button>` : ''}
                 </div>
               </div>`;
           }).join('');
@@ -8661,7 +8661,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </button>
               <div class="mh-code">
                 <input id="meetings-code-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Enter a meeting code or link" onkeydown="if(event.key==='Enter'){event.preventDefault();joinMeetingFromTypedCode();}">
-                <button onclick="joinMeetingFromTypedCode()" class="mh-join">Join</button>
+                <button onclick="joinMeetingFromTypedCode()" class="mh-join filter-pill">Join</button>
               </div>
               <div class="mh-label">Upcoming</div>
               <div id="meetings-home-cards">${meetingsHomeCardsHTML()}</div>
@@ -9629,7 +9629,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="cu-bsheet">
                 <div class="cu-bsheet-grab"></div>
                 <button onclick="closeMeetingSheet();toggleCallHand()" class="cu-handpill ${callState.handRaised ? 'on' : ''}">${Icon('handRaised', 'w-5 h-5')}<span>${callState.handRaised ? 'Lower hand' : 'Raise hand'}</span></button>
-                <div class="cu-tilegrid">
+                <div class="cu-tilegrid cu-tilegrid4">
                   ${tile('laugh', 'Reactions', "setMeetingSheet('reactions')")}
                   ${tile('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread})` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}
                   ${activeMeeting.code ? tile('send', 'Invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
