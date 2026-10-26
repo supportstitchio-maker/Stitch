@@ -1682,8 +1682,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div class="flex-1 flex flex-col items-center px-8" style="padding-top:48px;">
                 <div class="rounded-3xl p-5 flex flex-col items-center shadow-xl" style="width:280px;background:${t.card};${t.dark ? 'box-shadow:0 0 0 1px rgba(255,255,255,0.08);' : ''}">
                   <div id="${codeId}" class="relative flex items-center justify-center" style="width:240px;height:240px;">
-                    <div class="absolute rounded-2xl flex items-center justify-center" style="width:52px;height:52px;background:${t.card};box-shadow:0 0 0 5px ${t.card};">
-                      <div class="w-full h-full rounded-2xl overflow-hidden flex items-center justify-center" style="background:linear-gradient(135deg, ${ROYAL}, ${NAVY});">${photoHTML}</div>
+                    <div class="absolute rounded-full flex items-center justify-center" style="width:54px;height:54px;background:${t.card};box-shadow:0 0 0 4px ${t.card};z-index:2;">
+                      <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:34px;height:auto;display:block;">
                     </div>
                   </div>
                 </div>
@@ -1726,26 +1726,24 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ctx.textAlign = 'center';
           ctx.fillText(String(label || '').toUpperCase(), out.width / 2, size + 84);
           const cx = size / 2, cy = size / 2;
+          // Centre badge: the Stitch logo on a plain circle (the person's photo is no longer used here)
           const badge = (img) => {
             ctx.save();
-            ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI * 2); ctx.fillStyle = t.card; ctx.fill();
-            ctx.beginPath(); ctx.arc(cx, cy, 32, 0, Math.PI * 2); ctx.clip();
-            if (img) ctx.drawImage(img, cx - 32, cy - 32, 64, 64);
-            else {
-              const grad = ctx.createLinearGradient(cx - 32, cy - 32, cx + 32, cy + 32);
-              grad.addColorStop(0, ROYAL); grad.addColorStop(1, NAVY);
-              ctx.fillStyle = grad; ctx.fillRect(cx - 32, cy - 32, 64, 64);
+            ctx.beginPath(); ctx.arc(cx, cy, 42, 0, Math.PI * 2); ctx.fillStyle = t.card; ctx.fill();
+            if (img) {
+              const w = 60, h = w * (img.naturalHeight || img.height) / (img.naturalWidth || img.width);
+              ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+            } else {
+              ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fillStyle = ROYAL; ctx.fill();
             }
             ctx.restore();
           };
-          if (photo) {
-            await new Promise(res => {
-              const img = new Image(); img.crossOrigin = 'anonymous';
-              img.onload = () => { badge(img); res(); };
-              img.onerror = () => { badge(null); res(); };
-              img.src = photo;
-            });
-          } else badge(null);
+          await new Promise(res => {
+            const img = new Image();
+            img.onload = () => { badge(img); res(); };
+            img.onerror = () => { badge(null); res(); };
+            img.src = STITCH_LOGO_ICON;
+          });
           return out;
         }
 
@@ -1800,7 +1798,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function initProfileQRCode(){
           const el = document.getElementById('profile-qr-code');
           if (!el || typeof QRCode === 'undefined') return;
-          Array.from(el.querySelectorAll('canvas, table, img')).forEach(n => n.remove());
+          Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: profileQRLink(),
             width: 240,
@@ -1809,7 +1807,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H
           });
-          const canvas = el.querySelector('canvas') || el.querySelector('img');
+          const canvas = el.querySelector('canvas') || el.querySelector('img:not([data-qr-logo])');
           if (canvas) canvas.style.position = 'relative';
           prepareQRShare('profile-qr-code', profileQRLink(), profileData.username, profileData.photo);
         }

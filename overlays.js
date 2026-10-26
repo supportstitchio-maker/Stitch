@@ -2660,7 +2660,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function initPersonProfileQRCode(){
           const el = document.getElementById('person-profile-qr-code');
           if (!el || typeof QRCode === 'undefined') return;
-          Array.from(el.querySelectorAll('canvas, table, img')).forEach(n => n.remove());
+          Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: personProfileQRLink(viewedProfile || {}),
             width: 240,
@@ -2669,7 +2669,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H
           });
-          const canvas = el.querySelector('canvas') || el.querySelector('img');
+          const canvas = el.querySelector('canvas') || el.querySelector('img:not([data-qr-logo])');
           if (canvas) canvas.style.position = 'relative';
           const pp = viewedProfile || {};
           prepareQRShare('person-profile-qr-code', personProfileQRLink(pp), pp.username || pp.name || 'Stitch member', pp.photo);
