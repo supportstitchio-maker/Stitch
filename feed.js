@@ -3951,6 +3951,27 @@
 
         let feedVideoObserver = null;
         let feedVideoPreloadObserver = null;
+        // A stored poster can be a black frame, and a poster covers the real video until playback starts, so a post that
+        // is on screen but not yet playing looked black until the person scrolled. Once the video has its own picture,
+        // seek a little way in, drop the poster and let that real frame show.
+        function feedVideoShowStill(video){
+          try {
+            if (!video || video.dataset.stillDone === '1') return;
+            const show = () => {
+              if (video.dataset.stillDone === '1') return;
+              video.dataset.stillDone = '1';
+              const done = () => {
+                if (video.paused) video.removeAttribute('poster');
+                revealFeedVideo(video);
+              };
+              if (!video.paused || video.currentTime > 0.05) { done(); return; }
+              video.addEventListener('seeked', done, { once: true });
+              try { video.currentTime = Math.min(0.3, ((video.duration || 1) / 10)); } catch (e) { done(); }
+              setTimeout(done, 3000);
+            };
+            if (video.readyState >= 2) show(); else video.addEventListener('loadeddata', show, { once: true });
+          } catch (e) {}
+        }
         // Feed videos ship with preload="metadata" so posts nobody scrolls to never burn data
         function setupFeedVideoPreload(container){
           if (feedVideoPreloadObserver) { feedVideoPreloadObserver.disconnect(); feedVideoPreloadObserver = null; }
@@ -3962,6 +3983,7 @@
               if (!entry.isIntersecting) return;
               const video = entry.target;
               feedVideoPreloadObserver.unobserve(video);
+              feedVideoShowStill(video);
               if (video.preload === 'auto' || video.readyState >= 2) return;
               video.preload = 'auto';
               video.load();
