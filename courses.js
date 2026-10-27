@@ -7845,6 +7845,7 @@ try {
           if (whiteboardAttachment && whiteboardAttachment.url) URL.revokeObjectURL(whiteboardAttachment.url);
           lectureAttachments.forEach(a => { if (a.url) URL.revokeObjectURL(a.url); });
           whiteboardStrokes = [];
+          wbView = { x: 0, y: 0, k: 1 }; wbSel = null; wbActions = [];
           whiteboardAttachment = null;
           lectureSlides = null;
           lecturePreview = null;
@@ -8533,6 +8534,7 @@ try {
           if (whiteboardAttachment && whiteboardAttachment.url) URL.revokeObjectURL(whiteboardAttachment.url);
           lectureAttachments.forEach(a => { if (a.url) URL.revokeObjectURL(a.url); });
           whiteboardStrokes = [];
+          wbView = { x: 0, y: 0, k: 1 }; wbSel = null; wbActions = [];
           whiteboardAttachment = null;
           lecturePreview = null;
           lectureMoreSheetOpen = false;
@@ -8954,11 +8956,17 @@ try {
         const WHITEBOARD_COLORS = ['#111827','#dc2626','#2563eb','#16a34a','#f59e0b','#7c3aed'];
 
         // ---- Lecture whiteboard: tools, drawing, undo/clear ----
+        function wbExtraToolSvg(t){
+          const d = t === 'select'
+            ? '<path d="M5 3l14 7-6 2-2 6z"/>'
+            : '<path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/>';
+          return `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+        }
         function wbToolIcon(t){
           return { pen: 'penTool', square: 'square', circle: 'circle', line: 'lineTool', text: 'textTool', eraser: 'eraser' }[t] || 'penTool';
         }
 
-        const WB_TOOL_LABELS = { pen: 'Pen (freehand)', square: 'Square', circle: 'Circle', line: 'Line', text: 'Text', eraser: 'Eraser' };
+        const WB_TOOL_LABELS = { select: 'Select and move', hand: 'Pan (move around)', pen: 'Pen (freehand)', square: 'Square', circle: 'Circle', line: 'Line', text: 'Text', eraser: 'Eraser' };
 
         function lectureWhiteboardHTML(){
           const isTeacher = lectureIsTeacher();
@@ -8966,8 +8974,8 @@ try {
             <div class="flex-1 flex flex-col bg-white min-h-0" style="margin:0 10px 10px;border-radius:22px;overflow:hidden;color:#1f2937;">
               ${isTeacher ? `
               <div class="flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200 overflow-x-auto flex-shrink-0">
-                ${['pen','square','circle','line','text','eraser'].map(t => `
-                  <button onclick="wbSetTool('${t}')" title="${WB_TOOL_LABELS[t]}" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="${whiteboardTool === t ? `background:${NAVY};color:#ffffff;box-shadow:0 0 0 2px ${NAVY}55;` : 'background:#f3f4f6;color:#4b5563;'}">${Icon(wbToolIcon(t), t === 'text' ? 'w-5 h-5' : 'w-4 h-4')}</button>`).join('')}
+                ${['select','hand','pen','square','circle','line','text','eraser'].map(t => `
+                  <button onclick="wbSetTool('${t}')" title="${WB_TOOL_LABELS[t]}" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="${whiteboardTool === t ? `background:${NAVY};color:#ffffff;box-shadow:0 0 0 2px ${NAVY}55;` : 'background:#f3f4f6;color:#4b5563;'}">${(t === 'select' || t === 'hand') ? wbExtraToolSvg(t) : Icon(wbToolIcon(t), t === 'text' ? 'w-5 h-5' : 'w-4 h-4')}</button>`).join('')}
                 <div class="w-px h-6 bg-gray-200 flex-shrink-0 mx-1"></div>
                 ${WHITEBOARD_COLORS.map(c => `
                   <button onclick="wbSetColor('${c}')" class="w-6 h-6 rounded-full flex-shrink-0" style="background:${c};${whiteboardColor === c ? `box-shadow:0 0 0 2px #fff, 0 0 0 4px ${NAVY};` : ''}"></button>`).join('')}
@@ -8981,8 +8989,14 @@ try {
               <div class="flex items-center gap-2 px-3 py-2 bg-white border-b border-gray-200 flex-shrink-0">
                 <span class="text-xs font-semibold text-gray-400">Your moderator is presenting the whiteboard</span>
               </div>`}
-              <div id="lecture-whiteboard-stage" class="flex-1 relative bg-white overflow-hidden">
-                <canvas id="lecture-whiteboard-canvas" class="absolute inset-0 w-full h-full" style="touch-action:${isTeacher ? 'none' : 'auto'};"></canvas>
+              <div id="lecture-whiteboard-stage" class="flex-1 relative bg-white overflow-hidden" style="background-image:radial-gradient(circle, #cbd5e1 1.2px, transparent 1.4px);background-size:28px 28px;background-position:${wbView.x % 28}px ${wbView.y % 28}px;">
+                <canvas id="lecture-whiteboard-canvas" class="absolute inset-0 w-full h-full" style="touch-action:none;"></canvas>
+                <div class="absolute flex items-center gap-1 rounded-full" style="top:10px;right:10px;background:rgba(255,255,255,0.92);box-shadow:0 2px 10px rgba(15,23,42,0.14);padding:3px;z-index:4;">
+                  <button onclick="wbZoomBy(1/1.25)" title="Zoom out" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg" style="line-height:1;">&minus;</button>
+                  <button onclick="wbFitView()" title="Fit everything" id="wb-zoom-pct" class="text-xs font-bold text-gray-600 px-1" style="min-width:42px;">${Math.round(wbView.k * 100)}%</button>
+                  <button onclick="wbZoomBy(1.25)" title="Zoom in" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg" style="line-height:1;">+</button>
+                </div>
+                <button id="wb-sel-del" onclick="wbDeleteSelected()" title="Delete" class="absolute w-9 h-9 rounded-full items-center justify-center text-white" style="display:none;background:#dc2626;box-shadow:0 4px 12px rgba(220,38,38,0.4);z-index:4;">${Icon('trash','w-4 h-4')}</button>
               </div>
             </div>`;
         }
@@ -9015,7 +9029,18 @@ try {
           rerenderLectureScreen();
         }
 
+        // ---- Endless whiteboard: world coordinates + a pan/zoom view, select-and-move, pinch/scroll ----
+        let wbView = { x: 0, y: 0, k: 1 };
+        let wbSel = null;            // the selected stroke (object reference)
+        let wbActions = [];          // undo history: adds and moves
+        let wbPointers = new Map();  // active pointers on the canvas (for pinch/pan)
+        let wbGesture = null;        // two-finger pinch/pan
+        let wbPanState = null;       // one-finger / mouse pan
+        const WB_MIN_K = 0.2, WB_MAX_K = 4;
+
         function wbCanvasCursor(){
+          if (whiteboardTool === 'hand') return 'grab';
+          if (whiteboardTool === 'select') return 'default';
           return whiteboardTool === 'text' ? 'text' : 'crosshair';
         }
 
@@ -9025,52 +9050,147 @@ try {
           const canvas = document.getElementById('lecture-whiteboard-canvas');
           if (!canvas) return;
           const parent = canvas.parentElement;
-          canvas.width = parent.clientWidth;
-          canvas.height = parent.clientHeight;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = Math.max(1, Math.round(parent.clientWidth * dpr));
+          canvas.height = Math.max(1, Math.round(parent.clientHeight * dpr));
           canvas.style.cursor = wbCanvasCursor();
+          canvas.style.touchAction = 'none';
           whiteboardCtx = canvas.getContext('2d');
           redrawWhiteboard();
-          if (!canvas.dataset.wired && lectureIsTeacher()) {
+          if (!canvas.dataset.wired) {
             canvas.dataset.wired = '1';
             canvas.addEventListener('pointerdown', wbPointerDown);
             canvas.addEventListener('pointermove', wbPointerMove);
+            canvas.addEventListener('pointercancel', wbPointerUp);
+            canvas.addEventListener('wheel', wbWheel, { passive: false });
             if (!wbWindowPointerUpWired) {
               wbWindowPointerUpWired = true;
               window.addEventListener('pointerup', wbPointerUp);
+              window.addEventListener('keydown', wbKeyDown);
             }
           }
         }
 
-        function wbCanvasPoint(e){
+        function wbDpr(){ return whiteboardCtx ? (whiteboardCtx.canvas.width / Math.max(1, whiteboardCtx.canvas.clientWidth)) : 1; }
+        // Screen (CSS px inside the stage) to world and back
+        function wbScreenPoint(e){
           const canvas = document.getElementById('lecture-whiteboard-canvas');
           const rect = canvas.getBoundingClientRect();
           return { x: e.clientX - rect.left, y: e.clientY - rect.top };
         }
+        function wbToWorld(sp){ return { x: (sp.x - wbView.x) / wbView.k, y: (sp.y - wbView.y) / wbView.k }; }
+        function wbCanvasPoint(e){ return wbToWorld(wbScreenPoint(e)); }
+
+        function wbDistToSeg(px, py, ax, ay, bx, by){
+          const dx = bx - ax, dy = by - ay;
+          const l2 = dx * dx + dy * dy;
+          let t = l2 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0;
+          t = Math.max(0, Math.min(1, t));
+          const cx = ax + t * dx, cy = ay + t * dy;
+          return Math.hypot(px - cx, py - cy);
+        }
+        function wbHitTest(p){
+          const tol = Math.max(8, 14 / wbView.k);
+          for (let i = whiteboardStrokes.length - 1; i >= 0; i--) {
+            const s = whiteboardStrokes[i];
+            if (s.tool === 'eraser' || s.tool === 'delete') continue;
+            if (s.tool === 'pen') {
+              const pts = s.points || [];
+              if (pts.length === 1 && Math.hypot(p.x - pts[0].x, p.y - pts[0].y) <= tol) return s;
+              for (let q = 1; q < pts.length; q++) if (wbDistToSeg(p.x, p.y, pts[q - 1].x, pts[q - 1].y, pts[q].x, pts[q].y) <= tol) return s;
+            } else if (s.tool === 'line') {
+              if (wbDistToSeg(p.x, p.y, s.x0, s.y0, s.x1, s.y1) <= tol) return s;
+            } else if (s.tool === 'square') {
+              const b = wbStrokeBounds(s);
+              if (b && p.x >= b.minX - tol && p.x <= b.maxX + tol && p.y >= b.minY - tol && p.y <= b.maxY + tol) return s;
+            } else if (s.tool === 'circle') {
+              const cx = (s.x0 + s.x1) / 2, cy = (s.y0 + s.y1) / 2;
+              const rx = Math.abs(s.x1 - s.x0) / 2 + tol, ry = Math.abs(s.y1 - s.y0) / 2 + tol;
+              if (Math.pow((p.x - cx) / rx, 2) + Math.pow((p.y - cy) / ry, 2) <= 1) return s;
+            } else if (s.tool === 'text') {
+              const b = wbStrokeBounds(s);
+              if (b && p.x >= b.minX - tol && p.x <= b.maxX + tol && p.y >= b.minY - tol && p.y <= b.maxY + tol) return s;
+            }
+          }
+          return null;
+        }
+        function wbMoveStroke(s, dx, dy){
+          if (s.tool === 'pen' || s.tool === 'eraser') s.points.forEach(pt => { pt.x += dx; pt.y += dy; });
+          else if (s.tool === 'text') { s.x += dx; s.y += dy; }
+          else { s.x0 += dx; s.x1 += dx; s.y0 += dy; s.y1 += dy; }
+        }
 
         function wbPointerDown(e){
           if (liveLectureState.view !== 'whiteboard') return;
-          if (document.getElementById('wb-text-input')) return; 
+          if (document.getElementById('wb-text-input')) return;
           if (e.cancelable) e.preventDefault();
-          const p = wbCanvasPoint(e);
-          if (whiteboardTool === 'text') {
-            wbStartTextInput(p);
+          const canvas = e.currentTarget;
+          try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+          const sp = wbScreenPoint(e);
+          wbPointers.set(e.pointerId, sp);
+          // A second finger turns whatever is happening into a pinch/pan of the view
+          if (wbPointers.size === 2) {
+            whiteboardDrawState = null; wbPanState = null; wbMoveState = null;
+            const pts = Array.from(wbPointers.values());
+            const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+            wbGesture = { d0: Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)), k0: wbView.k, wx: (cx - wbView.x) / wbView.k, wy: (cy - wbView.y) / wbView.k };
+            redrawWhiteboard();
             return;
           }
+          if (wbPointers.size > 2) return;
+          const isTeacher = lectureIsTeacher();
+          const wantsPan = e.button === 1 || wbSpaceDown || whiteboardTool === 'hand' || !isTeacher;
+          if (wantsPan) { wbPanState = { sx: sp.x, sy: sp.y, vx: wbView.x, vy: wbView.y }; wbSetCursor('grabbing'); return; }
+          const p = wbToWorld(sp);
+          if (whiteboardTool === 'select') {
+            const hit = wbHitTest(p);
+            if (hit) {
+              wbSel = hit;
+              wbMoveState = { s: hit, last: p, dx: 0, dy: 0 };
+              redrawWhiteboard();
+            } else {
+              wbSel = null;
+              wbPanState = { sx: sp.x, sy: sp.y, vx: wbView.x, vy: wbView.y };
+              redrawWhiteboard();
+            }
+            return;
+          }
+          if (whiteboardTool === 'text') {
+            wbStartTextInput(p, sp);
+            return;
+          }
+          wbSel = null;
           whiteboardDrawState = { tool: whiteboardTool, color: whiteboardTool === 'eraser' ? '#ffffff' : whiteboardColor, points: [p], x0: p.x, y0: p.y, x1: p.x, y1: p.y };
         }
+        let wbMoveState = null;
+        let wbSpaceDown = false;
+        function wbSetCursor(c){ const cv = document.getElementById('lecture-whiteboard-canvas'); if (cv) cv.style.cursor = c; }
 
-        function wbStartTextInput(p){
+        function wbKeyDown(e){
+          if (liveLectureState.view !== 'whiteboard' || !document.getElementById('lecture-whiteboard-canvas')) return;
+          const tag = (e.target && e.target.tagName) || '';
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+          if ((e.key === 'Delete' || e.key === 'Backspace') && wbSel && lectureIsTeacher()) { e.preventDefault(); wbDeleteSelected(); }
+          else if (e.key === 'Escape' && wbSel) { wbSel = null; redrawWhiteboard(); }
+        }
+
+        function wbStartTextInput(p, sp){
           const stage = document.getElementById('lecture-whiteboard-stage');
           if (!stage) return;
           const input = document.createElement('input');
           input.type = 'text';
           input.id = 'wb-text-input';
           input.placeholder = 'Type...';
-          input.style.cssText = `position:absolute;left:${p.x}px;top:${p.y - 14}px;background:transparent;border:1px dashed ${whiteboardColor};outline:none;font:20px Montserrat, sans-serif;color:${whiteboardColor};padding:2px 4px;min-width:120px;z-index:5;`;
+          const fs = Math.max(12, Math.round(20 * wbView.k));
+          input.style.cssText = `position:absolute;left:${sp.x}px;top:${sp.y - fs * 0.7}px;background:transparent;border:1px dashed ${whiteboardColor};outline:none;font:${fs}px Montserrat, sans-serif;color:${whiteboardColor};padding:2px 4px;z-index:5;`;
           const commit = () => {
             const text = input.value.trim();
             if (input.parentNode) input.parentNode.removeChild(input);
-            if (text) { whiteboardStrokes.push({ tool: 'text', color: whiteboardColor, x: p.x, y: p.y, text }); redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes }); }
+            if (text) {
+              const st = { tool: 'text', color: whiteboardColor, x: p.x, y: p.y, text };
+              whiteboardStrokes.push(st); wbActions.push({ k: 'add', s: st });
+              redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+            }
           };
           input.addEventListener('keydown', ev => {
             if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
@@ -9082,14 +9202,51 @@ try {
         }
 
         function wbPointerMove(e){
+          if (!wbPointers.has(e.pointerId)) return;
+          const sp = wbScreenPoint(e);
+          wbPointers.set(e.pointerId, sp);
+          if (wbGesture && wbPointers.size >= 2) {
+            const pts = Array.from(wbPointers.values());
+            const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+            const d = Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y));
+            const k = Math.max(WB_MIN_K, Math.min(WB_MAX_K, wbGesture.k0 * d / wbGesture.d0));
+            wbView.k = k; wbView.x = cx - wbGesture.wx * k; wbView.y = cy - wbGesture.wy * k;
+            redrawWhiteboard();
+            return;
+          }
+          if (wbPanState) {
+            wbView.x = wbPanState.vx + (sp.x - wbPanState.sx);
+            wbView.y = wbPanState.vy + (sp.y - wbPanState.sy);
+            redrawWhiteboard();
+            return;
+          }
+          if (wbMoveState) {
+            const p = wbToWorld(sp);
+            const dx = p.x - wbMoveState.last.x, dy = p.y - wbMoveState.last.y;
+            wbMoveStroke(wbMoveState.s, dx, dy);
+            wbMoveState.last = p; wbMoveState.dx += dx; wbMoveState.dy += dy;
+            redrawWhiteboard();
+            return;
+          }
           if (!whiteboardDrawState) return;
-          const p = wbCanvasPoint(e);
+          const p = wbToWorld(sp);
           if (whiteboardDrawState.tool === 'pen' || whiteboardDrawState.tool === 'eraser') whiteboardDrawState.points.push(p);
           else { whiteboardDrawState.x1 = p.x; whiteboardDrawState.y1 = p.y; }
           redrawWhiteboard(whiteboardDrawState);
         }
 
-        function wbPointerUp(){
+        function wbPointerUp(e){
+          if (e && e.pointerId !== undefined) wbPointers.delete(e.pointerId);
+          if (wbGesture) { if (wbPointers.size < 2) wbGesture = null; wbUpdateZoomUI(); return; }
+          if (wbPanState) { wbPanState = null; wbSetCursor(wbCanvasCursor()); wbUpdateZoomUI(); return; }
+          if (wbMoveState) {
+            const m = wbMoveState; wbMoveState = null;
+            if (Math.abs(m.dx) > 0.5 || Math.abs(m.dy) > 0.5) {
+              wbActions.push({ k: 'move', s: m.s, dx: m.dx, dy: m.dy });
+              broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+            }
+            return;
+          }
           if (!whiteboardDrawState) return;
           if (whiteboardDrawState.tool === 'delete') {
             wbDeleteInRegion(whiteboardDrawState);
@@ -9099,17 +9256,113 @@ try {
             rerenderLectureScreen();
             return;
           }
-          whiteboardStrokes.push(whiteboardDrawState);
+          const done = whiteboardDrawState;
+          whiteboardStrokes.push(done);
+          wbActions.push({ k: 'add', s: done });
           whiteboardDrawState = null;
+          broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+        }
+
+        function wbWheel(e){
+          if (liveLectureState.view !== 'whiteboard') return;
+          e.preventDefault();
+          const sp = wbScreenPoint(e);
+          if (e.ctrlKey || e.metaKey) {
+            const k = Math.max(WB_MIN_K, Math.min(WB_MAX_K, wbView.k * Math.exp(-e.deltaY * 0.01)));
+            const w = wbToWorld(sp);
+            wbView.k = k; wbView.x = sp.x - w.x * k; wbView.y = sp.y - w.y * k;
+          } else {
+            wbView.x -= e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+            wbView.y -= e.shiftKey && !e.deltaX ? 0 : e.deltaY;
+          }
+          redrawWhiteboard();
+        }
+
+        function wbZoomBy(f){
+          const canvas = document.getElementById('lecture-whiteboard-canvas');
+          if (!canvas) return;
+          const cx = canvas.clientWidth / 2, cy = canvas.clientHeight / 2;
+          const w = wbToWorld({ x: cx, y: cy });
+          const k = Math.max(WB_MIN_K, Math.min(WB_MAX_K, wbView.k * f));
+          wbView.k = k; wbView.x = cx - w.x * k; wbView.y = cy - w.y * k;
+          redrawWhiteboard();
+        }
+        // Fit everything drawn on screen, or go back to the start when the board is empty
+        function wbFitView(){
+          const canvas = document.getElementById('lecture-whiteboard-canvas');
+          if (!canvas) return;
+          let b = null;
+          whiteboardStrokes.forEach(s => {
+            const sb = wbStrokeBounds(s);
+            if (!sb || s.tool === 'eraser') return;
+            b = b ? { minX: Math.min(b.minX, sb.minX), minY: Math.min(b.minY, sb.minY), maxX: Math.max(b.maxX, sb.maxX), maxY: Math.max(b.maxY, sb.maxY) } : sb;
+          });
+          const cw = canvas.clientWidth, ch = canvas.clientHeight;
+          if (!b) { wbView = { x: 0, y: 0, k: 1 }; }
+          else {
+            const pad = 40, w = Math.max(40, b.maxX - b.minX), h = Math.max(40, b.maxY - b.minY);
+            const k = Math.max(WB_MIN_K, Math.min(1.5, Math.min((cw - pad * 2) / w, (ch - pad * 2) / h)));
+            wbView = { k, x: (cw - w * k) / 2 - b.minX * k, y: (ch - h * k) / 2 - b.minY * k };
+          }
+          redrawWhiteboard();
+        }
+
+        function wbUpdateZoomUI(){
+          const z = document.getElementById('wb-zoom-pct');
+          if (z) z.textContent = Math.round(wbView.k * 100) + '%';
+          // The dot grid follows the view so the board feels endless
+          const stage = document.getElementById('lecture-whiteboard-stage');
+          if (stage) {
+            const g = 28 * wbView.k;
+            stage.style.backgroundSize = g + 'px ' + g + 'px';
+            stage.style.backgroundPosition = (wbView.x % g) + 'px ' + (wbView.y % g) + 'px';
+          }
+          // Delete button above the selected shape
+          const del = document.getElementById('wb-sel-del');
+          if (del) {
+            const b = wbSel ? wbStrokeBounds(wbSel) : null;
+            if (b && lectureIsTeacher()) {
+              del.style.display = 'flex';
+              const x = Math.max(8, Math.min((wbView.x + b.maxX * wbView.k), (whiteboardCtx ? whiteboardCtx.canvas.clientWidth : 9999) - 44));
+              const y = Math.max(8, wbView.y + b.minY * wbView.k - 46);
+              del.style.left = x + 'px'; del.style.top = y + 'px';
+            } else del.style.display = 'none';
+          }
+        }
+
+        function wbDeleteSelected(){
+          if (!wbSel) return;
+          whiteboardStrokes = whiteboardStrokes.filter(s => s !== wbSel);
+          wbSel = null;
+          redrawWhiteboard();
           broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
         }
 
         function redrawWhiteboard(preview){
           if (!whiteboardCtx) return;
           const canvas = whiteboardCtx.canvas;
+          const dpr = wbDpr();
+          whiteboardCtx.setTransform(1, 0, 0, 1, 0, 0);
           whiteboardCtx.clearRect(0, 0, canvas.width, canvas.height);
+          whiteboardCtx.setTransform(dpr * wbView.k, 0, 0, dpr * wbView.k, dpr * wbView.x, dpr * wbView.y);
+          // Keep the selection pointing at a stroke that still exists (the board can be replaced remotely)
+          if (wbSel && whiteboardStrokes.indexOf(wbSel) < 0) wbSel = null;
           whiteboardStrokes.forEach(s => drawWhiteboardItem(whiteboardCtx, s));
           if (preview) drawWhiteboardItem(whiteboardCtx, preview);
+          if (wbSel) {
+            const b = wbStrokeBounds(wbSel);
+            if (b) {
+              const pad = 8 / wbView.k;
+              whiteboardCtx.save();
+              whiteboardCtx.setLineDash([6 / wbView.k, 4 / wbView.k]);
+              whiteboardCtx.strokeStyle = '#2563eb'; whiteboardCtx.lineWidth = 1.5 / wbView.k;
+              whiteboardCtx.fillStyle = 'rgba(37,99,235,0.06)';
+              whiteboardCtx.fillRect(b.minX - pad, b.minY - pad, b.maxX - b.minX + pad * 2, b.maxY - b.minY + pad * 2);
+              whiteboardCtx.strokeRect(b.minX - pad, b.minY - pad, b.maxX - b.minX + pad * 2, b.maxY - b.minY + pad * 2);
+              whiteboardCtx.restore();
+            }
+          }
+          wbUpdateZoomUI();
         }
 
         function drawWhiteboardItem(ctx, s){
@@ -9124,11 +9377,14 @@ try {
             ctx.restore();
             return;
           }
+          ctx.save();
           ctx.strokeStyle = s.color; ctx.fillStyle = s.color;
           ctx.lineWidth = s.tool === 'eraser' ? 18 : 3;
           ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          // The eraser really rubs out, so the dotted background shows through
+          if (s.tool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
           if (s.tool === 'pen' || s.tool === 'eraser') {
-            if (s.points.length < 2) { ctx.beginPath(); ctx.arc(s.points[0].x, s.points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); return; }
+            if (s.points.length < 2) { ctx.beginPath(); ctx.arc(s.points[0].x, s.points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore(); return; }
             ctx.beginPath(); ctx.moveTo(s.points[0].x, s.points[0].y);
             s.points.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
             ctx.stroke();
@@ -9142,12 +9398,29 @@ try {
           } else if (s.tool === 'text') {
             ctx.font = '20px Montserrat, sans-serif'; ctx.fillText(s.text, s.x, s.y);
           }
+          ctx.restore();
         }
 
         function wbSetTool(t){ whiteboardTool = t; rerenderLectureScreen(); }
         function wbSetColor(c){ whiteboardColor = c; rerenderLectureScreen(); }
-        function wbUndo(){ whiteboardStrokes.pop(); redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes }); }
-        function wbClear(){ openAppConfirmModal('Clear the whiteboard?', '', 'Clear', function(){ whiteboardStrokes = []; redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes }); }); }
+        function wbUndo(){
+          let done = false;
+          while (wbActions.length && !done) {
+            const a = wbActions.pop();
+            if (a.k === 'move') {
+              if (whiteboardStrokes.indexOf(a.s) < 0) continue;
+              wbMoveStroke(a.s, -a.dx, -a.dy); done = true;
+            } else {
+              const at = whiteboardStrokes.indexOf(a.s);
+              if (at < 0) continue;
+              whiteboardStrokes.splice(at, 1); done = true;
+            }
+          }
+          if (!done) whiteboardStrokes.pop();
+          wbSel = null;
+          redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+        }
+        function wbClear(){ openAppConfirmModal('Clear the whiteboard?', '', 'Clear', function(){ whiteboardStrokes = []; wbSel = null; wbActions = []; redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes }); }); }
 
         function wbToggleDeleteSelect(){
           if (whiteboardTool === 'delete') {

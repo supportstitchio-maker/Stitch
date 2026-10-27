@@ -6332,3 +6332,6 @@ body.dark-mode .nt-chk{ accent-color:#4169e1; }
   .ov-desk-big-m > div > button:first-child{ display:none !important; }
   .ov-desk-big-m h1{ position:static !important; transform:none !important; left:auto !important; font-size:1.875rem !important; line-height:2.25rem !important; max-width:none !important; text-align:left !important; margin:0 !important; }
 }
+
+/* Whiteboard paper stays white in dark mode so dark ink is readable */
+body.dark-mode #lecture-whiteboard-stage{ background-color:#ffffff !important; }
