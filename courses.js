@@ -2396,7 +2396,7 @@ try {
         }
         function courseCreatorHomeHTML(){
           if (!canCreateCourses()) return '';
-          const mine = allCourses.filter(c => c.createdBy && typeof currentUserId !== 'undefined' && c.createdBy === currentUserId);
+          const mine = allCourses.filter(c => !c.archived && c.createdBy && typeof currentUserId !== 'undefined' && c.createdBy === currentUserId);
           if (!mine.length) return '';
           courseKickCreatorWallet();
           const students = mine.reduce((n, c) => n + ((c.enrolledUsers || []).length || c.enrolledCount || 0), 0);

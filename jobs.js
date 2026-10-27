@@ -3108,7 +3108,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function dashboardCourseCardsHTML(){
           if (typeof allCourses === 'undefined' || typeof courseAnalyticsCollect !== 'function') return '';
           const myId = (typeof currentUserId !== 'undefined') ? currentUserId : null;
-          const mine = myId ? allCourses.filter(c => c.createdBy === myId) : [];
+          const mine = myId ? allCourses.filter(c => c.createdBy === myId && !c.archived) : [];
           if (!mine.length) return '';
           const blocks = mine.map((c, i) => {
             const A = courseAnalyticsCollect(c);
