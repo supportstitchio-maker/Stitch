@@ -5468,12 +5468,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const pressHandlers = `onmousedown="startPress('messageLongPress','${pressKey}', event)" onmouseup="endPress()" onmouseleave="endPress()" ontouchstart="startPress('messageLongPress','${pressKey}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"`;
             const menuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${pressKey}', event)" class="desktop-msg-menu-btn w-7 h-7 rounded-full items-center justify-center text-gray-400 hover:bg-gray-100 flex-shrink-0" style="align-self:center;" title="Message options" aria-label="Message options">${Icon('dots','w-4 h-4')}</button>`;
             const bubble = m.from === 'them' ? `
-            <div class="flex items-start gap-3" data-cv-key="${pressKey}" ${pressHandlers}>
+            <div class="flex items-start gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
+              ${msgSelCheckHTML(pressKey)}
               <div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
               ${content}
               ${menuBtn}
             </div>` : `
-            <div class="flex items-start justify-end gap-3" data-cv-key="${pressKey}" ${pressHandlers}>
+            <div class="flex items-start justify-end gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
+              ${msgSelCheckHTML(pressKey)}
               ${menuBtn}
               ${content}
             </div>`;
@@ -5493,6 +5495,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           startCall(activeConvoId, type);
         }
         function messageLongPress(key){
+          if (typeof msgSel !== 'undefined' && msgSel) return;
           lastMsgLongPressAt = Date.now();
           const sep = key.lastIndexOf('|');
           if (sep === -1) return;
@@ -5562,7 +5565,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const btn = evt.currentTarget;
           const rect = btn.getBoundingClientRect();
           const menuWidth = 190;
-          const menuHeightEstimate = (canDeleteForEveryone ? 100 : 60) + (canCopy ? 40 : 0) + 40;
+          const menuHeightEstimate = (canDeleteForEveryone ? 100 : 60) + (canCopy ? 40 : 0) + 80;
           const dropUp = (window.innerHeight - rect.bottom) < (menuHeightEstimate + 12);
           const top = dropUp ? (rect.top - menuHeightEstimate - 6) : (rect.bottom + 6);
           const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
@@ -5574,6 +5577,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="fixed bg-white rounded-2xl border border-gray-100 py-2 menu-dropdown-inset" style="z-index:60;top:${Math.max(8, top)}px;left:${left}px;width:${menuWidth}px;box-shadow:0 10px 30px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
               ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Copy</button>` : ''}
               ${isCallEntry ? '' : `<button onclick="openForwardMessagePicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Forward</button>`}
+              <button onclick="msgSelStartFromMenu()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Select</button>
               <button onclick="deleteActionMessageForMe()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Delete for me</button>
               ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-4 py-2.5 text-sm text-red-500 menu-item-pill">Delete for everyone</button>` : ''}
             </div>`;
@@ -5657,6 +5661,167 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 });
               }
             }
+          }
+        }
+
+        // ---- Desktop multi-select delete (WhatsApp style) ----
+        let msgSel = null; // { convoId, times:Set }
+        const MSG_SEL_ICONS = {
+          x: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+          copy: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>',
+          fwd: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l6 6-6 6"/><path d="M21 11H9a5 5 0 0 0-5 5v2"/></svg>',
+          trash: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>',
+          chk: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+        };
+        function msgSelHas(key){
+          if (!msgSel) return false;
+          const sep = key.lastIndexOf('|');
+          return key.slice(0, sep) === msgSel.convoId && msgSel.times.has(Number(key.slice(sep + 1)));
+        }
+        function msgSelCheckHTML(key){
+          if (msgSel && msgSel.convoId !== activeConvoId) { msgSel = null; }
+          if (!msgSel) return '';
+          return `<span class="msg-sel-cb${msgSelHas(key) ? ' on' : ''}">${msgSelHas(key) ? MSG_SEL_ICONS.chk : ''}</span>`;
+        }
+        function msgSelRerender(){
+          const log = document.getElementById('convo-log');
+          if (!log || !msgSel) return;
+          const top = log.scrollTop;
+          log.innerHTML = convoLogHTML();
+          log.scrollTop = top;
+        }
+        function msgSelSelected(){
+          if (!msgSel) return [];
+          const msgs = conversationMessages[msgSel.convoId] || [];
+          return msgs.filter(m => msgSel.times.has(m.time));
+        }
+        function msgSelUpdateBar(){
+          const bar = document.getElementById('msg-select-bar');
+          if (!bar || !msgSel) return;
+          const sel = msgSelSelected();
+          const n = sel.length;
+          const hasText = sel.some(m => m.text && m.from !== 'system');
+          const canFwd = n === 1 && sel[0].from !== 'system';
+          bar.innerHTML = `
+            <button type="button" class="msg-sel-ic" onclick="msgSelExit()" title="Cancel" aria-label="Cancel">${MSG_SEL_ICONS.x}</button>
+            <span class="msg-sel-count">${n} selected</span>
+            <span style="flex:1"></span>
+            <button type="button" class="msg-sel-ic" ${hasText ? '' : 'disabled'} onclick="msgSelCopy()" title="Copy" aria-label="Copy">${MSG_SEL_ICONS.copy}</button>
+            <button type="button" class="msg-sel-ic" ${canFwd ? '' : 'disabled'} onclick="msgSelForward()" title="Forward" aria-label="Forward">${MSG_SEL_ICONS.fwd}</button>
+            <button type="button" class="msg-sel-ic msg-sel-del" ${n ? '' : 'disabled'} onclick="msgSelAskDelete()" title="Delete" aria-label="Delete">${MSG_SEL_ICONS.trash}</button>`;
+        }
+        function msgSelStartFromMenu(){
+          const convoId = messageActionConvoId, time = messageActionTime;
+          closeMessageActionSheet();
+          if (!convoId || time == null) return;
+          msgSel = { convoId, times: new Set([time]) };
+          const log = document.getElementById('convo-log');
+          const wrap = document.getElementById('convo-log-wrap');
+          if (!log || !wrap) { msgSel = null; return; }
+          const host = wrap.parentElement;
+          host.classList.add('msg-select-active');
+          let bar = document.getElementById('msg-select-bar');
+          if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'msg-select-bar';
+            wrap.insertAdjacentElement('afterend', bar);
+          }
+          msgSelRerender();
+          msgSelUpdateBar();
+        }
+        function msgSelExit(){
+          if (!msgSel) return;
+          msgSel = null;
+          const bar = document.getElementById('msg-select-bar');
+          if (bar) bar.remove();
+          const host = document.getElementById('convo-log-wrap');
+          if (host && host.parentElement) host.parentElement.classList.remove('msg-select-active');
+          closeMsgSelDialog();
+          msgSelRerenderPlain();
+        }
+        function msgSelRerenderPlain(){
+          const log = document.getElementById('convo-log');
+          if (!log) return;
+          const top = log.scrollTop;
+          log.innerHTML = convoLogHTML();
+          log.scrollTop = top;
+        }
+        function msgSelToggle(key){
+          if (!msgSel) return;
+          const sep = key.lastIndexOf('|');
+          const time = Number(key.slice(sep + 1));
+          if (msgSel.times.has(time)) msgSel.times.delete(time); else msgSel.times.add(time);
+          const row = document.querySelector('[data-cv-key="' + key.replace(/"/g, '') + '"]');
+          if (row) {
+            const on = msgSel.times.has(time);
+            row.classList.toggle('msg-sel-on', on);
+            const cb = row.querySelector('.msg-sel-cb');
+            if (cb) { cb.classList.toggle('on', on); cb.innerHTML = on ? MSG_SEL_ICONS.chk : ''; }
+          }
+          msgSelUpdateBar();
+        }
+        document.addEventListener('click', function(e){
+          if (!msgSel) return;
+          const row = e.target && e.target.closest && e.target.closest('[data-cv-key]');
+          if (!row) return;
+          e.stopPropagation(); e.preventDefault();
+          msgSelToggle(row.getAttribute('data-cv-key'));
+        }, true);
+        // Long-press / right-click menus are off while selecting
+        document.addEventListener('mousedown', function(e){
+          if (msgSel && e.target && e.target.closest && e.target.closest('[data-cv-key]')) endPress();
+        }, true);
+        document.addEventListener('keydown', function(e){
+          if (e.key === 'Escape' && msgSel) { if (document.getElementById('msg-select-dialog')) closeMsgSelDialog(); else msgSelExit(); }
+        });
+        function msgSelCopy(){
+          const text = msgSelSelected().filter(m => m.text && m.from !== 'system').map(m => m.text).join('\n');
+          if (!text) return;
+          const done = () => { if (typeof pushInAppNotification === 'function') pushInAppNotification('Copied', 'Messages copied to your clipboard.'); };
+          const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); } catch (e) {} };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fallback); else fallback();
+          msgSelExit();
+        }
+        function msgSelForward(){
+          const sel = msgSelSelected();
+          if (sel.length !== 1) return;
+          messageActionConvoId = msgSel.convoId; messageActionTime = sel[0].time;
+          msgSelExit();
+          openForwardMessagePicker();
+        }
+        function closeMsgSelDialog(){
+          const d = document.getElementById('msg-select-dialog');
+          if (d) d.remove();
+        }
+        function msgSelAskDelete(){
+          const sel = msgSelSelected();
+          if (!sel.length) return;
+          const everyone = sel.every(m => canDeleteMessageForEveryone(m));
+          const n = sel.length;
+          closeMsgSelDialog();
+          const d = document.createElement('div');
+          d.id = 'msg-select-dialog';
+          d.innerHTML = `
+            <div class="msg-sel-scrim" onclick="closeMsgSelDialog()"></div>
+            <div class="msg-sel-dlg" role="dialog" aria-modal="true">
+              <div class="msg-sel-dlg-title">Delete ${n} message${n === 1 ? '' : 's'}?</div>
+              <div class="msg-sel-dlg-sub">${everyone ? 'You can remove them for everyone in this chat, or only from your side.' : 'They will be removed from your side only.'}</div>
+              ${everyone ? `<button type="button" class="msg-sel-dlg-btn danger" onclick="msgSelDelete(true)">Delete for everyone</button>` : ''}
+              <button type="button" class="msg-sel-dlg-btn soft" onclick="msgSelDelete(false)">Delete for me</button>
+              <button type="button" class="msg-sel-dlg-btn plain" onclick="closeMsgSelDialog()">Cancel</button>
+            </div>`;
+          document.body.appendChild(d);
+        }
+        function msgSelDelete(forEveryone){
+          if (!msgSel) { closeMsgSelDialog(); return; }
+          const convoId = msgSel.convoId;
+          const times = Array.from(msgSel.times);
+          closeMsgSelDialog();
+          msgSelExit();
+          if (forEveryone) {
+            times.forEach(t => { messageActionConvoId = convoId; messageActionTime = t; deleteActionMessageForEveryone(); });
+          } else {
+            times.forEach(t => { messageActionConvoId = convoId; messageActionTime = t; deleteActionMessageForMe(); });
           }
         }
 
