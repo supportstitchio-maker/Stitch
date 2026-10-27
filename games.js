@@ -1358,7 +1358,7 @@ let userPoints = 0;
           const list = ['intent', 'role', 'bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'];
           if (!viaChips) list.push('paidchoice');
           if (posterAppDraft.sellPaid) list.push(...PAID_SELLER_STAGES.filter(st => !(viaChips && st === 'paidtype')));
-          list.push('bizdoc', 'iddoc', 'selfie', 'consent', 'photo');
+          list.push('bizdoc', 'iddoc', 'consent', 'photo');
           return list;
         }
         // Questions are grouped into pages so related ones share a screen. Stage ids are the same,
@@ -1375,7 +1375,7 @@ let userPoints = 0;
           add('paidsell', ['paidtype', 'paidprice', 'paidplan'], { kicker: 'Paid selling', title: 'What will you sell?', sub: 'A few quick questions about your paid listings.' });
           add('paidpay', ['paidpay', 'paidpayout'], { kicker: 'Paid selling', title: 'How you get paid', sub: 'Payment plan and withdrawals.' });
           add('paidconfirm', ['paidconfirm']);
-          add('verify', ['bizdoc', 'iddoc', 'selfie'], { kicker: 'Verify', title: "Prove it's really you", sub: 'Three quick uploads. An admin reviews them before you are approved.' });
+          add('verify', ['bizdoc', 'iddoc'], { kicker: 'Verify', title: "Prove it's really you", sub: 'Two quick uploads. An admin reviews them before you are approved.' });
           add('review', ['consent'], { kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and continue.' });
           add('photo', ['photo'], { kicker: 'Your photo' });
           return pages;
@@ -1398,7 +1398,7 @@ let userPoints = 0;
             ${row('Business', escapeHtml(d.businessName || '-'), 'business')}
             ${row('Category', escapeHtml(cat), 'business')}
             ${row('Selling', selling, d.sellPaid ? 'paidsell' : 'business')}
-            ${row('Documents', ok(d.businessDocumentFile && d.idDocumentFile && d.selfieFile), 'verify')}
+            ${row('Documents', ok(d.businessDocumentFile && d.idDocumentFile), 'verify')}
           </div>`;
         }
         function authShowPosterApp(){
@@ -1843,11 +1843,6 @@ let userPoints = 0;
           }
           // Same rule as the in-app "Apply to post" form (posterAppStageError in jobs.js): a live
           // selfie is required for the automated liveness + face-match check
-          if (cur === 'selfie' && !posterAppDraft.selfieFile) {
-            const errEl = document.getElementById('auth-poster-app-error');
-            if (errEl) { errEl.textContent = "Please take a selfie to verify it's you."; errEl.classList.add('show'); }
-            return;
-          }
           }
           if (authPosterAppStageIdx < stages.length - 1) {
             authPosterAppStageIdx++;
@@ -1886,10 +1881,10 @@ let userPoints = 0;
         async function authSubmitPosterApp(){
           if (authSubmittingPosterApp) return;
           // Belt-and-suspenders alongside the stage-level UI
-          if (posterAppDraft.intent === 'post' && (!posterAppDraft.businessDocumentFile || !posterAppDraft.idDocumentFile || !(posterAppDraft.idCountry || '').trim() || !posterAppDraft.selfieFile || !posterAppDraft.consent)) {
+          if (posterAppDraft.intent === 'post' && (!posterAppDraft.businessDocumentFile || !posterAppDraft.idDocumentFile || !(posterAppDraft.idCountry || '').trim() || !posterAppDraft.consent)) {
             const err = document.getElementById('auth-poster-app-error');
             if (err) {
-              err.textContent = !posterAppDraft.businessDocumentFile ? 'Please upload something that proves your business is real.' : !posterAppDraft.idDocumentFile ? 'Please submit an ID to continue.' : !(posterAppDraft.idCountry || '').trim() ? 'Please tell us which country issued your ID.' : !posterAppDraft.selfieFile ? "Please take a selfie to verify it's you." : 'Please agree to the Terms of Service and Privacy Policy to continue.';
+              err.textContent = !posterAppDraft.businessDocumentFile ? 'Please upload something that proves your business is real.' : !posterAppDraft.idDocumentFile ? 'Please submit an ID to continue.' : !(posterAppDraft.idCountry || '').trim() ? 'Please tell us which country issued your ID.' : 'Please agree to the Terms of Service and Privacy Policy to continue.';
               err.classList.add('show');
             }
             return;

@@ -857,9 +857,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               poster_proof_of_residence_url: proofOfResidenceUrl,
               poster_id_type: (posterAppDraft.idType || currentUserPosterIdType || '').trim(),
               poster_id_country: (posterAppDraft.idCountry || currentUserPosterIdCountry || '').trim().toUpperCase(),
-              poster_id_verification_status: idChanged ? 'pending' : (currentUserPosterIdVerificationStatus || 'not_started'),
+              poster_id_verification_status: 'not_started', // no automatic check any more: admins review the ID by hand
               poster_selfie_url: selfieUrl,
-              poster_selfie_verification_status: selfieChanged ? 'pending' : (currentUserPosterSelfieVerificationStatus || 'not_started'),
+              poster_selfie_verification_status: 'not_started',
               poster_status: posterStatus,
               poster_applied_at: new Date().toISOString(),
               // Saved from the "consent" stage: agreement to Terms/Privacy, and to Stitch tracking
@@ -896,8 +896,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             currentUserPosterIdType = (posterAppDraft.idType || currentUserPosterIdType || '').trim();
             currentUserPosterIdCountry = (posterAppDraft.idCountry || currentUserPosterIdCountry || '').trim().toUpperCase();
             currentUserPosterSelfieUrl = selfieUrl;
-            if (idChanged) currentUserPosterIdVerificationStatus = 'pending';
-            if (selfieChanged) currentUserPosterSelfieVerificationStatus = 'pending';
+            currentUserPosterIdVerificationStatus = 'not_started';
+            currentUserPosterSelfieVerificationStatus = 'not_started';
             if (posterAppDraft.consent) {
               currentUserPosterConsentAccepted = true;
               currentUserPosterConsentAt = new Date().toISOString();
@@ -913,9 +913,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             }
             // One Smile ID job checks the ID and the live selfie together (see verify-poster-selfie).
             // When both come back verified, smile-id-callback approves the poster without an admin.
-            if ((idChanged || selfieChanged) && posterStatus === 'pending') {
-              verifyPosterSelfieRemote(user.id).catch(() => {});
-            }
+            // Automatic Smile ID checks are switched off: every application waits for an admin to review the uploads.
             // Make sure this account's name/username/photo are in PUBLIC_PROFILES_TABLE before an
             // admin looks at the application
             if (typeof syncPublicProfile === 'function') { try { await syncPublicProfile(); } catch (e) {} }
@@ -1030,7 +1028,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const list = ['role', 'bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'];
           if (!d.paidOnly) list.push('paidchoice');
           if (d.sellPaid) list.push(...paid);
-          list.push('bizdoc', 'iddoc', 'selfie', 'consent');
+          list.push('bizdoc', 'iddoc', 'consent');
           return list;
         }
         let posterAppStageIdx = 0; // in the in-app form this is the PAGE index (see posterAppPages)
@@ -1046,7 +1044,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           ];
           if (!d.paidOnly) pages.push({ id: 'paidchoice', kicker: 'Paid selling', stages: ['paidchoice'] });
           if (d.sellPaid) PAID_SELLER_STAGES.forEach(st => pages.push({ id: st, kicker: 'Paid selling', stages: [st] }));
-          pages.push({ id: 'verify', kicker: 'Verify', title: "Prove it's really you", sub: 'Three quick uploads. An admin reviews them before you are approved.', stages: ['bizdoc', 'iddoc', 'selfie'] });
+          pages.push({ id: 'verify', kicker: 'Verify', title: "Prove it's really you", sub: 'Two quick uploads. An admin reviews them before you are approved.', stages: ['bizdoc', 'iddoc'] });
           pages.push({ id: 'review', kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and send.', stages: ['consent'] });
           return pages;
         }
@@ -1312,7 +1310,6 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             if (!posterAppDraft.idDocumentFile && !currentUserPosterIdDocumentUrl) return "Please submit an ID to apply.";
             if (!(posterAppDraft.idCountry || currentUserPosterIdCountry || '').trim()) return "Please tell us which country issued your ID.";
           }
-          if (stage === 'selfie' && !posterAppDraft.selfieFile && !currentUserPosterSelfieUrl) return "Please take a selfie to verify it's you.";
           if (stage === 'consent' && !posterAppDraft.consent) return "Please agree to the Terms of Service and Privacy Policy to continue.";
           if (stage === 'paidtype' && !posterAppDraft.paidType) return "Please pick what you'll be selling.";
           if (stage === 'paidprice' && !posterAppDraft.paidPrice) return "Please pick a rough price range.";
@@ -1477,7 +1474,6 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!posterAppDraft.businessDocumentFile && !currentUserPosterBusinessDocumentUrl) return "Please upload something that proves your business is real to apply.";
           if (!posterAppDraft.idDocumentFile && !currentUserPosterIdDocumentUrl) return "Please submit an ID to apply.";
           if (!(posterAppDraft.idCountry || currentUserPosterIdCountry || '').trim()) return "Please tell us which country issued your ID.";
-          if (!posterAppDraft.selfieFile && !currentUserPosterSelfieUrl) return "Please take a selfie to verify it's you.";
           if (!posterAppDraft.consent) return "Please agree to the Terms of Service and Privacy Policy to continue.";
           return null;
         }
@@ -1620,7 +1616,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               ${row('Business', escapeHtml(d.businessName || '-'), 'business')}
               ${row('Category', escapeHtml(cat), 'business')}
               ${row('Document', ok(has(d.businessDocumentFile, currentUserPosterBusinessDocumentUrl)), 'verify')}
-              ${row('ID and selfie', ok(has(d.idDocumentFile, currentUserPosterIdDocumentUrl) && has(d.selfieFile, currentUserPosterSelfieUrl)), 'verify')}
+              ${row('ID', ok(has(d.idDocumentFile, currentUserPosterIdDocumentUrl)), 'verify')}
             </div>`;
         }
 

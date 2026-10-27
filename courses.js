@@ -1455,6 +1455,7 @@ try {
         }
 
         const IMAGE_REQUEST_RE = /\b(draw|sketch|illustrate)\b|\b(generate|create|make)\b.{0,20}\b(image|picture|drawing|illustration|diagram|photo)\b/i;
+        const DRAWABLE_RE = /\b(graph|chart|plot|curve|diagram|flow ?chart|timeline|table|matrix|axis|axes|histogram|pie|bar|supply|demand|equilibrium|function|equation|mind ?map|cycle)\b/i;
         function isImageRequest(text){
           return IMAGE_REQUEST_RE.test(text || '');
         }
@@ -1494,15 +1495,10 @@ try {
           }
           if (!text && !images.length) return { text: ackLine || "What would you like help with?" };
 
-          if (!images.length && isImageRequest(text)) {
-            try {
-              const img = await requestAIImage(text);
-              return { text: ackLine, image: img.image, mediaType: img.mediaType };
-            } catch (err) {
-              const msg = (err && err.message) || '';
-              if (msg.startsWith('Too many AI requests')) return { text: ackLine + msg };
-              return { text: ackLine + "I couldn't generate that image just now, want to try again in a moment?" };
-            }
+          // AI picture generation is switched off. Graphs, charts, tables, diagrams and flowcharts are drawn by the app
+          // itself, so those requests go through to the normal chat. Anything else that asks for a picture gets a friendly no.
+          if (!images.length && isImageRequest(text) && !DRAWABLE_RE.test(text || '')) {
+            return { text: ackLine + "I can't generate pictures or images yet. I can still draw graphs, charts, tables and diagrams (like flowcharts and timelines) for you, so just ask for one of those." };
           }
           try {
             const context = buildResourceContext();
