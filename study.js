@@ -1241,6 +1241,8 @@ let studyFabMenuOpen = false;
           frown: '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 16.2c.9-1.3 2.1-2 3.5-2s2.6.7 3.5 2"/><path d="M9 9.6h.01M15 9.6h.01" stroke-width="2.8"/></svg>',
           undo: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>',
           shuffle: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+          x: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+          check: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
           flip: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0115.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 01-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>'
         };
 
@@ -1287,6 +1289,10 @@ let studyFabMenuOpen = false;
             if (fcPos + i >= total) return '';
             return `<div class="fc-ghost fc-ghost-${i}" style="background:${FC_TINTS[(idx + i) % FC_TINTS.length]};"></div>`;
           }).join('');
+          const upNext = fcQueue.slice(fcPos + 1, fcPos + 5).map(c => {
+            const t = fcCleanText(c.term);
+            return `<div class="fc-up"><i></i><span>${escapeHtml(t.length > 44 ? t.slice(0, 42) + '…' : t)}</span></div>`;
+          }).join('');
           document.getElementById('flashModalContent').innerHTML = `
             <div class="fc-head" style="padding-top:var(--top-safe-pad);">
               <button onclick="closeFlashModal()" class="fc-round-btn" aria-label="Back">${FC_ICONS.back}</button>
@@ -1300,6 +1306,7 @@ let studyFabMenuOpen = false;
               <div class="fc-progress"><div class="fc-progress-fill" style="width:${pct}%;"></div></div>
               <div class="fc-progress-count">${fcPos + 1} / ${total}</div>
             </div>
+            <div class="fc-body"><div class="fc-main">
             <div class="fc-stage">
               <div class="fc-stack">
                 ${ghosts}
@@ -1319,10 +1326,19 @@ let studyFabMenuOpen = false;
               <button onclick="shuffleStudyDeck()" class="fc-tool-btn" aria-label="Shuffle remaining cards">${FC_ICONS.shuffle}<span>Shuffle</span></button>
             </div>
             <div class="fc-actions" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
-              <button onclick="fcMark(false)" class="fc-act fc-act-no" aria-label="Still learning">${FC_ICONS.frown}</button>
+              <button onclick="fcMark(false)" class="fc-act fc-act-no" aria-label="Still learning">${FC_ICONS.x}<span class="fc-act-lbl">Again</span></button>
               <button onclick="flipStudyCard()" class="fc-act fc-act-flip">${FC_ICONS.flip}<span id="fcFlipLabel">${cardFlipped ? 'Show term' : 'Show answer'}</span></button>
-              <button onclick="fcMark(true)" class="fc-act fc-act-yes" aria-label="Got it">${FC_ICONS.smile}</button>
-            </div>`;
+              <button onclick="fcMark(true)" class="fc-act fc-act-yes" aria-label="Got it">${FC_ICONS.check}<span class="fc-act-lbl">Got it</span></button>
+            </div></div>
+            <aside class="fc-side">
+              <div class="fc-panel"><div class="fc-panel-h">This session</div>
+                <div class="fc-side-tally"><div class="fc-st fc-st-no"><b>${fcLearning.length}</b><span>Learning</span></div><div class="fc-st fc-st-yes"><b>${fcKnown.length}</b><span>Known</span></div></div></div>
+              ${upNext ? `<div class="fc-panel"><div class="fc-panel-h">Up next</div>${upNext}</div>` : ''}
+              <div class="fc-side-tools">
+                <button onclick="prevStudyCard()" class="fc-side-btn" ${fcHistory.length ? '' : 'disabled'}>${FC_ICONS.undo}<span>Undo</span></button>
+                <button onclick="shuffleStudyDeck()" class="fc-side-btn">${FC_ICONS.shuffle}<span>Shuffle</span></button>
+              </div>
+            </aside></div>`;
           fcBindDrag();
         }
 
@@ -1497,6 +1513,8 @@ let studyFabMenuOpen = false;
           const onBtn = e.target && e.target.tagName === 'BUTTON';
           if (e.key === 'ArrowRight') { fcMark(true); e.preventDefault(); }
           else if (e.key === 'ArrowLeft') { fcMark(false); e.preventDefault(); }
+          else if (e.key === '2') { fcMark(true); e.preventDefault(); }
+          else if (e.key === '1') { fcMark(false); e.preventDefault(); }
           else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || ((e.key === ' ' || e.key === 'Enter') && !onBtn)) { flipStudyCard(); e.preventDefault(); }
         }
 

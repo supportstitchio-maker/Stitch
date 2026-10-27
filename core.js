@@ -2665,6 +2665,7 @@
             if (typeof studyFabScrollCleanup === 'function') { studyFabScrollCleanup(); studyFabScrollCleanup = null; }
           }
           currentTab = n;
+          try { document.body.setAttribute('data-tab', String(n)); } catch (e) {}
           // closeOverlay lives in overlays.js, loaded after core.js
           if (typeof closeOverlay === 'function') closeOverlay(fromPopState);
           if (n === 0 || n === 4) {
@@ -2788,7 +2789,7 @@
           if (window.innerWidth < 1024) return;
           if (n === 0) openRightPanel('discover');
           else if (n === 1) openRightPanel('jobplan');
-          else if (n === 2) openRightPanel('notebook');
+          else if (n === 2) openRightPanel('notes');
           else if (n === 3) openRightPanel('profile', false);
           else if (n === 4) openRightPanel('profile');
         }

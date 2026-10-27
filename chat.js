@@ -7070,7 +7070,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             overlayHistoryPushed = false;
             if (!fromPopState) history.back();
           }
-          if (currentTab === 2) { renderStudy(); openRightPanel('notebook'); }
+          if (currentTab === 2) { renderStudy(); openRightPanel('notes'); }
           if (currentTab === 3) applyDefaultRightPanel(3);
           const banner = document.getElementById('call-minimized-banner');
           if (banner) { banner.classList.remove('hidden'); updateMinimizedCallBanner(); applyCallBannerPos(); }

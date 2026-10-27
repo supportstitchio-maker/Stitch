@@ -583,6 +583,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function rightPanelTitle(){
           if (rightPanelMode === 'profile') return 'Profile';
+          if (inWorkspaceNow() && (rightPanelMode === 'discover' || rightPanelMode === 'profile' || rightPanelMode === 'notes')) return 'Notes';
+          if (rightPanelMode === 'notes') return 'Notes';
           if (rightPanelMode === 'discover') return 'Discover';
           if (rightPanelMode === 'notebook') return inLectureCall ? 'Space Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook');
           if (rightPanelMode === 'jobplan') return 'Job Plan';
@@ -607,7 +609,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           }
           if (!body) return;
           if (window.innerWidth >= 1024) { body.classList.remove('rp-swap'); void body.offsetWidth; body.classList.add('rp-swap'); }
-          if (rightPanelMode === 'profile') body.innerHTML = rightPanelProfileHTML();
+          if (rightPanelMode === 'notes' || (inWorkspaceNow() && (rightPanelMode === 'discover' || rightPanelMode === 'profile'))) body.innerHTML = rightPanelNotesHTML();
+          else if (rightPanelMode === 'profile') body.innerHTML = rightPanelProfileHTML();
           else if (rightPanelMode === 'discover') body.innerHTML = rightPanelDiscoverHTML();
           else if (rightPanelMode === 'notebook') body.innerHTML = rightPanelNotebookHTML();
           else if (rightPanelMode === 'jobplan') body.innerHTML = rightPanelJobPlanHTML();
@@ -745,6 +748,256 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <input id="discover-search-input" value="${escapeHtml(discoverSearchQuery)}" oninput="onDiscoverSearchInput(this.value)" placeholder="Search by name, school, field..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm" autocomplete="off">
               </div>
               <div id="discover-people-list">${discoverPeopleHTML()}</div>
+            </div>`;
+        }
+
+
+        // ---- Personal notes (Workspace side panel) ----
+        let userNotes = [];
+        let userNotesLoaded = false;
+        let userNotesUid = null;
+        let notesView = 'list';
+        let notesOpenId = null;
+        let notesQuery = '';
+        let notesSaveTimer = null;
+        const NOTES_ICONS = {
+          search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+          plus: '<path d="M12 5v14M5 12h14"/>',
+          back: '<path d="M15 18l-6-6 6-6"/>',
+          trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+          pin: '<path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3z"/>',
+          bold: '<path d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"/>',
+          list: '<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+          check: '<path d="M20 6L9 17l-5-5"/>',
+          clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+        };
+        function notesIcon(n, size){
+          const z = size || 18;
+          return `<svg width="${z}" height="${z}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${NOTES_ICONS[n] || ''}</svg>`;
+        }
+        function inWorkspaceNow(){
+          const a = document.getElementById('app-shell');
+          return !!(a && a.classList.contains('classroom-active'));
+        }
+        function notesSorted(){
+          return userNotes.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || String(b.updated_at).localeCompare(String(a.updated_at)));
+        }
+        function notesCacheKey(){ return 'stitch_notes_v1_' + (userNotesUid || 'me'); }
+        function notesCacheSave(){ try { localStorage.setItem(notesCacheKey(), JSON.stringify(userNotes)); } catch (e) {} }
+        // Keeps only simple formatting; everything else is flattened to plain text
+        function notesClean(html){
+          const tpl = document.createElement('template');
+          tpl.innerHTML = String(html || '');
+          const ok = { B:1, STRONG:1, I:1, EM:1, UL:1, OL:1, LI:1, BR:1, DIV:1, P:1 };
+          (function walk(node){
+            Array.from(node.childNodes).forEach(ch => {
+              if (ch.nodeType === 3) return;
+              if (ch.nodeType !== 1) { ch.remove(); return; }
+              if (ch.tagName === 'INPUT' && ch.getAttribute('type') === 'checkbox') {
+                const on = ch.hasAttribute('checked');
+                Array.from(ch.attributes).forEach(a => ch.removeAttribute(a.name));
+                ch.setAttribute('type', 'checkbox'); ch.className = 'nt-chk';
+                if (on) ch.setAttribute('checked', '');
+                return;
+              }
+              walk(ch);
+              if (ok[ch.tagName]) { Array.from(ch.attributes).forEach(a => ch.removeAttribute(a.name)); }
+              else { while (ch.firstChild) node.insertBefore(ch.firstChild, ch); ch.remove(); }
+            });
+          })(tpl.content);
+          return tpl.innerHTML;
+        }
+        function notesPlain(html){
+          const d = document.createElement('div');
+          d.innerHTML = String(html || '').replace(/<\/(div|p|li)>/gi, ' ').replace(/<br\s*\/?>/gi, ' ');
+          return (d.textContent || '').replace(/\s+/g, ' ').trim();
+        }
+        function notesAgo(iso){
+          const t = new Date(iso).getTime();
+          if (!t) return '';
+          const m = Math.floor((Date.now() - t) / 60000);
+          if (m < 1) return 'Just now';
+          if (m < 60) return m + 'm ago';
+          const h = Math.floor(m / 60);
+          if (h < 24) return h + 'h ago';
+          const d = Math.floor(h / 24);
+          if (d === 1) return 'Yesterday';
+          if (d < 7) return new Date(t).toLocaleDateString(undefined, { weekday: 'short' });
+          return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+        async function loadUserNotes(force){
+          if (userNotesLoaded && !force) return;
+          try {
+            const uid = await getCurrentUserId();
+            if (!uid) return;
+            userNotesUid = uid;
+            if (!userNotes.length) {
+              try { const c = JSON.parse(localStorage.getItem(notesCacheKey()) || '[]'); if (Array.isArray(c)) userNotes = c; } catch (e) {}
+              notesRerenderIfOpen();
+            }
+            if (typeof isStitchTestAccount === 'function' && isStitchTestAccount()) { userNotesLoaded = true; return; }
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            const { data, error } = await sb.from('user_notes').select('id,title,body,pinned,created_at,updated_at').order('updated_at', { ascending: false }).limit(500);
+            if (error) return;
+            // Notes with edits still waiting to be saved stay as they are on screen
+            const pending = notesSaveTimer ? userNotes.find(n => n.id === notesOpenId) : null;
+            userNotes = (data || []).map(r => (pending && pending.id === r.id) ? pending : r);
+            if (pending && !userNotes.find(n => n.id === pending.id)) userNotes.push(pending);
+            userNotesLoaded = true;
+            notesCacheSave();
+            notesRerenderIfOpen();
+          } catch (e) { console.warn('Loading notes failed:', e); }
+        }
+        function notesRerenderIfOpen(){
+          if (typeof rightPanelMode === 'undefined' || !rightPanelMode) return;
+          if (notesView === 'editor') return;
+          if (document.getElementById('notes-root')) {
+            const body = document.getElementById('desktop-right-panel-body');
+            if (body) body.innerHTML = rightPanelNotesHTML();
+          }
+        }
+        async function notesPersist(n){
+          notesCacheSave();
+          try {
+            const stl = document.getElementById('notes-save-state');
+            if ((typeof isStitchTestAccount === 'function' && isStitchTestAccount()) || !getSupabaseClient()) { if (stl) stl.innerHTML = notesIcon('clock', 14) + ' Saved'; return; }
+            const sb = getSupabaseClient();
+            const { error } = await sb.from('user_notes').upsert({ id: n.id, title: n.title, body: n.body, pinned: !!n.pinned, updated_at: n.updated_at });
+            const st = document.getElementById('notes-save-state');
+            if (st) st.innerHTML = error ? 'Not saved, will retry' : notesIcon('clock', 14) + ' Saved';
+          } catch (e) { console.warn('Saving note failed:', e); }
+        }
+        function notesQueueSave(){
+          const n = userNotes.find(x => x.id === notesOpenId);
+          if (!n) return;
+          const titleEl = document.getElementById('note-title');
+          const bodyEl = document.getElementById('note-body');
+          if (titleEl) n.title = titleEl.value;
+          if (bodyEl) n.body = notesClean(bodyEl.innerHTML);
+          n.updated_at = new Date().toISOString();
+          const st = document.getElementById('notes-save-state');
+          if (st) st.textContent = 'Saving...';
+          clearTimeout(notesSaveTimer);
+          notesSaveTimer = setTimeout(() => { notesSaveTimer = null; notesPersist(n); }, 700);
+        }
+        function notesFlush(){
+          if (!notesSaveTimer) return;
+          clearTimeout(notesSaveTimer); notesSaveTimer = null;
+          const n = userNotes.find(x => x.id === notesOpenId);
+          if (n) notesPersist(n);
+        }
+        function notesNew(){
+          const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'n' + Date.now() + Math.random().toString(16).slice(2);
+          const now = new Date().toISOString();
+          const n = { id, title: '', body: '', pinned: false, created_at: now, updated_at: now };
+          userNotes.unshift(n);
+          notesCacheSave();
+          notesOpen(id, true);
+        }
+        function notesOpen(id, fresh){
+          notesView = 'editor'; notesOpenId = id;
+          const body = document.getElementById('desktop-right-panel-body');
+          if (body) body.innerHTML = rightPanelNotesHTML();
+          const el = document.getElementById(fresh ? 'note-title' : 'note-body');
+          if (el) { try { el.focus(); } catch (e) {} }
+        }
+        function notesBack(){
+          notesFlush();
+          const n = userNotes.find(x => x.id === notesOpenId);
+          // An untouched blank note is not worth keeping
+          if (n && !n.title.trim() && !notesPlain(n.body)) { userNotes = userNotes.filter(x => x.id !== n.id); notesCacheSave(); try { const sb = getSupabaseClient(); if (sb && !(typeof isStitchTestAccount === 'function' && isStitchTestAccount())) sb.from('user_notes').delete().eq('id', n.id).then(function(){}); } catch (e) {} }
+          notesView = 'list'; notesOpenId = null;
+          const body = document.getElementById('desktop-right-panel-body');
+          if (body) body.innerHTML = rightPanelNotesHTML();
+        }
+        function notesTogglePin(){
+          const n = userNotes.find(x => x.id === notesOpenId);
+          if (!n) return;
+          n.pinned = !n.pinned; n.updated_at = new Date().toISOString();
+          const b = document.getElementById('note-pin-btn');
+          if (b) b.classList.toggle('on', n.pinned);
+          notesPersist(n);
+        }
+        async function notesDelete(){
+          const n = userNotes.find(x => x.id === notesOpenId);
+          if (!n) return;
+          const go = (typeof openAppConfirmModal === 'function') ? null : true;
+          if (go === null) {
+            if (!window.confirm('Delete this note?')) return;
+          }
+          clearTimeout(notesSaveTimer); notesSaveTimer = null;
+          userNotes = userNotes.filter(x => x.id !== n.id);
+          notesCacheSave();
+          try {
+            const sb = getSupabaseClient();
+            if (sb && !(typeof isStitchTestAccount === 'function' && isStitchTestAccount())) await sb.from('user_notes').delete().eq('id', n.id);
+          } catch (e) {}
+          notesView = 'list'; notesOpenId = null;
+          const body = document.getElementById('desktop-right-panel-body');
+          if (body) body.innerHTML = rightPanelNotesHTML();
+        }
+        function notesFormat(cmd){
+          const el = document.getElementById('note-body');
+          if (!el) return;
+          el.focus();
+          if (cmd === 'check') document.execCommand('insertHTML', false, '<input type="checkbox" class="nt-chk">&nbsp;');
+          else document.execCommand(cmd, false, null);
+          notesQueueSave();
+        }
+        function notesBodyClick(e){
+          const t = e.target;
+          if (t && t.tagName === 'INPUT' && t.type === 'checkbox') {
+            if (t.checked) t.setAttribute('checked', ''); else t.removeAttribute('checked');
+            notesQueueSave();
+          }
+        }
+        function notesSearchInput(v){
+          notesQuery = v || '';
+          const list = document.getElementById('notes-list');
+          if (list) list.innerHTML = notesListItemsHTML();
+        }
+        function notesListItemsHTML(){
+          const q = notesQuery.trim().toLowerCase();
+          const rows = notesSorted().filter(n => !q || n.title.toLowerCase().includes(q) || notesPlain(n.body).toLowerCase().includes(q));
+          if (!rows.length) return `<div class="nt-empty">${q ? 'No notes match your search.' : 'No notes yet. Tap New note to write your first one.'}</div>`;
+          return `<div class="nt-lab">${q ? 'Results' : 'All notes'} &middot; ${rows.length}</div>` + rows.map(n => {
+            const prev = notesPlain(n.body);
+            return `<button class="nt-item" onclick="notesOpen('${n.id}')">
+              <div class="nt-item-t">${escapeHtml(n.title.trim() || 'Untitled note')}${n.pinned ? `<span class="nt-pin">${notesIcon('pin', 14)}</span>` : ''}</div>
+              ${prev ? `<div class="nt-item-p">${escapeHtml(prev.slice(0, 160))}</div>` : ''}
+              <div class="nt-item-d">${notesAgo(n.updated_at)}</div>
+            </button>`;
+          }).join('');
+        }
+        function rightPanelNotesHTML(){
+          if (!userNotesLoaded) loadUserNotes();
+          if (notesView === 'editor') {
+            const n = userNotes.find(x => x.id === notesOpenId);
+            if (n) return `
+              <div id="notes-root" class="nt-root">
+                <div class="nt-bar">
+                  <button class="nt-rb" onclick="notesBack()" aria-label="Back to notes">${notesIcon('back')}</button>
+                  <span class="nt-bar-sp"></span>
+                  <button id="note-pin-btn" class="nt-rb ${n.pinned ? 'on' : ''}" onclick="notesTogglePin()" aria-label="Pin note">${notesIcon('pin', 17)}</button>
+                  <button class="nt-rb" onclick="notesDelete()" aria-label="Delete note">${notesIcon('trash', 17)}</button>
+                </div>
+                <div class="nt-tools">
+                  <button onmousedown="event.preventDefault()" onclick="notesFormat('bold')" aria-label="Bold">${notesIcon('bold', 16)}</button>
+                  <button onmousedown="event.preventDefault()" onclick="notesFormat('insertUnorderedList')" aria-label="Bullet list">${notesIcon('list', 16)}</button>
+                  <button onmousedown="event.preventDefault()" onclick="notesFormat('check')" aria-label="Checklist item">${notesIcon('check', 16)}</button>
+                  <span id="notes-save-state" class="nt-save">${notesIcon('clock', 14)} Saved</span>
+                </div>
+                <input id="note-title" class="nt-title" value="${escapeHtml(n.title)}" placeholder="Title" oninput="notesQueueSave()" maxlength="140">
+                <div id="note-body" class="nt-body" contenteditable="true" data-ph="Start writing..." oninput="notesQueueSave()" onclick="notesBodyClick(event)">${notesClean(n.body)}</div>
+              </div>`;
+            notesView = 'list'; notesOpenId = null;
+          }
+          return `
+            <div id="notes-root" class="nt-root">
+              <div class="nt-search">${notesIcon('search', 17)}<input id="notes-search" value="${escapeHtml(notesQuery)}" oninput="notesSearchInput(this.value)" placeholder="Search notes" autocomplete="off"></div>
+              <button class="nt-new" onclick="notesNew()">${notesIcon('plus', 18)} New note</button>
+              <div id="notes-list">${notesListItemsHTML()}</div>
             </div>`;
         }
 
@@ -1930,7 +2183,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const installed = (typeof stitchAppInstalled === 'function' && stitchAppInstalled());
           return `
             <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Settings and activity', '20px', null, null, {right:true})}
+              ${overlayHeader('Settings and activity', '20px', null, null, {right:true, deskBig:true})}
               <div class="px-5" style="padding-bottom:28px;">
               ${stgProfileCardHTML()}
               ${stgGroup('Your account', `

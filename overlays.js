@@ -650,7 +650,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
           // Closing a page re-draws the Workspace underneath without replaying its slide-in (that
           // replay looked like the whole app blinking)
-          if (currentTab === 2) { window.__studyNoSlide = true; try { renderStudy(); } finally { window.__studyNoSlide = false; } openRightPanel('notebook'); }
+          if (currentTab === 2) { window.__studyNoSlide = true; try { renderStudy(); } finally { window.__studyNoSlide = false; } openRightPanel('notes'); }
           if (currentTab === 0 && typeof setupFeedVideoAutoplay === 'function') {
             const feedListEl = document.getElementById('feed-list');
             if (feedListEl) setupFeedVideoAutoplay(feedListEl);
@@ -727,7 +727,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const pbStyle = opts.pb ? ` style="padding-bottom:${opts.pb};"` : '';
           // Back-only headers are always left-aligned (opts.right / opts.center are ignored)
           return `
-            <div class="flex-shrink-0 w-full ov-sticky-head"${padStyle}>
+            <div class="flex-shrink-0 w-full ov-sticky-head${opts.deskBig ? ' ov-desk-big' : ''}"${padStyle}>
               <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center gap-4"${pbStyle}>
                 <button onclick="${backAction || 'overlayGoBack()'}">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
                 <div class="font-semibold ${titleSize} font-display grad-text${titleClass}">${title}</div>
@@ -797,7 +797,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             ? `${menuBtn}<h1 class="${titleClass}" style="max-width:${titleMaxWidth};">${title}</h1>`
             : `${backBtn}<h1 class="${titleClass}" style="max-width:${titleMaxWidth};">${title}</h1>${menuBtn}`;
           return `
-            <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
+            <div class="w-full px-5 pb-3 relative${opts.deskBig ? ' ov-desk-big-m' : ''}" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 ${rowChildren}
               </div>
@@ -3411,7 +3411,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             if (!rows.length) listHTML = `<div class="text-center py-14"><div class="text-sm font-semibold text-gray-500">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div></div>`;
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-                ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true })}
+                ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true, deskBig: true })}
                 <div class="px-5 pt-4 pb-8 notif-wrap">
                   ${notifFilterChipsHTML()}
                   <div class="notif-list">${listHTML}</div>

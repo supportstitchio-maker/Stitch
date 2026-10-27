@@ -10384,7 +10384,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const dlBtnClass = 'myact-dl-circle';
           return `
             ${embed ? '<div class="space-y-4">' : `<div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50 myact-page">
-            ${overlayHeader('My Activity', '20px', null, null, { center: true })}
+            ${overlayHeader('My Activity', '20px', null, null, { center: true, deskBig: true })}
             <div class="p-5 space-y-4">`}
 
               ${embed ? `<div class="flex" style="gap:34px;padding:2px 2px 4px;">${[[A.myPosts.length,'Posts'],[typeof cachedNetworkCount === 'number' ? cachedNetworkCount : 0,'Connections'],[A.appliedJobs.length,'Applied']].map(([n,l]) => `<div><div class="font-display font-bold" style="font-size:32px;line-height:1;color:${NAVY};">${n}</div><div class="text-[11px]" style="color:#6b7280;margin-top:5px;">${l}</div></div>`).join('')}</div>` : `

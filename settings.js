@@ -67,7 +67,7 @@ let appPrefs = {
         function notificationSettingsHTML(){
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Notifications', '20px', null, null, { right: true })}
+            ${overlayHeader('Notifications', '20px', null, null, { right: true, deskBig: true })}
             <div class="p-5">
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notifications</div>
               <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">
