@@ -3035,11 +3035,16 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             tab: opts.tab || null,
             meetingCode: opts.meetingCode || null,
           });
-          try { showNotifBanner(notifData[0]); } catch (e) {}
-          playNotifChime(opts.name || 'Stitch', opts.message || '', { icon: (typeof notifAvatarFor === 'function' ? notifAvatarFor(opts.otherUserId) : null), iconName: opts.name });
+          // Something that happened a while ago (caught up on sign-in) goes into the list quietly: no banner,
+          // chime or bell shake. Only fresh events announce themselves.
+          const isOldEvent = opts.createdAt && (Date.now() - opts.createdAt) > 120000;
+          if (!isOldEvent) {
+            try { showNotifBanner(notifData[0]); } catch (e) {}
+            playNotifChime(opts.name || 'Stitch', opts.message || '', { icon: (typeof notifAvatarFor === 'function' ? notifAvatarFor(opts.otherUserId) : null), iconName: opts.name });
+          }
           queueSaveUserState();
           refreshNotifBadge();
-          ringNotifBell();
+          if (!isOldEvent) ringNotifBell();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'notifications') renderNotifTab();
           // No per-event email anymore -- rolled into the daily digest (send-daily-digest).
           return id;

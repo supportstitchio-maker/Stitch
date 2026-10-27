@@ -6343,3 +6343,15 @@ body.dark-mode #careerSubscribeModal.pro-page{ background:var(--c-black,#121212)
 #careerSubscribeModal.pro-page .pro-page-body{ padding-top:6px; }
 #careerSubscribeModal.pro-page .ov-sticky-head{ position:sticky; top:0; z-index:3; background:#f8fafc; }
 body.dark-mode #careerSubscribeModal.pro-page .ov-sticky-head{ background:var(--c-black,#121212); }
+
+/* ===== Flashcards: the answer side is no longer blue, it matches the term side ===== */
+.fc-face-back{ background:#fff !important; color:#0f172a !important; border:0; }
+.fc-face-back .fc-text{ color:#0f172a; }
+.fc-face-back .fc-chip{ background:#e8f0ff !important; color:#2563eb !important; }
+.fc-face-back .fc-source{ color:#7b8aa6 !important; }
+.fc-face-back .fc-face-foot{ color:#94a3b8 !important; }
+body.dark-mode .fc-face-back{ background:#1e1e1e !important; border:1px solid #3a3a3a !important; color:#f2f2f2 !important; box-shadow:none; }
+body.dark-mode .fc-face-back .fc-text{ color:#f2f2f2; }
+body.dark-mode .fc-face-back .fc-chip{ background:rgba(65,105,225,.22) !important; color:#9db4ff !important; }
+body.dark-mode .fc-face-back .fc-source{ color:#8a94a8 !important; }
+body.dark-mode .fc-face-back .fc-face-foot{ color:#8a94a8 !important; }

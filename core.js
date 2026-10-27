@@ -1055,10 +1055,15 @@
           if (typeof reportedPosts !== 'undefined') reportedPosts = new Set(Array.isArray(d.reportedPosts) ? d.reportedPosts : []);
           if (typeof deletedPostIds !== 'undefined') deletedPostIds = new Set(Array.isArray(d.deletedPostIds) ? d.deletedPostIds : []);
           if (typeof notifData !== 'undefined') {
+            // Notifications that arrived live in this visit, before the saved list finished loading, must survive
+            // the replace below (otherwise a fresh message alert can vanish a moment after it appears).
+            const liveBootAt = Date.now() - ((window.performance && performance.now && performance.now()) || 0);
+            const liveKept = notifData.filter(n => n && n.createdAt && n.createdAt >= liveBootAt);
             notifData.length = 0;
             // One-time clean-out of old test notifications (e.g. leftover "Application update"
             // entries)
             if (d.notifPurgeV1) { if (Array.isArray(d.notifications)) notifData.push(...d.notifications); }
+            liveKept.forEach(n => { if (!notifData.some(x => x && x.id === n.id)) notifData.unshift(n); });
             if (typeof applyNotifReadLocal === 'function') applyNotifReadLocal();
             else if (typeof queueSaveUserState === 'function') setTimeout(queueSaveUserState, 0);
           }

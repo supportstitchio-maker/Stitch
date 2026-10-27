@@ -3153,9 +3153,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         let messagePollTimer = null;
         let lastPolledMessageId = 0;
+        // Set once startMessagePolling has recorded the newest message id. Until then the poll must not run,
+        // or it would treat the whole message history as brand new (a flood of banners on sign-in).
+        let messagePollPrimed = false;
 
         async function pollForNewMessages(){
           if (isStitchTestAccount()) return;
+          if (!messagePollPrimed) return;
           const sb = getSupabaseClient();
           if (!sb) return;
           const myId = await getCurrentUserId();
@@ -3186,6 +3190,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               .select('id').eq('recipient_id', myId)
               .order('id', { ascending: false }).limit(1);
             if (data && data[0]) lastPolledMessageId = data[0].id;
+            messagePollPrimed = true;
           } catch (e) {  }
           // Realtime delivers messages instantly
           messagePollTimer = setInterval(() => { if (!document.hidden) pollForNewMessages(); }, 10000);
@@ -4046,7 +4051,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const log = document.getElementById('convo-log');
             if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
           }
-          if (!convoIsInView(convoId)) (async () => {
+          // A message that was sent a while ago (caught up on sign-in or after the phone was asleep) is added to
+          // the chat quietly: no banner, chime or new notification. Push already told the person at the time.
+          const msgAgeMs = row.created_at ? (Date.now() - Date.parse(row.created_at)) : 0;
+          const msgIsStale = isFinite(msgAgeMs) && msgAgeMs > 120000;
+          if (!convoIsInView(convoId) && !msgIsStale) (async () => {
             if (typeof addNotif === 'function') {
               const meta = convoMeta[convoId] || {};
               const isGroup = meta.icon === 'users';
