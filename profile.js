@@ -1004,12 +1004,14 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         let notebookNotes = [];
         let notebookDraft = '';
         let notebookExpandedIds = new Set();
+        let notebookSelecting = false;
+        let notebookSelected = new Set();
 
         function classPadBodyHTML(prefix){
           return `
             <textarea id="${prefix}-notebook-draft-input" oninput="notebookDraft=this.value" placeholder="Jot a quick note for this space..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-3 resize-none" rows="3">${escapeHtml(notebookDraft)}</textarea>
             <button onclick="addNotebookNote()" class="w-full py-2.5 rounded-full font-medium text-sm text-white mb-5" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Add note</button>
-            <div class="font-semibold text-sm text-gray-700 mb-3">${inLectureCall ? 'Space Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook')}</div>
+            <div class="flex items-center justify-between mb-3"><div class="font-semibold text-sm text-gray-700">${inLectureCall ? 'Space Pad' : (inExamAnnotate ? 'Annotate' : 'Notebook')}</div><div id="${prefix}-notebook-select-bar">${notebookSelectBarHTML()}</div></div>
             <div id="${prefix}-notebook-notes-list">${notebookNotesHTML()}</div>
             ${inLectureCall ? `
             <div id="${prefix}-classpad-resources-list">${classPadResourcesHTML()}</div>` : ''}`;
@@ -1019,16 +1021,41 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return `<div class="p-5">${classPadBodyHTML('desktop')}</div>`;
         }
 
+        function notebookSelectBarHTML(){
+          if (!notebookNotes.length) return '';
+          if (!notebookSelecting) return `<button onclick="notebookStartSelect()" class="text-xs font-semibold" style="color:${ROYAL};">Select</button>`;
+          const n = notebookSelected.size;
+          return `<div class="flex items-center gap-3"><button onclick="notebookCancelSelect()" class="text-xs font-semibold text-gray-500">Cancel</button><button onclick="notebookDeleteSelected()" ${n ? '' : 'disabled'} class="text-xs font-semibold" style="color:#e11d48;${n ? '' : 'opacity:.4;'}">Delete${n ? ' (' + n + ')' : ''}</button></div>`;
+        }
+        function notebookStartSelect(){ notebookSelecting = true; notebookSelected = new Set(); refreshClassPadSurfaces(); }
+        function notebookCancelSelect(){ notebookSelecting = false; notebookSelected = new Set(); refreshClassPadSurfaces(); }
+        function notebookToggleSelected(id){
+          if (notebookSelected.has(id)) notebookSelected.delete(id); else notebookSelected.add(id);
+          refreshClassPadSurfaces();
+        }
+        function notebookDeleteSelected(){
+          if (!notebookSelected.size) return;
+          notebookNotes = notebookNotes.filter(n => !notebookSelected.has(n.id));
+          notebookSelected.forEach(id => notebookExpandedIds.delete(id));
+          notebookSelected = new Set();
+          notebookSelecting = false;
+          refreshClassPadSurfaces();
+          saveUserNotes();
+        }
+
         function notebookNotesHTML(){
           if (!notebookNotes.length) return `<div class="text-gray-400 text-sm text-center py-10">Notes you jot down during space will show up here.</div>`;
           return notebookNotes.map(n => {
             const expanded = notebookExpandedIds.has(n.id);
             return `
-            <div onclick="toggleNotebookNote('${n.id}')" class="bg-gray-50 rounded-2xl p-4 mb-3 cursor-pointer">
+            <div onclick="${notebookSelecting ? `notebookToggleSelected('${n.id}')` : `toggleNotebookNote('${n.id}')`}" class="bg-gray-50 rounded-2xl p-4 mb-3 cursor-pointer flex items-start gap-3" style="${notebookSelecting && notebookSelected.has(n.id) ? 'background:rgba(37,99,235,.10);' : ''}">
+              ${notebookSelecting ? `<span class="flex items-center justify-center flex-shrink-0" style="width:22px;height:22px;border-radius:50%;margin-top:1px;border:2px solid ${notebookSelected.has(n.id) ? ROYAL : '#b4c0d6'};background:${notebookSelected.has(n.id) ? ROYAL : '#fff'};">${notebookSelected.has(n.id) ? IconBold('check','w-3 h-3 text-white') : ''}</span>` : ''}
+              <div class="flex-1 min-w-0">
               <div class="text-sm text-gray-700 mb-2 ${expanded ? '' : 'truncate'}" style="${expanded ? 'white-space:pre-wrap;' : ''}">${escapeHtml(n.text)}</div>
               <div class="flex items-center justify-between">
                 <span class="text-[11px] text-gray-400">${n.time}</span>
-                <button onclick="event.stopPropagation(); deleteNotebookNote('${n.id}')" class="text-gray-400">${Icon('trash','w-3.5 h-3.5')}</button>
+                ${notebookSelecting ? '' : `<button onclick="event.stopPropagation(); deleteNotebookNote('${n.id}')" class="text-gray-400">${Icon('trash','w-3.5 h-3.5')}</button>`}
+              </div>
               </div>
             </div>`;
           }).join('');
@@ -1038,6 +1065,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ['desktop','lecture'].forEach(prefix => {
             const list = document.getElementById(`${prefix}-notebook-notes-list`);
             if (list) list.innerHTML = notebookNotesHTML();
+            const selBar = document.getElementById(`${prefix}-notebook-select-bar`);
+            if (selBar) selBar.innerHTML = notebookSelectBarHTML();
             const draft = document.getElementById(`${prefix}-notebook-draft-input`);
             if (draft) draft.value = notebookDraft;
           });

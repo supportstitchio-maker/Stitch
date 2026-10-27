@@ -3495,10 +3495,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           });
         }
 
+        function notifItemSelect(id, renderFnName){
+          notifItemMenuOpenId = null;
+          notifSelected.add(id);
+          const fn = window[renderFnName || 'renderNotifTab'];
+          if (typeof fn === 'function') fn();
+        }
+
         function notifItemMenuHTML(n, renderFn){
           const item = (action, icon, label, cls) => `<button role="menuitem" onclick="event.stopPropagation(); notifItemAction('${n.id}','${action}','${renderFn}')" class="nmenu-item ${cls || ''}">${Icon(icon,'w-4 h-4')}<span>${label}</span></button>`;
           return `
             <div role="menu" onclick="event.stopPropagation()" class="notif-item-menu nmenu">
+              <button role="menuitem" onclick="event.stopPropagation(); notifItemSelect('${n.id}','${renderFn}')" class="nmenu-item">${Icon('check','w-4 h-4')}<span>Select</span></button>
               ${item('pin','pin', n.pinned ? 'Unpin' : 'Pin')}
               ${n.read ? '' : item('read','check','Mark as read')}
               ${item('block','lock','Block')}
