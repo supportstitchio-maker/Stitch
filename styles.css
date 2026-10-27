@@ -6355,3 +6355,22 @@ body.dark-mode .fc-face-back .fc-text{ color:#f2f2f2; }
 body.dark-mode .fc-face-back .fc-chip{ background:rgba(65,105,225,.22) !important; color:#9db4ff !important; }
 body.dark-mode .fc-face-back .fc-source{ color:#8a94a8 !important; }
 body.dark-mode .fc-face-back .fc-face-foot{ color:#8a94a8 !important; }
+
+/* Desktop flashcards: the title, timer and End button sit below the top strip instead of under the greeting pill */
+@media (min-width:1024px){
+  #flashModal .fc-head{ padding-top:calc(var(--dtop-h) + 8px) !important; padding-left:28px; padding-right:28px; }
+}
+
+/* Desktop flashcards: the card shrinks to fit short windows and the action buttons always fit the column */
+@media (min-width:1024px){
+  #flashModal .fc-stack{ height:clamp(14rem, calc(100vh - 300px), 26rem); max-height:none; margin-bottom:24px; }
+  #flashModal .fc-actions{ width:100%; max-width:42rem; margin:14px auto 0; box-sizing:border-box; }
+  #flashModal .fc-act-no, #flashModal .fc-act-yes{ width:auto; flex:1 1 0; min-width:0; }
+  #flashModal .fc-act-flip{ flex:1.4 1 0; min-width:0; }
+}
+
+/* Flashcards: the definition side gets a soft shade so it reads as different from the term side */
+.fc-face-back{ background:linear-gradient(135deg,#eef3fc 0%,#dfe8f8 55%,#d2def4 100%) !important; box-shadow:inset -14px 0 28px rgba(37,99,235,.10), 0 16px 40px rgba(30,60,140,.16); }
+.fc-face-back .fc-chip{ background:#ffffff !important; color:#2563eb !important; }
+body.dark-mode .fc-face-back{ background:linear-gradient(135deg,#262626 0%,#2b2b2b 55%,#323232 100%) !important; border:1px solid #3a3a3a !important; box-shadow:inset -14px 0 28px rgba(0,0,0,.28); }
+body.dark-mode .fc-face-back .fc-chip{ background:rgba(65,105,225,.26) !important; color:#9db4ff !important; }
