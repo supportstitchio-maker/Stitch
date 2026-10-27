@@ -3270,6 +3270,22 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             renderNotifTab();
           }
         }
+        // Desktop has no long-press, and the top-right menu is hidden there, so selecting needs its own action bar
+        function notifSelectBarHTML(){
+          const n = notifSelected.size;
+          if (!n) return '';
+          const ic = (d) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+          const btn = (fn, d, label, cls) => `<button type="button" onclick="${fn}" class="notif-selbar-btn ${cls || ''}" title="${label}" aria-label="${label}">${ic(d)}<span>${label}</span></button>`;
+          return `
+            <div class="notif-selbar">
+              <button type="button" onclick="notifCancelSelect()" class="notif-selbar-btn" title="Cancel" aria-label="Cancel">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
+              <span class="notif-selbar-count">${n} selected</span>
+              <span style="flex:1"></span>
+              ${btn("handleNotifAction('read')", '<path d="M5 12.5l4.5 4.5L19 7.5"/>', 'Mark read')}
+              ${btn("handleNotifAction('pin')", '<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/>', 'Pin')}
+              ${btn("handleNotifAction('delete')", '<path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/>', 'Delete', 'danger')}
+            </div>`;
+        }
         function notifCancelSelect(){
           notifSelected.clear();
           renderNotifTab();
@@ -3418,6 +3434,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
                 ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true, deskBig: true })}
                 <div class="px-5 pt-4 pb-8 notif-wrap">
+                  ${notifSelectBarHTML()}
                   ${notifFilterChipsHTML()}
                   <div class="notif-list">${listHTML}</div>
                 </div>

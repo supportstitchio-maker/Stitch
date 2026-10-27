@@ -6400,3 +6400,10 @@ body.dark-mode .fc-face-back .fc-chip{ background:rgba(65,105,225,.26) !importan
   html.dark #msg-select-bar,html[data-theme="dark"] #msg-select-bar{background:#1e1e1e;border-top-color:#333;color:#cbd5e1;}
   html.dark .msg-sel-count,html[data-theme="dark"] .msg-sel-count{color:#f1f5f9;}
 }
+
+/* Notifications: selection action bar */
+.notif-selbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:6px;padding:8px 10px;margin-bottom:12px;background:#fff;border-radius:18px;box-shadow:0 4px 18px rgba(30,60,140,.12);color:#475569;}
+.notif-selbar-count{font-weight:700;font-size:15px;color:#0f172a;margin-left:6px;}
+.notif-selbar-btn{display:flex;align-items:center;gap:6px;border:0;background:transparent;color:inherit;font-family:inherit;font-size:13px;font-weight:600;padding:8px 12px;border-radius:999px;cursor:pointer;}
+.notif-selbar-btn:hover{background:#f1f5f9;}
+.notif-selbar-btn.danger{color:#e11d48;}
