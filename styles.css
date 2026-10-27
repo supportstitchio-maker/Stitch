@@ -6335,3 +6335,11 @@ body.dark-mode .nt-chk{ accent-color:#4169e1; }
 
 /* Whiteboard paper stays white in dark mode so dark ink is readable */
 body.dark-mode #lecture-whiteboard-stage{ background-color:#ffffff !important; }
+
+/* Stitch Pro opens as a whole page instead of a bottom sheet */
+#careerSubscribeModal.pro-page{ align-items:stretch !important; justify-content:center !important; background:#f8fafc !important; z-index:60; }
+body.dark-mode #careerSubscribeModal.pro-page{ background:var(--c-black,#121212) !important; }
+#careerSubscribeModal.pro-page .confirm-sheet{ max-width:640px !important; width:100%; max-height:none !important; height:100%; border-radius:0 !important; box-shadow:none !important; background:transparent !important; padding:0 20px calc(28px + env(safe-area-inset-bottom,0px)) !important; overflow-y:auto; transform:none !important; animation:none !important; }
+#careerSubscribeModal.pro-page .pro-page-body{ padding-top:6px; }
+#careerSubscribeModal.pro-page .ov-sticky-head{ position:sticky; top:0; z-index:3; background:#f8fafc; }
+body.dark-mode #careerSubscribeModal.pro-page .ov-sticky-head{ background:var(--c-black,#121212); }

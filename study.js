@@ -1663,8 +1663,11 @@ let studyFabMenuOpen = false;
           }
         }
         function proSheetHTML(reason){
-          if (isProActive() && proView !== 'plans') return proView === 'cancel' ? proCancelHTML() : proManageHTML();
-          return proPlansHTML(reason);
+          const head = (typeof overlayHeader === 'function') ? `<div class="-mx-5" style="margin-left:-20px;margin-right:-20px;">${overlayHeader('Stitch Pro', 'var(--top-safe-pad)', 'closeCareerSubscribeSheet()')}</div>` : '';
+          let body;
+          if (isProActive() && proView !== 'plans') body = proView === 'cancel' ? proCancelHTML() : proManageHTML();
+          else body = proPlansHTML(reason);
+          return head + `<div class="pro-page-body">${body}</div>`;
         }
         function proPlansHTML(reason){
           const active = isProActive();
@@ -1695,7 +1698,7 @@ let studyFabMenuOpen = false;
           const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.yearly;
           return `
             <div class="text-center mb-3">
-              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">Stitch Pro</div>
+              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">${active ? 'Extend your plan' : 'Go further with Pro'}</div>
               <div class="text-sm text-gray-500">${active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.')}</div>
             </div>
             <div class="flex items-center justify-end text-xs text-gray-400 mb-1" style="gap:6px;"><span>Free</span><span class="text-gray-300">/</span><span style="color:${NAVY};font-weight:600;">Pro</span></div>
@@ -1724,7 +1727,9 @@ let studyFabMenuOpen = false;
           if (!modal || !box) return;
           box.innerHTML = proSheetHTML(reason);
           const wasHidden = modal.classList.contains('hidden');
+          modal.classList.add('pro-page');
           modal.classList.remove('hidden');
+          try { modal.scrollTop = 0; box.parentElement.scrollTop = 0; } catch (e) {}
           if (wasHidden && typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeCareerSubscribeSheet(fromPopState));
           // fill in the live usage numbers once they arrive
           refreshProStatus().then(() => proRender());

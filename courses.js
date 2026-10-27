@@ -4428,22 +4428,12 @@ try {
             if (document.hidden) return;
             const sb = getSupabaseClient();
             if (!sb) return;
-            const before = JSON.stringify(allCourses.map(c => [c.id, (c.announcements || []).length, JSON.stringify(c.modules)]));
+            const before = JSON.stringify(allCourses.map(c => [c.id, c.archived ? 1 : 0, (c.announcements || []).length, JSON.stringify(c.modules)]));
             await loadCoursesRemote();
-            const after = JSON.stringify(allCourses.map(c => [c.id, (c.announcements || []).length, JSON.stringify(c.modules)]));
-            if (before === after) return; 
-            if (typeof currentTab !== 'undefined' && currentTab === 2 && typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'courses') {
-              const studyContentEl = document.getElementById('study-content');
-              if (studyContentEl) studyContentEl.innerHTML = studyContent();
-              else if (typeof renderStudy === 'function') renderStudy();
-            }
-            if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'courseDetail' && currentCourseId) {
-              const stillExists = allCourses.some(c => c.id === currentCourseId);
-              const ov = document.getElementById('overlay');
-              if (!stillExists) { if (typeof closeOverlay === 'function') closeOverlay(); }
-              else if (ov) ov.innerHTML = courseDetailHTML();
-            }
-          }, 120000);
+            const after = JSON.stringify(allCourses.map(c => [c.id, c.archived ? 1 : 0, (c.announcements || []).length, JSON.stringify(c.modules)]));
+            if (before === after) return;
+            refreshCourseSurfaces();
+          }, 20000);
         }
 
         function applyRemoteCourseChange(payload){
@@ -4457,19 +4447,25 @@ try {
             const idx = allCourses.findIndex(c => c.id === row.id);
             if (idx === -1) allCourses.unshift(incoming); else allCourses[idx] = incoming;
           }
-          if (typeof currentTab !== 'undefined' && currentTab === 2 && typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'courses') {
-            const studyContentEl = document.getElementById('study-content');
-            if (studyContentEl) studyContentEl.innerHTML = studyContent();
-            else if (typeof renderStudy === 'function') renderStudy();
-          }
-          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'courseDetail' && currentCourseId === row.id) {
-            if (payload.eventType === 'DELETE') {
-              if (typeof closeOverlay === 'function') closeOverlay();
-            } else {
-              const ov = document.getElementById('overlay');
-              if (ov) ov.innerHTML = courseDetailHTML();
+          refreshCourseSurfaces(row.id);
+        }
+
+        // Repaints every place a course can show, so a deleted course disappears everywhere at once
+        function refreshCourseSurfaces(changedId){
+          try {
+            if (typeof currentTab !== 'undefined' && currentTab === 2 && typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'courses') {
+              const studyContentEl = document.getElementById('study-content');
+              if (studyContentEl) studyContentEl.innerHTML = studyContent();
+              else if (typeof renderStudy === 'function') renderStudy();
             }
-          }
+            if (typeof repaintJobsIfVisible === 'function') repaintJobsIfVisible();
+            if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'courseDetail' && currentCourseId && (!changedId || currentCourseId === changedId)) {
+              const c = allCourses.find(x => x.id === currentCourseId);
+              const gone = !c || (c.archived && !enrolledCourseIds.includes(c.id));
+              if (gone) { if (typeof closeOverlay === 'function') closeOverlay(); }
+              else { const ov = document.getElementById('overlay'); if (ov) ov.innerHTML = courseDetailHTML(); }
+            }
+          } catch (e) { console.warn('Refreshing course surfaces failed:', e); }
         }
 
         async function deleteCourseRemote(id){
@@ -4503,8 +4499,14 @@ try {
             'Delete',
             function(){
               archiveCourse(courseId);
+              // The Career Space listing that points at this course goes with it
+              try {
+                const linked = (jobsData.courses || []).filter(x => x.courseId === courseId);
+                linked.forEach(x => { if (typeof deleteOpportunityRemote === 'function') deleteOpportunityRemote(x.id); if (typeof removeJobLocally === 'function') removeJobLocally(x.id); });
+              } catch (e) {}
               if (currentCourseId === courseId) closeOverlay();
               renderStudy();
+              refreshCourseSurfaces(courseId);
               queueSaveUserState();
             }
           );

@@ -2226,9 +2226,15 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         // ---- Job/course listing data + application status helpers ----
+        // A listing that points at a course which was deleted (archived) disappears right away for anyone not enrolled
+        function jobCourseGone(j){
+          if (!j || !j.courseId || typeof allCourses === 'undefined') return false;
+          const c = allCourses.find(x => x.id === j.courseId);
+          return !!(c && c.archived && !(typeof enrolledCourseIds !== 'undefined' && enrolledCourseIds.includes(c.id)));
+        }
         function allJobs(){
           return applySavedJobFlags([...jobsData.opportunities, ...jobsData.internships, ...jobsData.courses, ...jobsData.scholarships, ...jobsData.others]
-            .filter(j => !isOpportunityDeadlinePassed(j)));
+            .filter(j => !isOpportunityDeadlinePassed(j) && !jobCourseGone(j)));
         }
 
         function courseAsExploreCard(course){
@@ -2252,7 +2258,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function exploreCourseCards(){
           const linkedCourseIds = jobsData.courses.map(j => j.courseId).filter(Boolean);
           const catalogOnly = allCourses.filter(c => !linkedCourseIds.includes(c.id) && !c.archived).map(courseAsExploreCard);
-          return [...jobsData.courses, ...catalogOnly];
+          return [...jobsData.courses.filter(x => !jobCourseGone(x)), ...catalogOnly];
         }
 
         function allExploreCards(){
@@ -5361,6 +5367,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const modal = document.getElementById('careerSubscribeModal');
           const box = document.getElementById('careerSubscribeModalContent');
           if (!modal || !box) { startCareerPlanPayment(); return; }
+          modal.classList.remove('pro-page');
           const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
           box.innerHTML = `
             <div class="text-center">
@@ -5386,6 +5393,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const modal = document.getElementById('careerSubscribeModal');
           if (!modal || modal.classList.contains('hidden')) return;
           modal.classList.add('hidden');
+          modal.classList.remove('pro-page');
           if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
         }
         function confirmCareerSubscribeSheet(){
@@ -9282,9 +9290,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const adminPostedCount = allJobsList.length - userPostedCount;
           return `
             <div class="flex-1 relative overflow-hidden flex flex-col">
-            <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
+            <div class="flex-shrink-0 px-5" style="position:relative;z-index:2;">
               <div style="margin:0 -1.25rem;">${adminDashboardHeaderHTML()}</div>
               <div id="admin-pills" class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" style="margin-top:4px;">${adminPillsHTML()}</div>
+            </div>
+            <div id="admin-scroll" class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div id="admin-chart-slot" style="margin-top:14px;">${(adminDashboardTab === 'mydashboard' || adminDashboardTab === 'overview') ? '' : adminListingsChartHTML(allJobsList.length, userPostedCount, adminPostedCount)}</div>
               <div id="admin-tab-body">${adminBodyHTML()}</div>
             </div>

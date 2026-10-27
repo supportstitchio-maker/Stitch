@@ -1468,15 +1468,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         let cachedNetworkCount = null;
+        let networkCountKickAt = 0;
         let networkCountRequestSeq = 0;
         let networkCountFirstAttemptAt = null;
         let networkCountRetryTimer = null;
         function networkConnectionCount(){
           if (cachedNetworkCount !== null) return cachedNetworkCount;
-          if (networkCountFirstAttemptAt && (Date.now() - networkCountFirstAttemptAt) < 2500) {
-            return convoArrays().flat().filter(c => c.network && c.icon !== 'users').length;
-          }
-          return '\u00b7\u00b7\u00b7';
+          // Not confirmed by the server yet: show what My Network itself lists (the same chats), and keep trying
+          const local = convoArrays().flat().filter(c => c.network && c.icon !== 'users').length;
+          if (Date.now() - networkCountKickAt > 8000) { networkCountKickAt = Date.now(); setTimeout(() => { try { refreshNetworkCount(); } catch (e) {} }, 0); }
+          if (local > 0) return local;
+          if (!networkCountFirstAttemptAt || (Date.now() - networkCountFirstAttemptAt) < 6000) return '\u00b7\u00b7\u00b7';
+          return 0;
         }
 
         async function refreshNetworkCount(retryDelayMs){
