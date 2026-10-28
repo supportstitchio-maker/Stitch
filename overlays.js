@@ -3046,7 +3046,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             let seenSet = [];
             if (akey) seenSet = JSON.parse(localStorage.getItem(akey) || '[]') || [];
             if (akey && seenSet.indexOf(id) !== -1) isOldEvent = true;
-            if (!opts.createdAt && (Date.now() - (window.__stitchBootAt || 0)) < 15000) isOldEvent = true;
+            if (!opts.createdAt && (Date.now() - (window.__stitchBootAt || 0)) < 30000) isOldEvent = true;
             if (akey && seenSet.indexOf(id) === -1) { seenSet.push(id); localStorage.setItem(akey, JSON.stringify(seenSet.slice(-300))); }
           } catch (e) {}
           if (!isOldEvent) {

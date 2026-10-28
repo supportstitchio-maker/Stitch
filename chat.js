@@ -2165,6 +2165,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   name,
                   message: row.message ? `Wants to connect: "${row.message}"` : 'Wants to connect with you',
                   otherUserId: row.from_user,
+                  createdAt: Date.parse(row.created_at || '') || (Date.now() - 600000),
                 });
               }
             });
@@ -2370,6 +2371,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   name,
                   message: `${name} accepted your connection request`,
                   otherUserId: row.to_user,
+                  createdAt: Date.parse(row.updated_at || row.responded_at || row.created_at || '') || (Date.now() - 600000),
                 });
               }
             });
