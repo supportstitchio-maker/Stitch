@@ -1630,7 +1630,6 @@ let studyFabMenuOpen = false;
             <div class="pro3-scrim" onclick="proShowManage()"></div>
             <div class="pro3-sheet" role="dialog" aria-modal="true">
               <div class="pro3-grab"></div>
-              <div class="pro3-sheet-title">Cancel Stitch Pro?</div>
               <div class="pro3-sheet-text">You keep every Pro benefit until ${end}. After that your account goes back to the free plan. You can subscribe again whenever you like.</div>
               <div class="flex gap-3">
                 <button onclick="proShowManage()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>

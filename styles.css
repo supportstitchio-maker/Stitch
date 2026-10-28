@@ -6500,3 +6500,6 @@ body.dark-mode .pro4-tile.on{background:#1b2a4a;} body.dark-mode .pro4-cta{backg
 .pro4-cta{position:static !important;transform:none !important;left:auto !important;width:100% !important;max-width:none !important;background:transparent !important;padding:22px 0 calc(16px + env(safe-area-inset-bottom,0px)) !important;}
 .pro4-nn{height:48px;border-radius:999px;background:#e8edf5;color:#475569;margin-top:10px;padding:0;}
 body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
+
+/* Desktop side-panel reopen tab must never show on phones/tablets */
+@media (max-width:1023px){ html body #app-shell #rp-reopen-tab, html body #rp-reopen-tab{ display:none !important; } }
