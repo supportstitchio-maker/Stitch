@@ -197,10 +197,17 @@
             return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
           } catch (e) { return false; }
         }
+        window.__stitchBootAt = Date.now();
+        // The installed app (home-screen icon) keeps people signed in; a normal browser tab does not
+        function isInstalledApp(){
+          try {
+            return isNativeApp() || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+          } catch (e) { return false; }
+        }
         function getSupabaseClient(){
           if (SUPABASE_PROJECT_REF === 'YOUR_PROJECT_REF' || !window.supabase) return null;
           if (!_sbClient) {
-            const native = isNativeApp();
+            const native = isInstalledApp();
             _sbClient = window.supabase.createClient(
               `https://${SUPABASE_PROJECT_REF}.supabase.co`,
               SUPABASE_ANON_KEY,

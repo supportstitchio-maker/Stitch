@@ -3037,7 +3037,18 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           });
           // Something that happened a while ago (caught up on sign-in) goes into the list quietly: no banner,
           // chime or bell shake. Only fresh events announce themselves.
-          const isOldEvent = opts.createdAt && (Date.now() - opts.createdAt) > 120000;
+          let isOldEvent = !!(opts.createdAt && (Date.now() - opts.createdAt) > 120000);
+          // Never announce the same notification twice, and stay quiet while the app is still catching up
+          // right after opening (that is when old events were popping up as if they were new)
+          try {
+            const uid = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null;
+            const akey = uid ? 'stitch_announced_notifs_' + uid : null;
+            let seenSet = [];
+            if (akey) seenSet = JSON.parse(localStorage.getItem(akey) || '[]') || [];
+            if (akey && seenSet.indexOf(id) !== -1) isOldEvent = true;
+            if (!opts.createdAt && (Date.now() - (window.__stitchBootAt || 0)) < 15000) isOldEvent = true;
+            if (akey && seenSet.indexOf(id) === -1) { seenSet.push(id); localStorage.setItem(akey, JSON.stringify(seenSet.slice(-300))); }
+          } catch (e) {}
           if (!isOldEvent) {
             try { showNotifBanner(notifData[0]); } catch (e) {}
             playNotifChime(opts.name || 'Stitch', opts.message || '', { icon: (typeof notifAvatarFor === 'function' ? notifAvatarFor(opts.otherUserId) : null), iconName: opts.name });

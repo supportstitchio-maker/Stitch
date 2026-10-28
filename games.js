@@ -3123,6 +3123,15 @@ let userPoints = 0;
               hideAuthTransitionLoading(true);
               return;
             }
+            if (typeof isInstalledApp === 'function' && isInstalledApp()) {
+              // Installed app: stay signed in until the person signs out or uninstalls
+              let needs = null;
+              try { needs = await authCheckNeedsProfileSetup(); } catch (e) {}
+              if (needs === true) { authShowCompleteProfile(); return; }
+              let known = false;
+              try { known = localStorage.getItem('stitchOnboarded:' + session.user.id) === '1'; } catch (e) {}
+              if (needs === false || known) { await authEnterApp(); return; }
+            }
             await sb.auth.signOut().catch(() => {});
             authShowLogin();
           } catch (e) { if (freshOAuthRedirect) hideAuthTransitionLoading(); }

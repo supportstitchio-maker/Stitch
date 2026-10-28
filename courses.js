@@ -532,7 +532,7 @@ try {
 
         // ---- Stitch Bot avatar/pose + input keyboard handling ----
         function _aiRobotPoseStorage(){
-          try { return isNativeApp() ? window.localStorage : window.sessionStorage; }
+          try { return isInstalledApp() ? window.localStorage : window.sessionStorage; }
           catch (e) { return null; }
         }
 
