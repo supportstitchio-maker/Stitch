@@ -3076,6 +3076,16 @@ let userPoints = 0;
         }
 
         async function restoreSessionIfSignedIn(){
+          try { return await restoreSessionIfSignedInInner(); }
+          finally {
+            if (window.__stitchInstalledBoot) {
+              // Whatever happened, the early cover and hidden pages must not stay stuck
+              try { hideAuthTransitionLoading(true); } catch (e) {}
+              document.documentElement.classList.remove('installed-boot');
+            }
+          }
+        }
+        async function restoreSessionIfSignedInInner(){
           const sb = getSupabaseClient();
           // Prefer the flag index.html captured before supabase-js could strip the hash from the URL
           // (see the oauth-returning script in <head>)

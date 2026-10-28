@@ -86,7 +86,7 @@
     </script>
     <!-- Google/Apple sign-in return: the provider sends the person back to this page with the
        session tokens in the URL hash -->
-    <style>html.oauth-returning #landing-page{display:none !important;} html.oauth-returning #auth-gate{visibility:hidden;} html.oauth-returning.oauth-onboarding #auth-gate{visibility:visible;}</style>
+    <style>html.installed-boot #landing-page{display:none !important;} html.installed-boot #auth-gate{visibility:hidden;} html.oauth-returning #landing-page{display:none !important;} html.oauth-returning #auth-gate{visibility:hidden;} html.oauth-returning.oauth-onboarding #auth-gate{visibility:visible;}</style>
     <!-- LANDING PAGE TEMPORARILY HIDDEN. The markup, styles and scripts are all still in place:
          to bring it back, delete this <style> block (or set the rule below to display:block). -->
     <style id="landing-temporarily-hidden">
@@ -98,6 +98,12 @@
         try {
           var h = window.location.hash || '';
           window.__stitchFreshOAuthReturn = /access_token|provider_token/.test(h);
+          // Installed app that already has a saved sign-in: skip the landing page and go straight to the skeleton
+          try {
+            var __st = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+            window.__stitchInstalledBoot = !!(__st && !window.__stitchFreshOAuthReturn && localStorage.getItem('stitch-auth'));
+            if (window.__stitchInstalledBoot) document.documentElement.classList.add('installed-boot');
+          } catch (e) {}
           if (window.__stitchFreshOAuthReturn) document.documentElement.classList.add('oauth-returning');
           // Remember who is returning (read from the access token in the URL hash) so games.js can tell
           // a returning account from a brand-new sign-up on the very first frame
@@ -128,7 +134,7 @@
             if (isStandalone) document.documentElement.classList.add('standalone-splash');
           } catch (e) {}
           var darkTheme = document.documentElement.classList.contains('dark-mode'); // no splash in dark mode
-          window.__stitchSkipSplash = seen || authReturn || darkTheme;
+          window.__stitchSkipSplash = seen || authReturn || darkTheme || !!isStandalone;
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
           try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
         } catch (e) { window.__stitchSkipSplash = false; }
@@ -236,7 +242,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261028o">
+    <link rel="stylesheet" href="styles.css?v=20261028p">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -449,8 +455,9 @@
       // Returning account gets the Home skeleton, a new one goes to "Almost there".
       (function(){
         try {
-          if (window.__stitchFreshOAuthReturn !== true) return;
+          if (window.__stitchFreshOAuthReturn !== true && window.__stitchInstalledBoot !== true) return;
           var uid = window.__stitchOAuthUid, known = false, i;
+          if (window.__stitchInstalledBoot) known = true;
           try { known = !!(uid && localStorage.getItem('stitchOnboarded:' + uid) === '1'); } catch (e) {}
           // Older accounts with no "onboarded" flag on this device used to flash the "Almost there" screen.
           // Their sign-in token carries the same flag, so check that too.
@@ -946,18 +953,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261028o"></script>
-    <script src="core.js?v=20261028o"></script>
-    <script src="feed.js?v=20261028o"></script>
-    <script src="chat.js?v=20261028o"></script>
-    <script src="study.js?v=20261028o"></script>
-    <script src="courses.js?v=20261028o"></script>
-    <script src="quizzesAndGames.js?v=20261028o"></script>
-    <script src="jobs.js?v=20261028o"></script>
-    <script src="creator.js?v=20261028o"></script>
-    <script src="settings.js?v=20261028o"></script>
-    <script src="profile.js?v=20261028o"></script>
-    <script src="overlays.js?v=20261028o"></script>
-    <script src="games.js?v=20261028o"></script>
+    <script src="analytics.js?v=20261028p"></script>
+    <script src="core.js?v=20261028p"></script>
+    <script src="feed.js?v=20261028p"></script>
+    <script src="chat.js?v=20261028p"></script>
+    <script src="study.js?v=20261028p"></script>
+    <script src="courses.js?v=20261028p"></script>
+    <script src="quizzesAndGames.js?v=20261028p"></script>
+    <script src="jobs.js?v=20261028p"></script>
+    <script src="creator.js?v=20261028p"></script>
+    <script src="settings.js?v=20261028p"></script>
+    <script src="profile.js?v=20261028p"></script>
+    <script src="overlays.js?v=20261028p"></script>
+    <script src="games.js?v=20261028p"></script>
 </body>
 </html>
