@@ -2868,6 +2868,28 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         const notifData = [];
+        // Remember which notifications the person deleted, so a re-load of old data can't bring them back
+        function dismissedNotifKey(){
+          try { const u = (typeof _cachedAuthUser !== 'undefined' && _cachedAuthUser) ? _cachedAuthUser.id : null; return u ? 'stitch_dismissed_notifs_' + u : null; } catch (e) { return null; }
+        }
+        function isNotifDismissed(id){
+          try { const k = dismissedNotifKey(); if (!k) return false; return (JSON.parse(localStorage.getItem(k) || '[]') || []).indexOf(id) !== -1; } catch (e) { return false; }
+        }
+        (function(){
+          const origSplice = notifData.splice;
+          notifData.splice = function(){
+            const removed = origSplice.apply(this, arguments);
+            try {
+              const k = dismissedNotifKey();
+              if (k && removed && removed.length) {
+                const list = JSON.parse(localStorage.getItem(k) || '[]') || [];
+                removed.forEach(n => { if (n && n.id && list.indexOf(n.id) === -1) list.push(n.id); });
+                localStorage.setItem(k, JSON.stringify(list.slice(-500)));
+              }
+            } catch (e) {}
+            return removed;
+          };
+        })();
 
         let notifChimeAudioCtx = null;
         // ---- Notifications: sound, add, badge, ticker ----
@@ -3009,6 +3031,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           opts = opts || {};
           const id = opts.id || ('notif-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
           if (notifData.some(n => n.id === id)) return id;
+          if (opts.id && isNotifDismissed(id)) return id;
           notifData.unshift({
             id,
             source: opts.source || 'app',
