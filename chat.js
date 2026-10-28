@@ -1889,7 +1889,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ontouchstart="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
               onclick="handleRowTap('convoTap','${escapeForJsAttr(id)}')">
               ${selectMode ? `<div class="w-5 h-5 rounded-full border-2 ${isSel ? `bg-[${ROYAL}] border-[${ROYAL}]` : 'border-gray-300'} flex items-center justify-center flex-shrink-0">${isSel ? IconBold('check','w-3.5 h-3.5 text-white') : ''}</div>` : ''}
-              <div class="w-12 h-12 ${avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${escapeForJsAttr(id)}')">${avatarInnerHTML(c,'w-6 h-6')}</div>
+              <div class="w-12 h-12 ${avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${escapeForJsAttr(id)}')">${avatarInnerHTML(c,'w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5">
                   <div class="font-semibold text-sm ${showUnread ? '' : 'text-gray-700'}">${escapeHtml(name)}</div>
@@ -4669,7 +4669,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ? `<div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
                       ${sharedCollabs.map(c => `
                         <button onclick="closeOverlay(); openConversation('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
-                          <div class="w-10 h-10 ${c.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
+                          <div class="w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
                           <div class="flex-1 min-w-0 text-sm text-gray-700 truncate">${escapeHtml(c.name)}</div>
                           ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
                         </button>`).join('')}
@@ -4929,7 +4929,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="px-5 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);">
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openConvoProfile()">${avatarInnerHTML(meta,'w-5 h-5')}</div>
+              <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openConvoProfile()">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
                 <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
@@ -5417,7 +5417,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const callContentTap = callContent.replace('<div class="flex flex-col', `<div ${callTap} class="cursor-pointer flex flex-col`);
                 const row = outgoing
                   ? `<div class="flex items-start justify-end gap-3" data-cv-key="${cPressKey}" ${cPress}>${cMenuBtn}${callContentTap}</div>`
-                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}${cMenuBtn}</div>`;
+                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}${cMenuBtn}</div>`;
                 return separator + row;
               }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
@@ -5470,7 +5470,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const bubble = m.from === 'them' ? `
             <div class="flex items-start gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
               ${msgSelCheckHTML(pressKey)}
-              <div class="w-8 h-8 ${meta.avatarBg} rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
+              <div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
               ${content}
               ${menuBtn}
             </div>` : `
