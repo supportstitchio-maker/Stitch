@@ -4338,3 +4338,54 @@ function coverPickerHTML(o){
   }, 500);
   window.addEventListener('resize', function(){ GROUPS.forEach(function(id){ var g = document.getElementById(id); if (g) g._ft = null; }); queue(); });
 })();
+
+/* Media notification guard: Chrome keeps a "now playing" card for any video that has played, even
+   after you leave the post. When nothing is playing, drop the lock-screen card and release video
+   elements that were played but are no longer on screen. They reload on the next play(). */
+(function(){
+  try {
+    var origPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function(){
+      try {
+        if (this.__stitchSrc && !this.getAttribute('src') && !this.srcObject) {
+          var self = this, t = this.__stitchTime || 0;
+          this.setAttribute('src', this.__stitchSrc);
+          this.__stitchSrc = null;
+          if (t > 0) this.addEventListener('loadedmetadata', function(){ try { self.currentTime = t; } catch (e) {} }, { once: true });
+        }
+      } catch (e) {}
+      return origPlay.apply(this, arguments);
+    };
+    function onScreen(el){
+      var r = el.getBoundingClientRect();
+      if (!el.isConnected || (r.width === 0 && r.height === 0)) return false;
+      var cs = window.getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+      return r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+    }
+    function sweep(){
+      try {
+        var media = document.querySelectorAll('video, audio');
+        for (var i = 0; i < media.length; i++) {
+          if (!media[i].paused && !media[i].ended) return; // something is playing: leave everything alone
+        }
+        if (navigator.mediaSession) {
+          try { navigator.mediaSession.playbackState = 'none'; navigator.mediaSession.metadata = null; } catch (e) {}
+        }
+        for (var j = 0; j < media.length; j++) {
+          var v = media[j];
+          if (v.tagName !== 'VIDEO' || v.srcObject || v.currentTime < 0.5 || !v.getAttribute('src')) continue;
+          if (v.closest && v.closest('#call-screen, [id^="call-"]')) continue;
+          if (onScreen(v)) continue;
+          v.__stitchSrc = v.getAttribute('src');
+          v.__stitchTime = v.currentTime;
+          v.pause();
+          v.removeAttribute('src');
+          try { v.load(); } catch (e) {}
+        }
+      } catch (e) {}
+    }
+    setInterval(sweep, 2000);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') setTimeout(sweep, 400); });
+  } catch (e) {}
+})();

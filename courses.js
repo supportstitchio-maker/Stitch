@@ -6476,7 +6476,7 @@ try {
               <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:max(20px, env(safe-area-inset-bottom));">
                 <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
                   ${emojiButtonHTML('cm-input', 'w-8 h-8 rounded-full convo-composer-icon-btn')}
-                  <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
+                  <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
                   <button onclick="sendClassMessage()" title="Send" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
                 </div>
               </div>
@@ -10080,8 +10080,8 @@ try {
         function scheduleLectureHTML(){
           const cls = scheduleLectureCourseId ? courseVirtualClass(scheduleLectureCourseId) : myClasses.find(c => c.id === currentClassId);
           return `
-            <div class="p-5 flex-1 overflow-y-auto no-scrollbar">
-<div style="margin:-1.25rem -1.25rem 0;">${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}</div>
+            ${overlayHeader('Let\'s schedule', '20px', 'scheduleLectureBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}
+            <div class="px-5 pb-5 flex-1 overflow-y-auto no-scrollbar">
               <div class="text-sm text-gray-500 mb-5">Set up an upcoming session for ${cls ? cls.name : 'your space'}; ${scheduleLectureCourseId ? 'students enrolled in this course will see it on the course page and can join when it\'s live.' : 'members will see it in the Stream and can join when it\'s live.'}</div>
               <label class="text-xs font-semibold text-gray-500 mb-1 block">Session title</label>
               <input type="text" id="lecture-title-input" placeholder="e.g. Chapter 4: Market Structures" class="w-full bg-gray-100 border border-gray-300 rounded-2xl px-4 py-3 text-sm mb-4">

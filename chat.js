@@ -6819,7 +6819,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function syncConvoKeyboardInset(){
           const ov = document.getElementById('overlay');
           if (!ov || ov.classList.contains('hidden')) { setConvoKbFiller(false); return; }
-          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind !== 'conversation') { setConvoKbFiller(false); return; }
+          const classThreadOpen = !!document.getElementById('cm-input'); // class message thread shares this composer behaviour
+          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind !== 'conversation' && !classThreadOpen) {
+            setConvoKbFiller(false);
+            if (currentOverlayKind === 'classDetail' && ov.style.bottom && ov.style.bottom !== '0px' && ov.style.bottom !== '0') ov.style.bottom = '0';
+            return;
+          }
           const keyboardInset = getKeyboardInset(convoInputFocused);
           const keyboardLikelyOpen = keyboardInset > 0 || convoInputFocused;
           ov.style.bottom = (keyboardLikelyOpen ? keyboardInset : 0) + 'px';
@@ -6842,7 +6847,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           [120, 300, 600].forEach(ms => setTimeout(() => {
             if (!convoInputFocused) return;
             syncConvoKeyboardInset();
-            const log = document.getElementById('convo-log');
+            const log = document.getElementById('convo-log') || document.getElementById('cm-log');
             if (log) log.scrollTop = log.scrollHeight;
           }, ms));
         }
