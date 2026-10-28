@@ -1551,12 +1551,13 @@ let studyFabMenuOpen = false;
 
 
         // =====================================================================
-        // Stitch Pro: Free / Monthly / Yearly plans for Practice and Challenge Arena.
+        // Stitch Pro: Free / Daily / Monthly / Yearly plans for Practice and Challenge Arena.
         // The real limits live on the server (table feature_limits, functions feature_take / feature_status,
         // the ai-proxy function and a database trigger on challenge_invites). The numbers below are for display only.
         // Keep prices in sync with PRO_PLANS in the paystack-verify and paystack-webhook functions.
         // =====================================================================
         const PRO_PLANS = {
+          daily:   { id: 'daily',   label: 'Daily',   price: 12,  unit: 'day'   },
           monthly: { id: 'monthly', label: 'Monthly', price: 40,  unit: 'month' },
           yearly:  { id: 'yearly',  label: 'Yearly',  price: 399, unit: 'year'  }
         };
@@ -1607,10 +1608,8 @@ let studyFabMenuOpen = false;
           const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
           const usage = PRO_FEATURES.map(f => { const u = proState.features && proState.features[f.key]; return u ? row(escapeHtml(f.label), u.used + ' of ' + u.limit + ' this ' + (u.period === 'month' ? 'month' : 'week')) : ''; }).join('');
           return `
-            <div class="text-center mb-3">
-              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">Your subscription</div>
-              <div class="text-sm text-gray-500">${proState.cancelled ? 'Cancelled. You keep Stitch Pro until ' + end + '.' : 'Stitch Pro is active.'}</div>
-            </div>
+            <div class="pro3-head"><button type="button" onclick="closeCareerSubscribeSheet()" class="pro3-back" aria-label="Back"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><span class="pro3-title">Your subscription</span></div>
+            <div class="pro3-sub">${proState.cancelled ? 'Cancelled. You keep Stitch Pro until ' + end + '.' : 'Stitch Pro is active.'}</div>
             <div class="mb-3">
               ${row('Plan', escapeHtml(plan.label) + ' · GH₵' + plan.price + ' per ' + plan.unit)}
               ${proState.startedAt ? row('Last paid', escapeHtml(proPlanDateLabel(proState.startedAt))) : ''}
@@ -1619,7 +1618,7 @@ let studyFabMenuOpen = false;
             </div>
             <div class="text-xs text-gray-400 mb-3">Stitch Pro does not renew by itself, so you are never charged again unless you pay again. You can cancel at any time and keep access until the date above.</div>
             <div class="mb-4">${usage}</div>
-            <div class="flex gap-3">
+            <div class="pro3-bar">
               ${proState.cancelled
                 ? `<button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Close</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe again</button>`
                 : `<button onclick="proShowCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Extend</button>`}
@@ -1628,13 +1627,15 @@ let studyFabMenuOpen = false;
         function proCancelHTML(){
           const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
           return `
-            <div class="text-center">
-              <div class="text-lg font-bold font-display mb-2" style="color:${NAVY};">Cancel Stitch Pro?</div>
-              <div class="text-sm text-gray-500 mb-5">You keep every Pro benefit until ${end}. After that your account goes back to the free plan. You can subscribe again whenever you like.</div>
-            </div>
-            <div class="flex gap-3">
-              <button onclick="proShowManage()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>
-              <button id="pro-cancel-btn" onclick="confirmProCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel it</button>
+            <div class="pro3-scrim" onclick="proShowManage()"></div>
+            <div class="pro3-sheet" role="dialog" aria-modal="true">
+              <div class="pro3-grab"></div>
+              <div class="pro3-sheet-title">Cancel Stitch Pro?</div>
+              <div class="pro3-sheet-text">You keep every Pro benefit until ${end}. After that your account goes back to the free plan. You can subscribe again whenever you like.</div>
+              <div class="flex gap-3">
+                <button onclick="proShowManage()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>
+                <button id="pro-cancel-btn" onclick="confirmProCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel it</button>
+              </div>
             </div>`;
         }
         function proRender(){
@@ -1665,9 +1666,8 @@ let studyFabMenuOpen = false;
         function proSheetHTML(reason){
           const head = (typeof overlayHeader === 'function') ? `<div class="-mx-5" style="margin-left:-20px;margin-right:-20px;">${overlayHeader('Stitch Pro', 'var(--top-safe-pad)', 'closeCareerSubscribeSheet()')}</div>` : '';
           let body;
-          if (isProActive() && proView !== 'plans') body = proView === 'cancel' ? proCancelHTML() : proManageHTML();
-          else body = proPlansHTML(reason);
-          return head + `<div class="pro-page-body">${body}</div>`;
+          if (isProActive() && proView !== 'plans') return `<div class="pro-page-body pro3">${proManageHTML()}${proView === 'cancel' ? proCancelHTML() : ''}</div>`;
+          return `<div class="pro-page-body pro2">${proPlansHTML(reason)}</div>`;
         }
         function proPlansHTML(reason){
           const active = isProActive();
@@ -1677,40 +1677,41 @@ let studyFabMenuOpen = false;
             arena: 'You have used this week\'s free Challenge Arena games.',
             ai_generate: 'You have used this month\'s free upload-to-question sets.'
           }[reason] || '';
+          const PI = {
+            mock_test: '<rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+            ai_grade: '<path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"/>',
+            arena: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>',
+            ai_generate: '<path d="M12 16V5M7 9l5-5 5 5M5 20h14"/>'
+          };
           const rows = PRO_FEATURES.map(f => {
             const u = proState.features && proState.features[f.key];
-            const used = u ? ` <span class="text-xs text-gray-400">(${u.used} of ${u.limit} used)</span>` : '';
-            return `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);">
-              <span class="text-sm text-gray-700">${f.label}${used}</span>
-              <span class="text-sm text-right"><span class="text-gray-400">${f.free}</span> <span class="text-gray-300">/</span> <span class="font-semibold" style="color:${NAVY};">${f.pro}</span> <span class="text-xs text-gray-400">a ${f.per}</span></span>
+            const used = u ? (u.used + ' of ' + f.free + ' used') : ('Free: ' + f.free + ' a ' + f.per);
+            return `<div class="pro2-row">
+              <span class="pro2-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PI[f.key] || ''}</svg></span>
+              <div class="pro2-rm"><div class="pro2-rn">${f.label}</div><div class="pro2-rs">${u ? 'Free: ' + f.free + ' a ' + f.per + ' (' + used + ')' : used}</div></div>
+              <span class="pro2-pill">${f.pro} a ${f.per}</span>
             </div>`;
           }).join('');
-          const planCard = (p, note) => {
-            const on = proPlanChoice === p.id;
-            return `<button type="button" onclick="setProPlan('${p.id}')" class="w-full text-left" style="padding:12px 14px;border-radius:16px;border:2px solid ${on ? NAVY : 'rgba(128,128,128,0.25)'};background:${on ? 'rgba(30,144,255,0.08)' : 'transparent'};">
-              <div class="flex items-center justify-between">
-                <span class="text-sm font-bold text-gray-800">${p.label}</span>
-                <span class="text-sm font-bold" style="color:${NAVY};">GH₵${p.price} <span class="text-xs font-medium text-gray-400">/ ${p.unit}</span></span>
-              </div>
-              ${note ? `<div class="text-xs text-gray-500 mt-0.5">${note}</div>` : ''}
-            </button>`;
-          };
           const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.yearly;
+          const notes = { daily: '24 hours of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
+          const seg = ['daily', 'monthly', 'yearly'].map(id => `<button type="button" onclick="setProPlan('${id}')" class="${proPlanChoice === id ? 'on' : ''}">${PRO_PLANS[id].label}</button>`).join('');
           return `
-            <div class="text-center mb-3">
-              <div class="text-lg font-bold font-display mb-1" style="color:${NAVY};">${active ? 'Extend your plan' : 'Go further with Pro'}</div>
-              <div class="text-sm text-gray-500">${active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.')}</div>
+            <div class="pro2-hero">
+              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro2-back" aria-label="Back"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+              <div class="pro2-h1">${active ? 'Extend your plan' : 'Go further with Pro'}</div>
+              <div class="pro2-sub">${active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.')}</div>
+              <div class="pro2-seg">${seg}</div>
+              <div class="pro2-price">GH\u20b5${chosen.price}<small> / ${chosen.unit}</small></div>
+              <div class="pro2-note">${notes[chosen.id] || ''}</div>
             </div>
-            <div class="flex items-center justify-end text-xs text-gray-400 mb-1" style="gap:6px;"><span>Free</span><span class="text-gray-300">/</span><span style="color:${NAVY};font-weight:600;">Pro</span></div>
-            <div class="mb-3">${rows}</div>
-            <div class="text-xs text-gray-400 mb-4">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
-            <div class="flex flex-col mb-4" style="gap:10px;">
-              ${planCard(PRO_PLANS.yearly, 'Best value. Saves GH₵81 against paying monthly.')}
-              ${planCard(PRO_PLANS.monthly, 'Pay month by month.')}
+            <div class="pro2-list">
+              <div class="pro2-lh"><span>What Pro unlocks</span><span>Pro limit</span></div>
+              ${rows}
+              <div class="pro2-free">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
             </div>
-            <div class="flex gap-3">
-              <button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
-              <button id="pro-pay-btn" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Continue</button>
+            <div class="pro2-cta">
+              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="pro2-go">Continue with ${chosen.label}</button>
+              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro2-nn">Not now</button>
             </div>`;
         }
         function setProPlan(id){

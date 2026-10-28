@@ -2988,7 +2988,7 @@ let userPoints = 0;
               <p>Register with your email, join or create a space with a space code, and you're set -- upload a document to generate notes, flashcards, and practice questions from it automatically.</p>
               <h3 style="font-weight:700;padding-top:4px;">Common questions</h3>
               <p><strong>How do study groups work?</strong> Anyone in a space can start or lead a group -- no admin approval needed.</p>
-              <p><strong>What are the usage limits?</strong> Every account gets 30 Stitch Bot prompts a day (up to 150 a week and 500 a month). Free accounts also get 3 mock tests, 3 sets of AI-marked written answers and 2 Challenge Arena games a week, and 3 uploads turned into questions a month. Stitch Pro (GHS 40 a month or GHS 399 a year) gives about ten times more of those.</p>
+              <p><strong>What are the usage limits?</strong> Every account gets 30 Stitch Bot prompts a day (up to 150 a week and 500 a month). Free accounts also get 3 mock tests, 3 sets of AI-marked written answers and 2 Challenge Arena games a week, and 3 uploads turned into questions a month. Stitch Pro (GHS 12 a day, GHS 40 a month or GHS 399 a year) gives about ten times more of those.</p>
               <p><strong>My upload didn't generate anything.</strong> This usually means it looked like a duplicate of something you already uploaded. Try again with the original file.</p>
               <p>Didn't find your answer? Reach out below and we'll help directly.</p>
             `
