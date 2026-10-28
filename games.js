@@ -3198,7 +3198,7 @@ let userPoints = 0;
           dismissSplash(true);
         } else {
           const openedViaLink = !!(window.location.search || window.location.hash);
-          setTimeout(dismissSplash, openedViaLink ? 1000 : 5550);
+          setTimeout(dismissSplash, openedViaLink ? 1000 : 2550);
         }
 
         window.onload = async function(){
