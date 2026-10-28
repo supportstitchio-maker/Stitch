@@ -6452,3 +6452,45 @@ body.dark-mode .pro3-sheet{background:#1e1e1e;}
 /* plans page: no backgrounds behind the icons or the limits */
 .pro2-ic{background:none !important;width:30px !important;height:30px !important;border-radius:0 !important;}
 .pro2-pill{background:none !important;padding:0 !important;border-radius:0 !important;}
+
+/* ---- Pro page fixes: full-bleed top, 20px above the back arrow, title in line with the arrow, solid bottom bar ---- */
+#careerSubscribeModal.pro-page{position:fixed !important;inset:0 !important;}
+.pro2-hero{padding:20px 22px 24px !important;}
+.pro2-top{position:relative;z-index:1;display:flex;align-items:center;gap:14px;}
+.pro2-back{display:flex !important;padding:0 !important;}
+.pro2-h1{font-size:22px !important;margin:0 !important;line-height:1.2;}
+.pro2-sub{margin-top:12px;}
+#careerSubscribeModal.pro-page .pro-page-body.pro2{padding-bottom:128px;}
+.pro2-cta{position:fixed !important;left:50%;transform:translateX(-50%);bottom:0 !important;width:100%;max-width:640px;box-sizing:border-box;margin:0 !important;z-index:4;background:#f8fafc !important;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px)) !important;}
+body.dark-mode .pro2-cta{background:#121212 !important;}
+.pro3-head{padding:20px 0 10px !important;}
+.pro3-bar{background:#f8fafc !important;}
+body.dark-mode .pro3-bar{background:#121212 !important;}
+
+/* ---- Pro subscription page (plans), Spotify-style cards ---- */
+#careerSubscribeModal.pro-page .pro-page-body.pro4{padding-top:0;padding-bottom:132px;}
+.pro4-top{display:flex;align-items:center;gap:12px;padding:20px 0 6px;}
+.pro4-back{width:44px;height:44px;border-radius:50%;background:#fff;border:0;color:#0f172a;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(15,23,42,.06);cursor:pointer;flex-shrink:0;}
+.pro4-title{font-family:'Colmeak','Montserrat',sans-serif;font-size:22px;color:#4169E1;}
+.pro4-card{background:#fff;border-radius:26px;padding:18px 18px 16px;margin:10px 0 12px;}
+.pro4-price{font-size:34px;font-weight:800;color:#0f172a;line-height:1.1;}
+.pro4-price small{font-size:14px;font-weight:600;color:#475569;}
+.pro4-blurb{font-size:13px;color:#94a3b8;margin-top:10px;line-height:1.4;}
+.pro4-tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.pro4-tile{background:#fff;border:2px solid transparent;border-radius:22px;padding:13px 6px;text-align:center;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;gap:3px;}
+.pro4-tile.on{border-color:#2563eb;background:#f3f7ff;}
+.pro4-tn{font-size:12.5px;color:#64748b;font-weight:700;} .pro4-tp{font-size:19px;font-weight:800;color:#0f172a;} .pro4-tu{font-size:12px;color:#94a3b8;}
+.pro4-note{text-align:center;color:#94a3b8;font-size:13px;margin:0 6px 12px;}
+.pro4-list{padding:2px 4px 0;}
+.pro4-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.18);}
+.pro4-row:last-child{border-bottom:0;}
+.pro4-ic{width:30px;display:flex;justify-content:center;color:#475569;flex-shrink:0;}
+.pro4-rm{flex:1;min-width:0;} .pro4-rn{font-size:14.5px;font-weight:600;color:#0f172a;} .pro4-rs{font-size:11.5px;color:#94a3b8;margin-top:2px;}
+.pro4-rv{font-size:13.5px;font-weight:700;color:#475569;white-space:nowrap;}
+.pro4-free{font-size:11.5px;color:#94a3b8;line-height:1.4;margin:12px 6px 0;}
+.pro4-cta{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:640px;box-sizing:border-box;z-index:4;background:#f8fafc;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));}
+.pro4-go{display:flex;align-items:center;justify-content:center;width:100%;height:52px;border:0;border-radius:999px;background:#2563eb;color:#fff;font-family:'Colmeak','Montserrat',sans-serif;font-size:19px;box-shadow:0 8px 22px rgba(37,99,235,.35);cursor:pointer;}
+.pro4-nn{display:block;width:100%;background:transparent;border:0;color:#64748b;font-family:inherit;font-size:14px;font-weight:600;margin-top:8px;padding:6px;cursor:pointer;}
+body.dark-mode .pro4-card,body.dark-mode .pro4-tile,body.dark-mode .pro4-back{background:#1e1e1e;color:#f1f5f9;}
+body.dark-mode .pro4-price,body.dark-mode .pro4-tp,body.dark-mode .pro4-rn{color:#f1f5f9;}
+body.dark-mode .pro4-tile.on{background:#1b2a4a;} body.dark-mode .pro4-cta{background:#121212;}

@@ -1667,7 +1667,7 @@ let studyFabMenuOpen = false;
           const head = (typeof overlayHeader === 'function') ? `<div class="-mx-5" style="margin-left:-20px;margin-right:-20px;">${overlayHeader('Stitch Pro', 'var(--top-safe-pad)', 'closeCareerSubscribeSheet()')}</div>` : '';
           let body;
           if (isProActive() && proView !== 'plans') return `<div class="pro-page-body pro3">${proManageHTML()}${proView === 'cancel' ? proCancelHTML() : ''}</div>`;
-          return `<div class="pro-page-body pro2">${proPlansHTML(reason)}</div>`;
+          return `<div class="pro-page-body pro4">${proPlansHTML(reason)}</div>`;
         }
         function proPlansHTML(reason){
           const active = isProActive();
@@ -1685,33 +1685,30 @@ let studyFabMenuOpen = false;
           };
           const rows = PRO_FEATURES.map(f => {
             const u = proState.features && proState.features[f.key];
-            const used = u ? (u.used + ' of ' + f.free + ' used') : ('Free: ' + f.free + ' a ' + f.per);
-            return `<div class="pro2-row">
-              <span class="pro2-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PI[f.key] || ''}</svg></span>
-              <div class="pro2-rm"><div class="pro2-rn">${f.label}</div><div class="pro2-rs">${u ? 'Free: ' + f.free + ' a ' + f.per + ' (' + used + ')' : used}</div></div>
-              <span class="pro2-pill">${f.pro} a ${f.per}</span>
+            const sub = 'Free: ' + f.free + ' a ' + f.per + (u ? ' (' + u.used + ' of ' + f.free + ' used)' : '');
+            return `<div class="pro4-row">
+              <span class="pro4-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PI[f.key] || ''}</svg></span>
+              <div class="pro4-rm"><div class="pro4-rn">${f.label}</div><div class="pro4-rs">${sub}</div></div>
+              <span class="pro4-rv">${f.pro} a ${f.per}</span>
             </div>`;
           }).join('');
           const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.yearly;
           const notes = { daily: '24 hours of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
-          const seg = ['daily', 'monthly', 'yearly'].map(id => `<button type="button" onclick="setProPlan('${id}')" class="${proPlanChoice === id ? 'on' : ''}">${PRO_PLANS[id].label}</button>`).join('');
+          const tiles = ['daily', 'monthly', 'yearly'].map(id => { const p = PRO_PLANS[id]; return `<button type="button" onclick="setProPlan('${id}')" class="pro4-tile${proPlanChoice === id ? ' on' : ''}"><span class="pro4-tn">${p.label}</span><span class="pro4-tp">GH\u20b5${p.price}</span><span class="pro4-tu">per ${p.unit}</span></button>`; }).join('');
+          const blurb = active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.');
           return `
-            <div class="pro2-hero">
-              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro2-back" aria-label="Back"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
-              <div class="pro2-h1">${active ? 'Extend your plan' : 'Go further with Pro'}</div>
-              <div class="pro2-sub">${active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.')}</div>
-              <div class="pro2-seg">${seg}</div>
-              <div class="pro2-price">GH\u20b5${chosen.price}<small> / ${chosen.unit}</small></div>
-              <div class="pro2-note">${notes[chosen.id] || ''}</div>
+            <div class="pro4-top">
+              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro4-back" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+              <span class="pro4-title">${active ? 'Extend your plan' : 'Pro subscription'}</span>
             </div>
-            <div class="pro2-list">
-              <div class="pro2-lh"><span>What Pro unlocks</span><span>Pro limit</span></div>
-              ${rows}
-              <div class="pro2-free">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
-            </div>
-            <div class="pro2-cta">
-              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="pro2-go">Continue with ${chosen.label}</button>
-              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro2-nn">Not now</button>
+            <div class="pro4-card"><div class="pro4-price">GH\u20b5${chosen.price} <small>per ${chosen.unit}</small></div><div class="pro4-blurb">${blurb}</div></div>
+            <div class="pro4-tiles">${tiles}</div>
+            <div class="pro4-note">${notes[chosen.id] || ''}</div>
+            <div class="pro4-list">${rows}</div>
+            <div class="pro4-free">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
+            <div class="pro4-cta">
+              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="pro4-go">Continue with ${chosen.label}</button>
+              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro4-nn">Not now</button>
             </div>`;
         }
         function setProPlan(id){
