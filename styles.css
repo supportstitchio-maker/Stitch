@@ -6503,3 +6503,6 @@ body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
 
 /* Desktop side-panel reopen tab must never show on phones/tablets */
 @media (max-width:1023px){ html body #app-shell #rp-reopen-tab, html body #rp-reopen-tab{ display:none !important; } }
+
+/* Installed app: the splash is one second and the logo is already in place, so it carries on from the phone's own launch logo */
+html.standalone-splash #app-splash .app-splash-logo{opacity:1 !important;transform:none !important;animation:none !important;}

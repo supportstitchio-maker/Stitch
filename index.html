@@ -122,6 +122,11 @@
           var launched = false;
           try { launched = sessionStorage.getItem('stitchSplashLaunch') === '1'; sessionStorage.setItem('stitchSplashLaunch', '1'); } catch (e) {}
           seen = launched;
+          try {
+            var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+            window.__stitchStandalone = !!isStandalone;
+            if (isStandalone) document.documentElement.classList.add('standalone-splash');
+          } catch (e) {}
           var darkTheme = document.documentElement.classList.contains('dark-mode'); // no splash in dark mode
           window.__stitchSkipSplash = seen || authReturn || darkTheme;
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
@@ -190,7 +195,9 @@
     <meta name="apple-mobile-web-app-title" content="Stitch">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
     <!-- Shared-link params survive a sign-in step: stash them before any script clears the address bar -->
     <script>
       (function(){
@@ -229,7 +236,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261028m">
+    <link rel="stylesheet" href="styles.css?v=20261028o">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -939,18 +946,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261028m"></script>
-    <script src="core.js?v=20261028m"></script>
-    <script src="feed.js?v=20261028m"></script>
-    <script src="chat.js?v=20261028m"></script>
-    <script src="study.js?v=20261028m"></script>
-    <script src="courses.js?v=20261028m"></script>
-    <script src="quizzesAndGames.js?v=20261028m"></script>
-    <script src="jobs.js?v=20261028m"></script>
-    <script src="creator.js?v=20261028m"></script>
-    <script src="settings.js?v=20261028m"></script>
-    <script src="profile.js?v=20261028m"></script>
-    <script src="overlays.js?v=20261028m"></script>
-    <script src="games.js?v=20261028m"></script>
+    <script src="analytics.js?v=20261028o"></script>
+    <script src="core.js?v=20261028o"></script>
+    <script src="feed.js?v=20261028o"></script>
+    <script src="chat.js?v=20261028o"></script>
+    <script src="study.js?v=20261028o"></script>
+    <script src="courses.js?v=20261028o"></script>
+    <script src="quizzesAndGames.js?v=20261028o"></script>
+    <script src="jobs.js?v=20261028o"></script>
+    <script src="creator.js?v=20261028o"></script>
+    <script src="settings.js?v=20261028o"></script>
+    <script src="profile.js?v=20261028o"></script>
+    <script src="overlays.js?v=20261028o"></script>
+    <script src="games.js?v=20261028o"></script>
 </body>
 </html>
