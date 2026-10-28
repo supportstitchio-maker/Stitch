@@ -1608,7 +1608,7 @@ let studyFabMenuOpen = false;
           const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
           const usage = PRO_FEATURES.map(f => { const u = proState.features && proState.features[f.key]; return u ? row(escapeHtml(f.label), u.used + ' of ' + u.limit + ' this ' + (u.period === 'month' ? 'month' : 'week')) : ''; }).join('');
           return `
-            <div class="pro3-head"><button type="button" onclick="closeCareerSubscribeSheet()" class="pro3-back" aria-label="Back"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><span class="pro3-title">Your subscription</span></div>
+            ${proHeaderHTML('Your subscription')}
             <div class="pro3-sub">${proState.cancelled ? 'Cancelled. You keep Stitch Pro until ' + end + '.' : 'Stitch Pro is active.'}</div>
             <div class="mb-3">
               ${row('Plan', escapeHtml(plan.label) + ' · GH₵' + plan.price + ' per ' + plan.unit)}
@@ -1669,6 +1669,9 @@ let studyFabMenuOpen = false;
           if (isProActive() && proView !== 'plans') return `<div class="pro-page-body pro3">${proManageHTML()}${proView === 'cancel' ? proCancelHTML() : ''}</div>`;
           return `<div class="pro-page-body pro4">${proPlansHTML(reason)}</div>`;
         }
+        function proHeaderHTML(title){
+          return `<div class="flex items-center gap-4 pb-3" style="padding-top:20px;"><button type="button" onclick="closeCareerSubscribeSheet()" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button><div class="font-semibold text-lg font-display grad-text">${title}</div></div>`;
+        }
         function proPlansHTML(reason){
           const active = isProActive();
           const why = {
@@ -1697,18 +1700,15 @@ let studyFabMenuOpen = false;
           const tiles = ['daily', 'monthly', 'yearly'].map(id => { const p = PRO_PLANS[id]; return `<button type="button" onclick="setProPlan('${id}')" class="pro4-tile${proPlanChoice === id ? ' on' : ''}"><span class="pro4-tn">${p.label}</span><span class="pro4-tp">GH\u20b5${p.price}</span><span class="pro4-tu">per ${p.unit}</span></button>`; }).join('');
           const blurb = active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.');
           return `
-            <div class="pro4-top">
-              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro4-back" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-              <span class="pro4-title">${active ? 'Extend your plan' : 'Pro subscription'}</span>
-            </div>
+            ${proHeaderHTML(active ? 'Extend your plan' : 'Pro subscription')}
             <div class="pro4-card"><div class="pro4-price">GH\u20b5${chosen.price} <small>per ${chosen.unit}</small></div><div class="pro4-blurb">${blurb}</div></div>
             <div class="pro4-tiles">${tiles}</div>
             <div class="pro4-note">${notes[chosen.id] || ''}</div>
             <div class="pro4-list">${rows}</div>
             <div class="pro4-free">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
-            <div class="pro4-cta">
-              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="pro4-go">Continue with ${chosen.label}</button>
-              <button type="button" onclick="closeCareerSubscribeSheet()" class="pro4-nn">Not now</button>
+            <div class="pro4-cta flex gap-3">
+              <button type="button" onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
+              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Continue</button>
             </div>`;
         }
         function setProPlan(id){

@@ -6494,3 +6494,9 @@ body.dark-mode .pro3-bar{background:#121212 !important;}
 body.dark-mode .pro4-card,body.dark-mode .pro4-tile,body.dark-mode .pro4-back{background:#1e1e1e;color:#f1f5f9;}
 body.dark-mode .pro4-price,body.dark-mode .pro4-tp,body.dark-mode .pro4-rn{color:#f1f5f9;}
 body.dark-mode .pro4-tile.on{background:#1b2a4a;} body.dark-mode .pro4-cta{background:#121212;}
+
+/* Pro pages: header matches Settings and activity; Continue / Not now sit at the end of the page */
+#careerSubscribeModal.pro-page .pro-page-body.pro4{padding-bottom:28px;}
+.pro4-cta{position:static !important;transform:none !important;left:auto !important;width:100% !important;max-width:none !important;background:transparent !important;padding:22px 0 calc(16px + env(safe-area-inset-bottom,0px)) !important;}
+.pro4-nn{height:48px;border-radius:999px;background:#e8edf5;color:#475569;margin-top:10px;padding:0;}
+body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
