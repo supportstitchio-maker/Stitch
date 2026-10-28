@@ -4397,3 +4397,12 @@ function coverPickerHTML(o){
     document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') setTimeout(sweep, 400); });
   } catch (e) {}
 })();
+
+/* Keep the Messaging count honest: re-check it against the real conversations every few seconds, whenever the
+   page comes back into view, and right after any tap (so it never shows a number that has nothing behind it). */
+(function(){
+  function tick(){ try { if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges(); } catch (e) {} }
+  setInterval(tick, 4000);
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') tick(); });
+  document.addEventListener('click', function(){ setTimeout(tick, 250); }, true);
+})();
