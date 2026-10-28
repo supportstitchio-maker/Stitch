@@ -2252,7 +2252,7 @@
         }
 
         window.addEventListener('resize', function(){
-          if (window.innerWidth >= 1024 && typeof rightPanelMode !== 'undefined' && rightPanelMode === null) {
+          if (window.innerWidth >= 1100 && typeof rightPanelMode !== 'undefined' && rightPanelMode === null) {
             applyDefaultRightPanel(currentTab);
           }
         });
@@ -2369,7 +2369,7 @@
             if (g) g.style.bottom = (navHeight - bottomNavOffset) + 'px';
           };
           scrollEl.addEventListener('scroll', () => {
-            if (window.innerWidth >= 1024) return;
+            if (window.innerWidth >= 1100) return;
             const nav = activeBottomNavEl();
             if (!nav) return;
             const navHeight = nav.offsetHeight || 64;
@@ -2618,7 +2618,7 @@
         // ---- Tab switching ----
         // Desktop: the page panel eases in when you change tabs (see .pg-in in styles.css)
         function deskPageAnim(){
-          if (window.innerWidth < 1024) return;
+          if (window.innerWidth < 1100) return;
           const sc = document.getElementById('screen');
           if (!sc) return;
           sc.classList.remove('pg-in'); void sc.offsetWidth; sc.classList.add('pg-in');
@@ -2798,7 +2798,7 @@
         }
 
         function applyDefaultRightPanel(n){
-          if (window.innerWidth < 1024) return;
+          if (window.innerWidth < 1100) return;
           if (n === 0) openRightPanel('discover');
           else if (n === 1) openRightPanel('jobplan');
           else if (n === 2) openRightPanel('notes');
@@ -3366,7 +3366,7 @@ window.addEventListener('online', () => { realOfflineCheck(); });
 
 /* Desktop: bottom pull-up menus become anchored dropdowns, bottom form sheets become centred dialogs. */
 (function(){
-  var MQ = window.matchMedia ? window.matchMedia('(min-width:1024px) and (hover:hover) and (pointer:fine)') : { matches:false };
+  var MQ = window.matchMedia ? window.matchMedia('(min-width:1100px) and (hover:hover) and (pointer:fine)') : { matches:false };
   var lastRect = null, lastAt = 0;
   document.addEventListener('pointerdown', function(e){
     var t = e.target && e.target.closest ? e.target.closest('button,[onclick],a,[role="button"]') : null;
@@ -3580,7 +3580,7 @@ function toggleEmojiPicker(targetId, btn){
   const touch = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   // Desktop chat: the type box lifts and the panel opens right under it, like a phone keyboard
   const ovEl = document.getElementById('overlay');
-  const desk = !touch && window.innerWidth >= 1024 && !!ovEl && ovEl.contains(input) && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'conversation';
+  const desk = !touch && window.innerWidth >= 1100 && !!ovEl && ovEl.contains(input) && typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'conversation';
   const docked = touch || desk;
   const kbH = Math.max(240, Math.min(420, (typeof __kbLastReal === 'number' && __kbLastReal > 120) ? __kbLastReal : Math.round(window.innerHeight * 0.4)));
   const el = document.createElement('div');
@@ -3855,7 +3855,7 @@ window.haptic = function(ms){ try { if (navigator.vibrate && !window.matchMedia(
   }
   var st = null, running = null;
   document.addEventListener('touchstart', function(e){
-    if (e.touches.length !== 1 || window.matchMedia('(min-width:1024px) and (hover:hover) and (pointer:fine)').matches) { st = null; return; }
+    if (e.touches.length !== 1 || window.matchMedia('(min-width:1100px) and (hover:hover) and (pointer:fine)').matches) { st = null; return; }
     var t = e.target; if (!t || t.nodeType !== 1) return;
     if (t.closest && t.closest('input,textarea,select,[contenteditable="true"],.dsk-menu')) { st = null; return; }
     var s = sheetFor(t); if (!s) { st = null; return; }
@@ -3950,7 +3950,7 @@ function ghostWith(obj, key, sample, fn){
   }
   function place(b){
     // Desktop: sit in the middle of the free space between the left menu and the side panel
-    if (window.innerWidth < 1024) { b.style.left = ''; b.style.right = '16px'; return; }
+    if (window.innerWidth < 1100) { b.style.left = ''; b.style.right = '16px'; return; }
     let l = 0, r = window.innerWidth;
     try {
       const nav = document.getElementById('desktop-nav'), rp = document.getElementById('desktop-right-panel');
@@ -4326,7 +4326,7 @@ function coverPickerHTML(o){
   }
   var raf = 0;
   function sync(){
-    if (window.innerWidth < 1024) return;
+    if (window.innerWidth < 1100) return;
     var nav = document.getElementById('desktop-nav'); if (!nav) return;
     GROUPS.forEach(function(id){ var g = document.getElementById(id); if (g) syncGroup(g); });
     nav.classList.add('dnav-flow-ready');

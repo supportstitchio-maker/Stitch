@@ -1360,7 +1360,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${inboxMenuOpen ? `<div onclick="closeInboxActionsMenu()" onwheel="closeInboxActionsMenu()" ontouchmove="closeInboxActionsMenu()" class="fixed inset-0 z-10"></div>${notifActionsDropdownHTML('handleInboxAction')}` : ''}
             </div>
             <div id="inbox-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
-              ${(inboxSearchActive || window.innerWidth >= 1024) ? `
+              ${(inboxSearchActive || window.innerWidth >= 1100) ? `
                 <div class="w-full flex items-center gap-2.5 bg-gray-100 text-gray-500 rounded-full px-4 py-2.5 text-sm">
                   ${Icon('search','w-4 h-4')}
                   <input id="inbox-search-input" type="text" value="${escapeHtml(inboxSearchQuery)}" oninput="onInboxSearchInput(this.value)" placeholder="Search contacts and collaborations..." class="flex-1 min-w-0 bg-transparent outline-none text-gray-800" autocomplete="off">
@@ -4522,7 +4522,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           // Desktop split view: the contact details live in the right panel, so just show it (never replace the chat)
           try {
             const sh = document.getElementById('app-shell');
-            if (window.innerWidth >= 1024 && sh && sh.classList.contains('messaging-split') && typeof openContactPanel === 'function') {
+            if (window.innerWidth >= 1100 && sh && sh.classList.contains('messaging-split') && typeof openContactPanel === 'function') {
               const meta = activeConvoMetaSafe(activeConvoId);
               if (!(meta && meta.icon === 'users')) {
                 sh.classList.remove('rp-collapsed');
@@ -7967,7 +7967,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bar-incoming .cu-ctl.end .cu-ctl-btn{background:#ef4444;box-shadow:0 10px 22px rgba(239,68,68,.38);}
             .cu-bar-incoming .cu-ctl.accept .cu-ctl-btn{background:linear-gradient(135deg,#22c55e,#16a34a);}
             .cu-bar-incoming .cu-ctl-label{font-size:12.5px;}
-            @media (min-width:1024px){
+            @media (min-width:1100px){
               .cu-bar button.cu-ctl{width:auto;height:auto;}
               #call-controls-bar button.cu-ctl{width:auto;height:auto;}
               .cu-bar:not(.cu-bar-incoming) .cu-bar-inner{width:100%;max-width:440px;}
@@ -8015,7 +8015,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end{flex:none;width:100%;height:auto;margin:0;padding:0;border-radius:0;background:transparent;box-shadow:none;flex-direction:column;}
             .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end .cu-ctl-btn{width:56px;height:56px;background:#ef4444;color:#fff;}
             .cu-bar .cu-bar-inner.cu-voicegrid .cu-ctl.end .cu-ctl-label{font-size:10.5px;font-weight:600;}
-            @media (min-width:1024px){
+            @media (min-width:1100px){
               #call-controls-bar .cu-bar-inner.cu-pillbar,#lecture-controls-bar .cu-bar-inner.cu-pillbar{width:auto;max-width:none;gap:14px;padding:10px 14px;}
               #call-controls-bar .cu-pillbar button.cu-ctl,#lecture-controls-bar .cu-pillbar button.cu-ctl{width:auto;height:auto;}
               #call-controls-bar .cu-pillbar button.cu-ctl .cu-ctl-btn,#lecture-controls-bar .cu-pillbar button.cu-ctl .cu-ctl-btn{width:50px;height:50px;}
@@ -8060,7 +8060,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-spk-cell .cu-chip{font-size:10px;padding:2px 7px;left:5px;bottom:5px;}
             .cu-spk-cell .cu-corner{width:20px;height:20px;top:5px;right:5px;}
             .cu-spk-cell .cu-corner.cu-hand{left:5px;width:22px;height:22px;font-size:12px;}
-            @media (min-width:1024px){.cu-spk-strip{height:120px;}.cu-spk-cell{width:150px;}}
+            @media (min-width:1100px){.cu-spk-strip{height:120px;}.cu-spk-cell{width:150px;}}
           `;
           document.head.appendChild(st);
         }

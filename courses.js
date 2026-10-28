@@ -8106,7 +8106,7 @@ try {
         }
 
         function toggleLectureResourcesPanel(){
-          if (window.innerWidth >= 1024) {
+          if (window.innerWidth >= 1100) {
             if (rightPanelMode === 'notebook') closeRightPanel();
             else openRightPanel('notebook');
             return;
@@ -9597,7 +9597,7 @@ try {
           const headerLabel = view === 'whiteboard' ? 'Whiteboard' : (view === 'slides' ? (lectureSlides ? lectureSlides.fileName : 'Present') : (cls ? cls.name : 'Session'));
           const stageHTML = view === 'whiteboard' ? lectureWhiteboardHTML() : (view === 'slides' ? lectureSlidesHTML() : lectureGridHTML());
           const resourceCount = lectureAttachments.length + (whiteboardAttachment ? 1 : 0);
-          const isDesktopLecture = window.innerWidth >= 1024;
+          const isDesktopLecture = window.innerWidth >= 1100;
           return `
             <div id="lecture-call-screen" class="cu-screen" style="padding-top:var(--top-safe-pad);">
               <input type="file" id="lecture-slide-input" accept=".pdf,.pptx" class="hidden" onchange="handleLectureSlideFile(event)">

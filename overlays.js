@@ -341,7 +341,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           currentOverlayKind = kind;
           if (typeof STITCH_PAGE_TITLES !== 'undefined' && STITCH_PAGE_TITLES[kind]) setStitchPageTitle(STITCH_PAGE_TITLES[kind]);
           // My Activity always sits beside the Profile panel on desktop
-          if (kind === 'profileAnalytics' && window.innerWidth >= 1024 && typeof openRightPanel === 'function') { try { openRightPanel('profile', false); } catch (e) {} }
+          if (kind === 'profileAnalytics' && window.innerWidth >= 1100 && typeof openRightPanel === 'function') { try { openRightPanel('profile', false); } catch (e) {} }
           updateUtilityNavActive();
           if (typeof updateClassroomNav === 'function') updateClassroomNav();
           const ov = document.getElementById('overlay');
@@ -379,12 +379,12 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
           const appShellEl = document.getElementById('app-shell');
           if (appShellEl) {
-            if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); if (window.innerWidth >= 1024 && typeof openContactPanel === 'function') openContactPanel(); else closeRightPanel(); }
+            if (kind === 'conversation' && currentTab === 3) { appShellEl.classList.add('messaging-split'); if (window.innerWidth >= 1100 && typeof openContactPanel === 'function') openContactPanel(); else closeRightPanel(); }
             else appShellEl.classList.remove('messaging-split');
             if (kind === 'call' || kind === 'incomingCall') appShellEl.classList.add('call-fullscreen');
             else appShellEl.classList.remove('call-fullscreen');
             // Desktop calls keep the side panel: it can be collapsed / expanded and the call page resizes with it
-            if (kind === 'call' && window.innerWidth >= 1024 && !appShellEl.classList.contains('right-panel-open') && typeof openRightPanel === 'function') {
+            if (kind === 'call' && window.innerWidth >= 1100 && !appShellEl.classList.contains('right-panel-open') && typeof openRightPanel === 'function') {
               try { openRightPanel('profile', false); window.__callOpenedRP = true; } catch (e) {}
             }
           }
@@ -442,7 +442,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             inLectureCall = true;
             ov.innerHTML = lectureCallHTML();
             if (rightPanelMode === 'notebook') renderRightPanelBody();
-            else if (window.innerWidth >= 1024) openRightPanel('notebook');
+            else if (window.innerWidth >= 1100) openRightPanel('notebook');
           }
           else if (kind === 'classworkCreateMenu') ov.innerHTML = classworkCreateMenuHTML();
           else if (kind === 'newClasswork') ov.innerHTML = newClassworkHTML();
@@ -3662,7 +3662,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           document.addEventListener('touchstart', e => {
             const r = e.target && e.target.closest ? e.target.closest('.nrow-swipe') : null;
             document.querySelectorAll('.nrow-swipe[data-open="1"]').forEach(o => { if (o !== r) nrowClose(o); });
-            if (!r || window.innerWidth >= 1024 || e.target.closest('button, .nrow-del')) { row = null; return; }
+            if (!r || window.innerWidth >= 1100 || e.target.closest('button, .nrow-del')) { row = null; return; }
             row = r; inner = r.querySelector('.nrow-in');
             sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; horiz = null; wasOpen = r.dataset.open === '1';
             if (inner) inner.style.transition = 'none';

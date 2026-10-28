@@ -775,7 +775,7 @@ let userPoints = 0;
                   </div>
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <div class="flex items-center gap-1 font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:9999px;padding:0.3rem 0.65rem;font-size:0.7rem;">${Icon('coin','w-3.5 h-3.5')} ${userCoins.toLocaleString()}</div>
-                    ${window.innerWidth < 1024 ? `<button onclick="openGameProfile()" title="Game profile" class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${gamificationAvatarButtonHTML()}</button>` : ''}
+                    ${window.innerWidth < 1100 ? `<button onclick="openGameProfile()" title="Game profile" class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${gamificationAvatarButtonHTML()}</button>` : ''}
                   </div>
                 </div>
               </div>
@@ -2433,7 +2433,7 @@ let userPoints = 0;
           } catch (e) {}
           const place = () => {
             if (!el.isConnected) { window.removeEventListener('resize', place); if (el.__toastRO) { try { el.__toastRO.disconnect(); } catch (e) {} } return; }
-            if (window.innerWidth < 1024) { el.style.left = ''; el.style.width = 'calc(100% - 24px)'; el.style.maxWidth = 'none'; return; }   // phones: stretch to the side margins
+            if (window.innerWidth < 1100) { el.style.left = ''; el.style.width = 'calc(100% - 24px)'; el.style.maxWidth = 'none'; return; }   // phones: stretch to the side margins
             const nav = document.getElementById('desktop-nav');
             const rp = document.getElementById('desktop-right-panel');
             let l = 0, r = window.innerWidth;

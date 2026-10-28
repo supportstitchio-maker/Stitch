@@ -37,7 +37,7 @@
         .post-media-carousel > div{scroll-behavior:smooth;-webkit-overflow-scrolling:touch;}
         .post-media-carousel img, .post-media-carousel video{width:100%;height:auto;max-height:520px;object-fit:cover;}
         @media (min-width:768px){ .post-media-carousel img, .post-media-carousel video{max-height:640px;} }
-        @media (min-width:1024px){
+        @media (min-width:1100px){
           .feed-media{max-height:640px;}
           .feed-media > *{max-height:640px;}
         }
@@ -260,7 +260,7 @@
         .share-sheet-actions-row > div:empty{display:none;}
         /* Share icons row: left-aligned and scrollable on phones, centered on wider desktop. */
         .share-sheet-actions-row{justify-content:flex-start;}
-        @media (min-width:1024px){
+        @media (min-width:1100px){
           .share-sheet-actions-row{justify-content:center;}
         }
         .flashcard-flip-wrap{ perspective:1200px; }
@@ -613,7 +613,7 @@
         #overlay .flow-outline { border: 1.5px solid #cbd5e1; }
         #overlay .flow-outline:focus { border-color: #4169e1 !important; }
         #overlay .flow-outline.field-invalid:focus { border-color: #dc2626 !important; }
-        @media (min-width: 1024px) {
+        @media (min-width:1100px) {
           body.bg-gray-50 {
             background: #f2ede1;
           }
@@ -936,7 +936,7 @@
         }
         #app-shell.right-panel-open #rp-resizer { display: block; }
         #rp-resizer:hover, #rp-resizer.rp-dragging { background: rgba(65,105,225,0.28); }
-        @media (min-width: 1024px) {
+        @media (min-width:1100px) {
           #call-minimized-banner {
             left: calc(var(--nav-width, 248px) + 12px) !important;
             right: 12px !important;
@@ -954,7 +954,7 @@
           #call-minimized-name { font-size: 1rem !important; }
           #call-minimized-banner .text-xs { font-size: 0.9rem !important; }
         }
-        @media (max-width: 1023px) {
+        @media (max-width:1099px) {
           #desktop-right-panel { display: none !important; }
         }
         /* ---- Minimized "call in progress" card (see #call-minimized-banner in core.js) ---- */
@@ -1290,7 +1290,7 @@
           width:180px;
           margin:0 auto 18px;
         }
-        @media (min-width: 1024px){
+        @media (min-width:1100px){
           #auth-gate .auth-brand-logo{display:none;}
         }
         #auth-gate.auth-signup-mode .auth-brand-logo{display:none;}
@@ -1708,7 +1708,7 @@
           #auth-gate .auth-form-side, #auth-gate .auth-promo-side{transition:none;}
         }
 
-        @media (min-width:1024px){
+        @media (min-width:1100px){
           #auth-gate{padding:0;}
           #auth-gate.auth-signup-mode{padding:0;}
           #auth-gate .auth-scroll-inner{height:100%;}
@@ -2351,7 +2351,7 @@
     #landing-page .msg-pic,
     #landing-page .classroom-art{display:none !important;}
   }
-  @media (min-width:1024px){
+  @media (min-width:1100px){
     #landing-page .comm-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
     #landing-page .comm-grid .comm-card{max-width:none;margin:0;}
     #landing-page .bot-section{padding-top:64px;}
@@ -2491,7 +2491,7 @@
     max-width:640px;margin:0 auto;
   }
   #landing-page .comm-card-second{margin-top:24px;}
-  @media (min-width:1024px){ #landing-page .comm-card-second{margin-top:0;} }
+  @media (min-width:1100px){ #landing-page .comm-card-second{margin-top:0;} }
   #landing-page .comm-card h3{font-family:'Colmeak','Montserrat',sans-serif;font-size:1.05rem;font-weight:800;color:var(--navy);margin-bottom:4px;}
   #landing-page .comm-card > p.desc{font-size:0.86rem;color:var(--muted);margin-bottom:18px;}
   #landing-page .post-mock{background:#fff;border-radius:16px;padding:14px 16px;border:none;margin-bottom:10px;}
@@ -2614,7 +2614,7 @@
   #landing-page .footer-bottom-links a:hover,
 #landing-page .footer-bottom-links a:focus-visible{color:#fff;}
 
-  @media (min-width:1024px){
+  @media (min-width:1100px){
     #landing-page .footer-stack{flex-direction:row;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;}
     #landing-page .footer-brand-block{flex:0 0 auto;max-width:300px;}
     #landing-page .footer-cols-row{flex-direction:row;gap:64px;}
@@ -2646,7 +2646,7 @@
 
         /* Desktop-only "..." message-options button on chat bubbles */
         .desktop-msg-menu-btn{display:none;}
-        @media (min-width:1024px){
+        @media (min-width:1100px){
           .desktop-msg-menu-btn{display:flex;}
         }
 
@@ -2655,7 +2655,7 @@
         .notif-action-mobile{display:flex;}
         .notif-action-desktop{display:none;}
         .notif-header-menu-btn{display:flex;}
-        @media (min-width:1024px){
+        @media (min-width:1100px){
           .notif-action-mobile{display:none;}
           .notif-action-desktop{display:flex;}
           .notif-header-menu-btn{display:none;}
@@ -2744,7 +2744,7 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
 .inline-flex{display:inline-flex}
 
 /* ---- Auth: phone -- */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-verify-mode{
     /* Drop the extra top offset the card used to sit below */
     padding-top:env(safe-area-inset-top, 0px);
@@ -2778,7 +2778,7 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
 }
 
 /* ---- Auth: desktop -- roomier login, verify and onboarding ---- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate .auth-form-side{flex:0 1 680px; padding:64px 72px;}
   #auth-gate .auth-body{max-width:500px; padding-top:52px;}
   #auth-gate .auth-desktop-brand-mark{width:200px; margin-bottom:32px;}
@@ -2805,7 +2805,7 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
 }
 
 /* ---- Auth: soft brand artwork behind login, verify and onboarding -- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate::before{
     content:"";
     position:fixed;
@@ -2853,7 +2853,7 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
 
 /* ---- Auth back button ---- */
 #auth-gate .auth-back-arrow, #auth-gate .auth-back-label{display:none;}
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate .auth-back{
     top:28px; left:32px;
     width:auto; height:40px;
@@ -2870,13 +2870,13 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
 }
 
 /* ---- Auth (desktop): only the "Get Started" heading is enlarged ---- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate .auth-head h1{font-size:54px; line-height:1.1;}
   #auth-gate .auth-head p{font-size:16px;}
 }
 
 /* ---- Auth (phone): plain back arrow, no "Back" label ---- */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate .auth-back{
     width:38px; height:38px; padding:0; gap:0;
     background:transparent; box-shadow:none; border-radius:0;
@@ -2941,7 +2941,7 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
   overflow:hidden;
   text-overflow:clip;
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-head h1{
     font-size:28px;
     line-height:1.2;
@@ -3110,7 +3110,7 @@ body.dark-mode .neu-add-plus::before,body.dark-mode .neu-add-plus::after{backgro
 body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode){
   background:var(--c-onyx, #16191f);
 }
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode){
     padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
@@ -3184,7 +3184,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode){
   /* Progress bar (if shown) stays full width too. */
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-progress{padding:0;}
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Desktop: same plain white page, no framed panel/shadow over artwork. */
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{
     background:transparent;
@@ -3197,7 +3197,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode){
 
 /* ---- Onboarding step progress bar (Almost there / What brings you here) ---- */
 #auth-gate .auth-stepbar{ display:none; }
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
     display:flex;
     align-items:center;
@@ -4111,7 +4111,7 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 
 /* Practice test focus (desktop): the left menu hides, and a tab on the left edge brings it back */
 #nav-reopen-tab{display:none;}
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.nav-hidden{--nav-width:0px;}
   #app-shell.nav-hidden #desktop-nav{display:none !important;}
   #app-shell.nav-hidden #nav-reopen-tab{
@@ -4127,7 +4127,7 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-del{border-color:transparent
 @keyframes dskPop{from{opacity:0;transform:scale(.96) translateY(8px);}to{opacity:1;transform:none;}}
 @keyframes dskPopC{from{opacity:0;transform:translate(-50%,-48%) scale(.97);}to{opacity:1;transform:translate(-50%,-50%);}}
 @keyframes dskDrop{from{opacity:0;transform:translateY(-6px) scale(.98);}to{opacity:1;transform:none;}}
-@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+@media (min-width:1100px) and (hover:hover) and (pointer:fine){
   /* ---- dropdown menus ---- */
   .dsk-menu{position:fixed !important;right:auto !important;bottom:auto !important;margin:0 !important;width:272px !important;max-width:calc(100vw - 24px) !important;max-height:min(72vh,540px) !important;overflow-y:auto !important;padding:8px !important;border-radius:18px !important;background:#fff;box-shadow:0 14px 44px rgba(15,23,42,.16),0 0 0 1px rgba(15,23,42,.06) !important;animation:dskDrop .14s ease-out both !important;}
   .dsk-menu .convo-sheet-grabber,.dsk-menu > div[style*="height:5px"]{display:none !important;}
@@ -4278,7 +4278,7 @@ body.dark-mode .ghost-msg{color:#9ca3af;}
 body.dark-mode #to-top-btn{background:rgba(38,38,42,.95)!important;color:#7ab8ff!important;box-shadow:0 6px 20px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)!important;}
 
 /* ---- Desktop call screen: steady, centred, and sized for a big screen (phones are untouched) ---- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* No sideways scrolling or drifting: the pulsing rings are clipped instead of widening the area */
   #call-screen{overflow:hidden !important;}
   #call-stage-wrap,
@@ -4426,7 +4426,7 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
 .pa-flow textarea{ padding:14px 16px; }
 
 /* Onboarding pages (phones): header stays put while the page scrolls */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back{
     position:fixed; top:calc(env(safe-area-inset-top, 0px) + 20px); left:12px; z-index:6; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
@@ -4444,21 +4444,21 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
 #overlay .pa-flow .pa-sticky{ background:#f9fafb; }
 
 /* Onboarding progress bar on desktop: fixed band at the top with the Back button; content scrolls under it */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
     display:flex; align-items:center; position:fixed; top:30px; left:50%; margin-left:calc(min(536px, 100vw - 320px) / -2);
     width:min(536px, calc(100vw - 320px)); height:5px; z-index:12; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back{ position:fixed; top:14px; left:32px; z-index:13; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:96px; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Tall onboarding pages grow and scroll instead of being clipped at the top */
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-scroll-inner{ height:auto; min-height:100%; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stage{ height:auto; min-height:100vh; min-height:100dvh; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ height:auto; min-height:100vh; min-height:100dvh; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:96px; padding-bottom:48px; min-height:100vh; min-height:100dvh; box-sizing:border-box; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Short onboarding pages fit the screen exactly: no scrolling unless the content is taller */
   #auth-gate.auth-compact-mode:not(.auth-verify-mode){ padding:0; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-card{ padding-top:0; padding-bottom:0; }
@@ -4541,12 +4541,12 @@ body.dark-mode .nrow-m-u{color:#d1d5db}
   background:#fff; border-bottom:1px solid rgba(15,23,42,.07); box-shadow:0 4px 14px -8px rgba(15,23,42,.14); }
 body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
   background:#0b0e13; border-bottom-color:rgba(255,255,255,.08); box-shadow:none; }
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{ height:calc(env(safe-area-inset-top, 0px) + 66px); z-index:6; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back,
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{ z-index:7; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:104px; }
 }
 
@@ -4572,7 +4572,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
 #stitch-live-cam .slc-use{ background:linear-gradient(90deg,#1e90ff,#4169e1); color:#fff; box-shadow:0 8px 20px -6px rgba(30,144,255,.6); }
 
 /* Onboarding and the code page on desktop: the text column is a white panel, lifted off the swirl background */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side,
   #auth-gate.auth-verify-mode .auth-form-side{
     background:#fff; position:relative; z-index:1; border-radius:0 !important; min-height:100vh; min-height:100dvh;
@@ -4583,7 +4583,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
   body.dark-mode #auth-gate.auth-verify-mode .auth-form-side{
     background:#0b0e13; box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 24px 60px -12px rgba(0,0,0,.7); }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-verify-mode{ padding:0 !important; }
   #auth-gate.auth-verify-mode .auth-scroll-inner, #auth-gate.auth-verify-mode .auth-stage, #auth-gate.auth-verify-mode .auth-card{ height:100%; min-height:100vh; min-height:100dvh; }
   #auth-gate.auth-verify-mode .auth-back{ top:14px; }
@@ -4591,7 +4591,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
 
 /* Back floats; the progress bar sits on a white band over the top of the panel only (desktop), so scrolling text vanishes beneath it */
 #auth-gate .auth-topbar{ display:none !important; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
     display:block !important; position:fixed; top:0; left:50%; transform:translateX(-50%);
     width:min(680px, 100vw); height:66px; z-index:5; background:#fff; border:0; box-shadow:none; }
@@ -4602,13 +4602,13 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-ste
 }
 
 /* Onboarding stays put: no re-centring when content grows, no shift when the scrollbar appears */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ justify-content:flex-start !important; padding-top:max(120px, 16vh) !important; }
 }
 #auth-gate .pa-flow, #auth-gate #auth-poster-app-form-container{ overflow-anchor:none; }
 
 /* Phones: the white strip covers only Back and the progress bar; everything else scrolls under it */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
     display:block !important; position:fixed; top:0; left:0; right:0; transform:none; width:auto;
     height:calc(env(safe-area-inset-top, 0px) + 58px); z-index:6; background:#fff; border:0; box-shadow:none; }
@@ -4669,7 +4669,7 @@ body.dark-mode #desktop-nav #dnav-create{ color:#fff !important; }
 body.dark-mode .dnav-toggle{ background:#161a22; border-color:rgba(255,255,255,.12); color:#cbd5e1; }
 
 /* ---- Desktop sizing: shapes carried over from the phone layout get desktop measurements ---- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Search bars */
   #screen button[onclick="activateCareerSearch()"],
   #screen div:has(> #career-search-input){ height:44px !important; padding-top:0 !important; padding-bottom:0 !important; max-width:520px; }
@@ -4698,13 +4698,13 @@ body.dark-mode .dnav-toggle{ background:#161a22; border-color:rgba(255,255,255,.
 }
 
 /* Onboarding top strip: white that vanishes downward instead of a solid block */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
     height:120px; background:linear-gradient(to bottom,#fff 0,#fff 45%,rgba(255,255,255,.88) 62%,rgba(255,255,255,0) 100%); }
   body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
     background:linear-gradient(to bottom,#0b0e13 0,#0b0e13 45%,rgba(11,14,19,.88) 62%,rgba(11,14,19,0) 100%); }
 }
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(.auth-stepbar.show) .auth-topbar{
     height:calc(env(safe-area-inset-top, 0px) + 104px);
     background:linear-gradient(to bottom,#fff 0,#fff 45%,rgba(255,255,255,.88) 62%,rgba(255,255,255,0) 100%); }
@@ -4790,7 +4790,7 @@ body.dark-mode .ccb-no, html.dark-mode .ccb-no{ background:#2c2c2c; color:#e5e7e
 .cd-ghost{ color:#334155; background:#fff; border:1px solid #e2e8f0; }
 .cd-danger{ color:#dc2626; background:#fff; border:1.5px solid #fca5a5; }
 .cd-note{ flex:1; text-align:center; font-size:12.5px; color:#94a3b8; background:#fff; border-radius:16px; padding:12px; }
-@media (min-width:1024px){ .cd-actions{ left:var(--nav-width,0px); } }
+@media (min-width:1100px){ .cd-actions{ left:var(--nav-width,0px); } }
 body.dark-mode .cd-hero, body.dark-mode .cd-card, html.dark-mode .cd-hero, html.dark-mode .cd-card{ background:#1e1e1e; border-color:#2b2b2b; box-shadow:none; }
 body.dark-mode .cd-name, body.dark-mode .cd-h, body.dark-mode .cd-vtitle, body.dark-mode .cd-v, body.dark-mode .cd-tile-lab, html.dark-mode .cd-name, html.dark-mode .cd-h, html.dark-mode .cd-vtitle, html.dark-mode .cd-v, html.dark-mode .cd-tile-lab{ color:#fff; }
 body.dark-mode .cd-handle, body.dark-mode .cd-vsub, html.dark-mode .cd-handle, html.dark-mode .cd-vsub{ color:#9a9a9a; }
@@ -4820,7 +4820,7 @@ html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov
 #overlay .pa-flow .pa-sticky > div[class*="px-5"] i{ height:6px !important; }
 
 /* Call screen: fill the whole width when the side panel is collapsed (no empty strip on the right) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open.rp-collapsed{ width:100% !important; }
 }
 /* Message-request banner: comfortable width on big screens */
@@ -4828,7 +4828,7 @@ html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov
   .ccb{ max-width:520px; margin-left:auto; margin-right:auto; }
 }
 /* Desktop call bar: same compact shape as the phone one (round buttons, full-width End call), just centred */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #call-controls-bar.cu-bar:not(.cu-bar-incoming){ padding:8px 16px 28px var(--nav-width,210px); }
   #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{
     width:100%; max-width:420px; flex-wrap:wrap; justify-content:space-around; align-items:flex-start;
@@ -4965,7 +4965,7 @@ html.dnav-collapsed #desktop-nav .dnav-theme{ margin:0; }
 /* Notifications and Notice Board: content centred and kept to a readable width, following the sidebar and side panel */
 .notif-wrap{ max-width:42rem; margin-left:auto; margin-right:auto; width:100%; }
 /* Notification pop-up on desktop: centred over the notification panel, so it follows the sidebar and side panel */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #notifDetailModal{ left:var(--nav-width,0px) !important; right:0 !important; transition:left .18s ease, right .18s ease; }
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #notifDetailModal{ right:var(--rp-width,480px) !important; }
   #notifDetailModal > div{ padding:22px 24px 24px !important; }
@@ -4979,7 +4979,7 @@ html.dnav-collapsed #desktop-nav .dnav-theme{ margin:0; }
 body.dark-mode .app-toast{ background:#1e1e1e !important; border-color:#2b2b2b; box-shadow:0 12px 32px rgba(0,0,0,.55) !important; }
 body.dark-mode .app-toast .text-gray-500{ color:#a1a1aa !important; }
 body.dark-mode .app-toast [class*="text-[#"]{ color:#fff; }
-@media (min-width:1024px){ .app-toast{ min-width:260px; } }
+@media (min-width:1100px){ .app-toast{ min-width:260px; } }
 
 /* Theme button now sits at the right of the profile card, beside the name */
 #desktop-nav .dnav-profile .dnav-theme{ margin:0 4px 0 auto; }
@@ -4987,7 +4987,7 @@ html.dnav-collapsed #desktop-nav .dnav-profile .dnav-theme{ display:none; }
 html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 
 /* Message banner at the top: centred in the free space between the left menu and the side panel (desktop) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   .nbn{ left:calc(var(--nav-width,0px) + 12px) !important; right:12px !important; transition:left .18s ease, right .18s ease; }
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) .nbn{ right:calc(var(--rp-width,480px) + 12px) !important; }
 }
@@ -5010,15 +5010,15 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 .ar-wrap{ display:flex; flex-wrap:wrap; gap:8px; }
 
 /* Incoming call on desktop: background fills the whole free area; the content stays centred beside the left menu */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen #overlay .cu-screen:not(#call-screen){ padding-left:var(--nav-width,246px); box-sizing:border-box; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   .cu-bar-incoming .cu-bar-inner{ max-width:360px !important; margin-left:auto; margin-right:auto; gap:0 !important; justify-content:space-between !important; }
 }
 
 /* ---- Desktop video call: the picture gets the whole screen height; the controls float over its bottom edge as one tidy row ---- */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video){position:relative;}
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap{
     flex:1 1 0%;min-height:0;padding:4px 22px 22px calc(var(--nav-width,246px) + 22px);box-sizing:border-box;overflow:hidden !important;
@@ -5047,7 +5047,7 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
   /* The name and timer sit over the picture's top edge instead of eating a band above it */
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-header{padding-top:8px;padding-bottom:0;}
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{width:auto !important;max-width:none !important;flex-wrap:nowrap !important;gap:26px !important;padding:12px 28px 10px !important;justify-content:center !important;}
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl{flex:0 0 auto !important;min-width:64px;}
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end{flex:0 0 auto !important;width:auto !important;height:auto !important;margin:0 !important;padding:0 !important;}
@@ -5056,10 +5056,10 @@ html.dnav-collapsed #desktop-nav #dnav-theme{ display:none !important; }
 }
 
 /* Desktop incoming call: the blue-fade background runs the full width of the window, exactly like on the phone, instead of stopping at the right panel */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #overlay{ right:0 !important; width:100% !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #desktop-right-panel,
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-resizer,
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)) #rp-reopen-tab{ display:none !important; }
@@ -5116,12 +5116,12 @@ body.dark-mode .nmenu-danger, body.dark-mode .nmenu-danger svg{ color:#f87171; }
 #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl.end .cu-ctl-label{font-size:12px !important;font-weight:500 !important;color:inherit !important;}
 #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{flex-wrap:nowrap !important;align-items:flex-start !important;gap:0 !important;}
 #call-controls-bar.cu-bar:not(.cu-bar-incoming) button.cu-ctl{flex:1 1 0 !important;min-width:0 !important;}
-@media (min-width:1024px){
+@media (min-width:1100px){
   #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner{max-width:480px !important;}
 }
 
 /* Desktop: no swipe-to-delete on notifications (Delete stays in the three-dots menu) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   .nrow-del{display:none !important;}
   .nrow-swipe .nrow-in{transform:none !important;}
 }
@@ -5141,7 +5141,7 @@ body.dark-mode .nmenu-danger, body.dark-mode .nmenu-danger svg{ color:#f87171; }
 .cu-bar:not(.cu-bar-incoming) .cu-bar-inner > .cu-ctl,
 .cu-bar:not(.cu-bar-incoming) .cu-bar-inner > button.cu-ctl{flex:1 1 0 !important;min-width:0 !important;width:auto !important;}
 /* Desktop: sheets and menus open in the middle of the call area, not the whole window */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #overlay .cu-screen{position:relative;}
   #overlay .cu-screen .cu-bsheet{position:absolute !important;}
 }
@@ -5156,7 +5156,7 @@ html.dnav-collapsed body #desktop-nav #dcnav-theme .dside-label,html.dnav-collap
 
 
 /* Desktop 1:1 video: the picture keeps a natural 16:9 shape and sits centred, instead of stretching across the whole window */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap{display:flex;align-items:center;justify-content:center;}
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap > .cu-tile{
     width:min(100%, calc((100vh - 125px) * 16 / 9)) !important;height:100% !important;max-width:100% !important;flex:0 0 auto;
@@ -5170,7 +5170,7 @@ html.dnav-collapsed body #desktop-nav #dcnav-theme .dside-label,html.dnav-collap
 /* Test question-number strip: runs past the page margin and scrolls sideways */
 .ar-in .ar-strip{margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;scroll-padding-left:20px;scroll-padding-right:20px;}
 .ar-in .ar-strip::after{content:'';flex:0 0 12px;}
-@media(min-width:1024px){.ar-in .ar-strip{margin-left:-32px;margin-right:-32px;padding-left:32px;padding-right:32px;scroll-padding-left:32px;scroll-padding-right:32px;}}
+@media(min-width:1100px){.ar-in .ar-strip{margin-left:-32px;margin-right:-32px;padding-left:32px;padding-right:32px;scroll-padding-left:32px;scroll-padding-right:32px;}}
 
 /* Notifications, Notice Board and class notifications: no white panels, thin lines between rows */
 .nrow-swipe{ border-radius:0 !important; border-bottom:1px solid rgba(15,23,42,.08); }
@@ -5191,7 +5191,7 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
    #dtop is hidden below 1024px and every rule below sits in the media query.
    ===================================================================== */
 #dtop{ display:none; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   :root{ --nav-width:96px; --dtop-h:76px; --pg-bg:#f1f4f9; --pn-bg:#ffffff; --pn-sh:0 4px 18px rgba(30,60,140,.06); }
   html, body, body.bg-gray-50{ background:var(--pg-bg) !important; }
   body.dark-mode, body.dark-mode.bg-gray-50, html.dark-mode{ --pg-bg:#181818; --pn-bg:#222222; --pn-sh:none; background:#181818 !important; }
@@ -5288,7 +5288,7 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
   body.dark-mode #desktop-nav .dnav-item.dnav-active{ background:#2f5db3 !important; color:#fff !important; }
   body.dark-mode #desktop-nav #dnav-theme-dark{ color:#fff !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* sticky headers and page wrappers take the panel colour instead of their phone-grey */
   #screen .sticky, #screen .bg-gray-50.sticky, #overlay > .bg-gray-50, #overlay .flex-1.bg-gray-50, #overlay > div > .bg-gray-50{ background-color:var(--pn-bg) !important; }
   #career-titlebar, #career-filterbar, #inbox-titlebar, #inbox-filterbar{ border-color:transparent !important; }
@@ -5296,29 +5296,29 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
   body.dark-mode #screen button.bg-gray-100, body.dark-mode #screen .bg-gray-100.rounded-full{ background-color:#2d2d2d !important; }
   body.dark-mode #screen .sticky, body.dark-mode #overlay .flex-1.bg-gray-50, body.dark-mode #overlay > div > .bg-gray-50{ background-color:#222222 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #overlay .pa-flow .pa-sticky::before, #overlay .ov-sticky-head::before, #overlay .ov-sticky-wrap::before, #overlay div:has(> .ov-sticky-head:only-child)::before{
     background:linear-gradient(to bottom,var(--pn-bg) 0,var(--pn-bg) 70%,transparent 100%) !important; }
   #overlay .bg-gray-50:not(.stg-card), #overlay [class*="bg-gray-50/"]{ background-color:var(--pn-bg) !important; }
   body.dark-mode #overlay .bg-gray-50:not(.stg-card){ background-color:#222222 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* a full-page overlay replaces the page panel completely (no square corners peeking out) */
   #app-shell:not(.messaging-split):has(#overlay:not(.hidden)) #screen{ visibility:hidden; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* posts: media sits inside the panel with soft corners and a sensible height, rows keep thin dividers */
   #app-shell.home-active #screen [id^="post-"] .feed-media{ margin:0 16px; border-radius:20px; overflow:hidden; max-height:520px; }
   #app-shell.home-active #screen [id^="post-"] .feed-media img, #app-shell.home-active #screen [id^="post-"] .feed-media video{ width:100%; max-height:520px; object-fit:cover; }
   #app-shell.home-active #screen [id^="post-"]{ padding-bottom:6px; }
   body.dark-mode #screen [id^="post-"]{ background:transparent !important; border-color:rgba(255,255,255,.09) !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.home-active #screen [id^="post-"]{ margin-left:0 !important; margin-right:0 !important; }
   body.dark-mode #desktop-nav{ background:transparent !important; border:0 !important; box-shadow:none !important; }
 }
 .seg-lbl-d{ display:none; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.home-active #screen [id^="post-"] .feed-media{ margin:0 16px !important; width:auto !important; max-width:calc(100% - 32px) !important; }
   .seg-lbl-m{ display:none; }
   .seg-lbl-d{ display:inline; }
@@ -5330,8 +5330,8 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
   #screen .classroom-toggle-wrap .seg-btn:not(.on):hover{ color:#475569 !important; }
   body.dark-mode #screen .classroom-toggle-wrap .seg-btn.on{ color:#7aa2ff !important; border-bottom-color:#7aa2ff; }
 }
-@media (min-width:1024px){ #screen .px-5:has(> .classroom-toggle-wrap){ position:relative; } }
-@media (min-width:1024px){
+@media (min-width:1100px){ #screen .px-5:has(> .classroom-toggle-wrap){ position:relative; } }
+@media (min-width:1100px){
   #app-shell.messaging-split.right-panel-open #overlay, #app-shell.messaging-split.right-panel-open.rp-collapsed #overlay{ left:360px !important; right:0 !important; }
   #app-shell.messaging-split #screen{ margin-left:0 !important; border-right:1px solid #eef1f6; }
   body.dark-mode #app-shell.messaging-split #screen{ border-right-color:rgba(255,255,255,.08); }
@@ -5347,7 +5347,7 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
 @keyframes ovIn{ from{ opacity:0; transform:translateY(12px) scale(.992); } to{ opacity:1; transform:none; } }
 @keyframes dtopIn{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:none; } }
 @keyframes railIn{ from{ opacity:0; transform:translateX(-14px); } to{ opacity:1; transform:none; } }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen.pg-in{ animation:pgIn .32s cubic-bezier(.22,.68,0,1) both; }
   #desktop-right-panel-body.rp-swap{ animation:rpSwap .28s cubic-bezier(.22,.68,0,1) both; }
   #overlay:not(.hidden){ animation:ovIn .3s cubic-bezier(.22,.68,0,1) both; }
@@ -5361,7 +5361,7 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
 @media (prefers-reduced-motion:reduce){
   #screen.pg-in, #desktop-right-panel-body.rp-swap, #overlay:not(.hidden), #dtop, #desktop-nav .dn-grp, .dtop-bell:hover svg{ animation:none !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* chat beside the list: no back arrow (the list is always on screen), slimmer contact panel so the chat gets the room */
   #app-shell.messaging-split #overlay button[onclick="closeConversationOverlay()"]{ display:none !important; }
   html:has(#app-shell.messaging-split.right-panel-open){ --rp-width:340px !important; }
@@ -5415,7 +5415,7 @@ body.dark-mode .rcp-sec button{ color:#9db9ff; }
 
 /* ===== Desktop dropdown cards (>=1024px): sheets become floating menus anchored to their button ===== */
 @keyframes ddIn{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:none}}
-@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+@media (min-width:1100px) and (hover:hover) and (pointer:fine){
   .dsk-scrim-clear{ background:transparent !important; animation:none !important; }
   .dsk-menu, .menu-dropdown-inset{
     position:fixed; right:auto !important; bottom:auto !important; margin:0 !important;
@@ -5465,22 +5465,22 @@ body.dark-mode #convo-search-bar{ background:#2a2a2a; border-color:#3a3a3a; }
 body.dark-mode #convo-search-bar input{ color:#e5e7eb; }
 body.dark-mode #convo-search-bar .csb-b{ color:#d1d5db; }
 body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
-@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+@media (min-width:1100px) and (hover:hover) and (pointer:fine){
   .dsk-menu button, .dsk-menu button span, .menu-dropdown-inset button{ font-family:'Montserrat',system-ui,sans-serif !important; }
 }
-@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+@media (min-width:1100px) and (hover:hover) and (pointer:fine){
   .dsk-menu button.text-red-500 *{ color:#e11d48 !important; }
   body.dark-mode .dsk-menu button.text-red-500 *{ color:#fb7185 !important; }
 }
 /* Inbox search pill: always one line */
 #inbox-searchbar button > span, #inbox-searchbar input{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 #inbox-searchbar button svg, #inbox-searchbar > div > svg{ flex-shrink:0; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #inbox-searchbar button, #inbox-searchbar > div{ padding-top:9px !important; padding-bottom:9px !important; font-size:13.5px !important; line-height:20px; }
 }
 
 /* ===== Desktop call screens, new style: round-button pill bar, no labels, no green dots (>=1024px) ===== */
-@media (min-width:1024px){
+@media (min-width:1100px){
   .cu-dot,.cu-dot-warn{display:none !important;}
   #app-shell.call-fullscreen #call-screen #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner,
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-controls-bar.cu-bar:not(.cu-bar-incoming) .cu-bar-inner,
@@ -5507,30 +5507,30 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
   .cu-bar-incoming .cu-bar-inner{ gap:56px !important; }
   .cu-bar-incoming .cu-ctl-btn{ width:60px !important; height:60px !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Calls take the whole stage even when the side panel was open */
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen) #overlay{ left:0 !important; right:0 !important; width:100% !important; }
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen) #desktop-right-panel{ display:none !important; }
   .cu-ctl.accept, .cu-bar-incoming .cu-ctl.accept .cu-ctl-label{ color:#4169e1 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open:has(#overlay .cu-screen:not(#call-screen)){ width:100% !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* Group calls: the grid stops above the control bar so names are never covered */
   #app-shell.call-fullscreen #call-screen:has(#call-stage-wrap video) #call-stage-wrap:has(.cu-tile ~ .cu-tile){ padding-bottom:124px !important; box-sizing:border-box; }
 }
 /* Career search bar runs the full width of its panel (desktop) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen button[onclick="activateCareerSearch()"],
   #screen div:has(> #career-search-input){ max-width:none !important; width:100% !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #career-searchbar{ padding-bottom:18px !important; }
 }
 
 /* ===== Workspace (desktop): flat-edged middle panel, Space cards in two columns, plus button in the panel corner ===== */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.classroom-active #screen{ border-radius:0; }
   .my-spaces-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
   .my-spaces-grid > .class-color-card{ margin-bottom:0 !important; }
@@ -5538,19 +5538,19 @@ body.dark-mode #convo-search-bar .csb-b:hover{ background:#363636; }
   #study-fab-menu{ right:24px !important; bottom:84px !important; }
 }
 /* Same roomy spacing under the Messaging search bar (desktop) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #inbox-searchbar{ padding-bottom:18px !important; }
   #inbox-searchbar > button, #inbox-searchbar > div{ max-width:none !important; width:100% !important; }
 }
 /* New post (desktop): the close button and "New post" line up with the "Tag people" icon and label below */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #overlay:has(#create-post-scroll) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; padding-left:38px !important; gap:12px !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #overlay:has(#tag-picker-list) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; padding-left:21px !important; gap:12px !important; }
 }
 /* Overlay pages (My Activity, New post, Tag people, ...): flat-edged panel on desktop, like Home and Workspace */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #overlay{ border-radius:0 !important; }
 }
 /* Discover search bar in dark mode: rounded field on the panel colour, not a square dark block */
@@ -5558,13 +5558,13 @@ body.dark-mode #desktop-right-panel-body .sticky:has(> #discover-search-input){ 
 body.dark-mode #discover-search-input{ border:1px solid #3a3a3a !important; background:#2a2a2a !important; border-radius:18px !important; color:#e5e7eb; }
 body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
 /* Filter pills (Notifications, Career, Messaging) on desktop: room below them, shadows not clipped */
-@media (min-width:1024px){
+@media (min-width:1100px){
   .nfilter{ padding:4px 0 14px !important; margin-bottom:10px; }
   #career-filterbar, #inbox-filterbar{ padding-bottom:22px !important; }
   #career-tabs-scroller{ padding-bottom:6px; }
 }
 /* Every row of filter pills (Media/Links/Docs tabs, admin tabs, quiz filters, ...) gets the same room below on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   div:has(> .filter-pill.flex-shrink-0):not(.nfilter):not(#career-tabs-scroller):not(.sticky),
   div:has(> .filter-pill[data-k]){ padding-bottom:14px; margin-bottom:10px; }
 }
@@ -5579,7 +5579,7 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
   #dtop .dtop-search{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); margin:0; }
   #dtop .dtop-search:hover{ transform:translate(-50%,-50%); }
 }
-@media (min-width:1024px) and (max-width:1279px){
+@media (min-width:1100px) and (max-width:1279px){
   #dtop .dtop-search{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); margin:0; width:250px; }
   #dtop .dtop-search:hover{ transform:translate(-50%,-50%); }
 }
@@ -5598,14 +5598,14 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
 }
 
 /* Profile photo in the left rail: no blue pill behind it, just a soft ring when active */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #desktop-nav .dnav-item.dnav-profile.dnav-active,
   #desktop-nav .dnav-item.dnav-profile.dnav-pill.dnav-active,
   body.dark-mode #desktop-nav .dnav-item.dnav-profile.dnav-active{
     background:transparent !important; box-shadow:0 0 0 3px rgba(30,144,255,.45) !important; border-radius:50% !important;
   }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #desktop-nav #dnav-4.dnav-active:has(img),
   body.dark-mode #desktop-nav #dnav-4.dnav-active:has(img){
     background:transparent !important; background-image:none !important; box-shadow:0 0 0 3px rgba(30,144,255,.45) !important; border-radius:50% !important;
@@ -5614,7 +5614,7 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
 
 /* ===== Desktop: no big white panel behind Home, Workspace and overlay pages (My Activity, Settings,
    Notifications, ...). Content rests on the page background. Posts stay one long feed with thin dividers. ===== */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.home-active #screen,
   #app-shell.classroom-active #screen,
   body.dark-mode #app-shell.home-active #screen,
@@ -5627,7 +5627,7 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
   #app-shell.home-active #screen [id^="post-"]{ border-bottom:1px solid rgba(15,23,42,.08) !important; padding-bottom:14px; }
   body.dark-mode #app-shell.home-active #screen [id^="post-"]{ border-bottom-color:rgba(255,255,255,.08) !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #overlay > div,
   #app-shell:not(.messaging-split) #overlay div.overflow-y-auto.flex-1,
   #app-shell:not(.messaging-split) #overlay .bg-gray-50,
@@ -5635,7 +5635,7 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
   body.dark-mode #app-shell:not(.messaging-split) #overlay div.overflow-y-auto.flex-1,
   body.dark-mode #app-shell:not(.messaging-split) #overlay .bg-gray-50{ background-color:transparent !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.home-active #screen [id^="post-"],
   #app-shell.home-active #screen [id^="post-"] > .bg-white,
   body.dark-mode #app-shell.home-active #screen [id^="post-"]{ background-color:transparent !important; }
@@ -5681,20 +5681,20 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 #dtop-new-icon.dtop-plus-spin{ animation:dtopPlusSpin .75s cubic-bezier(.34,1.56,.64,1); }
 @media (prefers-reduced-motion:reduce){ #dtop-new-icon.dtop-plus-spin{ animation:none; } }
 /* The divider belongs between posts only: no line under the post header (name/date row) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.home-active #screen [id^="post-header-"],
   body.dark-mode #app-shell.home-active #screen [id^="post-header-"]{ border-bottom:0 !important; padding-bottom:8px; }
 }
 
 /* Top search bar sits over the middle of the main column (between the rail and the right panel) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #dtop .dtop-search{ left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - 16px) / 2) !important; }
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #dtop .dtop-search{
     left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - var(--rp-width,480px) - 32px) / 2) !important; }
   /* the loading skeleton copies this exactly (it always shows the right panel) */
   .skd-search{ left:calc(var(--nav-width,96px) + (100% - var(--nav-width,96px) - var(--rp-width,480px) - 32px) / 2) !important; transform:translateX(-50%); }
 }
-@media (min-width:1024px) and (max-width:1279px){ .skd-search{ width:250px !important; } }
+@media (min-width:1100px) and (max-width:1279px){ .skd-search{ width:250px !important; } }
 
 /* skeleton rail copies the real one: main group vertically centred, bottom group pinned to the bottom */
 .skd-rail{display:flex;flex-direction:column;align-items:center;gap:16px;}
@@ -5703,7 +5703,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 .skd-rail-bot{padding:8px 0;gap:6px;}
 
 /* Desktop pages that rest on the page background: header strip (and its fade) uses the page colour, not white */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #overlay .pa-flow .pa-sticky::before,
   #app-shell:not(.messaging-split) #overlay .ov-sticky-head::before,
   #app-shell:not(.messaging-split) #overlay .ov-sticky-wrap::before,
@@ -5716,22 +5716,22 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
     background:linear-gradient(to bottom,#181818 0,#181818 calc(100% - 22px),rgba(24,24,24,.85) calc(100% - 12px),rgba(24,24,24,0) 100%) !important; }
 }
 /* Settings and activity (desktop): back arrow and title line up with the cards below, not centred in the wide panel */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #overlay:has(.stg-title) .ov-sticky-head > div{ max-width:none !important; margin:0 !important; }
 }
 /* Every overlay page header (back arrow + title) sits on the same left margin as the page content on desktop,
    instead of being centred in the wide panel */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #overlay .ov-sticky-head > div{ max-width:none !important; margin-left:0 !important; margin-right:0 !important; }
 }
 /* Centred content blocks on overlay pages start on the same left margin as the header on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #overlay .sp-wrap,
   #app-shell:not(.messaging-split) #overlay .max-w-2xl.mx-auto:not(.ov-sticky-head > div){ margin-left:0 !important; margin-right:0 !important; }
 }
 
 /* Open chat in the Messaging list (desktop): white outlined card with a soft blue glow */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #inbox-list > .convo-active{ margin:6px 10px !important; padding-left:10px !important; padding-right:10px !important; border-radius:18px !important; border-top-width:0 !important;
     background:#fff !important; box-shadow:0 0 0 1.5px #1e90ff inset, 0 6px 16px -8px rgba(30,144,255,.5) !important; }
   #inbox-list > .convo-active + *{ border-top-width:0 !important; }
@@ -5739,12 +5739,12 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 }
 
 /* ===== Desktop: no big white panel on ANY page (Messaging, Career, Profile, Stitch Bot, ...). Content rests on the page background. ===== */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen, body.dark-mode #screen,
   #overlay, body.dark-mode #overlay,
   #app-shell.messaging-split #screen, #app-shell.messaging-split #overlay{ background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   /* sticky header bars take the page colour, so scrolling rows still hide behind them */
   #inbox-titlebar, #inbox-searchbar, #inbox-filterbar, #career-titlebar, #career-searchbar, #career-filterbar{ background:var(--pg-bg,#f1f4f9) !important; border-bottom-color:transparent !important; }
   body.dark-mode #inbox-titlebar, body.dark-mode #inbox-searchbar, body.dark-mode #inbox-filterbar, body.dark-mode #career-titlebar, body.dark-mode #career-searchbar, body.dark-mode #career-filterbar{ background:#181818 !important; }
@@ -5754,29 +5754,29 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #ai-composer-wrap, .convo-composer-anim, #ai-attach-strip{ background:transparent !important; }
 }
 /* Inside the main column and overlay pages "panel colour" IS the page colour (right panel and rail keep their own) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen, #overlay{ --pn-bg:var(--pg-bg,#f1f4f9); }
   body.dark-mode #screen, body.dark-mode #overlay{ --pn-bg:#181818; }
   body.dark-mode #screen .sticky{ background-color:#181818 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #inbox-searchbar > button, #inbox-searchbar > div, #career-searchbar > button, #career-searchbar > div, #career-searchbar input{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.06); }
   body.dark-mode #inbox-searchbar > button, body.dark-mode #inbox-searchbar > div, body.dark-mode #career-searchbar > button, body.dark-mode #career-searchbar > div, body.dark-mode #career-searchbar input{ background-color:#2a2a2a !important; box-shadow:none; }
 }
 
 /* Workspace: the + button stays fixed in the corner of the main column while the page scrolls; space cards get room below */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #study-fab-btn{ position:fixed !important; right:calc(var(--rp-width,480px) + 32px + 24px) !important; bottom:24px !important; }
   #app-shell.right-panel-open.rp-collapsed #study-fab-btn{ right:40px !important; }
   #study-fab-menu{ position:fixed !important; right:calc(var(--rp-width,480px) + 32px + 24px) !important; bottom:84px !important; }
   #study-fab-icon, #study-fab-btn *{ animation:none !important; transition:none !important; }
   .my-spaces-grid{ margin-bottom:28px; }
 }
-@media (min-width:1024px){ #screen{ animation-fill-mode:backwards !important; } }
+@media (min-width:1100px){ #screen{ animation-fill-mode:backwards !important; } }
 /* The white strip under floating type boxes (Stitch Bot, chats) is a mobile bottom-nav backdrop: not needed on desktop */
-@media (min-width:1024px){ #nav-bottom-backdrop{ display:none !important; } }
+@media (min-width:1100px){ #nav-bottom-backdrop{ display:none !important; } }
 /* Messaging: the chat list (only this) keeps its white panel */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen:has(#inbox-list){ background:#fff !important; border-radius:28px !important; box-shadow:0 1px 3px rgba(30,60,140,.05) !important; --pn-bg:#fff; overflow:hidden; }
   #app-shell.messaging-split #screen:has(#inbox-list){ border-right:0 !important; margin-right:12px !important; }
   #screen:has(#inbox-list) #inbox-titlebar, #screen:has(#inbox-list) #inbox-searchbar, #screen:has(#inbox-list) #inbox-filterbar{ background:#fff !important; }
@@ -5787,11 +5787,11 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   body.dark-mode #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #screen:has(#inbox-list) #inbox-filterbar{ background:#1e1e1e !important; }
   body.dark-mode #screen:has(#inbox-list) .convo-active{ background:#2a2a2a !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.messaging-split #screen:has(#inbox-list), #app-shell #screen:has(#inbox-list){ background:#fff !important; border-radius:28px !important; box-shadow:0 1px 3px rgba(30,60,140,.05) !important; }
   body.dark-mode #app-shell.messaging-split #screen:has(#inbox-list), body.dark-mode #app-shell #screen:has(#inbox-list){ background:#1e1e1e !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   body.dark-mode #screen:has(#inbox-list) #inbox-searchbar > button, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#2a2a2a !important; }
   body.dark-mode #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #screen:has(#inbox-list) #inbox-filterbar{ border-color:transparent !important; }
 }
@@ -5801,11 +5801,11 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 .rcp-act:hover{ background:transparent !important; transform:none; }
 .rcp-act:hover svg{ color:#2f6df0; }
 /* Create a Course pill: not full width on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   button.filter-pill[onclick="openNewCourse()"]{ flex:0 0 auto !important; width:auto !important; min-width:240px; padding-left:28px !important; padding-right:28px !important; }
 }
 /* Rail: one pill that flows between options (see dnav flow in core.js) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #desktop-nav .dn-grp{ position:relative; }
   #desktop-nav .dnav-flow{ position:absolute; left:7px; width:50px; border-radius:15px; background:linear-gradient(135deg,#1e90ff,#4169e1); box-shadow:0 8px 16px -8px rgba(30,144,255,.7); z-index:0; pointer-events:none; opacity:0; }
   #desktop-nav .dnav-flow.on{ opacity:1; }
@@ -5815,7 +5815,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   body.dark-mode #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile){ background:transparent !important; box-shadow:none !important; }
 }
 /* Chat list keeps its white panel ONLY beside an open chat; the full-width list rests on the page background */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:not(.messaging-split) #screen:has(#inbox-list), body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list){ background:transparent !important; border-radius:0 !important; box-shadow:none !important; overflow:visible; --pn-bg:var(--pg-bg,#f1f4f9); }
   #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:var(--pg-bg,#f1f4f9) !important; }
   #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > button, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.08) !important; }
@@ -5829,50 +5829,50 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #app-shell.messaging-split #screen #inbox-searchbar > div.bg-gray-100{ background-color:#f1f4f9 !important; box-shadow:none; }
   body.dark-mode #app-shell.messaging-split #screen #inbox-searchbar > div.bg-gray-100{ background-color:#2a2a2a !important; }
 }
-@media (min-width:1024px){ #screen #career-searchbar input, #screen #inbox-searchbar input, body.dark-mode #screen #career-searchbar input{ background-color:transparent !important; box-shadow:none !important; } }
+@media (min-width:1100px){ #screen #career-searchbar input, #screen #inbox-searchbar input, body.dark-mode #screen #career-searchbar input{ background-color:transparent !important; box-shadow:none !important; } }
 /* Search bars: not full width on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:420px; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:420px !important; width:100% !important; }
 }
 /* Career and Messaging search bars share one width (the width that fits the chat list beside an open chat) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen #career-searchbar > div, #screen #inbox-searchbar > div{ max-width:320px !important; }
 }
 /* Messaging panels (chat list, contact details): flat, square edges */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.messaging-split #screen:has(#inbox-list), body.dark-mode #app-shell.messaging-split #screen:has(#inbox-list){ border-radius:0 !important; }
   #app-shell.messaging-split #desktop-right-panel{ border-radius:0 !important; }
 }
 /* Messaging with the right panel retracted: the chat list stays a 360px column beside the chat (never stretches under it) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.messaging-split.right-panel-open.rp-collapsed #screen, #app-shell.messaging-split #screen{ width:360px !important; max-width:360px !important; flex-shrink:0 !important; margin-left:0 !important; }
 }
 /* New announcement button: compact on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   button.flex-1[onclick="openNewAnnouncementOverlay()"]{ flex:0 0 auto !important; width:auto !important; min-width:220px; padding-left:28px !important; padding-right:28px !important; }
 }
 /* Start Session / Schedule one pills: compact on desktop */
-@media (min-width:1024px){
+@media (min-width:1100px){
   button.filter-pill.flex-1[onclick^="startCourseSessionNow"], button.filter-pill.flex-1[onclick^="openScheduleCourseSession"],
   button.filter-pill.flex-1[onclick="startLiveLectureNow()"], button.filter-pill.flex-1[onclick="openScheduleLectureOverlay()"]{ flex:0 0 auto !important; width:auto !important; min-width:190px; padding-left:26px !important; padding-right:26px !important; }
 }
 /* Inside a Space's Resources, the top strip is not tappable */
-@media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop{ pointer-events:none; } }
-@media (min-width:1024px){ #app-shell.classroom-active.ws-resources #dtop, #app-shell.classroom-active.ws-resources #dtop *{ pointer-events:none !important; } }
+@media (min-width:1100px){ #app-shell.classroom-active.ws-resources #dtop{ pointer-events:none; } }
+@media (min-width:1100px){ #app-shell.classroom-active.ws-resources #dtop, #app-shell.classroom-active.ws-resources #dtop *{ pointer-events:none !important; } }
 /* Login panel: no "Get Started" heading; the welcome line is centred */
 #auth-gate:has(#auth-panel-login.active) .auth-login-title, body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{ display:none !important; }
 #auth-gate:has(#auth-panel-login.active) .auth-login-sub{ text-align:center !important; margin:2px 0 22px !important; font-size:15px !important; }
 /* Phone sign-up (login) page: real photo background, day photo in light mode and dusk photo in dark mode */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
   body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-dusk.webp') 44% 66% / 158% auto no-repeat, #0b0d18 !important; }
 }
 
 /* Phone sign-up: only 15px of white below the terms/privacy line (panel sits lower) */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate:has(#auth-panel-login.active) .auth-card{padding-bottom:0 !important;}
   #auth-gate:has(#auth-panel-login.active) .auth-body{padding-bottom:15px !important;}
 }
@@ -5881,7 +5881,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 body.dark-mode #auth-gate:has(#auth-panel-login.active){ background:#ffffff !important; }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card,
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-body{ background:#ffffff !important; }
-@media (max-width:1023px){
+@media (max-width:1099px){
   body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
 }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head::after{ background:#ffffff !important; }
@@ -5917,7 +5917,7 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-we
 }
 
 /* Verify page (phone): full-width white panel at the top, plain "We emailed a code" text (no blue box) */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-verify-mode .auth-card{
     background:#fff !important;
     box-shadow:0 18px 40px -14px rgba(10,37,64,.28),0 6px 16px -8px rgba(10,37,64,.14) !important;
@@ -5931,26 +5931,26 @@ body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-we
 }
 
 /* Verify page (phone): bigger text, back arrow lined up with the code boxes' left edge */
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-verify-mode .auth-info-banner{font-size:17px !important;line-height:1.45 !important;padding:6px 4px 10px !important;margin-bottom:14px !important;}
   #auth-gate.auth-verify-mode .auth-info-banner b,#auth-gate.auth-verify-mode #auth-verify-email-label{font-weight:700;}
   #auth-gate.auth-verify-mode .auth-resend{font-size:15px !important;line-height:1.5 !important;}
   #auth-gate.auth-verify-mode .auth-resend button{font-size:15px !important;}
   #auth-gate.auth-verify-mode .auth-error{font-size:14px !important;}
 }
-@media (max-width:1023px){
+@media (max-width:1099px){
   #auth-gate.auth-verify-mode .auth-back{left:-1px !important;}
 }
 
 /* Desktop: messaging search bar matches Career Space (same 44px height, same text size); bigger username */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #screen #inbox-searchbar > div, #screen #inbox-searchbar > button{ height:44px !important; padding-top:0 !important; padding-bottom:0 !important; font-size:1.15rem !important; line-height:normal !important; }
   #screen #inbox-searchbar input{ font-size:1.15rem !important; }
   #inbox-username-el{ font-size:1.3rem !important; }
 }
 
 /* Desktop flashcards: no back arrow (End leaves the session); the Stitch logo + wordmark float on a white pill */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell:has(.fc-end-btn) .fc-round-btn[aria-label="Back"]{ display:none !important; }
   #app-shell:has(.fc-end-btn) #dtop-logo{
     box-sizing:content-box; height:34px; padding:10px 20px; background:#fff; border-radius:999px;
@@ -6070,7 +6070,7 @@ body.dark-mode .mj-out{border-color:#3a3a3a;}
 #lecture-controls-bar#lecture-controls-bar#lecture-controls-bar#lecture-controls-bar .cu-bar-inner.cu-voicegrid > button.cu-ctl.end{background:transparent !important;border-radius:0 !important;box-shadow:none !important;flex-direction:column !important;}
 #lecture-controls-bar#lecture-controls-bar#lecture-controls-bar#lecture-controls-bar .cu-bar-inner.cu-voicegrid > button.cu-ctl.end .cu-ctl-btn{width:56px !important;height:56px !important;background:#ef4444 !important;color:#fff !important;box-shadow:none !important;}
 #lecture-controls-bar#lecture-controls-bar#lecture-controls-bar#lecture-controls-bar .cu-bar-inner.cu-voicegrid .cu-ctl-label{display:block !important;font-size:10.5px !important;font-weight:600 !important;}
-@media (min-width:1024px){
+@media (min-width:1100px){
   #call-controls-bar#call-controls-bar#call-controls-bar#call-controls-bar#call-controls-bar .cu-bar-inner.cu-pillbar,
   #lecture-controls-bar#lecture-controls-bar#lecture-controls-bar#lecture-controls-bar .cu-bar-inner.cu-pillbar{gap:14px !important;padding:10px 14px !important;}
   #call-controls-bar#call-controls-bar#call-controls-bar#call-controls-bar#call-controls-bar .cu-bar-inner.cu-pillbar .cu-ctl-btn,
@@ -6080,7 +6080,7 @@ body.dark-mode .mj-out{border-color:#3a3a3a;}
 }
 .cu-inpanel .cu-bar-incoming .cu-bar-inner{gap:90px !important;justify-content:center !important;max-width:none !important;}
 body.dark-mode .mh-act.out{background:transparent;}
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen #call-screen #call-stage-wrap:has(.cu-grid, .cu-spk){padding-bottom:116px !important;}
 }
 /* Meetings: Join / Start / Details use the same pill as the Messaging and Career tabs */
@@ -6106,7 +6106,7 @@ body.dark-mode .mh-start-ic{ background:#2b2b2b !important; color:#f2f2f2 !impor
 .call-min-card .call-min-mute-btn, #call-minimized-banner .call-min-mute-btn, #lecture-inline-panel .call-min-mute-btn{ background:#fff !important; color:#1f2937 !important; box-shadow:0 2px 10px rgba(15,23,42,0.14); border:1px solid rgba(15,23,42,0.06); }
 body.dark-mode .call-min-card .call-min-mute-btn, body.dark-mode #call-minimized-banner .call-min-mute-btn, body.dark-mode #lecture-inline-panel .call-min-mute-btn{ background:#2b2b2b !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,0.5); border-color:rgba(255,255,255,0.06); }
 /* Desktop calls: use the whole window right of the menu, so the call page sits in the middle (the empty right-hand panel no longer takes its width) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open:not(.rp-collapsed){ width:100% !important; }
   #app-shell.call-fullscreen.right-panel-open #overlay{ right:0 !important; width:100% !important; max-width:none !important; left:0 !important; transform:none !important; }
 }
@@ -6125,7 +6125,7 @@ body.dark-mode .dnav-av,body.dark-mode .dtop-av .dnav-av,body.dark-mode #desktop
 #desktop-nav .dnav-item.dnav-active:has(.dnav-av){ background:#e2e5ea !important; box-shadow:none !important; }
 body.dark-mode #desktop-nav .dnav-item.dnav-active:has(.dnav-av){ background:#2b2b2b !important; }
 #desktop-nav .dnav-item:has(.dnav-av)::before{ background:#9ca3af !important; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #desktop-nav .dnav-item.dnav-profile.dnav-active,
   #desktop-nav .dnav-item.dnav-profile.dnav-pill.dnav-active,
   body.dark-mode #desktop-nav .dnav-item.dnav-profile.dnav-active,
@@ -6139,9 +6139,9 @@ body.dark-mode #desktop-nav .dnav-item.dnav-active:has(.dnav-av){ background:#2b
 body.dark-mode #desktop-nav .dn-grp:has(#dnav-4.dnav-active) .dnav-flow,
 body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ background:#3a3a3a !important; }
 /* Desktop call: keep the Mute everyone pill centred under the title (content sits right of the side rail) */
-@media (min-width:1024px){ #call-screen .cu-adminbar{ padding-left:110px; } }
+@media (min-width:1100px){ #call-screen .cu-adminbar{ padding-left:110px; } }
 /* Desktop voice/video call: the side panel stays, retracts and expands, and the call page resizes with it */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen):not(.rp-collapsed){ width:calc(100% - var(--rp-width,480px) - 32px) !important; }
   #app-shell.call-fullscreen.right-panel-open.rp-collapsed:has(#overlay #call-screen){ width:calc(100% - 16px) !important; }
   #app-shell.call-fullscreen.right-panel-open:has(#overlay #call-screen) #overlay{ left:0 !important; right:0 !important; width:100% !important; }
@@ -6153,7 +6153,7 @@ body.dark-mode #desktop-nav .dn-grp:has(.dnav-profile.dnav-active) .dnav-flow{ b
   #call-screen .cu-adminbar{ padding-left:0 !important; }
 }
 /* Desktop sheets and pop-ups sit in the main area beside the open side panel, not across the whole window */
-@media (min-width:1024px){
+@media (min-width:1100px){
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) :is(#planner-sheet, #delete-account-sheet, #cert-modal, #job-sheet-backdrop, #admin-menu-backdrop){ left:96px !important; right:calc(var(--rp-width,480px) + 16px) !important; }
   body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #job-sheet-menu{ left:96px !important; right:calc(var(--rp-width,480px) + 16px) !important; }
   body:has(#app-shell.right-panel-open.rp-collapsed) :is(#planner-sheet, #delete-account-sheet, #cert-modal, #job-sheet-backdrop, #admin-menu-backdrop, #job-sheet-menu){ left:96px !important; }
@@ -6165,13 +6165,13 @@ body.dark-mode .cv-bad-out{ color:#ef4444 !important; }
 body.dark-mode .cv-meta-mine > span{ color:#9ca3af !important; }
 body.dark-mode .cv-meta-mine > span[title="Read"]{ color:#34b7f1 !important; }
 /* Workspace (desktop): no people search in the top strip, and the bell, New and profile always respond (also while the workspace is still loading) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.classroom-active #dtop .dtop-search{ display:none !important; }
   #app-shell.ws-locked #dtop{ opacity:1 !important; }
   #app-shell.ws-locked #dtop #dtop-bell, #app-shell.ws-locked #dtop #dtop-new, #app-shell.ws-locked #dtop #dtop-me{ pointer-events:auto !important; }
 }
 /* Workspace on desktop: no people search; the bell, New and profile work (also while it loads); they switch off only during a test */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.classroom-active #dtop-search{ display:none !important; }
   #app-shell.classroom-active.ws-resources #dtop :is(button,.dtop-me,.dtop-new,.dtop-bell,.dtop-logo,.dtop-av,.dtop-who){ pointer-events:auto !important; }
   #app-shell.ws-locked #dtop{ opacity:1 !important; }
@@ -6179,11 +6179,11 @@ body.dark-mode .cv-meta-mine > span[title="Read"]{ color:#34b7f1 !important; }
   #app-shell.exam-focus #dtop{ opacity:.55; pointer-events:none !important; }
   #app-shell.exam-focus #dtop > *, #app-shell.exam-focus #dtop :is(button,.dtop-me,.dtop-new,.dtop-bell){ pointer-events:none !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop, #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop *{ pointer-events:none !important; }
   #app-shell.exam-focus.exam-focus.exam-focus.exam-focus.exam-focus #dtop{ opacity:.55 !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   #app-shell#app-shell#app-shell.exam-focus #dtop, #app-shell#app-shell#app-shell.exam-focus #dtop *{ pointer-events:none !important; }
   #app-shell#app-shell#app-shell.exam-focus #dtop{ opacity:.55 !important; }
 }
@@ -6228,7 +6228,7 @@ body.dark-mode .fc-act-yes{ background:#1f2b25; color:#34d399; }
 body.dark-mode .fc-act-flip{ background:#4169e1; }
 body.dark-mode .fc-tally-no{ background:#2b2222; color:#fb7185; } body.dark-mode .fc-tally-yes{ background:#1f2b25; color:#34d399; }
 body.dark-mode .fc-cta{ background:#4169e1 !important; }
-@media (min-width:1024px){
+@media (min-width:1100px){
   .fc-body{ flex-direction:row; gap:28px; padding:0 34px 30px; }
   .fc-main{ align-items:center; justify-content:center; }
   .fc-stage{ flex:0 1 auto; width:100%; padding:10px 0 0; }
@@ -6267,18 +6267,18 @@ body.dark-mode .fc-cta{ background:#4169e1 !important; }
 }
 
 /* Search people bar: Home only */
-@media (min-width:1024px){
+@media (min-width:1100px){
   body[data-tab]:not([data-tab="0"]) #dtop .dtop-search,
   body[data-tab]:not([data-tab="0"]) #dtop-search{ display:none !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   .fc-main{ min-width:0; }
   .fc-side{ width:270px; }
   .fc-stage{ min-width:0; }
   .fc-body{ gap:22px; padding:0 28px 26px 20px; }
   .fc-act-no, .fc-act-yes{ width:150px; } .fc-act-flip{ flex:0 0 200px; }
 }
-@media (min-width:1024px){ #app-shell:has(.fc-end-btn) #dtop .dtop-search{ display:none !important; } }
+@media (min-width:1100px){ #app-shell:has(.fc-end-btn) #dtop .dtop-search{ display:none !important; } }
 
 /* ===== Workspace Notes panel ===== */
 .nt-root{ padding:4px 22px 24px; }
@@ -6319,16 +6319,16 @@ body.dark-mode .nt-body{ color:#e5e5e5; }
 body.dark-mode .nt-chk{ accent-color:#4169e1; }
 
 /* Flashcards: the logo pill follows dark mode (the inverted-logo filter was whitening the whole pill) */
-@media (min-width:1024px){
+@media (min-width:1100px){
   body.dark-mode #app-shell:has(.fc-end-btn) #dtop-logo{ filter:none !important; background:#1e1e1e; border:1px solid #3a3a3a; box-shadow:none; }
 }
 
 /* Settings and My Activity (desktop): no back arrow, page-sized title */
-@media (min-width:1024px){
+@media (min-width:1100px){
   .ov-sticky-head.ov-desk-big button{ display:none !important; }
   .ov-sticky-head.ov-desk-big .grad-text{ font-size:1.875rem !important; line-height:2.25rem !important; }
 }
-@media (min-width:1024px){
+@media (min-width:1100px){
   .ov-desk-big-m > div > button:first-child{ display:none !important; }
   .ov-desk-big-m h1{ position:static !important; transform:none !important; left:auto !important; font-size:1.875rem !important; line-height:2.25rem !important; max-width:none !important; text-align:left !important; margin:0 !important; }
 }
@@ -6357,12 +6357,12 @@ body.dark-mode .fc-face-back .fc-source{ color:#8a94a8 !important; }
 body.dark-mode .fc-face-back .fc-face-foot{ color:#8a94a8 !important; }
 
 /* Desktop flashcards: the title, timer and End button sit below the top strip instead of under the greeting pill */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #flashModal .fc-head{ padding-top:calc(var(--dtop-h) + 8px) !important; padding-left:28px; padding-right:28px; }
 }
 
 /* Desktop flashcards: the card shrinks to fit short windows and the action buttons always fit the column */
-@media (min-width:1024px){
+@media (min-width:1100px){
   #flashModal .fc-stack{ height:clamp(14rem, calc(100vh - 300px), 26rem); max-height:none; margin-bottom:24px; }
   #flashModal .fc-actions{ width:100%; max-width:42rem; margin:14px auto 0; box-sizing:border-box; }
   #flashModal .fc-act-no, #flashModal .fc-act-yes{ width:auto; flex:1 1 0; min-width:0; }
@@ -6502,7 +6502,7 @@ body.dark-mode .pro4-tile.on{background:#1b2a4a;} body.dark-mode .pro4-cta{backg
 body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
 
 /* Desktop side-panel reopen tab must never show on phones/tablets */
-@media (max-width:1023px){ html body #app-shell #rp-reopen-tab, html body #rp-reopen-tab{ display:none !important; } }
+@media (max-width:1099px){ html body #app-shell #rp-reopen-tab, html body #rp-reopen-tab{ display:none !important; } }
 
 /* Installed app: the splash is one second and the logo is already in place, so it carries on from the phone's own launch logo */
 html.standalone-splash #app-splash .app-splash-logo{opacity:1 !important;transform:none !important;animation:none !important;}

@@ -29,7 +29,7 @@
           const right = `<div class="skd-right"><div style="padding:26px 20px 0;">${bar('90px', 14, 'margin-bottom:28px;')}<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>${[0,1,2,3,4].map(() => `<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">${bar('45%', 12, 'margin-bottom:9px;')}${bar('70%', 10)}</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:9999px;"></div></div>`).join('')}</div></div>`;
           return `<div class="skd-wrap">${top}${rail}${main}${right}</div>`;
         }
-        function isDesktopLayout(){ return !!(window.matchMedia && window.matchMedia('(min-width:1024px)').matches); }
+        function isDesktopLayout(){ return !!(window.matchMedia && window.matchMedia('(min-width:1100px)').matches); }
 
         function feedSkeletonHTML(){
           if (isDesktopLayout()) return `<div class="feed-skeleton-marker skd-feed"><div class="skd-main-in">${skeletonStoryRowHTML(5)}<div>${skeletonPostDeskHTML()}${skeletonPostDeskHTML()}</div></div></div>`;

@@ -1138,7 +1138,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             : myTurn
               ? `Your turn: tap a card to claim and answer it.`
               : `${escapeHtml(opponent.name)}'s turn: they're picking a card...`;
-          const isDesktopView = window.innerWidth >= 1024;
+          const isDesktopView = window.innerWidth >= 1100;
           const boardCols = isDesktopView ? (isDaily ? 3 : 4) : (isDaily ? 4 : 5);
           const boardRows = Math.ceil(total / boardCols);
           const turnBanner = isDaily ? '' : `
@@ -1657,7 +1657,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-grid{display:grid;gap:14px}
           .ar-g2{grid-template-columns:1fr 1fr}
           .ar-g4{grid-template-columns:1fr 1fr}
-          @media(min-width:1024px){.ar-foot{padding-left:32px;padding-right:32px}.ar-g4{grid-template-columns:repeat(4,1fr)}.ar-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.ar-in{padding:0 32px 36px}}
+          @media(min-width:1100px){.ar-foot{padding-left:32px;padding-right:32px}.ar-g4{grid-template-columns:repeat(4,1fr)}.ar-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.ar-in{padding:0 32px 36px}}
           .ar-btn{border-radius:999px;font-weight:700;font-size:.85rem;padding:.7rem 1.2rem;text-align:center;border:1px solid var(--line);background:var(--card);color:var(--tx)}
           .ar-btn.p{background:linear-gradient(135deg,var(--pri2),var(--pri));color:#fff;border:0;box-shadow:0 4px 14px rgba(65,105,225,.35)}
           .ar-btn[disabled]{opacity:.4;pointer-events:none}
@@ -1665,7 +1665,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-chip.on{border-color:var(--pri);background:var(--soft);color:var(--pri)}
           .ar-take{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
           .ar-side{display:none}
-          @media(min-width:1024px){.ar-take{grid-template-columns:minmax(0,1fr) 300px;align-items:start}.ar-side{display:block;position:sticky;top:12px}.ar-strip{display:none!important}}
+          @media(min-width:1100px){.ar-take{grid-template-columns:minmax(0,1fr) 300px;align-items:start}.ar-side{display:block;position:sticky;top:12px}.ar-strip{display:none!important}}
           .ar-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
           .ar-strip::-webkit-scrollbar{display:none}
           .ar-n{flex:0 0 auto;width:34px;height:34px;border-radius:10px;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;background:rgba(148,163,184,.18);color:var(--sub);border:0}

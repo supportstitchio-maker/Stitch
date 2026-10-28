@@ -27,7 +27,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function careerSearchBarHTML(){
-          return (careerSearchActive || window.innerWidth >= 1024) ? `
+          return (careerSearchActive || window.innerWidth >= 1100) ? `
             <div class="w-full flex items-center gap-2.5 bg-gray-100 text-gray-500 rounded-full px-4 py-2.5 text-sm">
               ${Icon('search','w-4 h-4')}
               <input id="career-search-input" type="text" value="${escapeHtml(careerSearchQuery)}" oninput="onCareerSearchInput(this.value)" placeholder="Search opportunities, courses..." class="flex-1 min-w-0 bg-transparent outline-none text-gray-800" autocomplete="off">

@@ -242,7 +242,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261028w">
+    <link rel="stylesheet" href="styles.css?v=20261028x">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -476,7 +476,7 @@
             var story = '';
             for (i = 0; i < 5; i++) story += '<div class="skel-story-wrap"><div class="skel-story-circle"><div class="skel-story skel-avatar skel-shimmer"></div>' + (i === 0 ? '<div class="skel-story-badge skel-avatar skel-shimmer"></div>' : '') + '</div></div>';
             var post = '<div class="skel-post"><div class="skel-post-head"><div class="skel-post-avatar skel-avatar skel-shimmer"></div><div class="skel-post-headlines"><div class="skel-line skel-shimmer" style="width:38%;"></div><div class="skel-line skel-shimmer" style="width:24%;"></div></div></div><div class="skel-post-line skel-line skel-shimmer" style="width:100%;"></div><div class="skel-post-line skel-line skel-shimmer" style="width:80%;"></div></div>';
-            if (window.matchMedia && window.matchMedia('(min-width:1024px)').matches) {
+            if (window.matchMedia && window.matchMedia('(min-width:1100px)').matches) {
               // Desktop: skeleton of the whole shell (left menu, feed, right panel) so nothing jumps.
               // Same markup as desktopShellSkeletonHTML() in feed.js (that file loads later than this script).
               var sh = function (w, h, extra) { return '<div class="skel-line skel-shimmer" style="width:' + w + ';height:' + (h || 12) + 'px;' + (extra || '') + '"></div>'; };
@@ -953,18 +953,18 @@
       }
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261028w"></script>
-    <script src="core.js?v=20261028w"></script>
-    <script src="feed.js?v=20261028w"></script>
-    <script src="chat.js?v=20261028w"></script>
-    <script src="study.js?v=20261028w"></script>
-    <script src="courses.js?v=20261028w"></script>
-    <script src="quizzesAndGames.js?v=20261028w"></script>
-    <script src="jobs.js?v=20261028w"></script>
-    <script src="creator.js?v=20261028w"></script>
-    <script src="settings.js?v=20261028w"></script>
-    <script src="profile.js?v=20261028w"></script>
-    <script src="overlays.js?v=20261028w"></script>
-    <script src="games.js?v=20261028w"></script>
+    <script src="analytics.js?v=20261028x"></script>
+    <script src="core.js?v=20261028x"></script>
+    <script src="feed.js?v=20261028x"></script>
+    <script src="chat.js?v=20261028x"></script>
+    <script src="study.js?v=20261028x"></script>
+    <script src="courses.js?v=20261028x"></script>
+    <script src="quizzesAndGames.js?v=20261028x"></script>
+    <script src="jobs.js?v=20261028x"></script>
+    <script src="creator.js?v=20261028x"></script>
+    <script src="settings.js?v=20261028x"></script>
+    <script src="profile.js?v=20261028x"></script>
+    <script src="overlays.js?v=20261028x"></script>
+    <script src="games.js?v=20261028x"></script>
 </body>
 </html>

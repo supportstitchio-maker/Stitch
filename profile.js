@@ -608,7 +608,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             actions.innerHTML = `<div class="flex items-center gap-1">${modeActionsHTML}</div>`;
           }
           if (!body) return;
-          if (window.innerWidth >= 1024) { body.classList.remove('rp-swap'); void body.offsetWidth; body.classList.add('rp-swap'); }
+          if (window.innerWidth >= 1100) { body.classList.remove('rp-swap'); void body.offsetWidth; body.classList.add('rp-swap'); }
           if (rightPanelMode === 'notes' || (inWorkspaceNow() && (rightPanelMode === 'discover' || rightPanelMode === 'profile'))) body.innerHTML = rightPanelNotesHTML();
           else if (rightPanelMode === 'profile') body.innerHTML = rightPanelProfileHTML();
           else if (rightPanelMode === 'discover') body.innerHTML = rightPanelDiscoverHTML();
@@ -634,7 +634,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         }
         function restoreRightPanelAfterChat(){
-          if (window.innerWidth < 1024) return;
+          if (window.innerWidth < 1100) return;
           if (rightPanelMode === 'contact') { if (currentTab === 3) openRightPanel('profile', false); else closeRightPanel(); }
         }
         // Beside an open chat: contact details. Name and bio first, then call / mute / favourite tiles,

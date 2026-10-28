@@ -303,7 +303,7 @@ let studyFabMenuOpen = false;
         function studyMiniBarSync(){
           studyMiniBarRemove();
           const tiles = document.getElementById('study-tools-tiles');
-          if (!tiles || typeof IntersectionObserver === 'undefined' || window.innerWidth >= 1024) return;
+          if (!tiles || typeof IntersectionObserver === 'undefined' || window.innerWidth >= 1100) return;
           const bar = document.createElement('div');
           bar.id = 'study-mini-bar';
           bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:20;display:none;gap:8px;padding:calc(var(--top-safe-pad, 0px) + 8px) 16px 10px;background:rgba(249,250,251,.96);box-shadow:0 6px 16px rgba(15,23,42,.08);backdrop-filter:blur(8px);justify-content:center;';
