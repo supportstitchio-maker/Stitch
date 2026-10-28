@@ -3384,6 +3384,14 @@ window.addEventListener('online', () => { realOfflineCheck(); });
   }
   function place(el){
     var w = el.offsetWidth || 272, h = el.offsetHeight || 200, vw = window.innerWidth, vh = window.innerHeight;
+    // The side panel sits on top of this area: keep the menu to the left of it so it is never covered
+    try {
+      var rp = document.getElementById('desktop-right-panel');
+      if (rp && rp.offsetWidth > 0 && window.getComputedStyle(rp).display !== 'none') {
+        var rpl = rp.getBoundingClientRect().left;
+        if (rpl > 200 && rpl < vw) vw = rpl;
+      }
+    } catch (e) {}
     var r = (lastRect && Date.now() - lastAt < 4000) ? lastRect : { left: vw - 60, right: vw - 24, top: 56, bottom: 72 };
     var left = (r.right - w >= 12 || (r.left + r.right) / 2 > vw / 2) ? r.right - w : r.left;
     left = Math.max(12, Math.min(left, vw - w - 12));
