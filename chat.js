@@ -1454,7 +1454,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const activeId = (typeof activeConvoId !== 'undefined') ? activeConvoId : null;
                 const preferDrop = (drop.id === activeId && keep.id !== activeId)
                   || (keep.id !== activeId && String(drop.id).indexOf('dm-') === 0 && String(keep.id).indexOf('dm-') !== 0);
-                if (preferDrop) { const t = keep; keep = drop; drop = t; arr[keepIdx] = keep; }
+                const isPh = (x) => !x.preview || x.preview === 'You are now connected';
+                const preferDrop2 = preferDrop || (keep.id !== activeId && isPh(keep) && !isPh(drop));
+                if (preferDrop2) { const t = keep; keep = drop; drop = t; arr[keepIdx] = keep; }
                 if (drop.preview && keep.preview !== drop.preview && !keep.preview) keep.preview = drop.preview;
                 if (!keep.otherUserId && drop.otherUserId) keep.otherUserId = drop.otherUserId;
                 if (!keep.photo && drop.photo) keep.photo = drop.photo;
@@ -2190,7 +2192,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error || !Array.isArray(reqRows) || !reqRows.length) return;
 
             const knownIds = new Set(convoArrays().flat().map(c => c.id));
-            const newRows = reqRows.filter(r => !knownIds.has(r.id));
+            const knownUsers = new Set(convoArrays().flat().map(c => c && c.otherUserId).filter(Boolean));
+            const newRows = reqRows.filter(r => !knownIds.has(r.id) && !knownUsers.has(r.from_user));
             if (!newRows.length) return;
 
             const senderIds = newRows.map(r => r.from_user);
@@ -2324,7 +2327,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error || !Array.isArray(reqRows) || !reqRows.length) return;
 
             const knownIds = new Set(convoArrays().flat().map(c => c.id));
-            const newRows = reqRows.filter(r => !knownIds.has(r.id));
+            const knownUsers = new Set(convoArrays().flat().map(c => c && c.otherUserId).filter(Boolean));
+            const newRows = reqRows.filter(r => !knownIds.has(r.id) && !knownUsers.has(r.to_user));
             if (!newRows.length) return;
 
             const recipientIds = newRows.map(r => r.to_user);
