@@ -6532,3 +6532,16 @@ body:not(.dark-mode) .fc-face-back.fc-bk-0, body:not(.dark-mode) .fc-face-back.f
 
 /* Flashcards: the area around the card accepts swipes too */
 .fc-main .fc-stage{ touch-action:none; }
+
+/* Flashcards: every part of the card takes swipes (the scrolling text area used to hand them to the browser),
+   and the action buttons share the white header-pill look */
+.fc-card, .fc-card *{ touch-action:none !important; }
+.fc-act-no, .fc-act-yes, .fc-act-flip{ background:#fff !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important; }
+.fc-act-flip{ color:#1f2937 !important; }
+.fc-act-no{ color:#e11d48 !important; }
+.fc-act-yes{ color:#059669 !important; }
+body.dark-mode .fc-act-no, body.dark-mode .fc-act-yes, body.dark-mode .fc-act-flip{ background:#1e1e1e !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; }
+body.dark-mode .fc-act-flip{ color:#f2f2f2 !important; }
+body.dark-mode .fc-act-no{ color:#fb7185 !important; }
+body.dark-mode .fc-act-yes{ color:#34d399 !important; }
+body:not(.dark-mode) .fc-act-flip{ background:#fff !important; }
