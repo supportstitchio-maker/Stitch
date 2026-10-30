@@ -4142,6 +4142,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }
           if (typeof markNotifsReadForConvo === 'function') markNotifsReadForConvo(id);
           markGroupConvoMessagesRead(id);
+          {
+            const m0 = convoMeta[id];
+            window.__convoHistoryLoading = window.__convoHistoryLoading || {};
+            if (m0 && (m0.otherUserId || m0.icon === 'users') && !(conversationMessages[id] || []).length) window.__convoHistoryLoading[id] = true;
+          }
           openOverlay('conversation');
           requestAnimationFrame(() => {
             const log = document.getElementById('convo-log');
@@ -4157,7 +4162,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const isGroupConvo = !!(meta && meta.icon === 'users');
           if (meta && (meta.otherUserId || isGroupConvo)) {
             // loadConversationHistory is keyed purely on convo_id, so it already works for group chats
-            loadConversationHistory(id).then(() => {
+            loadConversationHistory(id).catch(() => {}).then(() => {
+              if (window.__convoHistoryLoading) delete window.__convoHistoryLoading[id];
               markGroupConvoMessagesRead(id);
               if (activeConvoId !== id) return;
               const log = document.getElementById('convo-log');
@@ -5376,6 +5382,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           convoGlimpseCards = [];
           const meta = activeConvoMetaSafe(activeConvoId);
           const msgs = conversationMessages[activeConvoId] || [];
+          if (!msgs.length && window.__convoHistoryLoading && window.__convoHistoryLoading[activeConvoId]) {
+            const b = (side, w, h) => `<div class="flex ${side === 'r' ? 'justify-end' : 'justify-start'}"><div class="skel-shimmer" style="width:${w}%;height:${h}px;border-radius:20px;"></div></div>`;
+            return b('l', 52, 44) + b('r', 38, 44) + b('l', 64, 70) + b('r', 46, 44) + b('l', 34, 44) + b('r', 58, 70);
+          }
           let lastDateKey = null;
           return msgs.map(m => {
             const ts = m.time || Date.now();

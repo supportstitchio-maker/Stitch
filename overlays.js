@@ -3135,7 +3135,14 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function refreshNotifBadge(){
           if (typeof unreadNotifCount !== 'function') return;
-          const count = unreadNotifCount();
+          let count = unreadNotifCount();
+          // Hold the badge back while the app is still loading (skeleton on screen / account data not in yet)
+          const _booting = !!document.querySelector('.feed-skeleton-marker')
+            || (typeof userStateLoadedForUserId !== 'undefined' && !userStateLoadedForUserId);
+          if (_booting && count) {
+            count = 0;
+            if (!window.__notifBadgeRetry) window.__notifBadgeRetry = setTimeout(() => { window.__notifBadgeRetry = null; try { refreshNotifBadge(); } catch (e) {} }, 800);
+          }
           const existing = document.getElementById('notif-badge');
           if (count) {
             if (existing) {
