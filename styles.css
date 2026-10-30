@@ -6545,3 +6545,7 @@ body.dark-mode .fc-act-flip{ color:#f2f2f2 !important; }
 body.dark-mode .fc-act-no{ color:#fb7185 !important; }
 body.dark-mode .fc-act-yes{ color:#34d399 !important; }
 body:not(.dark-mode) .fc-act-flip{ background:#fff !important; }
+
+/* Profile-picture placeholders (no photo) are grey, matching the grey pills elsewhere */
+body:not(.dark-mode) .rounded-full.bg-blue-50.text-gray-600.overflow-hidden,
+body:not(.dark-mode) .bg-blue-50.rounded-full.overflow-hidden:has(> svg){ background:#e5e7eb !important; }
