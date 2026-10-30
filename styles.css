@@ -6506,3 +6506,29 @@ body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
 
 /* Installed app: the splash is one second and the logo is already in place, so it carries on from the phone's own launch logo */
 html.standalone-splash #app-splash .app-splash-logo{opacity:1 !important;transform:none !important;animation:none !important;}
+
+/* Flashcards: three definition-side colours in sequence, plain centred label, white header pills,
+   grey flip button, Got it on the right / Again on the left */
+.fc-face-top{ flex-direction:column !important; align-items:center !important; justify-content:center; gap:4px !important; text-align:center; }
+.fc-face-top .fc-chip{ background:none !important; padding:0 !important; border-radius:0 !important; box-shadow:none !important; font-size:12px; letter-spacing:.16em; }
+.fc-face-top .fc-source{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0{ background:linear-gradient(160deg,#7d8290,#6c7180) !important; color:#fff; border:0; }
+body:not(.dark-mode) .fc-face-back.fc-bk-1{ background:linear-gradient(160deg,#5a6377,#464e60) !important; color:#fff; border:0; }
+body:not(.dark-mode) .fc-face-back.fc-bk-2{ background:linear-gradient(160deg,#f1efeb,#e4e1db) !important; color:#1f2937; border:0; }
+body:not(.dark-mode) .fc-face-back .fc-chip{ color:inherit !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0 .fc-source, body:not(.dark-mode) .fc-face-back.fc-bk-1 .fc-source{ color:rgba(255,255,255,.65) !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0 .fc-face-foot, body:not(.dark-mode) .fc-face-back.fc-bk-1 .fc-face-foot{ color:rgba(255,255,255,.55) !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-2 .fc-source, body:not(.dark-mode) .fc-face-back.fc-bk-2 .fc-face-foot{ color:#6b7280 !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-2 .fc-text{ color:#1f2937 !important; }
+.fc-round-btn, .fc-end-btn{ background:#fff !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important; color:#1f2937 !important; }
+body.dark-mode .fc-round-btn, body.dark-mode .fc-end-btn{ background:#1e1e1e !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; }
+body:not(.dark-mode) .fc-act-flip{ background:#8b909c !important; box-shadow:none !important; }
+.fc-stamp-yes{ left:auto !important; right:22px !important; transform:rotate(8deg) !important; }
+.fc-stamp-no{ right:auto !important; left:22px !important; transform:rotate(-8deg) !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0 .fc-text, body:not(.dark-mode) .fc-face-back.fc-bk-1 .fc-text{ color:#fff !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0 .fc-chip, body:not(.dark-mode) .fc-face-back.fc-bk-1 .fc-chip{ color:#fff !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-2 .fc-chip{ color:#1f2937 !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk-0, body:not(.dark-mode) .fc-face-back.fc-bk-1, body:not(.dark-mode) .fc-face-back.fc-bk-2{ box-shadow:0 16px 40px rgba(15,23,42,.18) !important; }
+
+/* Flashcards: the area around the card accepts swipes too */
+.fc-main .fc-stage{ touch-action:none; }

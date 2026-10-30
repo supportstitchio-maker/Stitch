@@ -1267,10 +1267,10 @@ let studyFabMenuOpen = false;
           const text = fcCleanText(isFront ? card.term : card.def);
           const source = card.source ? escapeHtml(card.source) : '';
           return `
-            <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back'}" ${isFront ? `style="--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};"` : ''}>
+            <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back fc-bk-' + (idx % 3)}" ${isFront ? `style="--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};"` : ''}>
               <div class="fc-face-top">
-                <span class="fc-chip">${isFront ? 'Term' : 'Definition'}</span>
                 ${source ? `<span class="fc-source">${source}</span>` : ''}
+                <span class="fc-chip">${isFront ? 'Term' : 'Definition'}</span>
               </div>
               <div class="fc-face-body">
                 <div class="fc-text ${fcTextSize(text)} ${isFront ? 'font-display' : ''}">${escapeHtml(text)}</div>
@@ -1356,8 +1356,10 @@ let studyFabMenuOpen = false;
             const flipped = !!(document.getElementById('fcFlipper') || {}).classList && document.getElementById('fcFlipper').classList.contains('is-flipped');
             return el.querySelector(flipped ? '.fc-face-back .fc-face-body' : '.fc-face-front .fc-face-body');
           };
+          let fromEdge = false;
           el.onpointerdown = e => {
             if (fcBusy || id !== null) return;
+            fromEdge = !!e.__fcEdge;
             id = e.pointerId; sx = lx = e.clientX; sy = ly = e.clientY; dx = 0; vx = 0;
             t0 = lt = performance.now(); moved = false; axis = null; body = faceBody();
             try { el.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1393,13 +1395,20 @@ let studyFabMenuOpen = false;
             id = null;
             el.classList.remove('fc-dragging');
             if (cancelled) { reset(); return; }
-            if (!moved) { if (performance.now() - t0 < 600) flipStudyCard(); return; }
+            if (!moved) { if (!fromEdge && performance.now() - t0 < 600) flipStudyCard(); return; }
             if (axis === 'y') return;
             // Distance OR a quick flick commits the swipe
             const flick = Math.abs(vx) > 0.45 && Math.abs(dx) > 30;
             if (Math.abs(dx) > 70 || flick) fcMark(dx > 0); else reset();
           };
           el.onpointerup = () => finish(false);
+          // Swiping also works from the sides (and any empty space around the card), not only on the card itself
+          const main = document.querySelector('#flashModalContent .fc-main');
+          if (main) main.onpointerdown = e => {
+            if (e.target.closest('#fcCard, button, .fc-tools, .fc-actions')) return;
+            e.__fcEdge = true;
+            el.onpointerdown(e);
+          };
           el.onpointercancel = () => finish(true);
           el.onlostpointercapture = () => { if (id !== null) finish(false); };
         }
