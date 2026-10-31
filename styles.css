@@ -6687,3 +6687,9 @@ body.dark-mode .nc-label{ color:#9a9a9a; }
 
 /* Confirm sheets (delete / leave / go back): no circle icon above the message */
 .sheet-top-icon{ display:none !important; }
+
+/* Welcome / sign-up hero: group-of-students photo (light and dark) */
+@media (max-width:1099px){
+  #auth-gate:has(#auth-panel-login.active) .auth-head,
+  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-group.webp') 50% 30% / cover no-repeat, #d9c9a8 !important; }
+}
