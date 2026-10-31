@@ -3759,7 +3759,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             title: isGroup ? `${callerName} is calling "${meta.name}"` : `${callerName} is calling you`,
             body: type === 'video' ? 'Incoming video call' : 'Incoming voice call',
             tag: 'call-' + convoId,
-            data: { kind: 'call', convoId, type, fromUserId: myId, callerName: String(callerName).slice(0, 60), groupName: isGroup ? String(meta.name || '').slice(0, 60) : '' },
+            data: { kind: 'call', sentAt: Date.now(), convoId, type, fromUserId: myId, callerName: String(callerName).slice(0, 60), groupName: isGroup ? String(meta.name || '').slice(0, 60) : '' },
           });
         }
 
@@ -8139,9 +8139,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function callToast(text){
           ensureCallUiStyles();
+          document.querySelectorAll('.cu-toast').forEach(t => t.remove()); // one at a time, never stacked
           const el = document.createElement('div');
           el.className = 'cu-toast';
-          el.textContent = text;
+          const _t = String(text || '');
+          const _svg = (p) => `<span class="cu-toast-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg></span>`;
+          const _mic = '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>';
+          const _ic = /^Muted/i.test(_t) ? _svg(_mic + '<path d="M3 3l18 18"/>')
+            : /^Unmuted/i.test(_t) ? _svg(_mic)
+            : /whiteboard/i.test(_t) ? _svg('<path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16l-1 4z"/>')
+            : _svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/>');
+          el.innerHTML = _ic + '<span class="cu-toast-tx"></span>';
+          el.querySelector('.cu-toast-tx').textContent = _t;
           document.body.appendChild(el);
           setTimeout(() => el.remove(), 3300);
         }
@@ -9998,13 +10007,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function callChatCtx(){
           if (typeof activeMeeting !== 'undefined' && activeMeeting) {
-            return { table: 'meeting_messages', keyCol: 'meeting_id', key: activeMeeting.id, title: activeMeeting.title || '', heading: 'Chat', noun: 'meeting', extra: {}, join: null,
+            return { table: 'meeting_messages', keyCol: 'meeting_id', key: activeMeeting.id, title: activeMeeting.title || '', heading: 'In-call chat', noun: 'meeting', extra: {}, join: null,
               float: (id, t, n) => addMeetingFloatComment(id, t, n) };
           }
           if (typeof liveLectureState !== 'undefined' && liveLectureState && liveLectureState.connected && liveLectureState.lectureId) {
             const classId = liveLectureState.classId, lid = String(liveLectureState.lectureId);
             const cls = (typeof myClasses !== 'undefined') ? myClasses.find(c => c.id === classId) : null;
-            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'Chat', noun: 'session', extra: { class_id: classId },
+            return { table: 'lecture_messages', keyCol: 'lecture_id', key: lid, title: (cls && cls.name) || 'Space session', heading: 'In-call chat', noun: 'session', extra: { class_id: classId },
               join: async (sb) => { const r = await sb.rpc('join_lecture_chat', { p_class: classId, p_lecture: lid }); if (r.error) throw r.error; },
               float: (id, t, n) => { if (typeof addLectureFloatingComment === 'function') addLectureFloatingComment(id, t, n); } };
           }
@@ -10153,7 +10162,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div style="display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
               ${mine ? '' : `<span style="font-size:11px;font-weight:700;color:var(--cu-sub);margin:0 10px 2px;">${name}</span>`}
-              <div style="max-width:82%;padding:9px 13px;border-radius:18px;font-size:15px;line-height:1.35;word-break:break-word;white-space:pre-wrap;${mine ? 'background:#1e90ff;color:#fff;border-bottom-right-radius:6px;' : 'background:var(--cu-soft);color:var(--cu-fg);border-bottom-left-radius:6px;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
+              <div class="${mine ? 'text-white' : 'bg-gray-100 text-gray-700'}" style="max-width:82%;padding:10px 16px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;${mine ? 'background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;' : 'border-radius:20px 20px 20px 0;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
               <span style="font-size:10px;color:var(--cu-sub);margin:2px 10px 0;">${m.failed ? 'Not sent \u00b7 tap to retry' : (m.pending ? 'Sending\u2026' : meetingChatFmtTime(m.created_at))}</span>
             </div>`;
         }
@@ -10187,6 +10196,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           page.style.top = '0px';
           page.style.boxSizing = 'border-box';
           page.style.height = window.innerHeight + 'px';
+          // On desktop the chat covers only the call screen (not the whole window)
+          if (window.innerWidth >= 1100) {
+            const scr = document.querySelector('#overlay .cu-screen, #call-screen, #lecture-call-screen');
+            if (scr) {
+              const r = scr.getBoundingClientRect();
+              const padL = parseFloat(getComputedStyle(scr).paddingLeft) || 0;
+              if (r.width > 200) { page.style.left = (r.left + padL) + 'px'; page.style.right = 'auto'; page.style.width = (r.width - padL) + 'px'; }
+            }
+          } else { page.style.left = '0px'; page.style.right = '0px'; page.style.width = ''; }
           page.style.paddingBottom = inset + 'px';
           const bar = document.getElementById('meeting-chat-bar');
           if (bar) bar.style.paddingBottom = open ? '10px' : 'calc(env(safe-area-inset-bottom,0px) + 10px)';
@@ -10437,6 +10455,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (d && d.type === 'call-push' && d.data && d.data.convoId) {
               try {
                 const cd = d.data;
+                // A call push only rings while the call is still live: older taps/pushes never ring
+                const _age = cd.sentAt ? (Date.now() - Number(cd.sentAt)) : Infinity;
+                if (_age > 40000 && (d.click || cd.sentAt)) { try { closeCallNotifications(cd.convoId); } catch (e) {} return; }
                 if (incomingCallInfo && document.visibilityState === 'visible') closeCallNotifications(cd.convoId);
                 if (!incomingCallInfo && !callState.convoId) {
                   handleIncomingCallRing({ convoId: cd.convoId, type: cd.type || 'audio', fromUserId: cd.fromUserId, callerName: cd.callerName || 'Someone', callerPhoto: cd.avatar || null, groupName: cd.groupName || null });

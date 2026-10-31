@@ -6549,3 +6549,14 @@ body:not(.dark-mode) .fc-act-flip{ background:#fff !important; }
 /* Profile-picture placeholders (no photo) are grey, matching the grey pills elsewhere */
 body:not(.dark-mode) .rounded-full.bg-blue-50.text-gray-600.overflow-hidden,
 body:not(.dark-mode) .bg-blue-50.rounded-full.overflow-hidden:has(> svg){ background:#e5e7eb !important; }
+
+/* Meetings: the "Enter a meeting code or link" pill is a plain solid pill (no glass) like the search bar */
+body:not(.dark-mode) .mh-code{ background:#e5e7eb !important; border:0 !important; box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+body.dark-mode .mh-code{ background:#1e1e1e !important; border:0 !important; box-shadow:none !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+
+/* In-call notices: white pill with a grey icon (like the app's other pills); call titles in dodger blue */
+body .cu-toast{ display:inline-flex !important; align-items:center; gap:10px; padding:10px 18px 10px 10px !important; background:#fff !important; color:#1f2937 !important; box-shadow:0 6px 22px rgba(15,23,42,.14) !important; border:0 !important; white-space:nowrap; }
+body .cu-toast .cu-toast-ic{ width:30px; height:30px; border-radius:50%; background:#eceef2; color:#4b5563; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+body.dark-mode .cu-toast{ background:#1e1e1e !important; color:#f2f2f2 !important; box-shadow:0 6px 22px rgba(0,0,0,.5) !important; }
+body.dark-mode .cu-toast .cu-toast-ic{ background:#2b2b2b; color:#d1d5db; }
+.cu-title-name{ color:#1e90ff !important; }

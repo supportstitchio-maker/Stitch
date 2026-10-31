@@ -1,5 +1,5 @@
 // Only offline.html is cached
-const OFFLINE_CACHE = 'stitch-offline-v433';
+const OFFLINE_CACHE = 'stitch-offline-v442';
 const OFFLINE_URL = '/offline.html';
 
 // Runtime cache for user-uploaded media (profile photos, post/glimpse images & videos,
@@ -204,7 +204,7 @@ self.addEventListener('notificationclick', (event) => {
         if ('focus' in client) {
           if (postId != null) { try { client.postMessage({ type: 'open-post', postId }); } catch (e) {} }
           if (meetingCode) { try { client.postMessage({ type: 'open-meeting', code: meetingCode }); } catch (e) {} }
-          if (data.kind === 'call' && data.convoId) { try { client.postMessage({ type: 'call-push', data }); } catch (e) {} }
+          if (data.kind === 'call' && data.convoId) { try { client.postMessage({ type: 'call-push', data, click: true }); } catch (e) {} }
           if (data.convoId && data.kind !== 'call') { try { client.postMessage({ type: 'open-chat', convoId: data.convoId }); } catch (e) {} }
           if (data.type === 'connect_request') { try { client.postMessage({ type: 'open-requests' }); } catch (e) {} }
           return client.focus();

@@ -8900,7 +8900,13 @@ try {
           }
           if (lectureIsTeacher()) return; 
           if (payload.type === 'view') {
+            const _prevView = liveLectureState.view;
             if (Array.isArray(payload.strokes)) whiteboardStrokes = payload.strokes.slice();
+            if (payload.view !== _prevView && typeof callToast === 'function') {
+              if (payload.view === 'whiteboard') callToast('Your moderator is using the whiteboard');
+              else if (_prevView === 'whiteboard') callToast('Your moderator closed the whiteboard');
+            }
+            if (payload.view === 'whiteboard') { try { closeLectureSheets(); } catch (e) {} }
             liveLectureState.view = payload.view;
             rerenderLectureScreen();
             if (payload.view === 'whiteboard') setTimeout(initWhiteboardCanvas, 0);
