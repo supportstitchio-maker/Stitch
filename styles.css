@@ -6585,3 +6585,54 @@ body.dark-mode .cu-handpill.on, body.dark-mode .cu-ctl.on .cu-ctl-btn{
   background:rgba(30,144,255,0.16) !important; border:1.5px solid #1e90ff !important; color:#60a5fa !important; box-shadow:0 3px 12px rgba(30,144,255,0.22) !important;
 }
 .cu-glass .cu-tile2-ic, .cu-tile2 .cu-tile2-ic{ color:inherit; }
+
+/* End-call button: same white pill as the other call buttons, red icon */
+body:not(.dark-mode) .cu-ctl.end .cu-ctl-btn{ background:#fff !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important; color:#ef4444 !important; }
+body.dark-mode .cu-ctl.end .cu-ctl-btn{ background:#1e1e1e !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; color:#f87171 !important; }
+.cu-ctl.end .cu-ctl-btn svg{ color:inherit; }
+
+/* End-call button: red pill, white phone icon (overrides the white version above) */
+body:not(.dark-mode) .cu-ctl.end .cu-ctl-btn, body.dark-mode .cu-ctl.end .cu-ctl-btn{ background:#ef4444 !important; border:1.5px solid transparent !important; box-shadow:none !important; color:#fff !important; }
+
+/* Grey circle back arrows use the same white pill style as the Messaging / Career tabs */
+body:not(.dark-mode) button[title="Back"].absolute.rounded-full, body:not(.dark-mode) .nt-rb{
+  background:#fff !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important; color:#1f2937 !important;
+}
+body.dark-mode button[title="Back"].absolute.rounded-full, body.dark-mode .nt-rb{
+  background:#1e1e1e !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; color:#f2f2f2 !important;
+}
+
+/* Meetings page redesign: code field first, three action tiles, upcoming timeline */
+.mh-wrap{padding-top:6px;}
+.mh-code{margin-top:4px !important;height:58px;padding:0 7px 0 20px !important;}
+.mh-code input{height:44px !important;font-size:15px !important;}
+.mh-join{height:44px !important;padding:0 24px !important;font-size:14px !important;color:#fff !important;background:linear-gradient(135deg,#1e90ff,#4169e1) !important;box-shadow:0 4px 12px rgba(30,144,255,.3);}
+body:not(.dark-mode) .mh-code{background:#fff !important;border:1.5px solid #cbd5e1 !important;box-shadow:0 2px 10px rgba(15,23,42,0.10) !important;}
+body.dark-mode .mh-code{border:1.5px solid #3a3a3a !important;}
+.mh-acts{display:flex;gap:12px;margin-top:16px;}
+.mh-tile{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 6px 16px;border-radius:22px;background:#fff;box-shadow:0 2px 10px rgba(15,23,42,0.08);font-size:13px;font-weight:700;color:#1f2937;}
+.mh-tile svg{color:#6b7280;}
+.mh-tile:active{transform:scale(.97);}
+body.dark-mode .mh-tile{background:#1e1e1e;color:#f2f2f2;box-shadow:0 2px 10px rgba(0,0,0,.5);}
+body.dark-mode .mh-tile svg{color:#9a9a9a;}
+.mh-label{margin:26px 4px 10px;}
+.mh-empty{border:1.5px dashed #cbd5e1;border-radius:22px;padding:26px 20px !important;text-align:center;}
+.mh-empty b{display:block;color:#0f172a;font-size:16px;margin-bottom:4px;}
+body.dark-mode .mh-empty{border-color:#3a3a3a;} body.dark-mode .mh-empty b{color:#f2f2f2;}
+.mh-empty-btn{margin-top:14px;display:inline-flex;}
+.mh-tl{position:relative;padding-left:62px;}
+.mh-tl:before{content:"";position:absolute;left:50px;top:10px;bottom:10px;width:2px;background:#e2e8f0;}
+body.dark-mode .mh-tl:before{background:#2b2b2b;}
+.mh-card{position:relative;border:0 !important;box-shadow:0 2px 10px rgba(15,23,42,0.08);border-radius:20px;overflow:visible;}
+body.dark-mode .mh-card{box-shadow:0 2px 10px rgba(0,0,0,.5);}
+.mh-card:before{content:"";position:absolute;left:-17px;top:22px;width:10px;height:10px;border-radius:50%;background:#1e90ff;box-shadow:0 0 0 4px #f8fafc;}
+body.dark-mode .mh-card:before{box-shadow:0 0 0 4px #121212;}
+.mh-card.live:before{background:#22c55e;}
+.mh-card .mh-date{position:absolute;left:-64px;top:14px;width:34px;height:auto;background:transparent !important;border-radius:0;text-align:right;align-items:flex-end;}
+.mh-card .mh-date b{font-size:12.5px;}
+.mh-card .mh-date small{font-size:10px;margin-top:2px;}
+.mh-links{padding-left:14px !important;}
+
+/* Meetings Join pill: white like the tab pills */
+body:not(.dark-mode) .mh-join{ background:#fff !important; color:#1f2937 !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.12) !important; }
+body.dark-mode .mh-join{ background:#2a2a2a !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,.5) !important; }

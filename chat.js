@@ -8899,15 +8899,19 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function meetingsHomeCardsHTML(){
           const upcoming = (myUpcomingMeetings || []);
           if (upcoming.length) setTimeout(startMeetingCountdownTicker, 0);
-          if (!upcoming.length) return `<div class="mh-empty">Meetings you schedule or ask to be reminded about show up here.</div>`;
-          return upcoming.map(m => {
+          if (!upcoming.length) return `<div class="mh-empty"><b>Nothing scheduled</b>Meetings you schedule or ask to be reminded about show up here.<br><button onclick="pickInlineMeeting('scheduled')" class="mh-empty-btn filter-pill on">Schedule one</button></div>`;
+          return `<div class="mh-tl">` + upcoming.map(m => {
             const dp = meetingMonthDay(m.starts_at);
+            const _d = new Date(m.starts_at);
+            const _ok = isFinite(_d.getTime());
+            const tmMain = m.state === 'live' ? 'Now' : (_ok ? _d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?(AM|PM)$/i, '') : dp.day);
+            const tmSub = m.state === 'live' ? 'Live' : (_ok ? (/PM/i.test(_d.toLocaleTimeString(undefined, { hour: 'numeric', hour12: true })) ? 'PM' : 'AM') : dp.mon);
             const act = (m.is_admin || m.state === 'live') ? (m.state === 'live' ? 'Join' : 'Start') : 'Details';
             const sub = `<span data-meeting-countdown="${escapeHtml(m.starts_at)}" style="font-variant-numeric:tabular-nums;">${escapeHtml(meetingCountdownText(m.starts_at))}</span>${m.is_host ? '' : (m.is_admin ? ' \u00b7 Admin' : ' \u00b7 Reminder on')}`;
             return `
-              <div class="mh-card">
+              <div class="mh-card${m.state === 'live' ? ' live' : ''}">
+                <span class="mh-date"><b>${tmMain}</b><small>${tmSub}</small></span>
                 <button onclick="openMeetingByCode('${escapeHtml(m.code)}')" class="mh-main">
-                  <span class="mh-date"><b>${dp.day}</b><small>${dp.mon}</small></span>
                   <span class="mh-info"><b>${escapeHtml(m.title)}</b><small>${sub}</small></span>
                   <span class="mh-act filter-pill">${act}</span>
                 </button>
@@ -8917,22 +8921,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${m.is_admin ? `<button class="red" onclick="confirmEndMeetingFromList('${escapeHtml(m.code)}')">${Icon('phoneHangup', 'w-4 h-4')}<span>${m.state === 'live' ? 'End' : 'Cancel'}</span></button>` : ''}
                 </div>
               </div>`;
-          }).join('');
+          }).join('') + `</div>`;
+        }
+        // "Invite link": copy the link of a meeting you host, or start one so you get a link to share
+        function meetingsInviteLink(){
+          const mine = (myUpcomingMeetings || []).find(m => m.is_host);
+          if (mine) { copyMeetingLink(mine.code); return; }
+          pickInlineMeeting('live');
         }
         function inlineMeetingsHTML(){
           return `
             <div class="meetings-fill mh-wrap">
-              <button onclick="pickInlineMeeting('live')" class="mh-start">
-                <span class="mh-start-tx"><b>Start a meeting</b><small>Get a link to share in one tap</small></span>
-                <span class="mh-start-ic">${Icon('video', 'w-5 h-5')}</span>
-              </button>
               <div class="mh-code">
                 <input id="meetings-code-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Enter a meeting code or link" onkeydown="if(event.key==='Enter'){event.preventDefault();joinMeetingFromTypedCode();}">
-                <button onclick="joinMeetingFromTypedCode()" class="mh-join filter-pill">Join</button>
+                <button onclick="joinMeetingFromTypedCode()" class="mh-join">Join</button>
+              </div>
+              <div class="mh-acts">
+                <button onclick="pickInlineMeeting('live')" class="mh-tile">${Icon('video', 'w-6 h-6')}<span>New meeting</span></button>
+                <button onclick="pickInlineMeeting('scheduled')" class="mh-tile">${Icon('calendar', 'w-6 h-6')}<span>Schedule</span></button>
+                <button onclick="meetingsInviteLink()" class="mh-tile">${Icon('link', 'w-6 h-6')}<span>Invite link</span></button>
               </div>
               <div class="mh-label">Upcoming</div>
               <div id="meetings-home-cards">${meetingsHomeCardsHTML()}</div>
-              <button onclick="pickInlineMeeting('scheduled')" class="mh-fab">${Icon('plus', 'w-4 h-4')}<span>Schedule</span></button>
             </div>`;
         }
 
@@ -9643,6 +9653,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const code = pendingMeetingCode;
           const res = await fetchMeetingByCode(code);
           if (code !== pendingMeetingCode) return;
+          if (res.status === 'ok' && (res.state === 'ended' || res.state === 'cancelled') && currentOverlayKind === 'meetingJoin') {
+            // An ended / cancelled meeting is just a pop-up notice, not a page of its own
+            stopMeetingJoinPoll();
+            closeOverlay();
+            try { openAppAlertModal(res.state === 'ended' ? 'This meeting has ended.' : 'This meeting was cancelled.', res.title || ''); } catch (e) {}
+            return;
+          }
           if (res.status === 'ok') { pendingMeetingInfo = res; pendingMeetingError = null; }
           else { pendingMeetingInfo = null; pendingMeetingError = res.status === 'not_found' ? 'not_found' : 'offline'; }
           const ov = document.getElementById('overlay');
