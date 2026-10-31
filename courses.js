@@ -233,7 +233,7 @@ try {
           if (aiHistoryPanelView === 'delete') {
             return `
               <div class="p-5 flex flex-col items-center text-center">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background:#fef2f2;color:#dc2626;">${Icon('trash','w-5 h-5')}</div>
+                <div class="sheet-top-icon w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background:#fef2f2;color:#dc2626;">${Icon('trash','w-5 h-5')}</div>
                 <div class="font-semibold text-sm mb-1.5">Clear this chat?</div>
                 <div class="text-xs text-gray-500 mb-4">This deletes your whole conversation with Stitch Bot. This can't be undone.</div>
                 <button onclick="clearAIChat()" class="w-full bg-red-500 text-white font-semibold text-sm py-2.5 rounded-2xl mb-2">Clear chat</button>

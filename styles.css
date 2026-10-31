@@ -6684,3 +6684,6 @@ body.dark-mode .nc-searchbar{ background:#1e1e1e; border-color:#3a3a3a; }
 body.dark-mode .nc-searchbar-back{ color:#f2f2f2; }
 .nc-label{ font-size:13px; font-weight:600; color:#6b7280; padding:14px 2px 4px; }
 body.dark-mode .nc-label{ color:#9a9a9a; }
+
+/* Confirm sheets (delete / leave / go back): no circle icon above the message */
+.sheet-top-icon{ display:none !important; }

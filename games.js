@@ -583,7 +583,7 @@ let userPoints = 0;
         function quizSearchingHTML(){
           return `
             <div class="text-center py-6">
-              <div class="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style="background:rgba(65,105,225,0.12);">${Icon('search','w-7 h-7')}</div>
+              <div class="sheet-top-icon w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style="background:rgba(65,105,225,0.12);">${Icon('search','w-7 h-7')}</div>
               <div class="text-lg font-bold text-gray-900 mb-1">Searching for a match...</div>
               <div class="text-sm text-gray-500 mb-6">Looking for someone online staking ${quizSearchStake} coins.</div>
               <button onclick="cancelQuizMatchSearch()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel</button>
