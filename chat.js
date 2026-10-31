@@ -615,23 +615,39 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           openOverlay('newCollaboration');
         }
 
+        function filterNewCollabContacts(q){
+          q = String(q || '').trim().toLowerCase();
+          document.querySelectorAll('#overlay .nc-row').forEach(el => {
+            el.style.display = (!q || (el.getAttribute('data-name') || '').indexOf(q) !== -1) ? '' : 'none';
+          });
+        }
         function newCollabSelectHTML(){
           const contacts = newCollabContactSource();
           const count = newCollabSelected.size;
+          const picked = contacts.filter(c => newCollabSelected.has(c.id));
           return `
-            <div class="px-5 pb-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
-              <div class="flex items-center gap-4">
-                <button onclick="newCollabStep='type';openOverlay('newCollaboration')" class="flex-shrink-0 collab-pill-back">${IconBold('back','w-5 h-5')}</button>
-                <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-lg font-display truncate grad-text">${newCollabVisibility === 'general' ? 'General collaboration' : 'Private collaboration'}</div>
-                  ${count ? `<div class="text-xs text-gray-400">${count} selected${newCollabVisibility === 'private' ? ` · max ${PRIVATE_COLLAB_MAX_MEMBERS}` : ''}</div>` : ''}
-                </div>
+            <div class="px-4 pb-2 flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 4px);">
+              <div class="nc-searchbar">
+                <button onclick="newCollabStep='type';openOverlay('newCollaboration')" class="nc-searchbar-back" aria-label="Back">${IconBold('back','w-5 h-5')}</button>
+                <input type="text" oninput="filterNewCollabContacts(this.value)" placeholder="Search contacts" autocomplete="off" style="outline:none;">
               </div>
             </div>
+            ${picked.length ? `
+              <div class="nc-strip flex flex-nowrap gap-4 overflow-x-auto no-scrollbar flex-shrink-0 px-5">
+                ${picked.map(c => `
+                  <div class="relative flex flex-col items-center gap-1 w-14 flex-shrink-0">
+                    <div class="relative">
+                      <div class="w-12 h-12 rounded-full ${c.avatarBg} flex items-center justify-center text-gray-600 overflow-hidden">${avatarInnerHTML(c,'w-5 h-5')}</div>
+                      <button onclick="toggleNewCollabContact('${c.id}')" class="nc-strip-x" title="Remove">${Icon('close','w-2.5 h-2.5')}</button>
+                    </div>
+                    <div class="text-[11px] text-gray-600 text-center truncate w-full">${escapeHtml((c.name || '').split(' ')[0])}</div>
+                  </div>`).join('')}
+              </div>` : ''}
             <div class="flex-1 overflow-y-auto px-5" style="position:relative;">
+              <div class="nc-label">Contacts</div>
               <div class="divide-y divide-gray-100">
                 ${contacts.map(c => `
-                  <button onclick="toggleNewCollabContact('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
+                  <button onclick="toggleNewCollabContact('${c.id}')" data-name="${escapeHtml(String(c.name || '').toLowerCase())}" class="nc-row w-full flex items-center gap-3 py-3 text-left">
                     <div class="w-11 h-11 rounded-full ${c.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-5 h-5')}</div>
                     <div class="flex-1 min-w-0">
                       <div class="text-[15px] text-gray-900 truncate">${escapeHtml(c.name)}</div>
@@ -642,9 +658,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>
             ${(count || newCollabVisibility === 'general') ? `
               <div class="flex-shrink-0 flex justify-end" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-                <button onclick="proceedToNewCollabName()" class="collab-pill-cta flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
-                  ${count || newCollabVisibility !== 'general' ? 'Next' : 'Skip'}
-                </button>
+                ${count ? `<button onclick="proceedToNewCollabName()" class="nc-fab" aria-label="Next">${Icon('arrowRight', 'w-6 h-6')}</button>`
+                        : `<button onclick="proceedToNewCollabName()" class="collab-pill-cta flex items-center justify-center gap-2 text-white rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">Skip</button>`}
               </div>
             ` : ''}`;
         }
@@ -673,7 +688,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="px-5 pb-3 flex-shrink-0 border-b border-gray-100 flex items-center gap-4" style="padding-top:var(--top-safe-pad);">
               <button onclick="backToNewCollabSelect()" class="flex-shrink-0 collab-pill-back">${IconBold('back','w-5 h-5')}</button>
-              <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text">New collaboration</div>
+              <div class="flex-1 min-w-0 font-semibold text-lg font-display truncate grad-text">${newCollabVisibility === 'general' ? 'General collaboration' : 'Private collaboration'}</div>
             </div>
             <div class="flex-1 overflow-y-auto px-5 py-5">
               <div style="height:20px;"></div>
