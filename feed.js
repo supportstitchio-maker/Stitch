@@ -3726,7 +3726,21 @@
             ov.querySelectorAll('video[id^="story-video-"], video[id^="my-glimpse-video-"]').forEach(v => { try { v.pause(); } catch (e) {} });
           }
           document.querySelectorAll('.feed-video-wrap video').forEach(v => {
-            if (!v.paused && !v.srcObject && postVideoIsCovered(v)) { try { v.pause(); } catch (e) {} }
+            if (v.paused || v.srcObject) return;
+            // Covered by a page, hidden (another tab is showing) or scrolled completely off screen
+            let gone = postVideoIsCovered(v);
+            if (!gone) {
+              try {
+                if (v.getClientRects().length === 0) gone = true;
+                else { const r = v.getBoundingClientRect(); if (r.bottom < 0 || r.top > (window.innerHeight || 0) || r.right < 0 || r.left > (window.innerWidth || 0)) gone = true; }
+              } catch (e) {}
+            }
+            if (gone) {
+              try { v.pause(); } catch (e) {}
+              const wrap = v.closest && v.closest('.feed-video-wrap');
+              const btn = wrap && wrap.querySelector('.feed-video-playbtn');
+              if (btn) btn.style.opacity = '1';
+            }
           });
           document.querySelectorAll('video').forEach(v => {
             if (v.paused || v.srcObject) return;

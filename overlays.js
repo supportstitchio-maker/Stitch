@@ -335,6 +335,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
           collabMembersOverlayOpen = false;
           pauseAllOverlayMedia();
+          // A live call keeps its sound when another page (Add to call, etc.) replaces the call screen
+          if (typeof keepCallAudioAlive === 'function') keepCallAudioAlive(kind);
           // Opening any other page ends whatever glimpse was playing.
           if (typeof stopGlimpsePlayback === 'function') stopGlimpsePlayback();
           const prevKindForScroll = currentOverlayKind;

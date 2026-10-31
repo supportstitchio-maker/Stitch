@@ -7681,7 +7681,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (a) a.srcObject = stream;
             });
           }
-          if (callMinimized) {
+          if (callMinimized || (callState.convoId && currentOverlayKind !== 'call')) {
             const bgAudio = document.getElementById('call-bg-audio');
             if (bgAudio) {
               const anyStream = Object.values(callPeers).find(e => e.stream);
@@ -7777,6 +7777,20 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           // Group tiles show a muted badge on your own tile, so they re-render on mute too
           if (key === 'camOff' || key === 'muted') refreshCallStage();
           refreshCallControls();
+        }
+
+        // Hands a live call's sound to the hidden background <audio> while the call screen is replaced by
+        // another page, and takes it back when the call screen returns
+        function keepCallAudioAlive(kind){
+          try {
+            if (!callState || !callState.convoId || callMinimized) return;
+            const bg = document.getElementById('call-bg-audio');
+            if (!bg) return;
+            if (kind === 'call') { bg.srcObject = null; return; }
+            const first = Object.values(callPeers).find(e => e.stream);
+            bg.srcObject = first ? first.stream : null;
+            if (first) { const pr = bg.play(); if (pr && pr.catch) pr.catch(() => {}); }
+          } catch (e) {}
         }
 
         function openAddToCall(){
