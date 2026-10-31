@@ -8268,6 +8268,7 @@ try {
         }
 
         function attachLectureMedia(){
+          try { reconcileLectureAudio(); } catch (e) {}
           if (liveLectureState.view === 'grid') {
             const v = document.getElementById('lecture-local-video');
             if (v) v.srcObject = (liveLectureState.screenSharing && lectureScreenStream) ? lectureScreenStream : lectureLocalStream;
@@ -8295,6 +8296,13 @@ try {
         // Tapping "Back" during a live lecture used to call endLecture() outright
         function minimizeLecture(fromPopState){
           if (!liveLectureState.connected) { closeOverlay(fromPopState); return; }
+          // Back while the whiteboard is open only closes the whiteboard (back to the call view); it never
+          // leaves or minimizes the call
+          if (liveLectureState.view === 'whiteboard') {
+            if (lectureIsTeacher()) toggleLectureWhiteboard(); else setLectureView('grid');
+            if (fromPopState) { overlayHistoryPushed = false; try { openOverlay('lectureCall'); attachLectureMedia(); } catch (e) {} }
+            return;
+          }
           lectureMinimized = true;
           syncLectureBgAudio();
           lectureSmoothSwap(() => {
@@ -8398,8 +8406,17 @@ try {
         }
         // While minimized the lecture screen (and its <video> elements) is gone, so the remote
         // audio is played through hidden <audio> elements instead
+        // The remote audio plays through the grid's <video> tiles. When those tiles aren't on screen
+        // (call minimized, or the whiteboard / slides are showing) hidden <audio> elements carry it so
+        // the moderator is still heard.
+        function lectureNeedsBgAudio(){
+          return lectureMinimized || (liveLectureState.connected && liveLectureState.view && liveLectureState.view !== 'grid');
+        }
+        function reconcileLectureAudio(){
+          if (lectureNeedsBgAudio()) syncLectureBgAudio(); else removeLectureBgAudio();
+        }
         function syncLectureBgAudio(){
-          if (!lectureMinimized) return;
+          if (!lectureNeedsBgAudio()) return;
           let box = document.getElementById('lecture-bg-audio-box');
           if (!box) { box = document.createElement('div'); box.id = 'lecture-bg-audio-box'; box.style.display = 'none'; document.body.appendChild(box); }
           Object.keys(lectureRemoteStreams).forEach(pid => {

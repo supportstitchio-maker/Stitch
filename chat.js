@@ -8613,7 +8613,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${tile('personPlus', 'Add people', 'closeCallMoreSheet();openAddToCall()')}
                 ${tile('edit', 'Call notes', 'closeCallMoreSheet();openCallNotes()')}
                 ${tile('commentText', 'Messages', 'closeCallMoreSheet();callBannerMessage()')}
-                ${canFlip ? tile('shuffle', 'Flip camera', 'closeCallMoreSheet();flipCallCamera()') : ''}
               </div>
             </div>`;
         }
@@ -9902,7 +9901,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${tile('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread})` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}
                   ${activeMeeting.code ? tile('send', 'Invite link', `closeMeetingSheet();shareActiveMeetingLink()`) : ''}
                   ${activeMeeting.code ? tile('copy', 'Copy link', `closeMeetingSheet();copyMeetingLink('${escapeHtml(activeMeeting.code)}')`) : ''}
-                  ${callState.type === 'video' && callLocalStream && !callState.camOff && !callState.mediaError ? tile('shuffle', 'Flip camera', 'closeMeetingSheet();flipCallCamera()') : ''}
                 </div>
                 ${activeMeeting.isAdmin ? row('muteAll', callEveryoneMuted ? 'Unmute everyone' : 'Mute everyone', 'closeMeetingSheet();muteEveryoneInCall()') : ''}
                 ${activeMeeting.isAdmin ? row('phoneHangup', 'End meeting for everyone', 'closeMeetingSheet();confirmEndMeetingForAll()', true) : ''}

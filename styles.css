@@ -6560,3 +6560,28 @@ body .cu-toast .cu-toast-ic{ width:30px; height:30px; border-radius:50%; backgro
 body.dark-mode .cu-toast{ background:#1e1e1e !important; color:#f2f2f2 !important; box-shadow:0 6px 22px rgba(0,0,0,.5) !important; }
 body.dark-mode .cu-toast .cu-toast-ic{ background:#2b2b2b; color:#d1d5db; }
 .cu-title-name{ color:#1e90ff !important; }
+
+/* meeting code pill outline */
+.mh-code{border:1.5px solid #cbd5e1 !important;}
+.mh-code:focus-within{border-color:#1e90ff !important;}
+body.dark-mode .mh-code{border:1.5px solid #3a3a3a !important;}
+body.dark-mode .mh-code:focus-within{border-color:#1e90ff !important;}
+body:not(.dark-mode) .mh-code{border:1.5px solid #cbd5e1 !important;}
+body:not(.dark-mode) .mh-code:focus-within{border-color:#1e90ff !important;}
+
+/* Call pills use the same pill style as the Messaging / Career tabs */
+body:not(.dark-mode) .cu-glass, body:not(.dark-mode) .cu-pill, body:not(.dark-mode) .cu-handpill, body:not(.dark-mode) .cu-tile2,
+body:not(.dark-mode) .cu-soft-btn, body:not(.dark-mode) .cu-ctl:not(.end):not(.accent):not(.accept):not(.on) .cu-ctl-btn{
+  background:#fff !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(15,23,42,0.10) !important; color:#1f2937 !important;
+}
+body.dark-mode .cu-glass, body.dark-mode .cu-pill, body.dark-mode .cu-handpill, body.dark-mode .cu-tile2,
+body.dark-mode .cu-soft-btn, body.dark-mode .cu-ctl:not(.end):not(.accent):not(.accept):not(.on) .cu-ctl-btn{
+  background:#1e1e1e !important; border:1.5px solid transparent !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; color:#f2f2f2 !important;
+}
+body:not(.dark-mode) .cu-handpill.on, body:not(.dark-mode) .cu-ctl.on .cu-ctl-btn{
+  background:#eef6ff !important; border:1.5px solid #1e90ff !important; color:#1e90ff !important; box-shadow:0 3px 12px rgba(30,144,255,0.22) !important;
+}
+body.dark-mode .cu-handpill.on, body.dark-mode .cu-ctl.on .cu-ctl-btn{
+  background:rgba(30,144,255,0.16) !important; border:1.5px solid #1e90ff !important; color:#60a5fa !important; box-shadow:0 3px 12px rgba(30,144,255,0.22) !important;
+}
+.cu-glass .cu-tile2-ic, .cu-tile2 .cu-tile2-ic{ color:inherit; }
