@@ -9,5 +9,6 @@
 
 User-agent: *
 Allow: /
+Disallow: /api/
 
 Sitemap: https://mystitch.vercel.app/sitemap.xml
