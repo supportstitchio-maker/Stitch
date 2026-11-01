@@ -7050,8 +7050,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             try {
               callLocalStream = await navigator.mediaDevices.getUserMedia({
-                video: type === 'video' ? { facingMode: 'user' } : false,
-                audio: true
+                video: type === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } } : false,
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
               });
               if (callState.convoId !== id) { stopCallLocalStream(); return; }
               applyCallTrackStates();
@@ -7483,6 +7483,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           entry.pc = pc;
           if (callLocalStream) {
             callLocalStream.getTracks().forEach(t => pc.addTrack(t, callLocalStream));
+            // Ask for a sharper picture: higher bitrate ceiling, keep resolution over frame rate when the line is weak
+            try {
+              pc.getSenders().forEach(snd => {
+                if (!snd.track || snd.track.kind !== 'video' || !snd.getParameters) return;
+                const prm = snd.getParameters();
+                if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}];
+                prm.encodings[0].maxBitrate = 1500000;
+                prm.degradationPreference = 'maintain-resolution';
+                snd.setParameters(prm).catch(() => {});
+                snd.track.contentHint = 'motion';
+              });
+            } catch (e) {}
           }
           pc.onicecandidate = (e) => {
             if (e.candidate) sendCallSignal({ kind: 'ice', candidate: e.candidate, to: peerId });
