@@ -1749,7 +1749,7 @@ let studyFabMenuOpen = false;
             <div class="pro4-list">${rows}</div>
             <div class="pro4-cta flex gap-3">
               <button type="button" onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
-              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Continue</button>
+              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
             </div>`;
         }
         function setProPlan(id){
@@ -1785,7 +1785,6 @@ let studyFabMenuOpen = false;
             openAppAlertModal('Could not load the payment popup. Check your connection and try again.', 'Payment unavailable');
             return;
           }
-          closeCareerSubscribeSheet();
           function closeProPopup(fromPopState){ teardownPaystackPopup(fromPopState); proPayBusy = false; }
           const reference = 'stitchpro_' + plan.id + '_' + Date.now();
           const handler = window.PaystackPop.setup({
@@ -1817,6 +1816,7 @@ let studyFabMenuOpen = false;
             if (!res.ok || data.error) throw new Error(data.error || 'Payment verification failed (' + res.status + ')');
             if (!data.verified) throw new Error('We could not confirm this payment. If you were charged, contact support with reference ' + reference + '.');
             proPayBusy = false;
+            closeCareerSubscribeSheet();
             await refreshProStatus();
             proView = 'auto';
             openAppAlertModal('Stitch Pro is active until ' + proPlanDateLabel(proState.expiresAt) + '.', 'Payment confirmed');
