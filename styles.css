@@ -6700,3 +6700,15 @@ body.dark-mode #careerSubscribeModal.pro-page .pro-sticky-head{ background:var(-
 
 /* Pro page: the Not now / Continue pills sit a little higher, clear of the bottom edge */
 #careerSubscribeModal.pro-page .pro4-cta{ padding:14px 0 calc(56px + env(safe-area-inset-bottom,0px)) !important; margin-top:0 !important; }
+
+/* Pro plans page: fixed, no scrolling. Spacing shrinks a little on short screens so everything fits. */
+#careerSubscribeModal.pro-page .confirm-sheet:has(.pro-page-body.pro4){ overflow:hidden !important; overscroll-behavior:none; touch-action:none; }
+#careerSubscribeModal.pro-page .pro-page-body.pro4{ padding-bottom:0 !important; }
+#careerSubscribeModal.pro-page .pro4 .pro-sticky-head{ padding-top:clamp(8px,2vh,20px) !important; padding-bottom:clamp(4px,1vh,12px) !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-card{ margin:clamp(4px,1vh,10px) 0 clamp(6px,1.2vh,12px) !important; padding:clamp(10px,1.8vh,18px) 18px clamp(10px,1.6vh,16px) !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-price{ font-size:clamp(26px,4.2vh,34px) !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-blurb{ margin-top:clamp(4px,1vh,10px) !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-tile{ padding:clamp(8px,1.4vh,13px) 6px !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-note{ margin:0 6px clamp(4px,1vh,12px) !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-row{ padding:clamp(4px,1.1vh,10px) 0 !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-cta{ padding:clamp(8px,1.6vh,14px) 0 calc(clamp(16px,4vh,56px) + env(safe-area-inset-bottom,0px)) !important; }
