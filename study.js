@@ -1593,25 +1593,26 @@ let studyFabMenuOpen = false;
 
 
         // =====================================================================
-        // Stitch Pro: Free / Daily / Monthly / Yearly plans for Practice and Challenge Arena.
+        // Stitch Pro: Free / Daily / Weekly / Monthly plans for Practice and Challenge Arena.
         // The real limits live on the server (table feature_limits, functions feature_take / feature_status,
         // the ai-proxy function and a database trigger on challenge_invites). The numbers below are for display only.
         // Keep prices in sync with PRO_PLANS in the paystack-verify and paystack-webhook functions.
         // =====================================================================
         const PRO_PLANS = {
-          daily:   { id: 'daily',   label: 'Daily',   price: 12,  unit: 'day'   },
-          monthly: { id: 'monthly', label: 'Monthly', price: 40,  unit: 'month' },
-          yearly:  { id: 'yearly',  label: 'Yearly',  price: 399, unit: 'year'  }
+          daily:   { id: 'daily',   label: 'Daily',   price: 5,   unit: 'day'   },
+          weekly:  { id: 'weekly',  label: 'Weekly',  price: 20,  unit: 'week'  },
+          monthly: { id: 'monthly', label: 'Monthly', price: 50,  unit: 'month' },
+          yearly:  { id: 'yearly',  label: 'Yearly',  price: 450, unit: 'year'  }
         };
         const PRO_FEATURES = [
-          { key: 'mock_test',   label: 'Mock tests',                    per: 'week',  free: 3, pro: 30 },
-          { key: 'ai_grade',    label: 'AI-marked written answers',     per: 'week',  free: 3, pro: 30 },
-          { key: 'arena',       label: 'Challenge Arena games',         per: 'week',  free: 2, pro: 20 },
-          { key: 'ai_generate', label: 'Uploads turned into questions', per: 'month', free: 3, pro: 30 }
+          { key: 'mock_test',   label: 'Mock tests',                    per: 'week',  free: 3, pro: 30, daily: 10 },
+          { key: 'ai_grade',    label: 'AI-marked written answers',     per: 'week',  free: 3, pro: 30, daily: 10 },
+          { key: 'arena',       label: 'Challenge Arena games',         per: 'week',  free: 2, pro: 20, daily: 8 },
+          { key: 'ai_generate', label: 'Uploads turned into questions', per: 'month', free: 3, pro: 30, daily: 5 }
         ];
         let proState = { loaded: false, pro: false, plan: null, expiresAt: null, cancelled: false, startedAt: null, features: {} };
         let proView = 'auto'; // 'auto' (manage when active, plans otherwise) | 'plans' | 'cancel'
-        let proPlanChoice = 'yearly';
+        let proPlanChoice = 'monthly';
         let proPayBusy = false;
 
         async function refreshProStatus(){
@@ -1648,7 +1649,7 @@ let studyFabMenuOpen = false;
           const plan = PRO_PLANS[proState.plan] || PRO_PLANS.monthly;
           const row = (label, value) => `<div class="flex items-center justify-between py-2.5" style="border-top:1px solid rgba(128,128,128,0.15);"><span class="text-sm text-gray-500">${label}</span><span class="text-sm font-semibold text-gray-800 text-right">${value}</span></div>`;
           const end = escapeHtml(proPlanDateLabel(proState.expiresAt));
-          const usage = PRO_FEATURES.map(f => { const u = proState.features && proState.features[f.key]; return u ? row(escapeHtml(f.label), u.used + ' of ' + u.limit + ' this ' + (u.period === 'month' ? 'month' : 'week')) : ''; }).join('');
+          const usage = PRO_FEATURES.map(f => { const u = proState.features && proState.features[f.key]; return u ? row(escapeHtml(f.label), u.used + ' of ' + u.limit + (u.period === 'day' ? ' today' : ' this ' + (u.period === 'month' ? 'month' : 'week'))) : ''; }).join('');
           return `
             ${proHeaderHTML('Your subscription')}
             <div class="pro3-sub">${proState.cancelled ? 'Cancelled. You keep Stitch Pro until ' + end + '.' : 'Stitch Pro is active.'}</div>
@@ -1711,7 +1712,7 @@ let studyFabMenuOpen = false;
           return `<div class="pro-page-body pro4">${proPlansHTML(reason)}</div>`;
         }
         function proHeaderHTML(title){
-          return `<div class="flex items-center gap-4 pb-3" style="padding-top:20px;"><button type="button" onclick="closeCareerSubscribeSheet()" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button><div class="font-semibold text-lg font-display grad-text">${title}</div></div>`;
+          return `<div class="ov-sticky-head pro-sticky-head flex items-center gap-4 pb-3" style="padding-top:20px;"><button type="button" onclick="closeCareerSubscribeSheet()" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button><div class="font-semibold text-lg font-display grad-text">${title}</div></div>`;
         }
         function proPlansHTML(reason){
           const active = isProActive();
@@ -1733,12 +1734,12 @@ let studyFabMenuOpen = false;
             return `<div class="pro4-row">
               <span class="pro4-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PI[f.key] || ''}</svg></span>
               <div class="pro4-rm"><div class="pro4-rn">${f.label}</div><div class="pro4-rs">${sub}</div></div>
-              <span class="pro4-rv">${f.pro} a ${f.per}</span>
+              <span class="pro4-rv">${proPlanChoice === 'daily' ? (f.daily + ' a day') : (f.pro + ' a ' + f.per)}</span>
             </div>`;
           }).join('');
-          const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.yearly;
-          const notes = { daily: '24 hours of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
-          const tiles = ['daily', 'monthly', 'yearly'].map(id => { const p = PRO_PLANS[id]; return `<button type="button" onclick="setProPlan('${id}')" class="pro4-tile${proPlanChoice === id ? ' on' : ''}"><span class="pro4-tn">${p.label}</span><span class="pro4-tp">GH\u20b5${p.price}</span><span class="pro4-tu">per ${p.unit}</span></button>`; }).join('');
+          const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.monthly;
+          const notes = { daily: '24 hours of Pro. No auto-renew.', weekly: '7 days of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
+          const tiles = ['daily', 'weekly', 'monthly'].map(id => { const p = PRO_PLANS[id]; return `<button type="button" onclick="setProPlan('${id}')" class="pro4-tile${proPlanChoice === id ? ' on' : ''}"><span class="pro4-tn">${p.label}</span><span class="pro4-tp">GH\u20b5${p.price}</span><span class="pro4-tu">per ${p.unit}</span></button>`; }).join('');
           const blurb = active ? 'Your plan is active until ' + escapeHtml(proPlanDateLabel(proState.expiresAt)) + '.' : (why ? why + ' Pro gives you about ten times more.' : 'About ten times more Practice and Challenge Arena.');
           return `
             ${proHeaderHTML(active ? 'Extend your plan' : 'Pro subscription')}

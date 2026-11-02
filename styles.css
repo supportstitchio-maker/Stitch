@@ -6693,3 +6693,7 @@ body.dark-mode .nc-label{ color:#9a9a9a; }
   #auth-gate:has(#auth-panel-login.active) .auth-head,
   body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-group.webp') 50% 30% / cover no-repeat, #d9c9a8 !important; }
 }
+
+/* Pro subscription: the header stays put while the page scrolls */
+#careerSubscribeModal.pro-page .pro-sticky-head{ position:sticky !important; top:0 !important; z-index:5 !important; background:#f8fafc !important; padding-bottom:12px !important; margin-bottom:0 !important; }
+body.dark-mode #careerSubscribeModal.pro-page .pro-sticky-head{ background:var(--c-black,#121212) !important; }
