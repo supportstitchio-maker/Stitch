@@ -6699,4 +6699,4 @@ body.dark-mode .nc-label{ color:#9a9a9a; }
 body.dark-mode #careerSubscribeModal.pro-page .pro-sticky-head{ background:var(--c-black,#121212) !important; }
 
 /* Pro page: the Not now / Continue pills sit a little higher, clear of the bottom edge */
-#careerSubscribeModal.pro-page .pro4-cta{ padding:6px 0 calc(56px + env(safe-area-inset-bottom,0px)) !important; margin-top:-14px !important; }
+#careerSubscribeModal.pro-page .pro4-cta{ padding:14px 0 calc(56px + env(safe-area-inset-bottom,0px)) !important; margin-top:0 !important; }

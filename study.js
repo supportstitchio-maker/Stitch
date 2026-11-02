@@ -1747,7 +1747,6 @@ let studyFabMenuOpen = false;
             <div class="pro4-tiles">${tiles}</div>
             <div class="pro4-note">${notes[chosen.id] || ''}</div>
             <div class="pro4-list">${rows}</div>
-            <div class="pro4-free">Stitch Bot, flashcards and everything else stay free. Pro also has a daily safety limit so no one burns through a month in one day.</div>
             <div class="pro4-cta flex gap-3">
               <button type="button" onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
               <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Continue</button>
