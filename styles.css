@@ -6697,3 +6697,6 @@ body.dark-mode .nc-label{ color:#9a9a9a; }
 /* Pro subscription: the header stays put while the page scrolls */
 #careerSubscribeModal.pro-page .pro-sticky-head{ position:sticky !important; top:0 !important; z-index:5 !important; background:#f8fafc !important; padding-bottom:12px !important; margin-bottom:0 !important; }
 body.dark-mode #careerSubscribeModal.pro-page .pro-sticky-head{ background:var(--c-black,#121212) !important; }
+
+/* Pro page: the Not now / Continue pills sit a little higher, clear of the bottom edge */
+#careerSubscribeModal.pro-page .pro4-cta{ padding:6px 0 calc(56px + env(safe-area-inset-bottom,0px)) !important; margin-top:-14px !important; }
