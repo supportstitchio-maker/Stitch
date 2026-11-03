@@ -1168,7 +1168,6 @@ let studyFabMenuOpen = false;
           if (r.status === 'processing') {
             return `
               <div class="${rowCls}" style="${rowStyle}">
-                <div class="w-10 h-10 flex items-center justify-center text-amber-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-amber-600">Scanning with Stitch Bot: building flashcards &amp; questions…</div>
@@ -1178,7 +1177,6 @@ let studyFabMenuOpen = false;
           if (r.status === 'error') {
             return `
               <div class="${rowCls}" style="${rowStyle}">
-                <div class="w-10 h-10 flex items-center justify-center text-red-500 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                   <div class="text-xs text-red-500 truncate">${r.error}</div>
@@ -1190,7 +1188,6 @@ let studyFabMenuOpen = false;
           const action = hasQuestions ? `openMockTestForResource('${r.id}')` : '';
           return `
             <div ${action ? `onclick="${action}"` : ''} class="${rowCls} ${action ? 'cursor-pointer' : ''}" style="${rowStyle}">
-              <div class="w-10 h-10 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('file','w-6 h-6')}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm truncate">${escapeHtml(r.name)}</div>
                 <div class="text-xs text-gray-500">${r.flashcards.length} flashcards · ${r.questions.length} practice questions</div>
