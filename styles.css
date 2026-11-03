@@ -6712,3 +6712,14 @@ body.dark-mode #careerSubscribeModal.pro-page .pro-sticky-head{ background:var(-
 #careerSubscribeModal.pro-page .pro4 .pro4-note{ margin:0 6px clamp(4px,1vh,12px) !important; }
 #careerSubscribeModal.pro-page .pro4 .pro4-row{ padding:clamp(4px,1.1vh,10px) 0 !important; }
 #careerSubscribeModal.pro-page .pro4 .pro4-cta{ padding:clamp(8px,1.6vh,14px) 0 calc(clamp(16px,4vh,56px) + env(safe-area-inset-bottom,0px)) !important; }
+
+
+/* Listing page: dark mode for the rebuilt layout */
+html.dark-mode .opp-sticky-bar{ background:linear-gradient(180deg,rgba(18,18,18,0),#121212 38%) !important; }
+html.dark-mode .opp-save-btn{ background:#1e1e1e !important; border-color:#333 !important; }
+html.dark-mode .opp-fact-card{ background:#1e1e1e !important; border-color:#2c2c2c !important; box-shadow:none !important; }
+html.dark-mode .opp-fact-v{ color:#f1f5f9 !important; }
+html.dark-mode .opp-body{ color:#cbd5e1 !important; }
+html.dark-mode .opp-role-chip{ background:#1e1e1e !important; border-color:#333 !important; color:#e2e8f0 !important; }
+html.dark-mode .opp-howto{ background:rgba(255,255,255,0.06) !important; }
+html.dark-mode .opp-howto div:last-child{ color:#cbd5e1 !important; }

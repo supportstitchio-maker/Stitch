@@ -1776,7 +1776,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             documents: (docsPayload && docsPayload.documents) || {},
             additionalDocuments: (docsPayload && docsPayload.additionalDocuments) || [],
             coverNote: jobApplyComposeNote(job),
-            answers: (oppApplyConfig(job) ? oppApplyConfig(job).fields : []).map(f => ({ id: f.id, label: f.label, value: String((d.answers || {})[f.id] || '').trim() })).filter(x => x.value),
+            answers: oppApplyFields(job).map(f => ({ id: f.id, label: f.label, value: String((d.answers || {})[f.id] || '').trim() })).filter(x => x.value),
           };
           const existing = job.applicants.find(a => a.id === myId);
           if (existing) Object.assign(existing, entry); else job.applicants.push(entry);
@@ -4174,6 +4174,100 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (jobsContentEl) jobsContentEl.innerHTML = jobsContent();
         }
 
+        // ---- Listing page helpers ----
+        function oppMoneyIcon(cls){
+          return `<svg class="${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.2v.01M18 14.8v.01"/></svg>`;
+        }
+        function oppIcon(name, cls){ return (name === 'coin' || name === 'money') ? oppMoneyIcon(cls) : Icon(name, cls); }
+        // "ABOUT THE ROLE" style lines become section headings; everything else is paragraph text
+        function oppDescSections(text){
+          const lines = String(text || '').replace(/\r/g, '').split('\n');
+          const isHead = (l) => { const t = l.trim(); return t.length >= 3 && t.length <= 42 && t === t.toUpperCase() && /[A-Z]/.test(t) && !/[.!?,:;]$/.test(t) && t.split(/\s+/).length <= 6; };
+          const out = []; let cur = { h: '', body: [] };
+          lines.forEach(l => {
+            if (isHead(l)) { if (cur.h || cur.body.join('').trim()) out.push(cur); cur = { h: l.trim(), body: [] }; }
+            else cur.body.push(l);
+          });
+          if (cur.h || cur.body.join('').trim()) out.push(cur);
+          return out.map(x => ({ h: x.h, body: x.body.join('\n').trim() })).filter(x => x.h || x.body);
+        }
+        // The poster's own "HOW TO APPLY" paragraph is shown inside the How to apply card instead of twice
+        function oppHowNote(job){
+          const sec = oppDescSections(job.description).find(x => /^HOW TO (APPLY|JOIN)$/.test(x.h));
+          return sec ? sec.body : '';
+        }
+        function oppDaysLeftLabel(job){
+          const dt = (typeof parsedOpportunityDeadline === 'function') ? parsedOpportunityDeadline(job) : null;
+          if (!dt) return '';
+          const end = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 23, 59, 59).getTime();
+          const days = Math.ceil((end - Date.now()) / 86400000);
+          if (days <= 0) return 'Closes today';
+          if (days === 1) return 'Closes tomorrow';
+          return days + ' days left';
+        }
+        // The key facts shown as cards at the top of a listing
+        function oppFactCards(job){
+          const isCourse = job.type === 'Course';
+          const det = Array.isArray(job.details) ? job.details.filter(x => x && x.key && x.value) : [];
+          const byKey = {}; det.forEach(x => { byKey[x.key] = x; });
+          const cards = [];
+          const dl = (job.deadline || '').replace(/^Deadline\s+/i, '');
+          if (dl) cards.push({ icon: 'calendar', label: isCourse ? 'Start' : 'Deadline', value: dl, sub: isCourse ? '' : oppDaysLeftLabel(job) });
+          const whereDet = byKey.where || byKey.studyWhere;
+          cards.push({ icon: job.mode === 'Online' ? 'link' : 'pin', label: 'Location', value: job.mode || 'On-site', sub: (whereDet && whereDet.value && whereDet.value !== job.mode) ? (job.mode === 'Online' ? 'Based in ' : '') + whereDet.value : '' });
+          const payBits = [byKey.payType && byKey.payType.value, byKey.stipend && byKey.stipend.value, byKey.pay && byKey.pay.value].filter(Boolean);
+          const used = { where: 1, studyWhere: 1, payType: 1, stipend: 1, pay: 1, length: 1, employment: 1, hours: 1 };
+          det.forEach(x => { if (!used[x.key]) cards.push({ icon: x.icon || 'check', label: x.label, value: x.value, sub: '' }); });
+          if (payBits.length) cards.push({ icon: 'money', label: 'Pay', value: payBits[0], sub: payBits.slice(1).join(' · ') });
+          if (isCourse) cards.push({ icon: 'money', label: 'Price', value: job.priceType === 'paid' ? (job.price || 'Paid') : 'Free', sub: '' });
+          return cards;
+        }
+        function oppFactCardHTML(c){
+          return `<div class="opp-fact-card" style="background:#fff;border-radius:20px;padding:14px;box-shadow:0 2px 10px rgba(15,35,90,0.07);border:1px solid #eef1f6;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;color:#64748b;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;"><span style="color:#2563eb;display:inline-flex;">${oppIcon(c.icon, 'w-4 h-4')}</span><span style="min-width:0;">${escapeHtml(c.label)}</span></div>
+            <div class="opp-fact-v" style="margin-top:8px;font-size:15px;font-weight:700;color:#0f172a;line-height:1.25;overflow-wrap:anywhere;">${escapeHtml(c.value)}</div>
+            ${c.sub ? `<div style="margin-top:2px;font-size:12px;color:#94a3b8;">${escapeHtml(c.sub)}</div>` : ''}</div>`;
+        }
+        function oppChipHTML(icon, text){
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(65,105,225,0.09);color:#1e40af;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;"><span style="display:inline-flex;">${oppIcon(icon, 'w-4 h-4')}</span>${escapeHtml(text)}</span>`;
+        }
+        function oppSectionHTML(h, inner){
+          return `<div style="margin-bottom:18px;">${h ? `<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#2563eb;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(h)}</div>` : ''}${inner}</div>`;
+        }
+        function jobDetailBodyHTML(job){
+          const isCourse = job.type === 'Course';
+          const det = Array.isArray(job.details) ? job.details : [];
+          const byKey = {}; det.forEach(x => { if (x && x.key) byKey[x.key] = x; });
+          const payBits = [byKey.payType && byKey.payType.value, byKey.stipend && byKey.stipend.value, byKey.pay && byKey.pay.value].filter(Boolean);
+          const chips = [oppChipHTML(job.type === 'Scholarship' || job.type === 'Internship' ? 'graduate' : 'briefcase', job.type)];
+          if (job.mode) chips.push(oppChipHTML(job.mode === 'Online' ? 'link' : 'pin', job.mode));
+          if (job.duration) chips.push(oppChipHTML('clock', job.duration));
+          if (payBits.length) chips.push(oppChipHTML('money', payBits[0]));
+          const cards = oppFactCards(job);
+          const secs = oppDescSections(job.description).filter(x => !/^HOW TO (APPLY|JOIN)$/.test(x.h));
+          const roles = Array.isArray(job.roles) ? job.roles.filter(Boolean) : [];
+          const rolesHTML = roles.length ? oppSectionHTML('Open roles', `<div style="display:flex;flex-wrap:wrap;gap:8px;">${roles.map(r => `<span class="opp-role-chip" style="background:#fff;border:1.5px solid #dbe3f0;color:#1e293b;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;">${escapeHtml(r)}</span>`).join('')}</div>`) : '';
+          const bodyText = (t) => `<div class="opp-body" style="font-size:14.5px;line-height:1.6;color:#334155;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(t)}</div>`;
+          let descHTML;
+          if (!secs.length) descHTML = oppSectionHTML('Description', bodyText('No description provided.'));
+          else if (secs.length === 1 && !secs[0].h) descHTML = oppSectionHTML('Description & requirements', bodyText(secs[0].body));
+          else descHTML = secs.map((x, i) => oppSectionHTML(x.h, bodyText(x.body)) + (i === 0 ? rolesHTML : '')).join('') + (secs[0] && secs[0].h ? '' : rolesHTML);
+          if (secs.length && !roles.length) { /* nothing extra */ }
+          return `
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">${chips.join('')}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;">${cards.map(oppFactCardHTML).join('')}</div>
+            <div style="height:1px;background:#e8ecf3;margin:22px 0 18px;"></div>
+            ${descHTML}`;
+        }
+        function oppHowToCardHTML(title, inner, note){
+          return `<div class="opp-howto" style="background:rgba(10,37,64,0.05);border-radius:20px;padding:16px;margin:4px 0 16px;"><div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#2563eb;text-transform:uppercase;">${title}</div>${note ? `<div style="margin-top:6px;font-size:14px;color:#334155;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(note)}</div>` : ''}<div style="margin-top:6px;font-size:14px;color:#334155;line-height:1.55;">${inner}</div></div>`;
+        }
+        function toggleSaveJobFromDetail(id, btn){
+          toggleSaveJob(id);
+          const job = findJob(id);
+          if (btn && job) btn.style.color = job.saved ? ROYAL : '#475569';
+        }
+
         function jobDetailHTML(){
           const job = findJob(activeJobId);
           if (!job) return `${overlayHeader('Opportunity', '20px')}<div class="p-5 text-center text-gray-400 text-sm">${oppLoadingIds[activeJobId] ? 'Loading this listing...' : 'This listing is no longer available.'}</div>`;
@@ -4195,42 +4289,14 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               ? menuOverlayHeader('Opportunity', jobDetailMenuOpen, 'toggleJobDetailMenu', jobDetailMenuDropdownHTML(job), {titleSize: 'text-lg'})
               : overlayHeader('Opportunity', '20px', null, null, { center: true })}
             <div class="px-5" style="padding-top:20px;padding-bottom:50px;">
-              ${(job.coverImage || (job.courseId && (allCourses.find(x => x.id === job.courseId) || {}).photo)) ? `<img src="${job.coverImage || (allCourses.find(x => x.id === job.courseId) || {}).photo}" class="w-full rounded-3xl mb-4 object-cover" style="height:180px;" alt="">` : ''}
-              <div class="flex items-center gap-4 mb-5">
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-lg font-display leading-snug">${escapeHtml(job.title)}</div>
-                  <div class="text-sm text-gray-500 truncate">${isCourse ? escapeHtml(stitchOrgName(job.org)) : (job.org || '')}</div>
-                  ${(job.createdByUsername || job.createdByName) ? `<div class="text-xs text-gray-400 mt-0.5">Posted by ${job.createdByUsername ? '@' + escapeHtml(job.createdByUsername) : escapeHtml(job.createdByName)}</div>` : ''}
-                </div>
+              ${(job.coverImage || (job.courseId && (allCourses.find(x => x.id === job.courseId) || {}).photo)) ? `<img src="${job.coverImage || (allCourses.find(x => x.id === job.courseId) || {}).photo}" class="w-full object-cover" style="height:190px;border-radius:24px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,35,90,0.18);" alt="">` : ''}
+              <div class="mb-1">
+                <div class="font-display" style="font-size:22px;font-weight:800;line-height:1.2;">${escapeHtml(job.title)}</div>
+                <div style="margin-top:4px;font-size:14px;color:#64748b;">${isCourse ? escapeHtml(stitchOrgName(job.org)) : escapeHtml(job.org || '')}</div>
+                ${(job.createdByUsername || job.createdByName) ? `<div style="margin-top:2px;font-size:12px;color:#94a3b8;">Posted by ${job.createdByUsername ? '@' + escapeHtml(job.createdByUsername) : escapeHtml(job.createdByName)}</div>` : ''}
               </div>
-              <div class="mb-5 pb-5 border-b border-gray-100">
-                <div class="font-semibold text-sm text-gray-800 mb-2">Description &amp; requirements</div>
-                <div class="text-sm text-gray-600 leading-relaxed" style="white-space:pre-wrap;">${job.description ? escapeHtml(job.description) : 'No description provided.'}</div>
-              </div>
-              <div class="mb-5 pb-5 border-b border-gray-100">
-                <div class="font-semibold text-sm text-gray-800 mb-1">Details</div>
-                <div>
-                  ${detailRow('briefcase', 'Type', job.type)}
-                  ${detailRow(job.mode === 'Online' ? 'link' : 'pin', 'Location', job.mode)}
-                  ${job.duration ? detailRow('clock', 'Duration', job.duration) : ''}
-                  ${(Array.isArray(job.details) ? job.details : []).filter(x => x && x.label && x.value && !(x.key === 'length' || x.key === 'employment' || x.key === 'hours') ).map(x => detailRow(x.icon || 'check', escapeHtml(x.label), escapeHtml(x.value))).join('')}
-                  ${isCourse ? detailRow('chart', 'Price', job.priceType === 'paid' ? (job.price || 'Paid') : 'Free') : ''}
-                  ${job.deadline ? detailRow('calendar', isCourse ? 'Start' : 'Deadline', job.deadline) : ''}
-                </div>
-              </div>
-              ${isCourse ? `
-                <div class="mb-5 pb-5 border-b border-gray-100">
-                  <div class="font-semibold text-sm text-gray-800 mb-1">How to join</div>
-                  <div class="text-xs text-gray-500">No application or letter needed: just enroll for free${job.priceType === 'paid' ? ', or pay the enrollment fee where applicable' : ''} to get started.${job.email ? ` Questions go to <span class="font-medium text-gray-700">${job.email}</span>.` : ''}</div>
-                </div>` : (job.applyMethod === 'website' && job.website ? `
-                <div class="mb-5 pb-5 border-b border-gray-100">
-                  <div class="font-semibold text-sm text-gray-800 mb-1">How to apply</div>
-                  <div class="text-xs text-gray-500">Applications are handled on their website: <a href="${ensureUrlScheme(job.website)}" target="_blank" rel="noopener" class="font-medium" style="color:${NAVY};">${escapeHtml(job.website)}</a></div>
-                </div>` : `
-                <div class="mb-5 pb-5 border-b border-gray-100">
-                  <div class="font-semibold text-sm text-gray-800 mb-1">How to apply</div>
-                  <div class="text-xs text-gray-500">Applications go straight to the poster here in the app -- no email needed.${!isCourse ? ` Have ready: <span class="font-medium text-gray-700">${['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume')).map(id => escapeHtml(oppDocLabel(id))).join(', ')}</span>.` : ''}</div>
-                </div>`)}
+              ${jobDetailBodyHTML(job)}
+              ${isCourse ? oppHowToCardHTML('How to join', `No application or letter needed: just enroll for free${job.priceType === 'paid' ? ', or pay the enrollment fee where applicable' : ''} to get started.${job.email ? ` Questions go to <span style="font-weight:600;">${escapeHtml(job.email)}</span>.` : ''}`, oppHowNote(job)) : (job.applyMethod === 'website' && job.website ? oppHowToCardHTML('How to apply', `Applications are handled on their website: <a href="${ensureUrlScheme(job.website)}" target="_blank" rel="noopener" style="font-weight:700;color:${NAVY};overflow-wrap:anywhere;">${escapeHtml(job.website)}</a>`, oppHowNote(job)) : oppHowToCardHTML('How to apply', `Applications go straight to the poster here in the app, no email needed. Have ready: <span style="font-weight:600;">${['resume'].concat((job.requiredDocs || []).filter(id => id !== 'resume')).map(id => escapeHtml(oppDocLabel(id))).join(', ')}</span>.`, oppHowNote(job)))}
               ${isJobApplied(job) && !isCourse ? jobApplicationTrackerHTML(job) : ''}
               ${(isCourse && canManage) ? `
                 <button onclick="goToJobCourse('${job.id}')" class="w-full flex items-center gap-3 bg-white rounded-3xl p-4 mb-4 shadow-sm border border-gray-100 text-left">
@@ -4241,7 +4307,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   </div>
                   <span class="text-gray-400 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
                 </button>` : ''}
-              <div class="text-center mt-2" style="padding-bottom:10px;">
+              <div class="text-center opp-sticky-bar" style="position:sticky;bottom:0;z-index:5;margin:8px -20px 0;padding:14px 20px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(248,250,252,0),#f8fafc 38%);">
+                <div style="display:flex;gap:10px;align-items:center;">
+                ${(isCourse || job.isCatalogCourse) ? '' : `<button type="button" onclick="toggleSaveJobFromDetail(\'${job.id}\', this)" aria-label="Save" class="opp-save-btn" style="flex-shrink:0;width:52px;height:52px;border-radius:999px;background:#fff;border:1.5px solid #dbe3f0;display:flex;align-items:center;justify-content:center;color:${job.saved ? ROYAL : '#475569'};">${Icon('bookmark','w-5 h-5')}</button>`}
+                <div style="flex:1;min-width:0;">
                 ${isWebsiteJob
                   ? `<button onclick="openJobApply('${job.id}')" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${applyLabel}</button>`
                   : (isJobApplied(job)
@@ -4249,6 +4318,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                       ? `<button onclick="goToJobCourse('${job.id}')" class="pill-cta w-full inline-flex items-center justify-center gap-2 text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${Icon('book','w-4 h-4')} Go to Course</button>`
                       : (myJobApplicantStatus(job) === 'offer' ? '' : `<div class="w-full inline-flex items-center justify-center rounded-full font-bold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${escapeHtml(jobStatusMeta(job).label)}</div>`))
                   : `<button onclick="openJobApply('${job.id}')" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${applyLabel}</button>`)}
+                </div>
+                </div>
               </div>
               ${canManage ? '' : `<div class="text-center pb-2"><button onclick="openReportOpportunity('${job.id}')" class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400">${Icon('flag','w-3.5 h-3.5')} Report this listing</button></div>`}
             </div>
@@ -4377,6 +4448,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!job || job.type === 'Course') return null;
           return OPP_APPLY_QS[job.type] || OPP_APPLY_QS['Job'];
         }
+        // Questions shown to the applicant: when the listing has several roles, the first question is which one
+        function oppApplyFields(job){
+          const cfg = oppApplyConfig(job); if (!cfg) return [];
+          const roles = Array.isArray(job.roles) ? job.roles.filter(Boolean) : [];
+          const roleQ = roles.length ? [{ id:'role', label:'Which role are you applying for?', kind:'chips', options: roles, icon:'briefcase' }] : [];
+          return roleQ.concat(cfg.fields);
+        }
         function jobApplyQuestionsHTML(job){
           const cfg = oppApplyConfig(job);
           if (!cfg) return '';
@@ -4384,11 +4462,11 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const answers = jobApplyDraft.answers || {};
           const errOf = (id) => jobApplyErrors['a_' + id];
           const errHTML = (id) => errOf(id) ? `<div class="field-error" id="job-apply-error-a_${id}">${escapeHtml(errOf(id))}</div>` : '';
-          return `<div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-2">${escapeHtml(cfg.head)}</div>` + cfg.fields.map(f => {
+          return `<div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-2">${escapeHtml(cfg.head)}</div>` + oppApplyFields(job).map(f => {
             const label = escapeHtml(f.label) + (f.opt ? ' (optional)' : '');
             if (f.kind === 'chips') {
               return `<div class="mb-4" id="job-apply-q-${f.id}"><label class="${LAB}">${label}</label>
-                <div class="auth-intent-row" style="padding:6px 2px 6px;">${f.options.map(o => `<button type="button" onclick="setJobApplyChoice('${f.id}', '${o.replace(/'/g, "\\'")}')" class="auth-intent-chip ${answers[f.id] === o ? 'on' : ''}">${Icon(f.icon || 'check','w-4 h-4')}<span>${escapeHtml(o)}</span></button>`).join('')}</div>
+                <div class="auth-intent-row" style="padding:6px 2px 6px;">${f.options.map((o, oi) => `<button type="button" onclick="setJobApplyChoiceAt('${f.id}', ${oi})" class="auth-intent-chip ${answers[f.id] === o ? 'on' : ''}">${Icon(f.icon || 'check','w-4 h-4')}<span>${escapeHtml(o)}</span></button>`).join('')}</div>
                 ${errHTML(f.id)}</div>`;
             }
             if (f.kind === 'area') {
@@ -4411,6 +4489,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             if (i) { i.classList.remove('field-invalid'); i.style.borderColor = ''; }
           }
         }
+        function setJobApplyChoiceAt(id, idx){
+          const f = oppApplyFields(findJob(activeApplyJobId)).find(x => x.id === id);
+          if (f && f.options && f.options[idx] != null) setJobApplyChoice(id, f.options[idx]);
+        }
         function setJobApplyChoice(id, value){
           if (!jobApplyDraft.answers) jobApplyDraft.answers = {};
           jobApplyDraft.answers[id] = value;
@@ -4425,7 +4507,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const cfg = oppApplyConfig(job); if (!cfg) return '';
           const a = jobApplyDraft.answers || {};
           let first = '';
-          cfg.fields.forEach(f => {
+          oppApplyFields(job).forEach(f => {
             const v = String(a[f.id] || '').trim();
             let msg = '';
             if (!f.opt && !v) msg = f.kind === 'chips' ? 'Please choose one.' : 'Please fill this in.';
@@ -4438,7 +4520,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function jobApplyComposeNote(job){
           const cfg = oppApplyConfig(job); if (!cfg) return (jobApplyDraft.letterText || '').trim();
           const a = jobApplyDraft.answers || {};
-          const parts = cfg.fields.map(f => { const v = String(a[f.id] || '').trim(); return v ? f.label + '\n' + v : ''; }).filter(Boolean);
+          const parts = oppApplyFields(job).map(f => { const v = String(a[f.id] || '').trim(); return v ? f.label + '\n' + v : ''; }).filter(Boolean);
           const extra = (jobApplyDraft.letterText || '').trim();
           if (extra) parts.push(extra);
           return parts.join('\n\n');
@@ -8110,11 +8192,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         const OPP_GENDER_ICONS = { any:'users', male:'user', female:'user' };
         // applyMethod 'inapp' (the default) means applications go straight to the poster and
         // admins inside Stitch
-        let newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{} };
+        let newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{}, roles:[], roleInput:'' };
         let newOppEditingId = null;
 
         function resetNewOppDraft(){
-          newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{} };
+          newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{}, roles:[], roleInput:'' };
         }
 
         function rerenderPostOpportunity(){
@@ -8185,6 +8267,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             priceType: job.priceType || 'free',
             price: (job.priceType === 'paid' ? (job.price || '') : ''),
             coverImage: job.coverImage || '',
+            roles: Array.isArray(job.roles) ? job.roles.slice() : [],
+            roleInput: '',
             extra: (Array.isArray(job.details) ? job.details.reduce((o, x) => { if (x && x.key) o[x.key] = x.value; return o; }, {}) : {}),
           };
           newOppEditingId = id; newOppPage = 0;
@@ -8355,6 +8439,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               description: d.description.trim(),
               coverImage: d.coverImage || '',
               details: oppPostDetails(),
+              roles: (!isCourse && oppRolesAllowed(d.type)) ? (d.roles || []).slice(0, OPP_ROLE_MAX) : [],
             };
             if (isCourse) {
               fields.priceType = d.priceType;
@@ -8512,6 +8597,41 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             example:[['WHAT THIS IS','We are choosing 10 campus ambassadors to run the Stitch sign-up desk in the first week of semester.'],['WHO CAN TAKE PART','Any level student who is active on campus and confident speaking to groups.'],['WHAT YOU GET','A certificate, a reference letter and free event access.'],['HOW TO APPLY','Apply here by the deadline.']],
             docs:[] },
         };
+        // ---- Roles available (several open positions in one listing) ----
+        const OPP_ROLE_MAX = 12;
+        function oppRolesAllowed(type){ return type === 'Job' || type === 'Internship' || type === 'Part-time' || type === 'Other'; }
+        function cleanRoleName(t){ return String(t || '').replace(/[<>"`\\&]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40); }
+        function addNewOppRole(silent){
+          const d = newOppDraft; if (!d.roles) d.roles = [];
+          const name = cleanRoleName(d.roleInput);
+          if (!name) { d.roleInput = ''; return false; }
+          if (d.roles.length >= OPP_ROLE_MAX) { if (!silent) openAppAlertModal('You can list up to ' + OPP_ROLE_MAX + ' roles.'); return false; }
+          if (!d.roles.some(r => r.toLowerCase() === name.toLowerCase())) d.roles.push(name);
+          d.roleInput = '';
+          if (!silent) {
+            rerenderPostOpportunity();
+            const el = document.getElementById('opp-role-input'); if (el) el.focus();
+          }
+          return true;
+        }
+        function removeNewOppRole(i){
+          const d = newOppDraft; if (!d.roles) return;
+          d.roles.splice(i, 1);
+          rerenderPostOpportunity();
+        }
+        function oppRolesBoxHTML(){
+          const d = newOppDraft;
+          if (!oppRolesAllowed(d.type)) return '';
+          const roles = d.roles || [];
+          return `<div class="mb-4"><label class="pa-lab">Roles available (optional)</label>
+            <div class="pa-hint" style="margin:0 0 8px;">Hiring for more than one role? Add each one so students can see exactly what is open.</div>
+            <div class="flex gap-2" style="padding:2px 2px 4px;">
+              <input type="text" id="opp-role-input" maxlength="40" autocomplete="off" placeholder="e.g. Videographer" value="${escapeHtml(d.roleInput || '')}" oninput="newOppDraft.roleInput = this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewOppRole();}" class="flex-1 min-w-0 flow-outline px-4 py-3 text-sm outline-none" style="border-radius:999px;">
+              <button type="button" onclick="addNewOppRole()" class="auth-intent-chip flex-shrink-0" style="justify-content:center;padding:0 28px;">${Icon('plus','w-4 h-4')} Add</button>
+            </div>
+            ${roles.length ? `<div class="auth-intent-row" style="padding:10px 2px 4px;">${roles.map((r, i) => `<span class="auth-intent-chip on" style="cursor:default;max-width:100%;">${Icon('briefcase','w-4 h-4')}<span style="min-width:0;overflow-wrap:anywhere;">${escapeHtml(r)}</span><button type="button" onclick="removeNewOppRole(${i})" aria-label="Remove ${escapeHtml(r)}" style="margin-left:6px;opacity:.7;">${IconBold('close','w-3 h-3')}</button></span>`).join('')}</div><div class="pa-hint">${roles.length} role${roles.length === 1 ? '' : 's'} added. They show as chips on the listing.</div>` : ''}
+          </div>`;
+        }
         function oppPostConfig(type){ return OPP_POST_QS[type] || null; }
         function oppExtraValue(key){
           const v = (newOppDraft.extra || {})[key];
@@ -8616,6 +8736,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return '';
         }
         function newOppNext(){
+          if (newOppPage === 1 && oppRolesAllowed(newOppDraft.type) && (newOppDraft.roleInput || '').trim()) addNewOppRole(true);
           const err = newOppPageError(newOppPage);
           if (err) { if (newOppPage === 0) rerenderPostOpportunity(); openAppAlertModal(err); return; }
           if (newOppPage >= NEW_OPP_PAGES.length - 1) { submitNewOpportunity(); return; }
@@ -8682,7 +8803,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
               </div>
 
-              ${(newOppDraft.type !== 'Course' && oppPostConfig(newOppDraft.type)) ? oppPostFieldsHTML() : `
+              ${(newOppDraft.type !== 'Course' && oppPostConfig(newOppDraft.type)) ? oppPostFieldsHTML() + oppRolesBoxHTML() : `
               ${newOppDraft.type === 'Course' ? '' : oppFieldRow(newOppDraft.mode === 'Online' ? 'Platform / link' : 'Location', 'location', newOppDraft.mode === 'Online' ? 'e.g. Zoom, remote' : 'e.g. Accra, Ghana')}
               ${(newOppDraft.type === 'Course' || newOppDraft.mode === 'Online') ? oppFieldRow('Location (optional)', 'place', 'e.g. Accra, Ghana') : ''}
               ${oppFieldRow('Duration', 'duration', newOppDraft.type === 'Course' ? 'e.g. 4 weeks' : 'e.g. 3 months, Full-time, One-time')}`}
