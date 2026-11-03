@@ -2008,6 +2008,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             delete oppPendingLocal[job.id];
             // Confirm from the server so every list shows the saved copy
             try { queueJobRefresh(job.id); } catch (e) {}
+            broadcastListingChange(job.id);
           }
           return ok;
         }
@@ -2117,6 +2118,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             if (activeJobId && !allJobs().some(j => j.id === activeJobId) && typeof closeOverlay === 'function') closeOverlay();
           } catch (e) { loadOpportunitiesRemote(); }
         }
+        let oppRealtimeRetryMs = 3000;
         function subscribeToOpportunitiesRealtime(){
           const sb = getSupabaseClient();
           if (!sb || opportunitiesChannel) return;
@@ -2130,8 +2132,48 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             opportunitiesChannel = sb.channel('opportunities-live')
               .on('postgres_changes', { event: '*', schema: 'public', table: OPPORTUNITIES_TABLE }, onChange)
               .on('postgres_changes', { event: '*', schema: 'public', table: APPLICATIONS_TABLE }, onChange)
-              .subscribe();
+              // Direct "I just posted/edited this" message from the poster's device, so everyone else
+              // refreshes that listing at once even if the database change feed is slow
+              .on('broadcast', { event: 'listing_changed' }, (msg) => {
+                const id = msg && msg.payload && msg.payload.id;
+                if (id) queueJobRefresh(id);
+              })
+              .subscribe((status) => {
+                if (status === 'SUBSCRIBED') { oppRealtimeRetryMs = 3000; syncOpportunityIds(); return; }
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                  // Connection dropped: rebuild it and catch up on anything missed
+                  try { sb.removeChannel(opportunitiesChannel); } catch (e) {}
+                  opportunitiesChannel = null;
+                  const wait = oppRealtimeRetryMs; oppRealtimeRetryMs = Math.min(oppRealtimeRetryMs * 2, 30000);
+                  setTimeout(() => { subscribeToOpportunitiesRealtime(); }, wait);
+                }
+              });
           } catch (e) { opportunitiesChannel = null; }
+        }
+        function broadcastListingChange(id){
+          try {
+            if (!opportunitiesChannel) subscribeToOpportunitiesRealtime();
+            if (opportunitiesChannel) opportunitiesChannel.send({ type: 'broadcast', event: 'listing_changed', payload: { id: String(id) } });
+          } catch (e) {}
+        }
+        // Light safety net: compares just the listing ids on the server with this device's list, then
+        // fetches only what is new (or drops what was deleted). Runs every 20 seconds while visible.
+        let oppIdSyncBusy = false;
+        async function syncOpportunityIds(){
+          if (oppIdSyncBusy) return;
+          const sb = getSupabaseClient(); if (!sb) return;
+          oppIdSyncBusy = true;
+          try {
+            const { data, error } = await sb.from(OPPORTUNITIES_TABLE).select('id');
+            if (error || !Array.isArray(data)) return;
+            const serverIds = new Set(data.map(r => String(r.id)));
+            const local = Object.keys(jobsData).reduce((a, k) => a.concat(jobsData[k]), []);
+            const localIds = new Set(local.map(j => String(j.id)));
+            serverIds.forEach(id => { if (!localIds.has(id)) queueJobRefresh(id); });
+            let removed = false;
+            localIds.forEach(id => { if (!serverIds.has(id) && !oppPendingLocal[id] && !/^(course-|demo)/.test(id)) { removeJobLocally(id); removed = true; } });
+            if (removed) { lastOpportunitiesSignature = ''; repaintJobsIfVisible(); }
+          } catch (e) {} finally { oppIdSyncBusy = false; }
         }
 
         // ---- Consistent admin-picked date system ----
@@ -2244,7 +2286,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           let lastFullRefresh = Date.now();
           const guarded = async () => { lastFullRefresh = Date.now(); await refresh(); };
           opportunitiesPollInterval = setInterval(() => { if (!document.hidden) guarded(); }, 300000);
-          document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastFullRefresh > 60000) guarded(); });
+          setInterval(() => { if (!document.hidden) syncOpportunityIds(); }, 20000);
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) { syncOpportunityIds(); if (Date.now() - lastFullRefresh > 60000) guarded(); } });
+          window.addEventListener('focus', () => { syncOpportunityIds(); });
           window.addEventListener('online', guarded);
         }
 
@@ -2711,7 +2755,22 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           }
           activeJobId = id;
           jobDetailMenuOpen = false;
+          if (!job) oppLoadingIds[id] = true;
           openOverlay('jobDetail');
+          if (!job) oppEnsureLoaded(id);
+        }
+        // A listing this device has not received yet (just posted, opened from a notification or link)
+        // is fetched from the server instead of showing "no longer available"
+        const oppLoadingIds = {};
+        async function oppEnsureLoaded(id){
+          try { pendingJobRefresh.add(String(id)); clearTimeout(jobRefreshTimer); await flushJobRefresh(); } catch (e) {}
+          delete oppLoadingIds[id];
+          if (currentOverlayKind === 'jobDetail' && activeJobId === id) {
+            const job = findJob(id);
+            if (job && isJobOwnedByCurrentUser(job)) { openJobDashboard(id); return; }
+            const ov = document.getElementById('overlay');
+            if (ov) ov.innerHTML = jobDetailHTML();
+          }
         }
 
         // Edit / Delete menus on the listing pages open as a bottom sheet that pulls up from below
@@ -4105,7 +4164,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function jobDetailHTML(){
           const job = findJob(activeJobId);
-          if (!job) return `${overlayHeader('Opportunity', '20px')}<div class="p-5 text-center text-gray-400 text-sm">This listing is no longer available.</div>`;
+          if (!job) return `${overlayHeader('Opportunity', '20px')}<div class="p-5 text-center text-gray-400 text-sm">${oppLoadingIds[activeJobId] ? 'Loading this listing...' : 'This listing is no longer available.'}</div>`;
           const isCourse = job.type === 'Course';
           const isWebsiteJob = !isCourse && job.applyMethod === 'website' && !!job.website;
           const applyLabel = isCourse ? 'Enroll' : (isWebsiteJob ? 'Go to website' : 'Apply');
