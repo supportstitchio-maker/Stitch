@@ -2444,12 +2444,17 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // One row of the timeline: a dot on a connecting line, the step name (with a short sub-
         // line on the current step) and its date on the right
+        // Straight, even check / cross marks drawn as shapes (the text symbols looked curved and uneven)
+        function jobMarkSVG(kind, px){
+          const d = kind === 'x' ? 'M7 7l10 10M17 7L7 17' : 'M5 12.5l4.5 4.5L19 7.5';
+          return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+        }
         function jobTrackerStepRowHTML(label, state, dateText, isFirst, isLast, color, sub){
           const done = state === 'done', cur = state === 'current';
           const upperLine = !isFirst ? `<div style="position:absolute;left:19px;width:2px;top:0;bottom:50%;background:${state === 'upcoming' ? '#e5e7eb' : JOB_TRACKER_TEAL};"></div>` : '';
           const lowerLine = !isLast ? `<div style="position:absolute;left:19px;width:2px;top:50%;bottom:0;background:${done ? JOB_TRACKER_TEAL : '#e5e7eb'};"></div>` : '';
           const dot = done
-            ? `<div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:9999px;background:${JOB_TRACKER_TEAL};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">&#10003;</div>`
+            ? `<div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:9999px;background:${JOB_TRACKER_TEAL};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">${jobMarkSVG('check', 12)}</div>`
             : cur
               ? `<div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:9999px;background:${color};box-shadow:0 0 0 4px ${color}33;"></div>`
               : `<div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:9999px;background:#fff;border:2px solid #d1d5db;"></div>`;
@@ -2502,7 +2507,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const terminalMeta = JOB_TERMINAL_META[status];
           if (terminalMeta) {
             const c = terminalMeta.color;
-            const glyph = status === 'rejected' ? '&#10005;' : (status === 'offer_accepted' ? '&#10003;' : '&#8212;');
+            const glyph = status === 'rejected' ? jobMarkSVG('x', 18) : (status === 'offer_accepted' ? jobMarkSVG('check', 20) : '&#8212;');
             return `
               <div class="mb-5 pb-5 border-b border-gray-100">
                 <div class="flex items-center justify-between mb-3">
@@ -2543,7 +2548,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
               <div class="rounded-2xl p-4 mb-4" style="background:${c}14;border:1.5px solid ${c}40;">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base font-bold" style="background:${c};color:#fff;">${status === 'applied' || status === 'offer' ? '&#10003;' : '&#9679;'}</div>
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base font-bold" style="background:${c};color:#fff;">${status === 'applied' || status === 'offer' ? jobMarkSVG('check', 20) : '&#9679;'}</div>
                   <div class="flex-1 min-w-0">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Status</div>
                     <div class="text-lg font-bold leading-tight" style="color:${c};">${escapeHtml(meta.label)}</div>
@@ -3391,6 +3396,23 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!ov) return;
           const sc = ov.querySelector('.overflow-y-auto');
           const top = (sc && !resetTop) ? sc.scrollTop : 0;
+          // An open Application page is refreshed inside its own scroller, so tapping a control never
+          // moves the page (and a half-typed message is kept)
+          if (jobDashboardApplicantViewId && sc && !resetTop) {
+            const keepTop = sc.scrollTop;
+            const msgEl = document.getElementById('job-applicant-msg');
+            const msgVal = msgEl ? msgEl.value : null;
+            const tmp = document.createElement('div');
+            tmp.innerHTML = jobDashboardHTML();
+            const nsc = tmp.querySelector('.overflow-y-auto');
+            if (nsc) {
+              sc.innerHTML = nsc.innerHTML;
+              const m2 = document.getElementById('job-applicant-msg');
+              if (m2 && msgVal) m2.value = msgVal;
+              sc.scrollTop = keepTop;
+              return;
+            }
+          }
           const tabs = document.getElementById('job-dash-tabs');
           const tabsLeft = tabs ? tabs.scrollLeft : 0;
           ov.innerHTML = jobDashboardHTML();
@@ -3411,6 +3433,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         const JOB_MANAGE_STAGES = ['under_review', 'shortlisted', 'interview', 'offer'];
         let jobStatusExpandedStage = null;
+        let jobStatusMoreOpen = false;
         let jobInterviewDraft = null;     // { applicantId, dateTyped, timeTyped, mode, location }
         let jobApplicantMsgDraft = '';
 
@@ -3678,7 +3701,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function jobApplicantAvatarHTML(a, sizeCls, iconCls){
-          return `<div class="${sizeCls} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:rgba(30,144,255,0.1);color:${NAVY};">${avatarMediaHTML(jobApplicantPhoto(a), 'user', iconCls)}</div>`;
+          return `<div class="${sizeCls} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:#e5e7eb;color:#9ca3af;">${avatarMediaHTML(jobApplicantPhoto(a), 'user', iconCls)}</div>`;
         }
 
         // Pulls each applicant's current profile picture so the list is always up to date.
@@ -3719,7 +3742,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function openJobDashboardApplicant(applicantId){
           jobDashboardApplicantViewId = applicantId;
-          jobStatusExpandedStage = null;
+          jobStatusExpandedStage = null; jobStatusMoreOpen = false;
           rerenderJobDashboard(true);
         }
 
@@ -3978,7 +4001,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const cur = a.status || 'applied';
           const jid = job.id, aid = a.id;
           const terminal = !!JOB_TERMINAL_META[cur];
-          const more = `<details ${jobStatusExpandedStage ? 'open' : ''} style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#1d4ed8;list-style:none;">More options</summary><div style="margin-top:8px;">${jobApplicantStatusControlsHTML(job, a)}</div></details>`;
+          const more = `<details ${(jobStatusExpandedStage || jobStatusMoreOpen) ? 'open' : ''} ontoggle="jobStatusMoreOpen=this.open" style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#1d4ed8;list-style:none;">More options</summary><div style="margin-top:8px;">${jobApplicantStatusControlsHTML(job, a)}</div></details>`;
           if (terminal) return `<div>${jobApplicantProgressHTML(a)}</div>${more}`;
           const steps = [['applied','Applied'],['under_review','Review'],['shortlisted','Shortlist'],['interview','Interview'],['offer','Offer']];
           const idx = Math.max(0, steps.findIndex(x => x[0] === cur));
@@ -4016,7 +4039,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const meta = JOB_STATUS_META[a.status || 'applied'] || JOB_STATUS_META.applied;
           const card = 'background:#fff;border-radius:24px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);padding:16px;margin-bottom:14px;';
           const lab = t => `<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1e90ff;margin-bottom:10px;">${t}</div>`;
-          const infoRow = (ic, l, v, first) => v ? `<div style="display:flex;gap:12px;align-items:center;padding:11px 0;${first ? '' : 'border-top:1px solid #eef2f7;'}"><div style="width:34px;height:34px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon(ic,'w-4 h-4')}</div><div style="min-width:0;"><div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.04em;text-transform:uppercase;">${l}</div><div style="font-size:14px;font-weight:600;color:#0f172a;word-break:break-word;">${escapeHtml(v)}</div></div></div>` : '';
+          const infoRow = (ic, l, v, first) => v ? `<div style="display:flex;gap:12px;align-items:center;padding:11px 0;${first ? '' : 'border-top:1px solid #eef2f7;'}"><div style="width:22px;color:#9ca3af;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon(ic,'w-4 h-4')}</div><div style="min-width:0;"><div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.04em;text-transform:uppercase;">${l}</div><div style="font-size:14px;font-weight:600;color:#0f172a;word-break:break-word;">${escapeHtml(v)}</div></div></div>` : '';
           const qa = jobApplicantQAList(a);
           const roleItem = qa.find(x => x.id === 'role' || /which role/i.test(x.q));
           const qaRest = qa.filter(x => x !== roleItem);
