@@ -2770,6 +2770,29 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (!job) oppLoadingIds[id] = true;
           openOverlay('jobDetail');
           if (!job) oppEnsureLoaded(id);
+          else if (job.type === 'Course' && job._coverStripped && !job.coverImage) oppEnsureCover(id);
+        }
+        // Listings saved with the picture inside the row hide it from the list for speed;
+        // fetch that one picture when the listing is opened so everyone sees the banner
+        const oppCoverFetching = {};
+        async function oppEnsureCover(id){
+          if (oppCoverFetching[id]) return;
+          oppCoverFetching[id] = true;
+          try {
+            const sb = getSupabaseClient();
+            if (!sb) return;
+            const { data: raw } = await sb.from(OPPORTUNITIES_TABLE).select('data').eq('id', id).maybeSingle();
+            const cover = raw && raw.data && raw.data.coverImage;
+            const job = findJob(id);
+            if (cover && job) {
+              job.coverImage = cover;
+              if (currentOverlayKind === 'jobDetail' && activeJobId === id) {
+                const ov = document.getElementById('overlay');
+                if (ov) ov.innerHTML = jobDetailHTML();
+              }
+            }
+          } catch (e) {}
+          finally { delete oppCoverFetching[id]; }
         }
         // A listing this device has not received yet (just posted, opened from a notification or link)
         // is fetched from the server instead of showing "no longer available"
@@ -2782,6 +2805,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             if (job && isJobOwnedByCurrentUser(job)) { openJobDashboard(id); return; }
             const ov = document.getElementById('overlay');
             if (ov) ov.innerHTML = jobDetailHTML();
+            if (job && job.type === 'Course' && job._coverStripped && !job.coverImage) oppEnsureCover(id);
           }
         }
 
@@ -4214,7 +4238,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const dl = (job.deadline || '').replace(/^Deadline\s+/i, '');
           if (dl) cards.push({ icon: 'calendar', label: isCourse ? 'Start' : 'Deadline', value: dl, sub: isCourse ? '' : oppDaysLeftLabel(job) });
           const whereDet = byKey.where || byKey.studyWhere;
-          cards.push({ icon: job.mode === 'Online' ? 'link' : 'pin', label: 'Location', value: job.mode || 'On-site', sub: (whereDet && whereDet.value && whereDet.value !== job.mode) ? (job.mode === 'Online' ? 'Based in ' : '') + whereDet.value : '' });
+          cards.push({ icon: 'pin', label: 'Location', value: job.mode || 'On-site', sub: (whereDet && whereDet.value && whereDet.value !== job.mode) ? (job.mode === 'Online' ? 'Based in ' : '') + whereDet.value : '' });
           const payBits = [byKey.payType && byKey.payType.value, byKey.stipend && byKey.stipend.value, byKey.pay && byKey.pay.value].filter(Boolean);
           const used = { where: 1, studyWhere: 1, payType: 1, stipend: 1, pay: 1, length: 1, employment: 1, hours: 1 };
           det.forEach(x => { if (!used[x.key]) cards.push({ icon: x.icon || 'check', label: x.label, value: x.value, sub: '' }); });
@@ -4240,7 +4264,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const byKey = {}; det.forEach(x => { if (x && x.key) byKey[x.key] = x; });
           const payBits = [byKey.payType && byKey.payType.value, byKey.stipend && byKey.stipend.value, byKey.pay && byKey.pay.value].filter(Boolean);
           const chips = [oppChipHTML(job.type === 'Scholarship' || job.type === 'Internship' ? 'graduate' : 'briefcase', job.type)];
-          if (job.mode) chips.push(oppChipHTML(job.mode === 'Online' ? 'link' : 'pin', job.mode));
+          if (job.mode) chips.push(oppChipHTML('pin', job.mode));
           if (job.duration) chips.push(oppChipHTML('clock', job.duration));
           if (payBits.length) chips.push(oppChipHTML('money', payBits[0]));
           const cards = oppFactCards(job);
@@ -4289,7 +4313,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               ? menuOverlayHeader('Opportunity', jobDetailMenuOpen, 'toggleJobDetailMenu', jobDetailMenuDropdownHTML(job), {titleSize: 'text-lg'})
               : overlayHeader('Opportunity', '20px', null, null, { center: true })}
             <div class="px-5" style="padding-top:20px;padding-bottom:50px;">
-              ${(job.coverImage || (job.courseId && (allCourses.find(x => x.id === job.courseId) || {}).photo)) ? `<img src="${job.coverImage || (allCourses.find(x => x.id === job.courseId) || {}).photo}" class="w-full object-cover" style="height:190px;border-radius:24px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,35,90,0.18);" alt="">` : ''}
+              ${(job.type === 'Course' && (job.coverImage || (job.courseId && (allCourses.find(x => x.id === job.courseId) || {}).photo))) ? `<img src="${job.coverImage || (allCourses.find(x => x.id === job.courseId) || {}).photo}" class="w-full object-cover" style="height:190px;border-radius:24px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,35,90,0.18);" alt="">` : ''}
               <div class="mb-1">
                 <div class="font-display" style="font-size:22px;font-weight:800;line-height:1.2;">${escapeHtml(job.title)}</div>
                 <div style="margin-top:4px;font-size:14px;color:#64748b;">${isCourse ? escapeHtml(stitchOrgName(job.org)) : escapeHtml(job.org || '')}</div>
@@ -8156,7 +8180,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             ${overlayHeader(isCourse ? 'Enroll' : 'Apply', '20px', undefined, undefined, { center: true, pb: '10px' })}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="rounded-3xl p-4 mb-5 flex items-center gap-3" style="background:rgba(10,37,64,0.05);">
-                <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${job.coverImage ? `<img src="${job.coverImage}" class="w-full h-full object-cover" alt="">` : Icon(job.icon,'w-5 h-5')}</div>
+                <div class="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${(job.type === 'Course' && job.coverImage) ? `<img src="${job.coverImage}" class="w-full h-full object-cover" alt="">` : Icon(job.icon,'w-5 h-5')}</div>
                 <div class="min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(job.title)}</div>
                   <div class="text-xs text-gray-500 truncate">${isCourse ? escapeHtml(stitchOrgName(job.org)) : (job.org || '')}</div>
@@ -8376,7 +8400,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             const applyMethod = isCourse ? 'inapp' : (d.applyMethod || 'inapp');
             const applyViaWebsite = !isCourse && applyMethod === 'website';
             { const keptCover = !!(newOppEditingId && (findJob(newOppEditingId) || {})._coverStripped);
-              if (!d.coverImage && !keptCover) { window.__oppCoverErr = true; rerenderPostOpportunity(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; } }
+              if (isCourse && !d.coverImage && !keptCover) { window.__oppCoverErr = true; rerenderPostOpportunity(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; } }
             if (!d.type) { openAppAlertModal('Please choose a type for this listing.'); return; }
             { const miss = oppPostMissing(); if (miss) { openAppAlertModal(miss); return; } }
             if (!d.mode) { openAppAlertModal('Please choose where this takes place (On-site, Online, ...).'); return; }
@@ -8437,7 +8461,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               requiredDocs: isCourse ? [] : (d.requiredDocs || []),
               gender: d.gender || 'any',
               description: d.description.trim(),
-              coverImage: d.coverImage || '',
+              coverImage: (d.type === 'Course' ? d.coverImage : '') || '',
               details: oppPostDetails(),
               roles: (!isCourse && oppRolesAllowed(d.type)) ? (d.roles || []).slice(0, OPP_ROLE_MAX) : [],
             };
@@ -8711,7 +8735,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const d = newOppDraft, isCourse = d.type === 'Course';
           if (i === 0) {
             const keptCover = !!(newOppEditingId && (findJob(newOppEditingId) || {})._coverStripped);
-            if (!d.coverImage && !keptCover) { window.__oppCoverErr = true; return 'Please pick a colour card or upload a cover picture to continue.'; }
+            if (isCourse && !d.coverImage && !keptCover) { window.__oppCoverErr = true; return 'Please pick a colour card or upload a cover picture to continue.'; }
             if (!d.title.trim()) return 'Please add a title.';
             if (!d.type) return 'Please choose a type for this listing.';
           }
@@ -8771,7 +8795,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               <div class="max-w-2xl mx-auto">
               ${pg === 0 ? `
 <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
-              ${(() => { return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}
+              ${(() => { if (newOppDraft.type !== 'Course') return ''; return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}
               <div class="mb-4">
                 <label class="pa-lab">Type</label>
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
