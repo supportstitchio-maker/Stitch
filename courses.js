@@ -3827,7 +3827,7 @@ try {
               c.learn = (d.learn || []).map(x => String(x).trim()).filter(Boolean); c.audience = (d.audience || '').trim();
               c.price = coursePriceFromDraft(d); c.currency = d.currency || 'GHS';
               const synced = await postCourseInsertRemote(c);
-              if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared course catalog -- it may not show up for other students or survive your next sign-in. Check the console for details.");
+              if (!synced) openAppAlertModal("We couldn't save your changes right now. Please check your connection and try again.");
               if (c.opportunityId) {
                 const job = findJob(c.opportunityId);
                 if (job) {
@@ -3870,7 +3870,7 @@ try {
           };
           allCourses.unshift(course);
           const synced = await postCourseInsertRemote(course);
-          if (!synced) openAppAlertModal("This course was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other students. Check the console for the Supabase error, or make sure the courses table + policies from the SQL comment above are set up.");
+          if (!synced) openAppAlertModal("We couldn't publish this course right now. Please check your connection and try again.");
           resetNewCourseDraft();
           closeOverlay();
           classroomAreaTab = 'courses';

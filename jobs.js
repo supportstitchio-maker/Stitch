@@ -8377,7 +8377,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   else await syncLinkedCourseMeta(existing);
                 }
                 const synced = await syncOpportunityWithRetry(existing);
-                if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Reason: " + (lastOppSyncError || 'unknown'));
+                if (!synced) {
+                  try { window.reportError && window.reportError(new Error('Listing save failed: ' + (lastOppSyncError || 'unknown')), { call: 'editOpportunity' }); } catch (e) {}
+                  openAppAlertModal("We couldn't save your changes right now. Please check your connection and try again.");
+                  return;
+                }
                 newOppEditingId = null;
                 resetNewOppDraft();
                 closeOverlay();
@@ -8405,7 +8409,15 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             bucket.unshift(job);
             if (isCourse) job.courseId = createLinkedCourse(job);
             const synced = await syncOpportunityWithRetry(job);
-            if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Reason: " + (lastOppSyncError || 'unknown'));
+            if (!synced) {
+              // Do not leave a listing that only exists on this phone: take it back out and keep the form so nothing is lost
+              const bk = bucket.indexOf(job); if (bk !== -1) bucket.splice(bk, 1);
+              delete oppPendingLocal[job.id];
+              try { window.reportError && window.reportError(new Error('Listing save failed: ' + (lastOppSyncError || 'unknown')), { call: 'postOpportunity' }); } catch (e) {}
+              renderJobMarket();
+              openAppAlertModal("We couldn't post this right now. Please check your connection and try again. Everything you filled in is still here.");
+              return;
+            }
             resetNewOppDraft();
             closeOverlay();
             jobsSub = isCourse ? 'courses' : (job.type === 'Internship' ? 'internships' : job.type === 'Scholarship' ? 'scholarships' : job.type === 'Other' ? 'others' : 'opportunities');
@@ -9078,7 +9090,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           adminCloseMenuSheet();
           openAppConfirmModal('Freeze poster status?', "They keep their approval on record but can't post until you unfreeze them. They'll be notified.", 'Freeze', async () => {
             const ok = await adminSetStatusDirect(userId, 'frozen', { poster_frozen_at: new Date().toISOString() });
-            if (!ok) { openAppAlertModal("Couldn't freeze this poster. Make sure poster-moderation.sql has been run, then try again."); return; }
+            if (!ok) { openAppAlertModal("Couldn't freeze this poster right now. Please try again."); return; }
             notifyUserRemote(userId, { type: 'poster_frozen', title: 'Poster access frozen', message: 'Your ability to post jobs & opportunities has been frozen while we review your account.' });
             const app = adminFindApplicant(userId); if (app) app.poster_status = 'frozen';
             adminAfterChange();
@@ -9100,7 +9112,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             const sb = getSupabaseClient();
             if (!sb || !isCurrentUserAdmin()) return;
             const { error } = await sb.rpc('block_poster', { target_user: userId, reason: 'Blocked by admin from Admin Dashboard' });
-            if (error) { console.warn('block_poster failed:', error); openAppAlertModal("Couldn't block this poster. Make sure poster-moderation.sql has been run in Supabase, then try again."); return; }
+            if (error) { console.warn('block_poster failed:', error); openAppAlertModal("Couldn't block this poster right now. Please try again."); return; }
             notifyUserRemote(userId, { type: 'poster_blocked', title: 'Poster access removed', message: 'Your account is no longer eligible to post jobs & opportunities on Stitch.' });
             const app = adminFindApplicant(userId); if (app) app.poster_status = 'blocked';
             adminAfterChange();

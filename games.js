@@ -3032,7 +3032,7 @@ let userPoints = 0;
           await authAwaitPendingDiscard();
           const sb = getSupabaseClient();
           if (!sb) {
-            openAppAlertModal('Sign-in backend is not configured yet. Fill in SUPABASE_PROJECT_REF and SUPABASE_ANON_KEY to enable this.');
+            openAppAlertModal('Sign-in is not available right now. Please try again in a moment.');
             return;
           }
           try {
@@ -3047,7 +3047,7 @@ let userPoints = 0;
             });
             if (error) openAppAlertModal(error.message || 'Could not start Google sign-in.');
           } catch (e) {
-            openAppAlertModal("Couldn't start Google sign-in. Make sure the Google provider is enabled in your Supabase project's Auth settings.");
+            openAppAlertModal("Couldn't start Google sign-in. Please try again in a moment.");
           }
         }
 
@@ -3055,7 +3055,7 @@ let userPoints = 0;
           await authAwaitPendingDiscard();
           const sb = getSupabaseClient();
           if (!sb) {
-            openAppAlertModal('Sign-in backend is not configured yet. Fill in SUPABASE_PROJECT_REF and SUPABASE_ANON_KEY to enable this.');
+            openAppAlertModal('Sign-in is not available right now. Please try again in a moment.');
             return;
           }
           try {
@@ -3071,7 +3071,7 @@ let userPoints = 0;
             });
             if (error) openAppAlertModal(error.message || 'Could not start Apple sign-in.');
           } catch (e) {
-            openAppAlertModal("Couldn't start Apple sign-in. Make sure the Apple provider is enabled in your Supabase project's Auth settings.");
+            openAppAlertModal("Couldn't start Apple sign-in. Please try again in a moment.");
           }
         }
 
