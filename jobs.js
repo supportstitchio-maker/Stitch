@@ -2361,6 +2361,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return null;
         }
         function isJobApplied(job){
+          // Applications handled on the poster's own website can't be tracked here, so they never
+          // show as Applied and have no tracker
+          if (job && job.type !== 'Course' && job.applyMethod === 'website' && job.website) return false;
           return !!jobApplication(job);
         }
 
@@ -3957,61 +3960,121 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return `<div class="rounded-2xl" style="border:1.5px solid #e5e7eb;padding:6px;">${rows}</div>`;
         }
 
+        // Splits what the applicant typed into question / answer blocks (new forms save them as
+        // "Question\nAnswer" blocks, older ones are one free note)
+        function jobApplicantQAList(a){
+          if (Array.isArray(a.answers) && a.answers.length) return a.answers.filter(x => x && x.value).map(x => ({ q: x.label || '', v: x.value, id: x.id }));
+          const raw = String(a.coverNote || '').trim();
+          if (!raw) return [];
+          const blocks = raw.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+          const looksQA = blocks.length > 1 || (blocks[0] || '').indexOf('\n') !== -1;
+          if (!looksQA) return [{ q: '', v: raw, id: 'note' }];
+          return blocks.map(b => { const nl = b.indexOf('\n'); return nl === -1 ? { q: '', v: b, id: 'note' } : { q: b.slice(0, nl).trim(), v: b.slice(nl + 1).trim(), id: '' }; });
+        }
+
+        // Status card: a row of five steps, one main "move forward" button and "Not a fit".
+        // Interview times, jumping stages, withdrawn etc. stay under "More options"
+        function jobApplicantStatusCardHTML(job, a){
+          const cur = a.status || 'applied';
+          const jid = job.id, aid = a.id;
+          const terminal = !!JOB_TERMINAL_META[cur];
+          const more = `<details ${jobStatusExpandedStage ? 'open' : ''} style="margin-top:14px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#1d4ed8;list-style:none;">More options</summary><div style="margin-top:8px;">${jobApplicantStatusControlsHTML(job, a)}</div></details>`;
+          if (terminal) return `<div>${jobApplicantProgressHTML(a)}</div>${more}`;
+          const steps = [['applied','Applied'],['under_review','Review'],['shortlisted','Shortlist'],['interview','Interview'],['offer','Offer']];
+          const idx = Math.max(0, steps.findIndex(x => x[0] === cur));
+          const stepper = `<div style="display:flex;align-items:flex-start;">${steps.map((st, i) => {
+            const done = i < idx, now = i === idx;
+            const col = (done || now) ? '#1e90ff' : '#cbd5e1';
+            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative;">
+              ${i ? `<div style="position:absolute;top:10px;right:50%;width:100%;height:3px;background:${i <= idx ? '#1e90ff' : '#e2e8f0'};"></div>` : ''}
+              <div style="width:22px;height:22px;border-radius:50%;z-index:1;box-sizing:border-box;background:${(done || now) ? '#1e90ff' : '#fff'};border:2px solid ${col};box-shadow:${now ? '0 0 0 4px #dbeafe' : 'none'};"></div>
+              <div style="font-size:10.5px;margin-top:6px;font-weight:${now ? 800 : 600};color:${now ? '#1e90ff' : '#94a3b8'};">${st[1]}</div></div>`;
+          }).join('')}</div>`;
+          const next = steps[idx + 1];
+          let main = '';
+          if (next) {
+            const k = next[0];
+            const label = k === 'interview' ? 'Schedule interview' : (k === 'offer' ? 'Offer opportunity' : 'Move to ' + jobStageLabel(k));
+            const act = k === 'interview' ? `toggleJobStatusStage('interview','${aid}')` : `posterUpdateApplicantStatus('${jid}','${aid}','${k}')`;
+            main = `<button onclick="${act}" class="text-white font-semibold" style="flex:2;height:44px;border-radius:999px;font-size:13px;background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">${label}</button>`;
+          }
+          const note = cur === 'offer' ? 'The opportunity has been offered. Waiting for their reply.' : 'Moving them forward updates their tracker and notifies them.';
+          return `${stepper}
+            <div style="font-size:12px;color:#94a3b8;margin:14px 0 10px;">${note}</div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="confirmPosterStatus('${jid}','${aid}','rejected','${cur}')" style="flex:1;height:44px;border-radius:999px;background:#f1f5f9;color:#475569;font-weight:700;font-size:13px;">Not a fit</button>
+              ${main}
+            </div>${more}`;
+        }
+
         function jobDashboardApplicantDetailHTML(job, a){
-          const meta = JOB_STATUS_META[a.status || 'applied'] || JOB_STATUS_META.applied;
           const required = job.requiredDocs || [];
           const docs = a.documents || {};
           const docKeys = Object.keys(docs);
           const extra = a.additionalDocuments || [];
           const missing = required.filter(id => !docs[id]);
-          const detailLine = (label, value) => value ? `<div class="flex items-start justify-between gap-4 py-2.5 border-b border-gray-100"><div class="text-xs text-gray-400 flex-shrink-0">${label}</div><div class="text-sm font-medium text-gray-800 text-right break-words min-w-0">${escapeHtml(value)}</div></div>` : '';
+          const meta = JOB_STATUS_META[a.status || 'applied'] || JOB_STATUS_META.applied;
+          const card = 'background:#fff;border-radius:24px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);padding:16px;margin-bottom:14px;';
+          const lab = t => `<div style="font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1e90ff;margin-bottom:10px;">${t}</div>`;
+          const infoRow = (ic, l, v, first) => v ? `<div style="display:flex;gap:12px;align-items:center;padding:11px 0;${first ? '' : 'border-top:1px solid #eef2f7;'}"><div style="width:34px;height:34px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon(ic,'w-4 h-4')}</div><div style="min-width:0;"><div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.04em;text-transform:uppercase;">${l}</div><div style="font-size:14px;font-weight:600;color:#0f172a;word-break:break-word;">${escapeHtml(v)}</div></div></div>` : '';
+          const qa = jobApplicantQAList(a);
+          const roleItem = qa.find(x => x.id === 'role' || /which role/i.test(x.q));
+          const qaRest = qa.filter(x => x !== roleItem);
+          const age = jobAgeFromISO(a.dob);
+          const sub = [age !== '' ? age + ' years old' : '', a.location || ''].filter(Boolean).join(' &middot; ');
+          const contact = [infoRow('mail', 'Email', a.email, true), infoRow('phone', 'Phone', a.phone, !a.email), infoRow('calendar', 'Date of birth', a.dob ? isoToTypedDate(a.dob) : '', !a.email && !a.phone)].join('');
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto px-5">
                 <div style="margin:0 -20px;">${overlayHeader('Application', '20px', 'closeJobDashboardApplicant()', null, { center: true, pb: '0px' })}</div>
                 <div style="height:10px;"></div>
-                <div class="flex items-center gap-4 mb-5">
-                  ${jobApplicantAvatarHTML(a, 'w-16 h-16', 'w-8 h-8')}
-                  <div class="min-w-0">
-                    <div class="font-bold text-lg truncate">${escapeHtml(a.name || 'Unnamed')}</div>
-                    ${jobAgeFromISO(a.dob) !== '' ? `<div class="text-sm text-gray-500">${jobAgeFromISO(a.dob)} years old</div>` : ''}
+
+                <div class="opp-app-card" style="${card}">
+                  <div style="display:flex;gap:14px;align-items:center;">
+                    ${jobApplicantAvatarHTML(a, 'w-16 h-16', 'w-8 h-8')}
+                    <div style="min-width:0;flex:1;">
+                      <div style="font-weight:800;font-size:18px;" class="truncate">${escapeHtml(a.name || 'Unnamed')}</div>
+                      ${sub ? `<div style="font-size:12.5px;color:#64748b;">${sub}</div>` : ''}
+                    </div>
+                    <div style="font-size:11px;font-weight:800;color:${meta.color};background:${meta.color}1f;border-radius:999px;padding:5px 10px;flex-shrink:0;">${escapeHtml(meta.label)}</div>
+                  </div>
+                  <div class="opp-app-sub" style="margin-top:14px;background:#f8fafc;border-radius:16px;padding:12px 14px;">
+                    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Applied for</div>
+                    <div style="font-size:14px;font-weight:700;">${escapeHtml(job.title)}</div>
+                    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+                      ${roleItem ? `<span style="font-size:12px;font-weight:800;color:#1d4ed8;background:#e0edff;border-radius:999px;padding:5px 11px;">Role: ${escapeHtml(roleItem.v)}</span>` : ''}
+                      <span style="font-size:12px;color:#64748b;">${a.appliedAt ? fmtJobDateTime(a.appliedAt) : ''}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Application details</div>
-                <div class="mb-5">
-                  ${detailLine('Applied for', job.title)}
-                  ${detailLine('Applied on', fmtJobDateTime(a.appliedAt))}
-                  ${detailLine('Last update', a.statusUpdatedAt ? fmtJobDateTime(a.statusUpdatedAt) : '')}
-                  ${detailLine('Email', a.email)}
-                  ${detailLine('Phone', a.phone)}
-                  ${detailLine('Date of birth', a.dob ? isoToTypedDate(a.dob) : '')}
-                  ${detailLine('Location', a.location)}
-                </div>
+                ${contact ? `<div class="opp-app-card" style="${card}">${lab('Contact')}${contact}</div>` : ''}
 
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Documents</div>
-                <div class="mb-5">
+                ${qaRest.length ? `<div class="opp-app-card" style="${card}">${lab('Their answers')}${qaRest.map((x, i) => `
+                  ${x.q ? `<div style="font-size:12px;font-weight:700;color:#94a3b8;${i ? 'margin-top:12px;' : ''}">${escapeHtml(x.q)}</div>` : ''}
+                  <div style="font-size:14px;line-height:1.5;margin-top:3px;white-space:pre-wrap;color:#334155;">${escapeHtml(x.v)}</div>`).join('')}</div>` : ''}
+
+                <div class="opp-app-card" style="${card}">
+                  ${lab('Documents')}
                   ${docKeys.map(id => jobApplicantDocRowHTML(job, a, jobDocLabel(id), docs[id].fileName, id, true)).join('')}
                   ${extra.map((d, i) => jobApplicantDocRowHTML(job, a, 'Other document', d.fileName, 'extra:' + i, true)).join('')}
                   ${missing.map(id => `<div class="flex items-center gap-3 rounded-2xl p-3 mb-2" style="border:1.5px dashed #fca5a5;background:#fef2f2;"><div class="flex-1 min-w-0"><div class="text-xs text-red-400">${escapeHtml(jobDocLabel(id))}</div><div class="text-sm font-semibold text-red-500">Not provided</div></div></div>`).join('')}
-                  ${(!docKeys.length && !extra.length && !missing.length) ? `<div class="text-sm text-gray-400">No documents were attached.</div>` : ''}
+                  ${(!docKeys.length && !extra.length && !missing.length) ? `<div style="font-size:14px;color:#94a3b8;">No documents were attached.</div>` : ''}
                 </div>
-
-                ${a.coverNote ? `
-                  <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Cover note</div>
-                  <div class="rounded-2xl p-4 mb-5 text-sm text-gray-700 whitespace-pre-wrap" style="border:1.5px solid #e5e7eb;">${escapeHtml(a.coverNote)}</div>` : ''}
 
                 ${jobInterviewCardHTML(job, a, true)}
 
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Status &amp; tracker</div>
-                <div class="text-xs text-gray-400 mb-3">Whatever you set here updates the applicant's tracker and notifies them.</div>
-                <div class="mb-6">${jobApplicantProgressHTML(a)}</div>
-                ${jobApplicantStatusControlsHTML(job, a)}
+                <div class="opp-app-card" style="${card}">
+                  ${lab('Status')}
+                  ${jobApplicantStatusCardHTML(job, a)}
+                </div>
 
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Message applicant</div>
-                <div class="text-xs text-gray-400 mb-3">Sent to ${escapeHtml(a.name || 'the applicant')} as a notification.</div>
-                <textarea id="job-applicant-msg" rows="3" maxlength="500" placeholder="Write a message, for example what to bring or a question about their application" oninput="onJobApplicantMsgInput(this)" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm resize-none outline-none">${escapeHtml(jobApplicantMsgDraft)}</textarea>
-                <button onclick="posterSendApplicantMessage('${job.id}','${a.id}')" class="mt-3 mb-4 w-full flex items-center justify-center gap-2 text-white font-semibold text-sm rounded-full py-3" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">${Icon('send','w-4 h-4')} Send notification</button>
+                <div class="opp-app-card" style="${card}">
+                  ${lab('Message applicant')}
+                  <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;">Sent to ${escapeHtml(a.name || 'the applicant')} as a notification.</div>
+                  <textarea id="job-applicant-msg" rows="3" maxlength="500" placeholder="Write a message, for example what to bring..." oninput="onJobApplicantMsgInput(this)" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm resize-none outline-none">${escapeHtml(jobApplicantMsgDraft)}</textarea>
+                  <button onclick="posterSendApplicantMessage('${job.id}','${a.id}')" class="mt-3 w-full flex items-center justify-center font-bold text-sm rounded-full" style="height:44px;background:#eaf3ff;color:#1d4ed8;">Send message</button>
+                </div>
                 <div style="padding-bottom:40px;">${jobMessagesListHTML(a, '')}</div>
               </div>
             </div>`;
@@ -4333,7 +4396,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 </button>` : ''}
               <div class="text-center opp-sticky-bar" style="position:sticky;bottom:0;z-index:5;margin:8px -20px 0;padding:14px 20px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(248,250,252,0),#f8fafc 38%);">
                 <div style="display:flex;gap:10px;align-items:center;">
-                ${(isCourse || job.isCatalogCourse) ? '' : `<button type="button" onclick="toggleSaveJobFromDetail(\'${job.id}\', this)" aria-label="Save" class="opp-save-btn" style="flex-shrink:0;width:52px;height:52px;border-radius:999px;background:#fff;border:1.5px solid #dbe3f0;display:flex;align-items:center;justify-content:center;color:${job.saved ? ROYAL : '#475569'};">${Icon('bookmark','w-5 h-5')}</button>`}
+                ${job.isCatalogCourse ? '' : `<button type="button" onclick="toggleSaveJobFromDetail(\'${job.id}\', this)" aria-label="Save" class="opp-save-btn" style="flex-shrink:0;width:52px;height:52px;border-radius:999px;background:#fff;border:1.5px solid #dbe3f0;display:flex;align-items:center;justify-content:center;color:${job.saved ? ROYAL : '#475569'};">${Icon('bookmark','w-5 h-5')}</button>`}
                 <div style="flex:1;min-width:0;">
                 ${isWebsiteJob
                   ? `<button onclick="openJobApply('${job.id}')" class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;">${applyLabel}</button>`

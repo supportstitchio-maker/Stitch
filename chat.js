@@ -8473,7 +8473,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         function callRingStatusText(){
           if (callState.statusOverride) return escapeHtml(callState.statusOverride);
-          return callState.type === 'video' ? 'Video calling\u2026' : 'Calling\u2026';
+          return callState.type === 'video' ? '' : 'Calling\u2026';
         }
 
         function callStageHTML(){
