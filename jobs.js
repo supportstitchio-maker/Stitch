@@ -1685,9 +1685,11 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return c;
         }
 
+        let lastOppSyncError = '';
         async function postOpportunityInsertRemote(job){
+          lastOppSyncError = '';
           const sb = getSupabaseClient();
-          if (!sb) return false;
+          if (!sb) { lastOppSyncError = 'no connection to the server'; return false; }
           try {
             const { data } = await sb.auth.getUser();
             const user = data && data.user;
@@ -1702,7 +1704,17 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             }
             if (user && typeof job.coverImage === 'string' && job.coverImage.indexOf('data:image/') === 0 && canCurrentUserWriteCoverFor(job, user.id)) {
               try { await uploadOpportunityCover(sb, job, user.id); }
-              catch (e) { console.warn('Cover image upload failed; saving the listing without changing its cover:', e); return false; }
+              catch (e) {
+                // Never lose the listing over its picture: keep a small inline copy of the cover and
+                // save anyway; the next save from the owner moves it to Storage
+                console.warn('Cover image upload failed; saving the listing with an inline cover instead:', e);
+                lastOppSyncError = 'cover upload: ' + ((e && (e.message || e.error)) || 'failed');
+                try {
+                  let small = await compressImageDataUrl(job.coverImage, 800, 0.7);
+                  if (small && small.length > 300000) small = await compressImageDataUrl(job.coverImage, 560, 0.6);
+                  job.coverImage = small || '';
+                } catch (e2) { job.coverImage = ''; }
+              }
             }
             const { error } = await sb.from(OPPORTUNITIES_TABLE).upsert({
               id: job.id,
@@ -1710,10 +1722,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               // Keep the original owner when someone else (an admin, an applicant) re-saves the row.
               created_by: oppOwners[job.id] || (user ? user.id : null),
             });
-            if (error) console.warn('Opportunity did not sync to Supabase (see opportunities table SQL comment above):', error);
+            if (error) { console.warn('Opportunity did not sync to Supabase (see opportunities table SQL comment above):', error); lastOppSyncError = (error.message || error.code || 'save failed'); }
             else if (user && !oppOwners[job.id]) oppOwners[job.id] = user.id;
             return !error;
-          } catch (e) { console.warn('Opportunity sync threw an error:', e); return false; }
+          } catch (e) { console.warn('Opportunity sync threw an error:', e); lastOppSyncError = (e && e.message) || 'save failed'; return false; }
         }
 
         // One-time, per-session cleanup: listings that still carry an inline base64 cover get it
@@ -8365,7 +8377,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   else await syncLinkedCourseMeta(existing);
                 }
                 const synced = await syncOpportunityWithRetry(existing);
-                if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Check the console for details.");
+                if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Reason: " + (lastOppSyncError || 'unknown'));
                 newOppEditingId = null;
                 resetNewOppDraft();
                 closeOverlay();
@@ -8393,7 +8405,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             bucket.unshift(job);
             if (isCourse) job.courseId = createLinkedCourse(job);
             const synced = await syncOpportunityWithRetry(job);
-            if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Check the console for the Supabase error, or make sure the opportunities table + policies from the SQL comment above are set up.");
+            if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Reason: " + (lastOppSyncError || 'unknown'));
             resetNewOppDraft();
             closeOverlay();
             jobsSub = isCourse ? 'courses' : (job.type === 'Internship' ? 'internships' : job.type === 'Scholarship' ? 'scholarships' : job.type === 'Other' ? 'others' : 'opportunities');
