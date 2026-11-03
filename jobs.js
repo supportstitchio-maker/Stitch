@@ -1763,7 +1763,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             // and a short cover note
             documents: (docsPayload && docsPayload.documents) || {},
             additionalDocuments: (docsPayload && docsPayload.additionalDocuments) || [],
-            coverNote: (d.letterText || '').trim(),
+            coverNote: jobApplyComposeNote(job),
+            answers: (oppApplyConfig(job) ? oppApplyConfig(job).fields : []).map(f => ({ id: f.id, label: f.label, value: String((d.answers || {})[f.id] || '').trim() })).filter(x => x.value),
           };
           const existing = job.applicants.find(a => a.id === myId);
           if (existing) Object.assign(existing, entry); else job.applicants.push(entry);
@@ -1991,6 +1992,25 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (content) content.innerHTML = jobsContent();
           else if (typeof renderJobMarket === 'function') renderJobMarket();
         }
+        // Listings the person just posted or edited on this device that the server may not have
+        // confirmed yet. A full reload that started before the save finished would otherwise
+        // replace the list without them, so the new post would vanish.
+        const oppPendingLocal = {};
+        async function syncOpportunityWithRetry(job){
+          oppPendingLocal[job.id] = job;
+          let ok = false;
+          const waits = [0, 1200, 3000];
+          for (let i = 0; i < waits.length && !ok; i++) {
+            if (waits[i]) await new Promise(r => setTimeout(r, waits[i]));
+            ok = await postOpportunityInsertRemote(job);
+          }
+          if (ok) {
+            delete oppPendingLocal[job.id];
+            // Confirm from the server so every list shows the saved copy
+            try { queueJobRefresh(job.id); } catch (e) {}
+          }
+          return ok;
+        }
         let lastOpportunitiesSignature = '';
         let opportunitiesLoadRetries = 0;
         let opportunitiesLoadInFlight = null;
@@ -2028,6 +2048,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             const rows = data
               .map(row => (row.data && typeof row.data === 'object') ? Object.assign({}, row.data, { id: row.id, applicants: applicationsByJob[row.id] || [] }, row.has_inline_cover ? { _coverStripped: true } : {}) : null)
               .filter(Boolean);
+            // Keep anything just posted or edited here that the server has not confirmed yet
+            Object.keys(oppPendingLocal).forEach(pid => {
+              const local = oppPendingLocal[pid];
+              const at = rows.findIndex(r => r.id === pid);
+              const keep = Object.assign({}, local, { applicants: (at !== -1 && rows[at].applicants) || local.applicants || [] });
+              if (at === -1) rows.unshift(keep); else rows[at] = keep;
+            });
             const signature = JSON.stringify(rows);
             jobsData = splitOpportunityRows(rows);
             // Personal details of applicants never go into the on-device listing cache.
@@ -2082,7 +2109,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               const part = splitOpportunityRows([job]);
               Object.keys(part).forEach(k => { jobsData[k].push.apply(jobsData[k], part[k]); });
             });
-            ids.forEach(id => { if (!found.has(id)) removeJobLocally(id); }); // deleted
+            ids.forEach(id => { if (!found.has(id) && !oppPendingLocal[id]) removeJobLocally(id); }); // deleted
             const all = Object.keys(jobsData).reduce((a, k) => a.concat(jobsData[k]), []);
             try { localStorage.setItem(OPP_CACHE_KEY, JSON.stringify(all.map(forCache))); } catch (e) {}
             lastOpportunitiesSignature = '';
@@ -4115,6 +4142,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                   ${detailRow('briefcase', 'Type', job.type)}
                   ${detailRow(job.mode === 'Online' ? 'link' : 'pin', 'Location', job.mode)}
                   ${job.duration ? detailRow('clock', 'Duration', job.duration) : ''}
+                  ${(Array.isArray(job.details) ? job.details : []).filter(x => x && x.label && x.value && !(x.key === 'length' || x.key === 'employment' || x.key === 'hours') ).map(x => detailRow(x.icon || 'check', escapeHtml(x.label), escapeHtml(x.value))).join('')}
                   ${isCourse ? detailRow('chart', 'Price', job.priceType === 'paid' ? (job.price || 'Paid') : 'Free') : ''}
                   ${job.deadline ? detailRow('calendar', isCourse ? 'Start' : 'Deadline', job.deadline) : ''}
                 </div>
@@ -4159,13 +4187,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let activeApplyJobId = null;
         // documents: { [docTypeId]: { file, fileName } } = poster-required (or optional resume) files.
         // additionalDocuments: [{ file, fileName }] = anything else they add.
-        let jobApplyDraft = { fullName:'', email:'', phone:'', dob:'', dobIso:'', location:'', letterText:'', documents:{}, additionalDocuments:[] };
+        let jobApplyDraft = { fullName:'', email:'', phone:'', dob:'', dobIso:'', location:'', letterText:'', answers:{}, documents:{}, additionalDocuments:[] };
         let jobApplyErrors = { fullName:'', email:'', phone:'', dob:'', location:'' };
 
         // ---- Job application form ----
         function resetJobApplyDraft(){
           const prefillName = (typeof profileData !== 'undefined' && profileData.name) || '';
-          jobApplyDraft = { fullName: prefillName, email: currentUserEmail || '', phone:'', dob:'', dobIso:'', location: careerKnownLocation(), letterText:'', documents:{}, additionalDocuments:[] };
+          jobApplyDraft = { fullName: prefillName, email: currentUserEmail || '', phone:'', dob:'', dobIso:'', location: careerKnownLocation(), letterText:'', answers:{}, documents:{}, additionalDocuments:[] };
           jobApplyErrors = { fullName:'', email:'', phone:'', dob:'', location:'' };
         }
 
@@ -4234,6 +4262,115 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               <input type="${type || 'text'}" id="job-apply-input-${field}" value="${escapeHtml(jobApplyDraft[field] || '')}" oninput="updateJobApplyField('${field}', this.value)" placeholder="${placeholder || ''}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${err ? ' field-invalid' : ''}" style="outline:none;${err ? 'border-color:#dc2626;' : ''}">
               ${err ? `<div class="field-error" id="job-apply-error-${field}">${escapeHtml(err)}</div>` : ''}
             </div>`;
+        }
+
+        // ---- Type-specific application questions ----
+        // Each listing type asks its own questions, each with an example so applicants know what to
+        // type. Answers are saved with the application (answers[] and written into the cover note).
+        const OPP_APPLY_QS = {
+          'Job': { head: 'About your experience', fields: [
+            { id:'recentRole', label:'Most recent role', kind:'text', ph:'e.g. Sales assistant, Melcom Kumasi', ex:'Sales assistant at Melcom, 8 months. Or: National service at KNUST Finance Office.' },
+            { id:'experience', label:'Years of experience', kind:'chips', options:['None','Under 1','1 to 3','3 to 5','5+'], icon:'briefcase' },
+            { id:'startDate', label:'When can you start?', kind:'chips', options:['Immediately','In 2 weeks','In a month'], icon:'clock' },
+            { id:'salary', label:'Expected salary', kind:'text', ph:'e.g. GHS 2,500 a month', ex:'GHS 2,500 a month', opt:true },
+            { id:'fit', label:'Why you are a good fit', kind:'area', ph:'I have used Excel and Power BI for two years and built a sales dashboard for my department...', hint:'Say what you have done, then what you can do for them. Two or three sentences is enough.', rows:4 },
+          ]},
+          'Internship': { head: 'About your studies', fields: [
+            { id:'school', label:'School and programme', kind:'text', ph:'e.g. KNUST, BSc Economics', ex:'KNUST, BSc Economics' },
+            { id:'level', label:'Level', kind:'chips', options:['Level 100','Level 200','Level 300','Level 400','Graduate'], icon:'graduate' },
+            { id:'cgpa', label:'CGPA', kind:'text', ph:'e.g. 3.4 out of 4.0', ex:'3.4 out of 4.0', opt:true },
+            { id:'free', label:'When are you free?', kind:'chips', options:['June to August','Long vacation','Part-time term'], icon:'clock' },
+            { id:'skills', label:'Skills for this internship', kind:'text', ph:'e.g. Canva, social media, report writing', ex:'Canva, social media, report writing' },
+            { id:'why', label:'Why this internship', kind:'area', ph:'I run my hall social media page with 3,000 followers and want to learn campaign planning...', hint:'Mention one thing you have done that relates to this internship.', rows:4 },
+          ]},
+          'Scholarship': { head: 'About your studies', fields: [
+            { id:'school', label:'School and programme', kind:'text', ph:'e.g. Opoku Ware SHS, General Arts', ex:'Opoku Ware SHS, General Arts. Or: KNUST, BSc Economics.' },
+            { id:'level', label:'Level of study', kind:'chips', options:['Senior High','Undergraduate','Postgraduate'], icon:'graduate' },
+            { id:'grade', label:'WASSCE aggregate or CGPA', kind:'text', ph:'e.g. Aggregate 9, or CGPA 3.6', ex:'Aggregate 9, or CGPA 3.6' },
+            { id:'income', label:'Household monthly income', kind:'chips', options:['Under GHS 1,000','1,000 to 3,000','Above 3,000'], icon:'coin' },
+            { id:'need', label:'Why do you need this scholarship?', kind:'area', ph:'My mother sells vegetables and cannot pay my tuition. I have been on partial fees since level 100...', hint:'Be honest and specific about your situation.', rows:4 },
+            { id:'plan', label:'What will you do with it?', kind:'area', ph:'Finish my degree and start a tutoring centre for JHS students in my community in Ejisu...', hint:'Tell them what the award will let you achieve.', rows:4 },
+          ]},
+          'Part-time': { head: 'About your availability', fields: [
+            { id:'days', label:'When can you work?', kind:'chips', options:['Weekdays','Weekends','Evenings','Flexible'], icon:'clock' },
+            { id:'hours', label:'Hours you can give each week', kind:'text', ph:'e.g. 15 hours', ex:'15 hours, mostly Saturday and Sunday' },
+            { id:'recentRole', label:'Any similar work you have done', kind:'text', ph:'e.g. Cashier at a provision shop', ex:'Cashier at a provision shop, 3 months', opt:true },
+            { id:'fit', label:'Why you want this work', kind:'area', ph:'I live five minutes from the shop, I am good with customers and I can start this week...', hint:'Mention where you live and when you can start.', rows:3 },
+          ]},
+          'Other': { head: 'About you', fields: [
+            { id:'relevant', label:'Relevant experience or skills', kind:'text', ph:'e.g. Led a 10-member student project team', ex:'Led a 10-member student project team' },
+            { id:'fit', label:'Why you are applying', kind:'area', ph:'I want to help with this because I have done similar work at my department...', hint:'Say what you can contribute in two or three sentences.', rows:4 },
+          ]},
+        };
+        function oppApplyConfig(job){
+          if (!job || job.type === 'Course') return null;
+          return OPP_APPLY_QS[job.type] || OPP_APPLY_QS['Job'];
+        }
+        function jobApplyQuestionsHTML(job){
+          const cfg = oppApplyConfig(job);
+          if (!cfg) return '';
+          const LAB = 'text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block';
+          const answers = jobApplyDraft.answers || {};
+          const errOf = (id) => jobApplyErrors['a_' + id];
+          const errHTML = (id) => errOf(id) ? `<div class="field-error" id="job-apply-error-a_${id}">${escapeHtml(errOf(id))}</div>` : '';
+          return `<div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-2">${escapeHtml(cfg.head)}</div>` + cfg.fields.map(f => {
+            const label = escapeHtml(f.label) + (f.opt ? ' (optional)' : '');
+            if (f.kind === 'chips') {
+              return `<div class="mb-4" id="job-apply-q-${f.id}"><label class="${LAB}">${label}</label>
+                <div class="auth-intent-row" style="padding:6px 2px 6px;">${f.options.map(o => `<button type="button" onclick="setJobApplyChoice('${f.id}', '${o.replace(/'/g, "\\'")}')" class="auth-intent-chip ${answers[f.id] === o ? 'on' : ''}">${Icon(f.icon || 'check','w-4 h-4')}<span>${escapeHtml(o)}</span></button>`).join('')}</div>
+                ${errHTML(f.id)}</div>`;
+            }
+            if (f.kind === 'area') {
+              return `<div class="mb-4" id="job-apply-q-${f.id}"><label class="${LAB}">${label}</label>
+                <textarea id="job-apply-input-a_${f.id}" oninput="updateJobApplyAnswer('${f.id}', this.value)" placeholder="${escapeHtml(f.ph || '')}" rows="${f.rows || 4}" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm" style="outline:none;resize:none;border:1.5px solid ${errOf(f.id) ? '#dc2626' : '#cbd5e1'};">${escapeHtml(answers[f.id] || '')}</textarea>
+                ${errHTML(f.id)}${f.hint ? `<div class="pa-hint">${escapeHtml(f.hint)}</div>` : ''}</div>`;
+            }
+            return `<div class="mb-4" id="job-apply-q-${f.id}"><label class="${LAB}">${label}</label>
+              <input type="text" id="job-apply-input-a_${f.id}" value="${escapeHtml(answers[f.id] || '')}" oninput="updateJobApplyAnswer('${f.id}', this.value)" placeholder="${escapeHtml(f.ph || '')}" class="w-full bg-gray-100 flow-outline rounded-2xl px-4 py-3 text-sm${errOf(f.id) ? ' field-invalid' : ''}" style="outline:none;${errOf(f.id) ? 'border-color:#dc2626;' : ''}">
+              ${errHTML(f.id)}${f.ex ? `<div class="pa-hint">Example: ${escapeHtml(f.ex)}</div>` : ''}</div>`;
+          }).join('');
+        }
+        function updateJobApplyAnswer(id, value){
+          if (!jobApplyDraft.answers) jobApplyDraft.answers = {};
+          jobApplyDraft.answers[id] = value;
+          if (jobApplyErrors['a_' + id]) {
+            jobApplyErrors['a_' + id] = '';
+            const e = document.getElementById('job-apply-error-a_' + id); if (e) e.remove();
+            const i = document.getElementById('job-apply-input-a_' + id);
+            if (i) { i.classList.remove('field-invalid'); i.style.borderColor = ''; }
+          }
+        }
+        function setJobApplyChoice(id, value){
+          if (!jobApplyDraft.answers) jobApplyDraft.answers = {};
+          jobApplyDraft.answers[id] = value;
+          jobApplyErrors['a_' + id] = '';
+          const ov = document.getElementById('overlay'); if (!ov) return;
+          const sc = ov.querySelector('.overflow-y-auto'); const top = sc ? sc.scrollTop : 0;
+          ov.innerHTML = jobApplyHTML();
+          const sc2 = ov.querySelector('.overflow-y-auto'); if (sc2) sc2.scrollTop = top;
+        }
+        // Validates the type-specific answers; returns the first missing field id (or '')
+        function jobApplyValidateAnswers(job){
+          const cfg = oppApplyConfig(job); if (!cfg) return '';
+          const a = jobApplyDraft.answers || {};
+          let first = '';
+          cfg.fields.forEach(f => {
+            const v = String(a[f.id] || '').trim();
+            let msg = '';
+            if (!f.opt && !v) msg = f.kind === 'chips' ? 'Please choose one.' : 'Please fill this in.';
+            else if (f.kind === 'area' && v && v.length < 20) msg = 'Please write a little more (at least a sentence).';
+            if (msg) { jobApplyErrors['a_' + f.id] = msg; if (!first) first = f.id; }
+          });
+          return first;
+        }
+        // The answers written out in order, saved as the applicant's note the poster reads
+        function jobApplyComposeNote(job){
+          const cfg = oppApplyConfig(job); if (!cfg) return (jobApplyDraft.letterText || '').trim();
+          const a = jobApplyDraft.answers || {};
+          const parts = cfg.fields.map(f => { const v = String(a[f.id] || '').trim(); return v ? f.label + '\n' + v : ''; }).filter(Boolean);
+          const extra = (jobApplyDraft.letterText || '').trim();
+          if (extra) parts.push(extra);
+          return parts.join('\n\n');
         }
 
         // ---- Opportunity document types ----
@@ -4327,10 +4464,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               if (!t) return '';
               return jobApplyDocPicker(t.id, t.label, t.accept, true);
             }).join('')}
-            <div class="mb-4">
+            ${oppApplyConfig(job) ? '' : `            <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Cover note (optional)</label>
               <textarea oninput="updateJobApplyField('letterText', this.value)" placeholder="Tell them why you're a great fit..." rows="5" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm" style="outline:none;resize:none;border:1.5px solid #cbd5e1;">${escapeHtml(jobApplyDraft.letterText || '')}</textarea>
-            </div>
+            </div>`}
             <div class="mb-4">
               <label class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 block">Any other relevant document (optional)</label>
               <input type="file" id="job-apply-extra-doc-input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleJobApplyAdditionalDocSelect(event)">
@@ -7651,6 +7788,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             return;
           }
 
+          if (!isCourse) {
+            const firstMissing = jobApplyValidateAnswers(job);
+            if (firstMissing) {
+              const ov = document.getElementById('overlay');
+              if (ov) ov.innerHTML = jobApplyHTML();
+              const el = document.getElementById('job-apply-q-' + firstMissing);
+              if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              return;
+            }
+          }
+
           careerRememberLocation(d.location);
 
           // The poster/admin decides, per opportunity, which documents are mandatory
@@ -7876,7 +8024,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               ${jobApplyDobRow()}
               ${jobApplyFieldRow('Location', 'location', 'e.g. Accra, Ghana')}
 
-              ${isCourse ? '' : jobApplyDocumentsHTML(job)}
+              ${isCourse ? '' : jobApplyQuestionsHTML(job)}${isCourse ? '' : jobApplyDocumentsHTML(job)}
 
               <div class="text-center mt-2" style="padding-bottom:10px;">
                 <button onclick="submitJobApplication()" ${(jobApplyPaymentBusy || jobApplySubmitBusy) ? 'disabled' : ''} class="pill-cta w-full inline-flex items-center justify-center text-white font-semibold text-center rounded-full text-sm" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);padding:0.85rem 1.1rem;${(jobApplyPaymentBusy || jobApplySubmitBusy) ? 'opacity:0.6;' : ''}">${jobApplyPaymentBusy ? 'Processing payment...' : jobApplySubmitBusy ? 'Submitting…' : (isCourse ? (job.priceType === 'paid' ? 'Continue to Payment' : 'Enroll for Free') : 'Submit Application')}</button>
@@ -7891,11 +8039,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         const OPP_GENDER_ICONS = { any:'users', male:'user', female:'user' };
         // applyMethod 'inapp' (the default) means applications go straight to the poster and
         // admins inside Stitch
-        let newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'' };
+        let newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{} };
         let newOppEditingId = null;
 
         function resetNewOppDraft(){
-          newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'' };
+          newOppDraft = { title:'', org:'', type:'', mode:'', location:'', place:'', duration:'', deadline:'', deadlineDate:'', deadlineDateTyped:'', description:'', applyMethod:'', email:'', website:'', requiredDocs:[], gender:'', priceType:'', price:'', coverImage:'', extra:{} };
         }
 
         function rerenderPostOpportunity(){
@@ -7966,6 +8114,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             priceType: job.priceType || 'free',
             price: (job.priceType === 'paid' ? (job.price || '') : ''),
             coverImage: job.coverImage || '',
+            extra: (Array.isArray(job.details) ? job.details.reduce((o, x) => { if (x && x.key) o[x.key] = x.value; return o; }, {}) : {}),
           };
           newOppEditingId = id; newOppPage = 0;
           openOverlay('postOpportunity');
@@ -8074,6 +8223,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             { const keptCover = !!(newOppEditingId && (findJob(newOppEditingId) || {})._coverStripped);
               if (!d.coverImage && !keptCover) { window.__oppCoverErr = true; rerenderPostOpportunity(); openAppAlertModal('Please pick a colour card or upload a cover picture to continue.'); return; } }
             if (!d.type) { openAppAlertModal('Please choose a type for this listing.'); return; }
+            { const miss = oppPostMissing(); if (miss) { openAppAlertModal(miss); return; } }
             if (!d.mode) { openAppAlertModal('Please choose where this takes place (On-site, Online, ...).'); return; }
             if (!d.title.trim() || !d.description.trim()) {
               openAppAlertModal('Please add at least a title and a description.');
@@ -8133,6 +8283,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               gender: d.gender || 'any',
               description: d.description.trim(),
               coverImage: d.coverImage || '',
+              details: oppPostDetails(),
             };
             if (isCourse) {
               fields.priceType = d.priceType;
@@ -8154,7 +8305,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   if (!existing.courseId) existing.courseId = createLinkedCourse(existing);
                   else await syncLinkedCourseMeta(existing);
                 }
-                const synced = await postOpportunityInsertRemote(existing);
+                const synced = await syncOpportunityWithRetry(existing);
                 if (!synced) openAppAlertModal("Saved on this device, but couldn't sync to the shared catalog -- it may not show up for other users or survive your next sign-in. Check the console for details.");
                 newOppEditingId = null;
                 resetNewOppDraft();
@@ -8182,7 +8333,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               : jobsData.opportunities;
             bucket.unshift(job);
             if (isCourse) job.courseId = createLinkedCourse(job);
-            const synced = await postOpportunityInsertRemote(job);
+            const synced = await syncOpportunityWithRetry(job);
             if (!synced) openAppAlertModal("This listing was saved on this device only -- it couldn't sync to the shared catalog, so it will disappear next time you sign in and won't show up for other users. Check the console for the Supabase error, or make sure the opportunities table + policies from the SQL comment above are set up.");
             resetNewOppDraft();
             closeOverlay();
@@ -8208,6 +8359,144 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             </div>`;
         }
 
+        // ---- Type-specific posting questions ----
+        // Each listing type asks the questions that fit it, with examples. Fields with `map` also
+        // write into the listing's own location / duration so the cards and filters keep working.
+        const OPP_POST_QS = {
+          'Job': { titleLabel:'Job title', titlePh:'e.g. Junior Data Analyst', orgLabel:'Company', orgPh:'e.g. Zeepay Ghana Ltd',
+            fields: [
+              { key:'employment', label:'Employment type', kind:'chips', options:['Full-time','Contract','Internship-to-hire','Temporary'], icon:'briefcase', map:'duration' },
+              { key:'where', label:'City or location', kind:'text', ph:'e.g. Accra (East Legon), Ghana', map:'location', req:true },
+              { key:'experience', label:'Experience needed', kind:'chips', options:['No experience','1 to 3 years','3+ years'], icon:'graduate' },
+              { key:'pay', label:'Pay (optional)', kind:'text', ph:'e.g. GHS 2,500 a month', icon:'coin', opt:true },
+            ],
+            descLabel:'Description & requirements',
+            template:'ABOUT THE ROLE\n\n\nWHAT WE NEED\n\n\nWHAT YOU GET\n\n\nHOW TO APPLY\n',
+            tmplHint:['What will they do each day?','Skills, education, experience','Pay, benefits, growth','What to send and when you reply'],
+            exTitle:'Example job description',
+            example:[['ABOUT THE ROLE','You will clean sales data, build weekly Excel reports and help the team spot trends.'],['WHAT WE NEED','Final year or graduate in Economics or Statistics. Good Excel skills. Clear writing.'],['WHAT YOU GET','GHS 2,500 a month, mentorship, and a full-time offer for strong performers.'],['HOW TO APPLY','Apply here with your CV. Shortlisted people hear from us within two weeks.']],
+            docs:['Cover letter','Portfolio'] },
+          'Internship': { titleLabel:'Internship title', titlePh:'e.g. Marketing Intern', orgLabel:'Company or school', orgPh:'e.g. MTN Ghana',
+            fields: [
+              { key:'payType', label:'Pay', kind:'chips', options:['Paid','Stipend','Unpaid'], icon:'coin', req:true },
+              { key:'stipend', label:'Stipend amount (optional)', kind:'text', ph:'e.g. GHS 600 a month', icon:'coin', opt:true },
+              { key:'openTo', label:'Open to', kind:'multi', options:['Level 200','Level 300','Level 400','Graduates'], icon:'graduate', req:true },
+              { key:'length', label:'Duration', kind:'text', ph:'e.g. 3 months, June to August', map:'duration', req:true },
+              { key:'where', label:'City or location', kind:'text', ph:'e.g. Accra, Ghana', map:'location', req:true },
+            ],
+            descLabel:'Description & requirements',
+            template:'ABOUT THE INTERNSHIP\n\n\nWHO CAN APPLY\n\n\nWHAT YOU GET\n\n\nHOW TO APPLY\n',
+            tmplHint:['What will the intern learn and do?','Level, course, skills','Stipend, certificate, mentor','What to send'],
+            exTitle:'Example internship description',
+            example:[['ABOUT THE INTERNSHIP','Join our social team for 3 months to plan campaigns and write weekly reports.'],['WHO CAN APPLY','Level 300 or 400 students of Marketing, Economics or Communication.'],['WHAT YOU GET','GHS 600 a month, a certificate, and a mentor from the brand team.'],['HOW TO APPLY','Apply here with your CV and a recommendation letter.']],
+            docs:['Recommendation letter'] },
+          'Part-time': { titleLabel:'Role', titlePh:'e.g. Weekend Sales Assistant', orgLabel:'Business', orgPh:'e.g. Melcom, Kumasi',
+            fields: [
+              { key:'days', label:'When is the work?', kind:'multi', options:['Weekdays','Weekends','Evenings','Flexible'], icon:'clock', req:true },
+              { key:'hours', label:'Hours', kind:'text', ph:'e.g. Sat and Sun, 8am to 4pm', map:'duration', req:true },
+              { key:'where', label:'Where', kind:'text', ph:'e.g. Adum, Kumasi', map:'location', req:true },
+              { key:'pay', label:'Pay (optional)', kind:'text', ph:'e.g. GHS 40 a day', icon:'coin', opt:true },
+            ],
+            descLabel:'Description & requirements',
+            template:'ABOUT THE WORK\n\n\nWHO WE NEED\n\n\nPAY AND HOURS\n\n\nHOW TO APPLY\n',
+            tmplHint:['What will they do?','Skills, age, experience','Pay and the days or hours','How to apply'],
+            exTitle:'Example part-time description',
+            example:[['ABOUT THE WORK','Help customers, arrange stock and use the till at our Adum shop.'],['WHO WE NEED','Friendly, honest and punctual. Students welcome. No experience needed.'],['PAY AND HOURS','GHS 40 a day, Saturday and Sunday, 8am to 4pm.'],['HOW TO APPLY','Apply here. We interview this week.']],
+            docs:[] },
+          'Scholarship': { titleLabel:'Scholarship name', titlePh:'e.g. GETFund Tertiary Scholarship', orgLabel:'Awarded by', orgPh:'e.g. Mastercard Foundation, KNUST',
+            fields: [
+              { key:'level', label:'Level of study', kind:'multi', options:['Senior High','Undergraduate','Postgraduate'], icon:'graduate', req:true },
+              { key:'studyWhere', label:'Where will they study?', kind:'chips', options:['Ghana','Abroad','Online'], icon:'pin', map:'location', req:true },
+              { key:'covers', label:'What it covers', kind:'multi', options:['Full tuition','Partial tuition','Living stipend','Books','Laptop'], icon:'coin', req:true },
+              { key:'award', label:'Award value', kind:'text', ph:'e.g. Full tuition + GHS 800 a month', icon:'coin', req:true },
+              { key:'length', label:'Duration', kind:'text', ph:'e.g. 4 years, One-time award', map:'duration', opt:true },
+            ],
+            descLabel:'Description & requirements',
+            template:'ABOUT THE AWARD\n\n\nWHO CAN APPLY\n\n\nWHAT TO PREPARE\n\n\nHOW YOU ARE CHOSEN\n',
+            tmplHint:['What does it cover and why does it exist?','Grades, nationality, income, level','Documents and essay','Shortlisting, interview, results date'],
+            exTitle:'Example scholarship description',
+            example:[['ABOUT THE AWARD','Covers full tuition and a GHS 800 monthly stipend for 4 years at any public university.'],['WHO CAN APPLY','Ghanaian students admitted to level 100 with aggregate 12 or better. Family income below GHS 3,000 a month.'],['WHAT TO PREPARE','Admission letter, WASSCE results slip, a one-page essay on why you deserve this award.'],['HOW YOU ARE CHOSEN','Shortlisting in December, then a short interview.']],
+            docs:['Academic transcript','Admission letter','Application letter'] },
+          'Other': { titleLabel:'Title', titlePh:'e.g. Campus Ambassador Call', orgLabel:'Organization', orgPh:'e.g. Student Representative Council',
+            fields: [
+              { key:'where', label:'Location', kind:'text', ph:'e.g. KNUST campus, Kumasi', map:'location', opt:true },
+              { key:'length', label:'Duration', kind:'text', ph:'e.g. One semester, One-time', map:'duration', opt:true },
+            ],
+            descLabel:'Description & requirements',
+            template:'WHAT THIS IS\n\n\nWHO CAN TAKE PART\n\n\nWHAT YOU GET\n\n\nHOW TO APPLY\n',
+            tmplHint:['What is it and why now?','Who is it for?','What do they gain?','How to apply'],
+            exTitle:'Example description',
+            example:[['WHAT THIS IS','We are choosing 10 campus ambassadors to run the Stitch sign-up desk in the first week of semester.'],['WHO CAN TAKE PART','Any level student who is active on campus and confident speaking to groups.'],['WHAT YOU GET','A certificate, a reference letter and free event access.'],['HOW TO APPLY','Apply here by the deadline.']],
+            docs:[] },
+        };
+        function oppPostConfig(type){ return OPP_POST_QS[type] || null; }
+        function oppExtraValue(key){
+          const v = (newOppDraft.extra || {})[key];
+          return Array.isArray(v) ? v : (v == null ? '' : String(v));
+        }
+        function setNewOppChoice(key, value, multi){
+          const d = newOppDraft; if (!d.extra) d.extra = {};
+          const cfg = oppPostConfig(d.type); const f = cfg && cfg.fields.find(x => x.key === key);
+          if (multi) {
+            const cur = Array.isArray(d.extra[key]) ? d.extra[key].slice() : [];
+            const at = cur.indexOf(value);
+            if (at === -1) cur.push(value); else cur.splice(at, 1);
+            d.extra[key] = cur;
+            if (f && f.map) d[f.map] = cur.join(', ');
+          } else {
+            d.extra[key] = (d.extra[key] === value) ? '' : value;
+            if (f && f.map) d[f.map] = d.extra[key];
+          }
+          rerenderPostOpportunity();
+        }
+        function updateNewOppExtra(key, value){
+          const d = newOppDraft; if (!d.extra) d.extra = {};
+          d.extra[key] = value;
+          const cfg = oppPostConfig(d.type); const f = cfg && cfg.fields.find(x => x.key === key);
+          if (f && f.map) d[f.map] = value;
+        }
+        function oppPostFieldsHTML(){
+          const cfg = oppPostConfig(newOppDraft.type); if (!cfg) return '';
+          const jq = (t) => String(t).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          return cfg.fields.map(f => {
+            const label = escapeHtml(f.label);
+            if (f.kind === 'chips' || f.kind === 'multi') {
+              const cur = oppExtraValue(f.key);
+              const on = (o) => f.kind === 'multi' ? (Array.isArray(cur) && cur.indexOf(o) !== -1) : cur === o;
+              return `<div class="mb-4"><label class="pa-lab">${label}</label><div class="auth-intent-row" style="padding:6px 2px 10px;">${f.options.map(o => `<button type="button" onclick="setNewOppChoice('${f.key}', '${jq(o)}', ${f.kind === 'multi'})" class="auth-intent-chip ${on(o) ? 'on' : ''}">${Icon(f.icon || 'check','w-4 h-4')}<span>${escapeHtml(o)}</span></button>`).join('')}</div></div>`;
+            }
+            const lbl = (f.map === 'location' && newOppDraft.mode === 'Online') ? 'Platform or link' : f.label;
+            return `<div class="mb-4"><label class="pa-lab">${escapeHtml(lbl)}</label><input type="text" value="${escapeHtml(oppExtraValue(f.key))}" oninput="updateNewOppExtra('${f.key}', this.value)" placeholder="${escapeHtml(f.ph || '')}" class="w-full flow-outline px-4 py-3 text-sm outline-none"></div>`;
+          }).join('');
+        }
+        function oppPostMissing(){
+          const d = newOppDraft; const cfg = oppPostConfig(d.type); if (!cfg || d.type === 'Course') return '';
+          for (const f of cfg.fields) {
+            if (!f.req) continue;
+            const v = oppExtraValue(f.key);
+            if (Array.isArray(v) ? !v.length : !String(v).trim()) return 'Please fill in: ' + f.label.replace(/ \(optional\)/, '').replace(/\?$/, '') + '.';
+          }
+          return '';
+        }
+        // Listing "Details" rows written from the answers so every listing shows them
+        function oppPostDetails(){
+          const d = newOppDraft; const cfg = oppPostConfig(d.type); if (!cfg || d.type === 'Course') return [];
+          return cfg.fields.map(f => {
+            const v = oppExtraValue(f.key); const val = Array.isArray(v) ? v.join(', ') : String(v).trim();
+            return val ? { key: f.key, label: f.label.replace(/ \(optional\)/, ''), value: val, icon: f.icon || 'check' } : null;
+          }).filter(Boolean);
+        }
+        function useNewOppTemplate(){
+          const cfg = oppPostConfig(newOppDraft.type); if (!cfg) return;
+          if ((newOppDraft.description || '').trim()) return;
+          newOppDraft.description = cfg.template;
+          rerenderPostOpportunity();
+        }
+        function oppPostExampleHTML(){
+          const cfg = oppPostConfig(newOppDraft.type); if (!cfg) return '';
+          return `<div class="mb-4 rounded-2xl p-4" style="background:rgba(10,37,64,0.05);"><div class="pa-lab" style="color:#2563eb;">${escapeHtml(cfg.exTitle)}</div>${cfg.example.map(([h, t]) => `<div style="font-size:11.5px;font-weight:700;color:#475569;margin-top:8px;">${escapeHtml(h)}</div><div style="font-size:13px;color:#334155;line-height:1.5;">${escapeHtml(t)}</div>`).join('')}</div>`;
+        }
+
         let newOppPage = 0;
         const NEW_OPP_PAGES = [
           { kicker: 'The basics', title: 'Post an opportunity', sub: 'Start with what people will see first.' },
@@ -8225,6 +8514,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           }
           if (i === 1) {
             if (!d.mode) return 'Please choose where this takes place (On-site, Online, ...).';
+            { const miss = oppPostMissing(); if (miss) return miss; }
             if (!isCourse && !d.deadlineDate) return (d.deadlineDateTyped || '').trim() ? 'Please enter a valid, future deadline date as DD/MM/YYYY.' : 'Please enter a deadline date for this listing.';
           }
           if (i === 2) {
@@ -8278,9 +8568,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               ${pg === 0 ? `
 <input type="file" id="opp-cover-input" accept="image/*" class="hidden" onchange="handleOppCoverSelect(event)">
               ${(() => { return coverPickerHTML({ cover: newOppDraft.coverImage, label: 'Cover', pickFn: 'pickOppCoverColor', uploadJs: "document.getElementById('opp-cover-input').click()", clearJs: 'clearOppCover()', error: !!window.__oppCoverErr }); })()}
-              ${oppFieldRow('Title', 'title', 'e.g. Research Intern')}
-              ${oppFieldRow('Organization', 'org', 'e.g. Macro Team')}
-
               <div class="mb-4">
                 <label class="pa-lab">Type</label>
                 <div class="auth-intent-row" style="padding:6px 2px 10px;">
@@ -8289,6 +8576,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   `).join('')}
                 </div>
               </div>
+              ${(() => { const pc = oppPostConfig(newOppDraft.type); return oppFieldRow(pc ? pc.titleLabel : 'Title', 'title', pc ? pc.titlePh : 'e.g. Research Intern') + oppFieldRow(pc ? pc.orgLabel : 'Organization', 'org', pc ? pc.orgPh : 'e.g. Macro Team'); })()}
 
               ` : ''}
               ${pg === 1 ? `
@@ -8311,9 +8599,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
               </div>
 
+              ${(newOppDraft.type !== 'Course' && oppPostConfig(newOppDraft.type)) ? oppPostFieldsHTML() : `
               ${newOppDraft.type === 'Course' ? '' : oppFieldRow(newOppDraft.mode === 'Online' ? 'Platform / link' : 'Location', 'location', newOppDraft.mode === 'Online' ? 'e.g. Zoom, remote' : 'e.g. Accra, Ghana')}
               ${(newOppDraft.type === 'Course' || newOppDraft.mode === 'Online') ? oppFieldRow('Location (optional)', 'place', 'e.g. Accra, Ghana') : ''}
-              ${oppFieldRow('Duration', 'duration', newOppDraft.type === 'Course' ? 'e.g. 4 weeks' : 'e.g. 3 months, Full-time, One-time')}
+              ${oppFieldRow('Duration', 'duration', newOppDraft.type === 'Course' ? 'e.g. 4 weeks' : 'e.g. 3 months, Full-time, One-time')}`}
               ${newOppDraft.type === 'Course'
                 ? oppFieldRow('Start date (optional)', 'deadline', 'e.g. Self-paced, or Starts Aug 10')
                 : `
@@ -8328,9 +8617,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               ${pg === 2 ? `
               <div class="mb-4">
                 <label class="pa-lab">Description &amp; requirements</label>
-                <textarea oninput="updateNewOppField('description', this.value); updateOppDescCounter(this.value)" data-autogrow placeholder="${newOppDraft.type === 'Course' ? 'What will learners cover? Any prerequisites?' : 'What will they be doing? What do you need from applicants?'}" rows="5" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none resize-none" style="overflow:hidden;">${escapeHtml(newOppDraft.description)}</textarea>
+                <textarea oninput="updateNewOppField('description', this.value); updateOppDescCounter(this.value)" data-autogrow placeholder="${newOppDraft.type === 'Course' ? 'What will learners cover? Any prerequisites?' : (oppPostConfig(newOppDraft.type) ? oppPostConfig(newOppDraft.type).template.split('\n').filter(Boolean).map((h, i) => h + ' - ' + oppPostConfig(newOppDraft.type).tmplHint[i]).join('&#10;') : 'What will they be doing? What do you need from applicants?')}" rows="${(newOppDraft.type !== 'Course' && oppPostConfig(newOppDraft.type)) ? 8 : 5}" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none resize-none" style="overflow:hidden;">${escapeHtml(newOppDraft.description)}</textarea>
                 <div id="opp-desc-counter" class="text-right" style="font-size:11px;margin-top:4px;color:${posterAppWordCount(newOppDraft.description) >= OPP_DESC_MIN_WORDS ? '#16a34a' : '#e11d48'};">${posterAppWordCount(newOppDraft.description)}/${OPP_DESC_MIN_WORDS} words minimum</div>
+                ${(newOppDraft.type !== 'Course' && oppPostConfig(newOppDraft.type) && !(newOppDraft.description || '').trim()) ? `<div style="margin-top:10px;"><button type="button" onclick="useNewOppTemplate()" class="auth-intent-chip on">${Icon('edit','w-4 h-4')}<span>Use ${newOppDraft.type.toLowerCase()} template</span></button></div>` : ''}
               </div>
+              ${newOppDraft.type !== 'Course' ? oppPostExampleHTML() : ''}
 
               ` : ''}
               ${pg === 3 ? `
@@ -8357,6 +8648,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                     ? oppFieldRow('Website to receive applications', 'website', 'e.g. careers.yourorg.com/apply', 'url')
                     : ''}
                 </div>
+                ${(newOppDraft.applyMethod !== 'website' && oppPostConfig(newOppDraft.type) && oppPostConfig(newOppDraft.type).docs.length) ? `<div class="mb-4 rounded-2xl p-4" style="background:rgba(10,37,64,0.05);"><div class="pa-lab" style="color:#2563eb;">Suggested for ${escapeHtml(newOppDraft.type.toLowerCase())}s</div><div style="font-size:13px;color:#334155;line-height:1.5;">${escapeHtml(oppPostConfig(newOppDraft.type).docs.join(', '))}. Tap a chip below to require it. Applicants also answer questions made for ${escapeHtml(newOppDraft.type.toLowerCase())}s.</div></div>` : ''}
                 ${newOppDraft.applyMethod === 'website' ? '' : `
                 <div class="mb-4">
                   <label class="pa-lab">Documents required from applicants (optional)</label>
