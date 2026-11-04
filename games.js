@@ -1196,7 +1196,7 @@ let userPoints = 0;
           bar.classList.add('show', 'seg');
           bar.setAttribute('aria-valuenow', String(Math.round(cur / total * 100)));
         }
-        function authOnboardingTotal(){ try { return 1 + authPosterAppPages().length; } catch (e) { return 3; } }
+        function authOnboardingTotal(){ return 1; }
         function authShowLogin(){
           if (window.__stitchInApp) return;
           authHideAllPanels();
@@ -1297,7 +1297,7 @@ let userPoints = 0;
           document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
-          if (eyebrow) eyebrow.textContent = 'STEP 1 OF ' + authOnboardingTotal() + ' · YOUR PROFILE';
+          if (eyebrow) eyebrow.textContent = 'YOUR PROFILE';
           setAuthSegments(1, authOnboardingTotal());
           // Test account: always arrives pre-filled so nothing has to be typed on this step
           if (isStitchTestAccount()) {
@@ -1316,11 +1316,9 @@ let userPoints = 0;
         // account exists), not the instant it's picked
         let authPendingPhotoBlob = null;
         // ---- "What brings you here?" chip picker ----
+        // Posting and selling are applied for later, from Career Space (not during sign-up)
         const AUTH_INTENT_GROUPS = [
-          { title: 'Using Stitch', items: [['explore','Explore','search'],['network','Network','users']] },
-          { title: 'Post opportunities', items: [['jobs','Jobs','briefcase'],['internships','Internships','graduate'],['scholarships','Scholarships','trophy'],['courses','Free courses','book'],['others','Others','gridOutline']] },
-          { title: 'Teach & earn (paid)', items: [['paidcourses','Paid courses','coin'],['paidclasses','Paid live spaces','video'],['paidmeetings','Paid meetings','calendar'],['paidsessions','1:1 sessions','mic']],
-            note: 'Adds a few quick questions about pricing and payouts.' }
+          { title: 'Using Stitch', items: [['explore','Explore','search'],['network','Network','users']] }
         ];
         const AUTH_POST_KEYS = ['jobs','internships','scholarships','courses','others'];
         const AUTH_PAID_KEYS = ['paidcourses','paidclasses','paidmeetings','paidsessions'];
@@ -1351,7 +1349,10 @@ let userPoints = 0;
         }
         function authPosterAppStages(){
           // The 'post' path collects everything an admin needs to review and verify a listing poster
-          if (posterAppDraft.intent !== 'post') return ['intent', 'photo'];  // (photo is always the last page)
+          // Sign-up is just this one question: no photo step and no posting application here
+          return ['intent'];
+          // eslint-disable-next-line no-unreachable
+          if (posterAppDraft.intent !== 'post') return ['intent'];
           // Same paid-courses question and follow-ups as the in-app form (posterAppStages in
           // jobs.js): right after the description, before any documents are requested
           const viaChips = authPaidViaChips();
@@ -2900,7 +2901,7 @@ let userPoints = 0;
           } else {
             b.disabled = false;
             b.classList.remove('auth-cta-busy');
-            b.textContent = 'Continue';
+            b.textContent = 'Finish';
           }
         }
         async function authSubmitCompleteProfile(e){
@@ -2953,9 +2954,25 @@ let userPoints = 0;
             profileData.name = fullName;
             profileData.username = username;
           }
-          // NOTHING is saved to the account here any more
-          authShowPosterApp();
-          setTimeout(() => authSetCpBusy(false), 400);
+          // No more questions after the name and username: the account is created right here
+          if (typeof resetPosterAppDraft === 'function') resetPosterAppDraft();
+          posterAppDraft.intent = 'explore';
+          posterAppDraft.interests = [];
+          authIntentPicks = new Set();
+          authPendingPhotoBlob = null;
+          authSubmittingPosterApp = true;
+          const committed = await authCommitNewAccount();
+          if (!committed) {
+            authSubmittingPosterApp = false;
+            authSetCpBusy(false);
+            err.textContent = "We couldn't finish setting up your account. Check your connection and try again.";
+            err.classList.add('show');
+            return;
+          }
+          try { if (typeof submitPosterApplication === 'function') await submitPosterApplication(); } catch (e3) {}
+          authSubmittingPosterApp = false;
+          await authEnterApp();
+          hideAuthTransitionLoading(true);
         }
         // ---- Terms screen (shown from the Get Started panel) ----
         function authShowTerms(){

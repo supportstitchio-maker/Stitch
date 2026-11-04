@@ -7070,7 +7070,7 @@ try {
               const a = cls.announcements.find(x => x.id === announcementId);
               const c = a && (a.comments || []).find(x => x.id === commentId);
               if (c) {
-                el.innerHTML = `<span class="font-semibold text-gray-700">${escapeHtml(c.name)}</span> · ${formatClassStreamTime(c)}`;
+                el.innerHTML = `<span class="font-semibold text-gray-700">${escapeHtml(streamCommentAuthor(c).name)}</span> · ${formatStreamCommentTime(c)}`;
               }
             });
           }, 30000);
@@ -7129,6 +7129,31 @@ try {
             </div>` : ''}`;
         }
 
+        // Who wrote a reply: their own name and picture (saved with the reply), never the viewer's.
+        // "You" is only shown on the viewer's own replies.
+        function streamCommentAuthor(c){
+          let me = null;
+          try { me = (_cachedAuthUser && _cachedAuthUser.id) || null; } catch (e) {}
+          if (c.userId && me && c.userId === me) return { name: 'You', photo: (typeof profileData !== 'undefined' && profileData.photo) || null };
+          const cached = c.userId && ((typeof classStudentProfiles !== 'undefined' && classStudentProfiles[c.userId]) || (typeof classTeacherProfiles !== 'undefined' && classTeacherProfiles[c.userId]));
+          const savedName = (c.name && c.name !== 'You') ? c.name : '';
+          return { name: (cached && cached.name) || savedName || 'Member', photo: (cached && cached.photo) || c.photo || null };
+        }
+        // Replies show how long ago for the first hour, then the actual time of day (or the date)
+        function formatStreamCommentTime(c){
+          const ts = c && c.createdAt;
+          if (!ts) return (c && c.time) || '';
+          const diff = Math.floor((Date.now() - ts) / 60000);
+          if (diff < 1) return 'now';
+          if (diff < 60) return diff + 'm';
+          const d = new Date(ts), n = new Date();
+          const clock = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          if (d.toDateString() === n.toDateString()) return clock;
+          const y = new Date(n); y.setDate(n.getDate() - 1);
+          if (d.toDateString() === y.toDateString()) return 'Yesterday, ' + clock;
+          return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + clock;
+        }
+
         function streamAnnouncementCommentsHTML(a){
           const comments = a.comments || [];
           return `
@@ -7136,14 +7161,14 @@ try {
               ${comments.length ? `
                 <div class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Space comments</div>
                 <div class="space-y-2.5 mb-3">
-                  ${comments.map(c => `
+                  ${comments.map(c => { const au = streamCommentAuthor(c); return `
                     <div class="flex items-start gap-2.5">
-                      <span class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${(c.name === 'You') ? avatarMediaHTML(profileData.photo, 'user', 'w-3.5 h-3.5') : Icon('user','w-3.5 h-3.5')}</span>
+                      <span class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${avatarMediaHTML(au.photo, 'user', 'w-3.5 h-3.5')}</span>
                       <div class="min-w-0">
-                        <div class="text-xs text-gray-400" data-comment-time="${a.id}:${c.id || ''}"><span class="font-semibold text-gray-700">${escapeHtml(c.name)}</span> · ${formatClassStreamTime(c)}</div>
+                        <div class="text-xs text-gray-400" data-comment-time="${a.id}:${c.id || ''}"><span class="font-semibold text-gray-700">${escapeHtml(au.name)}</span> · ${formatStreamCommentTime(c)}</div>
                         <div class="text-sm text-gray-700 leading-snug">${escapeHtml(c.text)}</div>
                       </div>
-                    </div>`).join('')}
+                    </div>`; }).join('')}
                 </div>` : ''}
               <div class="flex items-end gap-2">
                 <textarea id="stream-comment-input-${a.id}" placeholder="Add space comment" rows="1" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); addStreamComment('${a.id}'); }" class="flex-1 min-w-0 bg-gray-100 rounded-3xl px-4 py-2 text-sm resize-none overflow-hidden" style="max-height:140px;"></textarea>
@@ -7227,7 +7252,9 @@ try {
           const text = input ? input.value.trim() : '';
           if (!text) return;
           if (!a.comments) a.comments = [];
-          a.comments.push({ id: 'c-' + Date.now() + Math.random().toString(36).slice(2, 6), name: 'You', text, createdAt: Date.now() });
+          let _myUid = null; try { _myUid = (_cachedAuthUser && _cachedAuthUser.id) || null; } catch (e) {}
+          const _myPhoto = (typeof profileData !== 'undefined' && typeof profileData.photo === 'string' && /^https?:/i.test(profileData.photo)) ? profileData.photo : null;
+          a.comments.push({ id: 'c-' + Date.now() + Math.random().toString(36).slice(2, 6), userId: _myUid, name: (typeof profileData !== 'undefined' && profileData.name) || 'Member', username: (typeof profileData !== 'undefined' && profileData.username) || '', photo: _myPhoto, text, createdAt: Date.now() });
           if (input) { input.value = ''; input.style.height = 'auto'; }
           document.getElementById('overlay').innerHTML = classDetailHTML();
           queueSaveClassRemote(cls);
@@ -7876,7 +7903,16 @@ try {
 
           if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             try {
-              lectureLocalStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+              try {
+                lectureLocalStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+              } catch (camErr) {
+                // A laptop with no (or a blocked) camera still joins with sound, so sharing the screen
+                // and the whiteboard keep working
+                if (camErr && camErr.name === 'NotAllowedError') throw camErr;
+                lectureLocalStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                liveLectureState.camOff = true;
+                try { updateLecturePresenceTrack(); } catch (e2) {}
+              }
               if (liveLectureState.lectureId !== lectureId) { stopLectureLocalStream(); return; }
               applyLectureTrackStates();
               attachLocalTracksToLecturePeers();
@@ -8190,7 +8226,8 @@ try {
           closeLectureSheets();
           const nextView = liveLectureState.view === 'whiteboard' ? 'grid' : 'whiteboard';
           setLectureView(nextView);
-          broadcastLectureSignal({ type: 'view', view: nextView, strokes: whiteboardStrokes });
+          broadcastLectureSignal({ type: 'view', view: nextView, strokes: wbCompactStrokes() });
+          lectureWbResyncSet(nextView === 'whiteboard');
         }
 
         function toggleLectureScreenShare(){
@@ -8201,6 +8238,10 @@ try {
           } else {
             startLectureScreenShare();
           }
+        }
+
+        function lectureSenderIsVideo(pc, sender){
+          try { const t = pc.getTransceivers().find(x => x.sender === sender); return !!(t && t.receiver && t.receiver.track && t.receiver.track.kind === 'video'); } catch (e) { return false; }
         }
 
         async function startLectureScreenShare(){
@@ -8219,9 +8260,11 @@ try {
           const screenTrack = stream.getVideoTracks()[0];
           if (screenTrack) {
             screenTrack.onended = () => stopLectureScreenShare_user();
+            try { screenTrack.contentHint = 'detail'; } catch (e) {}
             Object.values(lecturePeerConnections).forEach(pc => {
-              const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-              if (sender) sender.replaceTrack(screenTrack);
+              const vSender = pc.getSenders().find(s => s.track && s.track.kind === 'video') || pc.getSenders().find(s => !s.track && lectureSenderIsVideo(pc, s));
+              if (vSender) { vSender.replaceTrack(screenTrack).catch(() => {}); }
+              else { try { pc.addTrack(screenTrack, lectureScreenStream); } catch (e) {} }
             });
           }
           broadcastLectureSignal({ type: 'screen-share', active: true });
@@ -8233,8 +8276,8 @@ try {
           stopLectureScreenStream();
           const cameraTrack = lectureLocalStream ? lectureLocalStream.getVideoTracks()[0] : null;
           Object.values(lecturePeerConnections).forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-            if (sender) sender.replaceTrack(cameraTrack || null);
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video') || pc.getSenders().find(s => !s.track && lectureSenderIsVideo(pc, s));
+            if (sender) sender.replaceTrack(cameraTrack || null).catch(() => {});
           });
           broadcastLectureSignal({ type: 'screen-share', active: false });
           rerenderLectureScreen();
@@ -8659,7 +8702,7 @@ try {
           sortedPeerIds.forEach((peerId, i) => {
             const p = lecturePresence[peerId];
             const stream = lectureRemoteStreams[peerId];
-            const showVideo = !p.camOff && stream && stream.getVideoTracks().some(t => t.enabled);
+            const showVideo = (!p.camOff || p.sharingScreen) && stream && stream.getVideoTracks().some(t => t.enabled);
             const isSpotlight = spotlightId === peerId;
             const videoInner = `
               <video id="lecture-remote-video-${peerId}" autoplay playsinline class="w-full h-full ${isSpotlight ? 'object-contain' : 'object-cover'} ${showVideo ? '' : 'hidden'}"></video>
@@ -8700,6 +8743,7 @@ try {
         let lectureRemoteStreams = {}; 
         let lecturePendingIce = {}; 
         let lectureRemoteDescSet = {}; 
+        let lectureNegState = {};
 
         function lectureIsTeacher(){
           const cls = lectureClassById(liveLectureState.classId);
@@ -8750,7 +8794,8 @@ try {
             updateLectureRemoteBadges();
           }
           if (newlyJoined.length && lectureIsTeacher()) {
-            broadcastLectureSignal({ type: 'view', view: liveLectureState.view, strokes: whiteboardStrokes });
+            broadcastLectureSignal({ type: 'view', view: liveLectureState.view, strokes: wbCompactStrokes() });
+            if (liveLectureState.screenSharing) broadcastLectureSignal({ type: 'screen-share', active: true });
           }
         }
 
@@ -8762,6 +8807,7 @@ try {
           delete lecturePeerConnections[key];
           delete lecturePendingIce[key];
           delete lectureRemoteDescSet[key];
+          delete lectureNegState[key];
         }
 
         function ensureLecturePeerConnection(peerId){
@@ -8770,14 +8816,19 @@ try {
           lecturePeerConnections[peerId] = pc;
           lecturePendingIce[peerId] = [];
           lectureRemoteDescSet[peerId] = false;
+          let addedVideo = false;
           if (lectureLocalStream) {
             lectureLocalStream.getTracks().forEach(t => {
               if (t.kind === 'video' && liveLectureState.screenSharing && lectureScreenStream) {
-                pc.addTrack(lectureScreenStream.getVideoTracks()[0], lectureScreenStream);
+                pc.addTrack(lectureScreenStream.getVideoTracks()[0], lectureScreenStream); addedVideo = true;
               } else {
-                pc.addTrack(t, lectureLocalStream);
+                pc.addTrack(t, lectureLocalStream); if (t.kind === 'video') addedVideo = true;
               }
             });
+          }
+          if (!addedVideo && liveLectureState.screenSharing && lectureScreenStream) {
+            const st = lectureScreenStream.getVideoTracks()[0];
+            if (st) pc.addTrack(st, lectureScreenStream);
           }
           pc.onicecandidate = (e) => {
             if (e.candidate) broadcastLectureSignal({ type: 'rtc-ice', to: peerId, candidate: e.candidate });
@@ -8788,13 +8839,18 @@ try {
             attachLectureRemoteVideo(peerId);
             rerenderLectureScreen();
           };
+          // Either side may start a new round (adding the screen when there is no camera, a camera
+          // switched on later). If both start at once, the "polite" side (smaller id) steps back.
           pc.onnegotiationneeded = async () => {
-            if (myLecturePeerId < peerId) return; 
+            const ns = lectureNegState[peerId] || (lectureNegState[peerId] = { making: false, ignore: false });
             try {
+              ns.making = true;
               const offer = await pc.createOffer();
+              if (pc.signalingState !== 'stable') return;
               await pc.setLocalDescription(offer);
-              broadcastLectureSignal({ type: 'rtc-offer', to: peerId, sdp: offer });
+              broadcastLectureSignal({ type: 'rtc-offer', to: peerId, sdp: pc.localDescription });
             } catch (e) {  }
+            finally { ns.making = false; }
           };
           return pc;
         }
@@ -8826,6 +8882,8 @@ try {
           lecturePresence = {};
           lecturePendingIce = {};
           lectureRemoteDescSet = {};
+          lectureNegState = {};
+          lectureWbResyncSet(false);
           myLecturePeerId = null;
           if (lectureChannel) {
             const sb = getSupabaseClient();
@@ -8834,9 +8892,47 @@ try {
           }
         }
 
-        function broadcastLectureSignal(payload){
+        function broadcastLectureSignal(payload, isRetry){
           if (!lectureChannel) return;
-          lectureChannel.send({ type: 'broadcast', event: 'lecture-signal', payload: Object.assign({ lectureId: liveLectureState.lectureId, from: myLecturePeerId }, payload) });
+          let res;
+          try { res = lectureChannel.send({ type: 'broadcast', event: 'lecture-signal', payload: Object.assign({ lectureId: liveLectureState.lectureId, from: myLecturePeerId }, payload) }); } catch (e) { res = null; }
+          // Whiteboard, view and screen-share messages matter: if one did not go through, send it once more
+          const important = payload && (payload.type === 'view' || payload.type === 'screen-share' || payload.type === 'wb-strokes');
+          if (important && !isRetry && res && typeof res.then === 'function') {
+            res.then(r => { if (r && r !== 'ok') setTimeout(() => broadcastLectureSignal(payload, true), 700); }).catch(() => setTimeout(() => broadcastLectureSignal(payload, true), 700));
+          }
+        }
+
+        // Whiteboard strokes are sent rounded and thinned, in one message shortly after the last change,
+        // so a long drawing never gets too big to send
+        let wbSyncTimer = null;
+        function wbCompactStrokes(){
+          return (whiteboardStrokes || []).map(st => {
+            if (!st || !Array.isArray(st.points)) return st;
+            const out = [];
+            let last = null;
+            st.points.forEach((pt, i) => {
+              const x = Math.round(pt.x * 10) / 10, y = Math.round(pt.y * 10) / 10;
+              if (last && i !== st.points.length - 1 && Math.abs(x - last.x) < 1.2 && Math.abs(y - last.y) < 1.2) return;
+              last = { x, y }; out.push(last);
+            });
+            return Object.assign({}, st, { points: out });
+          });
+        }
+        function wbSyncStrokes(){
+          clearTimeout(wbSyncTimer);
+          wbSyncTimer = setTimeout(() => { broadcastLectureSignal({ type: 'wb-strokes', strokes: wbCompactStrokes() }); }, 40);
+        }
+        // While the whiteboard is open the moderator re-sends it every few seconds, so a student whose
+        // connection blinked still catches up
+        let lectureWbResyncTimer = null;
+        function lectureWbResyncSet(on){
+          clearInterval(lectureWbResyncTimer); lectureWbResyncTimer = null;
+          if (!on) return;
+          lectureWbResyncTimer = setInterval(() => {
+            if (!lectureIsTeacher() || liveLectureState.view !== 'whiteboard') { lectureWbResyncSet(false); return; }
+            broadcastLectureSignal({ type: 'view', view: 'whiteboard', strokes: wbCompactStrokes() });
+          }, 6000);
         }
 
         function handleLectureSignal(payload){
@@ -8845,18 +8941,25 @@ try {
             if (payload.to !== myLecturePeerId || !payload.from) return;
             const peerId = payload.from;
             const pc = ensureLecturePeerConnection(peerId);
+            const ns = lectureNegState[peerId] || (lectureNegState[peerId] = { making: false, ignore: false });
             if (payload.type === 'rtc-offer') {
+              const polite = myLecturePeerId < peerId;
+              const collision = ns.making || pc.signalingState !== 'stable';
+              ns.ignore = !polite && collision;
+              if (ns.ignore) return;
               pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
                 .then(() => { lectureRemoteDescSet[peerId] = true; return flushLecturePendingIce(peerId, pc); })
                 .then(() => pc.createAnswer())
                 .then(answer => pc.setLocalDescription(answer).then(() => {
-                  broadcastLectureSignal({ type: 'rtc-answer', to: peerId, sdp: answer });
-                }));
+                  broadcastLectureSignal({ type: 'rtc-answer', to: peerId, sdp: pc.localDescription });
+                }))
+                .catch(() => {});
             } else if (payload.type === 'rtc-answer') {
+              if (pc.signalingState !== 'have-local-offer') return;
               pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)).then(() => {
                 lectureRemoteDescSet[peerId] = true;
                 flushLecturePendingIce(peerId, pc);
-              });
+              }).catch(() => {});
             } else if (payload.type === 'rtc-ice') {
               if (lectureRemoteDescSet[peerId]) { pc.addIceCandidate(payload.candidate).catch(() => {}); }
               else { lecturePendingIce[peerId] = lecturePendingIce[peerId] || []; lecturePendingIce[peerId].push(payload.candidate); }
@@ -8919,6 +9022,7 @@ try {
           if (payload.type === 'view') {
             const _prevView = liveLectureState.view;
             if (Array.isArray(payload.strokes)) whiteboardStrokes = payload.strokes.slice();
+            if (payload.view === 'whiteboard' && _prevView === 'whiteboard') { try { redrawWhiteboard(); } catch (e) {} return; }
             if (payload.view !== _prevView && typeof callToast === 'function') {
               if (payload.view === 'whiteboard') callToast('Your moderator is using the whiteboard');
               else if (_prevView === 'whiteboard') callToast('Your moderator closed the whiteboard');
@@ -9210,7 +9314,7 @@ try {
             if (text) {
               const st = { tool: 'text', color: whiteboardColor, x: p.x, y: p.y, text };
               whiteboardStrokes.push(st); wbActions.push({ k: 'add', s: st });
-              redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+              redrawWhiteboard(); wbSyncStrokes();
             }
           };
           input.addEventListener('keydown', ev => {
@@ -9264,7 +9368,7 @@ try {
             const m = wbMoveState; wbMoveState = null;
             if (Math.abs(m.dx) > 0.5 || Math.abs(m.dy) > 0.5) {
               wbActions.push({ k: 'move', s: m.s, dx: m.dx, dy: m.dy });
-              broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+              wbSyncStrokes();
             }
             return;
           }
@@ -9281,7 +9385,7 @@ try {
           whiteboardStrokes.push(done);
           wbActions.push({ k: 'add', s: done });
           whiteboardDrawState = null;
-          broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+          wbSyncStrokes();
         }
 
         function wbWheel(e){
@@ -9356,7 +9460,7 @@ try {
           whiteboardStrokes = whiteboardStrokes.filter(s => s !== wbSel);
           wbSel = null;
           redrawWhiteboard();
-          broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+          wbSyncStrokes();
         }
 
         function redrawWhiteboard(preview){
@@ -9439,9 +9543,9 @@ try {
           }
           if (!done) whiteboardStrokes.pop();
           wbSel = null;
-          redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+          redrawWhiteboard(); wbSyncStrokes();
         }
-        function wbClear(){ openAppConfirmModal('Clear the whiteboard?', '', 'Clear', function(){ whiteboardStrokes = []; wbSel = null; wbActions = []; redrawWhiteboard(); broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes }); }); }
+        function wbClear(){ openAppConfirmModal('Clear the whiteboard?', '', 'Clear', function(){ whiteboardStrokes = []; wbSel = null; wbActions = []; redrawWhiteboard(); wbSyncStrokes(); }); }
 
         function wbToggleDeleteSelect(){
           if (whiteboardTool === 'delete') {
@@ -9483,7 +9587,7 @@ try {
             const intersects = !(b.maxX < rx0 || b.minX > rx1 || b.maxY < ry0 || b.minY > ry1);
             return !intersects;
           });
-          if (whiteboardStrokes.length !== before) broadcastLectureSignal({ type: 'wb-strokes', strokes: whiteboardStrokes });
+          if (whiteboardStrokes.length !== before) wbSyncStrokes();
         }
 
         let lectureSlides = null; 
