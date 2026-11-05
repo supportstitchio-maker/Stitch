@@ -365,7 +365,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           selfieFile: null, selfieName: '', selfiePreviewUrl: '',
           consent: false,
           // Paid courses / paid meetings (asked right before the documents are sent)
-          interests: [], sellPaid: false, paidOnly: false, paidType: '', paidPlan: '', paidPrice: '', paidPayout: '',
+          interests: [], postPicks: [], sellPaid: false, paidOnly: false, paidType: '', paidPlan: '', paidPrice: '', paidPayout: '',
           ageConfirmed: false, paidTermsAck: false,
         };
         function resetPosterAppDraft(){
@@ -389,7 +389,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             // Re-confirmed on every application (including a reapply), rather than carried over from
             // currentUserPosterConsentAccepted
             consent: false,
-            interests: [], sellPaid: false, paidOnly: false, paidType: '', paidPlan: '', paidPrice: '', paidPayout: '',
+            interests: [], postPicks: [], sellPaid: false, paidOnly: false, paidType: '', paidPlan: '', paidPrice: '', paidPayout: '',
             ageConfirmed: false, paidTermsAck: false,
           };
         }
@@ -426,6 +426,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // "Next" only shows once the current question has an answer (selected / started typing).
         function posterAppStageReady(stage){
           const d = posterAppDraft;
+          if (stage === 'plan') return (d.postPicks || []).length > 0;
           if (stage === 'role') return !!d.role;
           if (stage === 'bizname') return !!(d.businessName || '').trim();
           if (stage === 'bizestablished') return !!(d.businessEstablishedTyped || '').trim();
@@ -1016,6 +1017,35 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
         let currentUserPaidSellerRequested = false; // set after a successful submit this session
 
+        // What the person wants to post, one list for opportunities and for courses / paid spaces
+        const POSTER_PLAN_GROUPS = [
+          { title: 'Opportunities', items: [['jobs','Jobs','briefcase'],['internships','Internships','graduateOutline'],['scholarships','Scholarships','trophy'],['parttime','Part-time','clock'],['others','Others','plus']] },
+          { title: 'Courses and spaces', items: [['freecourses','Free courses','book'],['paidcourses','Paid courses','tagOutline'],['paidclasses','Paid live spaces','users'],['paidmeetings','Paid meetings','video'],['paidsessions','1:1 sessions','search']] }
+        ];
+        const POSTER_PLAN_PAID_KEYS = ['paidcourses','paidclasses','paidmeetings','paidsessions'];
+        function posterPlanLabel(key){
+          for (const g of POSTER_PLAN_GROUPS) { const hit = g.items.find(i => i[0] === key); if (hit) return hit[1]; }
+          return key;
+        }
+        function posterAppApplyPlan(){
+          const d = posterAppDraft;
+          const picks = new Set(d.postPicks || []);
+          d.interests = Array.from(picks);
+          d.sellPaid = POSTER_PLAN_PAID_KEYS.some(k => picks.has(k));
+          if (d.sellPaid) {
+            const course = picks.has('paidcourses');
+            const live = picks.has('paidclasses') || picks.has('paidmeetings') || picks.has('paidsessions');
+            d.paidType = course && live ? 'both' : (course ? 'courses' : 'meetings');
+          } else d.paidType = '';
+        }
+        function togglePosterAppPlan(key){
+          const d = posterAppDraft;
+          const i = (d.postPicks || []).indexOf(key);
+          if (i === -1) d.postPicks.push(key); else d.postPicks.splice(i, 1);
+          posterAppApplyPlan();
+          posterAppRerender(); // paid questions appear or disappear
+          const err = document.getElementById('poster-app-stage-error'); if (err) err.style.display = 'none';
+        }
         function posterAppPaidOnlyApproved(){
           return !!(posterAppDraft.paidOnly && (isCurrentUserAdmin() || currentUserPosterStatus === 'approved' || currentUserPosterStatus === 'pending'));
         }
@@ -1025,9 +1055,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const d = posterAppDraft;
           const paid = PAID_SELLER_STAGES;
           if (posterAppPaidOnlyApproved()) return paid;
-          const list = ['role', 'bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'];
-          if (!d.paidOnly) list.push('paidchoice');
-          if (d.sellPaid) list.push(...paid);
+          const list = ['plan', 'role', 'bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'];
+          if (d.sellPaid) list.push(...paid.filter(st => st !== 'paidtype'));
           list.push('bizdoc', 'iddoc', 'consent');
           return list;
         }
@@ -1039,11 +1068,11 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (posterAppPaidOnlyApproved()) return PAID_SELLER_STAGES.map(st => ({ id: st, stages: [st] }));
           const pages = [
             { id: 'welcome', stages: [] },
+            { id: 'plan', kicker: 'Your plan', stages: ['plan'] },
             { id: 'about', kicker: 'About you', stages: ['role'] },
             { id: 'business', kicker: 'Your business', title: 'Tell us about it', sub: 'A few details about what you do.', stages: ['bizname', 'bizestablished', 'bizcategory', 'bizwebsite', 'bizdesc'] },
           ];
-          if (!d.paidOnly) pages.push({ id: 'paidchoice', kicker: 'Paid selling', stages: ['paidchoice'] });
-          if (d.sellPaid) PAID_SELLER_STAGES.forEach(st => pages.push({ id: st, kicker: 'Paid selling', stages: [st] }));
+          if (d.sellPaid) PAID_SELLER_STAGES.filter(st => st !== 'paidtype').forEach(st => pages.push({ id: st, kicker: 'Paid selling', stages: [st] }));
           pages.push({ id: 'verify', kicker: 'Verify', title: "Prove it's really you", sub: 'Two quick uploads. An admin reviews them before you are approved.', stages: ['bizdoc', 'iddoc'] });
           pages.push({ id: 'review', kicker: 'Review', title: 'Looks good?', sub: 'Check your details, then agree and send.', stages: ['consent'] });
           return pages;
@@ -1091,6 +1120,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         }
 
         function posterAppStageTitle(stage){
+          if (stage === 'plan') return 'What do you want to post?';
           if (stage === 'role') return 'Nice to meet you';
           if (stage === 'bizname') return "What's it called?";
           if (stage === 'bizestablished') return 'A little history';
@@ -1110,6 +1140,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return 'Before you submit';
         }
         function posterAppStageSub(stage){
+          if (stage === 'plan') return 'Pick everything that applies. You can add more later.';
           if (stage === 'role') return 'Which best describes you?';
           if (stage === 'bizname') return "What's your business called?";
           if (stage === 'bizestablished') return 'When was it established?';
@@ -1146,6 +1177,9 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const enterNext = `onkeydown="if(event.key==='Enter'){event.preventDefault();posterAppNext();}"`;
           const fieldCls = 'w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none';
           const skipLink = `<a href="#" onclick="posterAppNext(); return false;" style="font-size:12px;color:#9ca3af;display:block;margin-top:10px;">Skip for now</a>`;
+          if (stage === 'plan') {
+            return POSTER_PLAN_GROUPS.map(g => `<div class="pa-lab" style="margin-top:14px;text-transform:uppercase;letter-spacing:.05em;">${g.title}</div>` + stitchChipRowHTML(g.items, k => (d.postPicks || []).includes(k), 'togglePosterAppPlan')).join('') + '<div class="pa-hint" style="margin-top:16px;">Paid options add a few questions about pricing and payouts.</div>';
+          }
           if (stage === 'role') {
             return stitchChipRowHTML(POSTER_ROLE_OPTIONS, k => d.role===k, 'setPosterAppRole');
           }
@@ -1302,6 +1336,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // Per-question checks
         function posterAppStageError(stage){
+          if (stage === 'plan' && !(posterAppDraft.postPicks || []).length) return 'Pick at least one thing you want to post.';
           if (stage === 'bizname' && !(posterAppDraft.businessName || '').trim()) return "Let us know what your business is called.";
           if (stage === 'bizestablished') return posterAppEstablishedError();
           if (stage === 'bizdesc') return posterAppBizdescError();
@@ -1583,13 +1618,12 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // Welcome page: what to expect, before any question
         function posterAppWelcomeHTML(){
-          const paid = !posterAppDraft.paidOnly;
           const steps = [
-            ['About you', 'Who you are, 30 seconds'],
-            ['Your business', 'Name, category and a short story, 2 min'],
+            ['What to post', 'Jobs, internships, courses and more, 20 seconds'],
+            ['About you and your business', 'Who you are and what you do, 2 min'],
             ["Verify it's you", 'Document, ID and a live selfie, 2 min'],
+            ['Review and send', 'Check your details and submit'],
           ];
-          if (paid) steps.push(['Paid selling', 'Only if you will sell courses or spaces']);
           return `
             <div style="position:relative;overflow:hidden;border-radius:28px;height:150px;background:linear-gradient(135deg, ${NAVY}, ${ROYAL});color:#fff;display:flex;align-items:flex-end;padding:20px;">
               <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute;left:0;right:0;bottom:0;width:100%;height:60%;opacity:.25;"><path d="M0 60 Q100 10 200 55 T400 40 V100 H0Z" fill="#fff"/></svg>
@@ -1613,6 +1647,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const ok = (v) => v ? '<span style="color:#16a34a;">Uploaded</span>' : '<span style="color:#e11d48;">Missing</span>';
           return `
             <div style="margin-bottom:18px;">
+              ${row('Posting', escapeHtml((d.postPicks || []).map(posterPlanLabel).join(', ') || '-'), 'plan')}
               ${row('Business', escapeHtml(d.businessName || '-'), 'business')}
               ${row('Category', escapeHtml(cat), 'business')}
               ${row('Document', ok(has(d.businessDocumentFile, currentUserPosterBusinessDocumentUrl)), 'verify')}
@@ -1879,6 +1914,16 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // Delivers a notifications row into local notifData (see addNotif in overlays.js).
         function deliverRemoteNotification(row){
           if (!row || typeof addNotif !== 'function') return;
+          // Silent signal: this account left a space on another device, so drop it here too (no notice shown)
+          if (row.type === 'class_left') {
+            try {
+              const cid = (row.metadata && row.metadata.class_id) || row.job_id;
+              if (cid && typeof applyRemoteClassDelete === 'function') applyRemoteClassDelete({ old: { id: cid }, selfLeft: true });
+              const sb = getSupabaseClient();
+              if (sb && row.id != null) sb.from(NOTIFICATIONS_TABLE).delete().eq('id', row.id).then(() => {}, () => {});
+            } catch (e) {}
+            return;
+          }
           const iconByType = {
             application_message: 'comment',
             interview_scheduled: 'calendar',
@@ -5813,8 +5858,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         async function startCareerPlanPayment(){
           if (careerPlanBusy || !careerStartProfile || !CAREER_PLANS[careerPlanChoice]) return;
           const plan = CAREER_PLANS[careerPlanChoice] || CAREER_PLANS.monthly;
-          // Test account: skip Paystack entirely
-          if (isStitchTestAccount()) { careerPlanBusy = true; verifyCareerPlanPayment(plan, 'stitchtest_' + Date.now()); return; }
           const payEmail = String(careerStartProfile.email || (typeof currentUserEmail !== 'undefined' && currentUserEmail) || '').trim();
           if (!payEmail) { openAppAlertModal('Please add your email first.', 'Payment unavailable'); return; }
           careerPlanBusy = true;
@@ -8194,8 +8237,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             return;
           }
 
-          // Test account: enroll without paying
-          if (isStitchTestAccount()) { jobApplyPaymentBusy = false; completeJobApplication(job); return; }
 
           jobApplyPaymentBusy = true;
           const ov = document.getElementById('overlay');
@@ -9723,24 +9764,39 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function adminReportCardHTML(report){
           const p = report.person || {};
           const job = report.job;
+          const who = p.username ? '@' + escapeHtml(p.username) : (p.name ? escapeHtml(p.name) : 'a user');
+          const when = report.created_at ? fmtJobDate(new Date(report.created_at).getTime()) : '';
+          const sameCount = report.opportunity_id ? adminOpenReports.filter(r => String(r.opportunity_id) === String(report.opportunity_id)).length : 1;
+          const raw = String(report.reason || '').trim();
+          const nl = raw.indexOf('\n');
+          const cat = raw ? (nl === -1 ? raw : raw.slice(0, nl)) : 'No reason given';
+          const more = (raw && nl !== -1) ? raw.slice(nl + 1).trim() : '';
+          const serious = /spam|scam|fraud|fake/i.test(cat);
+          const chipFg = serious ? '#dc2626' : '#b45309';
+          const chipBg = serious ? '#fee2e2' : '#fef3c7';
+          const tIcon = (typeof OPP_TYPE_ICONS !== 'undefined' && job && OPP_TYPE_ICONS[job.type]) || 'briefcase';
+          const sub = job ? [job.company, job.type].filter(Boolean).map(escapeHtml).join(' &middot; ') : '';
+          const btn = 'flex:1;padding:11px 8px;border-radius:14px;font-size:12px;font-weight:700;';
           return `
-            <div class="bg-white rounded-3xl p-4 shadow-sm mb-3">
-              <div class="text-sm font-semibold text-gray-800 mb-1 truncate">${job ? escapeHtml(job.title) : 'Listing no longer available'}</div>
-              <div class="text-xs text-gray-400 mb-2">Reported by ${p.username ? '@' + escapeHtml(p.username) : (p.name ? escapeHtml(p.name) : 'a user')}${report.created_at ? ' · ' + fmtJobDate(new Date(report.created_at).getTime()) : ''}</div>
-              ${(() => {
-                // Reports are saved as "<selected category>\n<optional details>": show the category as a
-                // bold heading
-                const raw = String(report.reason || '').trim();
-                if (!raw) return `<div class="text-xs text-gray-600 bg-gray-50 rounded-2xl p-3 mb-3">No reason given.</div>`;
-                const nl = raw.indexOf('\n');
-                const cat = nl === -1 ? raw : raw.slice(0, nl);
-                const more = nl === -1 ? '' : raw.slice(nl + 1).trim();
-                return `<div class="text-xs text-gray-600 bg-gray-50 rounded-2xl p-3 mb-3" style="white-space:pre-wrap;"><div class="font-semibold text-gray-800">${escapeHtml(cat)}</div>${more ? `<div style="margin-top:4px;">${escapeHtml(more)}</div>` : ''}</div>`;
-              })()}
-              <div class="flex gap-2">
-                <button onclick="reviewOpportunityReport('${report.id}','dismiss')" class="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600">Dismiss</button>
-                ${job ? `<button onclick="openJobDetail('${job.id}')" class="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600">View listing</button>` : ''}
-                <button onclick="reviewOpportunityReport('${report.id}','delete_listing')" class="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold text-white bg-rose-500">Remove listing</button>
+            <div style="background:#fff;border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:44px;height:44px;border-radius:14px;background:#e0efff;color:#1E90FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon(tIcon,'w-5 h-5')}</span>
+                <div style="min-width:0;flex:1;">
+                  <div class="text-sm font-bold text-gray-900 truncate">${job ? escapeHtml(job.title) : 'Listing no longer available'}</div>
+                  ${sub ? `<div class="text-xs text-gray-400 truncate" style="margin-top:2px;">${sub}</div>` : ''}
+                </div>
+                ${sameCount > 1 ? `<span style="flex-shrink:0;font-size:11px;font-weight:700;color:#dc2626;background:#fee2e2;border-radius:999px;padding:4px 10px;">${sameCount} reports</span>` : ''}
+              </div>
+              <div style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${chipFg};background:${chipBg};border-radius:999px;padding:6px 12px;">${Icon('flag','w-3.5 h-3.5')}<span>${escapeHtml(cat)}</span></div>
+              ${more ? `<div class="text-xs text-gray-600" style="margin-top:10px;background:#f6f7f9;border-radius:16px;padding:12px;white-space:pre-wrap;">${escapeHtml(more)}</div>` : ''}
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.06);">
+                <span style="width:30px;height:30px;border-radius:50%;background:#e0efff;color:#1E90FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon('user','w-4 h-4')}</span>
+                <div style="min-width:0;"><div class="text-xs font-bold text-gray-800 truncate">Reported by ${who}</div>${when ? `<div class="text-[11px] text-gray-400">${when}</div>` : ''}</div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <button onclick="reviewOpportunityReport('${report.id}','dismiss')" style="${btn}background:#f1f3f6;color:#4b5563;">Dismiss</button>
+                ${job ? `<button onclick="openJobDetail('${job.id}')" style="${btn}background:#fff;color:#1E90FF;border:1.5px solid #cfe3fb;">View listing</button>` : ''}
+                <button onclick="reviewOpportunityReport('${report.id}','delete_listing')" style="${btn}background:#f43f5e;color:#fff;">Remove</button>
               </div>
             </div>`;
         }

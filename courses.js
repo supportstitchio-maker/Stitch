@@ -4948,9 +4948,9 @@ try {
             const hadOverlay = typeof currentOverlayKind !== 'undefined' && !!currentOverlayKind;
             currentClassId = null;
             if (hadOverlay) closeOverlay();
-            openAppAlertModal(wasTeacher ? 'This space was deleted.' : 'This space was deleted by its moderator.');
+            openAppAlertModal(payload.selfLeft ? 'You left this space on another device.' : (wasTeacher ? 'This space was deleted.' : 'This space was deleted by its moderator.'));
           } else if (!wasTeacher && typeof callToast === 'function') {
-            try { callToast((gone.name || 'A space') + ' was deleted by its moderator.'); } catch (e) {}
+            try { callToast(payload.selfLeft ? ('You left ' + (gone.name || 'a space') + ' on another device.') : ((gone.name || 'A space') + ' was deleted by its moderator.')); } catch (e) {}
           }
           if (typeof currentTab !== 'undefined' && currentTab === 2) {
             const studyContentEl = document.getElementById('study-content');

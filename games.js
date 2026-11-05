@@ -1299,14 +1299,6 @@ let userPoints = 0;
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR PROFILE';
           setAuthSegments(1, authOnboardingTotal());
-          // Test account: always arrives pre-filled so nothing has to be typed on this step
-          if (isStitchTestAccount()) {
-            const f = document.getElementById('auth-cp-fname'), l = document.getElementById('auth-cp-lname'), u = document.getElementById('auth-cp-username');
-            if (f) f.value = 'Test';
-            if (l) l.value = 'Mode';
-            if (u) u.value = 'test_mode';
-            return;
-          }
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
         }
         // Shown once, right after Complete Profile, so the Career Space "post or explore" question
@@ -2244,11 +2236,6 @@ let userPoints = 0;
             return;
           }
           if (authOtpSendInFlight) return;
-          // Test account: nothing to send. Type the code 000000 on the next screen
-          if (isStitchTestEmail(authPendingEmail)) {
-            if (err) { err.textContent = 'Test account: enter the QA code.'; err.style.color = '#b45309'; err.classList.add('show'); }
-            return;
-          }
           authOtpSendInFlight = true;
           try {
             // This single Get Started panel is now the only entry point, so shouldCreateUser is always
@@ -2550,30 +2537,6 @@ let userPoints = 0;
           if (el) { el.classList.add('hidden'); el.classList.remove('skeleton-mode'); el.classList.remove('plain-mode'); el.classList.remove('skel-desktop-mode'); }
         }
 
-        // Test account only: wipes everything it created (database rows + this device's saved data)
-        // so the next sign-in starts from a brand-new sign-up. Safe no-op for any other account.
-        async function resetStitchTestAccount(keepSession){
-          const sb = getSupabaseClient();
-          if (!sb) return;
-          try {
-            const { error } = await sb.rpc('reset_test_account');
-            if (error) console.warn('Test account reset failed:', error);
-          } catch (e) { console.warn('Test account reset failed:', e); }
-          // Wipe both storages; on sign-in the fresh Supabase session (stored under 'stitch-auth' in
-          // sessionStorage on web, localStorage in the native app) must survive the wipe
-          [window.localStorage, window.sessionStorage].forEach(store => {
-            try {
-              Object.keys(store).forEach(k => {
-                const isSession = k.indexOf('stitch-auth') === 0 || k.indexOf('sb-') === 0;
-                if (!(keepSession && isSession)) store.removeItem(k);
-              });
-            } catch (e) {}
-          });
-          try { if (window.storage) await window.storage.delete('gameProgress', false); } catch (e) {}
-                    try { if (window.caches) { (await caches.keys()).forEach(k => caches.delete(k)); } } catch (e) {}
-          try { resetCachedAuthUser(); } catch (e) {}
-        }
-
         function authSignOut(){
           openAppConfirmModal('Sign out of Stitch?', "You'll need to log back in to access your account.", 'Sign Out', function(){
             overlayHistoryPushed = false;
@@ -2582,12 +2545,6 @@ let userPoints = 0;
             // Persist any unsaved state and end the Supabase session in the background
             (async () => {
               const sb = getSupabaseClient();
-              if (isStitchTestAccount()) {
-                // Test account: save nothing, erase everything, then sign out
-                await resetStitchTestAccount();
-                if (sb) { sb.auth.signOut().catch(() => {}); }
-                return;
-              }
               if (typeof saveUserStateNow === 'function') { try { await saveUserStateNow(); } catch (e) {} }
               if (sb) { sb.auth.signOut().catch(() => {}); }
             })();
@@ -2751,31 +2708,11 @@ let userPoints = 0;
           if (keypadDone) { keypadDone.disabled = true; keypadDone.style.opacity = '0.5'; }
           try {
             let error;
-            if (isStitchTestEmail(authPendingEmail)) {
-              {
-                ({ error } = await stitchTestServerSignIn(sb, entered));
-                if (!error) {
-                  // Every test sign-in starts from scratch, even if the last session never signed out
-                  await resetStitchTestAccount(true);
-                  resetCachedAuthUser();
-                  // The reset can kill the new session, and refreshing a dead token signs the app out.
-                  // So don't refresh: make sure a session exists, else sign in again.
-                  let hasSession = false;
-                  try { const { data: sd } = await sb.auth.getSession(); hasSession = !!(sd && sd.session); } catch (e) {}
-                  if (!hasSession) {
-                    ({ error } = await stitchTestServerSignIn(sb, entered));
-                    resetCachedAuthUser();
-                  }
-                }
-              }
-            } else {
-              ({ error } = await sb.auth.verifyOtp({
-                email: authPendingEmail,
-                token: entered,
-                // Every entry
-                type: 'email'
-              }));
-            }
+            ({ error } = await sb.auth.verifyOtp({
+              email: authPendingEmail,
+              token: entered,
+              type: 'email'
+            }));
             if (error) {
               console.error('OTP verify error:', error);
               err.textContent = (error.message && error.message !== '{}') ? error.message : 'That code is incorrect or expired.';
@@ -2785,12 +2722,6 @@ let userPoints = 0;
             authMarkDeviceTrusted(authPendingEmail);
             // A code was just accepted for this email -- check whether it already has a Stitch profile
             let needsProfileSetup = await authCheckNeedsProfileSetup();
-            // Test account: if the check couldn't confirm (session dropped), sign in once more and retry
-            if (needsProfileSetup === null && isStitchTestEmail(authPendingEmail)) {
-              try { await stitchTestServerSignIn(sb, entered); } catch (e) {}
-              resetCachedAuthUser();
-              needsProfileSetup = await authCheckNeedsProfileSetup();
-            }
             if (needsProfileSetup === null) {
               await authAbortUnverifiedSignIn();
             } else if (needsProfileSetup) {
