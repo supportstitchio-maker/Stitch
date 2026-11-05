@@ -1406,7 +1406,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const avatarInner = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-4 h-4');
             return `
               <button type="button" onclick="toggleComposeTagPerson('${escapeForJsAttr(p.id)}')" class="w-full flex items-center text-left" style="gap:12px;padding:11px 4px;border-bottom:1px solid rgba(0,0,0,0.06);">
-                <div class="w-10 h-10 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0">${avatarInner}</div>
+                <div class="ph-av w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${avatarInner}</div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-semibold truncate">${escapeHtml(p.name)}</div>
                   ${p.username ? `<div class="text-xs truncate text-gray-400">@${escapeHtml(p.username)}</div>` : ''}
@@ -1875,7 +1875,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
           return `
             <div class="w-full flex items-center gap-4" style="padding:10px 0;margin-bottom:5px;border-bottom:1px solid rgba(0,0,0,0.08);">
-              <button onclick="openPersonProfileFromDiscover('${p.id}')" class="w-11 h-11 ${p.avatarBg || 'bg-blue-50'} rounded-2xl flex items-center justify-center text-gray-600 overflow-hidden flex-shrink-0">${avatarInner}</button>
+              <button onclick="openPersonProfileFromDiscover('${p.id}')" class="ph-av w-11 h-11 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">${avatarInner}</button>
               <div class="flex-1 min-w-0 cursor-pointer text-left" onclick="openPersonProfileFromDiscover('${p.id}')">
                 <div class="font-semibold text-sm truncate">${escapeHtml(p.name)}</div>
                 <div class="text-xs text-gray-500 truncate">${p.username ? escapeHtml(p.username) : ''}${p.username && p.sub ? ' · ' : ''}${escapeHtml(p.sub)}</div>
@@ -2988,7 +2988,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const uid = notifUserIdFor(n);
           if (!uid) return `<div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style="color:#9ca3af;">${NotifIcon(n.icon,'w-5 h-5')}</div>`;
           const photo = notifPhotoFor(n);
-          return `<div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarMediaHTML(photo, 'user', 'w-5 h-5')}</div>`;
+          return `<div class="ph-av w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">${avatarMediaHTML(photo, 'user', 'w-5 h-5')}</div>`;
         }
 
         // Read flags are also remembered on this device, so a stale server copy of the saved state

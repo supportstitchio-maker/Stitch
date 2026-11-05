@@ -6792,3 +6792,11 @@ body.dark-mode .nrow-grp{ background:#22314f; color:#8db8ff; }
 body.dark-mode .cw-empty{ background:#222222; box-shadow:none; }
 body.dark-mode .cw-empty-t{ color:#f3f4f6; }
 body.dark-mode .cw-empty-s{ color:#9ca3af; }
+
+/* One placeholder for every missing profile picture: grey circle with a grey person (same as Messaging) */
+body:not(.dark-mode) .ph-av, body:not(.dark-mode) .cmt-avatar, body:not(.dark-mode) .nav-av-c, body:not(.dark-mode) .cd-avatar{ background:#e5e7eb !important; color:#6b7280 !important; }
+html.dark-mode .ph-av, html.dark-mode .cmt-avatar, html.dark-mode .nav-av-c, html.dark-mode .cd-avatar{ background:#2b2b2b !important; color:#9ca3af !important; }
+.ph-av, .cmt-avatar, .nav-av-c, .cd-avatar{ border-radius:50% !important; }
+.ph-av svg, .cmt-avatar svg, .nav-av-c svg{ color:inherit; }
+.nav-av-c.nav-av-icon{ background:#e5e7eb !important; }
+html.dark-mode .nav-av-c.nav-av-icon{ background:#2b2b2b !important; }

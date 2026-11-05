@@ -9267,7 +9267,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="py-3 border-b border-gray-200 flex items-center gap-2">
               <button type="button" onclick="openAdminPosterDetail('${app.user_id}')" class="flex-1 min-w-0 flex items-center gap-3 text-left">
-                <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${p.photo ? `<img src="${escapeHtml(p.photo)}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5')}</div>
+                <div class="ph-av w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${p.photo ? `<img src="${escapeHtml(p.photo)}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(name)}</div>
                   <div class="text-xs text-gray-400 truncate">${p.username ? '@' + escapeHtml(p.username) : ''}${app.poster_business_name ? (p.username ? ' · ' : '') + escapeHtml(app.poster_business_name) : ''}${when ? ' · ' + when : ''}</div>
@@ -9725,7 +9725,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="py-4 mb-1 border-b border-gray-200">
               <div onclick="openAdminPosterDetail('${app.user_id}')" class="flex items-center gap-3 mb-2 cursor-pointer">
-                <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5')}</div>
+                <div class="ph-av w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="font-semibold text-sm truncate">${escapeHtml(p.name || p.username || 'Unnamed user')}</div>
                   <div class="text-xs text-gray-400 truncate">${p.username ? '@' + escapeHtml(p.username) : ''}</div>
@@ -9790,7 +9790,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               <div style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${chipFg};background:${chipBg};border-radius:999px;padding:6px 12px;">${Icon('flag','w-3.5 h-3.5')}<span>${escapeHtml(cat)}</span></div>
               ${more ? `<div class="text-xs text-gray-600" style="margin-top:10px;background:#f6f7f9;border-radius:16px;padding:12px;white-space:pre-wrap;">${escapeHtml(more)}</div>` : ''}
               <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.06);">
-                <span style="width:30px;height:30px;border-radius:50%;background:#e0efff;color:#1E90FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon('user','w-4 h-4')}</span>
+                <span class="ph-av" style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon('user','w-4 h-4')}</span>
                 <div style="min-width:0;"><div class="text-xs font-bold text-gray-800 truncate">Reported by ${who}</div>${when ? `<div class="text-[11px] text-gray-400">${when}</div>` : ''}</div>
               </div>
               <div style="display:flex;gap:8px;margin-top:14px;">
@@ -11186,7 +11186,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   <div class="divide-y">
                     ${recentActivity.map(c => `
                       <button onclick="overlayReturnTo='profileAnalytics';openPostDetail(${c.post.id}, undefined, true)" class="w-full flex items-start gap-2.5 py-3 text-left">
-                        <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0">${Icon('user','w-4 h-4')}</div>
+                        <div class="ph-av w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
                         <div class="min-w-0">
                           <div class="text-xs text-gray-700"><span class="font-semibold">${escapeHtml(c.name)}</span> commented: "${escapeHtml(c.text)}"</div>
                           <div class="text-[10px] text-gray-400 mt-0.5 truncate">on "${escapeHtml((c.post.body||'').slice(0,40))}${(c.post.body||'').length>40?'…':''}"</div>

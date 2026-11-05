@@ -900,7 +900,7 @@ let userPoints = 0;
                 <div class="divide-y divide-gray-100">${leaderboard.map((p, i) => `
                   <div class="flex items-center gap-3 py-3" ${p.me ? 'style="background:rgba(37,99,235,.07);margin:0 -.75rem;padding-left:.75rem;padding-right:.75rem;border-radius:12px;"' : ''}>
                     <div class="w-7 text-center font-bold text-sm" style="color:${cols[i] || '#9ca3af'}">${i < 3 ? Icon('trophy','w-5 h-5') : i + 1}</div>
-                    <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
+                    <div class="ph-av w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
                     <div class="flex-1 min-w-0 font-semibold text-sm truncate">${escapeHtml(p.name)}${p.me && p.name !== 'You' ? ' (You)' : ''}</div>
                     <div class="text-sm font-bold" style="color:#92720f">${p.pts.toLocaleString()}</div></div>`).join('')}</div>
               </div>

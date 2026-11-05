@@ -4121,7 +4121,7 @@ try {
           const fmtDate = ts => ts ? new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
           const personRow = (name, username, right, i, n) => `
             <div class="flex items-center gap-3 py-2.5 ${i < n - 1 ? 'border-b border-gray-100' : ''}">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,0.1);color:${NAVY};">${Icon('user','w-4 h-4')}</div>
+              <div class="ph-av w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
               <div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate">${escapeHtml(name || 'Unnamed')}</div>${username ? `<div class="text-[11px] text-gray-400 truncate">@${escapeHtml(username)}</div>` : ''}</div>
               <div class="text-xs font-semibold text-gray-500 flex-shrink-0">${right}</div>
             </div>`;
@@ -5770,6 +5770,8 @@ try {
           // Include cls.members too, not just cls.students
           const idSet = new Set((cls.students || []).map(s => s.id));
           (cls.members || []).forEach(id => { if (id && id !== cls.teacherId) idSet.add(id); });
+          // People who commented on announcements: look up their real names too
+          (cls.announcements || []).forEach(a => (a.comments || []).forEach(c => { if (c && c.userId && c.userId !== cls.teacherId) idSet.add(c.userId); }));
           const ids = Array.from(idSet).filter(id => id && !(classStudentProfiles[id] && classStudentProfiles[id].name) && !(classStudentProfiles[id] && classStudentProfiles[id]._t && Date.now() - classStudentProfiles[id]._t < 20000));
           if (!ids.length) return;
           ids.forEach(id => { if (!classStudentProfiles[id]) classStudentProfiles[id] = {}; classStudentProfiles[id]._t = Date.now(); });
@@ -5781,7 +5783,7 @@ try {
               classStudentProfiles[p.user_id] = { name: p.name || p.username || '', photo: p.photo || null, bio: p.bio || '', _t: Date.now() };
             });
                         const ov = document.getElementById('overlay');
-            if ((data || []).length && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && classDetailTab === 'people') {
+            if ((data || []).length && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && (classDetailTab === 'people' || classDetailTab === 'stream')) {
               ov.innerHTML = classDetailHTML();
             }
           } catch (e) {  }
@@ -7182,8 +7184,11 @@ try {
           try { me = (_cachedAuthUser && _cachedAuthUser.id) || null; } catch (e) {}
           if (c.userId && me && c.userId === me) return { name: 'You', photo: (typeof profileData !== 'undefined' && profileData.photo) || null };
           const cached = c.userId && ((typeof classStudentProfiles !== 'undefined' && classStudentProfiles[c.userId]) || (typeof classTeacherProfiles !== 'undefined' && classTeacherProfiles[c.userId]));
-          const savedName = (c.name && c.name !== 'You') ? c.name : '';
-          return { name: (cached && cached.name) || savedName || 'Member', photo: (cached && cached.photo) || c.photo || null };
+          const savedName = (c.name && c.name !== 'You' && c.name !== 'Member' && c.name !== 'Space member') ? c.name : '';
+          // Last resort before the profile has loaded: the name on the space's own member list
+          let rosterName = '';
+          try { const cl = (typeof myClasses !== 'undefined') && myClasses.find(x => x.id === currentClassId); const st = cl && c.userId && (cl.students || []).find(x => x.id === c.userId); if (st && st.name && st.name !== 'Member' && st.name !== 'Space member') rosterName = st.name; } catch (e) {}
+          return { name: (cached && cached.name) || savedName || rosterName || (c.username ? c.username : 'Member'), photo: (cached && cached.photo) || c.photo || null };
         }
         // Replies show how long ago for the first hour, then the actual time of day (or the date)
         function formatStreamCommentTime(c){
@@ -8581,7 +8586,7 @@ try {
             const name = pr.name || pr.username || 'Member';
             const done = lectureAddRinged.has(uid);
             return `<div class="flex items-center gap-3 py-2">
-              <div class="w-10 h-10 rounded-full bg-blue-50 overflow-hidden flex items-center justify-center flex-shrink-0">${avatarMediaHTML(pr.photo || null, 'user', 'w-5 h-5')}</div>
+              <div class="ph-av w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${avatarMediaHTML(pr.photo || null, 'user', 'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 text-sm font-semibold text-gray-800 truncate">${escapeHtml(name)}</div>
               <button id="lecture-add-btn-${uid}" onclick="ringLectureMember('${uid}')" ${done ? 'disabled' : ''} class="text-xs font-bold px-3 py-1.5 rounded-full text-white flex-shrink-0" style="background:${done ? '#9ca3af' : ROYAL};">${done ? 'Invited' : 'Add'}</button>
             </div>`;
@@ -8667,7 +8672,7 @@ try {
           // Screen share stays un-cropped (object-contain) so the whole shared screen is visible
           // instead of being cover-cropped like a face
           if (showLocalVideo) return `<video id="lecture-local-video" autoplay playsinline muted class="w-full h-full ${isSharing ? 'object-contain bg-black' : 'object-cover'}" style="${isSharing ? '' : (liveLectureState.facing === 'environment' ? '' : 'transform:scaleX(-1);')}"></video>`;
-          return `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar bg-blue-100">${avatarMediaHTML(profileData.photo, 'user', 'w-8 h-8 text-gray-500')}</div></div>`;
+          return `<div class="w-full h-full flex items-center justify-center"><div class="cu-avatar ph-av">${avatarMediaHTML(profileData.photo, 'user', 'w-8 h-8 text-gray-500')}</div></div>`;
         }
 
         function lectureLocalBadgesHTML(){
