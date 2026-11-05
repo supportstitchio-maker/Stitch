@@ -138,5 +138,11 @@
       "source": "/p/:id",
       "destination": "/api/post-api?id=:id"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/keepalive",
+      "schedule": "0 6 * * *"
+    }
   ]
 }
