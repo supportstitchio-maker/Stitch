@@ -1071,6 +1071,7 @@
             // entries)
             if (d.notifPurgeV1) { if (Array.isArray(d.notifications)) notifData.push(...d.notifications); }
             liveKept.forEach(n => { if (!notifData.some(x => x && x.id === n.id)) notifData.unshift(n); });
+            notifData.sort((x, y) => ((y && y.pinned) ? 1 : 0) - ((x && x.pinned) ? 1 : 0));
             if (typeof applyNotifReadLocal === 'function') applyNotifReadLocal();
             else if (typeof queueSaveUserState === 'function') setTimeout(queueSaveUserState, 0);
           }

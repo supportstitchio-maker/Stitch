@@ -3060,6 +3060,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             tab: opts.tab || null,
             meetingCode: opts.meetingCode || null,
           });
+          // Pinned stay on top: a new arrival goes right under them
+          notifData.sort((x, y) => (y.pinned ? 1 : 0) - (x.pinned ? 1 : 0));
           // Something that happened a while ago (caught up on sign-in) goes into the list quietly: no banner,
           // chime or bell shake. Only fresh events announce themselves.
           let isOldEvent = !!(opts.createdAt && (Date.now() - opts.createdAt) > 120000);
@@ -3929,6 +3931,16 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           renderClassAnnouncementsTab();
         }
 
+        // Pinned messages always sit at the very top, under their own label, however new ones arrive
+        function noticePinnedFirstHTML(list){
+          const opts = { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' };
+          const pinned = list.filter(n => n.pinned);
+          if (!pinned.length) return notifCards(list, opts);
+          const rest = list.filter(n => !n.pinned);
+          const lab = t => `<div class="text-[11px] font-extrabold uppercase" style="letter-spacing:.08em;color:#94a3b8;padding:2px 4px 6px;">${t}</div>`;
+          return lab('Pinned') + notifCards(pinned, opts) + (rest.length ? `<div style="height:10px;"></div>` + lab('Earlier') + notifCards(rest, opts) : '');
+        }
+
         function renderClassAnnouncementsTab(){
           const ov = document.getElementById('overlay');
           const classroomNotifs = notifData.filter(n => n.source === 'classroom');
@@ -3944,10 +3956,10 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>` : '';
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left', sheetToggle: 'toggleNoticeBoardMenu' }), { hideBack: true, shortDashes: true, titleLeft: true, titleSize: 'text-xl', menuLeft: true, flipMenuIcon: true })}
+              <div class="notif-wrap">${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'left', sheetToggle: 'toggleNoticeBoardMenu' }), { hideBack: true, shortDashes: true, titleLeft: true, titleSize: 'text-xl', menuLeft: true, flipMenuIcon: true, deskBig: true, hideMenuOnDesktop: true })}</div>
               <div class="p-5 notif-wrap">
                 ${stitchCard}
-                <div class="space-y-2">${classroomNotifs.length ? notifCards(classroomNotifs, { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' }) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
+                <div class="space-y-2">${classroomNotifs.length ? noticePinnedFirstHTML(classroomNotifs) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>
               </div>
             </div>`;
           attachMenuScrollCloser(ov.querySelector('.overflow-y-auto'), noticeBoardMenuOpen, 'toggleNoticeBoardMenu');
