@@ -4800,6 +4800,14 @@ try {
             return;
           }
           const prev = myClasses[idx];
+          {
+            // I'm no longer in the member list (I left, or was taken out): drop the space right away
+            const meNow = (typeof classesSubscribedForUserId !== 'undefined' && classesSubscribedForUserId) || null;
+            if (meNow && prev.role !== 'teacher' && Array.isArray(row.members) && !row.members.includes(meNow)) {
+              applyRemoteClassDelete({ old: { id: row.id } });
+              return;
+            }
+          }
           const notifyMe = prev.role !== 'teacher';
           const isTeacherHere = prev.role === 'teacher';
           const prevAnnouncementIds = notifyMe ? new Set((prev.announcements || []).map(a => a.id)) : null;
@@ -4862,6 +4870,23 @@ try {
                 tab: 'people',
               });
             });
+            // Someone left: say so on the notice board, live
+            (prev.members || []).forEach(uid => {
+              if (!uid || uid === updated.teacherId || (updated.members || []).includes(uid)) return;
+              const gone = classStudentProfiles[uid] || (prev.students || []).find(st => st.id === uid) || {};
+              addNotif({
+                id: 'left-' + updated.id + '-' + uid + '-' + Date.now(),
+                type: 'classroom',
+                source: 'classroom',
+                icon: 'users',
+                iconBg: 'bg-gray-100',
+                iconClass: 'text-gray-500',
+                name: updated.name || 'Your space',
+                message: `${gone.name || 'A member'} left ${updated.name}`,
+                classId: updated.id,
+                tab: 'people',
+              });
+            });
             // A class with an entrance fee (or an open join policy) lets someone in the moment they
             // pay/join, with no approval step
             (updated.members || []).forEach(uid => {
@@ -4914,22 +4939,22 @@ try {
         function applyRemoteClassDelete(payload){
           const deletedId = payload && payload.old && payload.old.id;
           if (!deletedId) return;
-          const hadIt = myClasses.some(c => c.id === deletedId);
-          if (!hadIt) return;
+          const gone = myClasses.find(c => c.id === deletedId);
+          if (!gone) return;
+          const wasTeacher = gone.role === 'teacher';
           myClasses = myClasses.filter(c => c.id !== deletedId);
           queueSaveUserState();
-          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classDetail' && currentClassId === deletedId) {
+          if (currentClassId === deletedId) {
+            const hadOverlay = typeof currentOverlayKind !== 'undefined' && !!currentOverlayKind;
             currentClassId = null;
-            closeOverlay();
-            openAppAlertModal('This space was deleted by its moderator.');
-          } else if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classSettings' && currentClassId === deletedId) {
-            currentClassId = null;
-            closeOverlay();
-            openAppAlertModal('This space was deleted by its moderator.');
+            if (hadOverlay) closeOverlay();
+            openAppAlertModal(wasTeacher ? 'This space was deleted.' : 'This space was deleted by its moderator.');
+          } else if (!wasTeacher && typeof callToast === 'function') {
+            try { callToast((gone.name || 'A space') + ' was deleted by its moderator.'); } catch (e) {}
           }
-          if (typeof currentTab !== 'undefined' && currentTab === 2 && typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'classes') {
+          if (typeof currentTab !== 'undefined' && currentTab === 2) {
             const studyContentEl = document.getElementById('study-content');
-            if (studyContentEl) studyContentEl.innerHTML = studyContent();
+            if (studyContentEl && typeof studyContent === 'function') studyContentEl.innerHTML = studyContent();
             else if (typeof renderStudy === 'function') renderStudy();
           }
         }
