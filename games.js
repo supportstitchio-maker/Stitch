@@ -2661,7 +2661,7 @@ let userPoints = 0;
           })();
         }
 
-        // Delete-account confirm sheet: the red button only works after typing DELETE
+        // Delete-account confirm sheet: Cancel or Delete
         function authDeleteAccount(){
           closeDeleteAccountSheet();
           const wrap = document.createElement('div');
@@ -2673,12 +2673,25 @@ let userPoints = 0;
               <div style="width:40px;height:5px;border-radius:9px;background:#e5e7eb;margin:0 auto 16px;"></div>
               <div class="font-display" style="font-size:24px;color:#dc2626;">Delete account?</div>
               <div class="del-sub" style="font-size:14px;line-height:1.5;margin-top:8px;color:#4b5563;">Your profile, posts, chats and course progress will be permanently removed. This can’t be undone.</div>
-              <div class="del-sub" style="font-size:12px;font-weight:700;margin:16px 0 6px;color:#6b7280;">Type DELETE to confirm</div>
-              <input id="delete-account-input" oninput="deleteAccountSheetInput(this.value)" autocomplete="off" autocapitalize="characters" placeholder="DELETE" style="width:100%;border:1.5px solid #e5e7eb;border-radius:18px;padding:12px 16px;font-size:16px;background:transparent;color:inherit;">
-              <button id="delete-account-confirm" type="button" onclick="deleteAccountSheetConfirm()" style="width:100%;margin-top:16px;border-radius:999px;background:#fca5a5;color:#fff;font-weight:700;padding:15px;">Delete my account</button>
-              <button type="button" onclick="closeDeleteAccountSheet()" class="del-cancel" style="width:100%;margin-top:10px;border-radius:999px;background:#f1f3f6;color:#374151;font-weight:700;padding:15px;">Cancel</button>
+              <div style="display:flex;gap:10px;margin-top:16px;">
+                <button type="button" onclick="closeDeleteAccountSheet()" class="del-cancel" style="flex:1;border-radius:999px;background:#f1f3f6;color:#374151;font-weight:700;padding:15px;">Cancel</button>
+                <button id="delete-account-confirm" type="button" onclick="deleteAccountSheetConfirm()" style="flex:1;border-radius:999px;background:#dc2626;color:#fff;font-weight:700;padding:15px;">Delete</button>
+              </div>
             </div>`;
           document.body.appendChild(wrap);
+          // Keep the sheet above the on-screen keyboard: follow the visible area, not the full window
+          const vv = window.visualViewport;
+          if (vv) {
+            const fit = function(){
+              if (!wrap.isConnected) { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); return; }
+              wrap.style.inset = 'auto';
+              wrap.style.left = '0'; wrap.style.right = '0';
+              wrap.style.top = vv.offsetTop + 'px';
+              wrap.style.height = vv.height + 'px';
+            };
+            vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
+            fit();
+          }
         }
         function deleteAccountSheetInput(v){
           const ok = String(v || '').trim().toUpperCase() === 'DELETE';
@@ -2687,7 +2700,7 @@ let userPoints = 0;
         }
         function deleteAccountSheetConfirm(){
           const btn = document.getElementById('delete-account-confirm');
-          if (!btn || btn.dataset.ok !== '1') return;
+          if (!btn) return;
           closeDeleteAccountSheet();
           authDeleteAccountNow();
         }
