@@ -4666,8 +4666,10 @@
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POSTS_TABLE }, (payload) => handleRemotePostInsert(payload, myId))
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: POSTS_TABLE }, (payload) => handleRemotePostDelete(payload))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_COMMENTS_TABLE }, (payload) => handleRemoteCommentInsert(payload, myId))
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_LIKES_TABLE }, (payload) => handleRemoteLikeInsert(payload, myId))
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_REPOSTS_TABLE }, (payload) => handleRemoteRepostInsert(payload, myId))
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_LIKES_TABLE }, (payload) => { applyRemoteReactionCount(payload, myId, 'likes', 1); handleRemoteLikeInsert(payload, myId); })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: POST_LIKES_TABLE }, (payload) => applyRemoteReactionCount(payload, myId, 'likes', -1))
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_REPOSTS_TABLE }, (payload) => { applyRemoteReactionCount(payload, myId, 'reposts', 1); handleRemoteRepostInsert(payload, myId); })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: POST_REPOSTS_TABLE }, (payload) => applyRemoteReactionCount(payload, myId, 'reposts', -1))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: POST_SHARES_TABLE }, (payload) => handleRemoteShareInsert(payload, myId))
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: OPPORTUNITIES_TABLE }, (payload) => handleRemoteOpportunityInsert(payload, myId))
             // Glimpses: show a new (or removed) one in everyone's strip right away
@@ -4720,6 +4722,33 @@
         }
 
         // ---- Realtime feed events (deletes/inserts/comments) ----
+        // Likes/unlikes and reposts/un-reposts from anyone (or from my other device) show up in the
+        // counts right away. My own action on this device already updated the count, so it is skipped.
+        function applyRemoteReactionCount(payload, myId, kind, delta){
+          try {
+            const row = delta > 0 ? (payload && payload.new) : (payload && payload.old);
+            if (!row || !row.post_id) return;
+            const post = typeof findPost === 'function' ? findPost(isNaN(Number(row.post_id)) ? row.post_id : Number(row.post_id)) : null;
+            if (!post) return;
+            const flag = kind === 'likes' ? 'liked' : 'reposted';
+            if (row.user_id === myId) {
+              const want = delta > 0;
+              if (!!post[flag] === want) return; // this device already knows
+              post[flag] = want;
+            }
+            post[kind] = Math.max(0, (post[kind] || 0) + delta);
+            const id = post.id;
+            if (kind === 'likes') {
+              forEachById('like-count-' + id, el => { el.textContent = post.likes.toLocaleString() + ' likes'; });
+              forEachById('like-inline-count-' + id, el => { el.textContent = formatCount(post.likes); });
+              if (row.user_id === myId) forEachById('like-icon-' + id, el => { el.innerHTML = post.liked ? gradientHeartIcon('w-[18px] h-[18px]') : Icon('heartOutline', 'w-[18px] h-[18px]'); });
+            } else {
+              forEachById('repost-inline-count-' + id, el => { el.textContent = formatCount(post.reposts); });
+            }
+            if (typeof queueSaveUserState === 'function' && row.user_id === myId) queueSaveUserState();
+          } catch (e) {}
+        }
+
         function handleRemotePostDelete(payload){
           const row = payload && payload.old;
           if (!row || row.id === undefined) return;
