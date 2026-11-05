@@ -10474,18 +10474,18 @@ try {
           }
 
           return `
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Course Materials</div>
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:26px 0 12px;">Course Materials</div>
             ${materials.length ? materials.map(row).join('') : `
-              <div class="py-4 mb-3 text-sm text-gray-400">
-                ${isTeacher ? 'Share slides, notes, or readings with your space.' : "Your moderator hasn't uploaded any course materials yet."}
+              <div class="cw-empty">
+                <div class="cw-empty-t">${isTeacher ? 'No materials yet' : 'Nothing here yet'}</div>
+                <div class="cw-empty-s">${isTeacher ? 'Share slides, notes, or readings with your space.' : "Your moderator hasn't uploaded any course materials yet."}</div>
               </div>`}
 
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1 mt-6">Assignments &amp; Quizzes</div>
+            <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:34px 0 12px;">Assignments &amp; Quizzes</div>
             ${work.length ? work.map(row).join('') : `
-              <div class="flex flex-col items-center text-center py-10">
-                <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${Icon('doc','w-9 h-9')}</div>
-                <div class="font-bold text-gray-700 mb-1">${isTeacher ? 'Assign work to your space' : 'No assignments yet'}</div>
-                <div class="text-sm text-gray-400 leading-relaxed">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks' : 'Assignments and quizzes from your moderator will show up here.'}</div>
+              <div class="cw-empty">
+                <div class="cw-empty-t">${isTeacher ? 'Assign work to your space' : 'No assignments yet'}</div>
+                <div class="cw-empty-s">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks.' : 'Assignments and quizzes from your moderator will show up here.'}</div>
               </div>`}
             ${isTeacher ? `<div style="height:60px;"></div>${createFab}` : ''}`;
         }

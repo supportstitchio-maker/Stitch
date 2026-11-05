@@ -6772,3 +6772,23 @@ html.dark-mode .opp-app-sub{ background:rgba(255,255,255,0.06) !important; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile.dnav-active{ box-shadow:none !important; background:#eef6ff !important; }
   body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile.dnav-active{ background:#2a2f3a !important; }
 }
+
+/* Every notice row (Notifications, Notice Board, right panel): softly curved cards, tidy count chip */
+.nrow-swipe{ border-radius:18px !important; border-bottom:0 !important; margin-bottom:8px; overflow:hidden; }
+.nrow-in{ border-radius:18px !important; background:#fff !important; padding:14px 16px !important; box-shadow:0 1px 6px rgba(30,60,140,.06); }
+.nrow-in.sel{ background:#e6ecfb !important; }
+body.dark-mode .nrow-in{ background:#222222 !important; box-shadow:none; }
+body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
+.nrow-grp{ background:#eaf2ff; color:#1e6bd6; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:800; flex:0 0 auto; }
+body.dark-mode .nrow-grp{ background:#22314f; color:#8db8ff; }
+/* The red delete layer only shows while a row is being swiped (keeps the rounded corners clean) */
+.nrow-swipe .nrow-del{ opacity:0; transition:opacity .12s ease; }
+.nrow-swipe[data-open="1"] .nrow-del, .nrow-swipe:has(.nrow-in[style*="translate"]) .nrow-del{ opacity:1; }
+
+/* Tasks tab empty states: one calm card each, no big icon */
+.cw-empty{ background:#fff; border-radius:18px; padding:18px 18px 20px; box-shadow:0 1px 6px rgba(30,60,140,.06); }
+.cw-empty-t{ font-size:15px; font-weight:700; color:#1f2937; margin-bottom:6px; }
+.cw-empty-s{ font-size:13.5px; line-height:1.55; color:#94a3b8; }
+body.dark-mode .cw-empty{ background:#222222; box-shadow:none; }
+body.dark-mode .cw-empty-t{ color:#f3f4f6; }
+body.dark-mode .cw-empty-s{ color:#9ca3af; }

@@ -544,6 +544,7 @@
             phoneMoneyOutline: `<rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path stroke-linecap="round" d="M11 18.5h2"/>`,
             bankOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M12 3L3 8.25h18L12 3zM5.25 10.5v7.5M9.75 10.5v7.5M14.25 10.5v7.5M18.75 10.5v7.5M3.75 20.25h16.5"/>`,
             walletOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"/>`,
+            pushpinOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M9 3.5h6l-.8 5.2 3.3 3.3H6.5l3.3-3.3zM12 12v8.5"/>`,
             tagOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z"/>`,
             helpCircleOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>`,
           };

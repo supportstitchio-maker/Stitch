@@ -3725,16 +3725,19 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
                     <div class="nrow-t truncate" style="font-weight:${unread ? 800 : 600};${unread ? '' : 'color:#6b7280;'}">${escapeHtml(n.name)}</div>
-                    ${n.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
+                    ${(opts.groupCounts && opts.groupCounts[n.id] > 1) ? `<span class="nrow-grp">${opts.groupCounts[n.id]} new</span>` : ''}
+                    ${n.pinned ? Icon('pushpinOutline','w-3.5 h-3.5 text-amber-600') : ''}
                   </div>
                   <div class="nrow-m ${unread ? 'nrow-m-u' : ''}" style="${opts.full ? 'display:block;-webkit-line-clamp:unset;' : ''}">${escapeHtml(notifPreviewText(n))}</div>
                   ${n.type === 'connect_request' ? `<div class="mt-2">${connectRequestActionsHTML(n)}</div>` : ''}
                 </div>
                 <div class="flex flex-col items-end gap-1.5 flex-shrink-0 relative">
                   <div class="text-[11px] whitespace-nowrap" style="color:${unread ? '#1e90ff' : '#9ca3af'};font-weight:${unread ? 700 : 500};" data-notif-time="${n.id}">${formatNotifTime(n.createdAt)}</div>
-                  ${selecting ? '' : (unread ? '<span class="nrow-dot nrow-count">1</span>' : '')}
+                  <div class="flex items-center gap-1">
+                  ${selecting ? '' : (unread ? `<span class="nrow-dot nrow-count">${(opts.groupUnread && opts.groupUnread[n.id]) || 1}</span>` : '')}
                   ${selecting ? '' : `<div class="nmenu-anchor"><button onclick="toggleNotifItemMenu('${n.id}','${renderFn}', event)" class="notif-action-desktop nmenu-dots w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600" title="More options" aria-haspopup="menu" aria-expanded="${itemMenuOpen ? 'true' : 'false'}">${Icon('dots','w-4 h-4')}</button>
                   ${itemMenuOpen ? notifItemMenuHTML(n, renderFn) : ''}</div>`}
+                  </div>
                 </div>
               </div>
             </div>`;
@@ -3871,7 +3874,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             renderClassAnnouncementsTab();
             return;
           }
-          { const nn = notifData.find(x => x.id === id); if (nn && !nn.read) { nn.read = true; queueSaveUserState(); refreshNotifBadge(); } }
+          { const nn = notifData.find(x => x.id === id); if (nn) { let ch = false; noticePeers(nn).concat([nn]).forEach(x => { if (!x.read) { x.read = true; ch = true; } }); if (ch) { queueSaveUserState(); refreshNotifBadge(); } } }
           openNotifDetail(id);
         }
 
@@ -3932,13 +3935,27 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         }
 
         // Pinned messages always sit at the very top, under their own label, however new ones arrive
+        function noticePeers(n){
+          return notifData.filter(x => x && x.source === 'classroom' && x.name === n.name && x.message === n.message && !x.pinned);
+        }
         function noticePinnedFirstHTML(list){
-          const opts = { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' };
+          const base = { selected: noticeSelected, longPressFn: 'noticeLongPressSelect', tapFn: 'noticeTap', renderFn: 'renderClassAnnouncementsTab' };
           const pinned = list.filter(n => n.pinned);
-          if (!pinned.length) return notifCards(list, opts);
           const rest = list.filter(n => !n.pinned);
+          // Identical notices (same space, same message) fold into one row with a count
+          const seen = new Set(), reps = [], groupCounts = {}, groupUnread = {};
+          rest.forEach(n => {
+            const k = n.name + '|' + n.message;
+            if (seen.has(k)) return;
+            seen.add(k); reps.push(n);
+            const peers = rest.filter(x => x.name === n.name && x.message === n.message);
+            groupCounts[n.id] = peers.length;
+            groupUnread[n.id] = peers.filter(x => !x.read).length;
+          });
+          const restOpts = Object.assign({ groupCounts, groupUnread }, base);
+          if (!pinned.length) return notifCards(reps, restOpts);
           const lab = t => `<div class="text-[11px] font-extrabold uppercase" style="letter-spacing:.08em;color:#94a3b8;padding:2px 4px 6px;">${t}</div>`;
-          return lab('Pinned') + notifCards(pinned, opts) + (rest.length ? `<div style="height:10px;"></div>` + lab('Earlier') + notifCards(rest, opts) : '');
+          return lab('Pinned') + notifCards(pinned, base) + (reps.length ? `<div style="height:10px;"></div>` + lab('Earlier') + notifCards(reps, restOpts) : '');
         }
 
         function renderClassAnnouncementsTab(){
