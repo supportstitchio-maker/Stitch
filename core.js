@@ -1934,7 +1934,7 @@
     </div>
     <button onclick="openRightPanel('profile', false);openOverlay('profileMenu')" class="dnav-item" id="dnav-settings" title="Settings">${Icon('settingsOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Settings</span></button>
     <div id="dnav-4" class="dnav-item dnav-profile" role="button" tabindex="0" onclick="switchTab(4)" title="View profile">
-      <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span>
+      <span id="dnav-4-icon" class="dnav-pav">${dnavAvatarHTML()}</span><span class="dside-label">Your profile</span>
     </div>
     </div>
   </div>

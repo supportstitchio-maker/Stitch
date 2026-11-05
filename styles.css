@@ -6726,3 +6726,54 @@ html.dark-mode .opp-howto div:last-child{ color:#cbd5e1 !important; }
 html.dark-mode .opp-app-card{ background:#1e1e1e !important; border-color:#2c2c2c !important; box-shadow:none !important; color:#f1f5f9 !important; }
 html.dark-mode .opp-app-card [style*="color:#334155"], html.dark-mode .opp-app-card [style*="color:#0f172a"]{ color:#e2e8f0 !important; }
 html.dark-mode .opp-app-sub{ background:rgba(255,255,255,0.06) !important; }
+
+.pa-sumval{ white-space:normal !important; overflow:visible !important; text-overflow:clip !important; text-align:right; }
+
+/* Desktop: hiding the right panel keeps the page the same width and centres it, instead of stretching */
+@media (min-width:1100px){
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen){
+    width:calc(100% - var(--nav-width) - var(--rp-width,480px) - 32px) !important;
+    margin-left:calc(var(--nav-width) + (var(--rp-width,480px) + 32px) / 2) !important;
+  }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #screen{ margin:0 0 16px 0 !important; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #overlay{ right:0 !important; }
+}
+
+/* Desktop: when the right panel is hidden the left rail widens and shows its labels */
+@media (min-width:1100px){
+  #desktop-nav, #desktop-nav .dn-grp{ transition:width .25s cubic-bezier(.22,.68,0,1); }
+  #app-shell{ transition:margin-left .25s cubic-bezier(.22,.68,0,1), width .25s cubic-bezier(.22,.68,0,1); }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen){
+    margin-left:calc(190px + var(--rp-width,480px) / 2) !important;
+  }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav{ width:220px !important; align-items:stretch; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp{ width:220px !important; align-items:stretch; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-main-list,
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-classroom-list{ padding:14px 10px; gap:6px; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-bottom{ padding:10px; gap:6px; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-flow{ display:none !important; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-item:not(.dn-th):not(.dnav-profile){
+    width:auto !important; justify-content:flex-start !important; gap:14px !important; padding:0 14px !important; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dside-label{
+    display:inline !important; font-size:14.5px; font-weight:600; white-space:nowrap; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile),
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp .dnav-item.dnav-active:not(.dnav-profile):not(.dn-th){
+    background:linear-gradient(135deg,#1e90ff,#4169e1) !important; color:#fff !important; box-shadow:0 8px 16px -8px rgba(30,144,255,.7) !important; }
+  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile),
+  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp .dnav-item.dnav-active:not(.dnav-profile):not(.dn-th){
+    background:#2f5db3 !important; box-shadow:none !important; }
+  /* theme switch becomes one segmented control */
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-themepair{ display:flex !important; flex-direction:row !important; gap:4px; background:#eef2f7; border-radius:15px; padding:4px; margin-bottom:2px; }
+  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-themepair{ background:#2d2d2d; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-th{ flex:1; width:auto !important; height:38px !important; gap:7px; border-radius:12px !important; font-size:13px; font-weight:600; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-th .dnav-icon{ width:18px; height:18px; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-theme-light::after{ content:'Light'; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-theme-dark::after{ content:'Dark'; }
+  /* profile row */
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile{
+    width:auto !important; height:52px !important; border-radius:15px !important; justify-content:flex-start !important; padding:0 10px !important; gap:12px !important; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile .dside-label{ color:#475569; }
+  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile .dside-label{ color:#d4d4d4; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile.dnav-active{ box-shadow:none !important; background:#eef6ff !important; }
+  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-profile.dnav-active{ background:#2a2f3a !important; }
+}
