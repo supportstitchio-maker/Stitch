@@ -2621,34 +2621,8 @@ let userPoints = 0;
         // Delete-account confirm sheet: Cancel or Delete
         function authDeleteAccount(){
           closeDeleteAccountSheet();
-          const wrap = document.createElement('div');
-          wrap.id = 'delete-account-sheet';
-          wrap.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,23,42,0.5);';
-          wrap.onclick = function(e){ if (e.target === wrap) closeDeleteAccountSheet(); };
-          wrap.innerHTML = `
-            <div class="del-sheet" style="width:100%;max-width:480px;background:#fff;border-radius:28px 28px 0 0;padding:22px 22px calc(env(safe-area-inset-bottom, 0px) + 24px);">
-              <div style="width:40px;height:5px;border-radius:9px;background:#e5e7eb;margin:0 auto 16px;"></div>
-              <div class="font-display" style="font-size:24px;color:#dc2626;">Delete account?</div>
-              <div class="del-sub" style="font-size:14px;line-height:1.5;margin-top:8px;color:#4b5563;">Your profile, posts, chats and course progress will be permanently removed. This can’t be undone.</div>
-              <div style="display:flex;gap:10px;margin-top:16px;">
-                <button type="button" onclick="closeDeleteAccountSheet()" class="del-cancel" style="flex:1;border-radius:999px;background:#f1f3f6;color:#374151;font-weight:700;padding:15px;">Cancel</button>
-                <button id="delete-account-confirm" type="button" onclick="deleteAccountSheetConfirm()" style="flex:1;border-radius:999px;background:#dc2626;color:#fff;font-weight:700;padding:15px;">Delete</button>
-              </div>
-            </div>`;
-          document.body.appendChild(wrap);
-          // Keep the sheet above the on-screen keyboard: follow the visible area, not the full window
-          const vv = window.visualViewport;
-          if (vv) {
-            const fit = function(){
-              if (!wrap.isConnected) { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); return; }
-              wrap.style.inset = 'auto';
-              wrap.style.left = '0'; wrap.style.right = '0';
-              wrap.style.top = vv.offsetTop + 'px';
-              wrap.style.height = vv.height + 'px';
-            };
-            vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit);
-            fit();
-          }
+          // Same sheet as "Sign out": same title style, position and pill buttons
+          openAppConfirmModal('Delete account?', 'Your profile, posts, chats and course progress will be permanently removed. This can\u2019t be undone.', 'Delete', function(){ authDeleteAccountNow(); }, 'trash');
         }
         function deleteAccountSheetInput(v){
           const ok = String(v || '').trim().toUpperCase() === 'DELETE';
