@@ -6741,27 +6741,22 @@ html.dark-mode .opp-app-sub{ background:rgba(255,255,255,0.06) !important; }
 
 /* Desktop: when the right panel is hidden the left rail widens and shows its labels */
 @media (min-width:1100px){
-  #desktop-nav, #desktop-nav .dn-grp{ transition:width .25s cubic-bezier(.22,.68,0,1); }
+  #desktop-nav, #desktop-nav .dn-grp{ transition:width .25s cubic-bezier(.22,.68,0,1), left .25s cubic-bezier(.22,.68,0,1); }
   #app-shell{ transition:margin-left .25s cubic-bezier(.22,.68,0,1), width .25s cubic-bezier(.22,.68,0,1); }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen){
-    margin-left:calc(190px + var(--rp-width,480px) / 2) !important;
+    margin-left:332px !important;
+    width:calc(100% - var(--nav-width) - var(--rp-width,480px) - 32px + 150px) !important;
   }
-  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav{ width:220px !important; align-items:stretch; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav{ width:220px !important; align-items:stretch; left:56px !important; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp{ width:220px !important; align-items:stretch; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-main-list,
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-classroom-list{ padding:14px 10px; gap:6px; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-bottom{ padding:10px; gap:6px; }
-  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-flow{ display:none !important; }
+  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-flow{ left:10px !important; right:10px !important; width:auto !important; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dnav-item:not(.dn-th):not(.dnav-profile){
     width:auto !important; justify-content:flex-start !important; gap:14px !important; padding:0 14px !important; }
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dside-label{
     display:inline !important; font-size:14.5px; font-weight:600; white-space:nowrap; }
-  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile),
-  #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp .dnav-item.dnav-active:not(.dnav-profile):not(.dn-th){
-    background:linear-gradient(135deg,#1e90ff,#4169e1) !important; color:#fff !important; box-shadow:0 8px 16px -8px rgba(30,144,255,.7) !important; }
-  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav.dnav-flow-ready .dn-grp .dnav-item.dnav-active:not(.dnav-profile),
-  body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #desktop-nav .dn-grp .dnav-item.dnav-active:not(.dnav-profile):not(.dn-th){
-    background:#2f5db3 !important; box-shadow:none !important; }
   /* theme switch becomes one segmented control */
   #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-themepair{ display:flex !important; flex-direction:row !important; gap:4px; background:#eef2f7; border-radius:15px; padding:4px; margin-bottom:2px; }
   body.dark-mode #app-shell.right-panel-open.rp-collapsed:not(.call-fullscreen) #dnav-themepair{ background:#2d2d2d; }
