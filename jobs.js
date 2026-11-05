@@ -1895,6 +1895,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             cancel_reason: 'flag',
             meeting_admin: 'video',
             meeting_reminder: 'calendar',
+            class_join_approved: 'check',
           };
           // Update local poster status the instant the decision notification lands, so "Poster
           // application pending" reflects it right away instead of waiting on a reload
@@ -1917,6 +1918,18 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               if (typeof queueSaveUserState === 'function') queueSaveUserState();
             }
           }
+          // Approved into a space: load it into the Spaces list now
+          if (row.type === 'class_join_approved') {
+            try {
+              Promise.resolve(typeof loadMyClasses === 'function' ? loadMyClasses() : null).then(() => {
+                if (typeof currentTab !== 'undefined' && currentTab === 2 && !currentOverlayKind) {
+                  const el = document.getElementById('study-content');
+                  if (el && typeof studyContent === 'function') el.innerHTML = studyContent();
+                  else if (typeof renderStudy === 'function') renderStudy();
+                }
+              });
+            } catch (e) {}
+          }
           addNotif({
             id: 'srv-notif-' + row.id,
             pinned: row.type === 'interview_scheduled',
@@ -1930,6 +1943,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
             jobId: row.job_id || null,
             meetingCode: (row.metadata && row.metadata.code) || null,
+            ...(row.type === 'class_join_approved' ? { type: 'classroom', source: 'classroom', classId: (row.metadata && row.metadata.classId) || null } : {}),
           });
         }
 

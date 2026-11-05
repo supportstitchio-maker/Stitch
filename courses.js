@@ -4793,7 +4793,12 @@ try {
           const row = payload && payload.new;
           if (!row || !row.id) return;
           const idx = myClasses.findIndex(c => c.id === row.id);
-          if (idx === -1) return;
+          if (idx === -1) {
+            // A space I was just let into (my join request was approved): add it right away
+            const meId = (typeof classesSubscribedForUserId !== 'undefined' && classesSubscribedForUserId) || null;
+            if (meId && Array.isArray(row.members) && row.members.includes(meId)) { adoptNewlyJoinedClass(row, meId); }
+            return;
+          }
           const prev = myClasses[idx];
           const notifyMe = prev.role !== 'teacher';
           const isTeacherHere = prev.role === 'teacher';
@@ -4888,6 +4893,22 @@ try {
             const studyContentEl = document.getElementById('study-content');
             if (studyContentEl && typeof studyContent === 'function') studyContentEl.innerHTML = studyContent();
           }
+        }
+
+        function adoptNewlyJoinedClass(row, meId){
+          if (myClasses.some(c => c.id === row.id)) return;
+          myClasses.push(classRowToLocal(row, meId));
+          try { hydrateClassSubmissions(); } catch (e) {}
+          if (typeof addNotif === 'function') {
+            addNotif({ id: 'joined-' + row.id, type: 'classroom', source: 'classroom', icon: 'check', iconBg: 'bg-emerald-50', iconClass: 'text-emerald-600',
+              name: (row.data && row.data.name) || 'Your space', message: `You're in! Your request to join ${(row.data && row.data.name) || 'the space'} was approved.`, classId: row.id });
+          }
+          if (typeof currentTab !== 'undefined' && currentTab === 2 && !currentOverlayKind) {
+            const studyContentEl = document.getElementById('study-content');
+            if (studyContentEl && typeof studyContent === 'function') studyContentEl.innerHTML = studyContent();
+            else if (typeof renderStudy === 'function') renderStudy();
+          }
+          if (typeof callToast === 'function') { try { callToast('Your request was approved. You can open the space now.'); } catch (e) {} }
         }
 
         function applyRemoteClassDelete(payload){
@@ -11288,8 +11309,10 @@ try {
                       <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(r.name || 'Unnamed')}</div>
                       ${r.username ? `<div class="text-xs text-gray-400 mt-0.5 truncate">@${escapeHtml(r.username)}</div>` : ''}
                     </div>
-                    <button onclick="denyClassJoinRequest('${cls.id}', '${r.userId}')" class="text-xs font-semibold text-gray-400 flex-shrink-0 mr-3">Deny</button>
-                    <button onclick="approveClassJoinRequest('${cls.id}', '${r.userId}')" class="text-xs font-semibold flex-shrink-0" style="color:${NAVY};">Approve</button>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                      <button onclick="denyClassJoinRequest('${cls.id}', '${r.userId}')" aria-label="Deny" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white" style="border:1.5px solid #d1d5db;color:#6b7280;">${IconBold('close','w-3.5 h-3.5')}</button>
+                      <button onclick="approveClassJoinRequest('${cls.id}', '${r.userId}')" aria-label="Approve" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white" style="border:1.5px solid ${ROYAL};color:${ROYAL};">${IconBold('check','w-3.5 h-3.5')}</button>
+                    </div>
                   </div>`).join('')}
               </div>` : ''}
             <div class="flex items-center justify-between mb-3">
@@ -11392,6 +11415,17 @@ try {
             if (req) cls.students.push({ id: studentId, name: req.name || '', email: '' });
             if (!cls.members.includes(studentId)) cls.members.push(studentId);
           }
+          // Tell the student right now, so their Spaces list updates without reopening the app
+          try {
+            if (typeof notifyUserRemote === 'function') {
+              notifyUserRemote(studentId, {
+                type: 'class_join_approved',
+                title: (cls && cls.name) || 'Your request was approved',
+                message: `You're in! Your request to join ${(cls && cls.name) || 'the space'} was approved.`,
+                metadata: { classId },
+              });
+            }
+          } catch (e) {}
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = classDetailHTML();
         }
