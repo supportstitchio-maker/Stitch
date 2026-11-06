@@ -1228,7 +1228,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (!list.length) return '';
           const align = (opts && opts.center) ? 'justify-center' : '';
           return `<div class="flex flex-wrap gap-2 mb-4 ${align}">${list.map(l => `
-            <a href="${escapeForJsAttr(l.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 text-xs font-semibold pl-2.5 pr-3 py-1.5 rounded-full" style="background:rgba(65,105,225,0.1);color:${ROYAL};">
+            <a href="${escapeForJsAttr(l.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 text-xs font-semibold pl-2.5 pr-3 py-1.5 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};">
               ${Icon('link','w-3 h-3')}${escapeHtml(profileLinkDisplayLabel(l.url))}
             </a>`).join('')}</div>`;
         }
@@ -1238,7 +1238,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return `
             <div class="flex flex-wrap gap-2 mb-3">
               ${list.map(l => `
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold pl-2.5 pr-1.5 py-1.5 rounded-full" style="background:rgba(65,105,225,0.1);color:${ROYAL};">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold pl-2.5 pr-1.5 py-1.5 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};">
                   ${Icon('link','w-3 h-3')}${escapeHtml(profileLinkDisplayLabel(l.url))}
                   <button type="button" onclick="removeProfileLink('${escapeForJsAttr(l.id)}')" class="w-4 h-4 flex items-center justify-center rounded-full" style="background:rgba(65,105,225,0.18);">${Icon('close','w-2.5 h-2.5')}</button>
                 </span>`).join('')}

@@ -9110,7 +9110,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function meetingAdminChipsHTML(){
           return meetingDraft.admins.map(a => `
-            <span class="inline-flex items-center gap-2 bg-blue-50 text-[${NAVY}] text-xs font-semibold rounded-full pl-4 pr-3 py-2.5">
+            <span class="inline-flex items-center gap-2 text-xs font-semibold rounded-full pl-4 pr-3 py-2.5" style="background:rgba(10,37,64,0.08);color:${NAVY};">
               ${escapeHtml(a.name)}
               <button onclick="toggleMeetingAdmin('${escapeHtml(String(a.id))}')" class="flex items-center" title="Remove">${Icon('close', 'w-3.5 h-3.5')}</button>
             </span>`).join('');

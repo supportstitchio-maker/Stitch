@@ -1318,7 +1318,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function composeTaggedChipsHTML(){
           if (!composeTaggedUsers.length) return '';
           return composeTaggedUsers.map(u => `
-            <span class="text-xs font-semibold" style="display:inline-flex;align-items:center;gap:12px;padding:8px 9px 8px 16px;border-radius:999px;background:rgba(65,105,225,0.12);color:${ROYAL};">
+            <span class="text-xs font-semibold" style="display:inline-flex;align-items:center;gap:12px;padding:8px 9px 8px 16px;border-radius:999px;background:rgba(10,37,64,0.08);color:${NAVY};">
               ${escapeHtml(u.name || u.username)}
               <button type="button" onclick="removeComposeTag('${escapeForJsAttr(u.id)}')" aria-label="Remove tag" class="flex items-center justify-center rounded-full" style="width:20px;height:20px;background:${ROYAL};color:#fff;">${IconBold('close','w-2.5 h-2.5')}</button>
             </span>`).join('');

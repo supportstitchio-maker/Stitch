@@ -4124,7 +4124,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Applied for</div>
                     <div style="font-size:14px;font-weight:700;">${escapeHtml(job.title)}</div>
                     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
-                      ${roleItem ? `<span style="font-size:12px;font-weight:800;color:#1d4ed8;background:#e0edff;border-radius:999px;padding:5px 11px;">Role: ${escapeHtml(roleItem.v)}</span>` : ''}
+                      ${roleItem ? `<span style="font-size:12px;font-weight:800;color:#0A2540;background:rgba(10,37,64,0.08);border-radius:999px;padding:5px 11px;">Role: ${escapeHtml(roleItem.v)}</span>` : ''}
                       <span style="font-size:12px;color:#64748b;">${a.appliedAt ? fmtJobDateTime(a.appliedAt) : ''}</span>
                     </div>
                   </div>
@@ -4398,7 +4398,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             ${c.sub ? `<div style="margin-top:2px;font-size:12px;color:#94a3b8;">${escapeHtml(c.sub)}</div>` : ''}</div>`;
         }
         function oppChipHTML(icon, text){
-          return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(65,105,225,0.09);color:#1e40af;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;"><span style="display:inline-flex;">${oppIcon(icon, 'w-4 h-4')}</span>${escapeHtml(text)}</span>`;
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(10,37,64,0.08);color:#0A2540;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;"><span style="display:inline-flex;">${oppIcon(icon, 'w-4 h-4')}</span>${escapeHtml(text)}</span>`;
         }
         function oppSectionHTML(h, inner){
           return `<div style="margin-bottom:18px;">${h ? `<div style="font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#2563eb;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(h)}</div>` : ''}${inner}</div>`;
@@ -6928,7 +6928,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               ${(ready || skippedForDocs || outside) ? `
                 <div class="flex flex-wrap gap-2" style="margin:4px 0 12px;">
                   ${ready ? `<span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};">${ready} ready to apply</span>` : ''}
-                  ${skippedForDocs ? `<span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#fffbeb;color:#b45309;">${skippedForDocs} need documents</span>` : ''}
+                  ${skippedForDocs ? `<span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f3f4f6;color:#4b5563;">${skippedForDocs} need documents</span>` : ''}
                   ${outside ? `<span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(128,128,128,0.15);color:#6b7280;">${outside} on outside sites</span>` : ''}
                 </div>` : ''}
               <div class="text-sm font-semibold text-gray-800" style="margin-bottom:6px;">Your read-out</div>
@@ -9670,7 +9670,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           else openConvoDocViewer(encodeURIComponent(signed), encodedName);
         }
         function adminAttachmentPreviewHTML(url, label){
-          if (!url) return `<span class="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-500">${Icon('doc','w-3.5 h-3.5')} No ${label.toLowerCase()}</span>`;
+          if (!url) return `<span class="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-500">${Icon('doc','w-3.5 h-3.5')} No ${label.toLowerCase()}</span>`;
           const kind = adminAttachmentKind(url);
           const enc = encodeURIComponent(url);
           if (kind === 'image') {
@@ -9772,22 +9772,21 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const cat = raw ? (nl === -1 ? raw : raw.slice(0, nl)) : 'No reason given';
           const more = (raw && nl !== -1) ? raw.slice(nl + 1).trim() : '';
           const serious = /spam|scam|fraud|fake/i.test(cat);
-          const chipFg = serious ? '#dc2626' : '#b45309';
-          const chipBg = serious ? '#fee2e2' : '#fef3c7';
+          const chipFg = '#0A2540';
+          const chipBg = 'rgba(10,37,64,0.08)';
           const tIcon = (typeof OPP_TYPE_ICONS !== 'undefined' && job && OPP_TYPE_ICONS[job.type]) || 'briefcase';
           const sub = job ? [job.company, job.type].filter(Boolean).map(escapeHtml).join(' &middot; ') : '';
           const btn = 'flex:1;padding:11px 8px;border-radius:14px;font-size:12px;font-weight:700;';
           return `
             <div style="background:#fff;border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(15,23,42,.06);border:1px solid rgba(0,0,0,.04);">
               <div style="display:flex;align-items:center;gap:12px;">
-                <span style="width:44px;height:44px;border-radius:14px;background:#e0efff;color:#1E90FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon(tIcon,'w-5 h-5')}</span>
                 <div style="min-width:0;flex:1;">
                   <div class="text-sm font-bold text-gray-900 truncate">${job ? escapeHtml(job.title) : 'Listing no longer available'}</div>
                   ${sub ? `<div class="text-xs text-gray-400 truncate" style="margin-top:2px;">${sub}</div>` : ''}
                 </div>
-                ${sameCount > 1 ? `<span style="flex-shrink:0;font-size:11px;font-weight:700;color:#dc2626;background:#fee2e2;border-radius:999px;padding:4px 10px;">${sameCount} reports</span>` : ''}
+                ${sameCount > 1 ? `<span style="flex-shrink:0;font-size:11px;font-weight:700;color:#4b5563;background:#f3f4f6;border-radius:999px;padding:4px 10px;">${sameCount} reports</span>` : ''}
               </div>
-              <div style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:${chipFg};background:${chipBg};border-radius:999px;padding:6px 12px;">${Icon('flag','w-3.5 h-3.5')}<span>${escapeHtml(cat)}</span></div>
+                <div class="text-xs font-semibold text-gray-600" style="margin-top:10px;">${escapeHtml(cat)}</div>
               ${more ? `<div class="text-xs text-gray-600" style="margin-top:10px;background:#f6f7f9;border-radius:16px;padding:12px;white-space:pre-wrap;">${escapeHtml(more)}</div>` : ''}
               <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.06);">
                 <span class="ph-av" style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${Icon('user','w-4 h-4')}</span>

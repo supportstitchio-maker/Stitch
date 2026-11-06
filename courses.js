@@ -4668,7 +4668,7 @@ try {
           return `
             <div class="bg-white rounded-3xl p-4 shadow-sm mb-3 border border-gray-100">
               <div class="flex items-center gap-2 mb-3">
-                <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-amber-50 flex-shrink-0 text-amber-600">Final Project</span>
+                <span class="text-[9px] font-bold uppercase tracking-wide px-2 py-1 rounded-full bg-gray-100 flex-shrink-0 text-gray-500">Final Project</span>
                 <div class="text-xs text-gray-400">Not part of any specific module</div>
               </div>
               ${items.map((it, ii) => `
@@ -11763,7 +11763,7 @@ try {
         }
 
         function inviteSelectedChipsHTML(){
-          return Array.from(inviteUserSelected.values()).map(p => `<button onclick="toggleInviteUser('${p.user_id}')" class="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold" style="background:#e9f1ff;color:${NAVY};">@${escapeHtml(p.username || '')} <span style="font-size:14px;line-height:1;">&times;</span></button>`).join('');
+          return Array.from(inviteUserSelected.values()).map(p => `<button onclick="toggleInviteUser('${p.user_id}')" class="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold" style="background:rgba(10,37,64,0.08);color:${NAVY};">@${escapeHtml(p.username || '')} <span style="font-size:14px;line-height:1;">&times;</span></button>`).join('');
         }
 
         function inviteResultsHTML(q){

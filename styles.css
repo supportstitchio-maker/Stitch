@@ -6808,3 +6808,7 @@ html.dark-mode #notif-badge{ box-shadow:0 0 0 2px #121212; }
 /* Decorative motion plays a couple of times, then stops */
 #landing-page .float-chip{ animation-iteration-count:2 !important; }
 @media (prefers-reduced-motion: reduce){ #landing-page .float-chip{ animation:none !important; } }
+
+/* Tinted pills: navy tint + grey only */
+html.dark-mode [style*="background:rgba(10,37,64,0.08);color:#0A2540"],
+html.dark-mode [style*="background:rgba(10,37,64,0.08);color:#0a2540"]{background:rgba(255,255,255,0.12) !important;color:#ffffff !important;}

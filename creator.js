@@ -784,7 +784,7 @@
                 <textarea id="payout-reject-reason" rows="2" placeholder="Why? The creator will see this." class="w-full mt-3 bg-gray-100 rounded-2xl px-3 py-2 text-xs outline-none resize-none"></textarea>
                 <div class="flex gap-2 mt-2">
                   <button onclick="adminPayoutRejectId=null;refreshAdminDashboardDom()" class="flex-1 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Back</button>
-                  <button onclick="adminRejectPayout('${id}')" class="flex-1 py-2 rounded-full text-xs font-semibold bg-red-50 text-red-500">Reject</button>
+                  <button onclick="adminRejectPayout('${id}')" class="flex-1 py-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Reject</button>
                 </div>` : `
                 <div class="flex gap-2 mt-3">
                   <button onclick="creatorAdminRun('approve-payout',{payoutId:'${id}'},'Approve ${ghs(p.amount)}?','Stitch sends it to ${escapeForJsAttr(prof.account_name || 'their account')} to their account.','Approve')" class="flex-1 py-2 rounded-full text-xs font-semibold text-white" style="${creatorNavyBtn}">Approve</button>
@@ -819,7 +819,7 @@
             <div class="${creatorCard} p-4 mb-3">
               <div class="flex items-center justify-between">
                 <div class="font-semibold text-sm truncate pr-3">${escapeHtml(creatorProductName(r.product_type, r.product_id))}</div>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${open ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}">${escapeHtml(r.status)}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${open ? '' : 'bg-gray-100 text-gray-500'}" style="${open ? 'background:rgba(10,37,64,0.08);color:#0A2540;' : ''}">${escapeHtml(r.status)}</span>
               </div>
               <div class="text-[11px] text-gray-400 mt-1">${escapeHtml(r.reason)} · reported by ${escapeHtml(personName(d.people, r.reporter_id))} · ${creatorDate(r.created_at)}</div>
               ${r.details ? `<div class="text-xs text-gray-600 mt-2 whitespace-pre-line">${escapeHtml(r.details)}</div>` : ''}
