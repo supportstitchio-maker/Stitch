@@ -7124,6 +7124,17 @@ try {
           }, 30000);
         }
 
+        function toggleStreamPostMenu(id, ev){
+          try { if (ev) ev.stopPropagation(); } catch (e) {}
+          document.querySelectorAll('[id^="ann-menu-"]').forEach(el => { if (el.id !== 'ann-menu-' + id) el.classList.add('hidden'); });
+          const m = document.getElementById('ann-menu-' + id);
+          if (m) m.classList.toggle('hidden');
+          if (!window._annMenuCloser) {
+            window._annMenuCloser = true;
+            document.addEventListener('click', () => { document.querySelectorAll('[id^="ann-menu-"]').forEach(el => el.classList.add('hidden')); });
+          }
+        }
+
         function classStreamTabHTML(cls){
           startClassStreamTimeTicker();
           return `
@@ -7143,15 +7154,21 @@ try {
                     <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
                     <div class="text-xs text-gray-400" data-announcement-time="${a.id}">${formatClassStreamTime(a)}</div>
                   </div>
-                  <div class="ml-auto flex flex-col items-end gap-3 flex-shrink-0">
-                    <button onclick="repostAnnouncement('${a.id}')" id="announcement-repost-${a.id}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full flex-shrink-0 font-semibold text-xs ${(a.repostCount > 0) ? 'text-white' : 'border border-gray-200 text-gray-500'}" style="${(a.repostCount > 0) ? `background:${NAVY};` : ''}">
-                      ${Icon('repost','w-3.5 h-3.5')} ${a.repostCount > 0 ? `Reposted${a.repostCount > 1 ? ' (' + a.repostCount + ')' : ''}` : 'Repost'}
-                    </button>
-                    ${cls.role === 'teacher' ? `<button onclick="deleteClassAnnouncement('${a.id}')" title="Delete announcement" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-gray-400 border border-gray-200">${Icon('trash','w-3.5 h-3.5')}</button>` : ''}
-                  </div>
+                  ${cls.role === 'teacher' ? `
+                  <div class="ml-auto relative flex-shrink-0">
+                    <button onclick="toggleStreamPostMenu('${a.id}', event)" title="More" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500">${Icon('dots','w-5 h-5')}</button>
+                    <div id="ann-menu-${a.id}" class="hidden absolute right-0 bg-white rounded-2xl py-1.5 z-20" style="top:100%;min-width:132px;box-shadow:0 10px 30px rgba(15,23,42,0.16);border:1px solid rgba(0,0,0,0.05);">
+                      <button onclick="deleteClassAnnouncement('${a.id}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-left" style="color:#dc2626;">${Icon('trash','w-4 h-4')} <span style="white-space:nowrap;">Delete</span></button>
+                    </div>
+                  </div>` : ''}
                 </div>
                 <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">${escapeHtml(a.text)}</div>
                 ${announcementAttachmentsDisplayHTML(a)}
+                <div class="flex items-center gap-4 mb-3">
+                  <button onclick="repostAnnouncement('${a.id}')" id="announcement-repost-${a.id}" class="flex items-center gap-1.5 font-semibold text-xs" style="color:${(a.repostCount > 0) ? '#1E90FF' : '#6b7280'};">
+                    ${Icon('repost','w-4 h-4')} ${a.repostCount > 0 ? `Reposted${a.repostCount > 1 ? ' (' + a.repostCount + ')' : ''}` : 'Repost'}
+                  </button>
+                </div>
                 ${streamAnnouncementCommentsHTML(a)}
               </div>`).join('') + `<div style="height:60px;"></div>
             <button onclick="openNewAnnouncementOverlay()" title="New announcement" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}`;

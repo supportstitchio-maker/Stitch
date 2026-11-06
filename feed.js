@@ -1082,8 +1082,7 @@
           if (!s) return;
           const convo = ensureConvoForStory(s);
           files.forEach(f => {
-            const emoji = f.type && f.type.startsWith('image/') ? '📷' : (f.type && f.type.startsWith('video/') ? '🎞️' : '📎');
-            conversationMessages[convo.id].push({ from: 'me', text: `${emoji} ${escapeHtml(f.name)}` });
+            conversationMessages[convo.id].push({ from: 'me', text: String(f.name || 'Attachment') });
           });
           const summary = files.length > 1 ? `${files.length} files sent` : `Sent ${files[0].name}`;
           convo.preview = summary;
@@ -1121,7 +1120,7 @@
           }
           if (item.liked) {
             const convo = ensureConvoForStory(s);
-            conversationMessages[convo.id].push({ from: 'me', text: '❤️ Liked your glimpse' });
+            conversationMessages[convo.id].push({ from: 'me', text: 'Liked your glimpse' });
             convo.preview = 'You liked their glimpse';
             convo.time = 'now';
             convo.unread = false;

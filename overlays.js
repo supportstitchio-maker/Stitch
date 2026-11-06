@@ -3147,14 +3147,15 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             count = 0;
             if (!window.__notifBadgeRetry) window.__notifBadgeRetry = setTimeout(() => { window.__notifBadgeRetry = null; try { refreshNotifBadge(); } catch (e) {} }, 800);
           }
+          const badgeLabel = count > 9 ? '9+' : String(count);
           const existing = document.getElementById('notif-badge');
           if (count) {
             if (existing) {
-              existing.textContent = count;
+              existing.textContent = badgeLabel;
             } else {
               const topbarIcons = document.getElementById('topbar-icons');
               const bellBtn = document.getElementById('notif-bell-btn') || (topbarIcons && topbarIcons.querySelector('button:last-child'));
-              if (bellBtn) bellBtn.insertAdjacentHTML('beforeend', `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${count}</span>`);
+              if (bellBtn) bellBtn.insertAdjacentHTML('beforeend', `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${badgeLabel}</span>`);
             }
           } else if (existing) {
             existing.remove();
@@ -3164,8 +3165,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (dtopBell) {
             const dtopExisting = document.getElementById('dtop-bell-badge');
             if (count) {
-              if (dtopExisting) dtopExisting.textContent = count;
-              else dtopBell.insertAdjacentHTML('beforeend', `<span id="dtop-bell-badge">${count}</span>`);
+              if (dtopExisting) dtopExisting.textContent = badgeLabel;
+              else dtopBell.insertAdjacentHTML('beforeend', `<span id="dtop-bell-badge">${badgeLabel}</span>`);
             } else if (dtopExisting) {
               dtopExisting.remove();
             }
@@ -3175,8 +3176,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (dnavBtn) {
             const dnavExisting = document.getElementById('dnav-notif-badge');
             if (count) {
-              if (dnavExisting) dnavExisting.textContent = count;
-              else dnavBtn.insertAdjacentHTML('beforeend', `<span id="dnav-notif-badge">${count}</span>`);
+              if (dnavExisting) dnavExisting.textContent = badgeLabel;
+              else dnavBtn.insertAdjacentHTML('beforeend', `<span id="dnav-notif-badge">${badgeLabel}</span>`);
             } else if (dnavExisting) {
               dnavExisting.remove();
             }

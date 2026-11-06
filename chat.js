@@ -488,7 +488,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="w-11 h-11 rounded-full ${c.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden" onclick="event.stopPropagation(); openPersonProfileForConvo('${escapeForJsAttr(c.id)}')">${avatarInnerHTML(c,'w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="text-[15px] text-gray-900 truncate">${escapeHtml(c.name)}</div>
-                  ${c.preview ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${escapeHtml(c.preview)}</div>` : ''}
+                  ${c.preview ? `<div class="text-xs text-gray-400 mt-0.5 truncate">${previewWithIconHTML(c.preview)}</div>` : ''}
                 </div>
               </button>`).join('');
         }
@@ -1917,7 +1917,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="font-semibold text-sm ${showUnread ? '' : 'text-gray-700'}">${escapeHtml(name)}</div>
                   ${c.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
                 </div>
-                <div class="text-xs ${showUnread ? 'text-gray-800 font-medium' : 'text-gray-500'} truncate">${escapeHtml(preview)}</div>
+                <div class="text-xs ${showUnread ? 'text-gray-800 font-medium' : 'text-gray-500'} truncate">${previewWithIconHTML(preview)}</div>
               </div>
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 <div class="text-[11px] text-gray-400">${time}</div>
@@ -1929,7 +1929,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // A plain dot only ever showed "something's unread", not how much
         function unreadCountBadge(count){
           const n = count || 1;
-          const label = n > 99 ? '99+' : String(n);
+          const label = n > 9 ? '9+' : String(n);
           return `<div class="rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0" style="min-width:1.25rem;height:1.25rem;padding:0 0.35rem;font-size:10px;font-weight:700;line-height:1;">${label}</div>`;
         }
 
@@ -5881,13 +5881,22 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return [...primaryConvos, ...collabConvos];
         }
 
+        // Legacy previews start with an emoji (photo, video, voice, file). Show a proper icon instead.
+        function previewWithIconHTML(text){
+          const t = String(text == null ? '' : text);
+          const m = /^(\u{1F4F7}|\u{1F3A5}|\u{1F39E}\uFE0F?|\u{1F3A4}|\u{1F4CE})\s*([\s\S]*)$/u.exec(t);
+          if (!m) return escapeHtml(t);
+          const name = m[1] === '\u{1F4F7}' ? 'camera' : (m[1] === '\u{1F3A4}' ? 'mic' : (m[1] === '\u{1F4CE}' ? 'paperclip' : 'video'));
+          return `<span style="display:inline-flex;align-items:center;gap:5px;max-width:100%;vertical-align:middle;"><span style="display:inline-flex;flex-shrink:0;">${Icon(name,'w-3.5 h-3.5')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${escapeHtml(m[2])}</span></span>`;
+        }
+
         function forwardMessagePreviewText(msg){
           if (!msg) return '';
           if (msg.text) return escapeHtml(msg.text.length > 80 ? msg.text.slice(0, 80) + '...' : msg.text);
-          if (msg.voice) return '🎤 Voice message';
+          if (msg.voice) return previewWithIconHTML('\u{1F3A4} Voice message');
           if (msg.attachments && msg.attachments.length) {
             const a = msg.attachments[0];
-            return a.type && a.type.startsWith('image/') ? '📷 Photo' : `📎 ${escapeHtml(a.name || 'Attachment')}`;
+            return a.type && a.type.startsWith('image/') ? previewWithIconHTML('\u{1F4F7} Photo') : previewWithIconHTML('\u{1F4CE} ' + (a.name || 'Attachment'));
           }
           return 'Message';
         }
