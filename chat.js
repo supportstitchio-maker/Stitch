@@ -4666,32 +4666,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${convoProfileRow('send','',`text-[${NAVY}]`,'Share invite link', 'Anyone with the link can ask to join', 'shareCollabInviteLink()')}
               </div>` : ''}
 
-              <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full text-left mb-5 cp-card" style="display:block;padding:14px;">
-                <div class="flex items-center justify-between" style="margin-bottom:12px;">
-                  <div class="font-bold text-[15px] text-gray-900">Shared in this chat</div>
-                  <div class="text-xs font-semibold" style="color:${ROYAL};">See all</div>
-                </div>
-                <div class="flex" style="gap:8px;">
-                  ${mediaThumbs.length ? mediaThumbs.map(f => {
-                    const u = f.url || f.dataUrl || '';
-                    const isImg = f.type && f.type.startsWith('image/') && u;
-                    return `<div style="flex:1;aspect-ratio:1;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1e90ff,#4169e1);display:flex;align-items:center;justify-content:center;color:#fff;">${isImg ? `<img src="${escapeHtml(u)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : Icon('video','w-5 h-5')}</div>`;
-                  }).join('') + Array(4 - mediaThumbs.length).fill('<div style="flex:1;"></div>').join('') : `<div class="text-sm text-gray-400" style="padding:6px 0;">Nothing shared yet</div>`}
-                </div>
-                <div class="flex" style="gap:8px;margin-top:12px;">
-                  <span class="cp-chip">${images.length} media</span><span class="cp-chip">${links.length} links</span><span class="cp-chip">${docs.length} docs</span>
-                </div>
-              </button>
-
-              <div class="flex mb-6" style="gap:10px;">
-                <button onclick="toggleConvoNotifPref()" class="cp-press cp-pill ${notifOn ? '' : 'on'}">
-                  ${Icon('bell','w-5 h-5')}
-                  <span>${notifOn ? 'Mute' : 'Muted'}</span>
-                </button>
-                <button onclick="toggleFavoriteConvo()" class="cp-press cp-pill ${favorited ? 'on' : ''}">
-                  ${Icon('star','w-5 h-5')}
-                  <span>${favorited ? 'Favourited' : 'Favourite'}</span>
-                </button>
+              <div class="cp-card mb-5" style="padding:2px 16px;">
+                <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;"><span class="font-semibold">Media, links and docs</span><span class="flex items-center gap-2 text-xs text-gray-400">${mediaCount}${Icon('arrowRight','w-4 h-4 text-gray-400')}</span></button>
+                <button onclick="toggleConvoNotifPref()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Mute notifications</span><span class="text-xs text-gray-400">${notifOn ? 'Off' : 'On'}</span></button>
+                <button onclick="toggleFavoriteConvo()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Favourite</span><span class="text-xs text-gray-400">${favorited ? 'On' : 'Off'}</span></button>
               </div>
 
               ${!isGroup ? `
@@ -4709,13 +4687,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   : `<div class="text-sm text-gray-400">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
               </div>` : ''}
 
-              <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">
+              <div class="flex justify-center flex-wrap text-sm font-semibold" style="gap:8px 28px;color:#dc2626;padding-top:4px;">
                 ${isGroup ? `
-                  ${convoProfileRow('logout','bg-red-50','text-red-500', 'Leave collaboration', null, 'leaveCollaboration()', true)}
-                  ${(isMe(meta.createdBy) || meta.createdBy === 'me') ? convoProfileRow('trash','bg-red-50','text-red-500', 'Delete collaboration', null, 'deleteCollaboration()', true) : ''}
+                  <button onclick="leaveCollaboration()" class="cp-press">Leave collaboration</button>
+                  ${(isMe(meta.createdBy) || meta.createdBy === 'me') ? `<button onclick="deleteCollaboration()" class="cp-press">Delete collaboration</button>` : ''}
                 ` : `
-                  ${convoProfileRow('block','bg-red-50','text-red-500', blocked ? 'Unblock' : 'Block', null, 'toggleBlockFromConvoProfile()', true)}
-                  ${convoProfileRow('trash','bg-red-50','text-red-500', 'Delete chat', null, 'deleteConvoChat()', true)}
+                  <button onclick="toggleBlockFromConvoProfile()" class="cp-press">${blocked ? 'Unblock' : 'Block'}</button>
+                  <button onclick="deleteConvoChat()" class="cp-press">Delete chat</button>
                 `}
               </div>
             </div>`;

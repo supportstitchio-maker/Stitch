@@ -6812,3 +6812,14 @@ html.dark-mode #notif-badge{ box-shadow:0 0 0 2px #121212; }
 /* Tinted pills: navy tint + grey only */
 html.dark-mode [style*="background:rgba(10,37,64,0.08);color:#0A2540"],
 html.dark-mode [style*="background:rgba(10,37,64,0.08);color:#0a2540"]{background:rgba(255,255,255,0.12) !important;color:#ffffff !important;}
+
+/* Download: round white icon button (same white pill look as the Career and Messaging pills) */
+body:not(.dark-mode) .myact-dl-circle{ background:#ffffff !important; color:#0A2540 !important; border:0 !important; box-shadow:0 2px 10px rgba(15,23,42,0.16) !important; }
+html.dark-mode .myact-dl-circle, body.dark-mode .myact-dl-circle{ background:#1e1e1e !important; color:#f2f2f2 !important; border:0 !important; box-shadow:0 2px 10px rgba(0,0,0,0.5) !important; }
+
+/* Profile dashboard button: grey, round, no icon */
+html.dark-mode #profile-admin-btn-el button{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
+html.dark-mode [data-act-sec] button[aria-label="What this shows"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
+
+/* Create Course step 3 add-pills in dark mode */
+html.dark-mode .pill-bleed button[style*="#eceef1"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }

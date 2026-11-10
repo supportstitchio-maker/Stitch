@@ -314,7 +314,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         // (patchProfileHeaderInPlace) can share it
         function profileAdminDashboardButtonHTML(){
           const isAdmin = typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin();
-          const btn = (fn, label, icon) => `<button onclick="${fn}()" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl font-medium text-sm" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon(icon || 'trending','w-4 h-4')} ${label}</button>`;
+          const btn = (fn, label) => `<button onclick="${fn}()" class="w-full flex items-center justify-center py-2.5 rounded-full text-sm" style="background:#eceef1;color:#4b5563;font-family:'Montserrat',system-ui,sans-serif;font-weight:400;">${label}</button>`;
           return `
             <div class="mb-2 flex flex-col gap-2">
               ${isAdmin ? btn('openAdminDashboard', 'Admin Dashboard') : ''}
@@ -408,8 +408,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div id="profile-links-el">${profileLinksHTML(profileData.links)}</div>
 
               <div class="flex gap-3 mb-2">
-                <button onclick="openEditProfileModal()" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Edit profile</button>
-                <button onclick="openOverlay('profileQR')" class="flex-1 bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">Share profile</button>
+                <button onclick="openEditProfileModal()" class="flex-1 bg-gray-100 py-2.5 rounded-full font-medium text-sm">Edit profile</button>
+                <button onclick="openOverlay('profileQR')" class="flex-1 bg-gray-100 py-2.5 rounded-full font-medium text-sm">Share profile</button>
               </div>
               <div id="profile-admin-btn-el">${profileAdminDashboardButtonHTML()}</div>
             </div>

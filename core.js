@@ -4006,7 +4006,7 @@ function coverPickerHTML(o){
   const useC = selC >= 0 ? selC : 0, useP = selP || 'm0';
   const has = !!o.cover;
   const swatches = pal.map((c, i) =>
-    '<button type="button" onclick="' + o.pickFn + '(\'' + i + ':' + useP + '\')" aria-label="Colour ' + (i + 1) + '" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');' +
+    '<button type="button" onclick="' + o.pickFn + '(\'' + i + ':' + useP + '\')" aria-label="Colour ' + (i + 1) + '" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');' +
     (selC === i ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + c[0] + ';' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);') + '"></button>').join('');
   const tiles = COVER_PATTERNS.map(pk => {
     const src = coverPatternDataUrl(useC + ':' + pk, 200);
@@ -4022,10 +4022,9 @@ function coverPickerHTML(o){
     '</div>' +
     '<button type="button" onclick="' + o.uploadJs + '" class="flex items-center justify-center gap-2 w-full" style="height:42px;border-radius:21px;font-size:14px;font-weight:700;color:#0a2540;background:rgba(10,37,64,.06);margin-bottom:12px;">' +
       '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload a picture</button>' +
-    '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:8px;">Or pick a colour</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:3px 4px;margin-bottom:10px;">' + swatches + '</div>' +
-    '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:8px;">and a pattern</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:10px;padding:3px 4px;">' + tiles + '</div>' +
+    '<div style="display:flex;flex-wrap:nowrap;gap:8px;padding:3px 4px;margin-bottom:10px;overflow-x:auto;" class="no-scrollbar">' + swatches + '</div>' +
+    '<button type="button" onclick="var p=this.nextElementSibling;var o=p.style.display===\'none\';p.style.display=o?\'flex\':\'none\';this.setAttribute(\'aria-expanded\',o);this.lastElementChild.style.transform=o?\'rotate(270deg)\':\'rotate(90deg)\';" aria-expanded="false" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="border:1px solid rgba(128,128,128,0.25);border-radius:16px;padding:13px 16px;"><span style="font-weight:600;">Pattern</span><span style="display:inline-block;color:#9ca3af;transform:rotate(90deg);line-height:1;">&rsaquo;</span></button>' +
+    '<div style="display:none;flex-wrap:wrap;gap:10px;padding:10px 4px 3px;">' + tiles + '</div>' +
   '</div>';
 }
 

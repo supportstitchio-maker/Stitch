@@ -4188,8 +4188,7 @@ try {
 
               ${recentLeft.length ? caCard('Recently left', 'Progress when they left', recentLeft.map((u, i) => personRow(u.name, u.username, `${Number(u.progress) || 0}% &middot; ${fmtDate(u.leftAt)}`, i, recentLeft.length)).join('')) : ''}
               `; })()}
-              <button id="course-analytics-dl-btn" type="button" onclick="downloadCourseAnalytics()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>Download course analytics</span></button>
-              <div class="text-[11px] text-gray-400 text-center" style="padding-bottom:max(24px, env(safe-area-inset-bottom));">Saves everything on this page as a PDF on your device.</div>
+              <div style="padding-bottom:max(24px, env(safe-area-inset-bottom));"></div>
             </div>
             </div>
             </div>`;
@@ -4258,9 +4257,11 @@ try {
           const font = (size, bold, display) => { doc.setFont(typeface(display), bold ? 'bold' : 'normal'); doc.setFontSize(size); };
           const ensure = h => { if (y + h > BOTTOM) { doc.addPage(); y = 18; } };
           const clip = (s, w) => { const t = doc.splitTextToSize(txt(s), w); return t[0] || ''; };
+          const pdfCard = { page: 0, y: 0 };
+          const endCard = () => { if (pdfCard.page && pdfCard.page === doc.getNumberOfPages()) { stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.roundedRect(M - 3, pdfCard.y, CW + 6, y - pdfCard.y + 1, 3, 3, 'S'); } pdfCard.page = 0; };
+          const startCard = () => { pdfCard.page = doc.getNumberOfPages(); pdfCard.y = y - 5; };
           const section = (title, sub, need) => {
-            y += 8; ensure(need || 40);
-            stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.line(M, y - 3, M + CW, y - 3);
+            endCard(); y += 8; ensure(need || 40); startCard();
             color('#000000'); font(12.5, true, true); doc.text(txt(title), M, y + 2.6);
             y += 7;
             if (sub) { color('#6b7280'); font(8.5, false); doc.text(txt(sub), M, y + 1); y += 5; }
@@ -4351,6 +4352,7 @@ try {
             top.forEach(u => bar((u.name || 'Unnamed') + (u.username ? ' (@' + u.username + ')' : ''), Number(u.progress) || 0, (Number(u.progress) || 0) + '%', C.green));
           }
 
+          endCard();
           const pages = doc.getNumberOfPages();
           for (let i = 1; i <= pages; i++) {
             doc.setPage(i);
@@ -4545,7 +4547,7 @@ try {
                     <button onclick="document.getElementById('course-welcome-input').click()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-semibold text-sm border border-dashed text-gray-500" style="border-color:${err ? '#ef4444' : '#d1d5db'};${err ? 'color:#ef4444;' : ''}">
                       ${Icon('video','w-4 h-4')} Upload a welcome video
                     </button>`}
-                  <div class="text-xs ${err ? '' : 'text-gray-400'}" style="margin-top:3px;${err ? 'color:#ef4444;' : ''}">${err ? 'A welcome video is required.' : 'A short introduction students see first, even before they enrol.'}</div>
+                  ${err ? `<div class="text-xs" style="margin-top:3px;color:#ef4444;">A welcome video is required.</div>` : ''}
                 </div>`;
               })()}
               <div class="mb-4">
@@ -4594,22 +4596,23 @@ try {
               </div>
             `: ''}
               ${step === 3 ? `
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Modules <span class="normal-case font-medium text-gray-400">(add modules, parts, quizzes &amp; assignments)</span></div>
-              <div class="grid grid-cols-2 gap-2 mb-4">
-                <button onclick="openCourseAddModule('${DRAFT_COURSE_ID}')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add Module</button>
-                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','video')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add Part</button>
-                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','gradedQuiz')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add Quiz</button>
-                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','assignment')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500">${Icon('plus','w-3.5 h-3.5')} Add Assignment</button>
-                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','project')" class="flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-bold border border-dashed border-gray-300 text-gray-500 col-span-2">${Icon('plus','w-3.5 h-3.5')} Add Project</button>
+              <div class="text-xs font-bold uppercase tracking-wide text-gray-400">Add to your course</div>
+              <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar" style="margin:10px 0 4px;padding-bottom:4px;">
+                <button onclick="openCourseAddModule('${DRAFT_COURSE_ID}')" class="flex-shrink-0 flex items-center gap-1 rounded-full text-sm" style="background:#eceef1;color:#4b5563;padding:9px 14px;font-weight:500;">${Icon('plus','w-3.5 h-3.5')} Module</button>
+                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','video')" class="flex-shrink-0 flex items-center gap-1 rounded-full text-sm" style="background:#eceef1;color:#4b5563;padding:9px 14px;font-weight:500;">${Icon('plus','w-3.5 h-3.5')} Part</button>
+                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','gradedQuiz')" class="flex-shrink-0 flex items-center gap-1 rounded-full text-sm" style="background:#eceef1;color:#4b5563;padding:9px 14px;font-weight:500;">${Icon('plus','w-3.5 h-3.5')} Quiz</button>
+                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','assignment')" class="flex-shrink-0 flex items-center gap-1 rounded-full text-sm" style="background:#eceef1;color:#4b5563;padding:9px 14px;font-weight:500;">${Icon('plus','w-3.5 h-3.5')} Assignment</button>
+                <button onclick="openCourseAddItemPage('${DRAFT_COURSE_ID}','project')" class="flex-shrink-0 flex items-center gap-1 rounded-full text-sm" style="background:#eceef1;color:#4b5563;padding:9px 14px;font-weight:500;">${Icon('plus','w-3.5 h-3.5')} Project</button>
               </div>
+              <div style="margin-top:14px;">
               ${d.modules.length ? d.modules.map((m, mi) => courseDraftModuleHTML(m, mi)).join('') : `
-                <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-5 text-center text-gray-500 text-sm mb-6">No modules yet -- tap Add Module or Add Part above.</div>`}
+                <div class="bg-white rounded-3xl shadow-sm text-center" style="padding:28px 20px;margin-bottom:14px;"><div class="text-sm font-semibold text-gray-700">No content yet</div><div class="text-xs text-gray-400" style="margin-top:4px;">Start with a module, then add parts inside it.</div></div>`}
+              </div>
 
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Resources <span class="normal-case font-medium text-gray-400">(supplementary video &amp; audio)</span></div>
               ${(d.resources || []).map((r, ri) => courseDraftResourceHTML(r, ri)).join('')}
-              <button onclick="openCourseAddResource('${DRAFT_COURSE_ID}')" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm border border-dashed border-gray-300 text-gray-500 mb-6">
-                ${Icon('plus','w-4 h-4')} Add Resource
-              </button>
+              <div class="bg-white rounded-3xl shadow-sm mb-6" style="padding:4px 16px;">
+                <button onclick="openCourseAddResource('${DRAFT_COURSE_ID}')" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;"><span>Resources <span class="text-gray-400">(optional video and audio)</span></span>${Icon('plus','w-4 h-4')}</button>
+              </div>
 
             `: ''}
               ${step === 4 ? (() => {
@@ -5136,17 +5139,17 @@ try {
           const d = newClassDraft;
           const mode = newClassEntranceMode();
           const options = [
-            { key:'free', label:'Free for everyone', icon:'users' },
-            { key:'approved', label:'Approve each member', icon:'shield' },
+            { key:'free', label:'Anyone', icon:'users' },
+            { key:'approved', label:'Approval', icon:'shield' },
           ];
-          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid entrance', icon:'phoneMoneyOutline' });
+          if (canCurrentUserSellPaid()) options.push({ key:'paid', label:'Paid', icon:'phoneMoneyOutline' });
           return `
             <div id="create-class-entrance" class="mb-5">
-              <label class="text-xs font-semibold text-gray-500 mb-1 block text-center">Entrance</label>
-              <div class="text-center text-[11px] text-gray-400 mb-3">Select one</div>
-              <div class="auth-intent-row" style="flex-direction:column;align-items:stretch;gap:10px;padding:4px 2px 8px;">
-                ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}" style="width:100%;justify-content:center;padding:13px 16px;">${Icon(o.icon,'w-4 h-4')}<span>${o.label}</span></button>`).join('')}
+              <label class="text-xs font-semibold text-gray-500 mb-2 block">Who can join</label>
+              <div class="auth-intent-row" style="padding:4px 2px 8px;">
+                ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}"><span>${o.label}</span></button>`).join('')}
               </div>
+              ${mode !== 'paid' ? `<div class="text-xs text-gray-400">${mode === 'approved' ? 'You approve each person before they join.' : 'Anyone can join straight away.'}</div>` : ''}
               ${mode === 'paid' ? `
                 <div class="flex gap-2 mt-3">
                   <input type="number" min="1" step="1" oninput="updateNewClassPaymentField('paymentAmount', this.value)" value="${escapeHtml(d.paymentAmount)}" placeholder="Amount" class="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm">
@@ -6065,6 +6068,34 @@ try {
               ${inner}
             </div>`;
         }
+        function classWhoJoinedHTML(slices){
+          const total = slices.reduce((n, x) => n + x.value, 0);
+          const r = 34, C = 2 * Math.PI * r;
+          let off = 0;
+          const arcs = total ? slices.filter(x => x.value > 0).map(x => {
+            const len = x.value / total * C;
+            const a = `<circle cx="45" cy="45" r="${r}" fill="none" stroke="${x.color}" stroke-width="12" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 45 45)"/>`;
+            off += len; return a;
+          }).join('') : '';
+          const rows = slices.map((x, i) => `
+            <div class="flex items-center justify-between text-sm text-gray-700" style="padding:8px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              <span class="flex items-center gap-2"><span style="width:8px;height:8px;border-radius:50%;background:${x.color};display:inline-block;"></span>${x.label}</span>
+              <span class="font-bold">${x.value}</span>
+            </div>`).join('');
+          return `
+            <div data-act-sec class="bg-white rounded-3xl p-5 shadow-sm" style="margin-bottom:16px;">
+              <div class="flex items-center justify-between">
+                <div class="text-base" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;color:#1f2937;">Who joined</div>
+                <button type="button" aria-label="What this shows" onclick="actToggleInfo(this)" style="width:22px;height:22px;border-radius:50%;background:#eceef1;color:#4b5563;font-size:12px;">i</button>
+              </div>
+              <div data-act-info class="text-xs" style="display:none;color:#6b7280;line-height:1.55;margin-top:8px;">${CLS_DESCRIPTIONS['Who joined']}</div>
+              <div class="flex items-center" style="gap:18px;margin-top:14px;">
+                <svg viewBox="0 0 90 90" width="84" height="84" style="flex-shrink:0;"><circle cx="45" cy="45" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="12"/>${arcs}</svg>
+                <div class="flex-1">${rows}</div>
+              </div>
+              ${total ? '' : '<div class="text-xs text-gray-400 text-center" style="margin-top:12px;">Nobody has joined yet.</div>'}
+            </div>`;
+        }
         function classTilesHTML(tiles){
           return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;margin-bottom:28px;">${tiles.map(t => `
             <div>
@@ -6184,12 +6215,11 @@ try {
                 + insightsLineChartHTML(X.W.labels, [{ name: 'Call minutes', color: CLS_COLORS.green, values: X.W.calls, area: true }]))
             : '';
           return `
-            ${classSectionHTML('Who joined', 'Members in the space compared with people still to join',
-              classPieHTML([
-                { label: 'Joined', value: A.joined.length, color: CLS_COLORS.sky },
+            ${classWhoJoinedHTML([
+                { label: 'Members', value: A.joined.length, color: CLS_COLORS.sky },
                 { label: 'Invited, not joined', value: A.invited.length, color: CLS_COLORS.amber },
-                { label: 'Join requests', value: A.requests, color: CLS_COLORS.purple },
-              ], 'Nobody has joined yet.'))}
+                { label: 'Waiting for approval', value: A.requests, color: CLS_COLORS.purple },
+              ])}
             ${weekly}
             ${classSectionHTML('Tasks', 'What you have posted so far',
               classBarsHTML([
@@ -6368,9 +6398,7 @@ try {
                 <div class="px-5">
                   ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
-                  ${hasFooter ? `
-                  <button id="class-report-dl-btn" type="button" onclick="downloadClassReport()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>${isTeacher ? 'Download space report' : 'Download my report'}</span></button>
-                  <div class="text-[11px] text-gray-400 text-center" style="padding:10px 0 max(24px, env(safe-area-inset-bottom));">Saves this report as a PDF on your device.</div>` : ''}
+                  ${hasFooter ? `<div style="padding-bottom:max(24px, env(safe-area-inset-bottom));"></div>` : ''}
                 </div>
               </div>
             </div>`;
@@ -6741,9 +6769,11 @@ try {
           doc.text(introLines, M, 51, { lineHeightFactor: 1.5 });
           y = 51 + introLines.length * 5.2 + 5;
 
+          const pdfCard = { page: 0, y: 0 };
+          const endCard = () => { if (pdfCard.page && pdfCard.page === doc.getNumberOfPages()) { stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.roundedRect(M - 3, pdfCard.y, CW + 6, y - pdfCard.y + 1, 3, 3, 'S'); } pdfCard.page = 0; };
+          const startCard = () => { pdfCard.page = doc.getNumberOfPages(); pdfCard.y = y - 5; };
           const section = (hex, title, sub, need) => {
-            y += 6; ensure(need || 50);
-            stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.line(M, y - 3, M + CW, y - 3);
+            endCard(); y += 6; ensure(need || 50); startCard();
             color('#000000'); font(12.5, true, true); doc.text(txt(title), M, y + 2.6); y += 7;
             if (sub) { color('#9ca3af'); font(8.5, false); doc.text(txt(sub), M, y + 1); y += 5; }
             y += 3;
@@ -6751,14 +6781,15 @@ try {
           const para = t => { color('#4b5563'); font(9, false); const l = doc.splitTextToSize(txt(t), CW); doc.text(l, M, y + 2, { lineHeightFactor: 1.5 }); y += l.length * 5 + 3; };
           const empty = t => { color('#9ca3af'); font(9, false); doc.text(txt(t), M, y + 3); y += 9; };
           const tiles = list => {
-            ensure(20);
+            ensure(24);
             const gap = 4, w = (CW - gap * (list.length - 1)) / list.length;
             list.forEach((t, i) => {
               const x = M + i * (w + gap);
-              color('#000000'); font(15, true); doc.text(txt(t.v), x, y + 6);
-              color('#6b7280'); font(7.5, false); doc.text(clip(t.l, w - 2), x, y + 11.5);
+              stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.roundedRect(x, y, w, 18, 3, 3, 'S');
+              color('#000000'); font(15, true); doc.text(txt(t.v), x + 3.5, y + 8);
+              color('#6b7280'); font(7.5, false); doc.text(clip(t.l, w - 5), x + 3.5, y + 13.5);
             });
-            y += 19;
+            y += 22;
           };
           const bars = (items, h, max) => {
             h = h || 34; ensure(h + 18);
@@ -7024,6 +7055,7 @@ try {
             ], R.items.map(i => ({ title: i.title, type: i.type, due: i.due || '--', status: i.status })));
           }
 
+          endCard();
           const pages = doc.getNumberOfPages();
           for (let i = 1; i <= pages; i++) {
             doc.setPage(i);
@@ -11321,11 +11353,16 @@ try {
           try { setTimeout(() => loadClassStudentProfiles(cls), 0); } catch (e) {}
           const coTeachers = cls.coTeachers || [];
           const isTeacher = cls.role === 'teacher';
+          const hasReq = !!(isTeacher && cls.joinPolicy === 'approved' && cls.pendingRequests && cls.pendingRequests.length);
+          const rosterN = classRosterList(cls).length;
+          const tabBtn = (k, label, on) => `<button type="button" data-people-tab="${k}" onclick="classPeopleTab(this,'${k}')" class="filter-pill flex-shrink-0 ${on ? 'on' : ''}">${label}</button>`;
           return `
-            <div class="flex items-center justify-between mb-3">
-              <div class="text-lg font-bold text-[${NAVY}] font-display">Moderators</div>
-              ${isTeacher ? `<button onclick="openInviteCoTeacherOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
+            <div class="people-tabs-root">
+            <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" style="margin-bottom:12px;">
+              ${tabBtn('mods', 'Moderators ' + (1 + (isTeacher ? coTeachers.length : 0)), true)}${tabBtn('members', 'Members ' + rosterN, false)}${hasReq ? tabBtn('reqs', 'Requests ' + cls.pendingRequests.length, false) : ''}
             </div>
+            <div data-people-panel="mods">
+            ${isTeacher ? `<div class="flex justify-end mb-2"><button onclick="openInviteCoTeacherOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:20px;padding-right:20px;">${Icon('personPlus','w-4 h-4')} Invite</button></div>` : ''}
             <div class="border-t border-gray-100 mb-5">
               <div class="flex items-center gap-4 py-4 ${(isTeacher && coTeachers.length) ? 'border-b border-gray-100' : ''}">
                 <span class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-6 h-6')}</span>
@@ -11344,10 +11381,9 @@ try {
                   <button onclick="cancelCoTeacherInvite('${cls.id}', ${i})" class="text-xs font-semibold text-gray-400 flex-shrink-0">Cancel</button>
                 </div>`).join('') : ''}
             </div>
-            ${(isTeacher && cls.joinPolicy === 'approved' && cls.pendingRequests && cls.pendingRequests.length) ? `
-              <div class="flex items-center justify-between mb-3">
-                <div class="text-lg font-bold text-[${NAVY}] font-display">Join requests</div>
-              </div>
+            </div>
+            ${hasReq ? `
+              <div data-people-panel="reqs" style="display:none;">
               <div class="border-t border-gray-100 mb-5">
                 ${cls.pendingRequests.map((r, i) => `
                   <div class="flex items-center gap-4 py-4 ${i < cls.pendingRequests.length - 1 ? 'border-b border-gray-100' : ''}">
@@ -11361,24 +11397,21 @@ try {
                       <button onclick="approveClassJoinRequest('${cls.id}', '${r.userId}')" aria-label="Approve" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white" style="border:1.5px solid ${ROYAL};color:${ROYAL};">${IconBold('check','w-3.5 h-3.5')}</button>
                     </div>
                   </div>`).join('')}
+              </div>
               </div>` : ''}
-            <div class="flex items-center justify-between mb-3">
-              <div class="text-lg font-bold text-[${NAVY}] font-display">Members${(() => { const n = classRosterList(cls).length; return n ? ` <span class="text-sm font-semibold text-gray-400">(${n}${cls.paymentEnabled ? ' enrolled' : ''})</span>` : ''; })()}</div>
-              ${isTeacher ? `<button onclick="openInviteStudentsOverlay()" class="text-[${NAVY}]">${Icon('personPlus','w-6 h-6')}</button>` : ''}
-            </div>
+            <div data-people-panel="members" style="display:none;">
+            ${(isTeacher && rosterN) ? `<div class="flex justify-end mb-2"><button onclick="openInviteStudentsOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:20px;padding-right:20px;">${Icon('personPlus','w-4 h-4')} Invite</button></div>` : ''}
             <div class="border-t border-gray-100">
               ${(() => {
                 const roster = classRosterList(cls);
                 if (!roster.length) {
                   return isTeacher ? `
-                <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
-                  <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
-                  <div class="text-gray-400 mb-5">Invite members to your space</div>
-                  <button onclick="openInviteStudentsOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:28px;padding-right:28px;margin-bottom:10px;">${Icon('personPlus','w-4 h-4')} Invite</button>
+                <div class="flex flex-col items-center text-center" style="padding:28px 0 20px;">
+                  <div class="text-sm text-gray-400 mb-4">No other members yet. Share the space code or invite people.</div>
+                  <button onclick="openInviteStudentsOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:28px;padding-right:28px;">${Icon('personPlus','w-4 h-4')} Invite</button>
                 </div>` : `
-                <div class="flex flex-col items-center text-center" style="padding:36px 0 28px;">
-                  <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">${Icon('users','w-8 h-8')}</div>
-                  <div class="text-gray-400">No other members yet.</div>
+                <div class="flex flex-col items-center text-center" style="padding:28px 0 20px;">
+                  <div class="text-sm text-gray-400">No other members yet.</div>
                 </div>`;
                 }
                 return roster.map((s, i) => {
@@ -11399,7 +11432,15 @@ try {
                   ${canMsg ? `<span class="flex-shrink-0 text-gray-300">${Icon('comment','w-5 h-5')}</span>` : ''}
                 </div>`;}).join('');
               })()}
+            </div>
+            </div>
             </div>`;
+        }
+        function classPeopleTab(btn, key){
+          const root = btn.closest('.people-tabs-root');
+          if (!root) return;
+          root.querySelectorAll('[data-people-tab]').forEach(b => b.classList.toggle('on', b === btn));
+          root.querySelectorAll('[data-people-panel]').forEach(p => { p.style.display = (p.getAttribute('data-people-panel') === key) ? '' : 'none'; });
         }
 
         let inviteCoTeacherDraft = '';

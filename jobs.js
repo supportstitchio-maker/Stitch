@@ -2487,7 +2487,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         // One row of the timeline
         // ---- Application tracker (applicant's own view) ----
-        const JOB_TRACKER_TEAL = '#14b8a6';
+        const JOB_TRACKER_TEAL = '#1E90FF';
         const JOB_TRACKER_SUBTEXT = {
           saved: 'Saved to your list',
           applied: 'Waiting for review',
@@ -2498,7 +2498,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         };
 
         function jobStatusChipHTML(meta){
-          return `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold flex-shrink-0" style="background:${meta.color}1a;color:${meta.color};">${Icon('clock','w-3.5 h-3.5')}${escapeHtml(meta.label)}</span>`;
+          return `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0" style="background:#f3f4f6;color:#4b5563;">${Icon('clock','w-3.5 h-3.5')}${escapeHtml(meta.label)}</span>`;
         }
 
         // One row of the timeline: a dot on a connecting line, the step name (with a short sub-
@@ -2605,22 +2605,24 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 ${jobStatusChipHTML(meta)}
               </div>
 
-              <div class="rounded-2xl p-4 mb-4" style="background:${c}14;border:1.5px solid ${c}40;">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-base font-bold" style="background:${c};color:#fff;">${status === 'applied' || status === 'offer' ? jobMarkSVG('check', 20) : '&#9679;'}</div>
-                  <div class="flex-1 min-w-0">
+              <div class="rounded-3xl p-4 mb-4 bg-white" style="border:1px solid #eef0f3;box-shadow:0 2px 12px rgba(15,23,42,.06);">
+                <div class="flex items-center justify-between">
+                  <div>
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Status</div>
-                    <div class="text-lg font-bold leading-tight" style="color:${c};">${escapeHtml(meta.label)}</div>
+                    <div class="text-xl font-bold font-display leading-tight" style="color:${c};">${escapeHtml(meta.label)}</div>
                   </div>
-                  <div class="text-sm font-bold" style="color:${c};">${pct}%</div>
+                  <div class="text-xl font-bold font-display" style="color:${NAVY};">${pct}%</div>
                 </div>
-                <div style="height:6px;border-radius:9999px;background:#ffffffaa;overflow:hidden;margin:12px 0 10px;">
+                <div style="height:6px;border-radius:9999px;background:#e5e7eb;overflow:hidden;margin:14px 0 14px;">
                   <div style="height:100%;width:${pct}%;border-radius:9999px;background:${c};transition:width .25s ease;"></div>
                 </div>
-                ${meta.message ? `<div class="text-xs text-gray-500">${escapeHtml(meta.message)}</div>` : ''}
+                <div class="flex">${JOB_PIPELINE_ORDER.map((k, i) => {
+                  const short = { under_review: 'Review', shortlisted: 'Short-list' }[k] || JOB_PIPELINE_META[k].label;
+                  const reached = i <= idx;
+                  return `<div style="flex:1;text-align:center;min-width:0;"><div style="width:14px;height:14px;border-radius:9999px;margin:0 auto;background:${reached ? c : '#e5e7eb'};"></div><div class="text-[9px] font-semibold" style="margin-top:6px;color:${i === idx ? c : '#9ca3af'};">${short}</div></div>`;
+                }).join('')}</div>
+                ${meta.message ? `<div class="text-xs text-gray-500" style="margin-top:12px;">${escapeHtml(meta.message)}</div>` : ''}
               </div>
-
-              <div class="rounded-2xl mb-4" style="border:1.5px solid #e5e7eb;padding:6px;">${stepsHTML}</div>
 
               ${status === 'offer' ? `
                 <div class="rounded-2xl p-4 mb-4" style="border:1.5px solid #05966940;background:#0596690d;">
@@ -4710,6 +4712,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         const OPP_CUSTOM_DOC_PREFIX = 'custom:';
         const OPP_CUSTOM_DOC_MAX = 5;
         let newOppCustomDocText = '';
+        let newOppDocsOpen = false;
+        function toggleNewOppDocs(){ newOppDocsOpen = !newOppDocsOpen; rerenderPostOpportunity(); }
         function oppDocType(id){
           const t = OPP_DOC_TYPES.find(x => x.id === id);
           if (t) return t;
@@ -6441,14 +6445,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const progress = card(`
             ${title('Your progress', `<span class="font-bold" style="color:${NAVY};">${s.setupPct}% set up</span>`)}
             ${careerBarRowHTML('Profile setup (CV, letter, phone, plan, first application)', s.setupPct, 100, `linear-gradient(90deg, ${NAVY}, ${ROYAL})`, s.setupPct + '%')}
-            ${s.hasSub ? careerBarRowHTML('Plan time used', s.subPct, 100, '#1e90ff', s.subText) : ''}`);
-          const funnel = card(`
-            ${title('Application funnel')}
+            ${s.hasSub ? careerBarRowHTML('Plan time used', s.subPct, 100, '#1e90ff', s.subText) : ''}
+            <div class="text-xs font-semibold text-gray-600" style="margin:16px 0 4px;">Application funnel</div>
             ${careerBarRowHTML('Matched', s.matched, top, '#94a3b8')}
             ${careerBarRowHTML('Applied', s.applied, top, '#1e90ff')}
             ${careerBarRowHTML('Under review +', s.reviewedPlus, top, '#b45309')}
             ${careerBarRowHTML('Shortlisted / interview +', s.shortPlus, top, '#4f46e5')}
             ${careerBarRowHTML('Offers', s.offers, top, '#059669')}`);
+          const funnel = '';
           const trendTotal = s.weekly.reduce((a, b) => a + b, 0);
           const trend = card(`
             ${title('Applications sent', `Last 6 weeks${trendTotal ? ' · ' + trendTotal : ''}`)}
@@ -6472,16 +6476,20 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const score = s.avgScore !== null ? card(`${title('Match quality')}${careerBarRowHTML('Average match of the posts Stitch Bot chose', s.avgScore, 100, s.avgScore < 50 ? '#f59e0b' : '#059669', s.avgScore + '%')}`) : '';
           const tile2 = (n, label) => `<div class="rounded-2xl text-center" style="background:rgba(10,37,64,0.05);padding:12px 4px;"><div class="text-lg font-bold" style="color:${NAVY};">${n}</div><div class="text-xs text-gray-500" style="margin-top:2px;">${label}</div></div>`;
           const thisWeek = s.weekly[s.weekly.length - 1] || 0;
-          const tiles2 = `<div class="grid grid-cols-4 gap-2 mb-4">${tile2(thisWeek, 'This week')}${tile2(s.applied ? s.responseRate + '%' : '-', 'Heard back')}${tile2(s.avgScore !== null ? s.avgScore + '%' : '-', 'Avg match')}${tile2(s.filled + '/' + s.totalSections, 'Documents')}</div>`;
+          const tiles2 = `<div class="text-xs text-gray-400 text-center mb-4" style="margin-top:-4px;">This week ${thisWeek} &middot; Heard back ${s.applied ? s.responseRate + '%' : '-'} &middot; Avg match ${s.avgScore !== null ? s.avgScore + '%' : '-'} &middot; Documents ${s.filled}/${s.totalSections}</div>`;
           const todo = [];
           if (!s.p.resumeFileName) todo.push(['Attach your CV', 'openCareerDocumentsPage()']);
           if (!careerBotDocList('openLetter').length) todo.push(['Add an open application letter', 'openCareerDocumentsPage()']);
           if (!careerBotDocList('degree').length) todo.push(['Add your degree or diploma', 'openCareerDocumentsPage()']);
           if (!careerBotDocList('reference').length) todo.push(['Add a reference letter', 'openCareerDocumentsPage()']);
           if (!s.applied) todo.push(['Review your preferences before the first application', 'openCareerPreferencesPage()']);
+          const stepRow = (t, i, hidden) => `<button onclick="${t[1]}" ${hidden ? 'data-more-step="1" style="display:none;padding:12px 0;border-top:1px solid rgba(128,128,128,0.15);"' : `style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}"`} class="w-full flex items-center justify-between text-left text-sm text-gray-700"><span>${t[0]}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`;
+          const moreN = Math.min(todo.length, 4) - 1;
           const nextSteps = todo.length ? card(`
-            ${title('Next steps')}
-            ${todo.slice(0, 4).map((t, i) => `<button onclick="${t[1]}" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}"><span>${t[0]}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`).join('')}`) : '';
+            ${title(moreN > 0 ? 'Next step' : 'Next steps')}
+            ${stepRow(todo[0], 0, false)}
+            ${todo.slice(1, 4).map((t, i) => stepRow(t, i + 1, true)).join('')}
+            ${moreN > 0 ? `<button type="button" onclick="(function(b){var c=b.parentElement;c.querySelectorAll('[data-more-step]').forEach(function(e){e.style.display='flex';});b.style.display='none';})(this)" class="text-sm font-semibold" style="color:#1e90ff;padding-top:12px;border-top:1px solid rgba(128,128,128,0.15);display:block;width:100%;text-align:left;">${moreN} more step${moreN === 1 ? '' : 's'}</button>` : ''}`) : '';
           return `
             ${tiles}
             ${tiles2}
@@ -8979,7 +8987,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                   <label class="pa-lab">Deadline</label>
                   <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="onOppDeadlineDateInput(this)" value="${escapeHtml(newOppDraft.deadlineDateTyped || '')}" class="w-full bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
                   ${typedDateHintHTML()}
-                  <div class="pa-hint">This listing disappears automatically once this date passes, so every admin's posts stay consistent.</div>
+                  <div class="pa-hint">The listing ends on this date.</div>
                 </div>`}
 
               ` : ''}
@@ -9008,7 +9016,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               ` : `
                 <div class="mb-4">
                   <label class="pa-lab">Apply via</label>
-                  <div class="pa-hint" style="margin:0 0 8px;">By default, applications go straight to you right here in Stitch -- no email needed. Choose Website instead if you'd rather applicants apply on your own site.</div>
+                  
                   <div class="auth-intent-row mb-3" style="padding:6px 2px 10px;">
                     <button onclick="setNewOppApplyMethod('inapp')" class="auth-intent-chip ${newOppDraft.applyMethod==='inapp' ? 'on' : ''}">${Icon('phone','w-4 h-4')}<span>In-app</span></button>
                     <button onclick="setNewOppApplyMethod('website')" class="auth-intent-chip ${newOppDraft.applyMethod==='website' ? 'on' : ''}">${Icon('monitor','w-4 h-4')}<span>Website</span></button>
@@ -9017,11 +9025,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                     ? oppFieldRow('Website to receive applications', 'website', 'e.g. careers.yourorg.com/apply', 'url')
                     : ''}
                 </div>
-                ${(newOppDraft.applyMethod !== 'website' && oppPostConfig(newOppDraft.type) && oppPostConfig(newOppDraft.type).docs.length) ? `<div class="mb-4 rounded-2xl p-4" style="background:rgba(10,37,64,0.05);"><div class="pa-lab" style="color:#2563eb;">Suggested for ${escapeHtml(newOppDraft.type.toLowerCase())}s</div><div style="font-size:13px;color:#334155;line-height:1.5;">${escapeHtml(oppPostConfig(newOppDraft.type).docs.join(', '))}. Tap a chip below to require it. Applicants also answer questions made for ${escapeHtml(newOppDraft.type.toLowerCase())}s.</div></div>` : ''}
+                ${(newOppDocsOpen && newOppDraft.applyMethod !== 'website' && oppPostConfig(newOppDraft.type) && oppPostConfig(newOppDraft.type).docs.length) ? `<div class="mb-4 rounded-2xl p-4" style="background:rgba(10,37,64,0.05);"><div class="pa-lab" style="color:#2563eb;">Suggested for ${escapeHtml(newOppDraft.type.toLowerCase())}s</div><div style="font-size:13px;color:#334155;line-height:1.5;">${escapeHtml(oppPostConfig(newOppDraft.type).docs.join(', '))}. Tap a chip below to require it. Applicants also answer questions made for ${escapeHtml(newOppDraft.type.toLowerCase())}s.</div></div>` : ''}
                 ${newOppDraft.applyMethod === 'website' ? '' : `
                 <div class="mb-4">
-                  <label class="pa-lab">Documents required from applicants (optional)</label>
-                  <div class="pa-hint" style="margin:0 0 8px;">A resume/CV is always required from applicants. Select any other documents you also want to require before they can submit.</div>
+                  <button type="button" onclick="toggleNewOppDocs()" aria-expanded="${newOppDocsOpen}" style="width:100%;display:flex;align-items:center;justify-content:space-between;border:1px solid #e5e7eb;border-radius:16px;padding:14px 16px;background:#fff;font-size:14px;font-weight:600;color:${NAVY};margin-bottom:${newOppDocsOpen ? '10px' : '0'};">Required documents<span style="font-weight:500;color:#9ca3af;display:inline-flex;align-items:center;gap:6px;">${newOppDraft.requiredDocs.length ? 'CV + ' + newOppDraft.requiredDocs.length + ' more' : 'CV only'}<span style="display:inline-block;transform:rotate(${newOppDocsOpen ? '270' : '90'}deg);line-height:1;">&rsaquo;</span></span></button>
+                  ${newOppDocsOpen ? `
                   <div class="auth-intent-row" style="padding:6px 2px 10px;">
                     ${OPP_DOC_TYPES.map(t => {
                       const active = newOppDraft.requiredDocs.includes(t.id);
@@ -9031,11 +9039,11 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                       <span class="auth-intent-chip on" style="cursor:default;max-width:100%;">${Icon('paperclip','w-4 h-4')}<span style="min-width:0;overflow-wrap:anywhere;">${escapeHtml(oppDocLabel(id))}</span><button onclick="removeNewOppCustomDoc('${id}')" aria-label="Remove ${escapeHtml(oppDocLabel(id))}" class="flex-shrink-0 flex items-center justify-center" style="width:20px;height:20px;margin-left:2px;color:#1e90ff;">${IconBold('close','w-3.5 h-3.5')}</button></span>`).join('')}
                   </div>
                   <div class="pa-lab" style="margin-top:14px;">Other documents</div>
-                  <div class="pa-hint" style="margin:0 0 8px;">Need something that isn't listed? Type its name and add it. Applicants will see it and have to attach it.</div>
                   <div class="flex gap-2" style="padding:2px 2px 4px;">
                     <input type="text" id="opp-custom-doc-input" maxlength="40" autocomplete="off" placeholder="e.g. Recommendation letter" value="${escapeHtml(newOppCustomDocText)}" oninput="newOppCustomDocText = this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewOppCustomDoc();}" class="flex-1 min-w-0 bg-gray-100 border border-gray-300 flow-outline rounded-2xl px-4 py-3 text-sm outline-none">
                     <button onclick="addNewOppCustomDoc()" class="auth-intent-chip flex-shrink-0" style="justify-content:center;padding:0 28px;">${Icon('plus','w-4 h-4')} Add</button>
                   </div>
+                  ` : ''}
                   </div>
                 </div>`}
               `}
@@ -9843,9 +9851,10 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             [pendingPayouts.length, 'Payout requests', pendingPayouts.length ? dashMoney(payoutTotal) + ' total' : 'None waiting', 'payouts', '#1E90FF', '#e0efff'],
             [spaceReports, 'Space reports', spaceReports ? 'Open' : 'None open', 'classreports', '#dc2626', '#fee2e2'],
           ];
-          const rows = queue.map(([n, t, sub, key, fg, bg]) => `
+          const activeQueue = queue.filter(q => q[0] > 0);
+          const rows = activeQueue.map(([n, t, sub, key, fg, bg]) => `
             <button onclick="switchAdminDashboardTab('${key}')" class="w-full flex items-center gap-3 text-left" style="padding:12px 0;border-bottom:1px solid rgba(0,0,0,.06);">
-              <span class="flex items-center justify-center flex-shrink-0" style="width:40px;height:40px;border-radius:13px;font-weight:800;background:${n ? bg : '#f3f4f6'};color:${n ? fg : '#9ca3af'};">${n}</span>
+              <span class="flex-shrink-0" style="width:28px;font-size:18px;font-weight:800;color:${n ? '#0A2540' : '#9ca3af'};">${n}</span>
               <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-gray-800">${t}</span><span class="block text-xs text-gray-400">${sub}</span></span>
               <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
             </button>`).join('');
@@ -9855,10 +9864,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const liveCourses = allCourses.filter(c => c.deliveryType === 'live').length;
           const fees = d && d.loaded ? d.payments.filter(p => p.status === 'paid').reduce((n, p) => n + Number(p.stitch_fee || 0), 0) : null;
           return `
-            <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:2px 0 6px;">Needs you</div>
-            <div style="${card}padding:2px 16px;margin-bottom:14px;">${rows}</div>
-            <div style="display:flex;gap:10px;margin-bottom:10px;">${tile('Posters', approved === null ? '…' : String(approved), pendingPosters ? pendingPosters + ' pending' : 'approved')}${tile('Courses', String(allCourses.length), liveCourses ? liveCourses + ' live' : '')}</div>
-            <div style="display:flex;gap:10px;margin-bottom:14px;">${tile('Live listings', String(jl.length), up + ' by users')}${tile('Stitch fees', fees === null ? '…' : dashMoney(fees), 'all time')}</div>
+            ${activeQueue.length ? `
+              <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:2px 0 6px;">Needs you</div>
+              <div style="${card}padding:2px 16px;margin-bottom:14px;">${rows}</div>` : `
+              <div style="${card}padding:16px;margin:4px 0 14px;">
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center justify-center flex-shrink-0" style="width:40px;height:40px;border-radius:9999px;background:rgba(10,37,64,0.08);color:#0A2540;">${Icon('check','w-5 h-5')}</div>
+                  <div><div class="text-sm font-bold text-gray-800">All caught up</div><div class="text-xs text-gray-400">Nothing needs you right now</div></div>
+                </div>
+                <div class="text-xs text-gray-400" style="margin-top:12px;line-height:1.7;">${queue.map(q => q[1] + ' ' + q[0]).join(' &middot; ')}</div>
+              </div>`}
+            <div style="${card}display:flex;padding:16px 6px;margin-bottom:14px;">${[['Posters', approved === null ? '…' : String(approved)], ['Courses', String(allCourses.length)], ['Live', String(jl.length)], ['Fees', fees === null ? '…' : dashMoney(fees)]].map(([k, v]) => `<div style="flex:1;min-width:0;text-align:center;"><div style="font-size:20px;font-weight:800;line-height:1.2;" class="text-gray-900">${v}</div><div class="text-[10px] font-bold uppercase tracking-wide text-gray-400" style="margin-top:2px;">${k}</div></div>`).join('')}</div>
             ${adminListingsChartHTML(jl.length, up, jl.length - up)}`;
         }
 
@@ -10269,7 +10285,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             ${insightsLineChartHTML(b.labels, [{ name: 'Connections', color: ROYAL, values: cumulative, area: true }])}`;
         }
 
-        function insightsPostActivityChartHTML(myPosts){
+        function insightsPostActivityChartHTML(myPosts, part){
           const WEEKS = 8;
           const b = insightsWeekBuckets(WEEKS);
           const posts = new Array(WEEKS).fill(0);
@@ -10283,7 +10299,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const totalPosts = myPostsCount();
           const inWindow = posts.reduce((s, n) => s + n, 0);
           const engTotal = engagement.reduce((s, n) => s + n, 0);
-          return `
+          const postsPart = `
             <div class="flex items-end justify-between" style="margin-bottom:10px;">
               <div>
                 <div class="font-semibold text-sm text-gray-800">Post activity</div>
@@ -10294,12 +10310,29 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 <div class="text-[11px] text-gray-400">${inWindow ? `${inWindow} recent` : 'total'}</div>
               </div>
             </div>
-            ${insightsBarChartHTML(b.labels, posts, ROYAL)}
-            <div style="margin-top:18px;" class="flex items-center justify-between">
-              <div class="font-semibold text-xs text-gray-600">Engagement on those posts</div>
+            ${insightsBarChartHTML(b.labels, posts, ROYAL)}`;
+          const engPart = `
+            <div class="flex items-center justify-between">
+              <div class="font-semibold text-sm text-gray-800">Engagement on those posts</div>
               <div class="text-xs text-gray-400">${engTotal} total</div>
             </div>
             <div style="margin-top:8px;">${insightsLineChartHTML(b.labels, [{ name: 'Engagement', color: '#10b981', values: engagement, area: true }])}</div>`;
+          if (part === 'posts') return postsPart;
+          if (part === 'engagement') return engPart;
+          return postsPart + `<div style="margin-top:18px;"></div>` + engPart;
+        }
+        // Switches the Posts / Engagement / Audience tabs on My Activity
+        function actChartTab(btn, key){
+          const root = btn.closest('.act-tabs-root');
+          if (!root) return;
+          root.querySelectorAll('[data-act-tab]').forEach(b => b.classList.toggle('on', b === btn));
+          root.querySelectorAll('[data-act-panel]').forEach(p => { p.style.display = (p.getAttribute('data-act-panel') === key) ? '' : 'none'; });
+        }
+        // Info button next to a section title: shows or hides the grey explanation
+        function actToggleInfo(btn){
+          const el = btn.closest('[data-act-sec]');
+          const d = el && el.querySelector('[data-act-info]');
+          if (d) d.style.display = (d.style.display === 'none') ? '' : 'none';
         }
 
         // ============================================================
@@ -10421,10 +10454,13 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const wrap = panel ? 'bg-white rounded-3xl p-5 shadow-sm' : '';
           const wrapStyle = panel ? '' : 'padding:6px 2px 2px;';
           return `
-            <div class="${wrap}" style="${wrapStyle}">
-              <div class="font-semibold text-sm text-gray-800" style="margin-bottom:${(sub || ACT_DESCRIPTIONS[title]) ? '2px' : '12px'};">${title}</div>
-              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 ${ACT_DESCRIPTIONS[title] ? '6px' : '12px'};">${sub}</div>` : ''}
-              ${ACT_DESCRIPTIONS[title] ? `<div class="text-xs" style="color:#6b7280;line-height:1.55;margin:${sub ? '0' : '3px'} 0 12px;">${ACT_DESCRIPTIONS[title]}</div>` : ''}
+            <div class="${wrap}" style="${wrapStyle}" data-act-sec="1">
+              <div class="flex items-center justify-between gap-2" style="margin-bottom:${(sub || ACT_DESCRIPTIONS[title]) ? '2px' : '12px'};">
+                <div class="font-semibold text-sm text-gray-800">${title}</div>
+                ${ACT_DESCRIPTIONS[title] ? `<button type="button" onclick="actToggleInfo(this)" aria-label="What this shows" class="flex-shrink-0 flex items-center justify-center rounded-full" style="width:24px;height:24px;background:#f3f4f6;color:#6b7280;font-size:12px;font-weight:700;">i</button>` : ''}
+              </div>
+              ${sub ? `<div class="text-xs text-gray-400" style="margin:0 0 12px;">${sub}</div>` : ''}
+              ${ACT_DESCRIPTIONS[title] ? `<div data-act-info="1" class="text-xs" style="display:none;color:#6b7280;line-height:1.55;margin:0 0 12px;">${ACT_DESCRIPTIONS[title]}</div>` : ''}
               ${inner}
             </div>`;
         }
@@ -10540,7 +10576,8 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         // of every analytics PDF ----
         const STITCH_PDF_LOGO_B64 = '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';
         function pdfWatermarkInit(doc){
-          const draw = () => {
+          const draw = () => { return; };
+          const drawOld = () => {
             try {
               const W = 150, H = W * 204 / 500;
               const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
@@ -10734,10 +10771,14 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           y = 51 + introLines.length * 5.2 + 5;
 
           // ---- building blocks ----
+          const pdfCard = { page: 0, y: 0 };
+          const endCard = () => { if (pdfCard.page && pdfCard.page === doc.getNumberOfPages()) { stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.roundedRect(M - 3, pdfCard.y, CW + 6, y - pdfCard.y + 1, 3, 3, 'S'); } pdfCard.page = 0; };
+          const startCard = () => { pdfCard.page = doc.getNumberOfPages(); pdfCard.y = y - 5; };
           const section = (hex, title, sub, need) => {
+            endCard();
             y += 8;
             ensure(need || 50);
-            stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.line(M, y - 3, M + CW, y - 3);
+            startCard();
             color('#000000'); font(12.5, true, true); doc.text(txt(title), M, y + 2.6);
             y += 7;
             if (sub) { color('#9ca3af'); font(8.5, false); doc.text(txt(sub), M, y + 1); y += 5; }
@@ -10747,14 +10788,15 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const note = t => { color('#9ca3af'); font(8, false); const l = doc.splitTextToSize(txt(t), CW); doc.text(l, M, y + 2); y += l.length * 4 + 2; };
           const empty = t => { color('#9ca3af'); font(9, false); doc.text(txt(t), M, y + 3); y += 9; };
           const tiles = list => {
-            ensure(20);
+            ensure(24);
             const gap = 4, w = (CW - gap * (list.length - 1)) / list.length;
             list.forEach((t, i) => {
               const x = M + i * (w + gap);
-              color('#000000'); font(15, true); doc.text(txt(t.v), x, y + 6);
-              color('#6b7280'); font(7.5, false); doc.text(clip(t.l, w - 2), x, y + 11.5);
+              stroke('#e5e7eb'); doc.setLineWidth(0.3); doc.roundedRect(x, y, w, 18, 3, 3, 'S');
+              color('#000000'); font(15, true); doc.text(txt(t.v), x + 3.5, y + 8);
+              color('#6b7280'); font(7.5, false); doc.text(clip(t.l, w - 5), x + 3.5, y + 13.5);
             });
-            y += 19;
+            y += 22;
           };
           const sector = (cx, cy, r, a0, a1) => {
             const pts = [[cx, cy]], steps = Math.max(2, Math.ceil((a1 - a0) / (Math.PI / 36)));
@@ -10953,6 +10995,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             topList.forEach((p, i) => { ensure(7); color('#374151'); font(9, false); doc.text((i + 1) + '. ' + clip(p.body || 'Photo/video post', CW - 30), M, y + 2); color('#6b7280'); font(8.5, true); doc.text(A.score(p) + ' reactions', M + CW, y + 2, { align: 'right' }); y += 7; });
           }
 
+          endCard();
           // ---- footer on every page ----
           const pages = doc.getNumberOfPages();
           for (let i = 1; i <= pages; i++) {
@@ -11092,20 +11135,32 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 ${actStatTile(A.myPosts.length ? Math.round(engagementTotal / A.myPosts.length * 10) / 10 : 0, 'Avg per post', ACT_COLORS.green)}
               </div>
 
-              <div style="padding:6px 2px 2px;">${insightsPostActivityChartHTML(feedPosts.filter(p => p.mine))}</div>
+              <div class="act-tabs-root">
+                <div class="pill-bleed flex gap-2 overflow-x-auto no-scrollbar pb-1" style="margin-bottom:12px;">
+                  <button type="button" data-act-tab="posts" onclick="actChartTab(this,'posts')" class="filter-pill flex-shrink-0 on">Posts</button>
+                  <button type="button" data-act-tab="engagement" onclick="actChartTab(this,'engagement')" class="filter-pill flex-shrink-0">Engagement</button>
+                  <button type="button" data-act-tab="audience" onclick="actChartTab(this,'audience')" class="filter-pill flex-shrink-0">Audience</button>
+                </div>
+                <div class="bg-white rounded-3xl p-5 shadow-sm">
+                  <div data-act-panel="posts">${insightsPostActivityChartHTML(feedPosts.filter(p => p.mine), 'posts')}</div>
+                  <div data-act-panel="engagement" style="display:none;">${insightsPostActivityChartHTML(feedPosts.filter(p => p.mine), 'engagement')}</div>
+                  <div data-act-panel="audience" style="display:none;">
+                    <div class="font-semibold text-sm text-gray-800" style="margin-bottom:2px;">Audience activity</div>
+                    <div class="text-xs text-gray-400" style="margin:0 0 12px;">Reactions on your posts, by the week you posted</div>
+                    ${audienceLine}
+                    <div style="margin-top:18px;">${actPieHTML([
+                      { label: 'Likes', value: A.likes, color: ACT_COLORS.red },
+                      { label: 'Comments', value: A.comments, color: ACT_COLORS.blue },
+                      { label: 'Reposts', value: A.reposts, color: ACT_COLORS.green },
+                      { label: 'Shares', value: A.shares, color: ACT_COLORS.amber },
+                    ], 'Reactions will be broken down here once people start interacting.')}</div>
+                  </div>
+                </div>
+              </div>
 
               ${actSectionHTML(ACT_COLORS.amber, 'Top post vs your other posts', `Total posts: ${A.myPosts.length}`, compare)}
 
               ${actSectionHTML(ACT_COLORS.purple, 'Every post, plotted', 'Each dot is a post: higher means more reactions. The gold dot is your top post.', actScatterHTML(postPts, { xLeft: 'Older', xRight: 'Newer', empty: 'Your posts will be plotted here once you post.', legend: '' }))}
-
-              ${actSectionHTML(ACT_COLORS.red, 'Audience activity', 'Reactions on your posts, by the week you posted', `
-                ${audienceLine}
-                <div style="margin-top:18px;">${actPieHTML([
-                  { label: 'Likes', value: A.likes, color: ACT_COLORS.red },
-                  { label: 'Comments', value: A.comments, color: ACT_COLORS.blue },
-                  { label: 'Reposts', value: A.reposts, color: ACT_COLORS.green },
-                  { label: 'Shares', value: A.shares, color: ACT_COLORS.amber },
-                ], 'Reactions will be broken down here once people start interacting.')}</div>`)}
 
               ${actSectionHTML(ACT_COLORS.pink, 'Profile & Glimpse views', 'Who is looking at you', `
                 <div class="flex gap-3" style="margin-bottom:14px;">
@@ -11195,7 +11250,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
               ` : ''}
 
-              ${embed ? '' : `<button type="button" onclick="downloadMyActivity()" class="myact-dl-pill">${Icon('download','w-5 h-5')}<span>Download my activity</span></button>
-              <div class="text-[11px] text-gray-400 text-center" style="padding-bottom:max(24px, env(safe-area-inset-bottom));">Saves everything on this page as a PDF on your device.</div>`}
+              ${embed ? '' : `<div style="padding-bottom:max(24px, env(safe-area-inset-bottom));"></div>`}
             ${embed ? '</div>' : '</div></div>'}`;
         }
