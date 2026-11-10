@@ -6542,9 +6542,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">Your CV</div>
               <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(p.resumeFileName)}</div>
               <div class="flex items-center gap-2" style="margin-top:10px;">
-                ${p.resumeDataUrl ? `<button onclick="careerViewResume()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};">View</button><button onclick="careerDownloadResume()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};">Download</button>` : ''}
+                ${p.resumeDataUrl ? `<button onclick="careerViewResume()" class="flex-1 text-center text-sm rounded-full" style="padding:9px 0;background:#eceef1;color:#4b5563; font-weight:500;">View</button><button onclick="careerDownloadResume()" class="flex-1 text-center text-sm rounded-full" style="padding:9px 0;background:#eceef1;color:#4b5563; font-weight:500;">Download</button>` : ''}
                 <input type="file" id="career-profile-resume-input" accept=".pdf,.doc,.docx" class="hidden" onchange="handleCareerProfileResumeReplace(event)">
-                <button onclick="document.getElementById('career-profile-resume-input').click()" class="flex-1 text-center text-sm font-semibold py-2.5 rounded-2xl" style="background:#f3f4f6;color:#374151;">Edit</button>
+                <button onclick="document.getElementById('career-profile-resume-input').click()" class="flex-1 text-center text-sm rounded-full" style="padding:9px 0;background:#eceef1;color:#4b5563; font-weight:500;">Edit</button>
               </div>
             </div>` : `
             <div class="bg-white rounded-3xl p-4 mb-5 shadow-sm text-sm text-gray-500">No CV attached yet.
@@ -6555,7 +6555,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Documents')}
               <div class="px-5" style="padding-top:20px;">
-                <div class="text-xs text-gray-400 px-1" style="margin-bottom:12px;">Everything you have uploaded for Stitch Bot. View, download or edit any file.</div>
+                <div class="text-xs text-gray-400 px-1" style="margin-bottom:12px;">Files Stitch Bot uses when it applies for you.</div>
                 ${cv}
                 ${careerBotDocsCardHTML()}
               </div>
@@ -6608,43 +6608,43 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         // The two big "Ask me first / Go ahead on its own" cards: tick circle, blue border and a
         // light blue fill when picked
         function careerPrefChoiceHTML(key, options, current){
-          return options.map(o => {
+          return options.map((o, i) => {
             const sel = current === o.v;
-            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full text-left rounded-2xl flex items-start gap-3" style="padding:14px;margin-bottom:10px;border:2px solid ${sel ? '#1e90ff' : 'rgba(128,128,128,0.2)'};background:${sel ? 'rgba(30,144,255,0.06)' : 'transparent'};">
-              <span class="flex-shrink-0 flex items-center justify-center" style="width:22px;height:22px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;color:#fff;' : 'border:2px solid rgba(128,128,128,0.4);'}">${sel ? IconBold('check','w-3 h-3') : ''}</span>
+            return `<button onclick="setCareerBotPref('${key}','${o.v}')" class="w-full text-left flex items-start gap-3" style="padding:14px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              <span class="flex-shrink-0" style="width:20px;height:20px;margin-top:1px;border-radius:9999px;${sel ? 'background:#1e90ff;box-shadow:inset 0 0 0 5px #1e90ff,inset 0 0 0 8px #fff;' : 'border:2px solid #d1d5db;'}"></span>
               <span class="flex-1 min-w-0"><span class="block text-sm font-semibold text-gray-800">${o.l}</span><span class="block text-xs text-gray-500" style="margin-top:2px;">${o.d}</span></span>
             </button>`;
           }).join('');
         }
         function careerPreferencesHTML(){
           const pr = careerBotPrefs();
-          const sec = (t, sub, inner) => `<div style="margin-bottom:28px;"><div class="text-base font-semibold text-gray-800">${t}</div>${sub ? `<div class="text-xs text-gray-400" style="margin:2px 0 12px;">${sub}</div>` : '<div style="height:10px;"></div>'}${inner}</div>`;
-          const sub2 = (t) => `<div class="text-sm font-semibold text-gray-500" style="margin:20px 0 10px;">${t}</div>`;
+          const sec = (t, sub, inner, plain) => `<div style="margin-bottom:22px;"><div style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:16px;color:#1f2937;">${t}</div>${sub ? `<div class="text-xs text-gray-400" style="margin:2px 0 10px;">${sub}</div>` : '<div style="height:10px;"></div>'}${plain ? inner : `<div class="pref-card bg-white rounded-3xl shadow-sm" style="padding:2px 16px 16px;">${inner}</div>`}</div>`;
+          const sub2 = (t) => `<div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin:16px 0 8px;">${t}</div>`;
           return `
             <div class="flex-1 overflow-y-auto aa-flow" style="padding-bottom:30px;">
               ${careerSubPageHeaderHTML('Preferences')}
               <div class="px-5" style="padding-top:20px;">
-                ${sec('How should Stitch Bot act for you?', 'Applies to everything it does on auto apply.', careerPrefChoiceHTML('mode', [
-                  { v: 'review', l: 'Ask me first', d: 'It shows each action and why it wants to take it. Nothing is sent until you approve.' },
-                  { v: 'auto', l: 'Go ahead on its own', d: 'It takes every action itself and tells you after.' },
+                ${sec('How should Stitch Bot act for you?', '', careerPrefChoiceHTML('mode', [
+                  { v: 'review', l: 'Ask me first', d: 'Nothing is sent until you approve.' },
+                  { v: 'auto', l: 'Go ahead on its own', d: 'Acts itself and tells you after.' },
                 ], pr.mode))}
                 ${sec('How it submits your documents', '', `
-                  ${sub2('Open application letter').replace('margin:20px 0 10px', 'margin:0 0 10px')}
+                  ${sub2('Open application letter')}
                   ${careerPrefChipsHTML('letter', [{ v: 'always', l: 'Always attach' }, { v: 'asked', l: 'Only when a post asks' }], pr.letter)}
-                  ${sub2('Extra documents (certificates, references, other)')}
+                  ${sub2('Extra documents')}
                   ${careerPrefChipsHTML('extras', [{ v: 'all', l: 'Attach all' }, { v: 'asked', l: 'Only what a post asks for' }], pr.extras)}
                   ${sub2('Cover note')}
                   ${careerPrefChipsHTML('coverNote', [{ v: 'fresh', l: 'Write a new one per post' }, { v: 'letter', l: 'Use my open letter' }], pr.coverNote)}
-                  ${sub2('Tone of the note')}
+                  ${sub2('Tone')}
                   ${careerPrefChipsHTML('tone', [{ v: 'professional', l: 'Professional' }, { v: 'friendly', l: 'Friendly' }, { v: 'concise', l: 'Short and direct' }], pr.tone)}
                 `)}
                 ${sec('Which posts it applies to', '', `
-                  ${sub2('Minimum match').replace('margin:20px 0 10px', 'margin:0 0 10px')}
+                  ${sub2('Minimum match')}
                   ${careerPrefChipsHTML('minScore', [{ v: 40, l: '40%+' }, { v: 60, l: '60%+' }, { v: 70, l: '70%+' }, { v: 80, l: '80%+' }], pr.minScore)}
                   ${sub2('Most applications per day')}
                   ${careerPrefChipsHTML('dailyLimit', [{ v: 5, l: '5' }, { v: 10, l: '10' }, { v: 20, l: '20' }, { v: 0, l: 'No limit' }], pr.dailyLimit)}
                 `)}
-                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`)}
+                ${sec('Anything else it should know?', 'Optional. Stitch Bot keeps this in mind when it writes for you.', `<textarea rows="4" maxlength="600" oninput="setCareerBotPrefNotes(this.value)" placeholder="e.g. I only want remote roles. Never mention my current employer." class="w-full bg-white text-sm rounded-3xl shadow-sm px-4 py-3" style="outline:none;resize:vertical;">${escapeHtml(pr.notes || '')}</textarea>`, true)}
               </div>
             </div>`;
         }
@@ -7915,22 +7915,21 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             const full = list.length >= CAREER_BOT_MAX_FILES;
             const sub = busy ? 'Saving…' : list.length ? `${list.length} file${list.length === 1 ? '' : 's'} added` : s.hint;
             return `
-              <div class="py-3" style="border-top:1px solid rgba(128,128,128,0.15);">
-                <div class="text-sm font-semibold text-gray-800">${s.label}</div>
-                <div class="text-xs text-gray-400 truncate">${sub}</div>
+              <div style="padding:12px 0;border-top:1px solid rgba(128,128,128,0.15);">
+                <div class="flex items-center gap-3">
+                  <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-gray-800">${s.label}</div><div class="text-xs text-gray-400 truncate" style="margin-top:2px;">${sub}</div></div>
+                  <input type="file" multiple id="career-bot-doc-${s.id}" accept="${s.id === 'idDocument' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx'}" class="hidden" onchange="handleCareerBotDoc(event,'${s.id}')">
+                  <button ${(busy || full) ? 'disabled' : ''} onclick="document.getElementById('career-bot-doc-${s.id}').click()" class="flex-shrink-0 rounded-full text-sm" style="background:#eceef1;color:#4b5563; padding:7px 14px;font-weight:500;${full ? 'opacity:.5;' : ''}">${full ? 'Limit reached' : list.length ? 'Add more' : 'Upload'}</button>
+                </div>
                 ${list.map((d, i) => `
-                  <div class="flex items-center gap-2" style="padding:6px 0;">
-                    <span class="flex-shrink-0" style="color:${NAVY};">${Icon('doc','w-4 h-4')}</span>
+                  <div class="flex items-center gap-2" style="padding:8px 0 0;">
+                    <span class="flex-shrink-0" style="color:#6b7280;">${Icon('doc','w-4 h-4')}</span>
                     <div class="flex-1 min-w-0 text-xs text-gray-700 truncate">${escapeHtml(d.fileName)}</div>
                     <button onclick="careerViewDoc('${s.id}',${i})" class="text-xs font-semibold" style="color:${NAVY};">View</button>
                     <button onclick="careerDownloadDoc('${s.id}',${i})" class="text-xs font-semibold" style="color:${NAVY};margin-left:10px;">Download</button>
                     <button onclick="careerDocEdit('${s.id}',${i})" class="text-xs font-semibold" style="color:#374151;margin-left:10px;">Edit</button>
                     <button onclick="removeCareerBotDoc('${s.id}',${i})" class="text-xs font-semibold" style="color:#ef4444;margin-left:10px;">Remove</button>
                   </div>`).join('')}
-                <div class="flex gap-2" style="margin-top:8px;">
-                  <input type="file" multiple id="career-bot-doc-${s.id}" accept="${s.id === 'idDocument' ? '.pdf,.jpg,.jpeg,.png' : '.pdf,.doc,.docx'}" class="hidden" onchange="handleCareerBotDoc(event,'${s.id}')">
-                  <button ${(busy || full) ? 'disabled' : ''} onclick="document.getElementById('career-bot-doc-${s.id}').click()" class="flex-1 flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-2xl" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px dashed ${ROYAL};${full ? 'opacity:.5;' : ''}">${Icon('upload','w-4 h-4')} ${full ? 'Limit reached' : list.length ? 'Add more' : 'Upload'}</button>
-                </div>
               </div>`;
           }).join('');
           // The phone number was already checked (with its country code) on the last step of Match
@@ -7940,14 +7939,18 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             ? `<div class="flex items-center justify-between text-sm py-2"><span class="text-gray-500">Phone</span><span class="font-semibold text-gray-800">${escapeHtml(phoneNow.display)}</span></div>`
             : `<div class="text-xs mb-1" style="color:#ef4444;">Add your phone number with its country code so Stitch Bot can apply for you.</div>
                <input type="tel" value="${escapeHtml(p.botContact.phone || '')}" onchange="setCareerBotPhone(this.value)" placeholder="e.g. +233 24 123 4567" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="outline:none;">`;
+          const H = (t) => `<div style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:16px;color:#1f2937;margin:22px 0 10px;">${t}</div>`;
           return `
-            <div class="px-1 mb-5">
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-1">Application documents</div>
-              <div class="text-xs text-gray-400 mb-2">Stitch Bot uses these, plus your CV, to apply for you. Posts that ask for other documents are skipped until you add them. You can add more than one file to each section.</div>
-              ${phoneBlock}
-              <div class="text-xs text-gray-400" style="margin:2px 0 4px;">${(p.botContact.location || '').trim() ? 'Your city and country, taken from your forms. Change it here if you move.' : 'Add your city and country so applications carry your location.'}</div>
-              <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2 mb-1" style="outline:none;">
-              ${rows}
+            <div class="mb-5">
+              ${H('Your details')}
+              <div class="bg-white rounded-3xl shadow-sm" style="padding:14px 16px;">
+                ${phoneBlock}
+                <div class="text-xs text-gray-400" style="margin:8px 0 6px;">${(p.botContact.location || '').trim() ? 'Taken from your forms. Change it here if you move.' : 'Add your city and country so applications carry your location.'}</div>
+                <input type="text" value="${escapeHtml(p.botContact.location || '')}" oninput="updateCareerBotContact('location', this.value)" placeholder="City, country" class="w-full min-w-0 bg-gray-100 flow-outline text-sm rounded-2xl px-3 py-2.5" style="outline:none;">
+              </div>
+              ${H('Documents')}
+              <div class="text-xs text-gray-400" style="margin:-4px 0 8px;">Stitch Bot uses these, plus your CV. Posts that ask for other documents are skipped until you add them.</div>
+              <div class="bg-white rounded-3xl shadow-sm" style="padding:0 16px;">${rows}</div>
             </div>`;
         }
         function careerBotUpdatesCardHTML(){
@@ -7983,21 +7986,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               <div style="height:8px;border-radius:9999px;background:rgba(128,128,128,0.18);overflow:hidden;"><div style="height:100%;width:${max ? Math.round(n / max * 100) : 0}%;min-width:${n ? 6 : 0}px;border-radius:9999px;background:${color};transition:width .4s ease;"></div></div>
             </div>`;
           const top = Math.max(1, matched, applied.length);
+          const cnt = (n, l) => `<div style="flex:1;text-align:center;"><div class="font-bold text-lg font-display">${n}</div><div class="text-[10px] uppercase tracking-wide text-gray-400">${l}</div></div>`;
           return `
-            <div class="px-1 mb-5">
-              <div class="flex items-center justify-between mb-2">
-                <div class="text-xs font-bold uppercase tracking-wide text-gray-400">Your progress</div>
-                <div class="text-xs font-bold" style="color:${NAVY};">${pct}% set up</div>
+            <div class="bg-white rounded-3xl p-4 mb-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:15px;color:#1f2937;">Your progress</div>
+                <div class="text-xs font-bold" style="color:#1e90ff;">${pct}% set up</div>
               </div>
-              ${bar('Profile setup (CV, letter, phone, plan, first application)', pct, 100, `linear-gradient(90deg, ${NAVY}, ${ROYAL})`).replace(/<span class="font-bold text-gray-800">\d+<\/span>/, `<span class="font-bold text-gray-800">${pct}%</span>`)}
-              ${sub ? bar('Plan time used', subPct, 100, '#1e90ff').replace(/<span class="font-bold text-gray-800">\d+<\/span>/, `<span class="font-bold text-gray-800">${subText}</span>`) : ''}
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:14px 0 8px;">Applications funnel</div>
-              ${bar('Matched', matched, top, '#94a3b8')}
-              ${bar('Applied', applied.length, top, '#1e90ff')}
-              ${bar('Under review +', reviewed, top, '#b45309')}
-              ${bar('Shortlisted / interview +', short, top, '#4f46e5')}
-              ${bar('Offers', offers, top, '#059669')}
-              <div style="margin-top:14px;">${careerAnalyticsGraphHTML(applied)}</div>
+              <div style="height:6px;border-radius:9px;background:#e5e7eb;overflow:hidden;margin:12px 0 ${sub ? '12px' : '16px'};"><div style="height:100%;width:${pct}%;background:#1e90ff;border-radius:9px;"></div></div>
+              ${sub ? `<div class="flex justify-between text-xs text-gray-500" style="margin:-2px 0 14px;"><span>Plan time used</span><span class="font-bold text-gray-800">${subText}</span></div>` : ''}
+              <div class="flex">${cnt(matched, 'Matched')}${cnt(applied.length, 'Applied')}${cnt(reviewed, 'Review')}${cnt(short, 'Short-list')}${cnt(offers, 'Offers')}</div>
+              ${applied.length ? `<div style="margin-top:14px;">${careerAnalyticsGraphHTML(applied)}</div>` : ''}
             </div>`;
         }
         function careerMatchesHTML(){

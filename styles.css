@@ -6825,3 +6825,9 @@ html.dark-mode [data-act-sec] button[aria-label="What this shows"]{ background:r
 html.dark-mode .pill-bleed button[style*="#eceef1"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
 
 /* Subscription: round blue CTA (matches Choose a plan concept) */
+
+/* Career Preferences: grey pills inside white cards, selected = light blue, no outline/shadow */
+body:not(.dark-mode) .pref-card .auth-intent-chip{ background:#eceef1 !important; color:#4b5563 !important; box-shadow:none !important; border-color:transparent !important; font-weight:500 !important; }
+body:not(.dark-mode) .pref-card .auth-intent-chip.on{ background:rgba(30,144,255,0.12) !important; color:#1e90ff !important; }
+html.dark-mode .pref-card .auth-intent-chip{ background:rgba(255,255,255,0.10) !important; color:#e5e7eb !important; box-shadow:none !important; }
+html.dark-mode .pref-card .auth-intent-chip.on{ background:rgba(30,144,255,0.22) !important; color:#60a5fa !important; }
