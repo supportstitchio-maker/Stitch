@@ -6823,3 +6823,5 @@ html.dark-mode [data-act-sec] button[aria-label="What this shows"]{ background:r
 
 /* Create Course step 3 add-pills in dark mode */
 html.dark-mode .pill-bleed button[style*="#eceef1"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
+
+/* Subscription: round blue CTA (matches Choose a plan concept) */

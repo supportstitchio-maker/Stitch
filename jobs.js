@@ -6994,10 +6994,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           let body, floatHTML = '';
           if (!sub) {
             body = `
-              <div style="text-align:center;margin-top:56px;">
-                <div style="color:${NAVY};display:flex;justify-content:center;">${botIcon.replace('width:26px;height:26px', 'width:54px;height:54px')}</div>
-                <h2 class="pa-h2" style="margin-top:14px;">No plan yet</h2>
-                <div class="pa-sub" style="max-width:270px;margin:0 auto;">Stitch Bot finds your matches and applies for you. Pick a plan to switch it on.</div>
+              <div style="margin-top:6px;">
+                <div class="font-display" style="font-size:28px;line-height:1.15;color:#111827;">No plan yet</div>
+                <div class="text-sm text-gray-500" style="margin-top:4px;">Pick a plan and Stitch Bot finds matches and applies for you.</div>
               </div>
               ${careerSubscriptionAboutHTML(null, false, true)}`;
             floatHTML = `<button onclick="openCareerStartPlan(true)" class="flow-pill flow-pill-go" style="width:100%;">Choose a plan</button>`;
@@ -7059,6 +7058,17 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             : (sub && sub.cancelled
               ? `You cancelled. Everything keeps working until ${end}, then matching and auto apply stop.`
               : `Your plan covers everything above until ${end}. If you cancel, you keep access until then.`));
+          if (noFoot) {
+            const short = [['Matches you to posts', 'Reads your CV and picks the best fits.'], ['Applies for you', 'Sends your CV and letter. Only inside Stitch.'], ['Keeps watch', 'Tells you when a status changes.']];
+            return `
+              <div class="bg-white rounded-3xl p-4 shadow-sm" style="margin-top:18px;">
+                ${short.map((it, i) => `
+                  <div class="flex items-center gap-3" style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+                    <svg viewBox="0 0 24 24" style="width:18px;height:18px;flex-shrink:0;color:#1E90FF;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;"><path d="M5 12l5 5 9-10"/></svg>
+                    <div class="flex-1 min-w-0"><div class="text-sm font-semibold text-gray-800">${it[0]}</div><div class="text-xs text-gray-500" style="margin-top:2px;">${it[1]}</div></div>
+                  </div>`).join('')}
+              </div>`;
+          }
           return `
             <div style="margin-top:${noFoot ? 34 : 24}px;">
               <div class="aa-h3" style="margin-bottom:6px;">What this plan gives you</div>

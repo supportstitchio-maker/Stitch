@@ -1669,6 +1669,11 @@ try {
           rerenderNewCourseOverlay();
           const sc = document.querySelector('#overlay .overflow-y-auto'); if (sc) sc.scrollTop = 0;
         }
+        function courseCreateGoto(n){
+          newCourseStep = Math.max(1, Math.min(4, n));
+          rerenderNewCourseOverlay();
+          const sc = document.querySelector('#overlay .overflow-y-auto'); if (sc) sc.scrollTop = 0;
+        }
         function courseCreateBack(){
           newCourseStep = Math.max(1, newCourseStep - 1);
           rerenderNewCourseOverlay();
@@ -4617,7 +4622,7 @@ try {
             `: ''}
               ${step === 4 ? (() => {
                 const parts = d.modules.reduce((n, m) => n + (m.items || []).length, 0);
-                const row = (ok, text) => `<div class="flex items-center gap-3 py-3" style="border-bottom:1px solid rgba(0,0,0,.06);"><span class="flex items-center justify-center flex-shrink-0" style="width:24px;height:24px;border-radius:50%;background:${ok ? '#10b981' : '#f59e0b'};color:#fff;font-weight:800;font-size:13px;">${ok ? IconBold('check','w-3 h-3') : '!'}</span><span class="text-sm font-semibold text-gray-800">${text}</span></div>`;
+                const row = (ok, text, goStep, first) => `<div class="flex items-center gap-3" style="padding:13px 0;${first ? '' : 'border-top:1px solid rgba(128,128,128,0.15);'}">${ok ? `<span class="flex items-center justify-center flex-shrink-0" style="width:22px;height:22px;border-radius:50%;background:#1E90FF;color:#fff;">${IconBold('check','w-3 h-3')}</span>` : `<span class="flex-shrink-0" style="width:22px;height:22px;border-radius:50%;border:2px solid #d1d5db;"></span>`}<span class="text-sm flex-1 ${ok ? 'text-gray-800' : 'text-gray-500'}">${text}</span>${ok ? '' : `<button onclick="courseCreateGoto(${goStep})" class="text-xs" style="color:#1E90FF;">Add</button>`}</div>`;
                 const price = coursePriceFromDraft(d);
                 const net = Math.round(price * (100 - PAID_SELLER_SHARE_PCT)) / 100;
                 const sym = { GHS: '₵', NGN: '₦', USD: '$', ZAR: 'R', KES: 'KSh ' }[d.currency || 'GHS'] || ((d.currency || 'GHS') + ' ');
@@ -4626,11 +4631,18 @@ try {
                     <div class="relative overflow-hidden flex-shrink-0" style="width:84px;height:84px;border-radius:18px;background:${courseFallbackGrad({ id: 'draft' })};">${d.photo ? `<img src="${escapeHtml(d.photo)}" alt="" class="absolute inset-0 w-full h-full object-cover">` : ''}</div>
                     <div class="min-w-0 flex-1"><div class="font-bold text-base text-gray-800 truncate">${escapeHtml(d.title || 'Untitled course')}</div><div class="text-xs text-gray-400" style="margin:3px 0 6px;">${d.modules.length} module${d.modules.length === 1 ? '' : 's'} · ${parts} part${parts === 1 ? '' : 's'}</div><span class="text-xs font-bold" style="color:${price > 0 ? '#1E90FF' : '#059669'};">${price > 0 ? sym + price : 'Free'}</span></div>
                   </div>
-                  ${row(!!(d.welcomeVideo && d.welcomeVideo.url), 'Welcome video added')}
-                  ${row(!!(d.photo && d.title.trim()), 'Cover and title set')}
-                  ${row(!!d.description.trim(), 'Description written')}
-                  ${row(parts > 0, d.modules.length + ' module' + (d.modules.length === 1 ? '' : 's') + ', ' + parts + ' part' + (parts === 1 ? '' : 's'))}
-                  ${row((d.resources || []).length > 0, (d.resources || []).length ? (d.resources.length + ' resource' + (d.resources.length === 1 ? '' : 's')) : 'No resources added yet (optional)')}
+                  ${(() => {
+                    const checks = [
+                      [!!(d.welcomeVideo && d.welcomeVideo.url), 'Welcome video', 1],
+                      [!!(d.photo && d.title.trim()), 'Cover and title', 1],
+                      [!!d.description.trim(), 'Description', 2],
+                      [parts > 0, 'At least one module with a part', 3],
+                    ];
+                    const done = checks.filter(c => c[0]).length;
+                    return `<div class="flex items-center justify-between" style="margin:18px 0 8px;"><span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:16px;color:#1f2937;">Before you publish</span><span class="text-xs text-gray-400">${done} of ${checks.length} done</span></div>
+                    <div class="bg-white rounded-3xl shadow-sm" style="padding:0 16px;">${checks.map((c, i) => row(c[0], c[1], c[2], i === 0)).join('')}</div>
+                    <div class="text-xs text-gray-400" style="margin-top:10px;">Resources are optional${(d.resources || []).length ? ' (' + d.resources.length + ' added)' : ''}.</div>`;
+                  })()}
                   ${price > 0 ? `<div class="bg-white rounded-3xl p-4 mt-4" style="box-shadow:0 4px 18px rgba(15,23,42,.08);border:1px solid rgba(0,0,0,.04);"><div class="text-[11px] font-bold uppercase tracking-wide text-gray-400">You earn</div><div class="text-sm mt-1"><b>${sym}${net}</b> from each ${sym}${price} sale <span class="text-gray-400">· Stitch keeps ${PAID_SELLER_SHARE_PCT}%</span></div></div>` : ''}`;
               })() : ''}
             </div>
