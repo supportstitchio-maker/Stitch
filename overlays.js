@@ -766,14 +766,13 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         // post menu on the main pages)
         function classMenuSheetHTML(toggleFnName, rows){
           const rowHtml = rows.map(r => `
-            <button onclick="${r.onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${r.cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${(r.cls && /text-red/.test(r.cls)) ? Icon(r.icon,'w-6 h-6').replace('<svg ', '<svg style="color:#ef4444;" ') : Icon(r.icon,'w-6 h-6')}</span>
-              <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${r.label}</span>
+            <button onclick="${r.onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${r.cls || 'text-gray-800'}${(r.cls && /text-red/.test(r.cls)) ? ' sheet-row-red' : ''}" style="background:transparent;${(r.cls && /text-red/.test(r.cls)) ? 'width:calc(100% - 48px);margin:6px 24px 0;padding-left:0;padding-right:0;border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${r.label}</span>
             </button>`).join('');
           return `
             <div onclick="${toggleFnName}()" ontouchmove="event.preventDefault()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
             <div class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
-              <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+              <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
               ${rowHtml}
             </div>`;
         }
@@ -3624,7 +3623,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (notice) { try { el.style.top = Math.round(notice.getBoundingClientRect().bottom + 8) + 'px'; } catch (e) {} }
           el.innerHTML = notifAvatar2(n) +
             `<div style="flex:1;min-width:0;"><div style="display:flex;justify-content:space-between;gap:8px;"><div class="nbn-t">${escapeHtml(n.name || 'Stitch')}</div><div class="nbn-time">now</div></div><div class="nbn-m">${escapeHtml(notifPreviewText(n))}</div></div>` +
-            `<span style="color:#9ca3af;flex-shrink:0;">${Icon('arrowRight','w-4 h-4')}</span>`;
+            `<span style="color:#9ca3af;flex-shrink:0;">${RowArrow('w-4 h-4')}</span>`;
           el.addEventListener('click', () => { el.remove(); notifBannerTap(n.id); });
           document.body.appendChild(el);
           if (typeof enableSwipeDismiss === 'function') enableSwipeDismiss(el, () => el.remove());
@@ -3970,7 +3969,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 <div class="font-extrabold text-[15px] truncate nrow-t">${escapeHtml(latestAppNotice.title || 'Notice')}</div>
                 <div class="nrow-m">${escapeHtml(latestAppNotice.message)}</div>
               </div>
-              <span style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</span>
+              <span style="color:#9ca3af;">${RowArrow('w-4 h-4')}</span>
             </div>` : '';
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">

@@ -139,9 +139,8 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
 
         function careerMenuRowHTML(onclick, icon, label, cls){
           return `
-            <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${(cls && /text-red/.test(cls)) ? Icon(icon,'w-6 h-6').replace('<svg ', '<svg style="color:#ef4444;" ') : Icon(icon,'w-6 h-6')}</span>
-              <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${label}</span>
+            <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}${(cls && /text-red/.test(cls)) ? ' sheet-row-red' : ''}" style="background:transparent;${(cls && /text-red/.test(cls)) ? 'width:calc(100% - 48px);margin:6px 24px 0;padding-left:0;padding-right:0;border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
         }
 
@@ -181,7 +180,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         // happens to be open when a poster_approved/poster_denied notification lands
         function careerMenuDropdownInnerHTML(){
           return `
-            <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+            <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
             ${careerMenuRowHTML("closeCareerMenuThen(() => jobsSubTab('saved'))", 'bookmarkOutline', 'Saved')}
             ${CAREER_MATCH_ENABLED ? careerMenuRowHTML("closeCareerMenuThen(() => openCareerStartForm())", 'file', 'Match with CV') : ''}
             ${careerMenuPostItemHTML()}
@@ -3200,7 +3199,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                     <div class="text-lg font-bold leading-tight" style="color:${NAVY};">${people.length}</div>
                     <div class="text-[10px] text-gray-400">${course ? 'Enrolled' : 'Applicants'}</div>
                   </div>
-                  <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+                  <span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
                 </div>
                 ${seg}
               </button>`;
@@ -4177,7 +4176,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 <div class="text-xs text-gray-400 truncate">${escapeHtml(a.email || '')}</div>
                 <div class="text-xs font-bold mt-0.5" style="color:${dm.color};">${escapeHtml(lbl)}</div>
               </div>
-              <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+              <span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
             </button>`;
           }
           const meta = JOB_STATUS_META[a.status || 'applied'] || JOB_STATUS_META.applied;
@@ -4189,7 +4188,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
               <div class="text-xs text-gray-400 truncate">${escapeHtml(a.email || '')}</div>
               <div class="text-[11px] text-gray-400 mt-0.5">${a.appliedAt ? fmtJobDateTime(a.appliedAt) : ''}${(!isCourse && docCount) ? ` &middot; ${docCount} document${docCount === 1 ? '' : 's'}` : ''}</div>
             </div>
-            ${!isCourse ? `<span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>` : ''}`;
+            ${!isCourse ? `<span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>` : ''}`;
           return isCourse
             ? `<div class="flex items-center gap-3 py-3.5 ${isLast ? '' : 'border-b border-gray-100'}">${inner}</div>`
             : `<button onclick="openJobDashboardApplicant('${a.id}')" class="w-full text-left flex items-center gap-3 py-3.5 ${isLast ? '' : 'border-b border-gray-100'}">${inner}</button>`;
@@ -4238,7 +4237,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                       <div class="font-semibold text-sm text-gray-800">Manage Course</div>
                       <div class="text-xs text-gray-400">Add modules, graded exams &amp; announcements, and see learner progress</div>
                     </div>
-                    <span class="text-gray-400 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+                    <span class="text-gray-400 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
                   </button>
                   <div class="text-center mb-5">
                     <div class="text-2xl font-bold" style="color:${NAVY};">${people.length}</div>
@@ -4476,7 +4475,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                     <div class="font-semibold text-sm text-gray-800">Manage Course</div>
                     <div class="text-xs text-gray-400">Add modules, graded exams &amp; announcements, and see learner progress</div>
                   </div>
-                  <span class="text-gray-400 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+                  <span class="text-gray-400 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
                 </button>` : ''}
               <div class="text-center opp-sticky-bar" style="position:sticky;bottom:0;z-index:5;margin:8px -20px 0;padding:14px 20px calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(248,250,252,0),#f8fafc 38%);">
                 <div style="display:flex;gap:10px;align-items:center;">
@@ -6047,7 +6046,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         }
         function careerCvMenuInnerHTML(){
           return `
-            <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+            <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerAutoApply())", 'bot', 'Auto apply')}
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerSubscriptionPage())", 'coin', 'Manage subscription')}
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerSavedPage())", 'bookmarkOutline', 'Saved')}`;
@@ -6112,7 +6111,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
         function careerBackToAutoApply(){ openOverlayFrom('careerMatches', 'careerAutoApply'); }
         function careerAutoMenuInnerHTML(){
           return `
-            <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+            <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerDocumentsPage())", 'doc', 'Documents')}
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerNotificationsPage())", 'bell', 'Notifications')}
             ${careerMenuRowHTML("closeCareerMenuThen(() => openCareerPreferencesPage())", 'settings', 'Preferences')}`;
@@ -6213,7 +6212,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           wrap.innerHTML = `
             <div onclick="closeCareerDocSheet()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
             <div class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;max-height:86vh;overflow-y:auto;">
-              <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 14px;"></div>
+              <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 14px;"></div>
               <div class="text-base font-bold font-display grad-text">Edit document</div>
               <div class="text-xs text-gray-400" style="margin-bottom:14px;">${escapeHtml(slot.label || 'Document')}</div>
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:6px;">File name</div>
@@ -6483,7 +6482,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           if (!careerBotDocList('degree').length) todo.push(['Add your degree or diploma', 'openCareerDocumentsPage()']);
           if (!careerBotDocList('reference').length) todo.push(['Add a reference letter', 'openCareerDocumentsPage()']);
           if (!s.applied) todo.push(['Review your preferences before the first application', 'openCareerPreferencesPage()']);
-          const stepRow = (t, i, hidden) => `<button onclick="${t[1]}" ${hidden ? 'data-more-step="1" style="display:none;padding:12px 0;border-top:1px solid rgba(128,128,128,0.15);"' : `style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}"`} class="w-full flex items-center justify-between text-left text-sm text-gray-700"><span>${t[0]}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`;
+          const stepRow = (t, i, hidden) => `<button onclick="${t[1]}" ${hidden ? 'data-more-step="1" style="display:none;padding:12px 0;border-top:1px solid rgba(128,128,128,0.15);"' : `style="padding:12px 0;${i ? 'border-top:1px solid rgba(128,128,128,0.15);' : ''}"`} class="w-full flex items-center justify-between text-left text-sm text-gray-700"><span>${t[0]}</span>${RowArrow('w-4 h-4 text-gray-400')}</button>`;
           const moreN = Math.min(todo.length, 4) - 1;
           const nextSteps = todo.length ? card(`
             ${title(moreN > 0 ? 'Next step' : 'Next steps')}
@@ -6589,7 +6588,6 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 px-1" style="margin-bottom:6px;">Recent from Stitch Bot</div>
                 ${log.length ? log.map(l => `
                   <div class="flex items-start gap-3 bg-white rounded-2xl shadow-sm" style="padding:12px;margin-bottom:8px;">
-                    <span class="flex-shrink-0 flex items-center justify-center" style="width:32px;height:32px;border-radius:9999px;background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('bot','w-4 h-4')}</span>
                     <div class="flex-1 min-w-0"><div class="text-sm text-gray-700">${escapeHtml(l.text)}</div><div class="text-xs text-gray-400" style="margin-top:2px;">${escapeHtml(careerPlanDateLabel(l.ts))}</div></div>
                   </div>`).join('') : `<div class="text-center text-gray-500 text-sm" style="padding:28px 16px;">Nothing yet. Updates from Stitch Bot will show up here.</div>`}
               </div>
@@ -6656,7 +6654,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const why = [];
           if (typeof m.score === 'number') why.push(`${m.score}% match to your profile`);
           if (m.reason) why.push(String(m.reason).replace(/[.\s]+$/, ''));
-          why.push('every document it asks for is ready');
+          why.push('Every document it asks for is ready');
           const sends = ['your CV'];
           if (careerBotDocList('openLetter').length) sends.push('your open letter');
           const extra = CAREER_BOT_DOC_SLOTS.filter(sl => sl.extra).reduce((a, sl) => a + careerBotDocList(sl.id).length, 0);
@@ -6669,20 +6667,20 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const list = (p.botPending || []).map(x => ({ x, job: findJob(x.jobId) })).filter(y => y.job && !isJobApplied(y.job));
           if (!list.length) return '';
           return `
-            <div class="bg-white rounded-3xl p-4 mb-4 shadow-sm" style="border:2px solid rgba(30,144,255,0.35);">
-              <div class="flex items-center justify-between" style="margin-bottom:6px;">
-                <div class="font-semibold text-sm text-gray-800">Waiting for your OK (${list.length})</div>
-                ${list.length > 1 ? `<button onclick="careerBotApproveAll()" class="text-xs font-semibold" style="color:${NAVY};">Approve all</button>` : ''}
+            <div class="bg-white rounded-3xl shadow-sm mb-4" style="padding:16px;">
+              <div class="flex items-center justify-between">
+                <div style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:15px;color:#1f2937;">Waiting for your OK (${list.length})</div>
+                ${list.length > 1 ? `<button onclick="careerBotApproveAll()" class="text-xs" style="color:#1e90ff;">Approve all</button>` : ''}
               </div>
-              ${list.map(({ x, job }) => { const r = careerBotReasonFor(job, p); return `
-                <div style="padding:12px 0;border-top:1px solid rgba(128,128,128,0.15);">
+              ${list.map(({ x, job }, i) => { const r = careerBotReasonFor(job, p); return `
+                <div style="padding:14px 0 16px;margin-top:${i ? 0 : 10}px;border-top:1px solid rgba(128,128,128,0.15);">
                   <div class="text-sm font-semibold text-gray-800">${escapeHtml(job.title)}</div>
                   <div class="text-xs text-gray-400">${escapeHtml(stitchOrgName(job.org || job.sub || ''))}</div>
-                  <div class="text-xs text-gray-600" style="margin-top:6px;"><b>Why:</b> ${escapeHtml(r.why)}</div>
-                  <div class="text-xs text-gray-600" style="margin-top:3px;"><b>It will send:</b> ${escapeHtml(r.sends)}.</div>
-                  <div class="flex gap-2" style="margin-top:10px;">
-                    <button ${careerBotBusy ? 'disabled' : ''} onclick="careerBotApprove('${job.id}')" class="flex-1 text-sm font-semibold py-2 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);${careerBotBusy ? 'opacity:.6;' : ''}">Approve</button>
-                    <button onclick="careerBotDecline('${job.id}')" class="flex-1 text-sm font-semibold py-2 rounded-full" style="background:#f3f4f6;color:#374151;">Skip</button>
+                  <div class="text-xs text-gray-500" style="margin-top:6px;">${escapeHtml(r.why.charAt(0).toUpperCase() + r.why.slice(1))}</div>
+                  <div class="text-xs text-gray-500" style="margin-top:2px;">Sends: ${escapeHtml(r.sends.charAt(0).toUpperCase() + r.sends.slice(1))}.</div>
+                  <div class="flex gap-2" style="margin-top:12px;">
+                    <button ${careerBotBusy ? 'disabled' : ''} onclick="careerBotApprove('${job.id}')" class="flex-1 text-sm rounded-full text-white" style="background:#1e90ff;padding:10px;font-weight:600;${careerBotBusy ? 'opacity:.6;' : ''}">Approve</button>
+                    <button onclick="careerBotDecline('${job.id}')" class="flex-1 text-sm rounded-full" style="background:#eceef1;color:#4b5563;padding:10px;font-weight:500;">Skip</button>
                   </div>
                 </div>`; }).join('')}
             </div>`;
@@ -6741,7 +6739,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 <div class="text-sm text-gray-500 text-center" style="margin-bottom:18px;">We're sorry to see you go. Pick the closest reason. It takes a few seconds and helps us improve.</div>
                 ${CAREER_CANCEL_GROUPS.map(g => `
                   <div class="text-xs font-bold uppercase tracking-wide text-gray-400 px-1" style="margin:16px 0 8px;">${g.title}</div>
-                  ${g.items.map((i, ix) => `<button onclick="careerCancelPick('${i.id}')" class="w-full flex items-center justify-between text-left font-semibold text-sm" style="background:transparent;color:#374151;padding:1rem 0.25rem;${ix ? '' : 'border-top:1px solid rgba(128,128,128,0.18);'}border-bottom:1px solid rgba(128,128,128,0.18);"><span>${i.label}</span>${Icon('arrowRight','w-4 h-4 text-gray-400')}</button>`).join('')}`).join('')}
+                  ${g.items.map((i, ix) => `<button onclick="careerCancelPick('${i.id}')" class="w-full flex items-center justify-between text-left font-semibold text-sm" style="background:transparent;color:#374151;padding:1rem 0.25rem;${ix ? '' : 'border-top:1px solid rgba(128,128,128,0.18);'}border-bottom:1px solid rgba(128,128,128,0.18);"><span>${i.label}</span>${RowArrow('w-4 h-4 text-gray-400')}</button>`).join('')}`).join('')}
                 <button onclick="careerCancelSkip()" class="w-full text-sm font-semibold text-gray-400 py-4">Skip</button>
               </div>
             </div>`;
@@ -9316,8 +9314,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             const pillBg = danger ? '#fef2f2' : '#eff6ff';
             return `
             <button onclick="${fn}" class="admin-menu-row w-full flex items-center gap-4 px-6 py-4 text-left ${cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="flex items-center justify-center flex-shrink-0" style="width:44px;height:44px;border-radius:9999px;background:${pillBg};">${Icon(icon,'w-6 h-6')}</span>
-              <span class="flex-1 min-w-0"><span class="block text-base font-semibold" style="line-height:1.3;">${label}</span>${sub ? `<span class="block text-xs text-gray-400 font-normal" style="margin-top:3px;line-height:1.35;">${sub}</span>` : ''}</span>
+              <span class="flex-1 min-w-0"><span class="block" style="line-height:1.3;font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>${sub ? `<span class="block text-xs text-gray-400 font-normal" style="margin-top:3px;line-height:1.35;">${sub}</span>` : ''}</span>
             </button>`;
           };
           let rows = row(`adminOpenMessageSheet('${userId}')`, 'comment', 'Address report', 'Send them a personal notification');
@@ -9328,7 +9325,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           document.body.insertAdjacentHTML('beforeend', `
             <div id="admin-menu-backdrop" onclick="adminCloseMenuSheet()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
             <div id="admin-menu-sheet" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
-              <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 8px;"></div>
+              <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 8px;"></div>
               <div style="padding-top:6px;">${rows}</div>
             </div>
             <style id="admin-menu-style">#admin-menu-sheet .admin-menu-row + .admin-menu-row{border-top:1px solid #eef0f3;}#admin-menu-sheet .admin-menu-row{box-shadow:none;}</style>`);
@@ -9865,7 +9862,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             <button onclick="switchAdminDashboardTab('${key}')" class="w-full flex items-center gap-3 text-left" style="padding:12px 0;border-bottom:1px solid rgba(0,0,0,.06);">
               <span class="flex-shrink-0" style="width:28px;font-size:18px;font-weight:800;color:${n ? '#0A2540' : '#9ca3af'};">${n}</span>
               <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-gray-800">${t}</span><span class="block text-xs text-gray-400">${sub}</span></span>
-              <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+              <span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
             </button>`).join('');
           const jl = allJobs();
           const up = jl.filter(j => j.createdByRole === 'user').length;
@@ -10100,7 +10097,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                         <div class="text-sm font-semibold text-gray-800 truncate">${escapeHtml(job.title || 'Untitled')}</div>
                         <div class="text-xs text-gray-400 truncate" style="margin-top:2px;">${meta}</div>
                       </div>
-                      ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                      ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
                     </button>`;
                 }).join('')}
               </div>
@@ -11237,7 +11234,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                         <div class="min-w-0 flex-1">
                           <div class="text-sm text-gray-700 truncate">${escapeHtml(p.body || 'Photo/video post')}</div>
                         </div>
-                        ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                        ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
                       </button>`).join('')}
                   </div>
                 ` : `<div class="text-xs text-gray-400">Once you post, your best-performing posts will show up here.</div>`}

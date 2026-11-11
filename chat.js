@@ -81,13 +81,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function inboxFilterMenuHTML(){
           const row = (onclick, icon, label, active) => `
             <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${active ? '' : 'text-gray-800'}" style="background:transparent;${active ? `color:${NAVY};` : ''}">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${Icon(icon,'w-6 h-6')}</span>
-              <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${label}</span>
+              <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
           return `
             <div id="inbox-filter-backdrop" onclick="closeInboxFilterMenuDom()" ontouchmove="event.preventDefault()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
             <div id="inbox-filter-dropdown" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
-              <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+              <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
               ${row("closeInboxFilterMenuDom();openOverlay('newMessage')", 'edit', 'New', false)}
               ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;meetingInline=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
@@ -4511,7 +4510,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="text-[15px] font-semibold ${danger ? 'text-red-500' : 'text-gray-900'}">${label}</div>
                 ${sub ? `<div class="text-xs text-gray-400 mt-0.5">${sub}</div>` : ''}
               </div>
-              ${danger ? '' : Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+              ${danger ? '' : RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
             </button>`;
         }
 
@@ -4667,7 +4666,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>` : ''}
 
               <div class="cp-card mb-5" style="padding:2px 16px;">
-                <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;"><span class="font-semibold">Media, links and docs</span><span class="flex items-center gap-2 text-xs text-gray-400">${mediaCount}${Icon('arrowRight','w-4 h-4 text-gray-400')}</span></button>
+                <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;"><span class="font-semibold">Media, links and docs</span><span class="flex items-center gap-2 text-xs text-gray-400">${mediaCount}${RowArrow('w-4 h-4 text-gray-400')}</span></button>
                 <button onclick="toggleConvoNotifPref()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Mute notifications</span><span class="text-xs text-gray-400">${notifOn ? 'Off' : 'On'}</span></button>
                 <button onclick="toggleFavoriteConvo()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Favourite</span><span class="text-xs text-gray-400">${favorited ? 'On' : 'Off'}</span></button>
               </div>
@@ -4681,7 +4680,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                         <button onclick="closeOverlay(); openConversation('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
                           <div class="w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
                           <div class="flex-1 min-w-0 text-sm text-gray-700 truncate">${escapeHtml(c.name)}</div>
-                          ${Icon('arrowRight','w-4 h-4 text-gray-300 flex-shrink-0')}
+                          ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
                         </button>`).join('')}
                     </div>`
                   : `<div class="text-sm text-gray-400">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
@@ -9343,7 +9342,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0"><div class="w-9 h-1.5 rounded-full bg-gray-300"></div></div>
                 <div class="flex-shrink-0 w-full">
                   <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between">
-                    <div class="font-semibold text-lg font-display truncate" style="color:${NAVY};">Share meeting</div>
+                    <div class="mshare-title truncate">Share meeting</div>
                     <button onclick="closeShareSheet()" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
                   </div>
                   <div class="max-w-2xl mx-auto px-5 pb-4">
@@ -9939,13 +9938,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (meetingSheet === 'menu') {
             const row = (icon, label, action, red) => `
               <button onclick="${action}" class="cu-bsheet-row ${red ? 'red' : ''}">
-                ${Icon(icon, 'w-5 h-5')}<span>${label}</span>
+                <span>${label}</span>
               </button>`;
-            const tile = (icon, label, action) => `<button onclick="${action}" class="cu-tile2"><span class="cu-tile2-ic">${Icon(icon, 'w-6 h-6')}</span><span>${label}</span></button>`;
+            const tile = (icon, label, action) => `<button onclick="${action}" class="cu-tile2"><span>${label}</span></button>`;
             return `${backdrop}
               <div class="cu-bsheet">
                 <div class="cu-bsheet-grab"></div>
-                <button onclick="closeMeetingSheet();toggleCallHand()" class="cu-handpill ${callState.handRaised ? 'on' : ''}">${Icon('handRaised', 'w-5 h-5')}<span>${callState.handRaised ? 'Lower hand' : 'Raise hand'}</span></button>
+                <button onclick="closeMeetingSheet();toggleCallHand()" class="cu-handpill ${callState.handRaised ? 'on' : ''}"><span>${callState.handRaised ? 'Lower hand' : 'Raise hand'}</span></button>
                 <div class="cu-tilegrid cu-tilegrid4">
                   ${tile('laugh', 'Reactions', "setMeetingSheet('reactions')")}
                   ${tile('commentText', meetingChat.unread > 0 ? `Messages (${meetingChat.unread})` : 'Messages', "closeMeetingSheet();openMeetingChatPage()")}

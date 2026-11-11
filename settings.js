@@ -317,7 +317,7 @@ let appPrefs = {
             <div class="flex-1 overflow-y-auto no-scrollbar">
             ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { right: true })}
             <div class="p-5">
-              <div class="text-sm leading-relaxed text-gray-600 space-y-3">
+              <div class="text-sm leading-relaxed text-gray-600 space-y-3 legal-app">
                 ${legalDateLineHTML('app')}
                 ${legalRenderHTML(sections, 'app')}
               </div>
@@ -425,7 +425,7 @@ let appPrefs = {
               <div id="help-results">${helpResultsHTML()}</div>
               <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-still">
                 <span><b>Still stuck?</b><span>Talk to a real person</span></span>
-                <span class="sp-go">${Icon('arrowRight','w-4 h-4')}</span>
+                <span class="sp-go">${RowArrow('w-4 h-4')}</span>
               </button>
             </div>
             </div>`;
@@ -652,7 +652,7 @@ let appPrefs = {
               <div class="sp-grid2" id="report-types">
                 ${reportIssueTypes.map(t => `
                   <button onclick="setReportIssueType(this.dataset.t)" data-t="${t.id}" class="outline-pill sp-tp${d.type === t.id ? ' on' : ''}">
-                    <i>${Icon(t.icon,'w-4 h-4')}</i><b>${t.title}</b><small>${t.sub}</small>
+                    <b>${t.title}</b><small>${t.sub}</small>
                   </button>`).join('')}
               </div>
               <div class="sp-lab">Where did it happen? (optional)</div>

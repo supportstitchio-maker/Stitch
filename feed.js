@@ -383,6 +383,10 @@
         ];
 
         // ---- SVG icon library ----
+        // Small chevron used at the end of list rows (not for Next / Back style buttons)
+        function RowArrow(cls){
+          return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+        }
         function Icon(type, cls){
           if (type === 'money' || type === 'moneyOutline' || type === 'phoneMoneyOutline' || type === 'walletOutline') {
             // Silhouette stack of notes in shades of black, drawn inline (no image file needed)
@@ -5672,9 +5676,8 @@
 
         function postMenuSheetHtml(post){
           const row = (onclick, icon, label, cls, disabled) => `
-            <button onclick="${disabled ? '' : onclick}" ${disabled ? 'disabled' : ''} class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}" style="background:transparent;">
-              <span class="w-6 h-6 flex items-center justify-center flex-shrink-0">${(cls && /text-red/.test(cls)) ? Icon(icon,'w-6 h-6').replace('<svg ', '<svg style="color:#ef4444;" ') : Icon(icon,'w-6 h-6')}</span>
-              <span style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:400;font-size:17px;letter-spacing:.01em;">${label}</span>
+            <button onclick="${disabled ? '' : onclick}" ${disabled ? 'disabled' : ''} class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}${(cls && /text-red/.test(cls)) ? ' sheet-row-red' : ''}" style="background:transparent;${(cls && /text-red/.test(cls)) ? 'width:calc(100% - 48px);margin:6px 24px 0;padding-left:0;padding-right:0;border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
           let rows = '';
           if (post.mine) {
@@ -5691,7 +5694,7 @@
           return `
             <div id="post-menu-backdrop-${post.id}" onclick="togglePostMenu(${post.id})" ontouchmove="event.preventDefault()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
             <div id="post-menu-dropdown-${post.id}" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
-              <div style="width:48px;height:5px;border-radius:3px;background:#1f2937;margin:2px auto 10px;"></div>
+              <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
               ${rows}
             </div>`;
         }

@@ -242,7 +242,7 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261110e">
+    <link rel="stylesheet" href="styles.css?v=20261111p">
 </head>
 <body class="bg-gray-50">
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
@@ -907,20 +907,13 @@
          first paint (it was a blank screen after a Google/Apple redirect). Order is unchanged. -->
     <!-- Resource-scanning libraries: extract text from uploaded PDF / DOCX / PPTX files client-
        side -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Cropper.js: drag-to-reposition / pinch-or-slider-to-zoom cropping UI for the profile
        photo crop step (see photoCropModal / cropper.js usage in profile.js) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <!-- KaTeX: renders the math in Stitch Bot replies. -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
     <!-- Mermaid: renders the simple diagrams (flowcharts, timelines, etc.) Stitch Bot can now
        draw -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
     <!-- Supabase client: reaches the ai-proxy Edge Function and, through Realtime broadcast,
          is the signaling layer for the WebRTC voice/video calls (see startCall/RTC_* below). -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -948,23 +941,57 @@
       };
     </script>
     <script>
-      if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
+      /* Document / QR / photo-crop / maths / diagram libraries are only needed once someone uploads a
+         file, opens a QR code, crops a photo or reads a Stitch Bot answer. They load in the
+         background right after the app has opened (in order) instead of blocking start-up. */
+      (function(){
+        var LIBS = [
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js',
+          'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js',
+          'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js'
+        ];
+        function after(src){
+          try {
+            if (/pdf\.min\.js/.test(src) && window.pdfjsLib) {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+            if (/mermaid/.test(src) && window.mermaid) {
+              mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', fontFamily: 'inherit' });
+            }
+          } catch (e) {}
+        }
+        function loadAll(){
+          if (window.__stitchLibsStarted) return;
+          window.__stitchLibsStarted = true;
+          LIBS.forEach(function(src){
+            var s = document.createElement('script');
+            s.src = src; s.async = false;
+            s.onload = function(){ after(src); };
+            document.head.appendChild(s);
+          });
+        }
+        window.__stitchLoadLibs = loadAll;
+        function kick(){ (window.requestIdleCallback || function(f){ setTimeout(f, 800); })(loadAll, { timeout: 4000 }); }
+        if (document.readyState === 'complete') kick(); else window.addEventListener('load', kick);
+      })();
     </script>
     <script src="vendor-posthog.js?v=1435_8"></script>
-    <script src="analytics.js?v=20261110e"></script>
-    <script src="core.js?v=20261110e"></script>
-    <script src="feed.js?v=20261110e"></script>
-    <script src="chat.js?v=20261110e"></script>
-    <script src="study.js?v=20261110e"></script>
-    <script src="courses.js?v=20261110e"></script>
-    <script src="quizzesAndGames.js?v=20261110e"></script>
-    <script src="jobs.js?v=20261110e"></script>
-    <script src="creator.js?v=20261110e"></script>
-    <script src="settings.js?v=20261110e"></script>
-    <script src="profile.js?v=20261110e"></script>
-    <script src="overlays.js?v=20261110e"></script>
-    <script src="games.js?v=20261110e"></script>
+    <script src="analytics.js?v=20261111p"></script>
+    <script src="core.js?v=20261111p"></script>
+    <script src="feed.js?v=20261111p"></script>
+    <script src="chat.js?v=20261111p"></script>
+    <script src="study.js?v=20261111p"></script>
+    <script src="courses.js?v=20261111p"></script>
+    <script src="quizzesAndGames.js?v=20261111p"></script>
+    <script src="jobs.js?v=20261111p"></script>
+    <script src="creator.js?v=20261111p"></script>
+    <script src="settings.js?v=20261111p"></script>
+    <script src="profile.js?v=20261111p"></script>
+    <script src="overlays.js?v=20261111p"></script>
+    <script src="games.js?v=20261111p"></script>
 </body>
 </html>

@@ -1906,7 +1906,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <div class="text-[15px] ${danger ? 'text-red-500 font-medium' : 'text-gray-900'}">${label}</div>
                 ${sub ? `<div class="text-xs text-gray-400 mt-0.5">${sub}</div>` : ''}
               </div>
-              ${hideArrow ? '' : `<div class="flex-shrink-0" style="color:${NAVY}">${Icon('arrowRight','w-4 h-4')}</div>`}
+              ${hideArrow ? '' : `<div class="flex-shrink-0" style="color:${NAVY}">${RowArrow('w-4 h-4')}</div>`}
             </button>`;
         }
 
@@ -2145,30 +2145,42 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           purple:['#ede9fe', '#7c3aed'],
           red:   ['#fee2e2', '#dc2626']
         };
-        function stgTile(icon, tone){
-          // Plain icon, no coloured pill: dark grey in light mode, light grey in dark mode (.stg-ico)
-          return `<div class="stg-ico flex items-center justify-center flex-shrink-0" style="width:30px;height:38px;${tone === 'red' ? 'color:#dc2626;' : ''}">${Icon(icon,'w-5 h-5')}</div>`;
+        // Thin outline icons for the Settings page (grey on rows, blue on the three top tiles)
+        const STG_PATHS = {
+          moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+          bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+          chat:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+          mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+          download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+          help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+          flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+          phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+          shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+          file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+          bars:'<path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>',
+          ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+          card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'
+        };
+        function stgOutline(name, size){
+          size = size || 22;
+          return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;">${STG_PATHS[name] || ''}</svg>`;
         }
-        function stgRow(icon, tone, label, sub, onclick, opts){
+        function stgRow(icon, label, val, onclick, opts){
           opts = opts || {};
           return `
-            <button onclick="${onclick}" class="stg-row w-full flex items-center text-left" style="gap:12px;padding:12px 0;">
-              ${stgTile(icon, tone)}
-              <div class="flex-1 min-w-0">
-                <div class="stg-title font-semibold" style="font-size:15px;${opts.danger ? 'color:#dc2626;' : ''}">${label}</div>
-                ${sub ? `<div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>` : ''}
-              </div>
-              ${opts.hideArrow ? '' : `<div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>`}
+            <button onclick="${onclick}" class="stg-row w-full flex items-center text-left" style="gap:12px;padding:13px 0;">
+              <span class="stg-ico flex items-center justify-center flex-shrink-0" style="width:24px;">${stgOutline(icon)}</span>
+              <span class="stg-title flex-1 min-w-0 truncate" style="font-size:15px;font-weight:500;">${label}</span>
+              ${val ? `<span class="stg-sub flex-shrink-0" style="font-size:13px;">${val}</span>` : ''}
+              ${opts.hideArrow ? '' : `<span class="stg-chev flex-shrink-0">${RowArrow('w-4 h-4')}</span>`}
             </button>`;
         }
-        function stgToggleRow(icon, tone, label, sub, checked, onclick){
+        function stgToggleRow(icon, label, val, checked, onclick){
           return `
-            <div class="stg-row w-full flex items-center" style="gap:12px;padding:12px 0;">
-              ${stgTile(icon, tone)}
-              <div class="flex-1 min-w-0">
-                <div class="stg-title font-semibold" style="font-size:15px;">${label}</div>
-                ${sub ? `<div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>` : ''}
-              </div>
+            <div class="stg-row w-full flex items-center" style="gap:12px;padding:13px 0;">
+              <span class="stg-ico flex items-center justify-center flex-shrink-0" style="width:24px;">${stgOutline(icon)}</span>
+              <span class="stg-title flex-1 min-w-0 truncate" style="font-size:15px;font-weight:500;">${label}</span>
+              ${val ? `<span class="stg-sub flex-shrink-0" style="font-size:13px;">${val}</span>` : ''}
               <button onclick="${onclick}" aria-label="${label}" class="relative flex-shrink-0" style="width:44px;height:26px;border-radius:9999px;border:1px solid ${checked ? 'transparent' : '#d1d5db'};background:${checked ? `linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)` : '#e5e7eb'};transition:background .15s ease;">
                 <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);transform:translateX(${checked ? '18px' : '0'});transition:transform .15s ease;"></span>
               </button>
@@ -2176,10 +2188,18 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
         function stgGroup(title, rowsHtml){
           return `
-            <div style="margin-top:20px;">
-              <div class="k stg-k" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#9ca3af;text-transform:uppercase;margin:0 4px 8px;">${title}</div>
+            <div style="margin-top:16px;">
+              <div class="stg-k" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:13px;color:#6b7280;margin:0 4px 8px;">${title}</div>
               <div class="stg-card">${rowsHtml}</div>
             </div>`;
+        }
+        function stgTile(icon, title, sub, onclick){
+          return `
+            <button onclick="${onclick}" class="stg-tile text-left" style="min-width:0;width:100%;height:100%;">
+              <div style="color:#1e90ff;margin-bottom:10px;">${stgOutline(icon)}</div>
+              <div class="stg-title" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
+              <div class="stg-sub truncate" style="font-size:12px;margin-top:2px;">${sub}</div>
+            </button>`;
         }
         function stgProfileCardHTML(){
           const name = escapeHtml(profileShownName() || '');
@@ -2187,22 +2207,21 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const photo = profileData && profileData.photo;
           const avatar = photo
             ? `<img src="${photo}" class="w-full h-full object-cover">`
-            : `<span style="color:${ROYAL};">${Icon('user','w-6 h-6')}</span>`;
+            : `<span class="stg-avatar-ico">${Icon('user','w-6 h-6')}</span>`;
           return `
-            <button onclick="closeOverlay()" class="stg-card w-full text-left" style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:8px;">
-              <div class="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="width:54px;height:54px;background:#e0efff;">${avatar}</div>
+            <div class="flex items-center" style="gap:14px;margin:14px 0 16px;">
+              <div class="stg-avatar rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style="width:56px;height:56px;">${avatar}</div>
               <div class="flex-1 min-w-0">
-                <div class="stg-title font-bold truncate" style="font-size:16px;">${name}</div>
+                <div class="stg-title font-bold truncate" style="font-size:16px;">${name || 'Your profile'}</div>
                 ${uname ? `<div class="stg-sub truncate" style="font-size:13px;">@${escapeHtml(uname)}</div>` : ''}
-                <div style="font-size:12px;font-weight:700;color:${ROYAL};margin-top:2px;">View profile</div>
               </div>
-              <div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>
-            </button>`;
+              <button onclick="closeOverlay()" class="stg-view flex-shrink-0" style="font-weight:600;font-size:14px;padding:8px 18px;border-radius:9999px;">View</button>
+            </div>`;
         }
         function stgProRowHTML(){
           const on = (typeof isProActive === 'function' && isProActive());
-          const sub = on ? (proState.cancelled ? 'Cancelled, ends ' : 'Active until ') + proPlanDateLabel(proState.expiresAt) : 'Free plan. See plans, manage or cancel';
-          return stgRow('trending','blue','Subscription', sub, "openProSheet()");
+          const sub = on ? (proState.cancelled ? 'Ends ' + proPlanDateLabel(proState.expiresAt) : 'Active') : 'Free plan';
+          return stgTile('card', 'Subscription', sub, "openProSheet()");
         }
         function stgRefreshProRow(){
           const el = document.getElementById('stg-pro-row');
@@ -2210,51 +2229,39 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
         function profileMenuHTML(){
           const installed = (typeof stitchAppInstalled === 'function' && stitchAppInstalled());
+          const nBlocked = blockedAccounts.length;
           return `
             <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Settings and activity', '20px', null, null, {right:true, deskBig:true})}
+              ${overlayHeader('Settings', '20px', null, null, {right:true, deskBig:true, titleClass:'stg-head-title'})}
               <div class="px-5" style="padding-bottom:28px;">
               ${stgProfileCardHTML()}
-              ${stgGroup('Your account', `
-                <div id="stg-pro-row">${stgProRowHTML()}</div>${(typeof proState !== 'undefined' && !proState.loaded && typeof setTimeout === 'function') ? (setTimeout(function(){ refreshProStatus().then(function(){ if (typeof stgRefreshProRow === 'function') stgRefreshProRow(); }); }, 0), '') : ''}
-                ${stgRow('chart','blue','Your activity','Posts, likes and time spent', "openOverlayFrom('profileMenu','profileAnalytics')")}
-                ${stgRow('close','amber','Blocked', blockedAccounts.length ? `${blockedAccounts.length} account${blockedAccounts.length===1?'':'s'}` : 'No blocked accounts', "openOverlay('blockedAccounts')")}
-                ${stgToggleRow('theme','purple','Theme', appPrefs.theme === 'dark' ? 'Dark mode' : 'Light mode', appPrefs.theme === 'dark', "toggleTheme()")}
-              `)}
-              ${stgGroup('Get the app', `
-                ${stgRow('download','green','Download the app', installed ? 'Already installed on this device' : 'Add Stitch to your home screen', "installAppFromSettings()")}
-              `)}
-              ${stgGroup('Notifications', `
-                ${stgToggleRow('bell','blue','Reminders and updates', 'Session reminders plus app news and updates', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
-                ${stgToggleRow('comment','blue','New messages', 'Direct messages and chat', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
-                ${stgToggleRow('mail','blue','Email notifications', 'Receive updates via email', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+                <div id="stg-pro-row" style="min-width:0;display:flex;">${stgProRowHTML()}</div>
+                ${stgTile('bars', 'Activity', 'Posts, likes', "openOverlayFrom('profileMenu','profileAnalytics')")}
+                ${stgTile('ban', 'Blocked', nBlocked ? String(nBlocked) : 'None', "openOverlay('blockedAccounts')")}
+              </div>
+              ${(typeof proState !== 'undefined' && !proState.loaded && typeof setTimeout === 'function') ? (setTimeout(function(){ refreshProStatus().then(function(){ if (typeof stgRefreshProRow === 'function') stgRefreshProRow(); }).catch(function(){}); }, 0), '') : ''}
+              ${stgGroup('Preferences', `
+                ${stgToggleRow('moon','Theme', appPrefs.theme === 'dark' ? 'Dark' : 'Light', appPrefs.theme === 'dark', "toggleTheme()")}
+                ${stgToggleRow('bell','Reminders and updates', '', appPrefs.notifReminders, "toggleNotifPref('notifReminders')")}
+                ${stgToggleRow('chat','New messages', '', appPrefs.notifMessages, "toggleNotifPref('notifMessages')")}
+                ${stgToggleRow('mail','Email notifications', '', appPrefs.notifEmail, "toggleNotifPref('notifEmail')")}
+                ${stgRow('download','Download the app', installed ? 'Installed' : '', "installAppFromSettings()")}
               `)}
               ${stgGroup('Support', `
-                ${stgRow('help','blue','Help Center', 'FAQs and guides', "openOverlay('helpCenter')")}
-                ${stgRow('flag','amber','Report an Issue', 'Bugs, safety, or content', "openOverlayFrom('profileMenu','reportIssue')")}
-                ${stgRow('phone','green','Contact Us', 'support.stitch.io@gmail.com', "openOverlayFrom('profileMenu','contactUs')")}
+                ${stgRow('help','Help Center', '', "openOverlay('helpCenter')")}
+                ${stgRow('flag','Report an issue', '', "openOverlayFrom('profileMenu','reportIssue')")}
+                ${stgRow('phone','Contact us', '', "openOverlayFrom('profileMenu','contactUs')")}
               `)}
-              ${stgGroup('Privacy and legal', `
-                ${stgRow('shield','purple','Privacy Policy', '', "openOverlay('privacyPolicy')")}
-                ${stgRow('doc','purple','Terms of Service', '', "openOverlay('termsOfService')")}
+              ${stgGroup('Legal', `
+                ${stgRow('shield','Privacy Policy', '', "openOverlay('privacyPolicy')")}
+                ${stgRow('file','Terms of Service', '', "openOverlay('termsOfService')")}
               `)}
-              ${stgGroup('Account', `
-                ${stgRow('logout','blue','Sign Out', '', "authSignOut()", {hideArrow:true})}
-              `)}
-              <button onclick="authDeleteAccount()" class="stg-danger w-full flex items-center text-left" style="margin-top:20px;gap:12px;padding:14px 16px;border-radius:22px;">
-                ${stgTile('trash','red')}
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold" style="font-size:15px;color:#dc2626;">Delete account</div>
-                  <div style="font-size:12px;color:#b45353;margin-top:1px;">Permanently remove your account and all data</div>
-                </div>
-                <div class="flex-shrink-0" style="color:#dc2626;">${Icon('arrowRight','w-4 h-4')}</div>
-              </button>
+              <button onclick="authSignOut()" class="w-full text-center" style="margin-top:22px;padding:10px 0;font-weight:600;font-size:15px;color:#ef4444;">Sign out</button>
+              <button onclick="authDeleteAccount()" class="w-full text-center" style="padding:6px 0 10px;font-size:13px;color:#ef4444;opacity:.75;">Delete account</button>
               </div>
             </div>`;
         }
-
-
-
 
         // ---- Edit Profile: the page is NOT scrollable. It only moves by itself, up above the keyboard
         // while the Bio or "Add link" box is focused, and drops straight back when the keyboard goes ----

@@ -6831,3 +6831,82 @@ body:not(.dark-mode) .pref-card .auth-intent-chip{ background:#eceef1 !important
 body:not(.dark-mode) .pref-card .auth-intent-chip.on{ background:rgba(30,144,255,0.12) !important; color:#1e90ff !important; }
 html.dark-mode .pref-card .auth-intent-chip{ background:rgba(255,255,255,0.10) !important; color:#e5e7eb !important; box-shadow:none !important; }
 html.dark-mode .pref-card .auth-intent-chip.on{ background:rgba(30,144,255,0.22) !important; color:#60a5fa !important; }
+
+/* Stitch Bot approvals: grey Skip pill in dark mode */
+html.dark-mode button[onclick^="careerBotDecline"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
+
+/* Pull-up panels: a lone red row has no separator above it */
+.sheet-row-red:first-of-type{ border-top:none !important; margin-top:0 !important; width:100% !important; padding-left:1.5rem !important; padding-right:1.5rem !important; }
+html.dark-mode .sheet-row-red{ border-top-color:rgba(255,255,255,0.12) !important; }
+
+/* Class tools + People sheets: same look as the other pull-up panels */
+.cu-sheet-title{ font-family:'Montserrat',system-ui,sans-serif !important; font-weight:600 !important; font-size:17px !important; }
+.cu-bsheet-row{ font-family:'Montserrat',system-ui,sans-serif !important; font-weight:500 !important; font-size:14px !important; }
+.cu-prow-tx b{ font-family:'Montserrat',system-ui,sans-serif !important; font-weight:500 !important; }
+body:not(.dark-mode) .cu-tile2{ background:#eceef1 !important; box-shadow:none !important; color:#4b5563 !important; font-weight:500 !important; }
+body:not(.dark-mode) .cu-wide-out{ background:#eceef1 !important; border:none !important; color:#4b5563 !important; font-weight:500 !important; }
+body:not(.dark-mode) .cu-prow-av{ background:#eceef1 !important; color:#4b5563 !important; }
+
+/* Class tools: text-only grey pills in one row, text-only rows with thin dividers */
+.cu-tilegrid4{ flex-wrap:nowrap !important; justify-content:space-between !important; gap:6px !important; margin:8px 6px 6px !important; }
+.cu-tilegrid4 .cu-tile2{ flex:1 1 0 !important; flex-direction:row !important; border-radius:999px !important; padding:10px 4px !important; font-size:12px !important; white-space:nowrap; }
+.cu-bsheet-row{ padding-left:14px !important; border-radius:0 !important; border-bottom:1px solid rgba(128,128,128,0.15) !important; }
+.cu-bsheet-row:last-child{ border-bottom:0 !important; }
+.cu-prow-st{ flex-shrink:0; }
+body:not(.dark-mode) .cu-prow{ border-bottom:1px solid rgba(128,128,128,0.15) !important; }
+.cu-bsheet .cu-bsheet-row > span:first-child{ width:auto !important; height:auto !important; padding:0 !important; display:block !important; text-align:left !important; font-size:14px !important; color:inherit !important; background:none !important; border-radius:0 !important; }
+.cu-bsheet .cu-bsheet-row.red > span:first-child{ color:#ef4444 !important; }
+.cu-bsheet .cu-bsheet-row small{ font-size:12px !important; color:#9ca3af !important; }
+
+/* Share meeting + Comments sheet titles: Montserrat, dark */
+.mshare-title,.cmt-sheet-title{font-family:'Montserrat',system-ui,sans-serif !important;font-weight:600 !important;font-size:17px !important;}
+body:not(.dark-mode) .mshare-title,body:not(.dark-mode) .cmt-sheet-title{color:#1f2937 !important;-webkit-text-fill-color:#1f2937 !important;background:none !important;}
+html.dark-mode .mshare-title,html.dark-mode .cmt-sheet-title,body.dark-mode .mshare-title,body.dark-mode .cmt-sheet-title{color:#f3f4f6 !important;-webkit-text-fill-color:#f3f4f6 !important;background:none !important;}
+
+/* Terms and Privacy pages (in-app): clearer headings and spacing */
+.legal-app > *{margin-top:0 !important;margin-bottom:0 !important;}
+.legal-app h3{font-family:'Montserrat',system-ui,sans-serif !important;font-weight:600 !important;font-size:16px !important;background:none !important;margin-top:26px !important;margin-bottom:8px !important;padding-top:0 !important;}
+.legal-app p{font-size:14px !important;line-height:1.7 !important;margin-bottom:10px !important;}
+.legal-app > p:first-child{font-size:12px !important;margin-bottom:0 !important;}
+body:not(.dark-mode) .legal-app h3{color:#1f2937 !important;-webkit-text-fill-color:#1f2937 !important;}
+body:not(.dark-mode) .legal-app p{color:#4b5563 !important;}
+body:not(.dark-mode) .legal-app > p:first-child{color:#9ca3af !important;}
+html.dark-mode .legal-app h3,body.dark-mode .legal-app h3{color:#f3f4f6 !important;-webkit-text-fill-color:#f3f4f6 !important;}
+html.dark-mode .legal-app p,body.dark-mode .legal-app p{color:#b8bcc4 !important;}
+html.dark-mode .legal-app > p:first-child,body.dark-mode .legal-app > p:first-child{color:#7b808a !important;}
+
+/* Dark mode: any heading given an inline dark-grey colour (#1f2937, used by the Montserrat titles and panel rows) must turn light */
+body.dark-mode [style*="color:#1f2937"], html.dark-mode [style*="color:#1f2937"]{ color:#f3f4f6 !important; -webkit-text-fill-color:#f3f4f6 !important; }
+
+/* ===== New Settings page ===== */
+body:not(.dark-mode) .stg-head-title{font-family:'Montserrat',system-ui,sans-serif !important;font-weight:700 !important;font-size:22px !important;background:none !important;-webkit-text-fill-color:#111827 !important;color:#111827 !important;}
+html.dark-mode .stg-head-title,body.dark-mode .stg-head-title{font-family:'Montserrat',system-ui,sans-serif !important;font-weight:700 !important;font-size:22px !important;background:none !important;-webkit-text-fill-color:#f3f4f6 !important;color:#f3f4f6 !important;}
+body:not(.dark-mode) .stg-card{background:#fff !important;border-radius:18px !important;padding:2px 16px !important;box-shadow:0 1px 2px rgba(0,0,0,.05) !important;border:1px solid #eef0f3 !important;}
+body:not(.dark-mode) .stg-tile{background:#fff !important;border-radius:18px !important;padding:14px 10px !important;box-shadow:0 1px 2px rgba(0,0,0,.05) !important;border:1px solid #eef0f3 !important;width:100%;}
+body:not(.dark-mode) .stg-row + .stg-row{border-top:1px solid #f1f2f4 !important;}
+body:not(.dark-mode) .stg-title{color:#111827 !important;}
+body:not(.dark-mode) .stg-sub{color:#6b7280 !important;}
+body:not(.dark-mode) .stg-ico{color:#6b7280 !important;background:none !important;}
+body:not(.dark-mode) .stg-chev{color:#9ca3af !important;}
+body:not(.dark-mode) .stg-view{background:#e8f3ff !important;color:#1e90ff !important;}
+html.dark-mode .stg-card,html.dark-mode .stg-tile{background:#1c1c1e !important;border:1px solid #2a2a2d !important;border-radius:18px !important;box-shadow:none !important;}
+html.dark-mode .stg-card{padding:2px 16px !important;}
+html.dark-mode .stg-tile{padding:14px 10px !important;width:100%;}
+html.dark-mode .stg-row + .stg-row{border-top:1px solid #2a2a2d !important;}
+html.dark-mode .stg-title{color:#f3f4f6 !important;}
+html.dark-mode .stg-sub,html.dark-mode .stg-k{color:#9ca3af !important;}
+html.dark-mode .stg-ico{color:#9ca3af !important;background:none !important;}
+html.dark-mode .stg-chev{color:#6b7280 !important;}
+html.dark-mode .stg-view{background:#12304f !important;color:#6db8ff !important;}
+
+/* Settings: grey avatar placeholder + floating tiles */
+body:not(.dark-mode) .stg-avatar{background:#e5e7eb !important;}
+body:not(.dark-mode) .stg-avatar-ico{color:#9ca3af !important;}
+html.dark-mode .stg-avatar{background:#2a2a2d !important;}
+html.dark-mode .stg-avatar-ico{color:#6b7280 !important;}
+.stg-tile{transition:transform .18s ease, box-shadow .18s ease !important;}
+.stg-tile:hover,.stg-tile:active{transform:translateY(-3px) !important;}
+body:not(.dark-mode) .stg-tile{box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3px rgba(17,24,39,.06) !important;border:1px solid #eef0f3 !important;}
+body:not(.dark-mode) .stg-tile:hover,body:not(.dark-mode) .stg-tile:active{box-shadow:0 12px 24px rgba(17,24,39,.14),0 2px 4px rgba(17,24,39,.08) !important;}
+html.dark-mode .stg-tile{background:#232326 !important;border:1px solid #333337 !important;box-shadow:0 8px 18px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05) inset !important;}
+html.dark-mode .stg-tile:hover,html.dark-mode .stg-tile:active{background:#2a2a2e !important;box-shadow:0 14px 28px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.07) inset !important;}

@@ -361,7 +361,7 @@ let studyFabMenuOpen = false;
                 <div class="stg-title font-semibold" style="font-size:15px;">${title}</div>
                 <div class="stg-sub" style="font-size:12px;margin-top:1px;">${sub}</div>
               </div>
-              <div class="flex-shrink-0" style="color:#9ca3af;">${Icon('arrowRight','w-4 h-4')}</div>
+              <div class="flex-shrink-0" style="color:#9ca3af;">${RowArrow('w-4 h-4')}</div>
             </button>`;
         }
 

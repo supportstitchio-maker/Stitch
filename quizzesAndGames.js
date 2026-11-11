@@ -1118,7 +1118,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                   ? `background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;`
                   : isMarked
                     ? 'background:rgba(180,83,9,0.1);color:#b45309;border:1.5px solid rgba(180,83,9,0.35);'
-                    : `background:url('${flashcardBackImage}') center/cover; color:#fff;`;
+                    : `background:${ROYAL}; color:#fff;`;
             const inner = isLocked
               ? Icon('lock','w-5 h-5')
               : isOpponentCard

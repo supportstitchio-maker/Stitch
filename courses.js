@@ -2419,7 +2419,7 @@ try {
                   <div class="text-xs text-gray-400 truncate" style="margin:2px 0 4px;">${(c.enrolledUsers || []).length || c.enrolledCount || 0} students · ${(c.modules || []).length} module${(c.modules || []).length === 1 ? '' : 's'}</div>
                   <div class="text-xs font-bold" style="color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}${c.deliveryType === 'live' ? ' <span class="text-gray-400 font-semibold">· Live</span>' : ''}${(c.welcomeVideo && c.welcomeVideo.url) ? '' : ' <span style="color:#d97706;font-weight:600;">· Needs a welcome video</span>'}</div>
                 </div>
-                <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+                <span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
               </button>`).join('')}
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-4">All courses</div>`;
         }
@@ -2884,7 +2884,7 @@ try {
                   <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(item.title || 'Untitled')}</div>
                   <div class="text-xs text-gray-400 truncate">${courseItemTypeLabel(item.type)} · ${escapeHtml(moduleTitle)}</div>
                 </div>
-                <span class="text-gray-300 flex-shrink-0">${Icon('arrowRight','w-4 h-4')}</span>
+                <span class="text-gray-300 flex-shrink-0">${RowArrow('w-4 h-4')}</span>
               </button>`).join('') : `
               <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-6 text-center text-gray-500 text-sm mb-2">No parts, quizzes, assignments, or projects yet -- add one above.</div>`}
             <div class="text-sm font-bold text-gray-700 mt-5 mb-2">Announcements</div>`;
@@ -9939,8 +9939,8 @@ try {
           const row = (name, role, muted, hand, isMe) => `
             <div class="cu-prow">
               <span class="cu-prow-av">${escapeHtml(userInitials(name) || '?')}</span>
-              <span class="cu-prow-tx"><b>${escapeHtml(name)}${isMe ? ' (you)' : ''}</b>${role ? `<small>${role}</small>` : ''}</span>
-              <span class="cu-prow-ic">${hand ? Icon('handRaised', 'w-5 h-5') : ''}${muted ? Icon('micOff', 'w-5 h-5') : Icon('mic', 'w-5 h-5')}</span>
+              <span class="cu-prow-tx"><b>${escapeHtml(name)}${isMe ? ' (you)' : ''}</b>${(role || hand) ? `<small>${role || 'Hand raised'}</small>` : ''}</span>
+              <span class="cu-prow-st" style="font-size:12px;color:${muted ? '#9ca3af' : '#1e90ff'};">${muted ? 'Muted' : 'On'}</span>
             </div>`;
           const rows = [row(me, iAmTeacher ? 'Host' : '', !!liveLectureState.muted, !!liveLectureState.handRaised, true)]
             .concat(peers.map(p => row(p.name || 'Member', p.isTeacher ? 'Host' : (p.handRaised ? 'Hand raised' : ''), !!p.muted, !!p.handRaised)));
@@ -9959,11 +9959,10 @@ try {
           const peerCount = Object.keys(lecturePresence).length + 1;
           const row = (onclick, icon, title, desc, active, red) => `
             <button onclick="${onclick}" class="cu-bsheet-row ${red ? 'red' : ''}">
-              ${Icon(icon, 'w-5 h-5')}
               <span style="flex:1;min-width:0;">${title}${desc ? `<small>${desc}</small>` : ''}</span>
               ${active ? `<span class="cu-rowon">${IconBold('check','w-3.5 h-3.5')}</span>` : ''}
             </button>`;
-          const tile = (onclick, icon, label) => `<button onclick="${onclick}" class="cu-tile2"><span class="cu-tile2-ic">${Icon(icon, 'w-6 h-6')}</span><span>${label}</span></button>`;
+          const tile = (onclick, icon, label) => `<button onclick="${onclick}" class="cu-tile2"><span>${label}</span></button>`;
           return `
             <div class="cu-bsheet"><div class="cu-bsheet-grab"></div>
               <div class="cu-sheet-title">Class tools</div>
