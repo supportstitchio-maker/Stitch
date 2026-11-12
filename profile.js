@@ -2190,15 +2190,15 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return `
             <div style="margin-top:16px;">
               <div class="stg-k" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;font-size:13px;color:#6b7280;margin:0 4px 8px;">${title}</div>
-              <div class="stg-card">${rowsHtml}</div>
+              <div class="stg-card stg-plain">${rowsHtml}</div>
             </div>`;
         }
         function stgTile(icon, title, sub, onclick){
           return `
             <button onclick="${onclick}" class="stg-tile text-left" style="min-width:0;width:100%;height:100%;">
-              <div style="color:#1e90ff;margin-bottom:10px;">${stgOutline(icon)}</div>
-              <div class="stg-title" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
-              <div class="stg-sub truncate" style="font-size:12px;margin-top:2px;">${sub}</div>
+              <span class="stg-bg">${stgOutline(icon, 84)}</span>
+              <div class="stg-title" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;">${title}</div>
+              <div class="stg-sub truncate" style="font-size:12px;margin-top:2px;position:relative;">${sub}</div>
             </button>`;
         }
         function stgProfileCardHTML(){

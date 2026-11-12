@@ -767,6 +767,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function classMenuSheetHTML(toggleFnName, rows){
           const rowHtml = rows.map(r => `
             <button onclick="${r.onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${r.cls || 'text-gray-800'}${(r.cls && /text-red/.test(r.cls)) ? ' sheet-row-red' : ''}" style="background:transparent;${(r.cls && /text-red/.test(r.cls)) ? 'width:calc(100% - 48px);margin:6px 24px 0;padding-left:0;padding-right:0;border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              ${sheetRowIconSpan(r.icon)}
               <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${r.label}</span>
             </button>`).join('');
           return `
@@ -781,7 +782,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           opts = opts || {};
           const backFnName = opts.backFn || 'closeOverlay';
           const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
-          const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes === false ? 'dashes' : 'dashesShortRight');
+          const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes === false ? 'dashes' : 'menuDrop');
           const menuIconSize = opts.shortDashes === false ? 'w-5 h-5' : 'w-6 h-6';
           const menuIcon = opts.boldMenuIcon ? IconBold(menuIconName,menuIconSize) : Icon(menuIconName,menuIconSize);
           const menuBtnClass = `${opts.menuEnd ? 'h-10 flex items-center justify-end flex-shrink-0' : 'w-8 h-8 flex items-center justify-center flex-shrink-0'}${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
@@ -830,7 +831,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               <div class="flex items-center justify-between">
                 <button onclick="openLeaveClassModal(closeOverlay, 'Exit this space?', 'You can come back to this space anytime from Workspace.')" title="Leave space" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <h1 class="nm-wrap text-base font-bold font-display absolute left-1/2 -translate-x-1/2" style="max-width:60%;"><span class="nm-inner grad-text">${escapeHtml(title)}</span></h1>
-                <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+                <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('menuDrop','w-6 h-6'))}</button>
               </div>
               ${classDetailMenuOpen ? classDetailMenuDropdown(isTeacher) : ''}
             </div>`;

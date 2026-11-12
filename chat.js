@@ -81,6 +81,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function inboxFilterMenuHTML(){
           const row = (onclick, icon, label, active) => `
             <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${active ? '' : 'text-gray-800'}" style="background:transparent;${active ? `color:${NAVY};` : ''}">
+              ${sheetRowIconSpan(icon)}
               <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
           return `
@@ -822,10 +823,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="text-[15px] font-semibold" style="color:${ROYAL};">Add members</div>
               </button>` : ''}
               ${iAmCreator ? `
-              <div class="rounded-2xl border border-gray-100 bg-white shadow-sm px-4 mb-4">
+              <div class="flat-list rounded-2xl border border-gray-100 bg-white shadow-sm px-4 mb-4">
                 ${notificationSettingsRow('users','bg-emerald-50','text-emerald-600','Let members add people', meta.membersCanAdd ? 'Any member can add new people' : 'Only you can add new people', !!meta.membersCanAdd, 'toggleCollabMembersCanAdd()')}
               </div>` : ''}
-              <div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
+              <div class="flat-list rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
                 ${orderedCollabMembers(members).map(m => `
                   <div class="flex items-center gap-3 py-3">
                     <div class="w-11 h-11 rounded-full ${m.avatarBg || 'bg-gray-100'} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(m,'w-5 h-5')}</div>
@@ -1288,7 +1289,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="toggleInboxActionsMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('dots','w-6 h-6'))}</button>
               ` : `
                 <span id="inbox-username-el" class="font-bold text-base font-display grad-text whitespace-nowrap">${escapeHtml(profileData.username)}</span>
-                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon(Icon('menuSliders','w-6 h-6'))}</button>
               `}
             </div>`;
         }
@@ -4648,54 +4649,184 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
                 `}
                 <div class="flex w-full" style="gap:12px;">
-                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-act cp-press">${gradIcon(Icon('comment','w-6 h-6'))}<span class="l">Message</span></button>`}
+                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-act cp-press"><span class="cp-bg">${Icon('comment','w-full h-full')}</span><span class="l stg-title">Chat</span><span class="cp-sub stg-sub">Say hi</span></button>`}
                   ${isGroup ? `
-                    <button onclick="openCollabMembers()" class="cp-act cp-press">${gradIcon(Icon('users','w-6 h-6'))}<span class="l">Members</span></button>
-                    <button onclick="shareCollabInviteLink()" class="cp-act cp-press">${gradIcon(Icon('send','w-6 h-6'))}<span class="l">Invite</span></button>
+                    <button onclick="openCollabMembers()" class="cp-act cp-press"><span class="cp-bg">${Icon('users','w-full h-full')}</span><span class="l stg-title">Members</span><span class="cp-sub stg-sub">${(meta.members || []).length} people</span></button>
+                    <button onclick="shareCollabInviteLink()" class="cp-act cp-press"><span class="cp-bg">${Icon('send','w-full h-full')}</span><span class="l stg-title">Invite</span><span class="cp-sub stg-sub">Share link</span></button>
                   ` : `
-                    <button onclick="startCall('${activeConvoId}','video')" class="cp-act cp-press">${gradIcon(Icon('video','w-6 h-6'))}<span class="l">Video</span></button>
-                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-act cp-press">${gradIcon(Icon('phoneOutline','w-6 h-6'))}<span class="l">Voice</span></button>
+                    <button onclick="startCall('${activeConvoId}','video')" class="cp-act cp-press"><span class="cp-bg">${Icon('video','w-full h-full')}</span><span class="l stg-title">Video</span><span class="cp-sub stg-sub">Face to face</span></button>
+                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-act cp-press"><span class="cp-bg">${Icon('phoneOutline','w-full h-full')}</span><span class="l stg-title">Voice</span><span class="cp-sub stg-sub">Audio call</span></button>
                   `}
                 </div>
               </div>
               <div class="px-5 pb-8">
 
-              ${isGroup ? `<div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-5">
-                ${convoProfileRow('users','','text-emerald-600','Members', (meta.members || []).length + ' people', 'openCollabMembers()')}
-                ${convoProfileRow('send','',`text-[${NAVY}]`,'Share invite link', 'Anyone with the link can ask to join', 'shareCollabInviteLink()')}
+              ${isGroup ? `<div class="flat-list cp-list mb-5">
+                ${cpRow('users','Members', (meta.members || []).length + ' people', 'openCollabMembers()')}
+                ${cpRow('send','Share invite link', '', 'shareCollabInviteLink()')}
               </div>` : ''}
 
-              <div class="cp-card mb-5" style="padding:2px 16px;">
-                <button onclick="openConvoMediaLinksDocs()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;"><span class="font-semibold">Media, links and docs</span><span class="flex items-center gap-2 text-xs text-gray-400">${mediaCount}${RowArrow('w-4 h-4 text-gray-400')}</span></button>
-                <button onclick="toggleConvoNotifPref()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Mute notifications</span><span class="text-xs text-gray-400">${notifOn ? 'Off' : 'On'}</span></button>
-                <button onclick="toggleFavoriteConvo()" class="cp-press w-full flex items-center justify-between text-left text-sm text-gray-700" style="padding:14px 0;border-top:1px solid rgba(128,128,128,0.15);"><span class="font-semibold">Favourite</span><span class="text-xs text-gray-400">${favorited ? 'On' : 'Off'}</span></button>
+              <div class="flat-list cp-list mb-5">
+                ${cpRow('image','Media, links and docs', String(mediaCount), 'openConvoMediaLinksDocs()')}
+                ${cpToggleRow('bell','Notifications', notifOn, 'toggleConvoNotifPref()')}
+                ${cpToggleRow('star','Favourite', favorited, 'toggleFavoriteConvo()')}
               </div>
 
               ${!isGroup ? `
-              <div class="mb-6">
-                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Collaborations together</div>
-                ${sharedCollabs.length
-                  ? `<div class="rounded-2xl border border-gray-100 divide-y bg-white shadow-sm px-4">
-                      ${sharedCollabs.map(c => `
-                        <button onclick="closeOverlay(); openConversation('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
-                          <div class="w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
-                          <div class="flex-1 min-w-0 text-sm text-gray-700 truncate">${escapeHtml(c.name)}</div>
-                          ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
-                        </button>`).join('')}
-                    </div>`
-                  : `<div class="text-sm text-gray-400">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
+              <div class="mb-5">
+                <div class="cp-k">Collaborations</div>
+                <div class="flat-list cp-list">
+                  ${sharedCollabs.map(c => `
+                    <button onclick="closeOverlay(); openConversation('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
+                      <div class="w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
+                      <div class="flex-1 min-w-0 text-sm text-gray-700 truncate">${escapeHtml(c.name)}</div>
+                      ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
+                    </button>`).join('')}
+                  ${cpRow('users','Create collaboration with ' + escapeHtml(meta.name), '', 'cpCreateCollabWith()')}
+                </div>
+                ${sharedCollabs.length ? '' : `<div class="text-xs text-gray-400 mt-2" style="padding:0 2px;">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
               </div>` : ''}
 
-              <div class="flex justify-center flex-wrap text-sm font-semibold" style="gap:8px 28px;color:#dc2626;padding-top:4px;">
+              <div class="flat-list cp-list cp-danger">
                 ${isGroup ? `
-                  <button onclick="leaveCollaboration()" class="cp-press">Leave collaboration</button>
-                  ${(isMe(meta.createdBy) || meta.createdBy === 'me') ? `<button onclick="deleteCollaboration()" class="cp-press">Delete collaboration</button>` : ''}
+                  ${cpRow('logout','Leave collaboration', '', 'leaveCollaboration()', true)}
+                  ${(isMe(meta.createdBy) || meta.createdBy === 'me') ? cpRow('trash','Delete collaboration', '', 'deleteCollaboration()', true) : ''}
                 ` : `
-                  <button onclick="toggleBlockFromConvoProfile()" class="cp-press">${blocked ? 'Unblock' : 'Block'}</button>
-                  <button onclick="deleteConvoChat()" class="cp-press">Delete chat</button>
+                  ${cpRow('ban', blocked ? 'Unblock ' + escapeHtml(meta.name) : 'Block ' + escapeHtml(meta.name), '', 'toggleBlockFromConvoProfile()', true)}
+                  ${cpRow('flag', 'Report ' + escapeHtml(meta.name), '', 'reportConvo()', true)}
+                  ${cpRow('eraser','Clear chat', '', 'clearConvoChatConfirm()', true)}
+                  ${cpRow('trash','Delete chat', '', 'deleteConvoChat()', true)}
                 `}
               </div>
             </div>`;
+        }
+
+        // ---- Contact info rows: outline icon, label, value, grey chevron, no panel behind ----
+        const CP_PATHS = {
+          image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
+          storage:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
+          bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+          star:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+          ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+          flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+          eraser:'<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
+          trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+          logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+          personPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
+          send:'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>'
+        };
+        function cpIcon(name){
+          if (name === 'users') return Icon('users','w-[22px] h-[22px]');
+          return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CP_PATHS[name] || ''}</svg>`;
+        }
+        function cpRow(icon, label, val, onclick, danger){
+          return `
+            <button onclick="${onclick}" class="cp-row cp-press w-full flex items-center text-left${danger ? ' cp-row-danger' : ''}" style="gap:14px;padding:13px 0;">
+              <span class="cp-ico flex items-center justify-center flex-shrink-0" style="width:24px;">${cpIcon(icon)}</span>
+              <span class="cp-lbl flex-1 min-w-0 truncate" style="font-size:15px;font-weight:500;">${label}</span>
+              ${val ? `<span class="cp-val flex-shrink-0" style="font-size:13px;">${val}</span>` : ''}
+              ${danger ? '' : RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
+            </button>`;
+        }
+        function cpToggleRow(icon, label, checked, onclick){
+          return `
+            <div class="cp-row flex items-center w-full" style="gap:14px;padding:13px 0;">
+              <span class="cp-ico flex items-center justify-center flex-shrink-0" style="width:24px;">${cpIcon(icon)}</span>
+              <span class="cp-lbl flex-1 min-w-0 truncate" style="font-size:15px;font-weight:500;">${label}</span>
+              <button onclick="${onclick}" aria-label="${label}" class="relative flex-shrink-0" style="width:44px;height:26px;border-radius:9999px;border:1px solid ${checked ? 'transparent' : '#d1d5db'};background:${checked ? `linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)` : '#e5e7eb'};transition:background .15s ease;">
+                <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:9999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);transform:translateX(${checked ? '18px' : '0'});transition:transform .15s ease;"></span>
+              </button>
+            </div>`;
+        }
+
+        function cpCreateCollabWith(){
+          const meta = activeConvoMetaSafe(activeConvoId);
+          closeOverlay();
+          openNewCollaboration();
+          // Pre-select this person when they are in the picker list
+          try {
+            const c = newCollabContactSource().find(x => x.otherUserId && x.otherUserId === meta.otherUserId);
+            if (c) { newCollabSelected.add(c.id); openOverlay('newCollaboration'); }
+          } catch (e) {}
+        }
+        // ---- Add this person to a collaboration you are already in ----
+        function cpAddTargets(dmId){
+          const meta = convoMeta[dmId] || {};
+          const uid = meta.otherUserId;
+          return collabConvos.filter(c => {
+            const m = convoMeta[c.id] || {};
+            const canAdd = m.createdBy === 'me' || (typeof isMe === 'function' && isMe(m.createdBy)) || !!m.membersCanAdd;
+            const already = (m.members || []).some(x => (uid && x.otherUserId === uid) || (!uid && x.name === meta.name));
+            return canAdd && !already;
+          });
+        }
+        function cpAddToCollabs(){
+          const dmId = activeConvoId;
+          const meta = convoMeta[dmId];
+          if (!dmId || !meta) return;
+          if (!meta.otherUserId) { openAppAlertModal('This contact cannot be added to a collaboration yet.'); return; }
+          window.__cpAddDm = dmId;
+          const list = cpAddTargets(dmId);
+          const ov = document.getElementById('overlay');
+          if (!ov) return;
+          ov.innerHTML = `
+            <div class="px-5 pb-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);">
+              <div class="flex items-center gap-4">
+                <button onclick="activeConvoId='${dmId}'; renderConvoProfile()" class="flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-lg font-display truncate grad-text">Add to collaborations</div>
+                  <div class="text-xs text-gray-400 truncate">Choose where to add ${escapeHtml(meta.name)}</div>
+                </div>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-5">
+              <div class="flat-list cp-list">
+                ${list.length ? list.map(c => `
+                  <button onclick="cpAddPersonToCollab('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left cp-press">
+                    <div class="w-11 h-11 rounded-full ${c.avatarBg} flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-5 h-5')}</div>
+                    <div class="flex-1 min-w-0 text-[15px] truncate" style="color:inherit;">${escapeHtml(c.name)}</div>
+                    ${RowArrow('w-4 h-4 text-gray-300 flex-shrink-0')}
+                  </button>`).join('') : `<div class="text-center text-gray-400 text-sm py-10">No collaborations to add ${escapeHtml(meta.name)} to. They may already be in all of yours, or only the creator can add people.</div>`}
+              </div>
+            </div>`;
+        }
+        function cpAddPersonToCollab(collabId){
+          const dmId = window.__cpAddDm;
+          const dm = convoMeta[dmId], gm = convoMeta[collabId];
+          if (!dm || !gm || !dm.otherUserId) return;
+          if ((gm.members || []).some(x => x.otherUserId === dm.otherUserId)) { openAppAlertModal(dm.name + ' is already in ' + gm.name + '.'); return; }
+          const contact = { otherUserId: dm.otherUserId, name: dm.name, avatarBg: dm.avatarBg, icon: dm.icon, photo: dm.photo || null };
+          gm.members = (gm.members || []).concat([Object.assign({ mine: false }, contact)]);
+          queueSaveUserState();
+          activeConvoId = dmId;
+          renderConvoProfile();
+          const myName = (typeof profileData !== 'undefined' && profileData.name) || 'Someone';
+          collabAddMembersRemote(collabId, gm.name, [contact]).then(ok => {
+            if (!ok) {
+              gm.members = (gm.members || []).filter(x => x.otherUserId !== contact.otherUserId);
+              queueSaveUserState();
+              openAppAlertModal('Could not add ' + dm.name + ' to ' + gm.name + '. Check your connection and try again.');
+              return;
+            }
+            openAppAlertModal(dm.name + ' was added to ' + gm.name + '.');
+            sendGroupSystemEvent(collabId, `${myName} added ${dm.name} to the group`, { excludeUserIds: new Set([dm.otherUserId]) });
+            sendPushTo(dm.otherUserId, { title: 'Added to a group', body: `${myName} added you to "${gm.name}"`, tag: 'collab-add-' + collabId, data: { kind: 'collab_add', convoId: collabId } });
+          });
+        }
+        function openConvoManageStorage(){
+          const { images, docs } = collectConvoMedia(activeConvoId);
+          const bytes = images.concat(docs).reduce((n, f) => n + (Number(f.size) || 0), 0);
+          const mb = bytes ? (bytes / 1048576).toFixed(1) + ' MB' : 'no files';
+          openAppAlertModal('Files shared in this chat: ' + (images.length + docs.length) + ' (' + mb + '). Open Media, links and docs to view them.');
+        }
+        function clearConvoChatConfirm(){
+          if (!activeConvoId) return;
+          const id = activeConvoId;
+          openAppConfirmModal('Clear this chat?', 'Your messages here will be removed. This can\'t be undone.', 'Clear', function(){
+            clearConvoChat();
+            deleteConvoMessagesRemote(id);
+            renderConvoProfile();
+          });
         }
 
         let reportedConvos = new Set();
@@ -4946,7 +5077,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
                 <button onclick="startCall('${activeConvoId}','video')" title="Video call" class="p-1">${gradIcon(Icon('video','w-5 h-5'))}</button>
                 <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" class="p-1">${gradIcon(Icon('phoneOutline','w-4 h-4'))}</button>
-                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon(IconBold((typeof isDesktopLayout === 'function' && isDesktopLayout()) ? 'dashesShortRight' : 'dots','w-5 h-5'))}</button>
+                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon(IconBold('menuRing','w-6 h-6'))}</button>
 
               </div>
             </div>
@@ -7657,6 +7788,69 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           myCallUserId = null;
         }
 
+        // Drag the small picture anywhere inside the call screen (works for whichever picture is currently small)
+        let callPipDragging = false;
+        (function installCallPipDrag(){
+          if (window.__callPipDragInstalled) return;
+          window.__callPipDragInstalled = true;
+          let drag = null;
+          document.addEventListener('pointerdown', function(e){
+            const el = e.target.closest && e.target.closest('.cu-tile > .cu-pip, .cu-tile.cu-swap > #call-remote-video');
+            if (!el || e.target.closest('.cu-flip')) return;
+            const tile = el.parentElement;
+            if (tile.classList.contains('cu-swap') && el.classList.contains('cu-pip')) return; // that one is the big picture now
+            const tr = tile.getBoundingClientRect(), er = el.getBoundingClientRect();
+            drag = { el, tile, tr, w: er.width, h: er.height, dx: e.clientX - er.left, dy: e.clientY - er.top, sx: e.clientX, sy: e.clientY, moved: false, id: e.pointerId };
+          }, true);
+          document.addEventListener('pointermove', function(e){
+            if (!drag || e.pointerId !== drag.id) return;
+            if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 8) return;
+            if (!drag.moved) { drag.moved = true; callPipDragging = true; try { drag.el.setPointerCapture(e.pointerId); } catch (_) {} }
+            const tr = drag.tr;
+            let x = e.clientX - drag.dx - tr.left, y = e.clientY - drag.dy - tr.top;
+            x = Math.max(6, Math.min(tr.width - drag.w - 6, x));
+            y = Math.max(6, Math.min(tr.height - drag.h - 6, y));
+            const px = +(x / tr.width * 100).toFixed(2), py = +(y / tr.height * 100).toFixed(2);
+            callState.pipPos = { x: px, y: py };
+            drag.tile.classList.add('cu-moved');
+            drag.tile.style.setProperty('--pip-x', px + '%');
+            drag.tile.style.setProperty('--pip-y', py + '%');
+            e.preventDefault();
+          }, true);
+          function end(e){
+            if (!drag || (e && e.pointerId !== drag.id)) return;
+            const d = drag; const was = d.moved; drag = null;
+            if (was) {
+              // Let go anywhere: the picture glides to the nearest edge of the screen (never stays in the middle)
+              const tr = d.tr, m = 10, p = callState.pipPos || { x: 0, y: 0 };
+              let x = p.x / 100 * tr.width, y = p.y / 100 * tr.height;
+              const dist = { l: x, r: tr.width - d.w - x, t: y, b: tr.height - d.h - y };
+              const side = Object.keys(dist).reduce(function(a, k){ return dist[k] < dist[a] ? k : a; }, 'l');
+              if (side === 'l') x = m; else if (side === 'r') x = tr.width - d.w - m;
+              else if (side === 't') y = m; else y = tr.height - d.h - m;
+              x = Math.max(m, Math.min(tr.width - d.w - m, x)); y = Math.max(m, Math.min(tr.height - d.h - m, y));
+              callState.pipPos = { x: +(x / tr.width * 100).toFixed(2), y: +(y / tr.height * 100).toFixed(2) };
+              d.tile.classList.add('cu-snapping');
+              d.tile.style.setProperty('--pip-x', callState.pipPos.x + '%');
+              d.tile.style.setProperty('--pip-y', callState.pipPos.y + '%');
+              setTimeout(function(){ d.tile.classList.remove('cu-snapping'); }, 260);
+              setTimeout(function(){ callPipDragging = false; }, 80);
+            }
+          }
+          document.addEventListener('pointerup', end, true);
+          document.addEventListener('pointercancel', end, true);
+        })();
+
+        // Tap the small picture to make it the big one (and the big one becomes the small one).
+        // Only CSS classes change: the <video> elements are never moved or rebuilt, so nothing blinks.
+        function toggleCallVideoSwap(fromSmallLocal){
+          if (callPipDragging) return;                                 // a drag just ended: not a tap
+          if (fromSmallLocal === true && callState.swapped) return;   // big local picture: ignore taps
+          if (fromSmallLocal === false && !callState.swapped) return; // big remote picture: ignore taps
+          callState.swapped = !callState.swapped;
+          const tile = document.querySelector('#call-stage-wrap .cu-tile');
+          if (tile) tile.classList.toggle('cu-swap', !!callState.swapped);
+        }
         function attachCallLocalVideo(){
           const v = document.getElementById('call-local-video');
           if (v && callLocalStream) { v.srcObject = callLocalStream; v.style.transform = callState.facing === 'environment' ? 'none' : 'scaleX(-1)'; }
@@ -8404,6 +8598,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const oldVid = oldTile && oldTile.querySelector(':scope > #call-remote-video');
             const newVid = newTile && newTile.querySelector(':scope > #call-remote-video');
             if (!oldTile || !newTile || !oldVid || !newVid) return false;
+            oldTile.classList.toggle('cu-swap', !!callState.swapped);
+            oldTile.classList.toggle('cu-moved', !!callState.pipPos);
+            if (callState.pipPos) { oldTile.style.setProperty('--pip-x', callState.pipPos.x + '%'); oldTile.style.setProperty('--pip-y', callState.pipPos.y + '%'); }
             oldVid.className = newVid.className;
             oldTile.querySelectorAll(':scope > .cu-avatar').forEach(e => e.remove());
             const newAv = newTile.querySelector(':scope > .cu-avatar');
@@ -8480,15 +8677,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
             if (isVideo) {
               const pip = `
-                <div class="cu-pip" data-speak="local">
+                <div class="cu-pip" data-speak="local" onclick="toggleCallVideoSwap(true)">
                   ${showLocalVideo ? `<span class="cu-flip" title="Flip camera" style="right:6px;bottom:6px;width:28px;height:28px;" onclick="event.stopPropagation();flipCallCamera()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg></span>` : ''}
                   <video id="call-local-video" autoplay playsinline muted class="${showLocalVideo ? '' : 'hidden'}" style="transform:scaleX(-1);"></video>
                   ${!showLocalVideo ? (callState.mediaError ? `<span class="text-white/70 text-[10px] font-semibold text-center px-2">${escapeHtml(callState.mediaError)}</span>` : `<span class="cu-avatar ${'bg-blue-100'}" style="width:56%;">${myCallAvatarHTML('w-12 h-12')}</span>`) : ''}
                   ${callState.muted ? `<span class="cu-corner cu-mute" style="top:6px;right:6px;width:22px;height:22px;">${Icon('micOff', 'w-3 h-3')}</span>` : ''}
                 </div>`;
               return `
-                <div class="cu-tile" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;">
-                  <video id="call-remote-video" autoplay playsinline class="${showRemoteVideo ? '' : 'hidden'}"></video>
+                <div class="cu-tile${callState.swapped ? ' cu-swap' : ''}${callState.pipPos ? ' cu-moved' : ''}" data-speak="${speakKey}" style="width:100%;height:100%;border-radius:26px;${callState.pipPos ? `--pip-x:${callState.pipPos.x}%;--pip-y:${callState.pipPos.y}%;` : ''}">
+                  <video id="call-remote-video" autoplay playsinline class="${showRemoteVideo ? '' : 'hidden'}" onclick="toggleCallVideoSwap(false)"></video>
                   ${!showRemoteVideo ? `<div class="cu-avatar cu-avatar-lg ${meta.avatarBg || 'bg-gray-100'}">${callAvatarFor(meta, 'w-12 h-12')}</div>` : ''}
                   ${entry ? `<span class="cu-chip" style="left:12px;top:12px;bottom:auto;">${escapeHtml(callDisplayName(meta))}${peerMuted ? ' · Muted' : ''}</span>` : ''}
                   ${pip}

@@ -149,7 +149,7 @@ let appPrefs = {
             ${overlayHeader('Blocked', '20px', "openOverlay('profileMenu')", null, { right: true })}
             <div id="blocked-accounts-body" class="p-5">
               ${blockedAccounts.length
-                ? `<div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">${blockedAccounts.map(blockedAccountRow).join('')}</div>`
+                ? `<div class="flat-list rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">${blockedAccounts.map(blockedAccountRow).join('')}</div>`
                 : savedEmptyState("You haven't blocked anyone. Blocked accounts will appear here.")}
             </div>
             </div>`;

@@ -64,7 +64,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div id="career-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               <div class="relative flex items-center justify-between">
                 <h1 class="text-base font-bold font-display grad-text whitespace-nowrap">Career Space</h1>
-                <button id="career-dashes-btn" onclick="toggleCareerMenu()" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+                <button id="career-dashes-btn" onclick="toggleCareerMenu()" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon(Icon('menuGrid','w-6 h-6'))}</button>
               </div>
             </div>
             <div id="career-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
@@ -140,6 +140,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         function careerMenuRowHTML(onclick, icon, label, cls){
           return `
             <button onclick="${onclick}" class="w-full flex items-center gap-5 px-6 py-4 text-left text-base font-semibold ${cls || 'text-gray-800'}${(cls && /text-red/.test(cls)) ? ' sheet-row-red' : ''}" style="background:transparent;${(cls && /text-red/.test(cls)) ? 'width:calc(100% - 48px);margin:6px 24px 0;padding-left:0;padding-right:0;border-top:1px solid rgba(128,128,128,0.15);' : ''}">
+              ${sheetRowIconSpan(icon)}
               <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
         }
@@ -6041,7 +6042,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="relative flex-shrink-0 w-full">
               ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
-              <button onclick="openCareerCvMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+              <button onclick="openCareerCvMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
             </div>`;
         }
         function careerCvMenuInnerHTML(){
@@ -6102,7 +6103,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="relative flex-shrink-0 w-full">
               ${overlayHeader('Auto apply', '20px', 'overlayGoBack()', null, { center: true })}
-              <button onclick="openCareerAutoMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+              <button onclick="openCareerAutoMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
             </div>`;
         }
         function careerSubPageHeaderHTML(title){
@@ -6507,9 +6508,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const hasDocs = careerHasBotDocs();
           const onText = prefs.mode === 'review' ? 'On. Stitch Bot asks you before each application, and shows why.' : 'On. Stitch Bot applies as soon as it spots a match.';
           const toggle = `
-            <div class="bg-white rounded-3xl p-4 mb-5 shadow-sm">
+            <div class="flat-post bg-white rounded-3xl p-4 mb-5 shadow-sm">
               <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('bot','w-5 h-5')}</div>
+                <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:transparent;color:#6b7280;">${Icon('bot','w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-semibold text-gray-800">Auto apply to my matches</div>
                   <div class="text-xs text-gray-400">${on ? onText : 'Off. You choose which matches to apply to.'}</div>

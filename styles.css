@@ -6910,3 +6910,141 @@ body:not(.dark-mode) .stg-tile{box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3p
 body:not(.dark-mode) .stg-tile:hover,body:not(.dark-mode) .stg-tile:active{box-shadow:0 12px 24px rgba(17,24,39,.14),0 2px 4px rgba(17,24,39,.08) !important;}
 html.dark-mode .stg-tile{background:#232326 !important;border:1px solid #333337 !important;box-shadow:0 8px 18px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05) inset !important;}
 html.dark-mode .stg-tile:hover,html.dark-mode .stg-tile:active{background:#2a2a2e !important;box-shadow:0 14px 28px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.07) inset !important;}
+
+/* Video call: tap the small picture to swap it with the big one (classes only, videos never move) */
+.cu-tile > .cu-pip{cursor:pointer;z-index:2;transition:none !important;}
+.cu-tile.cu-swap > .cu-pip{top:0 !important;right:0 !important;left:0 !important;bottom:0 !important;width:100% !important;height:100% !important;max-width:none !important;aspect-ratio:auto !important;border-radius:inherit !important;border:0 !important;box-shadow:none !important;z-index:1;cursor:default;}
+.cu-tile.cu-swap > #call-remote-video{inset:auto !important;top:14px !important;right:14px !important;width:27% !important;max-width:130px !important;height:auto !important;aspect-ratio:3/4 !important;border-radius:20px !important;border:3px solid var(--cu-bg,#fff) !important;box-shadow:0 8px 22px rgba(30,60,140,.28) !important;z-index:3;cursor:pointer;}
+.cu-tile.cu-swap > #call-remote-video.hidden{display:none !important;}
+.cu-tile.cu-swap > .cu-chip{z-index:2;}
+.cu-tile.cu-swap > .cu-avatar{display:none !important;}
+
+/* Video call: small picture is a bit bigger and can be dragged anywhere */
+.cu-tile > .cu-pip{width:34% !important;max-width:170px !important;touch-action:none;}
+.cu-tile.cu-swap > #call-remote-video{width:34% !important;max-width:170px !important;touch-action:none;}
+.cu-tile.cu-moved > .cu-pip{left:var(--pip-x) !important;top:var(--pip-y) !important;right:auto !important;bottom:auto !important;}
+.cu-tile.cu-moved.cu-swap > #call-remote-video{left:var(--pip-x) !important;top:var(--pip-y) !important;right:auto !important;bottom:auto !important;}
+.cu-tile.cu-moved.cu-swap > .cu-pip{left:0 !important;top:0 !important;right:0 !important;bottom:0 !important;width:100% !important;max-width:none !important;}
+.cu-tile.cu-snapping > .cu-pip,.cu-tile.cu-snapping.cu-swap > #call-remote-video{transition:left .22s cubic-bezier(.22,1,.36,1),top .22s cubic-bezier(.22,1,.36,1) !important;}
+.cu-tile.cu-snapping.cu-swap > .cu-pip{transition:none !important;}
+
+/* Row lists sit on the page background (no white panel); dividers between rows stay */
+.flat-list,.cp-card.flat-list,body.dark-mode .flat-list,body.dark-mode .cp-card.flat-list{background:transparent !important;background-image:none !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;padding-left:4px !important;padding-right:4px !important;}
+.flat-row,body.dark-mode .flat-row{background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;border-bottom:1px solid rgba(128,128,128,.18) !important;margin-bottom:0 !important;padding-left:4px !important;padding-right:4px !important;}
+
+/* Dark mode: the OFF toggle track was white and swallowed the white handle */
+html.dark-mode button[style*="border-radius:9999px"][style*="background:#e5e7eb"],body.dark-mode button[style*="border-radius:9999px"][style*="background:#e5e7eb"]{background:#3f3f46 !important;border-color:#5b5b63 !important;}
+
+/* ===== Contact info and Space settings rebuild (outline rows on the page background) ===== */
+.cp-list{ background:transparent !important; border:0 !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; }
+.cp-list > * + *{ border-top:1px solid rgba(128,128,128,.14) !important; }
+.cp-k{ font-family:'Montserrat',system-ui,sans-serif; font-weight:600; font-size:13px; color:#6b7280; margin:0 2px 4px; }
+body:not(.dark-mode) .cp-row .cp-lbl{ color:#111827 !important; }
+body:not(.dark-mode) .cp-row .cp-ico{ color:#374151 !important; }
+body:not(.dark-mode) .cp-row .cp-val{ color:#9ca3af !important; }
+html.dark-mode .cp-row .cp-lbl, body.dark-mode .cp-row .cp-lbl{ color:#f3f4f6 !important; }
+html.dark-mode .cp-row .cp-ico, body.dark-mode .cp-row .cp-ico{ color:#d1d5db !important; }
+html.dark-mode .cp-row .cp-val, body.dark-mode .cp-row .cp-val{ color:#9ca3af !important; }
+.cp-row.cp-row-danger .cp-lbl, .cp-row.cp-row-danger .cp-ico{ color:#dc2626 !important; }
+html.dark-mode .cp-row.cp-row-danger .cp-lbl, html.dark-mode .cp-row.cp-row-danger .cp-ico, body.dark-mode .cp-row.cp-row-danger .cp-lbl, body.dark-mode .cp-row.cp-row-danger .cp-ico{ color:#f87171 !important; }
+.cp-act svg{ fill:none !important; }
+/* Space settings */
+.ss-photo{ background-color:#e5e7eb; border:0; }
+.ss-photo-ico{ color:#9ca3af; }
+html.dark-mode .ss-photo, body.dark-mode .ss-photo{ background-color:#2a2a2e; }
+html.dark-mode .ss-photo-ico, body.dark-mode .ss-photo-ico{ color:#8b8b93; }
+html.dark-mode .ss-badge, body.dark-mode .ss-badge{ border-color:#121212 !important; }
+.ss-field{ border-bottom:1px solid rgba(128,128,128,.18); padding:10px 0 8px; }
+.ss-lbl{ display:block; font-size:12px; font-weight:600; color:#6b7280; margin-bottom:2px; }
+.ss-input{ background:transparent !important; border:0 !important; outline:0 !important; box-shadow:none !important; padding:4px 0 !important; font-size:16px; border-radius:0 !important; color:#111827; }
+html.dark-mode .ss-input, body.dark-mode .ss-input{ color:#f3f4f6; }
+.ss-code{ padding:8px 0; border-bottom:1px solid rgba(128,128,128,.14); }
+body:not(.dark-mode) .cp-row.cp-row-danger .cp-lbl, body:not(.dark-mode) .cp-row.cp-row-danger .cp-ico{ color:#dc2626 !important; }
+.ss-badge{ background:#4169e1 !important; color:#fff !important; }
+html.dark-mode .cp-act svg, body.dark-mode .cp-act svg, html.dark-mode .cp-act svg *, body.dark-mode .cp-act svg *{ fill:none !important; stroke:currentColor !important; }
+
+/* ===== Flat posts: no white panel, a thin divider instead ===== */
+.flat-post,body.dark-mode .flat-post,html.dark-mode .flat-post{background:transparent !important;border:0 !important;border-bottom:1px solid rgba(128,128,128,.18) !important;box-shadow:none !important;border-radius:0 !important;padding-left:4px !important;padding-right:4px !important;}
+.cw-empty,body.dark-mode .cw-empty{background:transparent !important;box-shadow:none !important;border-radius:0 !important;padding-left:4px !important;padding-right:4px !important;}
+/* Profile placeholders stay grey */
+body:not(.dark-mode) .bg-blue-50.rounded-full.overflow-hidden{background:#e5e7eb !important;color:#6b7280 !important;}
+html.dark-mode .bg-blue-50.rounded-full.overflow-hidden,body.dark-mode .bg-blue-50.rounded-full.overflow-hidden{background:#2b2b2b !important;color:#9ca3af !important;}
+
+/* ===== Courses, Spaces and Career: plain lines and text tabs instead of panels and pills ===== */
+#course-search-input{background:transparent !important;border-radius:0 !important;border:0 !important;border-bottom:1px solid rgba(128,128,128,.35) !important;}
+#courses-chips button{background:transparent !important;color:#6b7280 !important;border-radius:0 !important;padding:8px 4px !important;margin-right:10px;box-shadow:none !important;}
+#courses-chips button[style*="gradient"]{color:#1e90ff !important;box-shadow:inset 0 -2px 0 #1e90ff !important;}
+html.dark-mode #courses-chips button, body.dark-mode #courses-chips button{color:#9ca3af !important;}
+html.dark-mode #courses-chips button[style*="gradient"], body.dark-mode #courses-chips button[style*="gradient"]{color:#5cb0ff !important;box-shadow:inset 0 -2px 0 #5cb0ff !important;}
+#courses-list [onclick^="openCourseDetail"].bg-white{background:transparent !important;border:0 !important;box-shadow:none !important;}
+#courses-list [onclick^="openCourseDetail"] .text-xs.font-bold{color:#6b7280 !important;font-weight:500 !important;text-transform:none !important;letter-spacing:0 !important;}
+*:has(>.seg-btn){background:transparent !important;box-shadow:none !important;border-radius:0 !important;border-bottom:1px solid rgba(128,128,128,.25) !important;padding:0 !important;}
+.seg-btn{background:transparent !important;box-shadow:none !important;border-radius:0 !important;color:#6b7280 !important;}
+.seg-btn.on{color:#1e90ff !important;box-shadow:inset 0 -2px 0 #1e90ff !important;}
+html.dark-mode .seg-btn, body.dark-mode .seg-btn{color:#9ca3af !important;}
+html.dark-mode .seg-btn.on, body.dark-mode .seg-btn.on{color:#5cb0ff !important;box-shadow:inset 0 -2px 0 #5cb0ff !important;}
+textarea[id^="stream-comment-input"]{background:transparent !important;border-radius:0 !important;border-bottom:1px solid rgba(128,128,128,.35) !important;}
+textarea[id^="stream-comment-input"]+button{background:transparent !important;color:#1e90ff !important;box-shadow:none !important;}
+.filter-pill[data-people-tab]{background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;color:#6b7280 !important;padding:8px 4px !important;}
+.filter-pill[data-people-tab].on{color:#1e90ff !important;box-shadow:inset 0 -2px 0 #1e90ff !important;}
+html.dark-mode .filter-pill[data-people-tab], body.dark-mode .filter-pill[data-people-tab]{color:#9ca3af !important;}
+html.dark-mode .filter-pill[data-people-tab].on, body.dark-mode .filter-pill[data-people-tab].on{color:#5cb0ff !important;box-shadow:inset 0 -2px 0 #5cb0ff !important;}
+button[onclick*="openInviteCoTeacherOverlay"].filter-pill{background:transparent !important;border:0 !important;box-shadow:none !important;color:#1e90ff !important;}
+button[onclick*="openReportClass"]{font-size:13px !important;color:#6b7280 !important;font-weight:500 !important;}
+button[onclick*="openReportClass"] svg{width:16px !important;height:16px !important;}
+.auth-intent-chip[onclick*="setCareerBotPref"]{background:transparent !important;border:1.5px solid rgba(128,128,128,.4) !important;color:#374151 !important;box-shadow:none !important;}
+.auth-intent-chip[onclick*="setCareerBotPref"].on{border-color:#1e90ff !important;color:#1e90ff !important;}
+html.dark-mode .auth-intent-chip[onclick*="setCareerBotPref"], body.dark-mode .auth-intent-chip[onclick*="setCareerBotPref"]{color:#e5e7eb !important;}
+html.dark-mode .auth-intent-chip[onclick*="setCareerBotPref"].on, body.dark-mode .auth-intent-chip[onclick*="setCareerBotPref"].on{color:#5cb0ff !important;border-color:#5cb0ff !important;}
+/* Outline icons wrapped in the gradient: keep them outlines in dark mode */
+body.dark-mode svg[fill="none"][stroke="url(#navyRoyalGrad)"]{ fill:none !important; }
+/* Career bot preference chips: outlined, not filled */
+body:not(.dark-mode) .pref-card .auth-intent-chip[onclick*="setCareerBotPref"]{ background:transparent !important; border:1.5px solid #d1d5db !important; color:#374151 !important; }
+body:not(.dark-mode) .pref-card .auth-intent-chip[onclick*="setCareerBotPref"].on{ background:transparent !important; border-color:#1e90ff !important; color:#1e90ff !important; }
+html.dark-mode .pref-card .auth-intent-chip[onclick*="setCareerBotPref"]{ background:transparent !important; border:1.5px solid rgba(255,255,255,.25) !important; color:#e5e7eb !important; }
+html.dark-mode .pref-card .auth-intent-chip[onclick*="setCareerBotPref"].on{ background:transparent !important; border-color:#5cb0ff !important; color:#5cb0ff !important; }
+/* Red menu rows keep a red icon */
+.sheet-row-red .sheet-ico, .sheet-row-red .sheet-ico svg{ color:#ef4444 !important; }
+html.dark-mode .sheet-row-red .sheet-ico, body.dark-mode .sheet-row-red .sheet-ico{ color:#f87171 !important; }
+
+/* Contact info: Message / Video / Voice as Settings-style cards */
+.cp-act{ align-items:flex-start !important; justify-content:flex-start !important; gap:12px !important; padding:18px 14px 16px !important; border-radius:24px !important; background:#fff !important; border:1px solid #eef0f3 !important; box-shadow:0 6px 18px rgba(17,24,39,.07) !important; text-align:left !important; }
+.cp-act span.l{ font-size:14.5px !important; font-weight:700 !important; color:#111827 !important; white-space:nowrap; }
+body.dark-mode .cp-act, html.dark-mode .cp-act{ background:#232326 !important; border-color:#2e2e32 !important; }
+body.dark-mode .cp-act span.l, html.dark-mode .cp-act span.l{ color:#fff !important; }
+body.dark-mode .cp-act svg, html.dark-mode .cp-act svg{ color:#1E90FF !important; }
+
+/* Big faded corner icons on cards */
+.cp-act{ position:relative !important; overflow:hidden !important; min-height:108px; gap:2px !important; }
+.cp-act .cp-bg{ position:absolute; right:-6px; bottom:-12px; width:84px; height:84px; color:#1E90FF; opacity:.15; transform:rotate(-10deg); pointer-events:none; display:block; }
+.cp-act .cp-bg svg{ width:100% !important; height:100% !important; fill:none !important; stroke:currentColor !important; }
+.cp-act span.l{ display:block; position:relative; }
+.cp-act .cp-sub{ position:relative; font-size:14px; font-weight:400; color:#6B7280; margin-top:1px; white-space:nowrap; }
+.stg-tile{ position:relative !important; overflow:hidden !important; min-height:108px; }
+.stg-tile .stg-bg{ position:absolute; right:-6px; bottom:-12px; width:84px; height:84px; color:#1E90FF; opacity:.15; transform:rotate(-10deg); pointer-events:none; display:block; }
+.stg-tile .stg-bg svg{ width:100% !important; height:100% !important; }
+
+/* Cards with a big faded corner icon (Workspace) */
+.bgi-card{ position:relative !important; overflow:hidden !important; min-height:108px; padding:16px 14px !important; border-radius:24px !important; text-align:left !important; display:flex !important; flex-direction:column !important; align-items:flex-start !important; justify-content:flex-start !important; }
+.bgi-card .bgi-ico{ position:absolute; right:-6px; bottom:-12px; width:84px; height:84px; color:#1E90FF; opacity:.15; transform:rotate(-10deg); pointer-events:none; display:block; }
+.bgi-card .bgi-ico svg{ width:100% !important; height:100% !important; display:block; }
+.bgi-card .bgi-t{ position:relative; font-size:14.5px; font-weight:700; }
+.bgi-card .bgi-s{ position:relative; font-size:14px; margin-top:3px; white-space:nowrap; }
+.bgi-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; }
+
+/* Match Settings tile type and placement exactly: 12px / 600 title, 12px sub, padding 14px 10px, radius 18px */
+.cp-act, .bgi-card{ padding:14px 10px !important; border-radius:18px !important; gap:0 !important; }
+.cp-act span.l, .bgi-card .stg-title{ font-size:12px !important; font-weight:600 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.cp-act .cp-sub, .bgi-card .stg-sub{ font-size:12px !important; font-weight:400 !important; margin-top:2px !important; white-space:nowrap; }
+body:not(.dark-mode) .cp-act span.l{ color:#111827 !important; } body:not(.dark-mode) .cp-act .cp-sub{ color:#6b7280 !important; }
+html.dark-mode .cp-act span.l, body.dark-mode .cp-act span.l{ color:#f3f4f6 !important; } html.dark-mode .cp-act .cp-sub, body.dark-mode .cp-act .cp-sub{ color:#9ca3af !important; }
+
+/* Settings: plain groups (no panel) and vertically centred card text */
+.stg-card.stg-plain, body:not(.dark-mode) .stg-card.stg-plain, html.dark-mode .stg-card.stg-plain, body.dark-mode .stg-card.stg-plain{ background:transparent !important; border:0 !important; box-shadow:none !important; border-radius:0 !important; padding:0 4px !important; }
+.cp-act, .bgi-card, .stg-tile{ justify-content:center !important; }
+.stg-tile{ display:flex !important; flex-direction:column !important; align-items:flex-start !important; }
+/* Workspace cards: same shadow as Settings tiles */
+body:not(.dark-mode) .bgi-card{ box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3px rgba(17,24,39,.06) !important; border:1px solid #eef0f3 !important; }
+/* One shared card spec for Settings tiles, Contact info and Workspace cards */
+body:not(.dark-mode) .stg-tile, body:not(.dark-mode) .cp-act, body:not(.dark-mode) .bgi-card{ padding:14px 10px !important; border-radius:18px !important; min-height:108px !important; background:#fff !important; border:1px solid #eef0f3 !important; box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3px rgba(17,24,39,.06) !important; }
+html.dark-mode .stg-tile, html.dark-mode .cp-act, html.dark-mode .bgi-card, body.dark-mode .cp-act, body.dark-mode .bgi-card{ padding:14px 10px !important; border-radius:18px !important; min-height:108px !important; }

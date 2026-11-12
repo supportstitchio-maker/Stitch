@@ -106,12 +106,12 @@ let studyFabMenuOpen = false;
         ];
         const classCardMotifStroke = 'stroke="white" stroke-width="42" fill="none" stroke-linecap="round" stroke-linejoin="round"';
         const classCardMotifs = [
-          `<path d="M-10,70 C40,20 70,20 100,55 C130,90 160,90 190,55 C220,20 250,20 300,55" ${classCardMotifStroke}/><circle cx="255" cy="15" r="18" fill="white"/>`,
+          `<path d="M-10,70 C40,20 70,20 100,55 C130,90 160,90 190,55 C220,20 250,20 300,55" ${classCardMotifStroke}/>`,
           `<path d="M-10,90 C30,90 30,50 60,50 C90,50 90,10 130,10 C170,10 170,60 210,60 C250,60 250,20 300,20" ${classCardMotifStroke}/>`,
-          `<path d="M-10,30 C30,80 60,80 90,40 C120,0 150,0 180,40 C210,80 240,80 280,40" ${classCardMotifStroke}/><circle cx="20" cy="75" r="18" fill="white"/>`,
+          `<path d="M-10,30 C30,80 60,80 90,40 C120,0 150,0 180,40 C210,80 240,80 280,40" ${classCardMotifStroke}/>`,
           `<path d="M-10,10 C40,10 40,60 90,60 C140,60 140,10 190,10 C240,10 240,80 300,80" ${classCardMotifStroke}/>`,
           `<path d="M-10,50 C10,20 30,20 50,50 C70,80 90,80 110,50 C130,20 150,20 170,50 C190,80 210,80 230,50 C250,20 270,20 300,50" ${classCardMotifStroke} stroke-width="33"/>`,
-          `<path d="M-10,60 C60,100 90,20 150,50 C210,80 240,10 300,40" ${classCardMotifStroke}/><circle cx="270" cy="20" r="18" fill="white"/>`,
+          `<path d="M-10,60 C60,100 90,20 150,50 C210,80 240,10 300,40" ${classCardMotifStroke}/>`,
         ];
 
         function classCardIndex(cls){
@@ -275,10 +275,10 @@ let studyFabMenuOpen = false;
               </div>
             </div>` : '';
           const tile = (icon, title, sub, fn) => `
-            <button onclick="${fn}" class="stg-card" style="flex:1;min-width:0;padding:14px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;">
-              <span class="stg-ico flex items-center justify-center">${Icon(icon,'w-6 h-6')}</span>
-              <div class="stg-title font-semibold" style="font-size:13px;margin-top:6px;">${title}</div>
-              <div class="stg-sub" style="font-size:11px;margin-top:1px;white-space:nowrap;">${sub}</div>
+            <button onclick="${fn}" class="stg-card bgi-card" style="flex:1;min-width:0;">
+              <span class="bgi-ico">${Icon(icon,'w-full h-full')}</span>
+              <div class="stg-title bgi-t">${title}</div>
+              <div class="stg-sub bgi-s">${sub}</div>
             </button>`;
           const files = uploadedResources.length;
           return `

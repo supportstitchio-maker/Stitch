@@ -1760,7 +1760,7 @@ try {
             <div onclick="event.stopPropagation();" class="absolute bg-white rounded-2xl border border-gray-100 py-2 z-20 menu-dropdown-inset" style="right:1.25rem;top:2.75rem;width:11rem;box-shadow:0 10px 30px rgba(0,0,0,.14);">
               <button onclick="courseCardMenuOpenId=null; openEditCourse('${courseId}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('edit','w-4 h-4')} Edit Course</button>
               <button onclick="courseCardMenuOpenId=null; openCourseEnrolledPeople('${courseId}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('personPlus','w-4 h-4')} People</button>
-              <button onclick="courseCardMenuOpenId=null; openCourseAnalytics('${courseId}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('chart','w-4 h-4')} Course analytics</button>
+              <button onclick="courseCardMenuOpenId=null; openCourseAnalytics('${courseId}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 menu-item-pill">${Icon('chartOutline','w-4 h-4')} Course analytics</button>
               <button onclick="courseCardMenuOpenId=null; deleteCourse('${courseId}')" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 menu-item-pill">${Icon('trash','w-4 h-4')} Delete</button>
             </div>`;
         }
@@ -2005,7 +2005,7 @@ try {
           const pct = coursePctOf(c);
           const next = courseNextItem(c);
           return `
-            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex items-center mb-4" style="gap:14px;padding:14px;">
+            <div onclick="openCourseDetail('${c.id}')" class="flat-post bg-white rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex items-center mb-4" style="gap:14px;padding:14px;">
               <div class="relative flex-shrink-0 overflow-hidden" style="width:60px;height:60px;border-radius:18px;background:${courseFallbackGrad(c)};">${courseCoverFill(c)}</div>
               <div class="flex-1" style="min-width:0;">
                 <div class="font-bold text-[15px] text-gray-800 truncate">${escapeHtml(c.title)}</div>
@@ -2164,7 +2164,7 @@ try {
                 </button>
 
                 <button onclick="submitCourseEnroll()" ${canSubmit ? '' : 'disabled'} class="w-full flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-sm text-white ${canSubmit ? '' : 'opacity-40'}" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">
-                  ${Icon('check','w-4 h-4')} Confirm Enrollment
+                  ${Icon('checkOutline','w-4 h-4')} Confirm Enrollment
                 </button>
               </div>
             </div>`;
@@ -2305,7 +2305,7 @@ try {
 
                 ${courseDetailTab === 'resources' ? courseResourcesTabHTML(c, enrolled) : courseDetailTab === 'engage' ? courseEngageTabHTML(c) : (!c.modules.length ? `
                   <div class="bg-gray-50 border border-dashed border-gray-300 rounded-3xl p-8 text-center text-gray-500 text-sm">
-                    <div class="flex justify-center mb-2 text-gray-400">${Icon('book','w-6 h-6')}</div>
+                    <div class="flex justify-center mb-2 text-gray-400">${Icon('bookOutline','w-6 h-6')}</div>
                     No modules have been added to this course yet.
                     ${canManageCourse(c) ? `<button onclick="openEditCourse('${c.id}')" class="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 font-semibold text-xs text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">${Icon('plus','w-3.5 h-3.5')} Add the first module</button>` : ''}
                   </div>` : `
@@ -2324,7 +2324,7 @@ try {
                       ${Icon('plus','w-4 h-4')} Enroll${courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free'}
                     </button>` : `
                     <div class="mb-5">
-                      <div class="flex items-center gap-4 bg-white border border-gray-100 shadow-sm rounded-3xl p-4" style="padding:16px;">
+                      <div class="flat-post flex items-center gap-4 bg-white border border-gray-100 shadow-sm rounded-3xl p-4" style="padding:16px;">
                         <div class="relative flex-shrink-0" style="width:64px;height:64px;">
                           <svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg);"><circle cx="32" cy="32" r="27" fill="none" stroke="#eef0f4" stroke-width="7"/><circle cx="32" cy="32" r="27" fill="none" stroke="${pct === 100 ? '#059669' : NAVY}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(169.6 * pct / 100).toFixed(1)} 169.6"/></svg>
                           <div class="absolute inset-0 flex items-center justify-center font-bold text-sm text-gray-800">${pct}%</div>
@@ -2644,7 +2644,7 @@ try {
                 </div>
               </div>
               <div class="flex items-center gap-3 px-5 pt-3 pb-4" style="background:linear-gradient(180deg,rgba(249,250,251,0) 0%,rgba(249,250,251,.96) 40%);">
-                ${coursePreviewAsStudent ? '' : `<button onclick="shareCourseLink('${c.id}')" aria-label="Share" class="flex items-center justify-center rounded-full bg-white flex-shrink-0" style="width:52px;height:52px;box-shadow:0 4px 14px rgba(15,23,42,.12);border:1px solid rgba(0,0,0,.05);color:#111827;">${Icon('upload','w-5 h-5')}</button>`}
+                ${coursePreviewAsStudent ? '' : `<button onclick="shareCourseLink('${c.id}')" aria-label="Share" class="flex items-center justify-center rounded-full bg-white flex-shrink-0" style="width:52px;height:52px;box-shadow:0 4px 14px rgba(15,23,42,.12);border:1px solid rgba(0,0,0,.05);color:#111827;">${Icon('uploadOutline','w-5 h-5')}</button>`}
                 <button onclick="${coursePreviewAsStudent ? 'exitCoursePreview()' : `openCourseEnrollForm('${c.id}')`}" class="flex-1 rounded-full font-bold text-base text-white" style="padding:15px 0;background:linear-gradient(135deg,#1E90FF 0%,#4169E1 100%);box-shadow:0 8px 22px rgba(30,144,255,.4);">${coursePreviewAsStudent ? 'Exit preview' : 'Enroll' + (courseIsPaid(c) ? ' · ' + coursePriceLabel(c) : ' for free')}</button>
               </div>
             </div>`;
@@ -2737,7 +2737,7 @@ try {
               </div>`;
           }
           return addResourceButton + resources.map(r => `
-            <a href="${r.url ? escapeHtml(r.url) : '#'}" target="_blank" rel="noopener" class="flex items-center gap-3 bg-white rounded-3xl p-4 mb-3 shadow-sm border border-gray-100 ${r.url ? '' : 'pointer-events-none opacity-60'}">
+            <a href="${r.url ? escapeHtml(r.url) : '#'}" target="_blank" rel="noopener" class="flat-row flex items-center gap-3 bg-white rounded-3xl p-4 mb-3 shadow-sm border border-gray-100 ${r.url ? '' : 'pointer-events-none opacity-60'}">
               <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon(r.type === 'audio' ? 'mic' : 'video','w-5 h-5')}</div>
               <div class="flex-1 min-w-0">
                 <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(r.title || 'Untitled resource')}</div>
@@ -2908,7 +2908,7 @@ try {
                 <div class="bg-white rounded-3xl p-4 mb-3 shadow-sm border border-gray-100">
                   <div class="flex items-center justify-between gap-2 mb-2">
                     <div class="flex items-center gap-2 min-w-0">
-                      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:${NAVY};">${Icon('bell','w-4 h-4')}</div>
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:${NAVY};">${Icon('bellOutline','w-4 h-4')}</div>
                       <div class="min-w-0">
                         <div class="text-sm font-bold text-gray-800 truncate">${escapeHtml(TEAM_STITCH_TEACHER)}</div>
                         <div class="text-xs text-gray-400">${escapeHtml(new Date(a.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))}</div>
@@ -3439,7 +3439,7 @@ try {
                 ${isQuiz ? courseQuizFormHTML(item) : ''}
                 ${!isQuiz ? `
                   <button onclick="markCourseItemComplete()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-white" style="background:${isCourseItemComplete(item) ? '#059669' : 'rgba(30,144,255,0.85)'};">
-                    ${isCourseItemComplete(item) ? Icon('check','w-4 h-4') : ''} ${isCourseItemComplete(item) ? 'Completed' : 'Mark as complete'}
+                    ${isCourseItemComplete(item) ? Icon('checkOutline','w-4 h-4') : ''} ${isCourseItemComplete(item) ? 'Completed' : 'Mark as complete'}
                   </button>` : ''}
                 <div style="height:50px;" aria-hidden="true"></div>
               </div>
@@ -3929,7 +3929,7 @@ try {
               <div class="flex gap-2 mb-4">${tile(people.length, 'Students')}${tile(A.completionRate + '%', 'Completed')}${tile(A.avgProgress + '%', 'Avg. progress')}</div>
               ${A.modules.length && people.length ? `
                 <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Module completion</div>
-                <div class="bg-white border border-gray-100 shadow-sm rounded-3xl p-4 mb-4">
+                <div class="flat-list bg-white border border-gray-100 shadow-sm rounded-3xl p-4 mb-4">
                   ${A.modules.map(m => `<div style="margin-bottom:12px;"><div class="flex justify-between text-xs mb-1"><span class="font-semibold text-gray-700 truncate pr-2">${escapeHtml(m.title)}</span><span class="font-bold flex-shrink-0" style="color:${NAVY};">${m.pct}%</span></div><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${m.pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div></div>`).join('')}
                 </div>` : ''}
               <div class="flex gap-2 mb-4">
@@ -5218,7 +5218,7 @@ try {
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
                 <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Space</h1>
-                <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
+                <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
             </div>
@@ -5247,7 +5247,7 @@ try {
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
                 <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Space</h1>
-                <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('dashesShortRight','w-6 h-6')}</button>
+                <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${createClassMenuOpen ? createClassDropdownMenu() : ''}
             </div>
@@ -7187,13 +7187,13 @@ try {
               <button onclick="openNewAnnouncementOverlay()" class="flex-1 flex items-center justify-center gap-2 rounded-full py-3 font-semibold text-sm text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">New announcement</button>
             </div>`}
             ${cls.announcements.length ? cls.announcements.map(a => `
-              <div class="bg-white rounded-3xl p-4 mb-3 shadow-sm">
+              <div class="flat-post bg-white rounded-3xl p-4 mb-3 shadow-sm">
                 ${a.repostOf ? `
                 <div class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 mb-2.5">
                   ${Icon('repost','w-3.5 h-3.5')} ${escapeHtml(a.repostedByName || 'You')} reposted
                 </div>` : ''}
                 <div class="flex items-center gap-3 mb-2.5">
-                  <span class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-5 h-5')}</span>
+                  <span class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-5 h-5')}</span>
                   <div class="min-w-0">
                     <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
                     <div class="text-xs text-gray-400" data-announcement-time="${a.id}">${formatClassStreamTime(a)}</div>
@@ -10077,7 +10077,7 @@ try {
           return `
             <div class="mt-5">
               <div class="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('upload','w-3.5 h-3.5')}</span>
+                <span class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 flex-shrink-0">${Icon('uploadOutline','w-3.5 h-3.5')}</span>
                 Uploaded Resources${uploadedResources.length ? ` (${uploadedResources.length})` : ''}
               </div>
               ${uploadedResources.length ? uploadedResources.map(r => `
@@ -10435,7 +10435,7 @@ try {
                   </div>
                 </div>`).join('') : `
                 <div class="flex flex-col items-center text-center py-16">
-                  <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${NotifIcon('bell','w-9 h-9')}</div>
+                  <div class="w-20 h-20 flex items-center justify-center mb-4 text-[${NAVY}]">${NotifIcon('bellOutline','w-9 h-9')}</div>
                   <div class="font-bold text-gray-700 mb-1">Nothing new yet</div>
                   <div class="text-sm text-gray-400 leading-relaxed">Announcements, sessions, and due dates from this space will show up here.</div>
                 </div>`}
@@ -10671,7 +10671,7 @@ try {
               <div class="max-w-2xl mx-auto px-5 flex items-center justify-between gap-4" style="position:relative;padding-bottom:20px;">
                 <button onclick="discardAnnouncementDraft()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${ROYAL};">${IconBold('back','w-5 h-5')}</button>
                 <h1 class="text-base font-bold font-display truncate absolute left-1/2 -translate-x-1/2 text-center" style="color:${ROYAL};max-width:60%;">New announcement</h1>
-                <button onclick="toggleAnnouncementMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${ROYAL};">${Icon('dashesShortRight','w-6 h-6')}</button>
+                <button onclick="toggleAnnouncementMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${ROYAL};">${Icon('menuBars','w-6 h-6')}</button>
                 ${announcementMenuOpen ? classMenuSheetHTML('toggleAnnouncementMenu', [{ onclick: 'discardAnnouncementDraft()', icon: 'trash', label: 'Discard draft', cls: 'text-red-500' }]) : ''}
               </div>
             </div>
@@ -11055,7 +11055,7 @@ try {
                 <div class="flex items-center justify-between">
                   <button onclick="classDetailTab='classwork'; openOverlay('classDetail')" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                   <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${classworkTypeLabel(w.type)}</h1>
-                  <button onclick="toggleClassworkDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('dashesShortRight','w-6 h-6'))}</button>
+                  <button onclick="toggleClassworkDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('menuBars','w-6 h-6'))}</button>
                   ${classworkDetailMenuOpen ? classMenuSheetHTML('toggleClassworkDetailMenu', [{ onclick: 'deleteCurrentClasswork()', icon: 'trash', label: 'Delete', cls: 'text-red-500' }]) : ''}
                 </div>
               </div>` : overlayHeader(classworkTypeLabel(w.type), 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { center: true, pb: '20px' })}
@@ -11376,7 +11376,7 @@ try {
             ${isTeacher ? `<div class="flex justify-end mb-2"><button onclick="openInviteCoTeacherOverlay()" class="filter-pill nowrap-pill justify-center" style="padding-left:20px;padding-right:20px;">${Icon('personPlus','w-4 h-4')} Invite</button></div>` : ''}
             <div class="border-t border-gray-100 mb-5">
               <div class="flex items-center gap-4 py-4 ${(isTeacher && coTeachers.length) ? 'border-b border-gray-100' : ''}">
-                <span class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-[${NAVY}] flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-6 h-6')}</span>
+                <span class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 flex-shrink-0 overflow-hidden">${classTeacherAvatarHTML(cls,'w-6 h-6')}</span>
                 <div class="min-w-0 flex-1">
                   <div class="font-semibold text-sm text-gray-800 truncate">${classTeacherDisplayName(cls)}</div>
                   ${classBioLineHTML(cls.role === 'teacher' ? profileData.bio : (classTeacherProfiles[cls.teacherId] || {}).bio)}
@@ -11559,7 +11559,7 @@ try {
             <div class="px-5" style="padding-top:20px;padding-bottom:40px;">
               <div class="flex flex-col items-center mb-6">
                 <button onclick="triggerClassPhotoUpload('editClass')" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${cls.photo ? `background-image:url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}">
-                  ${cls.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('book','w-9 h-9')}</div>`}
+                  ${cls.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('bookOutline','w-9 h-9')}</div>`}
                   <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-[${NAVY}]" style="margin:4px;">${Icon('camera','w-4 h-4')}</div>
                 </button>
                 <button onclick="triggerClassPhotoUpload('editClass')" class="text-sm font-semibold" style="color:${NAVY};">Change space photo</button>
@@ -11618,39 +11618,40 @@ try {
                 <div class="font-semibold text-lg font-display">Space settings</div>
               </div>
             </div>
-            <div class="flex-1 overflow-y-auto px-5 pb-8">
+            <div class="flex-1 overflow-y-auto px-5 pb-8 ss-page">
               <div class="flex flex-col items-center mb-6">
-                <button onclick="triggerClassPhotoUpload()" class="relative w-24 h-24 rounded-3xl overflow-hidden mb-2" style="${cls.photo ? `background-image:url('${cls.photo}');background-size:cover;background-position:center;` : classCardBackgroundStyle(cls)}">
-                  ${cls.photo ? '' : `<div class="w-full h-full flex items-center justify-center text-white">${Icon('book','w-9 h-9')}</div>`}
-                  <div class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-[${NAVY}]" style="margin:4px;">${Icon('camera','w-4 h-4')}</div>
+                <button onclick="triggerClassPhotoUpload()" class="ss-photo relative w-24 h-24 rounded-3xl mb-3" style="${cls.photo ? `background-image:url('${cls.photo}');background-size:cover;background-position:center;` : ''}" aria-label="Change space photo">
+                  ${cls.photo ? '' : `<span class="ss-photo-ico w-full h-full flex items-center justify-center"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></svg></span>`}
+                  <span class="ss-badge absolute flex items-center justify-center" style="right:-6px;bottom:-6px;width:32px;height:32px;border-radius:9999px;background:${ROYAL};color:#fff;border:2px solid #fff;">${Icon('camera','w-4 h-4')}</span>
                 </button>
                 <button onclick="triggerClassPhotoUpload()" class="text-sm font-semibold" style="color:${NAVY};">Change space photo</button>
               </div>
 
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Space name</label>
-              <input type="text" id="class-settings-name-input" value="${escapeHtml(cls.name)}" oninput="updateClassName(this.value)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-4">
-
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">Section</label>
-              <input type="text" id="class-settings-section-input" value="${cls.section || ''}" oninput="updateClassSection(this.value)" class="w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-6">
-
-              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notifications</div>
-              <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm mb-6">
-                ${notificationSettingsRow('bell','bg-amber-100','text-amber-600','Space notifications','Get notified about announcements and tasks', cls.notificationsEnabled, "toggleClassNotifications()")}
+              <div class="ss-field">
+                <label class="ss-lbl">Space name</label>
+                <input type="text" id="class-settings-name-input" value="${escapeHtml(cls.name)}" oninput="updateClassName(this.value)" class="ss-input w-full">
+              </div>
+              <div class="ss-field">
+                <label class="ss-lbl">Section</label>
+                <input type="text" id="class-settings-section-input" value="${escapeHtml(cls.section || '')}" oninput="updateClassSection(this.value)" class="ss-input w-full">
               </div>
 
-              ${cls.code ? `<div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Space code</div>
-              <div class="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-4 mb-6">
-                <div class="text-lg font-bold tracking-widest text-[${NAVY}]">${cls.code}</div>
+              <div class="cp-k" style="margin-top:22px;">Notifications</div>
+              <div class="flat-list cp-list mb-4">
+                ${cpToggleRow('bell','Space notifications', !!cls.notificationsEnabled, "toggleClassNotifications()")}
+              </div>
+
+              ${cls.code ? `<div class="cp-k">Space code</div>
+              <div class="flex items-center justify-between ss-code mb-4">
+                <div class="text-lg font-bold tracking-widest" style="color:${NAVY};">${cls.code}</div>
                 <button onclick="copyClassCode('${cls.code}')" class="font-semibold text-sm" style="color:${NAVY};">Copy code</button>
               </div>` : ''}
 
-              ${cls.role === 'teacher'
-                ? `<button onclick="confirmDeleteCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
-                    ${Icon('trash','w-3.5 h-3.5')} Delete space
-                  </button>`
-                : `<button onclick="confirmLeaveCurrentClass()" class="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-sm text-red-500 border border-red-100 bg-red-50">
-                    ${IconBold('back','w-3.5 h-3.5')} Leave space
-                  </button>`}
+              <div class="flat-list cp-list cp-danger">
+                ${cls.role === 'teacher'
+                  ? cpRow('trash','Delete space','', 'confirmDeleteCurrentClass()', true)
+                  : cpRow('logout','Leave space','', 'confirmLeaveCurrentClass()', true)}
+              </div>
             </div>`;
         }
 
