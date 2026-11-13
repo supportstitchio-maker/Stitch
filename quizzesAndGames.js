@@ -1567,11 +1567,11 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function examResultFooterHTML(){
           if (examContext === 'dailyQuiz') {
-            return `<button onclick="openOverlay('gamification')" class="sheet-pill">Back to Games</button>`;
+            return `<button onclick="closeOverlay()" class="sheet-pill">Back</button>`;
           }
           if (examContext === 'weeklyQuiz') {
             return `
-              <button onclick="openOverlay('gamification')" class="sheet-pill">Back to Games</button>
+              <button onclick="closeOverlay()" class="sheet-pill">Back</button>
               <button onclick="openWeeklyQuizJoin()" class="sheet-pill">Play Again</button>`;
           }
           return `
@@ -2031,7 +2031,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="seg-btn ${examResultTab === k ? 'on' : ''}">${l}</button>`;
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
-              <div class="ar-top" style="justify-content:flex-start;">${arBack(isQuiz ? "openOverlay('gamification')" : 'closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
+              <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
               <div class="ar-fade">
                 ${isQuiz ? quizRewardBannerHTML() : ''}
                 ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}

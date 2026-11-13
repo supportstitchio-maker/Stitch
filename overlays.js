@@ -1,4 +1,4 @@
-const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'newMeeting', 'meetingCreated', 'meetingJoin', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'gamification', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
+const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'newMeeting', 'meetingCreated', 'meetingJoin', 'tagPeoplePicker', 'aiClass', 'conversation', 'addToCall', 'incomingCall', 'incomingLectureCall', 'joinClassroom', 'classPaymentConfirm', 'createClassroom', 'classDetail', 'inviteStudents', 'inviteCoTeacher', 'newAnnouncement', 'scheduleLecture', 'classworkCreateMenu', 'newClasswork', 'newQuiz', 'newPoll', 'classworkDetail', 'classSettings', 'editClass', 'studyTimetable', 'studyReminders', 'classAnnouncements', 'classNotifications', 'profileMenu', 'profileQR', 'newMessage', 'myContacts', 'newCollaboration', 'profileAnalytics', 'careerAnalytics', 'notifications', 'notificationSettings', 'savedItems', 'blockedAccounts', 'termsOfService', 'privacyPolicy', 'helpCenter', 'contactUs', 'reportIssue', 'practiceTests', 'examTake', 'jobDetail', 'reportOpportunity', 'jobApply', 'jobDashboard', 'posterDashboard', 'postOpportunity', 'courseDetail', 'courseItemDetail', 'courseEnroll', 'coursePeople', 'courseAnalytics', 'newCourse', 'creatorWallet', 'creatorWithdraw', 'reportClass', 'receipts', 'courseAddModule', 'courseAddItemPage', 'courseAddResource', 'personProfile', 'personProfileQR', 'personNetwork', 'postFeed', 'careerStart', 'careerMatches', 'careerAutoApply', 'careerSubscription', 'careerSaved', 'careerDocuments', 'careerNotifications', 'careerPreferences', 'careerCancelReason', 'careerCancelDetail', 'careerMatching', 'myFullProfile', 'forwardMessage'];
         const overlayBackAction = {
           // Phone back on the meeting pages steps back one page instead of leaving to the inbox
           meetingKind: (fromPopState) => {
@@ -84,160 +84,11 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         let overlayHistoryPushed = false;
 
-        let gamificationMenuOpen = false;
-        let gameProfileAvatar = null;
-        let gamingAvatarPickerOpen = false;
-        // ---- Gaming profile (username/avatar/ID) ----
-        function generateGameUniqueId(){
-          const seg = n => Math.floor(Math.random() * Math.pow(10, n)).toString().padStart(n, '0');
-          return `${seg(3)}-${seg(3)}-${seg(3)}-${seg(1)}`;
-        }
-        let gameUniqueId = generateGameUniqueId();
         let noticeBoardMenuOpen = false;
         let joinClassMenuOpen = false;
         let createClassMenuOpen = false;
 
-        function toggleGamificationMenu(){
-          gamificationMenuOpen = !gamificationMenuOpen;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function openGameProfile(){
-          gamificationSubView = 'profile';
-          gamingAvatarPickerOpen = false;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function toggleGamingAvatarPicker(){
-          gamingAvatarPickerOpen = !gamingAvatarPickerOpen;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function editGameUsername(){
-          const next = (prompt('Game username:', profileData.username) || '').trim();
-          if (next) profileData.username = next;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function copyGameUniqueId(){
-          const id = gameUniqueId;
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(id).then(() => openAppAlertModal('ID copied: ' + id)).catch(() => openAppAlertModal(id));
-          } else {
-            openAppAlertModal(id);
-          }
-        }
-        function selectGamingAvatarPreset(src){
-          gameProfileAvatar = { type: 'photo', src };
-          gamingAvatarPickerOpen = false;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function removeGamingAvatar(){
-          gameProfileAvatar = { type: 'none' };
-          gamingAvatarPickerOpen = false;
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function gamificationAvatarButtonHTML(){
-          if (gameProfileAvatar && gameProfileAvatar.type === 'photo') {
-            return `<img src="${gameProfileAvatar.src}" class="w-full h-full object-cover">`;
-          }
-          if (gameProfileAvatar && gameProfileAvatar.type === 'icon') {
-            return `<div class="w-full h-full flex items-center justify-center" style="background:${gameProfileAvatar.bg};color:${gameProfileAvatar.fg};">${Icon(gameProfileAvatar.icon,'w-4 h-4')}</div>`;
-          }
-          if (gameProfileAvatar && gameProfileAvatar.type === 'none') {
-            return `<div class="ph-av w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
-          }
-          if (profileData.photo) {
-            return `<img src="${profileData.photo}" class="w-full h-full object-cover">`;
-          }
-          return `<div class="ph-av w-full h-full flex items-center justify-center text-[${NAVY}]" style="background:rgba(10,37,64,0.14);">${Icon('user','w-4 h-4')}</div>`;
-        }
-        function gameProfileHTML(){
-          const canRemove = (gameProfileAvatar && (gameProfileAvatar.type === 'photo' || gameProfileAvatar.type === 'icon'))
-            || (!gameProfileAvatar && profileData.photo);
-          const badges = getBadges();
-          const earnedCount = badges.filter(b => b.earned).length;
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${gamificationSubHeaderHTML('Game Profile')}
-              <div class="p-5 space-y-4">
 
-                <div class="bg-white rounded-3xl p-5 shadow-sm">
-                  <div class="flex flex-col items-center">
-                    <div class="relative">
-                      <button onclick="toggleGamingAvatarPicker()" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center" style="border:2px solid rgba(10,37,64,0.12);">${gamificationAvatarButtonHTML()}</button>
-                    </div>
-
-                    ${gamingAvatarPickerOpen ? `
-                      <div class="w-full mt-3">
-                        <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));justify-items:center;gap:0.4rem;">
-                          ${defaultAvatarImages.map(src => `
-                            <button onclick="event.stopPropagation(); selectGamingAvatarPreset('${src}')" class="rounded-full overflow-hidden flex-shrink-0 border border-gray-100" style="width:2.25rem;height:2.25rem;">
-                              <img src="${src}" class="w-full h-full object-cover">
-                            </button>
-                          `).join('')}
-                        </div>
-                        ${canRemove ? `<button onclick="event.stopPropagation(); removeGamingAvatar()" class="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2 text-sm text-left rounded-xl" style="color:#dc2626;background:#fef2f2;">${Icon('trash','w-4 h-4')} Remove</button>` : ''}
-                      </div>
-                    ` : ''}
-                  </div>
-
-                  <div class="mt-4 divide-y divide-gray-100">
-                    <div class="flex items-center justify-between py-3">
-                      <span class="font-bold text-base text-[${NAVY}] font-display">${escapeHtml(profileData.username)}</span>
-                      <button onclick="editGameUsername()" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${ROYAL};color:#fff;">${Icon('edit','w-3.5 h-3.5')}</button>
-                    </div>
-                    <div class="flex items-center justify-between py-3">
-                      <span class="text-sm text-gray-500">Unique ID: <span class="font-bold" style="color:#b45309;">${gameUniqueId}</span></span>
-                      <button onclick="copyGameUniqueId()" class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:${ROYAL};color:#fff;">${Icon('copy','w-3.5 h-3.5')}</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div class="flex items-center justify-between mb-3 px-1">
-                    <div class="text-base font-bold text-[${NAVY}] font-display">Achievements &amp; Badges</div>
-                    <div class="text-sm font-semibold text-gray-500">${earnedCount} / ${badges.length}</div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-4">
-                    ${badges.map(b => `
-                      <div class="bg-white rounded-3xl p-5 text-center shadow-sm ${b.earned ? '' : 'opacity-50'}">
-                        <div class="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center mb-2" style="background:${b.earned ? '#eff6ff' : '#f3f4f6'};color:${b.earned ? NAVY : '#9ca3af'};">${Icon(b.icon,'w-6 h-6')}</div>
-                        <div class="font-semibold text-sm mb-1">${escapeHtml(b.label)}</div>
-                        <div class="text-xs text-gray-500 leading-snug mb-2">${escapeHtml(b.desc)}</div>
-                        ${b.earned
-                          ? `<div class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-blue-600">${Icon('check','w-4 h-4')} Earned</div>`
-                          : `<div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">Locked</div>`}
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-
-              </div>
-            </div>`;
-        }
-
-        function rightPanelGameProfileHTML(){
-          const badges = getBadges();
-          const earnedCount = badges.filter(b => b.earned).length;
-          return `
-            <div class="p-5 text-center border-b border-gray-100">
-              <button onclick="openGameProfile()" class="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center mx-auto mb-3" style="border:2px solid rgba(10,37,64,0.12);">${gamificationAvatarButtonHTML()}</button>
-              <div class="font-bold text-base mb-1">${escapeHtml(profileData.username)}</div>
-              <div class="text-xs text-gray-500 mb-4">Unique ID: <span class="font-bold" style="color:#b45309;">${gameUniqueId}</span></div>
-              <div class="flex items-center justify-center gap-6 mb-4">
-                <div class="text-center"><div class="text-base font-bold">${userPoints.toLocaleString()}</div><div class="text-[11px] text-gray-500">Points</div></div>
-                <div class="text-center"><div class="text-base font-bold">${earnedCount}/${badges.length}</div><div class="text-[11px] text-gray-500">Badges</div></div>
-              </div>
-              <button onclick="openGameProfile()" class="w-full bg-gray-100 py-2.5 rounded-2xl font-medium text-sm">View full profile</button>
-            </div>
-            <div class="px-5 pt-4 pb-5">
-              <div class="font-semibold text-sm mb-3">Achievements &amp; Badges</div>
-              <div class="grid grid-cols-2 gap-3">
-                ${badges.map(b => `
-                  <div class="bg-gray-50 rounded-2xl p-3 text-center ${b.earned ? '' : 'opacity-50'}">
-                    <div class="w-9 h-9 mx-auto rounded-xl flex items-center justify-center mb-1.5" style="background:${b.earned ? '#eff6ff' : '#f3f4f6'};color:${b.earned ? NAVY : '#9ca3af'};">${Icon(b.icon,'w-4 h-4')}</div>
-                    <div class="font-semibold text-xs">${escapeHtml(b.label)}</div>
-                  </div>`).join('')}
-              </div>
-            </div>`;
-        }
 
         // ---- Nav/menu toggles + media pause helper ----
         function toggleNoticeBoardMenu(){
@@ -350,7 +201,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           clearQuizBackground();
           const studyFabWrap = document.getElementById('study-fab-wrap');
           if (studyFabWrap) studyFabWrap.style.display = 'none';
-          const keepsTaskbar = kind === 'gamification' || kind === 'aiClass' || kind === 'classAnnouncements';
+          const keepsTaskbar = kind === 'aiClass' || kind === 'classAnnouncements';
           if (!keepsTaskbar) {
             const bottomNavEl = document.getElementById('bottom-nav');
             const classroomNavEl = document.getElementById('classroom-nav');
@@ -457,7 +308,6 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           else if (kind === 'studyReminders') ov.innerHTML = studyRemindersHTML();
           else if (kind === 'classAnnouncements') { renderClassAnnouncementsTab(); openRightPanel('pinned'); }
           else if (kind === 'classNotifications') ov.innerHTML = classNotificationsHTML();
-          else if (kind === 'gamification') { gamificationSubView = 'home'; ov.innerHTML = gamificationHTML(); openRightPanel('gameprofile'); }
           else if (kind === 'profileMenu') ov.innerHTML = profileMenuHTML();
           else if (kind === 'profileQR') { ov.innerHTML = profileQRHTML(); initProfileQRCode(); }
           else if (kind === 'newMessage') { newMessageSearchActive = false; newMessageSearchQuery = ''; ov.innerHTML = newMessageHTML(); }
@@ -535,7 +385,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           }
 
           const navBackdropEl = document.getElementById('nav-bottom-backdrop');
-          if (kind === 'gamification' || kind === 'aiClass' || kind === 'classAnnouncements') {
+          if (kind === 'aiClass' || kind === 'classAnnouncements') {
             const navH = activeNavBarHeight();
             // Animate the page's bottom edge with the same duration/easing the nav bar slides with
             // (applyBottomNavVisual: 0.22s ease-out)

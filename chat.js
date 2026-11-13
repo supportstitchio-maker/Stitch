@@ -4891,14 +4891,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="ccb-txt"><div class="ccb-title">Invitation sent</div><div class="ccb-sub">You will be connected as soon as ${name} accepts.</div></div>
             </div>`;
           }
-          const title = `${name} wants to connect`;
+          const title = `<span style="display:flex;max-width:100%"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span><span style="white-space:nowrap;flex-shrink:0">&nbsp;wants to connect</span></span>`;
           const sub = st.kind === 'incoming' ? 'Accept the invite to chat and call freely, or reject it.' : 'They messaged you and are not in your network. Accept the invite to chat and call freely, or reject it.';
           const yes = 'Accept invite';
           const no = 'Reject';
           return `<div id="convo-connect-banner" class="ccb">
             <div class="ccb-row">
               <div class="ccb-ic">${Icon('personPlus','w-5 h-5')}</div>
-              <div class="ccb-txt"><div class="ccb-title">${title}</div><div class="ccb-sub">${sub}</div></div>
+              <div class="ccb-txt" style="min-width:0;flex:1"><div class="ccb-title">${title}</div><div class="ccb-sub">${sub}</div></div>
             </div>
             <div class="ccb-actions">
               <button onclick="convoBannerAccept()" class="ccb-btn ccb-yes">${yes}</button>
@@ -5067,17 +5067,17 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="px-5 flex items-center gap-3 flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);">
+            <div class="flex items-center flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);padding-left:14px;padding-right:10px;gap:10px;">
               <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openConvoProfile()">${avatarInnerHTML(meta,'w-5 h-5')}</div>
               <div class="flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
                 <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
               </div>
-              <div class="flex items-center gap-0.5 flex-shrink-0" style="position:relative;">
+              <div class="flex items-center flex-shrink-0" style="position:relative;gap:10px;">
                 <button onclick="startCall('${activeConvoId}','video')" title="Video call" class="p-1">${gradIcon(Icon('video','w-5 h-5'))}</button>
                 <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" class="p-1">${gradIcon(Icon('phoneOutline','w-4 h-4'))}</button>
-                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon(IconBold('menuRing','w-6 h-6'))}</button>
+                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>')}</button>
 
               </div>
             </div>

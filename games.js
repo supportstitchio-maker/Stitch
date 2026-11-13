@@ -14,7 +14,7 @@ let userPoints = 0;
         let quizBackgroundImages = [];
         let currentQuizBackground = null;
         let flashcardBackImage = "";
-        // ---- Quiz background theme + gamification progress state ----
+        // ---- Quiz background theme + progress state ----
         function pickRandomQuizBackground(){
           currentQuizBackground = quizBackgroundImages[Math.floor(Math.random() * quizBackgroundImages.length)];
         }
@@ -73,20 +73,7 @@ let userPoints = 0;
           await ensureUserStateLoaded();
         }
 
-        let gamificationSubView = 'home';
 
-        function openLeaderboard(){
-          gamificationSubView = 'leaderboard';
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function openAchievements(){
-          gamificationSubView = 'achievements';
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
-        function backToGamificationHome(){
-          gamificationSubView = 'home';
-          document.getElementById('overlay').innerHTML = gamificationHTML();
-        }
 
         // ---- Badges + daily quiz status ----
         function getBadges(){
@@ -732,7 +719,6 @@ let userPoints = 0;
           saveProgress();
         }
 
-        // ---- Gamification hub screen (home, chat) ----
         function coinBadgeHTML(){
           return `
             <div class="flex items-center gap-1 font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:9999px;padding:0.3rem 0.6rem;font-size:0.7rem;">
@@ -740,180 +726,12 @@ let userPoints = 0;
             </div>`;
         }
 
-        function gamificationHTML(){
-          if (gamificationSubView === 'leaderboard') return leaderboardHTML();
-          if (gamificationSubView === 'achievements') return achievementsHTML();
-          if (gamificationSubView === 'profile') return gameProfileHTML();
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0">${IconBold('back','w-5 h-5')}</button>
-                    <h1 class="text-base font-bold text-[${NAVY}] font-display truncate">Gamification</h1>
-                  </div>
-                  <div class="flex items-center gap-2 flex-shrink-0">
-                    <div class="flex items-center gap-1 font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:9999px;padding:0.3rem 0.65rem;font-size:0.7rem;">${Icon('coin','w-3.5 h-3.5')} ${userCoins.toLocaleString()}</div>
-                    ${window.innerWidth < 1100 ? `<button onclick="openGameProfile()" title="Game profile" class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">${gamificationAvatarButtonHTML()}</button>` : ''}
-                  </div>
-                </div>
-              </div>
-              <div class="p-5 space-y-4">
-              <div class="rounded-3xl p-5 text-white" style="background:linear-gradient(135deg,${ROYAL},${NAVY});">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">Your points</div>
-                    <div class="text-3xl font-bold font-display">${userPoints.toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
 
-              <div class="rounded-3xl p-5 text-white relative overflow-hidden" style="background:linear-gradient(135deg,#4338ca,#7c3aed,#c026d3);">
-                <div class="text-xs font-semibold uppercase tracking-wide text-white/70 mb-3">This week's king of the Quiz</div>
-                <div class="flex items-center gap-3">
-                  <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">${Icon('user','w-7 h-7')}</div>
-                  <div class="flex-1 min-w-0">
-                    <div class="font-bold text-lg font-display truncate">${getQuizChampion().name}${getQuizChampion().me ? ' (You)' : ''}</div>
-                    <div class="flex items-center gap-1.5 text-sm text-white/85">${Icon('gem','w-4 h-4')} ${getQuizChampion().pts.toLocaleString()} points</div>
-                  </div>
-                  ${Icon('crown','w-8 h-8 text-amber-300 flex-shrink-0')}
-                </div>
-              </div>
-
-              <div class="flex gap-3">
-                <div class="flex-1 flex flex-col items-center gap-2">
-                  <div onclick="openWeeklyQuizJoin()" class="w-full flex items-center justify-center text-white cursor-pointer" style="background:#2563eb;border-radius:1.75rem;padding:1.75rem 0.5rem;">
-                    <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">${Icon('plus','w-9 h-9')}</div>
-                  </div>
-                  <span class="text-sm font-bold text-center text-[${NAVY}]">Join Quiz</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center gap-2">
-                  <div onclick="openLeaderboard()" class="w-full flex items-center justify-center text-white cursor-pointer" style="background:#16a34a;border-radius:1.75rem;padding:1.75rem 0.5rem;">
-                    <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">${Icon('chart','w-9 h-9')}</div>
-                  </div>
-                  <span class="text-sm font-bold text-center text-[${NAVY}]">Leaderboard</span>
-                </div>
-                <div class="flex-1 flex flex-col items-center gap-2">
-                  <div onclick="openAchievements()" class="w-full flex items-center justify-center text-white cursor-pointer" style="background:#1e3a8a;border-radius:1.75rem;padding:1.75rem 0.5rem;">
-                    <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">${Icon('trophy','w-9 h-9')}</div>
-                  </div>
-                  <span class="text-sm font-bold text-center text-[${NAVY}]">Achievements</span>
-                </div>
-              </div>
-
-              <div class="rounded-3xl p-5 text-white relative overflow-hidden flex items-center justify-between gap-4" style="background:linear-gradient(135deg,#f59e0b,#f97316);">
-                <div>
-                  <div class="text-xl font-bold font-display mb-1">Daily Quiz</div>
-                  <div class="text-sm text-white/85 mb-4">${isDailyQuizDoneToday() ? 'Come back tomorrow for more' : 'Play, earn, compete'}</div>
-                  ${isDailyQuizDoneToday()
-                    ? `<span class="inline-flex items-center gap-1.5 bg-white/20 text-white font-semibold px-5 py-2.5 rounded-2xl text-sm">${Icon('check','w-4 h-4')} Done for today</span>`
-                    : `<button onclick="openDailyQuizIntro()" class="bg-white text-[${NAVY}] font-semibold px-5 py-2.5 rounded-2xl text-sm">Join a quiz</button>`}
-                </div>
-                <div class="rounded-full bg-white/15 flex items-center justify-center flex-shrink-0" style="width:5.5rem;height:5.5rem;position:relative;">
-                  <span style="font-size:2.25rem;font-weight:800;color:#ffffff;line-height:1;">?</span>
-                  <span style="position:absolute;top:6px;left:8px;font-size:1.1rem;font-weight:800;color:#34d399;transform:rotate(-18deg);">?</span>
-                  <span style="position:absolute;bottom:8px;right:8px;font-size:1.1rem;font-weight:800;color:#a78bfa;transform:rotate(18deg);">?</span>
-                </div>
-              </div>
-
-              <div class="bg-white rounded-3xl p-5 shadow-sm">
-                <div class="mb-4">
-                  <div class="text-lg font-bold text-[${NAVY}] font-display">My Game Stats</div>
-                </div>
-                <div class="divide-y divide-gray-100">
-                  <div class="flex items-center justify-between py-3.5">
-                    <div class="text-gray-700">Quizzes won</div>
-                    <div class="text-xl font-bold" style="color:#92720f;">${quizzesWon}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>`;
-        }
-
-        function gamificationSubHeaderHTML(title){
-          return `
-            <div class="w-full px-5 relative" style="padding-top:var(--top-safe-pad);padding-bottom:10px;">
-              <div class="flex items-center justify-between">
-                <button onclick="backToGamificationHome()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <h1 class="text-base font-bold font-display grad-text absolute left-1/2 -translate-x-1/2 truncate" style="max-width:60%;">${title}</h1>
-                ${coinBadgeHTML()}
-              </div>
-            </div>`;
-        }
 
         // ---- Leaderboard + achievements ----
 
-        function leaderboardHTML(){
-          const top = leaderboard.slice(0, 3), max = Math.max(1, ...leaderboard.map(p => p.pts));
-          const cols = ['#f59e0b', '#94a3b8', '#b45309'], order = [1, 0, 2], heights = ['70%', '100%', '52%'];
-          const pod = order.filter(i => top[i]).map(i => `<div style="height:${heights[order.indexOf(i)]};background:linear-gradient(180deg,${cols[i]},${cols[i]}cc);">
-              ${i === 0 ? Icon('crown','w-6 h-6') : ''}<div style="font-size:1.4rem;">${i + 1}</div>
-              <div class="text-xs px-1 text-center" style="word-break:break-word;">${escapeHtml(top[i].name)}${top[i].me && top[i].name !== 'You' ? ' (You)' : ''}</div>
-              <div class="text-xs" style="opacity:.9">${top[i].pts.toLocaleString()}</div></div>`).join('');
-          const myIdx = leaderboard.findIndex(p => p.me);
-          return `
-            <div class="ar-root ar-page"><div class="ar-in">
-              ${gamificationSubHeaderHTML('Leaderboard')}
-              <div class="ar-cols">
-                <div>
-                  <div class="rounded-3xl p-5 text-white mb-3" style="background:linear-gradient(135deg,#4338ca,#7c3aed,#c026d3);">
-                    <div class="text-xs font-semibold uppercase tracking-wide text-white/70 mb-3">This week's king of the Quiz</div>
-                    <div class="flex items-center gap-3">
-                      <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">${Icon('user','w-7 h-7')}</div>
-                      <div class="flex-1 min-w-0"><div class="font-bold text-lg font-display truncate">${escapeHtml(getQuizChampion().name)}${getQuizChampion().me && getQuizChampion().name !== 'You' ? ' (You)' : ''}</div>
-                        <div class="flex items-center gap-1.5 text-sm text-white/85">${Icon('gem','w-4 h-4')} ${getQuizChampion().pts.toLocaleString()} points</div></div>
-                      ${Icon('crown','w-8 h-8 text-amber-300 flex-shrink-0')}
-                    </div>
-                  </div>
-                  <div class="ar-card mb-3"><div class="ar-h">Podium</div><div class="ar-pod">${pod || '<div style="color:var(--sub)">No players yet</div>'}</div>
-                    ${myIdx >= 0 ? `<div class="text-sm text-center mt-3" style="color:var(--sub)">You're <b style="color:var(--pri)">#${myIdx + 1}</b>${myIdx > 0 ? ` · ${(leaderboard[myIdx - 1].pts - leaderboard[myIdx].pts).toLocaleString()} pts behind #${myIdx}` : ' · top of the board'}</div>` : ''}</div>
-                </div>
-                <div class="ar-card mb-3">
-                  <div class="ar-h">Points chart · top ${Math.min(leaderboard.length, 10)}</div>
-                  ${arBars(leaderboard.slice(0, 10).map((p, i) => ({ label: (i + 1) + '. ' + p.name + (p.me && p.name !== 'You' ? ' (You)' : ''), pct: p.pts / max * 100, text: p.pts.toLocaleString(), color: p.me ? '#1e90ff' : (cols[i] || '#94a3b8') })))}
-                </div>
-              </div>
-              <div class="ar-card">
-                <div class="ar-h">All players</div>
-                <div class="divide-y divide-gray-100">${leaderboard.map((p, i) => `
-                  <div class="flex items-center gap-3 py-3" ${p.me ? 'style="background:rgba(37,99,235,.07);margin:0 -.75rem;padding-left:.75rem;padding-right:.75rem;border-radius:12px;"' : ''}>
-                    <div class="w-7 text-center font-bold text-sm" style="color:${cols[i] || '#9ca3af'}">${i < 3 ? Icon('trophy','w-5 h-5') : i + 1}</div>
-                    <div class="ph-av w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0">${Icon('user','w-4 h-4')}</div>
-                    <div class="flex-1 min-w-0 font-semibold text-sm truncate">${escapeHtml(p.name)}${p.me && p.name !== 'You' ? ' (You)' : ''}</div>
-                    <div class="text-sm font-bold" style="color:#92720f">${p.pts.toLocaleString()}</div></div>`).join('')}</div>
-              </div>
-            </div></div>`;
-        }
 
 
-        function achievementsHTML(){
-          const badges = getBadges();
-          const earnedCount = badges.filter(b => b.earned).length;
-          return `
-            <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              ${gamificationSubHeaderHTML('Achievements')}
-              <div class="p-5 space-y-4">
-                <div class="rounded-3xl p-5 text-white" style="background:linear-gradient(135deg,${ROYAL},${NAVY});">
-                  <div class="text-xs text-blue-200 font-semibold uppercase tracking-wide">Badges unlocked</div>
-                  <div class="text-3xl font-bold font-display">${earnedCount}<span class="text-lg font-semibold text-blue-200"> / ${badges.length}</span></div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                  ${badges.map(b => `
-                    <div class="bg-white rounded-3xl p-5 text-center shadow-sm ${b.earned ? '' : 'opacity-50'}">
-                      <div class="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center mb-2" style="background:${b.earned ? '#eff6ff' : '#f3f4f6'};color:${b.earned ? NAVY : '#9ca3af'};">${Icon(b.icon,'w-6 h-6')}</div>
-                      <div class="font-semibold text-sm mb-1">${escapeHtml(b.label)}</div>
-                      <div class="text-xs text-gray-500 leading-snug mb-2">${escapeHtml(b.desc)}</div>
-                      ${b.earned
-                        ? `<div class="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-blue-600">${Icon('check','w-4 h-4')} Earned</div>`
-                        : `<div class="text-[10px] font-bold uppercase tracking-wide text-gray-400">Locked</div>`}
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            </div>`;
-        }
 
         function joinGameCodeLoadingHTML(){
           return `

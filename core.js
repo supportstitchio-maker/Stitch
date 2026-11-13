@@ -2168,7 +2168,7 @@
   <input type="file" id="glimpse-media-input" accept="image/*,video/*" class="hidden" onchange="handleGlimpseMediaSelected(event)">
 
   <!-- Solid backdrop sitting directly behind the bottom nav bars. Stitch
-       Bot (and Gamification/Notice Board) deliberately leave a
+       Bot (and Notice Board) deliberately leave a
        nav-bar-height gap open under their overlay so the taskbar stays
        visible underneath (see openOverlay's keepsTaskbar block) -- as
        that bar hides/retracts on scroll its own background fades out
@@ -2309,12 +2309,12 @@
           }, { passive: true });
           const overlayEl = document.getElementById('overlay');
           if (overlayEl) overlayEl.addEventListener('click', () => { toggleBottomNav(); }, { passive: true });
-          // Notice Board / Stitch Bot / Gamification keep the classroom nav bar and scroll inside
+          // Notice Board / Stitch Bot keep the classroom nav bar and scroll inside
           // #overlay, not #screen
           if (overlayEl && window.MutationObserver) {
             new MutationObserver(() => {
               if (typeof currentOverlayKind === 'undefined') return;
-              if (!(currentOverlayKind === 'gamification' || currentOverlayKind === 'aiClass' || currentOverlayKind === 'classAnnouncements')) return;
+              if (!(currentOverlayKind === 'aiClass' || currentOverlayKind === 'classAnnouncements')) return;
               const sc = overlayEl.querySelector('.overflow-y-auto');
               if (sc && !sc._navScrollBound) {
                 bottomNavLastScroll = Math.max(0, sc.scrollTop);
