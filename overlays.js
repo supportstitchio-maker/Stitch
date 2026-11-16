@@ -2541,7 +2541,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function personProfileQRHTML(){
           const p = viewedProfile || {};
           const photoHTML = p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : Icon('user','w-5 h-5 text-white');
-          return qrScreenHTML('person-profile-qr-code', photoHTML, p.username ? escapeHtml(p.username.toUpperCase()) : escapeHtml(p.name || 'STITCH MEMBER'), 'sharePersonProfileQR()', 'copyPersonProfileQRLink()', 'downloadPersonProfileQR()');
+          return qrScreenHTML('person-profile-qr-code', photoHTML, p.username ? '@' + escapeHtml(p.username) : escapeHtml(p.name || 'Stitch member'), 'sharePersonProfileQR()', 'copyPersonProfileQRLink()', 'downloadPersonProfileQR()');
         }
 
         function initPersonProfileQRCode(){
@@ -2550,8 +2550,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: personProfileQRLink(viewedProfile || {}),
-            width: 240,
-            height: 240,
+            width: 256,
+            height: 256,
             colorDark: qrTheme().mod,
             colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H

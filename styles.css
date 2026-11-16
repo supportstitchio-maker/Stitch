@@ -7069,3 +7069,9 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
 @media (min-width:1100px){
   .msg-hov .cv-bub{ padding-right:2rem !important; }
 }
+
+/* Profile QR page: three action tiles in a row (large faded icon in the background) */
+.qr-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:360px; margin-bottom:34px; }
+.ct-tile.qr-t{ min-height:92px; padding:12px 14px; }
+.qr-t .ct-wm{ right:-12px; top:-10px; }
+.qr-t b{ font-size:13px; font-weight:600; }

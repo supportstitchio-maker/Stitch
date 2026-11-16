@@ -1948,33 +1948,47 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function qrTheme(){
           const dark = document.body.classList.contains('dark-mode');
           return dark
-            ? { dark: true, page: '#121212', card: '#1e1e1e', mod: '#1e90ff', light: '#1e1e1e', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
-            : { dark: false, page: '#ffffff', card: '#ffffff', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
+            ? { dark: true, page: '#121212', card: '#1e1e1e', border: '#2b2b2b', mod: '#1e90ff', light: '#1e1e1e', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
+            : { dark: false, page: '#f9fafb', card: '#ffffff', border: '#e6ecf5', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
+        }
+
+        // Action tile with a large faded outline icon in the background (same style as the Career Space tiles)
+        const QR_TILE_PATHS = {
+          send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+          link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+          download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'
+        };
+        function qrTileHTML(icon, label, onclick){
+          return `
+            <button type="button" onclick="${onclick}" class="ct-tile qr-t">
+              <span class="ct-wm"><svg viewBox="0 0 24 24" width="76" height="76" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${QR_TILE_PATHS[icon]}</svg></span>
+              <b>${label}</b>
+            </button>`;
         }
 
         function qrScreenHTML(codeId, photoHTML, label, shareFn, copyFn, downloadFn){
           const t = qrTheme();
+          const mine = codeId === 'profile-qr-code';
+          const title = mine ? 'My QR code' : 'QR code';
+          const hint = mine ? 'Anyone can scan this to open<br>your profile on Stitch' : 'Scan this to open<br>this profile on Stitch';
           return `
             <div class="flex-1 flex flex-col overflow-y-auto" style="background:${t.page};">
-              <div class="flex items-center px-5 flex-shrink-0" style="padding-top:var(--top-safe-pad);">
-                <button onclick="closeOverlay()" style="color:${t.text};">${IconBold('close','w-6 h-6')}</button>
-              </div>
-              <div class="flex-1 flex flex-col items-center px-8" style="padding-top:48px;">
-                <div class="rounded-3xl p-5 flex flex-col items-center shadow-xl" style="width:280px;background:${t.card};${t.dark ? 'box-shadow:0 0 0 1px rgba(255,255,255,0.08);' : ''}">
-                  <div id="${codeId}" class="relative flex items-center justify-center" style="width:240px;height:240px;">
-                    <div class="absolute rounded-full flex items-center justify-center" style="width:54px;height:54px;background:${t.card};box-shadow:0 0 0 4px ${t.card};z-index:2;">
-                      <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:34px;height:auto;display:block;">
+              ${overlayHeader(title, '20px')}
+              <div class="flex-1 flex flex-col items-center px-6" style="padding-top:28px;">
+                <div style="width:310px;max-width:100%;padding:27px;border-radius:30px;background:${t.card};border:1px solid ${t.border};${t.dark ? '' : 'box-shadow:0 14px 36px rgba(30,60,140,.10);'}">
+                  <div id="${codeId}" class="relative flex items-center justify-center" style="width:256px;height:256px;max-width:100%;margin:0 auto;">
+                    <div class="absolute rounded-full flex items-center justify-center" style="width:58px;height:58px;background:${t.card};box-shadow:0 0 0 4px ${t.card};z-index:2;">
+                      <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:36px;height:auto;display:block;">
                     </div>
                   </div>
                 </div>
-                <div class="flex-1"></div>
-                <div class="flex flex-col items-center" style="margin-bottom:50px;width:280px;">
-                  <div class="text-lg mb-3 tracking-wide" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;color:${t.text};">${label}</div>
-                  <div class="flex items-center justify-between pt-2.5 pb-3 px-4" style="width:280px;background:transparent;">
-                    ${qrActionButton('send','Share',shareFn)}
-                    ${qrActionButton('link','Copy',copyFn)}
-                    ${qrActionButton('download','Download',downloadFn)}
-                  </div>
+                <div class="text-xl mt-6 text-center" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;color:${t.text};word-break:break-word;">${label}</div>
+                <div class="text-[13px] mt-1.5 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
+                <div class="flex-1" style="min-height:24px;"></div>
+                <div class="qr-tiles">
+                  ${qrTileHTML('send','Share',shareFn)}
+                  ${qrTileHTML('link','Copy link',copyFn)}
+                  ${qrTileHTML('download','Save image',downloadFn)}
                 </div>
               </div>
             </div>`;
@@ -2064,7 +2078,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function profileQRHTML(){
           const photoHTML = profileData.photo ? `<img src="${profileData.photo}" class="w-full h-full object-cover">` : Icon('camera','w-5 h-5 text-white');
-          return qrScreenHTML('profile-qr-code', photoHTML, escapeHtml(profileData.username.toUpperCase()), 'shareProfileQR()', 'copyProfileQRLink()', 'downloadProfileQR()');
+          return qrScreenHTML('profile-qr-code', photoHTML, '@' + escapeHtml(profileData.username), 'shareProfileQR()', 'copyProfileQRLink()', 'downloadProfileQR()');
         }
 
         function qrActionButton(icon,label,onclick){
@@ -2081,8 +2095,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: profileQRLink(),
-            width: 240,
-            height: 240,
+            width: 256,
+            height: 256,
             colorDark: qrTheme().mod,
             colorLight: qrTheme().light,
             correctLevel: QRCode.CorrectLevel.H
