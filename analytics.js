@@ -174,7 +174,7 @@
     call: 1, addToCall: 1, incomingCall: 1, lectureCall: 1, incomingLectureCall: 1,
     posterApplication: 1, posterDashboard: 1, adminDashboard: 1,
     creatorWallet: 1, creatorWithdraw: 1, receipts: 1,
-    jobApply: 1, careerStart: 1, careerMatching: 1, careerMatches: 1, careerAnalytics: 1,
+    jobApply: 1, careerStart: 1, careerMatching: 1, careerMatches: 1, careerAnalytics: 1, careerMenu: 1,
     courseEnroll: 1, classPaymentConfirm: 1,
     profileMenu: 1, blockedAccounts: 1, reportOpportunity: 1, reportClass: 1,
     myContacts: 1, inviteStudents: 1, inviteCoTeacher: 1

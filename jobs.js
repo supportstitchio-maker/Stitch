@@ -64,7 +64,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div id="career-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               <div class="relative flex items-center justify-between">
                 <h1 class="text-base font-bold font-display grad-text whitespace-nowrap">Career Space</h1>
-                <button id="career-dashes-btn" onclick="toggleCareerMenu()" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon(Icon('menuGrid','w-6 h-6'))}</button>
+                <button id="career-dashes-btn" onclick="toggleCareerMenu()" aria-label="Career menu" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon(Icon('layoutGrid','w-6 h-6'))}</button>
               </div>
             </div>
             <div id="career-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
@@ -90,12 +90,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let careerMenuArmed = false;
         let careerMenuScrollAnchor = 0;
 
+        // The four-box button opens a full Career Space page of tiles (not a pull-up panel).
         function toggleCareerMenu(){
-          if (careerMenuOpen) {
-            closeCareerMenuDropdownDom();
-          } else {
-            openCareerMenuDropdownDom();
-          }
+          closeCareerMenuDropdownDom();
+          openOverlay('careerMenu');
         }
 
         function openCareerMenuDropdownDom(){
@@ -203,10 +201,69 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           if (typeof refreshProfilePosterButton === 'function') refreshProfilePosterButton();
           const dropdown = document.getElementById('career-menu-dropdown');
           if (dropdown) dropdown.innerHTML = careerMenuDropdownInnerHTML();
+          if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'careerMenu') {
+            const cmOv = document.getElementById('overlay');
+            if (cmOv) cmOv.innerHTML = careerMenuPageHTML();
+          }
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'posterApplication') {
             const ov = document.getElementById('overlay');
             if (ov) ov.innerHTML = posterApplicationOverlayHTML();
           }
+        }
+
+        // ---- Career Space menu page: a full page of tiles (opened by the four-box button) ----
+        function careerMenuTileHTML(onclick, icon, title, desc, muted){
+          const p = SHEET_PATHS[icon] || '';
+          return `
+            <button type="button" onclick="${onclick}" class="ct-tile${muted ? ' ct-muted' : ''}">
+              <span class="ct-wm"><svg viewBox="0 0 24 24" width="104" height="104" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${p}</svg></span>
+              <b>${title}</b>
+              <span class="ct-d">${desc}</span>
+            </button>`;
+        }
+
+        function careerMenuPostTileHTML(){
+          if (isCurrentUserAdmin() || currentUserPosterStatus === 'approved') {
+            return careerMenuTileHTML("openPostOpportunity()", 'plus', 'Post an Opportunity', 'Share a job, internship or scholarship');
+          }
+          if (currentUserPosterStatus === 'frozen') {
+            return careerMenuTileHTML("openAppAlertModal('Your poster access is frozen for now. Check your notifications or contact support for details.')", 'lock', 'Poster access frozen', 'Check your notifications', true);
+          }
+          if (currentUserPosterStatus === 'blocked') {
+            return careerMenuTileHTML("openAppAlertModal('This account is not eligible to post opportunities.')", 'block', 'Posting unavailable', 'This account is not eligible', true);
+          }
+          if (currentUserPosterStatus === 'pending') {
+            return careerMenuTileHTML("openAppAlertModal('An admin is reviewing your application to post -- you\\'ll get a notification once it\\'s decided.')", 'clock', 'Application pending', 'An admin is reviewing it', true);
+          }
+          return careerMenuTileHTML("openPosterApplicationForm()", 'plus', 'Apply to post', 'Get approved to share opportunities');
+        }
+
+        function careerMenuPaidTileHTML(){
+          if (isCurrentUserAdmin()) return '';
+          if (currentUserCreatorStatus === 'approved') return careerMenuTileHTML("openCreatorWallet()", 'coin', 'Creator wallet', 'Earnings and withdrawals');
+          if (currentUserCreatorStatus === 'suspended') return careerMenuTileHTML("openCreatorWallet()", 'lock', 'Creator access paused', 'Open your wallet', true);
+          if (currentUserPosterStatus !== 'pending' && currentUserPosterStatus !== 'approved') return '';
+          if (currentUserPaidSellerRequested) {
+            return careerMenuTileHTML("openPaidSellerApplicationForm()", 'clock', 'Paid spaces request pending', 'An admin is reviewing it', true);
+          }
+          return careerMenuTileHTML("openPaidSellerApplicationForm()", 'coin', 'Add course & paid spaces', 'Sell courses and run paid spaces');
+        }
+
+        function careerMenuPageHTML(){
+          return `
+            <div class="flex-1 overflow-y-auto no-scrollbar">
+            ${overlayHeader('Career Space', '20px', null, null, { right: true })}
+            <div class="sp-wrap">
+              <div class="ct-intro">Everything for your career in one place.</div>
+              <div class="ct-grid">
+                ${careerMenuTileHTML("closeOverlay();jobsSubTab('saved')", 'bookmarkOutline', 'Saved', 'Opportunities and courses you bookmarked')}
+                ${CAREER_MATCH_ENABLED ? careerMenuTileHTML("openCareerStartForm()", 'file', 'Match with CV', 'Find opportunities that fit your CV') : ''}
+                ${careerMenuPostTileHTML()}
+                ${careerMenuPaidTileHTML()}
+                ${careerMenuTileHTML("openOverlayFrom('careerMenu','careerAnalytics')", 'trending', 'Analytics', 'See how your career activity is doing')}
+              </div>
+            </div>
+            </div>`;
         }
 
         function closeCareerMenuThen(fn){

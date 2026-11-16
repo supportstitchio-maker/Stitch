@@ -5556,12 +5556,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const callContent = `<div class="flex flex-col ${outgoing ? 'items-end' : 'items-start'} gap-1" style="max-width:75%;">${callBubble}</div>`;
                 const cPressKey = `${activeConvoId}|${ts}`;
                 const cPress = `onmousedown="startPress('messageLongPress','${cPressKey}', event)" onmouseup="endPress()" onmouseleave="endPress()" ontouchstart="startPress('messageLongPress','${cPressKey}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"`;
-                const cMenuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${cPressKey}', event)" class="desktop-msg-menu-btn w-7 h-7 rounded-full items-center justify-center text-gray-400 hover:bg-gray-100 flex-shrink-0" style="align-self:center;" title="Call options" aria-label="Call options">${Icon('dots','w-4 h-4')}</button>`;
+                const cMenuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${cPressKey}', event)" class="desktop-msg-menu-btn msg-arrow-btn msg-arrow-media" title="Call options" aria-label="Call options"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`;
                 const callTap = `onclick="callBackFromEntry('${isVideo ? 'video' : 'audio'}')"`;
-                const callContentTap = callContent.replace('<div class="flex flex-col', `<div ${callTap} class="cursor-pointer flex flex-col`);
+                const callContentTap = callContent.replace('<div class="flex flex-col', `<div ${callTap} class="msg-hov cursor-pointer flex flex-col`).replace(/<\/div>\s*$/, cMenuBtn + '</div>');
                 const row = outgoing
-                  ? `<div class="flex items-start justify-end gap-3" data-cv-key="${cPressKey}" ${cPress}>${cMenuBtn}${callContentTap}</div>`
-                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}${cMenuBtn}</div>`;
+                  ? `<div class="flex items-start justify-end gap-3" data-cv-key="${cPressKey}" ${cPress}>${callContentTap}</div>`
+                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}</div>`;
                 return separator + row;
               }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
@@ -5584,8 +5584,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
-                ? `<div class="text-white px-4 py-2.5 text-sm" style="background:rgba(65,105,225,0.45); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
-                : `<div class="bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
+                ? `<div class="cv-bub text-white px-4 py-2.5 text-sm" style="background:rgba(65,105,225,0.45); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
+                : `<div class="cv-bub bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
             ) : '';
             const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
             const imagesHTML = convoImageAttachmentsHTML(images);
@@ -5599,28 +5599,29 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             // Voice notes need an actual (not shrink-wrapped) width to expand into, or width:100% on
             // the bubble has nothing to fill against
             const contentWidthStyle = m.voice ? 'width:75%;' : 'max-width:75%;';
+            const pressKey = `${activeConvoId}|${ts}`;
+            // Desktop: a small down arrow in the top-right corner of the message, shown only on hover
+            const arrowOnMedia = !!(sharedPostsHTML || imagesHTML || videosHTML || voiceHTML);
+            const menuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${pressKey}', event)" class="desktop-msg-menu-btn msg-arrow-btn${arrowOnMedia ? ' msg-arrow-media' : (mine ? ' msg-arrow-mine' : '')}" title="Message options" aria-label="Message options"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`;
             const content = `
-              <div class="flex flex-col ${mine ? 'items-end' : 'items-start'} gap-1" style="${contentWidthStyle}">
+              <div class="msg-hov flex flex-col ${mine ? 'items-end' : 'items-start'} gap-1" style="${contentWidthStyle}">
                 ${sharedPostsHTML}
                 ${imagesHTML}
                 ${videosHTML}
                 ${voiceHTML}
                 ${bubbleHTML}
                 ${footer}
+                ${menuBtn}
               </div>`;
-            const pressKey = `${activeConvoId}|${ts}`;
             const pressHandlers = `onmousedown="startPress('messageLongPress','${pressKey}', event)" onmouseup="endPress()" onmouseleave="endPress()" ontouchstart="startPress('messageLongPress','${pressKey}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"`;
-            const menuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${pressKey}', event)" class="desktop-msg-menu-btn w-7 h-7 rounded-full items-center justify-center text-gray-400 hover:bg-gray-100 flex-shrink-0" style="align-self:center;" title="Message options" aria-label="Message options">${Icon('dots','w-4 h-4')}</button>`;
             const bubble = m.from === 'them' ? `
             <div class="flex items-start gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
               ${msgSelCheckHTML(pressKey)}
               <div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
               ${content}
-              ${menuBtn}
             </div>` : `
             <div class="flex items-start justify-end gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
               ${msgSelCheckHTML(pressKey)}
-              ${menuBtn}
               ${content}
             </div>`;
             return separator + bubble;

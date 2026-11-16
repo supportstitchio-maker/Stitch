@@ -7044,3 +7044,28 @@ body:not(.dark-mode) .bgi-card{ box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3
 /* One shared card spec for Settings tiles, Contact info and Workspace cards */
 body:not(.dark-mode) .stg-tile, body:not(.dark-mode) .cp-act, body:not(.dark-mode) .bgi-card{ padding:14px 10px !important; border-radius:18px !important; min-height:108px !important; background:#fff !important; border:1px solid #eef0f3 !important; box-shadow:0 6px 16px rgba(17,24,39,.10),0 1px 3px rgba(17,24,39,.06) !important; }
 html.dark-mode .stg-tile, html.dark-mode .cp-act, html.dark-mode .bgi-card, body.dark-mode .cp-act, body.dark-mode .bgi-card{ padding:14px 10px !important; border-radius:18px !important; min-height:108px !important; }
+
+/* Career Space menu page: tiles with a large faded outline icon in the background */
+.ct-intro{ font-size:15px; color:#111827; line-height:1.5; padding:6px 0 14px; }
+.ct-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.ct-tile{ position:relative; overflow:hidden; min-height:150px; text-align:left; background:#fff; border:1px solid #e6ecf5; border-radius:20px; padding:14px; box-shadow:0 6px 18px rgba(30,60,140,.07); display:flex; flex-direction:column; justify-content:flex-end; gap:2px; -webkit-tap-highlight-color:transparent; transition:transform .12s ease; }
+.ct-tile:active{ transform:scale(.97); }
+.ct-tile b{ position:relative; z-index:1; font-size:14px; color:#0f172a; }
+.ct-tile .ct-d{ position:relative; z-index:1; font-size:12px; color:#64748b; line-height:1.35; }
+.ct-wm{ position:absolute; right:-18px; top:-14px; line-height:0; color:#1e3a5f; opacity:.16; pointer-events:none; }
+.ct-muted b, .ct-muted .ct-d{ opacity:.6; }
+body.dark-mode .ct-intro{ color:#f2f2f2; }
+body.dark-mode .ct-tile{ background:#1a1a1a; border-color:#2b2b2b; box-shadow:none; }
+body.dark-mode .ct-tile b{ color:#fff; }
+body.dark-mode .ct-tile .ct-d{ color:#9a9a9a; }
+body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
+
+/* Desktop message options: a small down arrow inside the bubble's top-right corner, shown only on hover */
+.msg-hov{ position:relative; }
+.msg-arrow-btn{ position:absolute; top:5px; right:8px; width:24px; height:22px; align-items:center; justify-content:center; border-radius:11px; color:#6b7280; background:transparent; opacity:0; pointer-events:none; transition:opacity .12s ease; z-index:2; }
+.msg-hov:hover > .msg-arrow-btn, .msg-arrow-btn:focus-visible{ opacity:1; pointer-events:auto; }
+.msg-arrow-mine{ color:#fff; }
+.msg-arrow-media{ background:rgba(17,24,39,.45); color:#fff; }
+@media (min-width:1100px){
+  .msg-hov .cv-bub{ padding-right:2rem !important; }
+}
