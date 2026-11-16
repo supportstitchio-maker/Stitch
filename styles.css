@@ -7075,3 +7075,6 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
 .ct-tile.qr-t{ min-height:92px; padding:12px 14px; }
 .qr-t .ct-wm{ right:-12px; top:-10px; }
 .qr-t b{ font-size:13px; font-weight:600; }
+
+/* Visually hidden live region for screen-reader announcements */
+.a11y-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }

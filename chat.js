@@ -1219,33 +1219,33 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const id = activeConvoId;
           const meta = convoMeta[id];
           if (!meta) return;
-          const typed = prompt('Rename collaboration:', meta.name || '');
-          if (typed === null) return; 
-          const newName = typed.trim();
-          if (!newName || newName === meta.name) return;
-          meta.name = newName;
-          const entry = collabConvos.find(c => c.id === id);
-          if (entry) entry.name = newName;
-          queueSaveUserState();
-          renderConvoProfile();
-          const headerName = document.getElementById('chat-header-name');
-          if (headerName) headerName.textContent = convoDisplayName(meta);
-          if (currentTab === 3) renderInboxTab();
-          collabUpdateNameRemote(id, newName);
+          openAppPromptModal('Rename collaboration', meta.name || '', function(typed){
+            const newName = String(typed || '').trim();
+            if (!newName || newName === meta.name) return;
+            meta.name = newName;
+            const entry = collabConvos.find(c => c.id === id);
+            if (entry) entry.name = newName;
+            queueSaveUserState();
+            renderConvoProfile();
+            const headerName = document.getElementById('chat-header-name');
+            if (headerName) headerName.textContent = convoDisplayName(meta);
+            if (currentTab === 3) renderInboxTab();
+            collabUpdateNameRemote(id, newName);
+          }, { placeholder: 'Collaboration name' });
         }
 
         function editCollabDescription(){
           const id = activeConvoId;
           const meta = convoMeta[id];
           if (!meta) return;
-          const typed = prompt('Collaboration description:', meta.description || '');
-          if (typed === null) return;
-          const newDescription = typed.trim();
-          if (newDescription === (meta.description || '')) return;
-          meta.description = newDescription;
-          queueSaveUserState();
-          renderConvoProfile();
-          collabUpdateDescriptionRemote(id, newDescription);
+          openAppPromptModal('Collaboration description', meta.description || '', function(typed){
+            const newDescription = String(typed || '').trim();
+            if (newDescription === (meta.description || '')) return;
+            meta.description = newDescription;
+            queueSaveUserState();
+            renderConvoProfile();
+            collabUpdateDescriptionRemote(id, newDescription);
+          }, { multiline: true, placeholder: 'What is this collaboration about?' });
         }
 
         // ---- Inbox tab render (primary/requests/collabs) ----

@@ -2205,6 +2205,77 @@ let userPoints = 0;
           if (action) action();
         }
 
+
+        // ---- In-app text prompt (a sheet with a text box). Replaces the browser's prompt(), which installed
+        // iOS web apps block, so the action silently did nothing. onSubmit gets the typed text. ----
+        let appPromptModalAction = null;
+        let appPromptReturnFocus = null;
+        function openAppPromptModal(title, initialValue, onSubmit, opts){
+          opts = opts || {};
+          appPromptModalAction = typeof onSubmit === 'function' ? onSubmit : null;
+          appPromptReturnFocus = document.activeElement;
+          const modal = document.getElementById('appPromptModal');
+          const titleEl = document.getElementById('appPromptModalTitle');
+          const input = document.getElementById('appPromptModalInput');
+          const area = document.getElementById('appPromptModalTextarea');
+          const saveBtn = document.getElementById('appPromptModalSaveBtn');
+          if (!modal || !input || !area) return;
+          if (titleEl) titleEl.textContent = title || 'Edit';
+          if (saveBtn) saveBtn.textContent = opts.saveLabel || 'Save';
+          const field = opts.multiline ? area : input;
+          input.classList.toggle('hidden', !!opts.multiline);
+          area.classList.toggle('hidden', !opts.multiline);
+          field.value = initialValue || '';
+          field.placeholder = opts.placeholder || '';
+          if (opts.maxLength) field.maxLength = opts.maxLength; else field.removeAttribute('maxlength');
+          field.setAttribute('aria-labelledby', 'appPromptModalTitle');
+          modal.classList.remove('hidden');
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeAppPromptModal(fromPopState));
+          setTimeout(() => { try { field.focus(); if (field.select) field.select(); } catch (e) {} }, 60);
+        }
+        function closeAppPromptModal(fromPopState){
+          const modal = document.getElementById('appPromptModal');
+          if (modal) modal.classList.add('hidden');
+          if (typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState);
+          const back = appPromptReturnFocus; appPromptReturnFocus = null;
+          if (back && back.isConnected && typeof back.focus === 'function') { try { back.focus(); } catch (e) {} }
+        }
+        function confirmAppPromptSave(){
+          const input = document.getElementById('appPromptModalInput');
+          const area = document.getElementById('appPromptModalTextarea');
+          const field = (area && !area.classList.contains('hidden')) ? area : input;
+          const value = field ? field.value : '';
+          const action = appPromptModalAction;
+          appPromptModalAction = null;
+          closeAppPromptModal();
+          if (action) action(value);
+        }
+
+        // Screen readers: a polite live region so toasts and "copied" confirmations are spoken
+        function announceToScreenReader(text){
+          if (!text) return;
+          let r = document.getElementById('a11y-live');
+          if (!r) {
+            r = document.createElement('div');
+            r.id = 'a11y-live';
+            r.className = 'a11y-sr';
+            r.setAttribute('role', 'status');
+            r.setAttribute('aria-live', 'polite');
+            r.setAttribute('aria-atomic', 'true');
+            document.body.appendChild(r);
+          }
+          r.textContent = '';
+          setTimeout(() => { r.textContent = String(text); }, 60);
+        }
+        // Esc closes the in-app confirm and prompt sheets
+        document.addEventListener('keydown', function(e){
+          if (e.key !== 'Escape') return;
+          const p = document.getElementById('appPromptModal');
+          if (p && !p.classList.contains('hidden')) { e.preventDefault(); closeAppPromptModal(); return; }
+          const c = document.getElementById('appConfirmModal');
+          if (c && !c.classList.contains('hidden')) { e.preventDefault(); closeAppConfirmModal(); }
+        });
+
         // Alerts that only need an OK show as a dismissible top banner. On desktop, pop-ups sit in the
         // middle of the content area, between the left menu and right panel.
         function placeToastInContent(el){
@@ -2250,8 +2321,10 @@ let userPoints = 0;
               ${hasTitle ? `<div class="text-sm text-[${NAVY}]">${escapeHtml(title)}</div>` : ''}
               <div class="${hasTitle ? 'text-xs text-gray-500' : `text-sm text-[${NAVY}]`}">${escapeHtml(message || '')}</div>
             </div>`;
+          el.setAttribute('role', 'status');
           document.body.appendChild(el);
           placeToastInContent(el);
+          announceToScreenReader((hasTitle ? title + '. ' : '') + (message || ''));
           let dismissed = false;
           const dismiss = () => {
             if (dismissed) return;
