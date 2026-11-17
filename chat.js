@@ -2749,7 +2749,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const myId = await getCurrentUserId();
             // A group message is stored as one row per recipient (so each person's own delivery/read
             // state is independent)
-            const cols = 'id,sender_id,text,voice_url,voice_duration,attachments,read,local_id,created_at';
+            const cols = 'id,sender_id,text,voice_url,voice_duration,attachments,read,local_id,created_at,edited_at';
             let data, error;
             ({ data, error } = await sb.from(MESSAGES_TABLE)
               .select(cols)
@@ -2783,6 +2783,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   voice: r.voice_url ? sanitizeChatVoice({ src: r.voice_url, duration: r.voice_duration || 0 }) : undefined,
                   attachments: Array.isArray(r.attachments) ? sanitizeChatAttachments(r.attachments) : undefined,
                   read: !!r.read,
+                  edited: r.edited_at ? new Date(r.edited_at).getTime() : undefined,
                   time: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
                   _mine: isSys || r.sender_id === myId,
                 };
@@ -2799,6 +2800,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 return !arr.slice(0, idx).some(prev => prev._mine && !prev.localId && prev.text === m.text && Math.abs(prev.time - m.time) < 5000);
               })
               .map(({ _mine, ...rest }) => rest);
+            // Starred is kept on this device only, so carry it over onto the freshly loaded messages
+            fresh.forEach(m => {
+              if (prevLocalMsgs.some(x => x && x.starred && ((m.id != null && x.id === m.id) || (m.localId && x.localId === m.localId)))) m.starred = true;
+            });
             // My own messages that never reached the server used to be wiped, so the chat opened empty.
             // Keep them and mark them "Not delivered" after a while.
             const stuck = prevLocalMsgs.filter(m => m && m.from === 'me' && m.localId && m.id == null && !serverLocalIds.has(m.localId));
@@ -3115,7 +3120,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               handleIncomingMessage(payload.new);
             })
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: MESSAGES_TABLE, filter: `sender_id=eq.${myId}` }, (payload) => {
+              handleMessageEditUpdate(payload.new);
               handleMessageReadUpdate(payload.new);
+            })
+            // The other person edited a message they sent me
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: MESSAGES_TABLE, filter: `recipient_id=eq.${myId}` }, (payload) => {
+              handleMessageEditUpdate(payload.new);
             })
             // "Delete for everyone" can be triggered by either side of a conversation, so this user's
             // client needs to hear about a DELETE whether they were the sender or the recipient of the
@@ -3250,6 +3260,28 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               return;
             }
           }
+        }
+
+        // An edit (by me on another device, or by the other person) arrives as an UPDATE with a new edited_at
+        function handleMessageEditUpdate(row){
+          if (!row || !row.edited_at || !row.convo_id) return;
+          const convoId = row.convo_id;
+          const msgs = conversationMessages[convoId];
+          if (!msgs) return;
+          const editedAt = new Date(row.edited_at).getTime();
+          const m = msgs.find(x => x && ((row.id != null && x.id === row.id) || (row.local_id && x.localId === row.local_id)));
+          if (!m || m.edited === editedAt) return;
+          const raw = row.text || '';
+          if (raw.startsWith(SYS_MSG_PREFIX)) return;
+          m.text = raw;
+          m.edited = editedAt;
+          queueSaveUserState();
+          const found = (typeof findConvoAndArray === 'function') ? findConvoAndArray(convoId) : null;
+          if (found && typeof syncConvoPreviewFromMessages === 'function' && syncConvoPreviewFromMessages(found.arr[found.idx])) {
+            queueSaveUserState();
+            if (typeof currentTab !== 'undefined' && currentTab === 3) renderInboxTab();
+          }
+          convoRerenderKeepScroll(convoId);
         }
 
         function handleMessageReadUpdate(row){
@@ -4044,6 +4076,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const hasAttachments = !isSysEvent && Array.isArray(row.attachments) && row.attachments.length > 0;
           conversationMessages[convoId].push({
             id: row.id,
+            localId: row.local_id || undefined,
+            edited: row.edited_at ? new Date(row.edited_at).getTime() : undefined,
             from: isSysEvent ? 'system' : 'them',
             text: isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : rawText,
             voice: isVoice ? sanitizeChatVoice({ src: row.voice_url, duration: row.voice_duration || 0 }) : undefined,
@@ -4188,6 +4222,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (activeConvoId !== id) return;
               const log = document.getElementById('convo-log');
               if (log) { log.innerHTML = convoLogHTML(); log.scrollTop = log.scrollHeight; }
+              loadConvoReactions(id);
             });
             if (meta.otherUserId) refreshConvoAvatarFromProfile(id);
             joinConvoTypingChannel(id);
@@ -5086,11 +5121,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="convo-sheet-grabber"></div>
                   <button onclick="closeConvoOptionsMenuThen(() => openConvoProfile())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('user','w-4 h-4')} <span>Contact details</span></button>
                   <button onclick="closeConvoOptionsMenuThen(() => openConvoSearch())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('search','w-4 h-4')} <span>Search in chat</span></button>
+                  <button onclick="closeConvoOptionsMenuThen(() => openStarredMessages())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${msgExtraIcon('star',16)} <span>Starred messages</span></button>
                   <button onclick="closeConvoOptionsMenuThen(() => clearConvoChat())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100">${Icon('trash','w-4 h-4')} <span>Clear chat</span></button>
                   <button onclick="${reported ? '' : `closeConvoOptionsMenuThen(() => reportConvo())`}" ${reported ? 'disabled' : ''} class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium border-b border-gray-100 ${reported ? 'text-gray-400' : 'text-red-500'}">${Icon('flag','w-4 h-4')} <span>${reported ? 'Reported' : 'Report'}</span></button>
                   <button onclick="closeConvoOptionsMenuThen(() => toggleBlockConvoContact())" class="w-full flex items-center gap-3 text-left px-5 py-4 text-[15px] font-medium text-red-500">${Icon('block','w-4 h-4')} <span>${blocked ? 'Unblock' : 'Block'}</span></button>
                 </div>
             ${convoConnectBannerHTML()}
+            <div id="convo-pinned-bar" class="flex-shrink-0">${convoPinnedBarHTML()}</div>
             <div id="convo-log-wrap" class="flex-1 relative" style="min-height:0;">
               <div id="convo-log" class="overflow-y-auto p-5 flex flex-col gap-3" style="height:100%;overflow-x:hidden;">
                 ${convoLogHTML()}
@@ -5580,7 +5617,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const timeInBubble = hasBubbleContent && !glimpseReplies.length && !m.voice && !m.unsent
               && !(m.attachments || []).some(f => f && (f.type === 'stitch/post' || f.type === 'stitch/challenge' || (f.type && (f.type.startsWith('image/') || f.type.startsWith('video/')) && (f.dataUrl || f.url || f.file))));
             const inMeta = timeInBubble
-              ? `<span class="${mine ? 'cv-meta-mine' : ''}" style="float:right;display:inline-flex;align-items:center;gap:3px;margin:7px 0 -3px 12px;font-size:10px;line-height:1;white-space:nowrap;${mine ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}${mine ? convoReadTicksHTML(m) : ''}</span>`
+              ? `<span class="${mine ? 'cv-meta-mine' : ''}" style="float:right;display:inline-flex;align-items:center;gap:3px;margin:7px 0 -3px 12px;font-size:10px;line-height:1;white-space:nowrap;${mine ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${convoMsgFlagsHTML(m)}${timeLabel}${mine ? convoReadTicksHTML(m) : ''}</span>`
               : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
@@ -5592,10 +5629,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const videosHTML = convoVideoAttachmentsHTML(videos);
             const footer = timeInBubble ? '' : mine
               ? `<div class="flex items-center gap-1 mt-1 px-1">
-                   <span class="text-[10px] text-gray-400">${timeLabel}</span>
+                   <span class="text-[10px] text-gray-400 inline-flex items-center gap-1">${convoMsgFlagsHTML(m)}${timeLabel}</span>
                    ${m.unsent ? `<button type="button" onclick="retryUnsentMessage('${escapeForJsAttr(String(activeConvoId))}','${escapeForJsAttr(String(m.localId || ''))}')" class="text-[10px] font-semibold" style="color:#ef4444;">Not delivered · Tap to retry</button>` : convoReadTicksHTML(m)}
                  </div>`
-              : `<div class="text-[10px] text-gray-400 mt-1 px-1">${timeLabel}</div>`;
+              : `<div class="text-[10px] text-gray-400 mt-1 px-1 inline-flex items-center gap-1">${convoMsgFlagsHTML(m)}${timeLabel}</div>`;
             // Voice notes need an actual (not shrink-wrapped) width to expand into, or width:100% on
             // the bubble has nothing to fill against
             const contentWidthStyle = m.voice ? 'width:75%;' : 'max-width:75%;';
@@ -5603,6 +5640,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             // Desktop: a small down arrow in the top-right corner of the message, shown only on hover
             const arrowOnMedia = !!(sharedPostsHTML || imagesHTML || videosHTML || voiceHTML);
             const menuBtn = `<button type="button" onclick="event.stopPropagation();toggleDesktopMessageMenu('${pressKey}', event)" class="desktop-msg-menu-btn msg-arrow-btn${arrowOnMedia ? ' msg-arrow-media' : (mine ? ' msg-arrow-mine' : '')}" title="Message options" aria-label="Message options"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>`;
+            const chipsHTML = convoReactionChipsHTML(activeConvoId, m);
             const content = `
               <div class="msg-hov flex flex-col ${mine ? 'items-end' : 'items-start'} gap-1" style="${contentWidthStyle}">
                 ${sharedPostsHTML}
@@ -5610,6 +5648,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${videosHTML}
                 ${voiceHTML}
                 ${bubbleHTML}
+                ${chipsHTML}
                 ${footer}
                 ${menuBtn}
               </div>`;
@@ -5665,21 +5704,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function messageActionSheetHTML(){
-          // "Delete for everyone" only makes sense (and is only ever allowed by the DB's delete
-          // policy) for a message the current user actually sent
           const msgs = (messageActionConvoId && conversationMessages[messageActionConvoId]) || [];
           const msg = msgs.find(m => m.time === messageActionTime);
-          const canDeleteForEveryone = canDeleteMessageForEveryone(msg);
-          const isCallEntry = !!(msg && msg.from === 'system');
-          const canCopy = !!(msg && msg.text) && !isCallEntry;
+          const row = r => `<button onclick="${r.fn}" class="w-full text-left px-5 py-4 text-[15px] font-medium ${r.danger ? 'text-red-500' : 'text-gray-800'} border-b border-gray-100" style="font-family:inherit;">${r.label}</button>`;
           return `
             <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
-              <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
+              <div class="bg-white w-full convo-sheet" style="max-width:480px;max-height:88vh;overflow-y:auto;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
                 <div class="convo-sheet-grabber"></div>
-                ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Copy</button>` : ''}
-                ${isCallEntry ? '' : `<button onclick="openForwardMessagePicker()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Forward</button>`}
-                <button onclick="deleteActionMessageForMe()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-800 border-b border-gray-100" style="font-family:inherit;">Delete for me</button>
-                ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-red-500 border-b border-gray-100" style="font-family:inherit;">Delete for everyone</button>` : ''}
+                ${messageReactionRowHTML(msg, false)}
+                ${messageMenuRows(msg).map(row).join('')}
                 <button onclick="closeMessageActionSheet()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-500" style="font-family:inherit;">Cancel</button>
               </div>
             </div>`;
@@ -5703,14 +5736,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
           const msgs = (messageActionConvoId && conversationMessages[messageActionConvoId]) || [];
           const msg = msgs.find(m => m.time === messageActionTime);
-          const canDeleteForEveryone = canDeleteMessageForEveryone(msg);
-          const isCallEntry = !!(msg && msg.from === 'system');
-          const canCopy = !!(msg && msg.text) && !isCallEntry;
+          const rows = messageMenuRows(msg);
+          const reactRow = messageReactionRowHTML(msg, true);
 
           const btn = evt.currentTarget;
           const rect = btn.getBoundingClientRect();
-          const menuWidth = 190;
-          const menuHeightEstimate = (canDeleteForEveryone ? 100 : 60) + (canCopy ? 40 : 0) + 80;
+          const menuWidth = 210;
+          const menuHeightEstimate = rows.length * 40 + (reactRow ? 52 : 0) + 20;
           const dropUp = (window.innerHeight - rect.bottom) < (menuHeightEstimate + 12);
           const top = dropUp ? (rect.top - menuHeightEstimate - 6) : (rect.bottom + 6);
           const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
@@ -5720,13 +5752,426 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           menu.innerHTML = `
             <div class="fixed inset-0" style="z-index:59;" onclick="closeMessageActionSheet()"></div>
             <div class="fixed bg-white rounded-2xl border border-gray-100 py-2 menu-dropdown-inset" style="z-index:60;top:${Math.max(8, top)}px;left:${left}px;width:${menuWidth}px;box-shadow:0 10px 30px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
-              ${canCopy ? `<button onclick="copyActionMessage()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Copy</button>` : ''}
-              ${isCallEntry ? '' : `<button onclick="openForwardMessagePicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Forward</button>`}
-              <button onclick="msgSelStartFromMenu()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Select</button>
-              <button onclick="deleteActionMessageForMe()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 menu-item-pill">Delete for me</button>
-              ${canDeleteForEveryone ? `<button onclick="deleteActionMessageForEveryone()" class="w-full text-left px-4 py-2.5 text-sm text-red-500 menu-item-pill">Delete for everyone</button>` : ''}
+              ${reactRow}
+              ${rows.map(r => `<button onclick="${r.fn}" class="w-full text-left px-4 py-2.5 text-sm ${r.danger ? 'text-red-500' : 'text-gray-700'} menu-item-pill">${r.label}</button>`).join('')}
             </div>`;
           document.body.appendChild(menu);
+        }
+
+        // =====================================================================================
+        // Message extras: edit, reactions, pin, star, message info, starred list
+        // (Reply already exists as swipe-to-reply; it is now also in the message menu and bar)
+        // =====================================================================================
+        const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
+        const MSG_EXTRA_PATHS = {
+          star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3 1.2-6.8-5-4.9 6.9-1z"/>',
+          pin: '<path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9A2 2 0 0 1 15 10.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+          x: '<path d="M6 6l12 12M18 6 6 18"/>',
+          like: '<path d="M7 10v12"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 1.9 2.5l-2.4 8A2 2 0 0 1 17.4 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.8a2 2 0 0 0 1.8-1.1L12 2a3.1 3.1 0 0 1 3 3.9z"/>',
+          heart: '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+          smile: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+          wow: '<circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="16" rx="2" ry="2.6"/><path d="M9 9h.01M15 9h.01"/>',
+          sad: '<circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><path d="M9 9h.01M15 9h.01"/>'
+        };
+        function msgExtraIcon(name, size, fill){
+          return `<svg viewBox="0 0 24 24" width="${size || 18}" height="${size || 18}" fill="${fill ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${MSG_EXTRA_PATHS[name] || ''}</svg>`;
+        }
+        const MESSAGE_REACTIONS = [
+          { k: 'like', label: 'Like' }, { k: 'heart', label: 'Love' }, { k: 'smile', label: 'Haha' },
+          { k: 'wow', label: 'Wow' }, { k: 'sad', label: 'Sad' }
+        ];
+
+        function convoRerenderKeepScroll(convoId){
+          if (activeConvoId !== convoId) return;
+          const log = document.getElementById('convo-log');
+          if (!log) return;
+          const top = log.scrollTop;
+          log.innerHTML = convoLogHTML();
+          log.scrollTop = top;
+        }
+
+        // ---- Edited / starred markers shown next to the time ----
+        function convoMsgFlagsHTML(m){
+          if (!m) return '';
+          let out = '';
+          if (m.starred) out += `<span style="display:inline-flex;margin-right:1px;">${msgExtraIcon('star', 10, true)}</span>`;
+          if (m.edited) out += '<span style="margin-right:3px;">Edited</span>';
+          return out;
+        }
+
+        // ---- The message the menu / bar is acting on ----
+        function msgActionTarget(){
+          const convoId = messageActionConvoId, time = messageActionTime;
+          const msg = (convoId && (conversationMessages[convoId] || []).find(m => m.time === time)) || null;
+          return { convoId, time, msg };
+        }
+
+        // ---- Menu rows (shared by the phone sheet and the desktop dropdown) ----
+        function messageMenuRows(msg){
+          if (!msg) return [];
+          const rows = [];
+          const isCall = msg.from === 'system';
+          if (!isCall) rows.push({ label: 'Reply', fn: 'msgMenuReply()' });
+          if (canEditMessage(msg)) rows.push({ label: 'Edit', fn: 'openEditMessage()' });
+          if (msg.text && !isCall) rows.push({ label: 'Copy', fn: 'copyActionMessage()' });
+          if (!isCall) rows.push({ label: 'Forward', fn: 'openForwardMessagePicker()' });
+          if (!isCall) rows.push({ label: msg.starred ? 'Unstar' : 'Star', fn: 'msgMenuToggleStar()' });
+          if (!isCall) {
+            const meta = convoMeta[messageActionConvoId];
+            const pinned = !!(meta && meta.pinnedMsg && meta.pinnedMsg.time === msg.time);
+            rows.push({ label: pinned ? 'Unpin' : 'Pin', fn: 'msgMenuTogglePin()' });
+            rows.push({ label: 'Message info', fn: 'openMessageInfo()' });
+          }
+          rows.push({ label: 'Select', fn: 'msgSelStartFromMenu()' });
+          rows.push({ label: 'Delete for me', fn: 'deleteActionMessageForMe()' });
+          if (canDeleteMessageForEveryone(msg)) rows.push({ label: 'Delete for everyone', fn: 'deleteActionMessageForEveryone()', danger: true });
+          return rows;
+        }
+
+        // ---- Reply / star / pin ----
+        function msgMenuReply(){
+          const { convoId, time } = msgActionTarget();
+          closeMessageActionSheet();
+          if (!convoId || time == null) return;
+          convoSetReply(convoId + '|' + time);
+        }
+        function msgSelReply(){
+          const sel = msgSelSelected();
+          if (sel.length !== 1) return;
+          const convoId = msgSel.convoId, time = sel[0].time;
+          msgSelExit();
+          convoSetReply(convoId + '|' + time);
+        }
+        function msgMenuToggleStar(){
+          const { convoId, msg } = msgActionTarget();
+          closeMessageActionSheet();
+          if (!msg) return;
+          msg.starred = !msg.starred;
+          queueSaveUserState();
+          convoRerenderKeepScroll(convoId);
+        }
+        function msgMenuTogglePin(){
+          const { convoId, time, msg } = msgActionTarget();
+          closeMessageActionSheet();
+          const meta = convoMeta[convoId];
+          if (!meta || !msg) return;
+          if (meta.pinnedMsg && meta.pinnedMsg.time === time) delete meta.pinnedMsg;
+          else meta.pinnedMsg = { time };
+          queueSaveUserState();
+          refreshConvoPinnedBar();
+        }
+        function convoMessageLabel(m){
+          if (!m) return '';
+          const body = meetingChatParse(m.text).body;
+          if (body) return body;
+          if (m.voice) return 'Voice message';
+          if ((m.attachments || []).some(a => a.type && a.type.indexOf('image/') === 0)) return 'Photo';
+          if ((m.attachments || []).some(a => a.type && a.type.indexOf('video/') === 0)) return 'Video';
+          return 'Attachment';
+        }
+        function convoPinnedBarHTML(){
+          const meta = convoMeta[activeConvoId];
+          const p = meta && meta.pinnedMsg;
+          if (!p) return '';
+          const m = (conversationMessages[activeConvoId] || []).find(x => x.time === p.time);
+          if (!m) { delete meta.pinnedMsg; queueSaveUserState(); return ''; }
+          return `
+            <div class="cv-pinbar" onclick="convoJumpToMessage(${Number(p.time)})">
+              <span class="cv-pinbar-ic">${msgExtraIcon('pin', 16)}</span>
+              <span class="cv-pinbar-tx">${escapeHtml(convoMessageLabel(m).slice(0, 120))}</span>
+              <button type="button" class="cv-pinbar-x" onclick="event.stopPropagation();unpinConvoMessage()" title="Unpin" aria-label="Unpin message">${msgExtraIcon('x', 16)}</button>
+            </div>`;
+        }
+        function refreshConvoPinnedBar(){
+          const el = document.getElementById('convo-pinned-bar');
+          if (el) el.innerHTML = convoPinnedBarHTML();
+        }
+        function unpinConvoMessage(){
+          const meta = convoMeta[activeConvoId];
+          if (!meta) return;
+          delete meta.pinnedMsg;
+          queueSaveUserState();
+          refreshConvoPinnedBar();
+        }
+        function convoJumpToMessage(time){
+          const el = document.querySelector('[data-cv-key="' + String(activeConvoId).replace(/"/g, '') + '|' + Number(time) + '"]');
+          if (!el) return;
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          el.classList.add('cv-flash');
+          setTimeout(() => el.classList.remove('cv-flash'), 1600);
+        }
+
+        // ---- Message info ----
+        function openMessageInfo(){
+          const { msg } = msgActionTarget();
+          closeMessageActionSheet();
+          if (!msg) return;
+          const fmt = t => new Date(t).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+          const mine = msg.from === 'me';
+          const rows = [[mine ? 'Sent' : 'Received', fmt(msg.time)]];
+          if (msg.edited) rows.push(['Edited', fmt(msg.edited)]);
+          if (mine) rows.push(['Status', msg.unsent ? 'Not delivered' : (msg.read ? 'Seen' : (msg.id != null ? 'Delivered' : 'Sending'))]);
+          const sheet = document.createElement('div');
+          sheet.id = 'message-action-sheet';
+          sheet.innerHTML = `
+            <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
+              <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
+                <div class="convo-sheet-grabber"></div>
+                <div class="text-[17px] font-bold text-gray-800" style="padding:8px 20px 12px;">Message info</div>
+                ${rows.map(r => `<div class="flex items-center justify-between border-b border-gray-100" style="padding:14px 20px;font-family:'Montserrat',sans-serif;"><span class="text-sm text-gray-500">${r[0]}</span><span class="text-sm font-medium text-gray-800">${escapeHtml(r[1])}</span></div>`).join('')}
+                <button onclick="closeMessageActionSheet()" class="w-full text-left px-5 py-4 text-[15px] font-medium text-gray-500" style="font-family:inherit;">Close</button>
+              </div>
+            </div>`;
+          document.body.appendChild(sheet);
+        }
+
+        // ---- Starred messages list (this chat) ----
+        function openStarredMessages(){ openOverlayFrom('conversation', 'starredMessages'); }
+        function starredMessagesHTML(){
+          const convoId = activeConvoId;
+          const meta = convoMeta[convoId] || {};
+          const list = (conversationMessages[convoId] || []).filter(m => m && m.starred && m.from !== 'system');
+          const rows = list.map(m => {
+            const who = m.from === 'me' ? 'You' : (meta.name || 'Them');
+            return `
+              <button type="button" onclick="starredMessageJump(${Number(m.time)})" class="w-full text-left border-b border-gray-100" style="padding:14px 20px;">
+                <div class="flex items-center justify-between"><span class="text-xs font-semibold" style="color:#1e90ff;">${escapeHtml(who)}</span><span class="text-[11px] text-gray-400">${escapeHtml(new Date(m.time).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }))}</span></div>
+                <div class="text-sm text-gray-700 mt-1" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">${escapeHtml(convoMessageLabel(m))}</div>
+              </button>`;
+          }).join('');
+          return `
+            <div class="flex-1 overflow-y-auto no-scrollbar">
+              ${overlayHeader('Starred messages', '20px')}
+              ${rows || '<div class="text-sm text-gray-400 text-center" style="padding:60px 24px;line-height:1.5;">No starred messages in this chat.<br>Hold a message and choose Star.</div>'}
+            </div>`;
+        }
+        function starredMessageJump(time){
+          overlayGoBack();
+          setTimeout(() => {
+            const log = document.getElementById('convo-log');
+            if (log) log.scrollTop = log.scrollHeight;
+            convoJumpToMessage(time);
+          }, 120);
+        }
+
+        // ---- Edit a message ----
+        let editMsgTarget = null;
+        function canEditMessage(m){
+          if (!m || m.from !== 'me' || m.voice || m.unsent || m.id == null || !m.text) return false;
+          if ((m.attachments || []).length) return false;
+          if (!meetingChatParse(m.text).body.trim()) return false;
+          return (Date.now() - Number(m.time || 0)) <= MESSAGE_EDIT_WINDOW_MS;
+        }
+        function openEditMessage(){
+          const { convoId, time, msg } = msgActionTarget();
+          closeMessageActionSheet();
+          startEditMessage(convoId, time, msg);
+        }
+        function msgSelEdit(){
+          const sel = msgSelSelected();
+          if (sel.length !== 1) return;
+          const convoId = msgSel.convoId, time = sel[0].time, msg = sel[0];
+          msgSelExit();
+          startEditMessage(convoId, time, msg);
+        }
+        function startEditMessage(convoId, time, msg){
+          if (!msg) return;
+          if (!canEditMessage(msg)) {
+            if (typeof openAppAlertModal === 'function') openAppAlertModal('You can edit a text message you sent for 15 minutes after sending it.');
+            return;
+          }
+          editMsgTarget = { convoId, time };
+          openOverlayFrom('conversation', 'editMessage');
+        }
+        function editMessageHTML(){
+          const t = editMsgTarget;
+          const m = t && (conversationMessages[t.convoId] || []).find(x => x.time === t.time);
+          if (!m) return `<div class="flex-1 flex flex-col">${overlayHeader('Edit message', '20px')}<div class="text-sm text-gray-400 text-center" style="padding:60px 24px;">This message is no longer available.</div></div>`;
+          const body = meetingChatParse(m.text).body;
+          return `
+            <div class="flex-1 flex flex-col" style="min-height:0;">
+              ${overlayHeader('Edit message', '20px')}
+              <div class="flex-1 overflow-y-auto p-5 flex flex-col justify-end" style="opacity:.55;">
+                <div class="flex justify-end"><div class="cv-bub text-white px-4 py-2.5 text-sm" style="max-width:80%;background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;word-break:break-word;white-space:pre-wrap;">${escapeHtml(body)}</div></div>
+              </div>
+              <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
+                <div class="wa-row">
+                  <div class="wa-pill convo-composer-pill">
+                    <textarea id="edit-msg-input" rows="1" maxlength="4000" aria-label="Edit message" oninput="autoGrowConvoInput(this);editMessageUpdateBtn()" onkeydown="if(event.key==='Enter' && !event.shiftKey && window.innerWidth>=1100){event.preventDefault();saveEditedMessage();}" class="wa-textarea">${escapeHtml(body)}</textarea>
+                  </div>
+                  <button type="button" id="edit-msg-save" onclick="saveEditedMessage()" title="Save" aria-label="Save changes" class="wa-main-btn">${MSG_SEL_ICONS.chk.replace('width="14" height="14"', 'width="24" height="24"')}</button>
+                </div>
+              </div>
+            </div>`;
+        }
+        function editMessageAfterOpen(){
+          const el = document.getElementById('edit-msg-input');
+          if (!el) return;
+          try { autoGrowConvoInput(el); } catch (e) {}
+          editMessageUpdateBtn();
+          setTimeout(() => { try { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} }, 80);
+        }
+        function editMessageUpdateBtn(){
+          const el = document.getElementById('edit-msg-input'), btn = document.getElementById('edit-msg-save');
+          if (!el || !btn) return;
+          const t = editMsgTarget;
+          const m = t && (conversationMessages[t.convoId] || []).find(x => x.time === t.time);
+          const same = !m || el.value.trim() === meetingChatParse(m.text).body.trim();
+          const off = !el.value.trim() || same;
+          btn.disabled = off;
+          btn.style.opacity = off ? '.45' : '1';
+        }
+        async function editMessageRemote(convoId, m, newText){
+          const sb = getSupabaseClient();
+          if (!sb) return false;
+          try {
+            let q = sb.from(MESSAGES_TABLE).update({ text: newText, edited_at: new Date().toISOString() }).eq('convo_id', convoId);
+            q = m.localId ? q.eq('local_id', m.localId) : q.eq('id', m.id);
+            const { error } = await q;
+            if (error) { console.warn('Editing a message failed:', error); return false; }
+            return true;
+          } catch (e) { console.warn('Editing a message threw an error:', e); return false; }
+        }
+        async function saveEditedMessage(){
+          const t = editMsgTarget;
+          const input = document.getElementById('edit-msg-input');
+          if (!t || !input) return;
+          const m = (conversationMessages[t.convoId] || []).find(x => x.time === t.time);
+          if (!m) { overlayGoBack(); return; }
+          const parsed = meetingChatParse(m.text);
+          const body = input.value.trim();
+          if (!body) return;
+          if (body === parsed.body.trim()) { editMsgTarget = null; overlayGoBack(); return; }
+          if (!canEditMessage(m)) {
+            if (typeof openAppAlertModal === 'function') openAppAlertModal('You can edit a text message you sent for 15 minutes after sending it.');
+            return;
+          }
+          // A reply keeps its quoted line; only the message part changes
+          const prefix = parsed.rname ? '\u2063' + parsed.rname + '\u2063' + parsed.rquote + '\u2063' : '';
+          const newText = prefix + body.slice(0, Math.max(1, 4000 - prefix.length));
+          const oldText = m.text, oldEdited = m.edited;
+          m.text = newText;
+          m.edited = Date.now();
+          queueSaveUserState();
+          const convoId = t.convoId;
+          editMsgTarget = null;
+          const found = (typeof findConvoAndArray === 'function') ? findConvoAndArray(convoId) : null;
+          if (found && typeof syncConvoPreviewFromMessages === 'function' && syncConvoPreviewFromMessages(found.arr[found.idx])) queueSaveUserState();
+          overlayGoBack();
+          setTimeout(() => {
+            const log = document.getElementById('convo-log');
+            if (log) log.scrollTop = log.scrollHeight;
+          }, 80);
+          const ok = await editMessageRemote(convoId, m, newText);
+          if (!ok) {
+            m.text = oldText; m.edited = oldEdited;
+            queueSaveUserState();
+            if (found && typeof syncConvoPreviewFromMessages === 'function') syncConvoPreviewFromMessages(found.arr[found.idx]);
+            convoRerenderKeepScroll(convoId);
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't edit this message. Please try again.");
+          }
+        }
+
+        // ---- Reactions ----
+        const MESSAGE_REACTIONS_TABLE = 'message_reactions';
+        let convoReactions = {};          // convoId -> { messageKey -> { userId -> kind } }
+        let reactionsMyId = null;
+        let reactionsChannel = null;
+        let reactionsUnavailable = false; // the table isn't there yet: quietly skip reactions
+        function msgKeyOf(m){
+          if (!m) return null;
+          if (m.localId) return String(m.localId);
+          if (m.id != null) return 'id_' + m.id;
+          return null;
+        }
+        function reactionsFor(convoId, m){
+          const k = msgKeyOf(m);
+          return (k && convoReactions[convoId] && convoReactions[convoId][k]) || null;
+        }
+        function reactionSet(convoId, key, userId, kind){
+          if (!convoReactions[convoId]) convoReactions[convoId] = {};
+          if (!convoReactions[convoId][key]) convoReactions[convoId][key] = {};
+          if (kind) convoReactions[convoId][key][userId] = kind;
+          else {
+            delete convoReactions[convoId][key][userId];
+            if (!Object.keys(convoReactions[convoId][key]).length) delete convoReactions[convoId][key];
+          }
+        }
+        async function loadConvoReactions(convoId){
+          if (reactionsUnavailable) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try {
+            reactionsMyId = reactionsMyId || await getCurrentUserId();
+            const { data, error } = await sb.from(MESSAGE_REACTIONS_TABLE).select('message_key,user_id,kind').eq('convo_id', convoId);
+            if (error) { reactionsUnavailable = true; return; }
+            convoReactions[convoId] = {};
+            (data || []).forEach(r => reactionSet(convoId, r.message_key, r.user_id, r.kind));
+            convoRerenderKeepScroll(convoId);
+            ensureReactionsChannel();
+          } catch (e) { reactionsUnavailable = true; }
+        }
+        function ensureReactionsChannel(){
+          if (reactionsChannel || reactionsUnavailable) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try {
+            reactionsChannel = sb.channel('message-reactions')
+              .on('postgres_changes', { event: '*', schema: 'public', table: MESSAGE_REACTIONS_TABLE }, (payload) => {
+                const row = payload.eventType === 'DELETE' ? payload.old : payload.new;
+                if (!row || !row.convo_id || !row.message_key || !row.user_id) return;
+                reactionSet(row.convo_id, row.message_key, row.user_id, payload.eventType === 'DELETE' ? null : row.kind);
+                convoRerenderKeepScroll(row.convo_id);
+              })
+              .subscribe();
+          } catch (e) { reactionsChannel = null; }
+        }
+        function messageReactionRowHTML(msg, small){
+          if (!msg || msg.from === 'system' || !msgKeyOf(msg) || reactionsUnavailable) return '';
+          const mineKind = reactionsMyId && (reactionsFor(messageActionConvoId, msg) || {})[reactionsMyId];
+          return `<div class="cv-react-row${small ? ' sm' : ''}">${MESSAGE_REACTIONS.map(r => `<button type="button" class="cv-react-btn${mineKind === r.k ? ' on' : ''}" onclick="reactActionMessage('${r.k}')" title="${r.label}" aria-label="${r.label}">${msgExtraIcon(r.k, small ? 18 : 22)}</button>`).join('')}</div>`;
+        }
+        function reactActionMessage(kind){
+          const { convoId, msg } = msgActionTarget();
+          closeMessageActionSheet();
+          setMyReaction(convoId, msg, kind);
+        }
+        function reactChip(convoId, time, kind){
+          const msg = (conversationMessages[convoId] || []).find(m => m.time === time);
+          setMyReaction(convoId, msg, kind);
+        }
+        async function setMyReaction(convoId, msg, kind){
+          const key = msgKeyOf(msg);
+          if (!key) return;
+          const sb = getSupabaseClient();
+          if (!sb) return;
+          try { reactionsMyId = reactionsMyId || await getCurrentUserId(); } catch (e) {}
+          if (!reactionsMyId) return;
+          const prev = (reactionsFor(convoId, msg) || {})[reactionsMyId] || null;
+          const next = prev === kind ? null : kind;
+          reactionSet(convoId, key, reactionsMyId, next);
+          convoRerenderKeepScroll(convoId);
+          let error = null;
+          try {
+            if (next) ({ error } = await sb.from(MESSAGE_REACTIONS_TABLE).upsert({ convo_id: convoId, message_key: key, user_id: reactionsMyId, kind: next }, { onConflict: 'convo_id,message_key,user_id' }));
+            else ({ error } = await sb.from(MESSAGE_REACTIONS_TABLE).delete().eq('convo_id', convoId).eq('message_key', key).eq('user_id', reactionsMyId));
+          } catch (e) { error = e; }
+          if (error) {
+            console.warn('Saving a reaction failed:', error);
+            reactionSet(convoId, key, reactionsMyId, prev);
+            convoRerenderKeepScroll(convoId);
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("Couldn't save your reaction. Please try again.");
+          }
+        }
+        function convoReactionChipsHTML(convoId, m){
+          const map = reactionsFor(convoId, m);
+          if (!map) return '';
+          const counts = {};
+          Object.keys(map).forEach(u => { counts[map[u]] = (counts[map[u]] || 0) + 1; });
+          const mineKind = reactionsMyId && map[reactionsMyId];
+          const chips = MESSAGE_REACTIONS.filter(r => counts[r.k]).map(r => `
+            <button type="button" class="cv-react-chip${mineKind === r.k ? ' on' : ''}" onclick="event.stopPropagation();reactChip('${escapeForJsAttr(String(convoId))}',${Number(m.time)},'${r.k}')" aria-label="${r.label}, ${counts[r.k]}">${msgExtraIcon(r.k, 14, r.k === 'heart' || r.k === 'like')}${counts[r.k] > 1 ? `<span>${counts[r.k]}</span>` : ''}</button>`).join('');
+          return chips ? `<div class="cv-react-chips">${chips}</div>` : '';
         }
 
         // "Delete for everyone" is only offered for your own messages (including shared posts)
@@ -5816,6 +6261,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           copy: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>',
           fwd: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l6 6-6 6"/><path d="M21 11H9a5 5 0 0 0-5 5v2"/></svg>',
           trash: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>',
+          reply: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 4 12l5 5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
+          edit: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
           chk: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
         };
         function msgSelHas(key){
@@ -5851,6 +6298,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <button type="button" class="msg-sel-ic" onclick="msgSelExit()" title="Cancel" aria-label="Cancel">${MSG_SEL_ICONS.x}</button>
             <span class="msg-sel-count">${n} selected</span>
             <span style="flex:1"></span>
+            ${canFwd ? `<button type="button" class="msg-sel-ic" onclick="msgSelReply()" title="Reply" aria-label="Reply">${MSG_SEL_ICONS.reply}</button>` : ''}
+            ${(n === 1 && canEditMessage(sel[0])) ? `<button type="button" class="msg-sel-ic" onclick="msgSelEdit()" title="Edit" aria-label="Edit">${MSG_SEL_ICONS.edit}</button>` : ''}
             <button type="button" class="msg-sel-ic" ${hasText ? '' : 'disabled'} onclick="msgSelCopy()" title="Copy" aria-label="Copy">${MSG_SEL_ICONS.copy}</button>
             <button type="button" class="msg-sel-ic" ${canFwd ? '' : 'disabled'} onclick="msgSelForward()" title="Forward" aria-label="Forward">${MSG_SEL_ICONS.fwd}</button>
             <button type="button" class="msg-sel-ic msg-sel-del" ${n ? '' : 'disabled'} onclick="msgSelAskDelete()" title="Delete" aria-label="Delete">${MSG_SEL_ICONS.trash}</button>`;
