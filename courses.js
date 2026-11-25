@@ -5217,7 +5217,7 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Space</h1>
+                <h1 class="text-base font-semibold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Space</h1>
                 <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
@@ -5246,7 +5246,7 @@ try {
             <div class="w-full px-5 pb-3 relative" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Space</h1>
+                <h1 class="text-base font-semibold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Space</h1>
                 <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${createClassMenuOpen ? createClassDropdownMenu() : ''}
@@ -5509,7 +5509,7 @@ try {
             <div class="w-full px-5 pb-3 relative flex-shrink-0" style="padding-top:var(--top-safe-pad);">
               <div class="flex items-center justify-between">
                 <button onclick="cancelClassPaymentConfirm()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold text-[${NAVY}] font-display truncate" style="text-align:left;max-width:80%;">Entrance Fee</h1>
+                <h1 class="text-base font-semibold text-[${NAVY}] font-display truncate" style="text-align:left;max-width:80%;">Entrance Fee</h1>
               </div>
             </div>
 </div>
@@ -6614,12 +6614,20 @@ try {
           classMsgAfterRender();
           classMsgMarkRead(currentClassId, studentId);
         }
+        let classPeopleReturn = null;    // { scroll, tab } of the People page, restored when coming back from a member chat
         let classMsgFromPeople = false;   // thread was opened by tapping a student on the People tab
         async function openClassMsgFromPeople(studentId){
           const cls = myClasses.find(c => c.id === currentClassId);
           if (!cls || cls.role !== 'teacher' || !studentId) return;
           if (!classMsgMyId) { try { const me = await getCachedAuthUser(); if (me) classMsgMyId = me.id; } catch (e) {} }
           classMsgFromPeople = true;
+          // Remember which People tab (Moderators / Members / Requests) was open and how far it was scrolled
+          try {
+            const ovEl = document.getElementById('overlay');
+            const sc = ovEl && ovEl.querySelector('.overflow-y-auto');
+            const onBtn = ovEl && ovEl.querySelector('[data-people-tab].on');
+            classPeopleReturn = { scroll: sc ? sc.scrollTop : 0, tab: onBtn ? onBtn.getAttribute('data-people-tab') : null };
+          } catch (e) { classPeopleReturn = null; }
           classMsgThread = studentId;
           classMsgDraft = '';
           classDetailSwitchTab('messages');
@@ -6635,6 +6643,17 @@ try {
             classDetailTab = 'people';
             const ov = document.getElementById('overlay');
             if (ov) ov.innerHTML = classDetailHTML();
+            const ret = classPeopleReturn; classPeopleReturn = null;
+            if (ov && ret) {
+              const restore = () => {
+                const btn = ret.tab ? ov.querySelector('[data-people-tab="' + ret.tab + '"]') : null;
+                if (btn && !btn.classList.contains('on')) classPeopleTab(btn, ret.tab);
+                const sc = ov.querySelector('.overflow-y-auto');
+                if (sc) sc.scrollTop = ret.scroll || 0;
+              };
+              restore();
+              requestAnimationFrame(restore);   // once more after layout / avatars settle
+            }
             return;
           }
           if (cls && cls.role === 'teacher' && classMsgThread) {
@@ -10668,9 +10687,9 @@ try {
 <div class="-mx-5">
             <div class="flex-shrink-0 w-full" style="padding-top:20px;">
               <div class="max-w-2xl mx-auto px-5 flex items-center justify-between gap-4" style="position:relative;padding-bottom:20px;">
-                <button onclick="discardAnnouncementDraft()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${ROYAL};">${IconBold('back','w-5 h-5')}</button>
-                <h1 class="text-base font-bold font-display truncate absolute left-1/2 -translate-x-1/2 text-center" style="color:${ROYAL};max-width:60%;">New announcement</h1>
-                <button onclick="toggleAnnouncementMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${ROYAL};">${Icon('menuBars','w-6 h-6')}</button>
+                <button onclick="discardAnnouncementDraft()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
+                <h1 class="text-base font-semibold font-display truncate absolute left-1/2 -translate-x-1/2 text-center" style="color:${NAVY};max-width:60%;">New announcement</h1>
+                <button onclick="toggleAnnouncementMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuBars','w-6 h-6')}</button>
                 ${announcementMenuOpen ? classMenuSheetHTML('toggleAnnouncementMenu', [{ onclick: 'discardAnnouncementDraft()', icon: 'trash', label: 'Discard draft', cls: 'text-red-500' }]) : ''}
               </div>
             </div>

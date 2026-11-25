@@ -7176,3 +7176,62 @@ html.dark-mode .stg-tg-ico, body.dark-mode .stg-tg-ico{ color:#5cb0ff; }
 html.dark-mode .filter-pill.on, body.dark-mode .filter-pill.on, html.dark-mode .outline-pill.on, body.dark-mode .outline-pill.on,
 body.dark-mode .outline-pill.is-selected, html.dark-mode .auth-intent-chip.on, body.dark-mode .auth-intent-chip.on,
 body:not(.dark-mode) .cu-handpill.on, body.dark-mode .cu-handpill.on, body:not(.dark-mode) .cu-ctl.on .cu-ctl-btn, body.dark-mode .cu-ctl.on .cu-ctl-btn{ box-shadow:none !important; }
+
+
+/* ---- Chat header, WhatsApp style: one flat bar (back, avatar, name + status, call icons), no floating pills ---- */
+.cv-wa-head{ background:#f9fafb; border-bottom:1px solid rgba(128,128,128,.18); }
+body.dark-mode .cv-wa-head, html.dark-mode .cv-wa-head{ background:#121212; border-bottom-color:rgba(255,255,255,.08); }
+.cv-wa-back{ width:40px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:transparent; border:0; }
+.cv-wa-main{ display:flex; align-items:center; gap:10px; min-width:0; padding:2px 6px 2px 2px; }
+.cv-wa-avatar{ width:40px; height:40px; border-radius:9999px; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:rgba(128,128,128,.18); }
+.cv-wa-avatar img{ width:100%; height:100%; object-fit:cover; }
+.cv-wa-acts{ gap:0; }
+.cv-wa-acts .cv-act{ width:40px; height:44px; background:transparent; }
+
+/* ---- Filter pills (Messaging + Career Space): unselected = no shadow, faint gray outline ---- */
+.filter-pill{ box-shadow:none !important; border:1.5px solid rgba(156,163,175,.45) !important; }
+.filter-pill.on{ border-color:#1e90ff !important; }
+body.dark-mode .filter-pill, html.dark-mode .filter-pill{ box-shadow:none !important; border-color:rgba(255,255,255,.18) !important; }
+body.dark-mode .filter-pill.on, html.dark-mode .filter-pill.on{ border-color:#1e90ff !important; }
+
+/* ---- Help Center "Still stuck?" card: same look as the minimized call card (white card, soft border + shadow, dark round button) ---- */
+.sp-still{ background:#fff !important; color:#111827 !important; border:1px solid rgba(0,0,0,0.06) !important; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.18) !important; }
+.sp-still b{ color:#111827; font-weight:600; }
+.sp-still span span{ color:#6b7280; opacity:1; }
+.sp-still .sp-go{ background:#111827; color:#fff; }
+body.dark-mode .sp-still, html.dark-mode .sp-still{ background:#1e1e1e !important; color:#fff !important; border:1px solid rgba(255,255,255,0.08) !important; box-shadow:0 10px 30px rgba(0,0,0,0.5) !important; }
+body.dark-mode .sp-still b, html.dark-mode .sp-still b{ color:#fff; }
+body.dark-mode .sp-still span span, html.dark-mode .sp-still span span{ color:#9a9a9a; }
+body.dark-mode .sp-still .sp-go, html.dark-mode .sp-still .sp-go{ background:#fff; color:#111827; }
+
+/* ---- Bottom panels / sheets: Colmeak font for everything inside (share, menus, comments, confirm sheets) ---- */
+.share-sheet-panel, .share-sheet-panel *,
+.convo-sheet, .convo-sheet *,
+.confirm-sheet, .confirm-sheet *,
+[id^="comment-sheet-panel-"], [id^="comment-sheet-panel-"] *,
+#career-menu-dropdown, #career-menu-dropdown *,
+#inbox-filter-dropdown, #inbox-filter-dropdown *,
+[id^="post-menu-dropdown-"], [id^="post-menu-dropdown-"] *,
+#job-sheet-menu, #job-sheet-menu *,
+#admin-menu-sheet, #admin-menu-sheet *,
+[style*="border-radius:24px 24px 0 0"][style*="bottom:0"], [style*="border-radius:24px 24px 0 0"][style*="bottom:0"] *{
+  font-family:'Colmeak','Montserrat',sans-serif !important;
+}
+
+/* ---- Headers that have only a back arrow + title: every title is the same size and Dodger blue ---- */
+html body .ov-sticky-head.ov-sticky-head .font-display,
+html body .ov-sticky-head.ov-sticky-head .grad-text,
+html body .ov-sticky-head.ov-sticky-head .career-flow-title,
+html body #overlay .ov-sticky-head .font-display,
+html body #overlay .ov-sticky-head .grad-text{
+  font-size:1rem !important; line-height:1.5rem !important; font-weight:600 !important;
+  color:#1e90ff !important; -webkit-text-fill-color:#1e90ff !important; background:none !important;
+}
+html body.dark-mode .ov-sticky-head.ov-sticky-head .font-display,
+html body.dark-mode .ov-sticky-head.ov-sticky-head .grad-text,
+html body.dark-mode #overlay .ov-sticky-head .font-display{ color:#1e90ff !important; -webkit-text-fill-color:#1e90ff !important; }
+
+/* Header icons and words: any royal blue inside a header becomes Dodger blue (back arrows, titles, space chat pages) */
+.ov-sticky-head [style*="#4169e1" i], .ov-sticky-head [style*="royalblue" i],
+.cv-wa-head [style*="#4169e1" i], #overlay h1.font-display{ color:#1e90ff !important; -webkit-text-fill-color:#1e90ff !important; }
+.ov-sticky-head svg, .cv-wa-head svg, .ov-sticky-head .grad-text svg{ color:#1e90ff; }

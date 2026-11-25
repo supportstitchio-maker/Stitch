@@ -1944,7 +1944,7 @@
       </div>
       <div class="flex items-center gap-5" id="topbar-icons">
         <button onclick="morphPlusIcon('topbar-create-icon');openOverlay('create')" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none"><line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>')}</span></button>
-        <button id="notif-bell-btn" onclick="openOverlay('notifications')" class="relative hover:text-blue-300"><span class="notif-bell-icon" style="display:inline-flex;transform-origin:50% 10%;">${gradIcon(Icon('bell','w-6 h-6'))}</span>${unreadNotifCount() ? `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${unreadNotifCount()}</span>` : ''}</button>
+        <button id="notif-bell-btn" onclick="openOverlay('notifications')" class="relative hover:text-blue-300"><span class="notif-bell-icon" style="display:inline-flex;transform-origin:50% 10%;">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>')}</span>${unreadNotifCount() ? `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${unreadNotifCount()}</span>` : ''}</button>
       </div>
     </div>
     <div class="max-w-2xl mx-auto px-5 pb-3" id="topbar-search-row">
@@ -4385,4 +4385,66 @@ function coverPickerHTML(o){
   setInterval(tick, 4000);
   document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') tick(); });
   document.addEventListener('click', function(){ setTimeout(tick, 250); }, true);
+})();
+
+/* ---- Swipe-down to dismiss for share sheets (same feel as the comments panel) ----
+   Drag the panel down from the handle or anywhere on it (unless a list inside is scrolled down).
+   Past ~110px, or a quick flick, it slides off and closes through the sheet's own close handler
+   (tapping its dim wrapper); otherwise it springs back. */
+(function(){
+  var SEL = '.share-sheet-panel';
+  var st = null;
+  function vScroller(el, panel){
+    for (var n = el; n && n !== panel.parentElement; n = n.parentElement) {
+      if (n.nodeType !== 1) continue;
+      var oy = getComputedStyle(n).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1) return n;
+    }
+    return null;
+  }
+  document.addEventListener('touchstart', function(e){
+    var t = e.touches && e.touches[0];
+    var panel = e.target && e.target.closest ? e.target.closest(SEL) : null;
+    if (!t || !panel || e.touches.length > 1) { st = null; return; }
+    var tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') { st = null; return; }
+    st = { panel: panel, x: t.clientX, y: t.clientY, t0: Date.now(), dragging: false, dead: false, target: e.target, dy: 0 };
+  }, { passive: true });
+  document.addEventListener('touchmove', function(e){
+    if (!st || st.dead) return;
+    var t = e.touches && e.touches[0];
+    if (!t) return;
+    var dx = t.clientX - st.x, dy = t.clientY - st.y;
+    if (!st.dragging) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      var sc = vScroller(st.target, st.panel);
+      if (Math.abs(dx) > Math.abs(dy) || dy <= 0 || (sc && sc.scrollTop > 0)) { st.dead = true; return; }
+      st.dragging = true;
+      st.panel.style.transition = 'none';
+    }
+    st.dy = Math.max(0, dy);
+    st.panel.style.transform = 'translateY(' + st.dy + 'px)';
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  function end(){
+    var s = st; st = null;
+    if (!s || !s.dragging) return;
+    var p = s.panel, dt = Math.max(1, Date.now() - s.t0);
+    var flick = s.dy / dt > 0.6 && s.dy > 30;
+    if (s.dy > 110 || flick) {
+      p.style.transition = 'transform .22s cubic-bezier(.4,0,.2,1)';
+      p.style.transform = 'translateY(100%)';
+      setTimeout(function(){
+        var wrap = p.parentElement;
+        if (wrap && p.isConnected) wrap.click();   // sheet's own tap-outside handler runs its close logic
+        setTimeout(function(){ if (p.isConnected) { p.style.transition = ''; p.style.transform = ''; } }, 80);
+      }, 200);
+    } else {
+      p.style.transition = 'transform .2s ease';
+      p.style.transform = 'translateY(0)';
+      setTimeout(function(){ p.style.transition = ''; p.style.transform = ''; }, 220);
+    }
+  }
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', end, { passive: true });
 })();

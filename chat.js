@@ -5101,17 +5101,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="cv-tg-head flex items-center flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 2px);padding-bottom:10px;padding-left:10px;padding-right:10px;gap:8px;">
-              <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-pill cv-pill-round">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div class="cv-pill cv-pill-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
+            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 2px);padding-bottom:10px;padding-left:8px;padding-right:6px;gap:2px;">
+              <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-wa-back">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              <div class="cv-wa-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
+                <div id="chat-header-avatar" class="cv-wa-avatar">${avatarInnerHTML(meta, 'w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
-                  <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
+                  <div id="chat-header-name" class="font-semibold text-base truncate grad-text" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;">${escapeHtml(convoDisplayName(meta))}</div>
                   <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
                 </div>
               </div>
-              <div class="cv-pill cv-pill-acts flex items-center flex-shrink-0" style="position:relative;">
-                <button onclick="startCall('${activeConvoId}','video')" title="Video call" aria-label="Video call" class="cv-act">${gradIcon(Icon('video','w-5 h-5'))}</button>
-                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" aria-label="Voice call" class="cv-act">${gradIcon(Icon('phoneOutline','w-5 h-5'))}</button>
+              <div class="cv-wa-acts flex items-center flex-shrink-0" style="position:relative;">
+                <button onclick="startCall('${activeConvoId}','video')" title="Video call" aria-label="Video call" class="cv-act">${gradIcon(Icon('video','w-6 h-6'))}</button>
+                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" aria-label="Voice call" class="cv-act">${gradIcon(Icon('phoneOutline','w-6 h-6'))}</button>
                 <button onclick="toggleConvoOptionsMenu()" title="More" aria-label="More" class="cv-act">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
               </div>
             </div>

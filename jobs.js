@@ -64,7 +64,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div id="career-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               <div class="relative flex items-center justify-between">
                 <h1 class="text-base font-bold font-display grad-text whitespace-nowrap">Career Space</h1>
-                <button id="career-dashes-btn" onclick="toggleCareerMenu()" aria-label="Career menu" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon(Icon('layoutGrid','w-6 h-6'))}</button>
+                <button id="career-dashes-btn" onclick="toggleCareerMenu()" aria-label="Career menu" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h16"/></svg>')}</button>
               </div>
             </div>
             <div id="career-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
@@ -90,10 +90,10 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
         let careerMenuArmed = false;
         let careerMenuScrollAnchor = 0;
 
-        // The four-box button opens a full Career Space page of tiles (not a pull-up panel).
+        // The three-dot button pulls up the bottom panel, same as the other menus.
         function toggleCareerMenu(){
-          closeCareerMenuDropdownDom();
-          openOverlay('careerMenu');
+          if (careerMenuOpen) { closeCareerMenuDropdownDom(); return; }
+          openCareerMenuDropdownDom();
         }
 
         function openCareerMenuDropdownDom(){
