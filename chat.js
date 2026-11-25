@@ -1,4 +1,4 @@
-const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['meetings','Meetings',0],['requests','Requests',3]];
+const inboxFilters = [['general','General',0],['collaborations','Collaborations',0],['requests','Requests',3]];
         let selectMode = false;
         let selectedConvos = new Set();
         let inboxMenuOpen = false;
@@ -89,7 +89,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="inbox-filter-dropdown" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
               <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
               ${row("closeInboxFilterMenuDom();openOverlay('newMessage')", 'edit', 'New', false)}
-              ${row("closeInboxFilterMenuDom();meetingKindFromMeetings=false;meetingInline=false;openOverlay('meetingKind')", 'video', 'Create meeting', false)}
               ${row("toggleInboxViewFilter('unread')", 'comment', 'Unread only', inboxViewFilter === 'unread')}
               ${row("toggleInboxViewFilter('pinned')", 'pin', 'Pinned', inboxViewFilter === 'pinned')}
               ${row("closeInboxFilterMenuDom();selectMode=true;selectedConvos.clear();renderInboxTab()", 'check', 'Select chats', false)}
@@ -1289,7 +1288,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="toggleInboxActionsMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('dots','w-6 h-6'))}</button>
               ` : `
                 <span id="inbox-username-el" class="font-bold text-base font-display grad-text whitespace-nowrap">${escapeHtml(profileData.username)}</span>
-                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon(Icon('menuSliders','w-6 h-6'))}</button>
+                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
               `}
             </div>`;
         }
@@ -1748,10 +1747,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function inboxFilterTab(key){
           // "Meetings" shows Live / Scheduled + your meetings right here under the tab (no extra page)
+          if (key === 'meetings') key = 'general';
           inboxFilter = key;
           inboxPillNudge = true;
           inboxViewFilter = 'all';
-          if (key === 'meetings') loadMyUpcomingMeetings();
           renderInboxTab();
         }
 
@@ -1823,10 +1822,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const emptyLabel = (defaultText) => inboxViewFilter === 'pinned' ? 'No pinned messages.' : defaultText;
           // Empty inbox / requests / pinned: just a clean blank page, no text
           const emptyState = (title, body, fallback) => `<div class="inbox-empty empty-center"></div>`;
-          if (inboxFilter === 'meetings') return inlineMeetingsHTML();
+          if (inboxFilter === 'meetings') inboxFilter = 'general';
           if (inboxFilter === 'general') {
             dedupeDirectConvos();
-            const list = sortConvosByRecentActivity(applyView(primaryConvos));
+            const list = sortConvosByRecentActivity(applyView(primaryConvos.filter(c => !(c && (c.meeting || isMeetingConvo(c.id))))));
             return list.length ? list.map(c => convoRow(c)).join('') : emptyState('Your inbox is empty', 'Tap the menu in the top right corner to start messaging your contacts. Your conversations will show up here.', 'No messages.');
           }
           if (inboxFilter === 'requests') {
@@ -4653,10 +4652,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               @media (prefers-reduced-motion: reduce){.cp-rise{animation:none;}}
             </style>
             <div id="convo-profile-scroll" class="${embed ? '' : 'flex-1 overflow-y-auto'}" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
-              ${embed ? '' : `<div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
-                <button onclick="closeConvoProfile()" class="w-10 h-10 flex items-center justify-center cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-                <span class="font-bold truncate grad-text" style="margin-left:6px;text-align:left;font-family:'Colmeak','Montserrat',sans-serif;font-size:20px;">${isGroup ? 'Group info' : 'Contact info'}</span>
-              </div>`}
+              ${embed ? '' : `<div style="position:sticky;top:0;height:0;z-index:20;"><button onclick="closeConvoProfile()" aria-label="Back" class="cp-float-back cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button></div><div style="height:calc(var(--top-safe-pad) + 60px);"></div>`}
               <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;">
                 <div class="flex items-center gap-5 mb-4">
                   <div class="relative flex-shrink-0">
@@ -4683,25 +4679,26 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${pd && pd.bio ? `<div class="text-sm text-gray-600 mb-4" style="white-space:pre-wrap;">${escapeHtml(pd.bio)}</div>` : ''}
                   ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
                 `}
-                <div class="flex w-full" style="gap:12px;">
-                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-act cp-press"><span class="cp-bg">${Icon('comment','w-full h-full')}</span><span class="l stg-title">Chat</span><span class="cp-sub stg-sub">Say hi</span></button>`}
+                <div class="flex w-full cp-tg-row">
+                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-tg cp-press">${cpTgIcon('comment')}<span>Message</span></button>`}
+                  <button onclick="toggleConvoNotifPref()" class="cp-tg cp-press">${cpIcon(notifOn ? 'bell' : 'bellOff')}<span>${notifOn ? 'Mute' : 'Unmute'}</span></button>
                   ${isGroup ? `
-                    <button onclick="openCollabMembers()" class="cp-act cp-press"><span class="cp-bg">${Icon('users','w-full h-full')}</span><span class="l stg-title">Members</span><span class="cp-sub stg-sub">${(meta.members || []).length} people</span></button>
-                    <button onclick="shareCollabInviteLink()" class="cp-act cp-press"><span class="cp-bg">${Icon('send','w-full h-full')}</span><span class="l stg-title">Invite</span><span class="cp-sub stg-sub">Share link</span></button>
+                    <button onclick="openCollabMembers()" class="cp-tg cp-press">${cpIcon('users')}<span>Members</span></button>
+                    <button onclick="shareCollabInviteLink()" class="cp-tg cp-press">${cpIcon('send')}<span>Invite</span></button>
                   ` : `
-                    <button onclick="startCall('${activeConvoId}','video')" class="cp-act cp-press"><span class="cp-bg">${Icon('video','w-full h-full')}</span><span class="l stg-title">Video</span><span class="cp-sub stg-sub">Face to face</span></button>
-                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-act cp-press"><span class="cp-bg">${Icon('phoneOutline','w-full h-full')}</span><span class="l stg-title">Voice</span><span class="cp-sub stg-sub">Audio call</span></button>
+                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-tg cp-press">${cpTgIcon('phoneOutline')}<span>Call</span></button>
+                    <button onclick="startCall('${activeConvoId}','video')" class="cp-tg cp-press">${cpTgIcon('video')}<span>Video</span></button>
                   `}
                 </div>
               </div>
               <div class="px-5 pb-8">
 
-              ${isGroup ? `<div class="flat-list cp-list mb-5">
+              ${isGroup ? `<div class="flat-list cp-list cp-grp mb-4">
                 ${cpRow('users','Members', (meta.members || []).length + ' people', 'openCollabMembers()')}
                 ${cpRow('send','Share invite link', '', 'shareCollabInviteLink()')}
               </div>` : ''}
 
-              <div class="flat-list cp-list mb-5">
+              <div class="flat-list cp-list cp-grp mb-4">
                 ${cpRow('image','Media, links and docs', String(mediaCount), 'openConvoMediaLinksDocs()')}
                 ${cpToggleRow('bell','Notifications', notifOn, 'toggleConvoNotifPref()')}
                 ${cpToggleRow('star','Favourite', favorited, 'toggleFavoriteConvo()')}
@@ -4710,7 +4707,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${!isGroup ? `
               <div class="mb-5">
                 <div class="cp-k">Collaborations</div>
-                <div class="flat-list cp-list">
+                <div class="flat-list cp-list cp-grp">
                   ${sharedCollabs.map(c => `
                     <button onclick="closeOverlay(); openConversation('${c.id}')" class="w-full flex items-center gap-3 py-3 text-left">
                       <div class="w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(c,'w-4 h-4')}</div>
@@ -4722,7 +4719,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 ${sharedCollabs.length ? '' : `<div class="text-xs text-gray-400 mt-2" style="padding:0 2px;">No collaborations with ${escapeHtml(meta.name)} yet.</div>`}
               </div>` : ''}
 
-              <div class="flat-list cp-list cp-danger">
+              <div class="flat-list cp-list cp-grp cp-danger">
                 ${isGroup ? `
                   ${cpRow('logout','Leave collaboration', '', 'leaveCollaboration()', true)}
                   ${(isMe(meta.createdBy) || meta.createdBy === 'me') ? cpRow('trash','Delete collaboration', '', 'deleteCollaboration()', true) : ''}
@@ -4748,12 +4745,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
           logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
           personPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
+          bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
           send:'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>'
         };
         function cpIcon(name){
           if (name === 'users') return Icon('users','w-[22px] h-[22px]');
           return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CP_PATHS[name] || ''}</svg>`;
         }
+        function cpTgIcon(name){ return Icon(name,'w-[22px] h-[22px]'); }
         function cpRow(icon, label, val, onclick, danger){
           return `
             <button onclick="${onclick}" class="cp-row cp-press w-full flex items-center text-left${danger ? ' cp-row-danger' : ''}" style="gap:14px;padding:13px 0;">
@@ -5102,18 +5101,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="flex items-center flex-shrink-0 border-b border-gray-100" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 5px);padding-left:14px;padding-right:10px;gap:10px;">
-              <button onclick="closeConversationOverlay()">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div id="chat-header-avatar" class="w-10 h-10 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="openConvoProfile()">${avatarInnerHTML(meta,'w-5 h-5')}</div>
-              <div class="flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
-                <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
-                <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
+            <div class="cv-tg-head flex items-center flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 2px);padding-bottom:10px;padding-left:10px;padding-right:10px;gap:8px;">
+              <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-pill cv-pill-round">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+              <div class="cv-pill cv-pill-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
+                <div class="flex-1 min-w-0">
+                  <div id="chat-header-name" class="font-semibold text-sm font-display truncate grad-text">${escapeHtml(convoDisplayName(meta))}</div>
+                  <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
+                </div>
               </div>
-              <div class="flex items-center flex-shrink-0" style="position:relative;gap:10px;">
-                <button onclick="startCall('${activeConvoId}','video')" title="Video call" class="p-1">${gradIcon(Icon('video','w-5 h-5'))}</button>
-                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" class="p-1">${gradIcon(Icon('phoneOutline','w-4 h-4'))}</button>
-                <button onclick="toggleConvoOptionsMenu()" title="Chat settings" class="p-1">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>')}</button>
-
+              <div class="cv-pill cv-pill-acts flex items-center flex-shrink-0" style="position:relative;">
+                <button onclick="startCall('${activeConvoId}','video')" title="Video call" aria-label="Video call" class="cv-act">${gradIcon(Icon('video','w-5 h-5'))}</button>
+                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" aria-label="Voice call" class="cv-act">${gradIcon(Icon('phoneOutline','w-5 h-5'))}</button>
+                <button onclick="toggleConvoOptionsMenu()" title="More" aria-label="More" class="cv-act">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
               </div>
             </div>
             <div id="convo-options-menu-backdrop" class="hidden convo-sheet-scrim" onclick="closeConvoOptionsMenuThen()" style="position:fixed;inset:0;z-index:25;"></div>
@@ -5598,7 +5597,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const callContentTap = callContent.replace('<div class="flex flex-col', `<div ${callTap} class="msg-hov cursor-pointer flex flex-col`).replace(/<\/div>\s*$/, cMenuBtn + '</div>');
                 const row = outgoing
                   ? `<div class="flex items-start justify-end gap-3" data-cv-key="${cPressKey}" ${cPress}>${callContentTap}</div>`
-                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}><div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta, 'w-4 h-4')}</div>${callContentTap}</div>`;
+                  : `<div class="flex items-start gap-3" data-cv-key="${cPressKey}" ${cPress}>${callContentTap}</div>`;
                 return separator + row;
               }
               return separator + `<div class="flex justify-center"><div class="text-[11px] text-gray-400 bg-gray-50 rounded-full px-3 py-1">${escapeHtml(m.text)}</div></div>`;
@@ -5656,7 +5655,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const bubble = m.from === 'them' ? `
             <div class="flex items-start gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
               ${msgSelCheckHTML(pressKey)}
-              <div class="w-8 h-8 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden cursor-pointer" onclick="event.stopPropagation(); openPersonProfileForConvo('${activeConvoId}')">${avatarInnerHTML(meta,'w-4 h-4')}</div>
               ${content}
             </div>` : `
             <div class="flex items-start justify-end gap-3${msgSelHas(pressKey) ? ' msg-sel-on' : ''}" data-cv-key="${pressKey}" ${pressHandlers}>
@@ -5811,7 +5809,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!msg) return [];
           const rows = [];
           const isCall = msg.from === 'system';
-          if (!isCall) rows.push({ label: 'Reply', fn: 'msgMenuReply()' });
+          if (!isCall || /(voice|video) call/i.test(String(msg.text || ''))) rows.push({ label: 'Reply', fn: 'msgMenuReply()' });
           if (canEditMessage(msg)) rows.push({ label: 'Edit', fn: 'openEditMessage()' });
           if (msg.text && !isCall) rows.push({ label: 'Copy', fn: 'copyActionMessage()' });
           if (!isCall) rows.push({ label: 'Forward', fn: 'openForwardMessagePicker()' });
@@ -9498,10 +9496,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           meetingKindFromMeetings = false;
           meetingInline = false;
           if (currentOverlayKind) closeOverlay();
-          inboxFilter = 'meetings';
+          inboxFilter = 'general';
           inboxViewFilter = 'all';
           if (typeof renderInboxTab === 'function') renderInboxTab();
-          loadMyUpcomingMeetings();
         }
         // Back from the New / Schedule meeting form
         function meetingNewBack(){
@@ -10841,11 +10838,13 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sep = key.lastIndexOf('|');
           const convoId = key.slice(0, sep), ts = Number(key.slice(sep + 1));
           const m = (conversationMessages[convoId] || []).find(x => (x.time || 0) === ts);
-          if (!m || m.from === 'system') return;
-          const body = meetingChatParse(m.text).body;
+          if (!m) return;
+          const isCallEntry = m.from === 'system';
+          if (isCallEntry && !/(voice|video) call/i.test(String(m.text || ''))) return;
+          const body = isCallEntry ? ((/video/i.test(m.text) ? '\ud83d\udcf9 Video call' : '\ud83d\udcde Voice call') + (/missed/i.test(m.text) ? ' \u00b7 Missed' : '')) : meetingChatParse(m.text).body;
           const label = body || (m.voice ? '\ud83c\udfa4 Voice message' : ((m.attachments || []).some(a => a.type && a.type.indexOf('image/') === 0) ? '\ud83d\udcf7 Photo' : 'Attachment'));
           const meta = convoMeta[convoId] || {};
-          convoReply = { convoId, name: m.from === 'me' ? 'You' : (meta.name || 'Them'), text: label.slice(0, 80) };
+          convoReply = { convoId, name: (m.from === 'me' || (isCallEntry && m.callDir === 'out')) ? 'You' : (meta.name || 'Them'), text: label.slice(0, 80) };
           convoShowReply();
           const inp = document.getElementById('convo-input'); if (inp) inp.focus();
         }

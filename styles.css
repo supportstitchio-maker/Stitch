@@ -7143,3 +7143,36 @@ body.dark-mode .ph-username{ color:#ffffff; }
 .ph-gear-panel:active{ transform:scale(.94); }
 .ph-gear-panel svg{ width:22px; height:22px; }
 body.dark-mode .ph-gear-panel{ background:#1e1e1e; box-shadow:none; }
+
+/* Contact info, Telegram style: floating round back button, simple action tiles, grouped rows */
+.cp-float-back{ position:absolute; left:14px; top:calc(var(--top-safe-pad,20px) + 4px); width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center; background:rgba(120,125,135,.16); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border:0; }
+.cp-tg-row{ gap:8px; }
+.cp-tg{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:12px 4px 10px; border-radius:14px; border:0; background:rgba(128,128,128,.12); color:#1E90FF; }
+.cp-tg svg{ fill:none !important; stroke:currentColor !important; }
+.cp-tg span{ font-size:12px; font-weight:500; line-height:1; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+html.dark-mode .cp-tg span, body.dark-mode .cp-tg span{ color:#e5e7eb; }
+html.dark-mode .cp-tg, body.dark-mode .cp-tg{ color:#5cb0ff; }
+.cp-list.cp-grp{ background:rgba(128,128,128,.1) !important; border-radius:16px !important; padding:0 16px !important; }
+
+/* Chat header, Telegram style: floating pills (back / contact / call + menu) */
+.cv-tg-head{ background:transparent; }
+.cv-pill{ background:rgba(120,125,135,.14); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-radius:9999px; border:0; }
+.cv-pill-round{ width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.cv-pill-main{ display:flex; align-items:center; gap:10px; height:48px; padding:4px 18px; }
+.cv-pill-acts{ height:44px; padding:0 6px; gap:2px; }
+.cv-act{ width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+.cv-pill-acts{ padding:0 8px; gap:0; }
+
+/* Settings top tiles, Telegram style: flat, centred icon + title + sub, no shadow or faded corner icon */
+.stg-tg{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:14px 6px 12px; border-radius:14px; border:0; background:rgba(128,128,128,.12); text-align:center !important; min-width:0; }
+.stg-tg-ico{ color:#1E90FF; display:flex; }
+html.dark-mode .stg-tg-ico, body.dark-mode .stg-tg-ico{ color:#5cb0ff; }
+.stg-tg .stg-tg-t{ font-size:12.5px; font-weight:600; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:4px; }
+.stg-tg .stg-tg-s{ font-size:11.5px; max-width:100%; }
+.stg-tg:active{ opacity:.7; }
+
+/* Selected pills: outline only, no blue glow underneath (same everywhere) */
+.filter-pill.on, .outline-pill.on, .outline-pill.is-selected, .auth-intent-chip.on, .cu-handpill.on, .cu-ctl.on .cu-ctl-btn,
+html.dark-mode .filter-pill.on, body.dark-mode .filter-pill.on, html.dark-mode .outline-pill.on, body.dark-mode .outline-pill.on,
+body.dark-mode .outline-pill.is-selected, html.dark-mode .auth-intent-chip.on, body.dark-mode .auth-intent-chip.on,
+body:not(.dark-mode) .cu-handpill.on, body.dark-mode .cu-handpill.on, body:not(.dark-mode) .cu-ctl.on .cu-ctl-btn, body.dark-mode .cu-ctl.on .cu-ctl-btn{ box-shadow:none !important; }

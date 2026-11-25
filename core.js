@@ -1943,7 +1943,7 @@
         <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:48px;width:auto;object-fit:contain;">
       </div>
       <div class="flex items-center gap-5" id="topbar-icons">
-        <button onclick="morphPlusIcon('topbar-create-icon');openOverlay('create')" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon(IconBold('plus','w-6 h-6'))}</span></button>
+        <button onclick="morphPlusIcon('topbar-create-icon');openOverlay('create')" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none"><line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>')}</span></button>
         <button id="notif-bell-btn" onclick="openOverlay('notifications')" class="relative hover:text-blue-300"><span class="notif-bell-icon" style="display:inline-flex;transform-origin:50% 10%;">${gradIcon(Icon('bell','w-6 h-6'))}</span>${unreadNotifCount() ? `<span id="notif-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${unreadNotifCount()}</span>` : ''}</button>
       </div>
     </div>

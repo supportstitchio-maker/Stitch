@@ -7198,10 +7198,7 @@
           const contacts = shareContactsList();
           return `
             <div class="flex-shrink-0 w-full">
-              <div class="max-w-2xl mx-auto px-5 pb-3 flex items-center justify-between">
-                <div class="font-semibold text-lg font-display" style="color:${NAVY};">Send as message</div>
-                <button onclick="closeShareSheet()" style="color:${ROYAL};">${IconBold('close','w-5 h-5')}</button>
-              </div>
+              <div class="max-w-2xl mx-auto px-5" style="padding-top:6px;"></div>
               <div class="max-w-2xl mx-auto px-5 pb-4">
                 <div class="relative">
                   <div class="text-gray-400" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);">${Icon('search','w-4 h-4')}</div>

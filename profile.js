@@ -2181,7 +2181,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function stgRow(icon, label, val, onclick, opts){
           opts = opts || {};
           return `
-            <button onclick="${onclick}" class="stg-row w-full flex items-center text-left" style="gap:12px;padding:13px 0;">
+            <button ${opts.id ? `id="${opts.id}" ` : ''}onclick="${onclick}" class="stg-row w-full flex items-center text-left" style="gap:12px;padding:13px 0;">
               <span class="stg-ico flex items-center justify-center flex-shrink-0" style="width:24px;">${stgOutline(icon)}</span>
               <span class="stg-title flex-1 min-w-0 truncate" style="font-size:15px;font-weight:500;">${label}</span>
               ${val ? `<span class="stg-sub flex-shrink-0" style="font-size:13px;">${val}</span>` : ''}
@@ -2208,10 +2208,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
         function stgTile(icon, title, sub, onclick){
           return `
-            <button onclick="${onclick}" class="stg-tile text-left" style="min-width:0;width:100%;height:100%;">
-              <span class="stg-bg">${stgOutline(icon, 84)}</span>
-              <div class="stg-title" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;">${title}</div>
-              <div class="stg-sub truncate" style="font-size:12px;margin-top:2px;position:relative;">${sub}</div>
+            <button onclick="${onclick}" class="stg-tg text-left" style="min-width:0;width:100%;height:100%;">
+              <span class="stg-tg-ico">${stgOutline(icon, 22)}</span>
+              <div class="stg-title stg-tg-t">${title}</div>
+              <div class="stg-sub stg-tg-s truncate">${sub}</div>
             </button>`;
         }
         function stgProfileCardHTML(){
@@ -2228,17 +2228,16 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <div class="stg-title font-bold truncate" style="font-size:16px;">${name || 'Your profile'}</div>
                 ${uname ? `<div class="stg-sub truncate" style="font-size:13px;">@${escapeHtml(uname)}</div>` : ''}
               </div>
-              <button onclick="closeOverlay()" class="stg-view flex-shrink-0" style="font-weight:600;font-size:14px;padding:8px 18px;border-radius:9999px;">View</button>
             </div>`;
         }
         function stgProRowHTML(){
           const on = (typeof isProActive === 'function' && isProActive());
           const sub = on ? (proState.cancelled ? 'Ends ' + proPlanDateLabel(proState.expiresAt) : 'Active') : 'Free plan';
-          return stgTile('card', 'Subscription', sub, "openProSheet()");
+          return stgRow('card', 'Subscription', sub, "openProSheet()", { id: 'stg-pro-row' });
         }
         function stgRefreshProRow(){
           const el = document.getElementById('stg-pro-row');
-          if (el) el.innerHTML = stgProRowHTML();
+          if (el) el.outerHTML = stgProRowHTML();
         }
         function profileMenuHTML(){
           const installed = (typeof stitchAppInstalled === 'function' && stitchAppInstalled());
@@ -2248,11 +2247,11 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               ${overlayHeader('Settings', '20px', null, null, {right:true, deskBig:true, titleClass:'stg-head-title'})}
               <div class="px-5" style="padding-bottom:28px;">
               ${stgProfileCardHTML()}
-              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
-                <div id="stg-pro-row" style="min-width:0;display:flex;">${stgProRowHTML()}</div>
-                ${stgTile('bars', 'Activity', 'Posts, likes', "openOverlayFrom('profileMenu','profileAnalytics')")}
-                ${stgTile('ban', 'Blocked', nBlocked ? String(nBlocked) : 'None', "openOverlay('blockedAccounts')")}
-              </div>
+              ${stgGroup('Account', `
+                ${stgProRowHTML()}
+                ${stgRow('bars', 'Activity', 'Posts, likes', "openOverlayFrom('profileMenu','profileAnalytics')")}
+                ${stgRow('ban', 'Blocked', nBlocked ? String(nBlocked) : 'None', "openOverlay('blockedAccounts')")}
+              `)}
               ${(typeof proState !== 'undefined' && !proState.loaded && typeof setTimeout === 'function') ? (setTimeout(function(){ refreshProStatus().then(function(){ if (typeof stgRefreshProRow === 'function') stgRefreshProRow(); }).catch(function(){}); }, 0), '') : ''}
               ${stgGroup('Preferences', `
                 ${stgToggleRow('moon','Theme', appPrefs.theme === 'dark' ? 'Dark' : 'Light', appPrefs.theme === 'dark', "toggleTheme()")}
