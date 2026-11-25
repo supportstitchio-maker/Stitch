@@ -7078,3 +7078,68 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
 
 /* Visually hidden live region for screen-reader announcements */
 .a11y-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+/* ===== Light mode on phones and tablets: ONE white for every page background =====
+   Before this, the page used several near-whites (#f9fafb, #f8fafc, #f6f7f9) behind headers, search bars,
+   filter pills, list rows and sticky bars while the content area was pure #ffffff.
+   Everything that acts as a page/surface background is now #ffffff. Inputs, chips and tiles keep their own soft grey.
+   Desktop (1100px+) keeps its own page colour, and dark mode is untouched. */
+@media (max-width:1099px){
+  html:not(.dark-mode),
+  body:not(.dark-mode),
+  body:not(.dark-mode).bg-gray-50{ background:#ffffff !important; }
+
+  body:not(.dark-mode) #screen{ background-color:#ffffff !important; }
+
+  /* Career Space + Messaging: title, search and filter bands */
+  body:not(.dark-mode) #career-titlebar,
+  body:not(.dark-mode) #career-searchbar,
+  body:not(.dark-mode) #career-filterbar,
+  body:not(.dark-mode) #inbox-titlebar,
+  body:not(.dark-mode) #inbox-searchbar,
+  body:not(.dark-mode) #inbox-filterbar{ background:#ffffff !important; background-color:#ffffff !important; }
+
+  /* Other pages: sticky bars and page wrappers that used the grey-white */
+  body:not(.dark-mode) #screen .sticky.bg-gray-50,
+  body:not(.dark-mode) #screen .bg-gray-50.sticky,
+  body:not(.dark-mode) #overlay > .bg-gray-50,
+  body:not(.dark-mode) #overlay .flex-1.bg-gray-50,
+  body:not(.dark-mode) #overlay > div > .bg-gray-50{ background-color:#ffffff !important; }
+
+  /* Rows, covers and sticky headers */
+  body:not(.dark-mode) .nrow-in{ background:#ffffff !important; }
+  body:not(.dark-mode) .nrow-in.sel{ background:rgba(65,105,225,.14) !important; }
+  body:not(.dark-mode) .classroom-slide-cover{ background:#ffffff !important; }
+  body:not(.dark-mode) #overlay .pa-flow .pa-sticky,
+  body:not(.dark-mode) #overlay .ov-sticky-head,
+  body:not(.dark-mode) #overlay .ov-sticky-wrap,
+  body:not(.dark-mode) #overlay div:has(> .ov-sticky-head:only-child){ background:transparent !important; }
+
+  /* Fade strips behind sticky headers and bottom action bars */
+  body:not(.dark-mode) #overlay .pa-flow .pa-sticky::before,
+  body:not(.dark-mode) #overlay .ov-sticky-head::before,
+  body:not(.dark-mode) #overlay .ov-sticky-wrap::before,
+  body:not(.dark-mode) #overlay div:has(> .ov-sticky-head:only-child)::before{
+    background:linear-gradient(to bottom,#ffffff 0,#ffffff calc(100% - 22px),rgba(255,255,255,.85) calc(100% - 12px),rgba(255,255,255,0) 100%) !important; }
+  body:not(.dark-mode) .cd-actions{ background:linear-gradient(to top,#ffffff 0,#ffffff 55%,rgba(255,255,255,0) 100%) !important; }
+
+  /* Pro / subscribe pages, Match history, onboarding-style bottom bars */
+  body:not(.dark-mode) .mh-wrap{ background:#ffffff !important; }
+  body:not(.dark-mode) .mh-card:before{ box-shadow:0 0 0 4px #ffffff !important; }
+  body:not(.dark-mode) #careerSubscribeModal.pro-page,
+  body:not(.dark-mode) #careerSubscribeModal.pro-page .ov-sticky-head,
+  body:not(.dark-mode) #careerSubscribeModal.pro-page .pro-sticky-head{ background:#ffffff !important; }
+  body:not(.dark-mode) .pro2-cta,
+  body:not(.dark-mode) .pro3-bar{ background:linear-gradient(180deg,rgba(255,255,255,0),#ffffff 30%) !important; }
+  body:not(.dark-mode) .pro4-cta{ background:#ffffff !important; }
+}
+
+/* Profile page: username sits under the full name, small, light and black */
+.ph-username{ font-family:'Inter',sans-serif; font-size:12.5px; font-weight:300; line-height:1.3; color:#000000; margin:2px 0 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+body.dark-mode .ph-username{ color:#ffffff; }
+
+/* Profile page: the settings gear floats on its own small round panel */
+.ph-gear-panel{ width:44px; height:44px; border-radius:50%; background:#ffffff; border:0; box-shadow:0 4px 16px rgba(30,60,140,.16), 0 1px 3px rgba(30,60,140,.08); flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
+.ph-gear-panel:active{ transform:scale(.94); }
+.ph-gear-panel svg{ width:22px; height:22px; }
+body.dark-mode .ph-gear-panel{ background:#1e1e1e; box-shadow:none; }

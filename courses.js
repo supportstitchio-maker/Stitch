@@ -10562,7 +10562,6 @@ try {
         function classworkCreateMenuOptionRow(icon, label, sub, onclick, isLast){
           return `
             <button onclick="${onclick}" class="w-full flex items-center gap-4 py-4 text-left" style="${isLast ? '' : 'border-bottom:1px solid rgba(0,0,0,0.07);'}">
-              <span class="w-11 h-11 flex items-center justify-center text-gray-400 flex-shrink-0">${Icon(icon,'w-5 h-5')}</span>
               <div class="min-w-0">
                 <div class="font-semibold text-sm text-gray-800">${label}</div>
                 <div class="text-xs text-gray-400">${sub}</div>

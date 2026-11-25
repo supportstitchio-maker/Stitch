@@ -255,7 +255,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
         function profileUsernameHTML(){
           const u = profileShownUsername();
-          return u ? `<span class="nm-inner grad-text">${escapeHtml(u)}</span>` : profileNamePlaceholderHTML('7rem');
+          return u ? `<span class="nm-inner">${escapeHtml(u)}</span>` : profileNamePlaceholderHTML('7rem');
         }
         function profileNameHTML(){
           const n = profileShownName();
@@ -383,9 +383,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               ${asOverlay
                 ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
                 : ''}
-              <span id="profile-username-el" class="nm-wrap font-bold" style="flex:1;min-width:0;text-align:left;font-family:'Inter',sans-serif;font-size:16px;">${profileUsernameHTML()}</span>
+              <span style="flex:1;min-width:0;"></span>
               <div class="flex items-center">
-                <button onclick="openOverlay('profileMenu')" class="w-10 h-10 flex items-center justify-center">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none"><line x1="4" y1="6.5" x2="20" y2="6.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><line x1="11" y1="17.5" x2="20" y2="17.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>')}</button>
+                <button onclick="openOverlay('profileMenu')" class="ph-gear-panel flex items-center justify-center" aria-label="Settings">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>')}</button>
               </div>
             </div>
 
@@ -396,7 +396,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                   ${profilePhotoButtonHTML()}
                 </div>
                 <div class="flex-1">
-                  <div id="profile-name-el" class="font-bold text-base mb-2">${profileNameHTML()}</div>
+                  <div id="profile-name-el" class="font-bold text-base">${profileNameHTML()}</div>
+                  <div id="profile-username-el" class="ph-username">${profileUsernameHTML()}</div>
                   <div class="flex items-start gap-6">
                     <div class="text-left"><div class="text-base font-bold" id="profile-posts-count-el">${myPostsCount()}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">Posts</div></div>
                     <button onclick="openOverlay('myContacts')" class="text-left"><div class="text-base font-bold" id="profile-network-count-el">${networkConnectionCount()}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">My Network</div></button>
@@ -1949,7 +1950,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const dark = document.body.classList.contains('dark-mode');
           return dark
             ? { dark: true, page: '#121212', card: '#1e1e1e', border: '#2b2b2b', mod: '#1e90ff', light: '#1e1e1e', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
-            : { dark: false, page: '#f9fafb', card: '#ffffff', border: '#e6ecf5', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
+            : { dark: false, page: '#ffffff', card: '#ffffff', border: '#e6ecf5', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
         }
 
         // Action tile with a large faded outline icon in the background (same style as the Career Space tiles)
