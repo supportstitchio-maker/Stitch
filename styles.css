@@ -7488,3 +7488,16 @@ html.dark-mode, body.dark-mode, body.dark-mode #app-shell, body.dark-mode #scree
 body.dark-mode #overlay .ar-root, body.dark-mode #overlay .ar-page, body.dark-mode #overlay .overflow-y-auto{ background-color:#121212; }
 body.dark-mode, html.dark-mode, body.dark-mode #screen, body.dark-mode #overlay{ --pg-bg:#121212; --pn-bg:#121212; --c-black:#121212; --c-blackout:#121212; --ws-bg:#121212; }
 body.dark-mode #screen{ background:#121212 !important; }
+
+/* ===== Phone dark mode: one single black everywhere (the Glimpse-area black, #121212) =====
+   Top bar, search, feed, Messaging header/search/pills/rows and the bottom nav all share it. */
+@media (max-width:1099px){
+  html.dark-mode, body.dark-mode, body.dark-mode #app, body.dark-mode #app-shell, body.dark-mode #screen,
+  body.dark-mode #top-bar, body.dark-mode #topbar-search-row,
+  body.dark-mode #bottom-nav, body.dark-mode #classroom-nav, body.dark-mode #nav-bottom-backdrop,
+  body.dark-mode #inbox-titlebar, body.dark-mode #inbox-searchbar, body.dark-mode #inbox-filterbar,
+  body.dark-mode #inbox-list, body.dark-mode #inbox-list > div, body.dark-mode #inbox-list .bg-white, body.dark-mode #inbox-list .bg-gray-50{
+    background:#121212 !important; background-color:#121212 !important;
+  }
+  body.dark-mode #bottom-nav.nav-bar-floating, body.dark-mode #classroom-nav.nav-bar-floating{ box-shadow:none !important; }
+}

@@ -68,6 +68,7 @@
   body.dark-mode .ws-dock .ws-fab{background:#1e90ff;box-shadow:0 8px 24px rgba(0,0,0,.45)}
   .ws-motif.ws-m-sm{inset:auto;left:0;top:0;transform:none;width:300px;height:100px;max-width:none;overflow:visible}
   .ws-hdr-t b,.ws-h1,.ws-h2,.ws-tile b,.ws-cc h3,.ws-sp b,.ws-hero h2,.ws-cta,.ws-btn,.ws-seg button,.filter-pill flex-shrink-0,.filter-pill,.ws-cont b,.ws-st b,.ws-live b{font-family:'Gendy','Montserrat',sans-serif}
+  .ws-hdr .ws-circ svg:not([stroke="#1e90ff"]),.ws-fl .ws-circ svg:not([stroke="#1e90ff"]),body.dark-mode .ws-hdr .ws-circ svg:not([stroke="#1e90ff"]),body.dark-mode .ws-fl .ws-circ svg:not([stroke="#1e90ff"]){color:#1e90ff !important;stroke:#1e90ff !important}
   .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ,.ws-fl .ws-circ,body.dark-mode .ws-hdr .ws-circ,body.dark-mode .ws-fl .ws-circ{color:#1e90ff}
   .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
@@ -259,12 +260,14 @@
     if (d < wsPushed) { wsPushed = d; if (nav.length) popNav(true); }
   });
   window.wsLeave = function(){
-    if (popNav()) return;
+    /* Pages inside the tutor (chat history, summaries...) step back to their parent */
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
-    if (view !== 'home') { view = 'home'; render(); var sc0 = $('screen'); if (sc0) sc0.scrollTop = 0; return; }
-    if (typeof openLeaveClassModal === 'function') openLeaveClassModal(); else switchTab(0);
+    /* On the Workspace page itself the arrow simply exits it: no previous-page lookup */
+    nav.length = 0;
+    if (wsPushed > 0) { var n = wsPushed; wsPushed = 0; try { history.go(-n); } catch(e){} }
+    switchTab(0);
   };
-  window.wsGo = function(k){ if (view !== k) pushNav(); view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
+  window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
 
   /* ---------- Class helpers ---------- */
   function classes(){ try { return myClasses || []; } catch(e){ return []; } }
@@ -483,11 +486,10 @@
   }
   window.wsCTab = function(t){
     if (t === cTab) return;
-    cHist.push(cTab); if (cHist.length > 30) cHist.shift();
     showTab(t);
   };
   window.wsClassBack = function(){
-    if (cHist.length) { showTab(cHist.pop()); return; }
+    cHist = [];
     closeOverlay();
   };
   /* Opening a space from anywhere starts it on a clean tab history */
@@ -499,7 +501,6 @@
     var obClass = overlayBackAction.classDetail;
     overlayBackAction.classDetail = function(fromPopState){
       var sub = (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1);
-      if (!sub && cHist.length) { if (fromPopState) { try { history.pushState({ stitchOverlay: 'classDetail' }, ''); } catch(e){} } window.wsClassBack(true); return; }
       obClass(fromPopState);
     };
   } catch(e){}
@@ -1282,7 +1283,7 @@
         var hs = box.querySelectorAll(':scope > .ws-hdr-s, :scope > .ws-fl, :scope > .px-5 > .ws-hdr-s');
         for (var i = 1; i < hs.length; i++) { var x = hs[i]; if (x.classList.contains('ws-fl') && x.nextElementSibling && x.nextElementSibling.classList.contains('ws-fl-sp')) x.nextElementSibling.remove(); x.remove(); }
       });
-      var ov = document.getElementById('overlay'), on = !!(ov && ov.firstElementChild && getComputedStyle(ov).display !== 'none' && ov.offsetHeight > window.innerHeight * 0.6);
+      var ov = document.getElementById('overlay'), on = !!(ov && ov.firstElementChild && getComputedStyle(ov).display !== 'none' && (ov.offsetHeight > window.innerHeight * 0.6 || currentOverlayKind));
       document.body.classList.toggle('ws-covered', on);
     } catch(e){}
   }
