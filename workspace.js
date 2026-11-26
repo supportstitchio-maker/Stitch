@@ -26,8 +26,27 @@
 
   /* One header at a time: while a page is open over the Workspace, the header underneath stays hidden */
   body.ws-covered #screen .ws-hdr-s,body.ws-covered #screen .ws-fl{visibility:hidden}
+  body.ws-covered .ws-hdr-home{display:none !important}
   .ws-hdr-s + .ws-hdr-s,.ws-hdr-s + .ws-fl,.ws-fl + .ws-hdr-s,.ws-fl + .ws-fl-sp + .ws-fl,.ws-fl + .ws-fl-sp + .ws-hdr-s{display:none !important}
   .ws-hdr-t{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 6px}.ws-hdr-t b,.ws-hdr-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}  .ws-hdr-t b{display:block;font-size:17px;font-weight:700}.ws-hdr-t span{font-size:12px;color:var(--ws-sub)}
+  .ws-hdr-r{display:flex;align-items:center;margin-right:-11px}.ws-hdr-r .ws-circ{width:38px !important}.ws-hdr-m .ws-hdr-t{padding-left:38px}
+  .ws-menu-bg,.ws-dr-bg{position:fixed;inset:0;z-index:999;background:transparent}.ws-dr-bg{background:rgba(0,0,0,.5);opacity:0;transition:opacity .22s}.ws-dr-bg.in{opacity:1}
+  .ws-menu{position:fixed;z-index:1000;min-width:210px;background:var(--ws-card);color:var(--ws-ink);border:1px solid var(--ws-line);border-radius:18px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+  .ws-menu button{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:none;border:0;color:inherit;font-size:15px;font-weight:600;text-align:left;border-radius:12px}
+  .ws-menu button:active{background:var(--ws-line)}.ws-menu button.del{color:#ef4444}
+  .ws-dr{position:fixed;top:0;bottom:0;left:0;width:82%;max-width:360px;z-index:1000;background:var(--ws-bg);color:var(--ws-ink);transform:translateX(-102%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:8px 0 30px rgba(0,0,0,.35)}.ws-dr.in{transform:none}
+  .ws-dr-h{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--top-safe-pad,20px) + 6px) 20px 12px;background:var(--ws-card)}
+  .ws-dr-h b{font-size:24px;font-weight:800;font-family:'Gendy','Montserrat',sans-serif}
+  .ws-dr-h button{width:44px;height:44px;border-radius:50%;border:1px solid var(--ws-line);background:var(--ws-bg);color:var(--ws-ink);display:flex;align-items:center;justify-content:center}
+  .ws-dr-s{padding:0 16px 10px;background:var(--ws-card)}.ws-dr-s input{width:100%;border:0;outline:0;border-radius:24px;padding:12px 16px;font-size:15px;background:var(--ws-bg);color:var(--ws-ink)}
+  .ws-dr-new{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:17px;font-weight:700;color:#1e90ff;background:none;border:0;width:100%;text-align:left}
+  .ws-dr-l{padding:16px 20px 10px;font-size:17px;font-weight:700;background:var(--ws-card)}
+  .ws-dr-rows{flex:1;overflow-y:auto;padding-bottom:30px}
+  .ws-dr-row{display:flex;align-items:center;gap:8px;padding:0 8px 0 20px}.ws-dr-row.cur{background:var(--ws-card)}
+  .ws-dr-row span{flex:1;min-width:0;padding:17px 0;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ws-dr-row button{width:40px;height:40px;background:none;border:0;color:var(--ws-sub);display:flex;align-items:center;justify-content:center}
+  .ws-dr-empty{padding:30px 20px;color:var(--ws-sub);font-size:15px}
+  .ws-hdr-sub{margin:-6px 0 12px;text-align:left;font-size:11px;line-height:1.2}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
   .ws-h2{font-size:18px;font-weight:700;margin:22px 0 10px}
@@ -213,11 +232,13 @@
   function backBtn(fn){
     return '<button class="ws-circ ws-back" onclick="' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="#1e90ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   }
-  function header(title, sub, backFn){
+  function header(title, sub, backFn, extraCls, moreBtn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
-    return '<div class="ws-hdr ws-hdr-s">' + backBtn(backFn || 'wsLeave()') +
-      '<div class="ws-hdr-t"><b>' + E(title) + '</b><span>' + E(sub) + '</span></div>' +
-      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
+    var bell = '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + (n ? '<i class="ws-dot"></i>' : '') + '</button>';
+    return '<div class="ws-hdr ws-hdr-s' + (extraCls ? ' ' + extraCls : '') + (moreBtn ? ' ws-hdr-m' : '') + '">' + backBtn(backFn || 'wsLeave()') +
+      '<div class="ws-hdr-t"><b>' + E(title) + '</b></div>' +
+      (moreBtn ? '<div class="ws-hdr-r">' + bell + moreBtn + '</div>' : bell) + '</div>' +
+      (sub ? '<div class="ws-sub ws-hdr-sub">' + E(sub) + '</div>' : '');
   }
   function floatNav(backFn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
@@ -325,7 +346,7 @@
     var cs = classes(), last = lget('ws-tutor-last', null), nm = firstName();
     var fresh = cs.slice().sort(function(a, b){ return (parseInt(String(b.id).replace(/\D/g,'')) || 0) - (parseInt(String(a.id).replace(/\D/g,'')) || 0); }).slice(0, 8);
     var now = Date.now();
-    return header('Workspace', '') +
+    return header('Workspace', '', '', 'ws-hdr-home') +
       '<h1 class="ws-h1 font-display">' + (nm ? 'Hello, ' + E(nm) : 'Hello') + '</h1><div class="ws-sub">' + cs.length + ' active \u00b7 pick up where you stopped</div>' +
       (cs.length ? '' : '<div class="ws-tiles"><button class="ws-tile ws-t1" onclick="wsCreateJoin(\'create\')"><span class="ic">' + I('plus', 20) + '</span><b>Create space</b><span class="s">Start a space for your class or group</span></button>' +
       '<button class="ws-tile ws-t2" onclick="wsCreateJoin(\'join\')"><span class="ic">' + I('link', 20) + '</span><b>Join space</b><span class="s">Enter a code or link</span></button></div>') +
@@ -360,7 +381,7 @@
   window.wsSearch = function(v){ cQuery = v || ''; var l = $('ws-clist'); if (l) l.innerHTML = spaceList(); };
   function spacesHTML(){
     var n = classes().length;
-    return floatNav('wsLeave()') + '<h1 class="ws-h1 font-display">Spaces</h1><div class="ws-sub">' + n + (n === 1 ? ' space' : ' spaces') + '</div>' +
+    return header('Spaces', n + (n === 1 ? ' space' : ' spaces'), 'wsLeave()') +
       '<div class="ws-search">' + I('search', 18) + '<input type="text" placeholder="Search spaces" oninput="wsSearch(this.value)" value="' + E(cQuery) + '"></div>' +
       '<div class="ws-chips" id="ws-cchips">' + chips() + '</div><div id="ws-clist">' + spaceList() + '</div>';
   }
@@ -816,6 +837,74 @@
     if (typeof queueSaveUserState === 'function') queueSaveUserState();
     var r = $('ws-hist-rows'); if (r) r.innerHTML = histRows(); else render();
   };
+  /* ----- Tutor menu (three dots): History, Search, Export chat, Delete chat ----- */
+  var IC_HIST = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>';
+  var IC_TRASH = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  window.wsMenuClose = function(){ var a = $('ws-menu'), b = $('ws-menu-bg'); if (a) a.remove(); if (b) b.remove(); };
+  window.wsMenu = function(e){
+    if (e && e.stopPropagation) e.stopPropagation();
+    if ($('ws-menu')) { wsMenuClose(); return; }
+    var btn = (e && e.currentTarget) || document.querySelector('.ws-more'), r = btn.getBoundingClientRect();
+    var bg = document.createElement('div'); bg.id = 'ws-menu-bg'; bg.className = 'ws-menu-bg'; bg.onclick = wsMenuClose;
+    var m = document.createElement('div'); m.id = 'ws-menu'; m.className = 'ws-menu';
+    m.style.top = (r.bottom + 4) + 'px'; m.style.right = Math.max(10, window.innerWidth - r.right) + 'px';
+    m.innerHTML = '<button onclick="wsDrawer()">' + IC_HIST + 'History</button>' +
+      '<button onclick="wsDrawer(true)">' + I('search', 20) + 'Search</button>' +
+      '<button onclick="wsExportChat()">' + I('dl', 20) + 'Export chat</button>' +
+      '<button class="del" onclick="wsDeleteCurrent()">' + IC_TRASH + 'Delete chat</button>';
+    document.body.appendChild(bg); document.body.appendChild(m);
+  };
+  function drawerRows(){
+    var q = (T.hq || '').trim().toLowerCase(), list = sessList().filter(function(x){ return !q || sessTitle(x).toLowerCase().indexOf(q) >= 0; });
+    if (!list.length) return '<div class="ws-dr-empty">' + (q ? 'No chats match "' + E(T.hq) + '".' : 'No past chats yet. Ask Stitch Tutor something and it will be saved here.') + '</div>';
+    return list.map(function(x){
+      return '<div class="ws-dr-row' + (x.id === T.sid ? ' cur' : '') + '" onclick="wsDrOpen(' + x.id + ')"><span>' + E(sessTitle(x)) + '</span>' +
+        '<button aria-label="Delete chat" onclick="event.stopPropagation();wsDrDel(' + x.id + ')">' + IC_TRASH + '</button></div>';
+    }).join('');
+  }
+  window.wsDrawerClose = function(){
+    var d = $('ws-dr'), b = $('ws-dr-bg'); if (!d) return;
+    d.classList.remove('in'); if (b) b.classList.remove('in');
+    setTimeout(function(){ if (d.parentNode) d.remove(); if (b && b.parentNode) b.remove(); }, 260);
+  };
+  window.wsDrawer = function(focusSearch){
+    wsMenuClose(); var o = $('ws-dr'); if (o) o.remove(); var ob = $('ws-dr-bg'); if (ob) ob.remove();
+    T.hq = '';
+    var bg = document.createElement('div'); bg.id = 'ws-dr-bg'; bg.className = 'ws-dr-bg'; bg.onclick = wsDrawerClose;
+    var d = document.createElement('div'); d.id = 'ws-dr'; d.className = 'ws-dr';
+    d.innerHTML = '<div class="ws-dr-h"><b>History</b><button aria-label="Search" onclick="wsDrSearchToggle()">' + I('search', 22) + '</button></div>' +
+      '<div class="ws-dr-s" id="ws-dr-s" style="' + (focusSearch ? '' : 'display:none') + '"><input id="ws-dr-q" type="text" placeholder="Search chat history..." oninput="wsDrSearch(this.value)"></div>' +
+      '<button class="ws-dr-new" onclick="wsDrNew()">' + I('plus', 22) + 'New chat</button>' +
+      '<div class="ws-dr-l">Recents</div><div class="ws-dr-rows" id="ws-dr-rows">' + drawerRows() + '</div>';
+    document.body.appendChild(bg); document.body.appendChild(d);
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ bg.classList.add('in'); d.classList.add('in'); if (focusSearch) { var q = $('ws-dr-q'); if (q) q.focus(); } }); });
+  };
+  window.wsDrSearchToggle = function(){ var s = $('ws-dr-s'); if (!s) return; var show = s.style.display === 'none'; s.style.display = show ? '' : 'none'; if (show) { var q = $('ws-dr-q'); if (q) q.focus(); } else { T.hq = ''; var r = $('ws-dr-rows'); if (r) r.innerHTML = drawerRows(); } };
+  window.wsDrSearch = function(v){ T.hq = v; var r = $('ws-dr-rows'); if (r) r.innerHTML = drawerRows(); };
+  window.wsDrOpen = function(id){ wsDrawerClose(); setTimeout(function(){ wsOpenChat(id); }, 120); };
+  window.wsDrNew = function(){ wsDrawerClose(); setTimeout(function(){ wsNewChat(); }, 120); };
+  window.wsDrDel = function(id){ wsDelChat(id); var r = $('ws-dr-rows'); if (r) r.innerHTML = drawerRows(); };
+  window.wsExportChat = function(){
+    wsMenuClose();
+    var ms = T.msgs.filter(function(x){ return !x.busy && x.t; });
+    if (!ms.length) { toast('Nothing to export', 'Start a chat first.'); return; }
+    var title = T.title || 'Stitch Tutor chat';
+    var txt = title + '\n' + new Date().toLocaleString() + '\n\n' + ms.map(function(x){ return (x.r === 'u' ? 'You' : 'Stitch Tutor') + ':\n' + x.t; }).join('\n\n');
+    var name = (title.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'stitch-tutor-chat') + '.txt';
+    try {
+      var u = URL.createObjectURL(new Blob([txt], { type: 'text/plain' })), a = document.createElement('a');
+      a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(u); }, 2000);
+      toast('Chat exported', name);
+    } catch(e){ toast('Could not export', 'Try again.'); }
+  };
+  window.wsDeleteCurrent = function(){
+    wsMenuClose();
+    if (!T.msgs.length && !T.sid) { toast('Nothing to delete', 'This chat is empty.'); return; }
+    if (!window.confirm('Delete this chat?')) return;
+    var id = T.sid;
+    if (id) { try { aiChatSessions = sessList().filter(function(x){ return x.id !== id; }); } catch(e){} if (typeof queueSaveUserState === 'function') queueSaveUserState(); }
+    T.sid = null; T.msgs = []; T.title = ''; T.sub = 'chat'; render();
+  };
   window.wsContinue = function(){
     var last = sessList().filter(function(x){ return x.tutor; })[0];
     if (!T.msgs.length && last) { wsOpenChat(last.id); return; }
@@ -875,7 +964,7 @@
     if (s === 'summary') genSummary();
   };
   function subHeaderT(name, sub){ return header(name, sub || '', 'wsBackTutor()'); }
-  function subHeader(name, sub){ return floatNav('wsBackTutor()') + '<h1 class="ws-h1 font-display">' + E(name) + '</h1><div class="ws-sub">' + E(sub || '') + '</div>'; }
+  function subHeader(name, sub){ return header(name, sub || '', 'wsBackTutor()'); }
   window.wsBackTutor = function(){ if (popNav()) return; if (T.sub === 'history') { T.sub = 'chat'; render(); return; } if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
   function errBox(e, fn){ return '<div class="ws-blk" style="text-align:center"><div style="font-size:13px;color:var(--ws-sub)">' + E(e) + '</div><button class="filter-pill on" style="margin-top:10px" onclick="' + fn + '">Try again</button></div>'; }
@@ -1255,8 +1344,8 @@
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
     if (T.sub === 'history') return historyHTML();
-    var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button><button class="filter-pill flex-shrink-0" onclick="wsHistory()">History</button>' + (T.sub === 'chat' && T.msgs.length ? '<button class="filter-pill flex-shrink-0" onclick="wsNewChat()">New chat</button>' : '') + '</div>';
-    return header('Stitch Tutor', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
+    var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button>' + (T.sub === 'chat' && T.msgs.length ? '<button class="filter-pill flex-shrink-0" onclick="wsNewChat()">New chat</button>' : '') + '</div>';
+    return header('Stitch Tutor', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '', 'wsLeave()', '', '<button class="ws-circ ws-more" onclick="wsMenu(event)" aria-label="More options">' + I('dots', 22) + '</button>') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
 
@@ -1279,7 +1368,12 @@
   /* Header guard: a page never keeps two back/bell rows, and the Workspace header hides when a page is open on top */
   function wsGuard(){
     try {
-      document.querySelectorAll('.ws-page, #overlay .overflow-y-auto, #overlay .ar-in').forEach(function(box){
+      /* "Workspace" is the home's title only: once a page (Practice Tests, a space...) is open, drop it */
+      var pageOpen = false;
+      try { pageOpen = !!currentOverlayKind; } catch(e){}
+      if (!pageOpen && document.querySelector('#screen .ws-hero')) pageOpen = true;
+      if (pageOpen) document.querySelectorAll('.ws-hdr-home').forEach(function(h){ h.remove(); });
+      document.querySelectorAll('.ws-page, #overlay .overflow-y-auto, #overlay .ar-in, #screen .px-5').forEach(function(box){
         var hs = box.querySelectorAll(':scope > .ws-hdr-s, :scope > .ws-fl, :scope > .px-5 > .ws-hdr-s');
         for (var i = 1; i < hs.length; i++) { var x = hs[i]; if (x.classList.contains('ws-fl') && x.nextElementSibling && x.nextElementSibling.classList.contains('ws-fl-sp')) x.nextElementSibling.remove(); x.remove(); }
       });
