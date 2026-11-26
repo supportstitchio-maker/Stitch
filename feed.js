@@ -483,8 +483,10 @@
         function sheetRowIconSpan(name){
           return name ? `<span class="sheet-ico" style="display:flex;align-items:center;justify-content:center;width:24px;flex-shrink:0;">${sheetIcon(name)}</span>` : '';
         }
+        // Top-right header icons (the drop-down circle, the glimpse dashes) are drawn thinner
+        const MENU_ICON_THIN = { menuDrop: 1.3, menuBars: 1.3 };
         function menuIconSvg(type, cls){
-          return `<svg viewBox="0 0 24 24" class="${cls || ''}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${MENU_ICONS[type]}</svg>`;
+          return `<svg viewBox="0 0 24 24" class="${cls || ''}" fill="none" stroke="currentColor" stroke-width="${MENU_ICON_THIN[type] || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${MENU_ICONS[type]}</svg>`;
         }
         function Icon(type, cls){
           if (MENU_ICONS[type]) return menuIconSvg(type, cls);
@@ -5868,20 +5870,30 @@
               <span style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;">${label}</span>
             </button>`;
           let rows = '';
+          // Stuff everyone gets: save, link, share, copy text
+          const common = row(`savePostFromMenu(${post.id})`, post.saved ? 'bookmark' : 'bookmarkOutline', post.saved ? 'Unsave post' : 'Save post')
+            + row(`copyPostLinkFromMenu(${post.id})`, 'link', 'Copy link')
+            + row(`sharePostFromMenu(${post.id})`, 'send', 'Share post')
+            + ((post.body && String(post.body).trim()) ? row(`copyPostTextFromMenu(${post.id})`, 'copy', 'Copy text') : '');
           if (post.mine) {
-            rows = post.isRepost
+            rows = common + (post.isRepost
               ? row(`deleteRepost(${post.id})`, 'trash', 'Delete repost', 'text-red-500')
-              : row(`deletePost(${post.id})`, 'trash', 'Delete post', 'text-red-500');
+              : row(`deletePost(${post.id})`, 'trash', 'Delete post', 'text-red-500'));
           } else {
             const reported = isPostReported(post.id);
             const inNetwork = post.authorId && typeof isUserInMyNetwork === 'function' && isUserInMyNetwork(post.authorId);
-            rows = row(`notInterestedPost(${post.id})`, 'close', 'Not interested')
+            const canConnect = post.authorId && !inNetwork && !post.connectRequestSent;
+            rows = common
+              + (post.authorId ? row(`viewPosterProfileFromMenu(${post.id})`, 'user', `View ${escapeHtml(post.name || 'profile')}'s profile`) : '')
+              + (canConnect ? row(`connectFromMenu(${post.id})`, 'personPlus', 'Connect') : '')
+              + row(`notInterestedPost(${post.id})`, 'close', 'Not interested')
               + (inNetwork ? row(`removeNetworkFromPost(${post.id})`, 'user', 'Remove from network') : '')
+              + (post.authorId ? row(`blockPosterFromMenu(${post.id})`, 'block', 'Block account', 'text-red-500') : '')
               + row(`reportPost(${post.id})`, 'flag', reported ? 'Reported' : 'Report post', reported ? 'text-gray-400' : 'text-red-500', reported);
           }
           return `
             <div id="post-menu-backdrop-${post.id}" onclick="togglePostMenu(${post.id})" ontouchmove="event.preventDefault()" style="position:fixed;inset:0;z-index:11000;background:rgba(0,0,0,.5);"></div>
-            <div id="post-menu-dropdown-${post.id}" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;">
+            <div id="post-menu-dropdown-${post.id}" class="bg-white" style="position:fixed;left:0;right:0;bottom:0;z-index:11001;border-radius:24px 24px 0 0;padding:10px 0 calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:shareSheetSlideUp .22s cubic-bezier(0.16,1,0.3,1);max-width:640px;margin:0 auto;max-height:80vh;overflow-y:auto;overscroll-behavior:contain;">
               <div style="width:40px;height:4px;border-radius:3px;background:#d1d5db;margin:2px auto 10px;"></div>
               ${rows}
             </div>`;
@@ -5904,6 +5916,65 @@
           const overlayEl = document.getElementById('overlay');
           const overlayVisible = overlayEl && !overlayEl.classList.contains('hidden');
           const scrollEl = overlayVisible ? document.getElementById('post-feed-list') : document.getElementById('screen');
+        }
+
+        function closePostMenuNow(id){
+          openPostMenuId = null;
+          removePostMenuDom(id);
+        }
+
+        function savePostFromMenu(id){
+          closePostMenuNow(id);
+          toggleSavePost(id);
+        }
+
+        // Own copy of the link flow, the share-sheet one also closes the overlay under us
+        function copyPostLinkFromMenu(id){
+          closePostMenuNow(id);
+          const link = postShareLink(id);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Link copied to clipboard')).catch(() => openAppAlertModal('Link: ' + link));
+          } else {
+            openAppAlertModal('Link: ' + link);
+          }
+        }
+
+        function sharePostFromMenu(id){
+          closePostMenuNow(id);
+          openShare(id);
+        }
+
+        function copyPostTextFromMenu(id){
+          const post = findPost(id);
+          closePostMenuNow(id);
+          if (!post || !post.body) return;
+          const text = String(post.body);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => openAppAlertModal('Post text copied')).catch(() => openAppAlertModal('Couldn\'t copy the text. Please try again.'));
+          } else {
+            openAppAlertModal('Couldn\'t copy the text on this device.');
+          }
+        }
+
+        function viewPosterProfileFromMenu(id){
+          closePostMenuNow(id);
+          openPersonProfileForPost(id);
+        }
+
+        function connectFromMenu(id){
+          closePostMenuNow(id);
+          connectWithPoster(id);
+        }
+
+        function blockPosterFromMenu(id){
+          const post = findPost(id);
+          closePostMenuNow(id);
+          if (!post || !post.authorId) return;
+          const name = post.name || 'this person';
+          openAppConfirmModal(`Block ${name}?`, 'Their posts will leave your feed, and you two won\'t be able to message each other or see each other\'s glimpses.', 'Block', function(){
+            blockAccount(post.name, post.avatarIcon, post.avatarBg, post.photo, post.authorId);
+            if (typeof renderFeed === 'function') renderFeed();
+          }, 'block');
         }
 
         function closePostMenuOnScroll(id){

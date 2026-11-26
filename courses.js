@@ -5794,11 +5794,13 @@ try {
           if (!sb) return;
           try {
             const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,name,username,photo,bio').in('user_id', ids);
+            let gotName = false;
             (data || []).forEach(p => {
+              if (p.name || p.username) gotName = true;
               classStudentProfiles[p.user_id] = { name: p.name || p.username || '', photo: p.photo || null, bio: p.bio || '', _t: Date.now() };
             });
-                        const ov = document.getElementById('overlay');
-            if ((data || []).length && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && (classDetailTab === 'people' || classDetailTab === 'stream')) {
+            const ov = document.getElementById('overlay');
+            if (gotName && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && (classDetailTab === 'people' || classDetailTab === 'stream')) {
               ov.innerHTML = classDetailHTML();
             }
           } catch (e) {  }
@@ -7234,7 +7236,7 @@ try {
                 </div>
                 ${streamAnnouncementCommentsHTML(a)}
               </div>`).join('') + `<div style="height:60px;"></div>
-            <button onclick="openNewAnnouncementOverlay()" title="New announcement" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : ''}`;
+            <button onclick="openNewAnnouncementOverlay()" title="New announcement" class="fixed flex items-center justify-center text-white rounded-2xl z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);box-shadow:0 8px 18px rgba(30,144,255,0.38),0 3px 8px rgba(0,0,0,0.22);">${IconBold('plus','w-5 h-5')}</button>` : ''}`;
         }
 
         function announcementAttachmentsDisplayHTML(a){
@@ -7287,6 +7289,13 @@ try {
 
         function streamAnnouncementCommentsHTML(a){
           const comments = a.comments || [];
+          // Anyone still showing as 'Member' gets their profile fetched, then the stream redraws
+          try {
+            if (comments.some(c => c && c.userId && streamCommentAuthor(c).name === 'Member')) {
+              const _cl = myClasses.find(x => x.id === currentClassId);
+              if (_cl) setTimeout(() => loadClassStudentProfiles(_cl), 0);
+            }
+          } catch (e) {}
           return `
             <div class="border-t border-gray-100 pt-3">
               ${comments.length ? `
@@ -7385,7 +7394,7 @@ try {
           if (!a.comments) a.comments = [];
           let _myUid = null; try { _myUid = (_cachedAuthUser && _cachedAuthUser.id) || null; } catch (e) {}
           const _myPhoto = (typeof profileData !== 'undefined' && typeof profileData.photo === 'string' && /^https?:/i.test(profileData.photo)) ? profileData.photo : null;
-          a.comments.push({ id: 'c-' + Date.now() + Math.random().toString(36).slice(2, 6), userId: _myUid, name: (typeof profileData !== 'undefined' && profileData.name) || 'Member', username: (typeof profileData !== 'undefined' && profileData.username) || '', photo: _myPhoto, text, createdAt: Date.now() });
+          a.comments.push({ id: 'c-' + Date.now() + Math.random().toString(36).slice(2, 6), userId: _myUid, name: (typeof profileData !== 'undefined' && (profileData.name || profileData.username)) || 'Member', username: (typeof profileData !== 'undefined' && profileData.username) || '', photo: _myPhoto, text, createdAt: Date.now() });
           if (input) { input.value = ''; input.style.height = 'auto'; }
           document.getElementById('overlay').innerHTML = classDetailHTML();
           queueSaveClassRemote(cls);
@@ -10541,7 +10550,7 @@ try {
             </div>`;
           // Same static plus button as the main Classroom page.
           const createFab = isTeacher ? `
-            <button onclick="openClassworkCreateMenu()" title="Create" class="fixed flex items-center justify-center text-white rounded-2xl shadow-lg z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);">${IconBold('plus','w-5 h-5')}</button>` : '';
+            <button onclick="openClassworkCreateMenu()" title="Create" class="fixed flex items-center justify-center text-white rounded-2xl z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);box-shadow:0 8px 18px rgba(30,144,255,0.38),0 3px 8px rgba(0,0,0,0.22);">${IconBold('plus','w-5 h-5')}</button>` : '';
           if (isTeacher && !cls.classwork.length) {
             return `
               <div class="text-center mb-4">
