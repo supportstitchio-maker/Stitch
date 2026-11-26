@@ -418,8 +418,8 @@ let appPrefs = {
             <div class="sp-wrap">
               <label class="sp-search">${Icon('search','w-4 h-4')}<input type="search" value="${escapeHtml(helpSearchText)}" oninput="setHelpSearch(this.value)" placeholder="Search help, e.g. payment, calls, profile" autocomplete="off"></label>
               <div class="sp-two">
-                <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-qa"><span class="sp-qa-ic sp-b1">${Icon('comment','w-5 h-5')}</span><b>Contact support</b><span>We reply within 24 hours</span></button>
-                <button onclick="openOverlayFrom('helpCenter','reportIssue')" class="sp-qa"><span class="sp-qa-ic sp-b2">${Icon('flag','w-5 h-5')}</span><b>Report an issue</b><span>Bugs, safety, content</span></button>
+                <button onclick="openOverlayFrom('helpCenter','contactUs')" class="sp-qa"><b>Contact support</b><span>We reply within 24 hours</span></button>
+                <button onclick="openOverlayFrom('helpCenter','reportIssue')" class="sp-qa"><b>Report an issue</b><span>Bugs, safety, content</span></button>
               </div>
               <div class="sp-chips">${cats.map(c => `<button onclick="setHelpCategory(this.dataset.c)" data-c="${escapeHtml(c)}" class="outline-pill sp-chip${helpCategory === c ? ' on' : ''}">${escapeHtml(c)}</button>`).join('')}</div>
               <div id="help-results">${helpResultsHTML()}</div>

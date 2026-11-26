@@ -7183,7 +7183,7 @@ body:not(.dark-mode) .cu-handpill.on, body.dark-mode .cu-handpill.on, body:not(.
 
 
 /* ---- Chat header, WhatsApp style: one flat bar (back, avatar, name + status, call icons), no floating pills ---- */
-.cv-wa-head{ background:#f9fafb; border-bottom:1px solid rgba(128,128,128,.18); }
+.cv-wa-head{ background:#ffffff; border-bottom:1px solid rgba(128,128,128,.18); }
 body.dark-mode .cv-wa-head, html.dark-mode .cv-wa-head{ background:#121212; border-bottom-color:rgba(255,255,255,.08); }
 .cv-wa-back{ width:44px; height:44px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:transparent; border:0; }
 .cv-wa-main{ display:flex; align-items:center; gap:10px; min-width:0; padding:2px 6px 2px 2px; }
@@ -7303,3 +7303,99 @@ html.dark-mode .cp-menu, body.dark-mode .cp-menu{ background:rgba(30,36,48,.92);
 html.dark-mode .cp-menu-item, body.dark-mode .cp-menu-item{ color:#f3f4f6; }
 html.dark-mode .cp-float-more, body.dark-mode .cp-float-more{ color:#5cb0ff; }
 @media (prefers-reduced-motion: reduce){ .cp-menu{ animation:none; } }
+
+
+/* ---- Chat page (conversation with a friend): ONE white, same as the Messaging list, and the same top breathing room ----
+   Before: the overlay behind the chat was #f9fafb (bg-gray-50) and the header was #f9fafb while the Messaging list was
+   #ffffff, so the two pages showed two different colours. The header's top space was also visually tighter than the
+   other pages (its avatar/buttons sit higher in the row than the Messaging title), so it gets a small extra offset. */
+body:not(.dark-mode) #overlay:has(.cv-wa-head),
+body:not(.dark-mode) #overlay:has(.cv-wa-head) #convo-log-wrap,
+body:not(.dark-mode) #overlay:has(.cv-wa-head) #convo-log,
+body:not(.dark-mode) #overlay:has(.cv-wa-head) #convo-composer-wrap,
+body:not(.dark-mode) #overlay:has(.cv-wa-head) #convo-pinned-bar{ background-color:#ffffff !important; }
+body:not(.dark-mode) .cv-wa-head{ background:#ffffff !important; background-color:#ffffff !important; }
+.cv-wa-head{ padding-top:calc(var(--top-safe-pad, 20px) + 6px) !important; }
+
+
+/* ===== Floating back arrow (top left), same little round panel as the Settings gear on Profile ===== */
+@media (max-width:1099px){
+  .ov-sticky-head > div > button:first-child,
+  .ov-sticky-head.pro-sticky-head > button:first-child{
+    width:44px; height:44px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; border:0; background:#ffffff;
+    box-shadow:0 4px 16px rgba(30,60,140,.16), 0 1px 3px rgba(30,60,140,.08);
+    -webkit-tap-highlight-color:transparent; transition:transform .15s ease;
+  }
+  .ov-sticky-head > div > button:first-child:active,
+  .ov-sticky-head.pro-sticky-head > button:first-child:active{ transform:scale(.94); }
+  .ov-sticky-head > div > button:first-child svg,
+  .ov-sticky-head.pro-sticky-head > button:first-child svg{ width:22px; height:22px; }
+  body.dark-mode .ov-sticky-head > div > button:first-child,
+  body.dark-mode .ov-sticky-head.pro-sticky-head > button:first-child{ background:#1e1e1e; box-shadow:none; }
+  /* the back arrow's panel is taller than the old bare arrow, so keep the header the same top gap */
+  .ov-sticky-head.pro-sticky-head{ padding-top:14px !important; }
+}
+
+/* ===== Panels and the Pro page: Gendy for titles, prices and buttons, Montserrat for the reading text ===== */
+.share-sheet-panel *, .convo-sheet *, .confirm-sheet *,
+[id^="comment-sheet-panel-"] *, #career-menu-dropdown *, #inbox-filter-dropdown *,
+[id^="post-menu-dropdown-"] *, #job-sheet-menu *, #admin-menu-sheet *,
+[style*="border-radius:24px 24px 0 0"][style*="bottom:0"] *{
+  font-family:'Montserrat',system-ui,-apple-system,sans-serif !important;
+}
+html body :is(.share-sheet-panel, .convo-sheet, .confirm-sheet, [id^="comment-sheet-panel-"], #career-menu-dropdown,
+  #inbox-filter-dropdown, [id^="post-menu-dropdown-"], #job-sheet-menu, #admin-menu-sheet,
+  [style*="border-radius:24px 24px 0 0"][style*="bottom:0"])
+  :is(button, button *, h1, h2, h3, h4, .font-display, .grad-text, .cmt-sheet-title, .sheet-pill, .pill-cta,
+      .pro4-price, .pro4-tp, .pro4-rn, .pro4-go, .pro4-title){
+  font-family:'Gendy','Montserrat',sans-serif !important;
+}
+/* Pro page: small supporting words stay Montserrat, even inside the plan buttons */
+html body #careerSubscribeModal .pro4-tn, html body #careerSubscribeModal .pro4-tu,
+html body #careerSubscribeModal .pro4-price small, html body #careerSubscribeModal .pro4-blurb,
+html body #careerSubscribeModal .pro4-note, html body #careerSubscribeModal .pro4-rs,
+html body #careerSubscribeModal .pro4-rv{
+  font-family:'Montserrat',system-ui,-apple-system,sans-serif !important;
+}
+html body #careerSubscribeModal .pro4-tn{ font-weight:600; }
+html body #careerSubscribeModal .pro4-rv{ font-weight:600; }
+html body #careerSubscribeModal .pro4-blurb, html body #careerSubscribeModal .pro4-note{ line-height:1.5; }
+
+/* Thin line look: floating back arrow, settings gear */
+@media (max-width:1099px){
+  .ov-sticky-head > div > button:first-child svg *, .ov-sticky-head.pro-sticky-head > button:first-child svg *{ stroke-width:1.2 !important; }
+}
+.ph-gear-panel svg *{ stroke-width:1.4 !important; }
+
+/* Share panel: the grab handle strip is a bigger drag target and hands the gesture to the swipe-down logic */
+.share-sheet-panel > div:first-child{ touch-action:none; padding-top:14px !important; padding-bottom:10px !important; cursor:grab; }
+
+/* ---- Live "typing..." / "recording audio..." bubble in the chat (other person's side) ---- */
+.cv-live-row{ display:flex; justify-content:flex-start; padding:2px 0 6px 2px; animation:cvLiveIn .22s cubic-bezier(.22,1,.36,1) both; }
+.cv-live-bubble{ position:relative; display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:0 18px; border-radius:20px; background:#e5e6eb; margin-left:8px; }
+/* little thought-bubble tail: two circles, bottom left */
+.cv-live-bubble::before{ content:''; position:absolute; left:-4px; bottom:-3px; width:14px; height:14px; border-radius:50%; background:#e5e6eb; }
+.cv-live-bubble::after{ content:''; position:absolute; left:-12px; bottom:-8px; width:7px; height:7px; border-radius:50%; background:#e5e6eb; }
+.cv-live-dots{ display:inline-flex; gap:5px; align-items:center; }
+.cv-live-dots i{ width:8px; height:8px; border-radius:50%; background:#9a9ba1; display:block; animation:cvDot 1.3s ease-in-out infinite; }
+.cv-live-dots i:nth-child(2){ animation-delay:.18s; } .cv-live-dots i:nth-child(3){ animation-delay:.36s; }
+@keyframes cvDot{ 0%,60%,100%{ transform:translateY(0) scale(.85); opacity:.45; } 30%{ transform:translateY(-3px) scale(1.1); opacity:1; } }
+.cv-live-rec{ padding:0 16px; }
+.cv-live-wave{ display:inline-flex; align-items:center; gap:3px; height:24px; }
+.cv-live-wave i{ display:block; width:3px; border-radius:3px; background:#1f2937; transform-origin:center; animation:cvWave .9s ease-in-out infinite; }
+@keyframes cvWave{ 0%,100%{ transform:scaleY(.35); } 50%{ transform:scaleY(1); } }
+@keyframes cvLiveIn{ from{ opacity:0; transform:translateY(6px) scale(.9); transform-origin:left bottom; } to{ opacity:1; transform:none; } }
+body.dark-mode .cv-live-bubble, body.dark-mode .cv-live-bubble::before, body.dark-mode .cv-live-bubble::after{ background:#2a2a2a; }
+body.dark-mode .cv-live-dots i{ background:#8b8d94; }
+body.dark-mode .cv-live-wave i{ background:#e5e7eb; }
+@media (prefers-reduced-motion: reduce){ .cv-live-dots i, .cv-live-wave i, .cv-live-row{ animation:none; } .cv-live-wave i{ transform:scaleY(.7); } }
+
+/* Sent bubbles are a pale dodger blue now, so in light mode their text, ticks and time are dark navy (white would be unreadable) */
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"],
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] *{ color:#0a2540 !important; }
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] .cv-meta-mine > span,
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] [style*="font-size:10px"]{ color:rgba(10,37,64,.62) !important; }
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] .cv-bad-out,
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] .cv-bad-out *{ color:#b91c1c !important; }
+body:not(.dark-mode) [style*="rgba(30,144,255,0.32)"] .cv-mention{ color:#0b57d0 !important; }

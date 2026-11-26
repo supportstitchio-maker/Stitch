@@ -4447,4 +4447,27 @@ function coverPickerHTML(o){
   }
   document.addEventListener('touchend', end, { passive: true });
   document.addEventListener('touchcancel', end, { passive: true });
+
+  // Swiping on the dimmed area above the sheet also closes it (not only a tap there)
+  var out = null;
+  document.addEventListener('touchstart', function(e){
+    var t = e.touches && e.touches[0];
+    var el = e.target;
+    out = null;
+    if (!t || !el || el.nodeType !== 1 || e.touches.length > 1) return;
+    if (el.closest && el.closest(SEL)) return;
+    var kid = el.firstElementChild;
+    var wrap = (el.querySelector && el.querySelector(':scope > ' + SEL)) ? el : null;
+    if (wrap) out = { wrap: wrap, x: t.clientX, y: t.clientY, done: false };
+  }, { passive: true });
+  document.addEventListener('touchmove', function(e){
+    if (!out || out.done) return;
+    var t = e.touches && e.touches[0];
+    if (!t) return;
+    if (Math.abs(t.clientX - out.x) > 8 || Math.abs(t.clientY - out.y) > 8) {
+      out.done = true;
+      if (out.wrap.isConnected) out.wrap.click();   // sheet's own tap-outside handler closes it
+    }
+  }, { passive: true });
+  document.addEventListener('touchend', function(){ out = null; }, { passive: true });
 })();

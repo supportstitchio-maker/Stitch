@@ -431,6 +431,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (el) el.textContent = convoLastSeenText(meta);
           const profileEl = document.getElementById('convo-profile-status');
           if (profileEl) profileEl.textContent = convoLastSeenText(meta);
+          syncConvoTypingBubble(convoId);
         }
 
         function newMessageContactRow(icon, iconBg, label, onclick, sub, extraIconRight){
@@ -1288,7 +1289,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <button onclick="toggleInboxActionsMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="12" cy="18.5" r="1.35"/></svg>')}</button>
               ` : `
                 <span id="inbox-username-el" class="font-bold text-base font-display grad-text whitespace-nowrap">${escapeHtml(profileData.username)}</span>
-                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
+                <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>')}</button>
               `}
             </div>`;
         }
@@ -4984,6 +4985,12 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           layer.id = 'cp-menu-layer';
           layer.setAttribute('onclick', 'closeCpMenu()');
           layer.innerHTML = `<div class="cp-menu" role="menu" onclick="event.stopPropagation()" style="top:${Math.round(r.bottom + 8)}px;right:${Math.max(10, Math.round(window.innerWidth - r.right))}px;">${items.map((it, i) => `<button type="button" role="menuitem" class="cp-menu-item" onclick="cpMenuDo(window.__cpMenuActions[${i}])">${cpIcon(it[0])}<span>${it[1]}</span></button>`).join('')}</div>`;
+          // Swiping/scrolling anywhere outside the menu closes it too (not only a tap)
+          const cpMenuEl = layer.firstElementChild;
+          let cpSwX = 0, cpSwY = 0, cpSwOut = false;
+          layer.addEventListener('touchstart', e => { const t = e.touches[0]; cpSwX = t.clientX; cpSwY = t.clientY; cpSwOut = !(cpMenuEl && cpMenuEl.contains(e.target)); }, { passive: true });
+          layer.addEventListener('touchmove', e => { if (!cpSwOut) return; const t = e.touches[0]; if (Math.abs(t.clientX - cpSwX) > 8 || Math.abs(t.clientY - cpSwY) > 8) closeCpMenu(); }, { passive: true });
+          layer.addEventListener('wheel', e => { if (!(cpMenuEl && cpMenuEl.contains(e.target))) closeCpMenu(); }, { passive: true });
           document.body.appendChild(layer);
           if (window.haptic) window.haptic(8);
         }
@@ -5383,7 +5390,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:var(--top-safe-pad);padding-bottom:6px;padding-left:2px;padding-right:2px;gap:2px;">
+            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 6px);padding-bottom:6px;padding-left:2px;padding-right:2px;gap:2px;">
               <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-wa-back">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div class="cv-wa-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-avatar" class="cv-wa-avatar">${avatarInnerHTML(meta, 'w-5 h-5')}</div>
@@ -5828,7 +5835,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return new Date(ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
         }
 
-        function convoLogHTML(){ return chatMediaRewriteHtml(convoLogHTMLInner()); }
+        // Live "typing..." / "recording..." bubble shown at the bottom of the chat (the other person's side)
+        function convoTypingBubbleHTML(convoId){
+          const rec = !!(convoId && recordingByConvo[convoId]);
+          const typ = !!(convoId && typingByConvo[convoId]);
+          if (!rec && !typ) return '';
+          if (rec) {
+            const bars = [0.35,0.6,0.9,0.5,1,0.7,0.4,0.8,0.55,0.3].map((h,i) => `<i style="height:${Math.round(h*20)}px;animation-delay:${(i*0.09).toFixed(2)}s"></i>`).join('');
+            return `<div id="convo-typing-bubble" class="cv-live-row" aria-live="polite" aria-label="Recording audio"><div class="cv-live-bubble cv-live-rec"><span class="cv-live-wave">${bars}</span></div></div>`;
+          }
+          return `<div id="convo-typing-bubble" class="cv-live-row" aria-live="polite" aria-label="Typing"><div class="cv-live-bubble cv-live-typ"><span class="cv-live-dots"><i></i><i></i><i></i></span></div></div>`;
+        }
+        function syncConvoTypingBubble(convoId){
+          const log = document.getElementById('convo-log');
+          if (!log) return;
+          const want = convoTypingBubbleHTML(convoId);
+          const cur = document.getElementById('convo-typing-bubble');
+          const kind = h => /cv-live-rec/.test(h) ? 'rec' : (/cv-live-typ/.test(h) ? 'typ' : '');
+          if (cur && kind(cur.innerHTML) === kind(want)) return;
+          const nearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 140;
+          if (cur) cur.remove();
+          if (want) log.insertAdjacentHTML('beforeend', want);
+          if (want && nearBottom) log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
+        }
+        function convoLogHTML(){ return chatMediaRewriteHtml(convoLogHTMLInner()) + convoTypingBubbleHTML(activeConvoId); }
         function convoLogHTMLInner(){
           convoGlimpseCards = [];
           const meta = activeConvoMetaSafe(activeConvoId);
@@ -5863,7 +5893,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const title = (isVideo ? 'Video call' : 'Voice call');
                 // Same bubble as a normal chat message: same colour, shape, width and time underneath
                 const bubbleStyle = outgoing
-                  ? 'background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;'
+                  ? 'background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;'
                   : 'border-radius:20px 20px 20px 0;';
                 const bubbleCls = outgoing ? 'text-white' : 'bg-gray-100 text-gray-700';
                 const circleStyle = outgoing ? 'color:#ffffff;' : 'color:#8b93a1;';
@@ -5907,7 +5937,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
-                ? `<div class="cv-bub text-white px-4 py-2.5 text-sm" style="background:rgba(65,105,225,0.45); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
+                ? `<div class="cv-bub text-white px-4 py-2.5 text-sm" style="background:rgba(30,144,255,0.32); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
                 : `<div class="cv-bub bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
             ) : '';
             const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
@@ -6277,7 +6307,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="flex-1 flex flex-col" style="min-height:0;">
               ${overlayHeader('Edit message', '20px')}
               <div class="flex-1 overflow-y-auto p-5 flex flex-col justify-end" style="opacity:.55;">
-                <div class="flex justify-end"><div class="cv-bub text-white px-4 py-2.5 text-sm" style="max-width:80%;background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;word-break:break-word;white-space:pre-wrap;">${escapeHtml(body)}</div></div>
+                <div class="flex justify-end"><div class="cv-bub text-white px-4 py-2.5 text-sm" style="max-width:80%;background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;word-break:break-word;white-space:pre-wrap;">${escapeHtml(body)}</div></div>
               </div>
               <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
                 <div class="wa-row">
@@ -6847,7 +6877,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoVoiceNoteHTML(voice, mine, m){
           const uid = 'voice-' + Math.random().toString(36).slice(2, 9);
           // Sent notes echo the outgoing text-bubble treatment
-          const bubbleBg = mine ? 'rgba(65,105,225,0.45)' : '#f3f4f6';
+          const bubbleBg = mine ? 'rgba(30,144,255,0.32)' : '#f3f4f6';
           const subColor = mine ? 'rgba(255,255,255,0.8)' : '#6b7280';
           const waveBg = mine ? 'rgba(255,255,255,0.4)' : '#d1d5db';
           const waveFg = mine ? '#ffffff' : NAVY;
@@ -11170,7 +11200,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div style="display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
               ${mine ? '' : `<span style="font-size:11px;font-weight:700;color:var(--cu-sub);margin:0 10px 2px;">${name}</span>`}
-              <div class="${mine ? 'text-white' : 'bg-gray-100 text-gray-700'}" style="max-width:82%;padding:10px 16px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;${mine ? 'background:rgba(65,105,225,0.45);border-radius:20px 20px 0 20px;' : 'border-radius:20px 20px 20px 0;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
+              <div class="${mine ? 'text-white' : 'bg-gray-100 text-gray-700'}" style="max-width:82%;padding:10px 16px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;${mine ? 'background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;' : 'border-radius:20px 20px 20px 0;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
               <span style="font-size:10px;color:var(--cu-sub);margin:2px 10px 0;">${m.failed ? 'Not sent \u00b7 tap to retry' : (m.pending ? 'Sending\u2026' : meetingChatFmtTime(m.created_at))}</span>
             </div>`;
         }
