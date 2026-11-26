@@ -75,8 +75,20 @@
   body.dark-mode .ws-bub{background:#3a3a3a}
   .ws-ans{font-size:14px;line-height:1.55;margin-bottom:12px}.ws-ans ul{padding-left:18px;margin:6px 0;list-style:disc}.ws-ans li{margin:5px 0}
   .ws-src{display:flex;align-items:center;gap:10px;background:var(--ws-card);border-radius:16px;padding:10px 12px;margin-bottom:12px}
-  .ws-comp{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);display:flex;gap:8px;align-items:center;background:var(--ws-bg);border-radius:999px;box-shadow:0 6px 22px rgba(11,31,63,.16);padding:6px 6px 6px 18px;z-index:24}
-  .ws-comp input{flex:1;font-size:14px;outline:none;background:transparent;color:var(--ws-ink)}
+  .ws-comp{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);background:var(--ws-bg);border:1px solid var(--ws-line);border-radius:28px;box-shadow:0 6px 22px rgba(11,31,63,.16);padding:5px;z-index:24;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chips chips chips" "clip ta main";align-items:center;column-gap:2px;transition:border-radius .18s ease}
+  .ws-comp.ws-exp{border-radius:26px;grid-template-areas:"chips chips chips" "ta ta ta" "clip . main"}
+  .ws-chips{grid-area:chips;display:flex;gap:8px;flex-wrap:wrap;padding:8px 8px 4px}.ws-chips:empty{display:none}
+  .ws-chip{display:flex;align-items:center;gap:6px;max-width:100%;background:var(--ws-card);border-radius:14px;padding:6px 6px 6px 10px;font-size:12px;color:var(--ws-ink)}
+  .ws-chip span{max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ws-chip small{color:var(--ws-sub);font-size:11px}
+  .ws-chip.bad{color:#d33}.ws-chip button{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ws-sub);flex-shrink:0}
+  .ws-comp textarea{grid-area:ta;width:100%;min-height:44px;max-height:160px;resize:none;border:0;outline:0;background:transparent;color:var(--ws-ink);font:inherit;font-size:16px;line-height:22px;padding:11px 6px;overflow-y:auto}
+  .ws-comp.ws-exp textarea{padding:12px 14px 6px}
+  .ws-ci{border:0;grid-area:clip;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ws-sub);background:transparent}
+  .ws-main{border:0;grid-area:main;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#1e90ff;color:#fff;flex-shrink:0}
+  body.dark-mode .ws-main[data-mode="send"]{background:#f2f2f2;color:#111}
+  .ws-main[data-mode="mic"]{background:var(--ws-card);color:var(--ws-ink)}
+  .ws-main[data-mode="rec"]{background:#ef4444;color:#fff;animation:wsPulse 1.2s ease-in-out infinite}
+  @keyframes wsPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{box-shadow:0 0 0 9px rgba(239,68,68,0)}}
   .ws-send{width:38px;height:38px;border-radius:50%;background:#1e90ff;color:#fff;display:flex;align-items:center;justify-content:center}
   .ws-stu{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .ws-st{border-radius:22px;padding:16px;min-height:104px;text-align:left;display:flex;flex-direction:column;justify-content:space-between}
@@ -119,6 +131,9 @@
     heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.500-7 10-7 10z"/>', dots:'<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
     upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>', msg:'<path d="M4 5h16v11H9l-5 4z"/>', dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', copy:'<rect x="8" y="8" width="11" height="11" rx="3"/><path d="M5 15V6a2 2 0 012-2h9"/>', chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'
   };
+  P.clip = '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>';
+  P.mic = '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>';
+  P.stop = '<rect x="7" y="7" width="10" height="10" rx="2.5" fill="currentColor"/>';
   function I(n, s){ s = s || 20; return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[n]||'')+'</svg>'; }
   function E(s){ return (typeof escapeHtml === 'function') ? escapeHtml(String(s == null ? '' : s)) : String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function $(id){ return document.getElementById(id); }
@@ -439,7 +454,7 @@
     if (c) materials(c).forEach(function(w){ out.push({ id: 'cw' + w.id, name: w.title || 'Resource', ext: 'doc', text: w.text || w.description || '', from: c.name }); });
     return out;
   }
-  function sel(){ return srcs().filter(function(s){ return !T.off[s.id]; }); }
+  function sel(){ return srcs(); } /* every uploaded resource feeds the tutor; nothing to tick */
   function readable(){ return sel().filter(function(s){ return s.text && s.text.trim().length > 30; }); }
   function sig(){ return readable().map(function(s){ return s.id + ':' + s.text.length; }).join('|'); }
   function ctx(list){
@@ -453,7 +468,7 @@
     t = String(t || '').replace(/```json|```/g, ''); var a = t.search(/[\[{]/); if (a < 0) throw new Error('no json');
     var open = t.charAt(a), close = open === '{' ? '}' : ']', b = t.lastIndexOf(close); return JSON.parse(t.slice(a, b + 1));
   }
-  function needSrc(){ if (!readable().length) { toast('Add a source first', 'Upload a PDF, DOCX or PPTX, or paste notes, and make sure it is ticked.'); wsSources(); return true; } return false; }
+  function needSrc(){ if (!readable().length) { var busy = srcs().some(function(x){ return x.busy; }); toast(busy ? 'Still reading your file' : 'Add a file first', busy ? 'Give it a moment, then ask again.' : 'Tap the paperclip to attach a PDF, DOCX or PPTX.'); if (!busy) { var f = $('ws-file'); if ($('ws-comp') && f) f.click(); else wsSources(); } return true; } return false; }
   function chip(n){ return '<span class="ws-cite">' + n + '</span>'; }
   function rich(t){
     var h = E(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\[(\d{1,2})\]/g, function(m, n){ return chip(n); });
@@ -534,21 +549,79 @@
       (m.d && diagHTML(m.d) ? '<div class="ws-blk" style="margin-top:8px">' + diagHTML(m.d) + '<div style="font-size:11px;color:#1e90ff;font-weight:600;margin-top:4px">Illustration \u00b7 ' + E(m.d.title) + '</div></div>' : '') +
       (m.err ? '' : '<div><button class="filter-pill on" onclick="wsOpenSub(\'flashcards\')">Make flashcards</button><button class="filter-pill" onclick="wsOpenSub(\'practice\')">Practice quiz</button><button class="filter-pill" onclick="wsSave(' + i + ')">Save</button></div>') + '</div>';
   }
-  function srcBar(){
-    var s = srcs(), n = sel().length;
-    return '<div class="ws-src" onclick="wsSources()"><span style="font-weight:700;font-size:12px;color:#1e90ff">' + s.slice(0, 3).map(function(x){ return E((x.ext || 'doc').toUpperCase().slice(0, 3)); }).join(' ') + '</span><div style="flex:1;min-width:0"><b style="font-size:13px">' + n + ' source' + (n === 1 ? '' : 's') + ' selected</b><small style="display:block;color:var(--ws-sub);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (s.length ? E(s.map(function(x){ return x.name; }).join(', ')) : 'Tap to add files or notes') + '</small></div><span style="color:#1e90ff;font-weight:700;font-size:13px">' + (s.length ? 'Edit' : 'Add') + '</span></div>';
-  }
   function chatBody(){
-    if (!T.msgs.length) return '<div style="text-align:center;padding:44px 8px;color:var(--ws-sub)"><div class="ws-cap" style="margin:0 auto 14px;width:56px;height:56px">' + I('cap', 26) + '</div><b style="font-size:17px;color:var(--ws-ink)">Ask anything about your sources</b><div style="font-size:13px;margin:6px 0 14px">Answers come from the files you pick, with numbered citations.</div>' +
+    if (!T.msgs.length) return '<div style="text-align:center;padding:44px 8px;color:var(--ws-sub)"><b style="font-size:17px;color:var(--ws-ink)">Your resources are in memory</b><div style="font-size:13px;margin:6px 0 14px">Edit them in Resources on Home, or attach new notes or slides here.</div>' +
       '<div class="ws-sugs">' + ['Summarize my sources','Explain the key terms','Quiz me on this'].map(function(q){ return '<button class="filter-pill" onclick="wsAsk(\'' + q + '\')">' + q + '</button>'; }).join('') + '</div></div>';
     return T.msgs.map(msgHTML).join('');
   }
   function chatLog(){ var l = $('ws-chatlog'); if (l) { l.innerHTML = chatBody(); var s = $('screen'); if (s) s.scrollTop = s.scrollHeight; } }
   window.wsAsk = function(q){ var i = $('ws-in'); if (i) i.value = q; wsSend(); };
+  /* ----- Composer: paperclip, auto-growing box, mic that turns into send (same behaviour as the Stitch Bot chat) ----- */
+  var REC = null, recBase = '';
+  T.chips = []; T.draft = '';
+  function chipsHTML(){
+    var all = srcs();
+    return T.chips.map(function(id){
+      var x = all.filter(function(k){ return k.id === id; })[0]; if (!x) return '';
+      var bad = x.res && x.res.status === 'error';
+      return '<div class="ws-chip' + (bad ? ' bad' : '') + '"><span>' + E(x.name) + '</span>' + (x.busy ? '<small>reading\u2026</small>' : bad ? '<small>failed</small>' : '') +
+        '<button onclick="wsDropChip(\'' + id + '\')" aria-label="Dismiss">' + I('close', 13) + '</button></div>';
+    }).join('');
+  }
+  function composerHTML(){
+    return '<div class="ws-comp" id="ws-comp"><div class="ws-chips" id="ws-chips">' + chipsHTML() + '</div>' +
+      '<button class="ws-ci" onclick="document.getElementById(\'ws-file\').click()" aria-label="Attach files">' + I('clip', 22) + '</button>' +
+      '<textarea id="ws-in" rows="1" placeholder="Ask Stitch Tutor anything..." oninput="wsGrow()" onkeydown="wsKey(event)"></textarea>' +
+      '<button class="ws-main" id="ws-main" data-mode="mic" onclick="wsMain()" aria-label="Voice">' + I('mic', 22) + '</button></div>';
+  }
+  window.wsDropChip = function(id){ T.chips = T.chips.filter(function(k){ return k !== id; }); updateChips(); };
+  function updateChips(){ var c = $('ws-chips'); if (c) c.innerHTML = chipsHTML(); }
+  window.wsGrow = function(){
+    var ta = $('ws-in'), box = $('ws-comp'), b = $('ws-main'); if (!ta || !box) return;
+    var has = ta.value.trim().length > 0; T.draft = ta.value;
+    box.classList.toggle('ws-exp', has);
+    ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+    if (b) { var mode = REC ? 'rec' : has ? 'send' : 'mic';
+      if (b.getAttribute('data-mode') !== mode) { b.setAttribute('data-mode', mode); b.innerHTML = I(mode === 'send' ? 'send' : mode === 'rec' ? 'stop' : 'mic', 22); b.setAttribute('aria-label', mode === 'send' ? 'Send' : mode === 'rec' ? 'Stop recording' : 'Voice'); } }
+  };
+  window.wsKey = function(e){
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    var touch = false; try { touch = window.matchMedia('(pointer:coarse)').matches; } catch(x){}
+    if (!touch) { e.preventDefault(); wsSend(); }
+  };
+  window.wsMain = function(){ var ta = $('ws-in'); if (ta && ta.value.trim() && !REC) wsSend(); else wsMic(); };
+  function wsStopMic(){ var r = REC; REC = null; if (r) { try { r.stop(); } catch(e){} } wsGrow(); }
+  window.wsStopMic = wsStopMic;
+  window.wsMic = function(){
+    if (REC) { wsStopMic(); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('Voice input unavailable', "This browser doesn't support voice input."); return; }
+    var ta = $('ws-in'); if (!ta) return;
+    recBase = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
+    var r; try { r = new SR(); } catch(e){ toast('Voice input unavailable', 'Could not start the microphone.'); return; }
+    r.lang = navigator.language || 'en-US'; r.continuous = true; r.interimResults = true;
+    r.onresult = function(ev){
+      if (REC !== r) return; var t = ''; for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+      var el = $('ws-in'); if (el) { el.value = recBase + t; wsGrow(); el.scrollTop = el.scrollHeight; }
+    };
+    r.onerror = function(ev){
+      if (ev.error === 'aborted' || ev.error === 'no-speech') return;
+      if (REC === r) REC = null;
+      toast(ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'Mic access denied' : 'Voice input failed', ev.error === 'not-allowed' ? 'Allow microphone access in your browser settings.' : 'Please try again.'); wsGrow();
+    };
+    r.onend = function(){
+      if (REC !== r) return;
+      var el = $('ws-in'); recBase = el ? el.value.replace(/\s+$/, '') + ' ' : '';
+      try { r.start(); } catch(e){ REC = null; wsGrow(); }   /* the browser stops on silence: keep listening until the person taps stop */
+    };
+    try { r.start(); REC = r; wsGrow(); } catch(e){ REC = null; toast('Voice input unavailable', 'Could not start the microphone.'); }
+  };
+
   window.wsSend = async function(){
     var i = $('ws-in'); var q = i ? i.value.trim() : ''; if (!q || T.busy) return;
+    wsStopMic();
     if (needSrc()) return;
-    i.value = ''; T.busy = true; if (!T.msgs.length) { T.title = q.slice(0, 42); lset('ws-tutor-last', { title: T.title }); }
+    i.value = ''; T.draft = ''; wsGrow(); T.busy = true; if (!T.msgs.length) { T.title = q.slice(0, 42); lset('ws-tutor-last', { title: T.title }); }
     T.msgs.push({ r: 'u', t: q }); var m = { r: 'a', busy: true, t: '' }; T.msgs.push(m); chatLog();
     var list = readable(), hist = T.msgs.slice(-9, -2).filter(function(x){ return !x.busy; }).map(function(x){ return (x.r === 'u' ? 'Student: ' : 'Tutor: ') + x.t; }).join('\n');
     try {
@@ -565,18 +638,26 @@
   /* ----- Sources sheet ----- */
   window.wsSources = function(){
     var s = srcs(), col = { pdf: '#e24d3f', ppt: '#1e90ff', pptx: '#1e90ff', doc: '#1fa463', docx: '#1fa463', txt: '#f59e0b' };
-    sheet('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:20px">Sources</b><a style="color:#1e90ff;font-weight:700;font-size:14px" onclick="wsAllSrc()">Select all</a></div>' +
-      (s.length ? s.map(function(x){ var on = !T.off[x.id], k = (x.ext || 'doc');
-        return '<div class="ws-row" onclick="wsTogSrc(\'' + x.id + '\')"><span class="ws-ft" style="background:' + (col[k] || '#1e90ff') + '">' + E(k.toUpperCase().slice(0, 3)) + '</span><div style="flex:1;min-width:0"><b>' + E(x.name) + '</b><small>' + E(x.from) + (x.busy ? ' \u00b7 reading\u2026' : (!x.text ? ' \u00b7 no readable text' : '')) + '</small></div>' +
-          '<span style="width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;' + (on ? 'background:#1e90ff;color:#fff' : 'background:var(--ws-card)') + '">' + (on ? I('check', 16) : '') + '</span></div>'; }).join('')
+    sheet('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:20px">Sources</b></div>' +
+      (s.length ? s.map(function(x){ var k = (x.ext || 'doc');
+        return '<div class="ws-row"><span class="ws-ft" style="background:' + (col[k] || '#1e90ff') + '">' + E(k.toUpperCase().slice(0, 3)) + '</span><div style="flex:1;min-width:0"><b>' + E(x.name) + '</b><small>' + E(x.from) + (x.busy ? ' \u00b7 reading\u2026' : (!x.text ? ' \u00b7 no readable text' : '')) + '</small></div>' +
+          '</div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No sources yet.</div>') +
       '<div style="margin-top:14px"><button class="filter-pill" onclick="document.getElementById(\'ws-file\').click()">' + I('plus', 15) + ' Upload file</button><button class="filter-pill" onclick="wsPaste()">' + I('plus', 15) + ' Paste notes</button><button class="filter-pill" onclick="wsPickCourse()">' + I('plus', 15) + ' From a space</button></div>' +
-      '<button class="ws-cta" onclick="wsSrcDone()">Use ' + sel().length + ' sources</button>');
+      '<button class="ws-cta" onclick="wsSrcDone()">Done</button>');
   };
   window.wsTogSrc = function(id){ T.off[id] = !T.off[id]; wsSources(); };
   window.wsAllSrc = function(){ T.off = {}; wsSources(); };
   window.wsSrcDone = function(){ sheetClose(); setTimeout(function(){ if (view === 'tutor') { render(); if (T.sub === 'summary') genSummary(); else if (T.sub === 'flashcards') prepFlash(); else if (T.sub === 'practice') prepPractice(); } }, 60); };
-  window.wsUpload = function(e){ var f = Array.prototype.slice.call(e.target.files || []); e.target.value = ''; f.forEach(function(x){ if (typeof processUploadedResource === 'function') processUploadedResource(x); }); setTimeout(function(){ if ($('ws-sheet')) wsSources(); }, 400); };
+  window.wsUpload = function(e){
+    var f = Array.prototype.slice.call(e.target.files || []); e.target.value = '';
+    f.forEach(function(x){
+      var before = {}; try { uploadedResources.forEach(function(r){ before[r.id] = 1; }); } catch(k){}
+      if (typeof processUploadedResource === 'function') processUploadedResource(x);
+      try { uploadedResources.forEach(function(r){ if (!before[r.id] && T.chips.indexOf(r.id) < 0) T.chips.push(r.id); }); } catch(k){}
+    });
+    updateChips(); setTimeout(function(){ if ($('ws-sheet')) wsSources(); }, 400);
+  };
   window.wsPaste = function(){
     sheet('<b style="font-size:20px">Paste notes</b><label class="ws-lab">Title</label><input id="ws-pt" class="ws-in" placeholder="e.g. Lab notes, Week 4"><label class="ws-lab">Text</label><textarea id="ws-px" rows="8" class="ws-in" placeholder="Paste your notes here"></textarea><button class="ws-cta" onclick="wsPasteAdd()">Add source</button>');
   };
@@ -594,7 +675,7 @@
   function studioHTML(){
     var cc = counts(), cards = cc.cards, decks = matList().filter(function(x){ return matsOf(x); }).length;
     var t = function(k, ic, c, bg, a, b){ return '<button class="ws-st" style="background:' + bg + ';color:' + c + '" onclick="wsOpenSub(\'' + k + '\')"><span>' + I(ic, 22) + '</span><span><b>' + a + '</b><small>' + b + '</small></span></button>'; };
-    return srcBar() + '<div class="ws-h2" style="margin-top:6px">Studio</div><div class="ws-stu">' +
+    return '<div class="ws-h2" style="margin-top:6px">Studio</div><div class="ws-stu">' +
       t('summary', 'lines', '#14804a', 'rgba(31,164,99,.14)', 'Summary', 'Key points in 1 min') + t('diagrams', 'tree', '#1673cc', 'rgba(30,144,255,.13)', 'Diagrams', 'Illustrated concepts') +
       t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
   }
@@ -667,7 +748,7 @@
   function flashHTML(){
     var h = subHeader('Flashcards'), l = matList(), c = counts();
     if (!l.length) return h + '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">Add a source to make flashcards.</div><button class="ws-cta" onclick="wsSources()">Add sources</button>';
-    h += srcBar();
+    /* sources bar removed: every upload is used */
     h += '<div class="ws-cc" style="background:linear-gradient(160deg,#f7774a,#ee5f36);min-height:150px;margin-bottom:6px" onclick="' + (c.cards ? 'wsStudyDeck(\'*\')' : '') + '">' + motif({ name: 'cards' }, 3, 'md') + '<span class="bd">Flashcards</span><h3>' + (c.cards ? c.cards + ' cards ready' : 'Making your cards') + '</h3><p>' + (c.cards ? 'Swipe to sort what you know. Tap to start.' : 'Terms and definitions from your sources') + '</p>' + (busyAny() ? '<div class="ws-dots"><span style="background:#fff"></span><span style="background:#fff"></span><span style="background:#fff"></span></div>' : '') + '</div>';
     h += '<div class="ws-h2" style="margin-top:16px">Decks</div>' + srcRows('cards');
     if (c.cards) h += '<div style="margin-top:14px"><button class="ws-cta" style="margin:6px 0" onclick="wsStudyDeck(\'*\')">Study all ' + c.cards + ' cards</button><button class="filter-pill" onclick="wsRemake()">' + I('refresh', 14) + ' Write new cards</button><button class="filter-pill" onclick="wsOpenSub(\'practice\')">Practice quiz</button></div>';
@@ -692,7 +773,7 @@
   function practiceHTML(){
     var h = subHeader('Practice'), l = matList(), c = counts();
     if (!l.length) return h + '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">Add a source to make practice questions.</div><button class="ws-cta" onclick="wsSources()">Add sources</button>';
-    h += srcBar();
+    /* sources bar removed: every upload is used */
     h += '<div class="ws-stats"><div class="ws-stat"><b>' + c.q + '</b><span>questions</span></div><div class="ws-stat"><b>' + c.mcq + ' / ' + c.wr + '</b><span>choice / written</span></div><div class="ws-stat"><b>' + lastScore() + '</b><span>last score</span></div></div>';
     h += '<button class="ws-cta" style="margin:0 0 6px;' + (c.q ? '' : 'opacity:.5') + '" onclick="' + (c.q ? 'wsStartTest(\'*\')' : '') + '">' + (c.q ? 'Start mock test' : 'Writing your questions\u2026') + '</button>';
     if (busyAny()) h += '<div style="text-align:center;margin:8px 0"><div class="ws-dots"><span></span><span></span><span></span></div></div>';
@@ -829,17 +910,19 @@
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
     var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button></div>';
-    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : 'Stitch Tutor') + seg + (T.sub === 'chat' ? srcBar() + '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
+    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : 'Stitch Tutor') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
 
   function render(){
     var s = $('screen'); if (!s) return;
+    var oldIn = $('ws-in'); if (oldIn) T.draft = oldIn.value;
     var h = view === 'home' ? homeHTML() : view === 'spaces' ? spacesHTML() : view === 'courses' ? coursesHTML() : tutorHTML();
     var chat = view === 'tutor' && T.sub === 'chat';
-    s.innerHTML = '<div class="ws-page"' + (chat ? ' style="padding-bottom:190px"' : '') + '>' + h + '</div>' +
-      (chat ? '<div class="ws-comp"><input id="ws-in" placeholder="Ask anything about your sources..." onkeydown="if(event.key===\'Enter\')wsSend()"><button class="ws-send" onclick="wsSend()" aria-label="Send">' + I('send', 18) + '</button></div>' : '') +
+    s.innerHTML = '<div class="ws-page"' + (chat ? ' style="padding-bottom:260px"' : '') + '>' + h + '</div>' +
+      (chat ? composerHTML() : '') +
       '<input type="file" id="ws-file" multiple accept=".pdf,.docx,.pptx" class="hidden" onchange="wsUpload(event)">' + dock();
+    var ni = $('ws-in'); if (ni) { ni.value = T.draft || ''; wsGrow(); }
     var cn = $('classroom-nav'); if (cn) cn.style.display = 'none';
     var fab = $('study-fab-btn'); if (fab) fab.remove();
   }
@@ -848,6 +931,6 @@
   var oRefresh = (typeof refreshResourcesUI === 'function') ? refreshResourcesUI : null;
   window.refreshResourcesUI = function(){
     try { if (oRefresh) oRefresh.apply(this, arguments); } catch(e){}
-    try { if (typeof currentTab !== 'undefined' && currentTab === 2 && view === 'tutor' && !$('ws-sheet')) render(); } catch(e){}
+    try { if (typeof currentTab !== 'undefined' && currentTab === 2 && view === 'tutor' && !$('ws-sheet')) { if (T.sub === 'chat' && $('ws-comp')) updateChips(); else render(); } } catch(e){}
   };
 })();
