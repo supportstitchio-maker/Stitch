@@ -27,6 +27,21 @@
   /* One header at a time: while a page is open over the Workspace, the header underneath stays hidden */
   body.ws-covered #screen .ws-hdr-s,body.ws-covered #screen .ws-fl{visibility:hidden}
   body.ws-covered .ws-hdr-home{display:none !important}
+  /* A page opened from the Workspace (Quizzes, a space...) is white edge to edge with its own back arrow and bell:
+     the Workspace header and content never show behind it */
+  body:has(#overlay .ws-hdr) #screen .ws-hdr, body:has(#overlay .ws-hdr) #screen .ws-fl{display:none !important}
+  @media (max-width:1099px){
+    body:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero){background:var(--ws-bg,#fff) !important}
+    body.dark-mode:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero){background:#121212 !important}
+  }
+  /* Desktop: bigger header text on every Workspace page */
+  @media (min-width:1100px){
+    .ws-hdr-t b{font-size:26px !important}
+    .ws-hdr-t span{font-size:14px !important}
+    .ws-hdr-sub{font-size:15px !important}
+    .ws-h1{font-size:40px !important}
+    .ws-h2{font-size:22px !important}
+  }
   .ws-hdr-s + .ws-hdr-s,.ws-hdr-s + .ws-fl,.ws-fl + .ws-hdr-s,.ws-fl + .ws-fl-sp + .ws-fl,.ws-fl + .ws-fl-sp + .ws-hdr-s{display:none !important}
   .ws-hdr-t{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 6px}.ws-hdr-t b,.ws-hdr-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}  .ws-hdr-t b{display:block;font-size:17px;font-weight:700}.ws-hdr-t span{font-size:12px;color:var(--ws-sub)}
   .ws-hdr-r{display:flex;align-items:center;margin-right:-11px}.ws-hdr-r .ws-circ{width:38px !important}.ws-hdr-m .ws-hdr-t{padding-left:38px}
@@ -286,7 +301,13 @@
   window.wsLeave = function(){
     /* Pages inside the tutor (chat history, summaries...) step back to their parent */
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
-    /* On the Workspace page itself the arrow simply exits it: no previous-page lookup */
+    /* Tutor, Courses and the Spaces list step back to the Workspace home first; only the home's arrow exits */
+    if (view !== 'home') {
+      nav.length = 0;
+      if (wsPushed > 0) { var m = wsPushed; wsPushed = 0; try { history.go(-m); } catch(e){} }
+      view = 'home'; render(); var hs = $('screen'); if (hs) hs.scrollTop = 0; return;
+    }
+    /* On the Workspace home itself the arrow simply exits it: no previous-page lookup */
     nav.length = 0;
     if (wsPushed > 0) { var n = wsPushed; wsPushed = 0; try { history.go(-n); } catch(e){} }
     switchTab(0);
@@ -1401,8 +1422,8 @@
       /* A space page is open: nothing from the Workspace home (its title) may show behind or above it */
       if (document.querySelector('#overlay .ws-hero, #screen .ws-hero')) on = true;
       document.body.classList.toggle('ws-covered', on);
-      /* Quizzes page: its title always reads Quizzes */
-      if (currentOverlayKind === 'practiceTests') document.querySelectorAll('#overlay .ws-hdr-t b').forEach(function(b){ if (b.textContent !== 'Quizzes') b.textContent = 'Quizzes'; });
+      /* Practice page: its title always reads Practice */
+      if (currentOverlayKind === 'practiceTests') document.querySelectorAll('#overlay .ws-hdr-t b').forEach(function(b){ if (b.textContent !== 'Practice') b.textContent = 'Practice'; });
     } catch(e){}
   }
   try {
