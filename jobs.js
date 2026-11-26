@@ -64,7 +64,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div id="career-titlebar" class="sticky top-0 z-20 px-5 pb-3 border-b border-gray-100" style="padding-top:var(--top-safe-pad);background:#f9fafb;">
               <div class="relative flex items-center justify-between">
                 <h1 class="text-base font-bold font-display grad-text whitespace-nowrap">Career Space</h1>
-                <button id="career-dashes-btn" onclick="toggleCareerMenu()" aria-label="Career menu" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h16"/></svg>')}</button>
+                <button id="career-dashes-btn" onclick="toggleCareerMenu()" aria-label="Career menu" class="h-10 flex items-center justify-end" style="width:32px;margin-right:-2px;">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h16"/></svg>')}</button>
               </div>
             </div>
             <div id="career-searchbar" class="sticky z-10 bg-gray-50 px-5 pt-4" style="padding-bottom:8px;">
@@ -5827,7 +5827,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 <span style="font-size:16px;font-weight:700;color:#0f172a;">${plan.label}</span>
                 <span class="block" style="font-size:11.5px;color:#64748b;margin-top:1px;">Billed every ${plan.unit}${best ? ` · <b style="white-space:nowrap;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#1e90ff;font-size:10px;">Best value</b>` : ''}</span>
               </span>
-              <span class="text-right flex-shrink-0"><span style="font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;color:${selected ? '#1e90ff' : '#0f172a'};">GHS ${plan.price}</span><span style="font-size:12px;color:#64748b;"> /${plan.unit}</span></span>
+              <span class="text-right flex-shrink-0"><span style="font-family:'Gendy','Montserrat',sans-serif;font-size:24px;color:${selected ? '#1e90ff' : '#0f172a'};">GHS ${plan.price}</span><span style="font-size:12px;color:#64748b;"> /${plan.unit}</span></span>
             </button>`;
         }
         function careerStartPlanHTML(){
@@ -7075,7 +7075,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
                 </div>
               </div>
               <div style="margin:22px 0 4px;">
-                <div class="disp" style="font-family:'Colmeak','Montserrat',sans-serif;font-size:46px;line-height:1;color:${bigColor};">${active ? `${leftDays} day${leftDays === 1 ? '' : 's'}` : 'Ended'}</div>
+                <div class="disp" style="font-family:'Gendy','Montserrat',sans-serif;font-size:46px;line-height:1;color:${bigColor};">${active ? `${leftDays} day${leftDays === 1 ? '' : 's'}` : 'Ended'}</div>
                 <div style="font-size:12.5px;color:#64748b;margin-top:6px;">${active ? (sub.cancelled ? 'left · then matching and auto apply stop' : (soon ? 'left · auto apply pauses after this' : `left · renews ${escapeHtml(careerPlanDateLabel(sub.expiresAt))}`)) : `on ${escapeHtml(careerPlanDateLabel(sub.expiresAt))} · auto apply is paused`}</div>
               </div>
               <div style="height:7px;border-radius:9999px;background:#e5eaf3;overflow:hidden;margin:12px 0 18px;"><div style="height:100%;width:${active ? pct : 100}%;border-radius:9999px;background:${active ? barBg : '#ef4444'};"></div></div>
@@ -10783,9 +10783,9 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           let useColmeak = false, useMont = false;
           try {
             if (window.COLMEAK_PDF_TTF_B64) {
-              doc.addFileToVFS('Colmeak.ttf', window.COLMEAK_PDF_TTF_B64);
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'normal');
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'bold');
+              doc.addFileToVFS('Gendy.ttf', window.COLMEAK_PDF_TTF_B64);
+              doc.addFont('Gendy.ttf', 'Gendy', 'normal');
+              doc.addFont('Gendy.ttf', 'Gendy', 'bold');
               useColmeak = true;
             }
           } catch (e) { useColmeak = false; }
@@ -10805,7 +10805,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             return c >= 0xA0 && c <= 0xFF && (!useColmeak || cmOk.has(c));
           }).join('').trim();
           // `display` = true draws in Colmeak (title, headings); everything else is Montserrat.
-          const typeface = display => (display && useColmeak) ? 'Colmeak' : (useMont ? 'Montserrat' : (useColmeak ? 'Colmeak' : 'helvetica'));
+          const typeface = display => (display && useColmeak) ? 'Gendy' : (useMont ? 'Montserrat' : (useColmeak ? 'Gendy' : 'helvetica'));
           const rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
           const fill = h => doc.setFillColor(...rgb(h));
           const stroke = h => doc.setDrawColor(...rgb(h));

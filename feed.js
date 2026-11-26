@@ -2177,7 +2177,7 @@
         }
         const GLIMPSE_COMPOSE_FONTS = [
           "'Montserrat', system-ui, -apple-system, sans-serif",
-          "'Colmeak', 'Montserrat', sans-serif",
+          "'Gendy', 'Montserrat', sans-serif",
           "Georgia, 'Times New Roman', serif",
           "'Courier New', Courier, monospace",
           "'Brush Script MT', cursive",

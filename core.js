@@ -3620,7 +3620,7 @@ function toggleEmojiPicker(targetId, btn){
         '</div>' +
         '<button type="button" data-act="del" aria-label="Delete" style="' + iconBtn + '">' + emojiBackspaceSVG(22) + '</button>' +
       '</div>' +
-      '<div style="padding:4px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
+      '<div style="padding:4px 12px 4px;font-size:12px;font-weight:700;opacity:.55;flex-shrink:0;font-family:\'Gendy\',\'Montserrat\',sans-serif;">' + t.name + '</div>' +
       '<div id="emoji-grid" style="' + GRID + (desk ? 'grid-template-columns:repeat(' + deskCols + ',1fr);' : '') + '">' +
         (t.list.length ? cellsHTML(t.list) : '<div style="grid-column:1/-1;padding:24px 8px;text-align:center;font-size:13px;opacity:.55;">Emojis you use will show up here</div>') +
       '</div>';
@@ -4085,7 +4085,7 @@ function coverPickerHTML(o){
     const steps = isIOS && !deferred
       ? '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Tap <b>Share</b> <span style="display:inline-block;vertical-align:-3px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg></span> in Safari, then <b>Add to Home Screen</b>. You can find this again anytime in <b>Settings</b>.</div>'
       : '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Add it to your home screen for faster access and a full-screen experience. No app store needed. You can also do this anytime in <b>Settings</b>.</div>';
-    const btn = 'height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
+    const btn = 'height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Gendy\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
     const actions = isIOS && !deferred
       ? '<button type="button" id="install-no" style="width:100%;' + btn + '">Got it</button>'
       : '<div style="display:flex;gap:10px;"><button type="button" id="install-no" style="flex:1;' + btn + '">Not now</button>' +
@@ -4093,7 +4093,7 @@ function coverPickerHTML(o){
     card.innerHTML =
       '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">' +
         '<img src="/assets/icon-192.png" alt="" width="52" height="52" style="width:52px;height:52px;border-radius:13px;box-shadow:0 0 0 1px rgba(10,37,64,.08);flex-shrink:0;">' +
-        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">Install Stitch</div>' + steps + '</div>' +
+        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Gendy\',\'Montserrat\',sans-serif;">Install Stitch</div>' + steps + '</div>' +
       '</div>' + actions;
     document.body.appendChild(card);
     requestAnimationFrame(function(){ requestAnimationFrame(function(){ if (card) { card.style.transform = 'none'; card.style.opacity = '1'; } }); });
@@ -4187,11 +4187,11 @@ function coverPickerHTML(o){
     card = document.createElement('div'); card.id = 'push-card';
     card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Turn on notifications');
     card.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30000;max-width:460px;margin:0 auto;border-radius:24px;padding:18px 18px 16px;background:' + (dark ? '#1f2024' : '#ffffff') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';box-shadow:0 18px 50px rgba(10,37,64,.28),0 0 0 1px ' + (dark ? 'rgba(255,255,255,.08)' : 'rgba(10,37,64,.06)') + ';transform:translateY(110%);opacity:0;transition:transform .38s cubic-bezier(.2,.9,.25,1),opacity .25s;';
-    const btn = 'flex:1;height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
+    const btn = 'flex:1;height:46px;border-radius:23px;font-size:15px;font-weight:700;font-family:\'Gendy\',\'Montserrat\',sans-serif;background:' + (dark ? 'rgba(255,255,255,.1)' : '#eceef1') + ';color:' + (dark ? '#f2f2f2' : '#0a2540') + ';';
     card.innerHTML =
       '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">' +
         '<img src="/assets/icon-192.png" alt="" width="52" height="52" style="width:52px;height:52px;border-radius:13px;box-shadow:0 0 0 1px rgba(10,37,64,.08);flex-shrink:0;">' +
-        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Colmeak\',\'Montserrat\',sans-serif;">Turn on notifications</div>' +
+        '<div style="min-width:0;"><div style="font-size:18px;font-weight:700;font-family:\'Gendy\',\'Montserrat\',sans-serif;">Turn on notifications</div>' +
         '<div style="font-size:13.5px;line-height:1.5;opacity:.75;margin-top:2px;">Get messages, calls and class updates even when Stitch is closed. You can change this anytime in <b>Settings</b>.</div></div>' +
       '</div><div style="display:flex;gap:10px;"><button type="button" id="push-no" style="' + btn + '">Not now</button><button type="button" id="push-yes" style="' + btn + '">Turn on</button></div>';
     document.body.appendChild(card);

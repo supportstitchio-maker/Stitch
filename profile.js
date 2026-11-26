@@ -1983,7 +1983,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                     </div>
                   </div>
                 </div>
-                <div class="text-xl mt-6 text-center" style="font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;color:${t.text};word-break:break-word;">${label}</div>
+                <div class="text-xl mt-6 text-center" style="font-family:'Gendy','Montserrat',sans-serif;font-weight:700;color:${t.text};word-break:break-word;">${label}</div>
                 <div class="text-[13px] mt-1.5 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
                 <div class="flex-1" style="min-height:24px;"></div>
                 <div class="qr-tiles">
@@ -2001,7 +2001,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         // Draws the finished light card (QR + centre photo + name in Colmeak) and resolves with the canvas
         async function buildQRCardCanvas(link, label, photo){
           const t = qrExportTheme();
-          try { if (document.fonts && document.fonts.load) await document.fonts.load("700 38px 'Colmeak'"); } catch (e) {}
+          try { if (document.fonts && document.fonts.load) await document.fonts.load("700 38px 'Gendy'"); } catch (e) {}
           const holder = document.createElement('div');
           new QRCode(holder, { text: link, width: 240, height: 240, colorDark: t.mod, colorLight: t.light, correctLevel: QRCode.CorrectLevel.H });
           const qrCanvas = holder.querySelector('canvas');
@@ -2017,7 +2017,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ctx.drawImage(qrCanvas, pad, pad, size - pad * 2, size - pad * 2);
           ctx.imageSmoothingEnabled = true;
           ctx.fillStyle = t.text;
-          ctx.font = "700 38px 'Colmeak','Montserrat',sans-serif";
+          ctx.font = "700 38px 'Gendy','Montserrat',sans-serif";
           ctx.textAlign = 'center';
           ctx.fillText(String(label || '').toUpperCase(), out.width / 2, size + 84);
           const cx = size / 2, cy = size / 2;

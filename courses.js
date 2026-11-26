@@ -1831,7 +1831,7 @@ try {
           return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
         }
         async function buildCourseCertificate(c){
-          try { await Promise.all([document.fonts.load('64px Colmeak'), document.fonts.load('700 52px Inter'), document.fonts.load('400 30px Montserrat'), document.fonts.load('600 30px Montserrat'), document.fonts.load('700 30px Montserrat'), document.fonts.load('800 30px Montserrat'), document.fonts.ready]); } catch (e) {}
+          try { await Promise.all([document.fonts.load('64px Gendy'), document.fonts.load('700 52px Inter'), document.fonts.load('400 30px Montserrat'), document.fonts.load('600 30px Montserrat'), document.fonts.load('700 30px Montserrat'), document.fonts.load('800 30px Montserrat'), document.fonts.ready]); } catch (e) {}
           const W = 1600, H = 1130, CX = W / 2;
           const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
           const x = cv.getContext('2d');
@@ -1861,14 +1861,14 @@ try {
           const lw0 = await courseCertLoadImg('assets/stitch-logo-wordmark.png');
           x.save(); x.translate(0, -90);
           // heading
-          x.fillStyle = '#1e90ff'; let hs = 92; x.font = hs + 'px Colmeak, Montserrat, sans-serif';
-          while (x.measureText('COURSE CERTIFICATE').width > W - 520 && hs > 50) { hs -= 4; x.font = hs + 'px Colmeak, Montserrat, sans-serif'; }
+          x.fillStyle = '#1e90ff'; let hs = 92; x.font = hs + 'px Gendy, Montserrat, sans-serif';
+          while (x.measureText('COURSE CERTIFICATE').width > W - 520 && hs > 50) { hs -= 4; x.font = hs + 'px Gendy, Montserrat, sans-serif'; }
           x.fillText('COURSE CERTIFICATE', CX, 360);
           // body
           const name = ((typeof profileData !== 'undefined' && profileData.name) || 'Learner').trim();
           x.fillStyle = '#6b7280'; x.font = '400 27px Montserrat, sans-serif'; x.fillText('This is to certify that', CX, 490);
-          x.fillStyle = NAVYD; let fs = 84; x.font = fs + 'px Colmeak, Montserrat, sans-serif';
-          while (x.measureText(name).width > W - 400 && fs > 36) { fs -= 4; x.font = fs + 'px Colmeak, Montserrat, sans-serif'; }
+          x.fillStyle = NAVYD; let fs = 84; x.font = fs + 'px Gendy, Montserrat, sans-serif';
+          while (x.measureText(name).width > W - 400 && fs > 36) { fs -= 4; x.font = fs + 'px Gendy, Montserrat, sans-serif'; }
           x.fillText(name, CX, 585);
           x.strokeStyle = '#c7d7f5'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(CX - 330, 618); x.lineTo(CX + 330, 618); x.stroke();
           x.fillStyle = '#6b7280'; x.font = '400 26px Montserrat, sans-serif';
@@ -4233,9 +4233,9 @@ try {
           let useColmeak = false, useMont = false;
           try {
             if (window.COLMEAK_PDF_TTF_B64) {
-              doc.addFileToVFS('Colmeak.ttf', window.COLMEAK_PDF_TTF_B64);
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'normal');
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'bold');
+              doc.addFileToVFS('Gendy.ttf', window.COLMEAK_PDF_TTF_B64);
+              doc.addFont('Gendy.ttf', 'Gendy', 'normal');
+              doc.addFont('Gendy.ttf', 'Gendy', 'bold');
               useColmeak = true;
             }
           } catch (e) { useColmeak = false; }
@@ -4254,7 +4254,7 @@ try {
             if (c >= 0x20 && c <= 0x7E) return true;
             return c >= 0xA0 && c <= 0xFF && (!useColmeak || cmOk.has(c));
           }).join('').trim();
-          const typeface = display => (display && useColmeak) ? 'Colmeak' : (useMont ? 'Montserrat' : (useColmeak ? 'Colmeak' : 'helvetica'));
+          const typeface = display => (display && useColmeak) ? 'Gendy' : (useMont ? 'Montserrat' : (useColmeak ? 'Gendy' : 'helvetica'));
           const rgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
           const fill = h => doc.setFillColor(...rgb(h));
           const stroke = h => doc.setDrawColor(...rgb(h));
@@ -6741,9 +6741,9 @@ try {
           let useColmeak = false, useMont = false;
           try {
             if (window.COLMEAK_PDF_TTF_B64) {
-              doc.addFileToVFS('Colmeak.ttf', window.COLMEAK_PDF_TTF_B64);
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'normal');
-              doc.addFont('Colmeak.ttf', 'Colmeak', 'bold');
+              doc.addFileToVFS('Gendy.ttf', window.COLMEAK_PDF_TTF_B64);
+              doc.addFont('Gendy.ttf', 'Gendy', 'normal');
+              doc.addFont('Gendy.ttf', 'Gendy', 'bold');
               useColmeak = true;
             }
           } catch (e) { useColmeak = false; }
@@ -6762,7 +6762,7 @@ try {
             if (c >= 0x20 && c <= 0x7E) return true;
             return c >= 0xA0 && c <= 0xFF && (!useColmeak || cmOk.has(c));
           }).join('').trim();
-          const typeface = display => (display && useColmeak) ? 'Colmeak' : (useMont ? 'Montserrat' : (useColmeak ? 'Colmeak' : 'helvetica'));
+          const typeface = display => (display && useColmeak) ? 'Gendy' : (useMont ? 'Montserrat' : (useColmeak ? 'Gendy' : 'helvetica'));
           const rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
           const fill = h => doc.setFillColor(...rgb(h));
           const stroke = h => doc.setDrawColor(...rgb(h));

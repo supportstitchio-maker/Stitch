@@ -1285,7 +1285,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ${selectMode ? `
                 <button onclick="cancelInboxSelect()" class="text-sm font-semibold text-gray-600">Cancel</button>
                 <div class="text-sm font-semibold grad-text">${selectedConvos.size} selected</div>
-                <button onclick="toggleInboxActionsMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('dots','w-6 h-6'))}</button>
+                <button onclick="toggleInboxActionsMenu()" class="w-10 h-10 flex items-center justify-center">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="12" cy="18.5" r="1.35"/></svg>')}</button>
               ` : `
                 <span id="inbox-username-el" class="font-bold text-base font-display grad-text whitespace-nowrap">${escapeHtml(profileData.username)}</span>
                 <button id="inbox-filter-btn" onclick="toggleInboxFilterMenu()" class="h-10 flex items-center justify-end flex-shrink-0" style="width:32px;margin-right:-2px;" title="Menu">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
@@ -1927,7 +1927,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } catch (e) { return ''; }
         }
         function mentionAtBadge(){
-          return `<div class="rounded-full flex items-center justify-center flex-shrink-0" title="You were mentioned" style="width:1.25rem;height:1.25rem;background:#1e90ff;color:#fff;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg></div>`;
+          return `<span class="flex items-center justify-center flex-shrink-0" title="You were mentioned" style="color:#1fc45a;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg></span>`;
         }
         function convoRow(c){
           const { id, icon, avatarBg, name, username, preview, time, photo } = c;
@@ -1936,7 +1936,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const showUnread = c.unread && !c.read;
           const isActiveChat = activeConvoId === id && document.getElementById('app-shell') && document.getElementById('app-shell').classList.contains('messaging-split');
           return `
-            <div class="flex items-center gap-4 px-5 py-4 cursor-pointer ${isSel ? '' : (c.read ? 'bg-gray-50' : 'bg-white')}${isActiveChat ? ' convo-active' : ''}"
+            <div class="flex items-center gap-4 px-5 py-4 cursor-pointer ${isSel ? '' : 'bg-white'}${isActiveChat ? ' convo-active' : ''}"
               style="${isSel ? `background:rgba(65,105,225,0.14);` : ''}"
               onmousedown="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" onmouseup="endPress()" onmouseleave="endPress()"
               ontouchstart="startPress('convoLongPressSelect','${escapeForJsAttr(id)}', event)" ontouchend="endPress()" ontouchmove="movePress(event)" ontouchcancel="endPress()"
@@ -1951,17 +1951,18 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="text-xs ${showUnread ? 'text-gray-800 font-medium' : 'text-gray-500'} truncate">${escapeHtml(convoRowPreviewPrefix(c))}${previewWithIconHTML(preview)}</div>
               </div>
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <div class="text-[11px] ${showUnread && c.mentioned ? '' : 'text-gray-400'}" style="${showUnread && c.mentioned ? 'color:#1e90ff;font-weight:600;' : ''}">${time}</div>
-                ${showUnread ? `<div class="flex items-center gap-1">${c.mentioned ? mentionAtBadge() : ''}${unreadCountBadge(c.unreadCount)}</div>` : ''}
+                <div class="text-[11px] ${showUnread && c.mentioned ? '' : 'text-gray-400'}" style="${showUnread && c.mentioned ? 'color:#1fc45a;font-weight:600;' : ''}">${time}</div>
+                ${showUnread ? `<div class="flex items-center gap-1.5">${c.mentioned ? mentionAtBadge() : ''}${unreadCountBadge(c.unreadCount, c.mentioned)}</div>` : ''}
               </div>
             </div>`;
         }
 
         // A plain dot only ever showed "something's unread", not how much
-        function unreadCountBadge(count){
+        function unreadCountBadge(count, mentioned){
           const n = count || 1;
-          const label = n > 9 ? '9+' : String(n);
-          return `<div class="rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0" style="min-width:1.25rem;height:1.25rem;padding:0 0.35rem;font-size:10px;font-weight:700;line-height:1;">${label}</div>`;
+          // Rows where I was tagged use the green WhatsApp-style pill and show the full count (up to 99+)
+          const label = mentioned ? (n > 99 ? '99+' : String(n)) : (n > 9 ? '9+' : String(n));
+          return `<div class="rounded-full ${mentioned ? '' : 'bg-blue-500'} text-white flex items-center justify-center flex-shrink-0" style="${mentioned ? 'background:#1fc45a;min-width:1.4rem;height:1.4rem;font-size:11px;' : 'min-width:1.25rem;height:1.25rem;font-size:10px;'}padding:0 0.4rem;font-weight:700;line-height:1;">${label}</div>`;
         }
 
         // ---- Message requests (accept/reject) ----
@@ -4882,8 +4883,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               @media (prefers-reduced-motion: reduce){.cp-rise{animation:none;}}
             </style>
             <div id="convo-profile-scroll" class="${embed ? '' : 'flex-1 overflow-y-auto'}" style="-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
-              ${embed ? '' : `<div style="position:sticky;top:0;height:0;z-index:20;"><button onclick="closeConvoProfile()" aria-label="Back" class="cp-float-back cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button></div><div style="height:calc(var(--top-safe-pad) + 60px);"></div>`}
-              <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;">
+              ${embed ? '' : `<div style="position:sticky;top:0;height:0;z-index:20;"><button onclick="closeConvoProfile()" aria-label="Back" class="cp-float-back cp-press">${gradIcon(IconBold('back','w-5 h-5'))}</button><button onclick="toggleCpMenu(event)" aria-label="More" class="cp-float-more cp-press">${cpDotsIcon()}</button></div><div style="height:calc(var(--top-safe-pad) + 60px);"></div>`}
+              <div class="p-5 ${window.__cpNoRise ? '' : 'cp-rise'}" style="padding-top:8px;${embed ? 'position:relative;' : ''}">
+                ${embed ? `<button onclick="toggleCpMenu(event, true)" aria-label="More" class="cp-float-more cp-press" style="top:12px;right:12px;">${cpDotsIcon()}</button>` : ''}
                 <div class="flex items-center gap-5 mb-4">
                   <div class="relative flex-shrink-0">
                     <div class="w-20 h-20 ${meta.avatarBg} rounded-full flex items-center justify-center text-gray-600 overflow-hidden cp-press" onclick="${isGroup ? 'triggerCollabPhotoUpload()' : `openPersonProfileForConvo('${activeConvoId}')`}" style="cursor:pointer;">${avatarInnerHTML(pd && pd.photo ? Object.assign({}, meta, { photo: pd.photo }) : meta,'w-9 h-9')}</div>
@@ -4909,18 +4911,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${pd && pd.bio ? `<div class="text-sm text-gray-600 mb-4" style="white-space:pre-wrap;">${escapeHtml(pd.bio)}</div>` : ''}
                   ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
                 `}
-                <div class="flex w-full cp-tg-row">
-                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-tg cp-press">${cpIcon('comment')}<span>Message</span></button>`}
-                  <button onclick="toggleConvoNotifPref()" class="cp-tg cp-press">${cpIcon(notifOn ? 'bell' : 'bellOff')}<span>${notifOn ? 'Mute' : 'Unmute'}</span></button>
-                  ${isGroup ? `
-                    <button onclick="openCollabMembers()" class="cp-tg cp-press">${cpIcon('users')}<span>Members</span></button>
-                    <button onclick="shareCollabInviteLink()" class="cp-tg cp-press">${cpIcon('send')}<span>Invite</span></button>
-                  ` : `
-                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-tg cp-press">${cpIcon('phone')}<span>Call</span></button>
-                    <button onclick="startCall('${activeConvoId}','video')" class="cp-tg cp-press">${cpIcon('video')}<span>Video</span></button>
-                  `}
-                  <button onclick="cpOpenSearch()" class="cp-tg cp-press">${cpIcon('search')}<span>Search</span></button>
-                </div>
               </div>
               <div class="px-5 pb-8">
 
@@ -4930,7 +4920,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>` : ''}
 
               <div class="flat-list cp-list cp-grp mb-4">
-                ${!isGroup && pd && pd.username ? cpRow('at','Username', '@' + escapeHtml(String(pd.username).replace(/^@/, '')), 'cpCopyUsername()') : ''}
                 ${cpRow('image','Media, links and docs', String(mediaCount), 'openConvoMediaLinksDocs()')}
                 ${cpRow('star','Starred messages', '', 'cpOpenStarred()')}
                 ${!isGroup && pd && pd.username ? cpRow('share','Share contact', '', 'cpShareContact()') : ''}
@@ -4967,6 +4956,38 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        // ---- Contact info: floating Telegram-style menu (Message, Mute, Call, Video, Search) ----
+        function cpDotsIcon(){ return '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>'; }
+        function closeCpMenu(){ const m = document.getElementById('cp-menu-layer'); if (m) m.remove(); }
+        function cpMenuDo(fn){ closeCpMenu(); try { fn(); } catch (e) {} }
+        function toggleCpMenu(ev, embed){
+          if (document.getElementById('cp-menu-layer')) { closeCpMenu(); return; }
+          const meta = activeConvoMetaSafe(activeConvoId);
+          const isGroup = meta && meta.icon === 'users';
+          const notifOn = isConvoNotifEnabled(activeConvoId);
+          const id = activeConvoId;
+          const items = [];
+          if (!embed) items.push(['comment', 'Message', () => closeConvoProfile()]);
+          items.push([notifOn ? 'bell' : 'bellOff', notifOn ? 'Mute' : 'Unmute', () => toggleConvoNotifPref()]);
+          if (isGroup) {
+            items.push(['users', 'Members', () => openCollabMembers()]);
+            items.push(['send', 'Invite', () => shareCollabInviteLink()]);
+          } else {
+            items.push(['phone', 'Call', () => startCall(id, 'audio')]);
+            items.push(['video', 'Video', () => startCall(id, 'video')]);
+          }
+          items.push(['search', 'Search', () => cpOpenSearch()]);
+          window.__cpMenuActions = items.map(it => it[2]);
+          const btn = ev && ev.currentTarget;
+          const r = btn ? btn.getBoundingClientRect() : { bottom: 56, right: window.innerWidth - 14 };
+          const layer = document.createElement('div');
+          layer.id = 'cp-menu-layer';
+          layer.setAttribute('onclick', 'closeCpMenu()');
+          layer.innerHTML = `<div class="cp-menu" role="menu" onclick="event.stopPropagation()" style="top:${Math.round(r.bottom + 8)}px;right:${Math.max(10, Math.round(window.innerWidth - r.right))}px;">${items.map((it, i) => `<button type="button" role="menuitem" class="cp-menu-item" onclick="cpMenuDo(window.__cpMenuActions[${i}])">${cpIcon(it[0])}<span>${it[1]}</span></button>`).join('')}</div>`;
+          document.body.appendChild(layer);
+          if (window.haptic) window.haptic(8);
+        }
+
         // ---- Contact info rows: outline icon, label, value, grey chevron, no panel behind ----
         const CP_PATHS = {
           image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
@@ -5000,13 +5021,6 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const u = c && c.details && c.details.username;
             return u ? String(u).replace(/^@/, '') : '';
           } catch (e) { return ''; }
-        }
-        function cpCopyUsername(){
-          const u = cpProfileUsername();
-          if (!u) return;
-          if (window.haptic) window.haptic(8);
-          const done = () => { try { pushInAppNotification('Copied', '@' + u + ' copied to your clipboard.'); } catch (e) {} };
-          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText('@' + u).then(done).catch(() => {});
         }
         function cpShareContact(){
           const u = cpProfileUsername();
@@ -5369,7 +5383,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:max(4px,calc(var(--top-safe-pad) - 14px));padding-bottom:6px;padding-left:2px;padding-right:2px;gap:2px;">
+            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:var(--top-safe-pad);padding-bottom:6px;padding-left:2px;padding-right:2px;gap:2px;">
               <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-wa-back">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div class="cv-wa-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-avatar" class="cv-wa-avatar">${avatarInnerHTML(meta, 'w-5 h-5')}</div>
@@ -5980,7 +5994,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const row = r => `<button onclick="${r.fn}" class="w-full text-left px-5 py-4 text-[15px] font-medium ${r.danger ? 'text-red-500' : 'text-gray-800'} border-b border-gray-100" style="font-family:inherit;">${r.label}</button>`;
           return `
             <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
-              <div class="bg-white w-full convo-sheet" style="max-width:480px;max-height:88vh;overflow-y:auto;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
+              <div class="bg-white w-full convo-sheet" style="max-width:480px;max-height:88vh;overflow-y:auto;font-family:'Gendy','Montserrat',sans-serif;" onclick="event.stopPropagation()">
                 <div class="convo-sheet-grabber"></div>
                 ${messageReactionRowHTML(msg, false)}
                 ${messageMenuRows(msg).map(row).join('')}
@@ -6186,7 +6200,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           sheet.id = 'message-action-sheet';
           sheet.innerHTML = `
             <div class="fixed inset-0 flex items-end justify-center convo-sheet-scrim" style="z-index:60;" onclick="closeMessageActionSheet()">
-              <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Colmeak','Montserrat',sans-serif;" onclick="event.stopPropagation()">
+              <div class="bg-white w-full convo-sheet" style="max-width:480px;font-family:'Gendy','Montserrat',sans-serif;" onclick="event.stopPropagation()">
                 <div class="convo-sheet-grabber"></div>
                 <div class="text-[17px] font-bold text-gray-800" style="padding:8px 20px 12px;">Message info</div>
                 ${rows.map(r => `<div class="flex items-center justify-between border-b border-gray-100" style="padding:14px 20px;font-family:'Montserrat',sans-serif;"><span class="text-sm text-gray-500">${r[0]}</span><span class="text-sm font-medium text-gray-800">${escapeHtml(r[1])}</span></div>`).join('')}
@@ -8882,7 +8896,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-glass:active{transform:scale(.93);background:var(--cu-soft2);}
             .cu-glass .cu-count{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
             .cu-title{flex:1;min-width:0;text-align:center;}
-            .cu-title-name{font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .cu-title-name{font-family:'Gendy','Montserrat',sans-serif;font-weight:700;font-size:17px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
             .cu-status{display:inline-flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:var(--cu-sub);font-variant-numeric:tabular-nums;}
             .cu-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:cuPulse 1.8s infinite;}
             .cu-dot-warn{background:#fbbf24;animation-name:cuPulseWarn;}
@@ -8939,7 +8953,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-tile{border-radius:26px;}
             .cu-tile.cu-speaking,.cu-pip.cu-speaking{outline:3px solid #1e90ff;outline-offset:-3px;}
             .cu-pip{border:3px solid var(--cu-bg);border-radius:20px;box-shadow:0 8px 22px rgba(30,60,140,.28);}
-            .cu-voice-name{font-family:'Colmeak','Montserrat',sans-serif;font-size:24px;}
+            .cu-voice-name{font-family:'Gendy','Montserrat',sans-serif;font-size:24px;}
             .cu-bar{padding:6px 12px calc(env(safe-area-inset-bottom,0px) + 14px);}
             .cu-bar-inner{width:100%;max-width:560px;flex-wrap:wrap;justify-content:space-around;gap:10px 4px;padding:14px 12px 14px;border-radius:30px;background:var(--cu-sheet);border:1px solid var(--cu-line);box-shadow:0 12px 36px rgba(30,60,140,.18);}
             body.dark-mode .cu-bar-inner{box-shadow:none;}
@@ -9017,7 +9031,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             .cu-bsheet-row > :first-child{background:none !important;color:var(--cu-ic) !important;width:24px !important;height:24px !important;padding:0 !important;border-radius:0 !important;}
             .cu-bsheet-row.red > :first-child{background:none !important;color:#ef4444 !important;}
             .cu-bsheet{max-width:560px;}
-            .cu-sheet-title{font-family:'Colmeak','Montserrat',sans-serif;font-weight:700;font-size:20px;padding:6px 8px 4px;}
+            .cu-sheet-title{font-family:'Gendy','Montserrat',sans-serif;font-weight:700;font-size:20px;padding:6px 8px 4px;}
             .cu-tilegrid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:10px 6px;}
             .cu-tilegrid .cu-tile2{flex:0 0 calc((100% - 16px) / 3);min-width:0;}
             .cu-tilegrid4 .cu-tile2{flex-basis:calc((100% - 24px) / 4);}
@@ -11290,7 +11304,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div style="display:flex;align-items:center;gap:10px;padding:calc(var(--top-safe-pad, env(safe-area-inset-top,0px)) + 10px) 12px 10px;border-bottom:1px solid var(--cu-line);flex-shrink:0;">
               <button onclick="closeMeetingChatPage()" title="Back to call" class="mc-back-bold" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--cu-soft);color:var(--cu-fg);">${Icon('arrowLeft','w-5 h-5')}</button>
               <div style="min-width:0;flex:1;text-align:center;">
-                <div style="font-size:18px;font-weight:700;font-family:'Colmeak','Montserrat',sans-serif;" class="truncate">${escapeHtml(ctx.heading)}</div>
+                <div style="font-size:18px;font-weight:700;font-family:'Gendy','Montserrat',sans-serif;" class="truncate">${escapeHtml(ctx.heading)}</div>
               </div>
               <div style="width:40px;height:40px;flex-shrink:0;" aria-hidden="true"></div>
             </div>

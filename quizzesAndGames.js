@@ -1650,7 +1650,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           .ar-page{flex:1;overflow-y:auto;background:var(--bg)}
           .ar-in{max-width:1080px;margin:0 auto;padding:0 20px 28px}
           .ar-top{padding-top:var(--top-safe-pad);padding-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-          .ar-top,.ar-top *{font-family:'Colmeak','Montserrat',sans-serif}
+          .ar-top,.ar-top *{font-family:'Gendy','Montserrat',sans-serif}
           .ar-title{font-weight:700;font-size:1.05rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
           .ar-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}
           .ar-h{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:12px}
