@@ -1,4 +1,4 @@
-/* Workspace redesign: Home, Courses, Course page, Create/Join sheet and AI Tutor.
+/* Workspace redesign: Home, Courses, Course page, Create/Join sheet and Stitch Tutor.
    Loaded after the other scripts: it replaces renderStudy() and classDetailHTML(). */
 (function(){
   'use strict';
@@ -34,7 +34,7 @@
   .ws-sp b{font-size:17px;line-height:1.15}.ws-sp small{font-size:11px;opacity:.85;margin-top:4px}
   .ws-dock{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;justify-content:center;gap:12px;z-index:25;pointer-events:none}
   .ws-dock button{pointer-events:auto;width:60px;height:56px;border-radius:20px;background:var(--ws-bg);color:var(--ws-ink);border:1px solid transparent;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(11,31,63,.16);transition:background .2s,box-shadow .2s}
-  .ws-dock button.on{background:rgba(30,144,255,.14);color:var(--ws-ink);border-color:#1e90ff;box-shadow:0 8px 24px rgba(11,31,63,.16),inset 0 0 0 1px #1e90ff}
+  .ws-dock button.on{background:linear-gradient(rgba(30,144,255,.14),rgba(30,144,255,.14)),var(--ws-bg);color:var(--ws-ink);border-color:#1e90ff;box-shadow:0 8px 24px rgba(11,31,63,.16),inset 0 0 0 1px #1e90ff}
   body.dark-mode .ws-dock button{box-shadow:0 8px 24px rgba(0,0,0,.45)}
   .ws-search{display:flex;align-items:center;gap:10px;background:var(--ws-card);border-radius:999px;padding:12px 16px;color:var(--ws-sub);margin-bottom:12px}
   .ws-search input{flex:1;background:transparent;outline:none;font-size:14px;color:var(--ws-ink)}
@@ -91,6 +91,19 @@
   .ws-dots span{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1e90ff;margin-right:4px;animation:wsb 1s infinite}.ws-dots span:nth-child(2){animation-delay:.15s}.ws-dots span:nth-child(3){animation-delay:.3s}
   @keyframes wsb{50%{opacity:.25}}
 .ws-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.ws-stat{background:var(--ws-card);border-radius:18px;padding:12px 6px;text-align:center}.ws-stat b{display:block;font-size:19px;color:var(--ws-ink);font-family:'Gendy','Montserrat',sans-serif}.ws-stat span{font-size:11px;color:var(--ws-sub)}
+
+  #classroom-nav{display:none!important}
+  .ws-sugs{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:22px}.ws-sugs .filter-pill{margin:0}
+  .ws-hero{padding-top:54px}
+  .ws-hero h2{font-size:22px!important;line-height:1.15!important;letter-spacing:.01em}
+  .ws-code{display:inline-flex;align-items:center;gap:8px;position:relative;margin-top:12px;align-self:flex-start;background:rgba(255,255,255,.2);color:#fff;border-radius:999px;padding:6px 10px 6px 14px;font-size:12px;font-weight:700}
+  .ws-code span{letter-spacing:.14em}
+  .ws-av{width:46px;height:46px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--ws-card);color:var(--ws-sub)}
+  .ws-av img{width:100%;height:100%;object-fit:cover}
+  .ws-msgb{width:38px;height:38px;border-radius:50%;background:rgba(30,144,255,.12);color:#1e90ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ws-res{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--ws-card);border-radius:18px;padding:14px;margin-bottom:12px;color:var(--ws-ink)}
+  .ws-res .t{flex:1;min-width:0}.ws-res b{display:block;font-size:14px}.ws-res small{font-size:12px;color:var(--ws-sub)}
+  .ws-res .ic{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
   `;
   document.head.appendChild(st);
 
@@ -99,11 +112,11 @@
     link:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3A4 4 0 0011 18.7l1-1"/>',
     board:'<rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/>', home:'<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>', cap:'<path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/>',
     book:'<rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 17h6"/>', search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>',
-    lines:'<path d="M5 8h14M5 12h14M5 16h9"/>', card:'<rect x="4" y="6" width="16" height="12" rx="3"/>', pen:'<path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3"/>',
+    lines:'<path d="M5 8h14M5 12h14M5 16h9"/>', card:'<rect x="2.5" y="8" width="14" height="11" rx="2.5"/><path d="M7 5.5h12a2.5 2.5 0 012.5 2.5v7"/>', pen:'<rect x="5" y="4.5" width="14" height="17" rx="3"/><path d="M9.5 3h5v3h-5zM9 12l1.6 1.6L14 10M9 17h6"/>',
     folder:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>', check:'<path d="M5 12l5 5 9-10"/>',
     close:'<path d="M6 6l12 12M18 6L6 18"/>', send:'<path d="M12 19V5M6 11l6-6 6 6"/>', tree:'<circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v4M6 17v-3h12v3"/>',
     heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.500-7 10-7 10z"/>', dots:'<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
-    upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>'
+    upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>', msg:'<path d="M4 5h16v11H9l-5 4z"/>', dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', copy:'<rect x="8" y="8" width="11" height="11" rx="3"/><path d="M5 15V6a2 2 0 012-2h9"/>', chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'
   };
   function I(n, s){ s = s || 20; return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[n]||'')+'</svg>'; }
   function E(s){ return (typeof escapeHtml === 'function') ? escapeHtml(String(s == null ? '' : s)) : String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -210,6 +223,12 @@
       '<h3>' + E(String(c.name || '').toUpperCase()) + '</h3><p>' + E(teacher(c)) + (teacher(c) ? ' \u00b7 ' : '') + materials(c).length + ' resources</p>' +
       '<div class="ws-bar"><i style="width:' + progress(c) + '%"></i></div></div>';
   }
+  window.wsOpenPerson = function(id){ if (id && typeof openPersonProfile === 'function') openPersonProfile(id); };
+  window.wsMsgPerson = function(id){
+    var cls = classes().filter(function(c){ return c.id === currentClassId; })[0];
+    if (cls && cls.role === 'teacher' && cls.teacherId !== id && typeof openClassMsgFromPeople === 'function') { openClassMsgFromPeople(id); return; }
+    wsOpenPerson(id);
+  };
   window.wsOpenCourse = function(id){ cTab = 'resources'; if (typeof openClassDetailWithLoading === 'function') openClassDetailWithLoading(id); else openClassDetail(id); };
 
   /* ---------- Home ---------- */
@@ -217,16 +236,16 @@
     var cs = classes(), last = lget('ws-tutor-last', null), nm = firstName();
     var fresh = cs.slice().sort(function(a, b){ return (parseInt(String(b.id).replace(/\D/g,'')) || 0) - (parseInt(String(a.id).replace(/\D/g,'')) || 0); }).slice(0, 8);
     var now = Date.now();
-    return header('Workspace', cs.length ? cs.length + (cs.length === 1 ? ' space' : ' spaces') : 'Study space') +
+    return header('Workspace', '') +
       '<h1 class="ws-h1 font-display">' + (nm ? 'Hello, ' + E(nm) : 'Hello') + '</h1><div class="ws-sub">' + cs.length + ' active \u00b7 pick up where you stopped</div>' +
       (cs.length ? '' : '<div class="ws-tiles"><button class="ws-tile ws-t1" onclick="wsCreateJoin(\'create\')"><span class="ic">' + I('plus', 20) + '</span><b>Create space</b><span class="s">Start a space for your class or group</span></button>' +
       '<button class="ws-tile ws-t2" onclick="wsCreateJoin(\'join\')"><span class="ic">' + I('link', 20) + '</span><b>Join space</b><span class="s">Enter a code or link</span></button></div>') +
-      '<div class="ws-h2">Continue with AI Tutor</div>' +
-      '<div class="ws-card ws-cont"><div class="r" onclick="wsGo(\'tutor\')"><div><b>' + E(last ? last.title : 'AI Tutor') + '</b><small>' + (last ? 'Continue where you stopped' : 'Add your sources and start studying') + '</small></div><span class="ws-cap">' + I('cap', 20) + '</span></div>' +
-      '<div class="ws-acts"><button onclick="wsOpenSub(\'summary\')" aria-label="Summary">' + I('lines') + '</button><button onclick="wsOpenSub(\'flashcards\')" aria-label="Flashcards">' + I('card') + '</button><button onclick="wsOpenSub(\'practice\')" aria-label="Practice">' + I('pen') + '</button></div></div>' +
+      '<div class="ws-h2">Continue with Stitch Tutor</div>' +
+      '<div class="ws-card ws-cont"><div class="r" onclick="wsGo(\'tutor\')"><div><b>' + E(last ? last.title : 'Stitch Tutor') + '</b><small>' + (last ? 'Continue where you stopped' : 'Add your sources and start studying') + '</small></div><span class="ws-cap">' + I('cap', 20) + '</span></div>' +
+      '<div class="ws-acts"><button onclick="wsOpenSub(\'summary\')" aria-label="Summary">' + I('lines') + '</button><button onclick="wsOpenSub(\'flashcards\')" aria-label="Flashcards">' + I('card') + '</button><button onclick="wsQuiz()" aria-label="Quiz">' + I('pen') + '</button></div></div>' +
       '<div class="ws-h2">Study tools</div><div class="ws-tools">' +
       '<button class="ws-tool" onclick="wsSources()"><span class="i" style="color:#1e90ff">' + I('book', 22) + '</span>Resources</button>' +
-      '<button class="ws-tool" onclick="wsOpenSub(\'summary\')"><span class="i" style="color:#1fa463">' + I('lines', 22) + '</span>Summaries</button>' +
+      '<button class="ws-tool" onclick="wsQuiz()"><span class="i" style="color:#1fa463">' + I('pen', 22) + '</span>Quiz</button>' +
       '<button class="ws-tool" onclick="wsOpenSub(\'flashcards\')"><span class="i" style="color:#f7774a">' + I('card', 22) + '</span>Flashcards</button></div>' +
       (fresh.length ? '<div class="ws-h2" style="display:flex;justify-content:space-between">New spaces<a style="font-size:13px;color:#1e90ff;font-weight:600" onclick="wsGo(\'spaces\')">See all</a></div><div class="ws-hs">' +
         fresh.map(function(c, ix){ var p = pal(c), ts = parseInt(String(c.id).replace(/\D/g,'')) || 0;
@@ -346,7 +365,7 @@
     if (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1) return origDetail();
     var p = pal(cls), live = liveLec(cls) || todayLec(cls), teach = cls.role === 'teacher';
     var admin = false; try { admin = isCurrentUserAdmin() && teach; } catch(e){}
-    var tabs = [['resources','Resources'],['lectures','Lectures'],['people','People'],['stream','Stream'],['classwork','Tasks']];
+    var tabs = [['resources','Resources'],['lectures','Lectures'],['people','People'],['stream','Stream'],['classwork','Tasks'],['results', teach ? 'Results' : 'My report']];
     if (admin) tabs.push(['dashboard','Dashboard']);
     var body = '';
     if (cTab === 'resources') {
@@ -362,11 +381,33 @@
           (lv ? '<button class="ws-btn" style="padding:8px 16px" onclick="joinLiveLecture(\'' + l.id + '\',\'' + cls.id + '\')">Join</button>' : (teach && l.status === 'scheduled' ? '<button class="filter-pill" onclick="startScheduledLectureNow(\'' + l.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No lectures scheduled.</div>' + (teach && typeof lectureActionPillsHTML === 'function' ? lectureActionPillsHTML() : '');
     } else if (cTab === 'people') {
+      try { loadClassStudentProfiles(cls); } catch(e){}
       var ro = []; try { ro = classRosterList(cls); } catch(e){}
-      body = ro.length ? ro.map(function(s){ var nm = (typeof classStudentName === 'function') ? classStudentName(cls, s) : (s.name || 'Member');
-        return '<div class="ws-row" style="cursor:default"><span class="ws-ft" style="background:' + p.b + ';border-radius:50%">' + E(nm.charAt(0).toUpperCase()) + '</span><div style="flex:1"><b>' + E(nm) + '</b><small>' + (s.pending ? 'Invited' : 'Member') + '</small></div></div>'; }).join('')
-        : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No members yet.</div>';
-      if (cls.code) body += '<button class="filter-pill" style="margin-top:12px" onclick="copyClassCode(\'' + cls.code + '\')">Code: ' + E(cls.code) + '</button>';
+      var me = myId();
+      var row = function(id, nm, photo, sub, canMsg){
+        var av = '<span class="ws-av">' + (typeof avatarMediaHTML === 'function' ? avatarMediaHTML(photo, 'user', 'w-6 h-6') : E(nm.charAt(0).toUpperCase())) + '</span>';
+        var tap = id ? ' onclick="wsOpenPerson(\'' + id + '\')"' : ' style="cursor:default"';
+        return '<div class="ws-row"' + tap + '>' + av + '<div style="flex:1;min-width:0"><b>' + E(nm) + '</b><small>' + E(sub) + '</small></div>' +
+          (canMsg && id ? '<button class="ws-msgb" onclick="event.stopPropagation();wsMsgPerson(\'' + id + '\')" aria-label="Message ' + E(nm) + '">' + I('msg', 18) + '</button>' : '') + '</div>';
+      };
+      var tId = cls.teacherId || '', tPhoto = '';
+      try { tPhoto = cls.role === 'teacher' ? profileData.photo : ((classTeacherProfiles[cls.teacherId] || {}).photo || ''); } catch(e){}
+      var tName = ''; try { tName = classTeacherDisplayName(cls); } catch(e){ tName = teacher(cls) || 'Moderator'; }
+      body = row(tId, String(tName).replace(/<[^>]*>/g, ''), tPhoto, 'Moderator', !!tId && tId !== me);
+      body += ro.map(function(s2){ var nm = (typeof classStudentName === 'function') ? classStudentName(cls, s2) : (s2.name || 'Member');
+        var prof = (s2.id && typeof classStudentProfiles !== 'undefined' && classStudentProfiles[s2.id]) || {};
+        return row(s2.id, nm, prof.photo || s2.photo || '', s2.pending ? 'Invited' : 'Member', !!s2.id && !s2.pending && s2.id !== me); }).join('');
+      if (!ro.length) body += '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);margin-top:12px">No other members yet.</div>';
+    } else if (cTab === 'results') {
+      body = '';
+      if (teach) {
+        body += '<button class="ws-res" onclick="downloadClassReport()"><span class="ic class-report-dl" style="background:#1e90ff">' + I('dl', 20) + '</span><span class="t"><b>Download student results</b><small>PDF with every member\'s grades, ranking and graphs</small></span></button>' +
+          '<button class="ws-res" onclick="classDetailSwitchTab(\'profile\')"><span class="ic" style="background:#1fa463">' + I('chart', 20) + '</span><span class="t"><b>Space profile</b><small>Averages, top performers and who needs a check-in</small></span></button>';
+      } else {
+        body += '<button class="ws-res" onclick="downloadClassReport()"><span class="ic class-report-dl" style="background:#1e90ff">' + I('dl', 20) + '</span><span class="t"><b>Download my report</b><small>PDF with your grades and progress in this space</small></span></button>' +
+          '<button class="ws-res" onclick="classDetailSwitchTab(\'report\')"><span class="ic" style="background:#1fa463">' + I('chart', 20) + '</span><span class="t"><b>My space report</b><small>See how you are doing against the space average</small></span></button>';
+      }
+      body += '<button class="ws-res" onclick="openClassMessages()"><span class="ic" style="background:#f7774a">' + I('msg', 20) + '</span><span class="t"><b>Messages</b><small>' + (teach ? 'Chat with members of this space' : 'Chat with your moderator') + '</small></span></button>';
     } else if (cTab === 'stream') body = classStreamTabHTML(cls);
     else if (cTab === 'classwork') body = classClassworkTabHTML(cls);
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
@@ -375,15 +416,15 @@
       '<div class="ws-hdr"><button class="ws-circ" onclick="closeOverlay()" aria-label="Back">' + I('back', 20) + '</button><div class="ws-hdr-t"><b>Workspace</b><span>' + E(cls.name) + (teacher(cls) ? ' \u00b7 ' + E(teacher(cls)) : '') + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
-      '<h2 style="font-size:32px;font-weight:800;line-height:1;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:13px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div></div>' +
+      '<h2 style="font-size:22px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
+      (cls.code ? '<button class="ws-code" onclick="copyClassCode(\'' + cls.code + '\')"><span>Code: ' + E(cls.code) + '</span>' + I('copy', 14) + '</button>' : '') + '</div>' +
       (live ? '<div class="ws-live"><div><b style="font-size:15px">' + E(live.title) + ' \u00b7 ' + (live.status === 'live' ? 'Live now' : E(live.time || 'Today')) + '</b><small style="display:block;color:var(--ws-sub);font-size:12px">' + E(teacher(cls)) + '</small></div>' +
         (live.status === 'live' ? '<button class="ws-btn" onclick="joinLiveLecture(\'' + live.id + '\',\'' + cls.id + '\')">Join</button>' : (teach ? '<button class="ws-btn" onclick="startScheduledLectureNow(\'' + live.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>' : '<div style="height:16px"></div>') +
       '<div class="ws-tabs">' + tabs.map(function(t){ return '<button class="filter-pill flex-shrink-0 ' + (cTab === t[0] ? 'on' : '') + '" onclick="wsCTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<div>' + body + '</div>' +
-      '<button class="ws-cta" onclick="wsTutorFromCourse(\'' + cls.id + '\')">Open this space in AI Tutor</button></div></div></div>';
+      '<div>' + body + '</div></div></div></div>';
   };
 
-  /* ================= AI TUTOR ================= */
+  /* ================= STITCH TUTOR ================= */
   var T = { sub: 'chat', msgs: [], off: {}, cls: null, extra: [], sum: null, sumMode: 'short', sumSig: '', decks: {}, deck: null, ci: 0, flip: false, known: 0, queue: null,
             quiz: null, qi: 0, pick: -1, score: 0, quizSrc: 'mine', diagrams: lget('ws-diagrams', []), openDiag: -1, dfilter: 'all', busy: false, title: '' };
   function srcs(){
@@ -495,7 +536,7 @@
   }
   function chatBody(){
     if (!T.msgs.length) return '<div style="text-align:center;padding:44px 8px;color:var(--ws-sub)"><div class="ws-cap" style="margin:0 auto 14px;width:56px;height:56px">' + I('cap', 26) + '</div><b style="font-size:17px;color:var(--ws-ink)">Ask anything about your sources</b><div style="font-size:13px;margin:6px 0 14px">Answers come from the files you pick, with numbered citations.</div>' +
-      ['Summarize my sources','Explain the key terms','Quiz me on this'].map(function(q){ return '<button class="filter-pill" onclick="wsAsk(\'' + q + '\')">' + q + '</button>'; }).join('') + '</div>';
+      '<div class="ws-sugs">' + ['Summarize my sources','Explain the key terms','Quiz me on this'].map(function(q){ return '<button class="filter-pill" onclick="wsAsk(\'' + q + '\')">' + q + '</button>'; }).join('') + '</div></div>';
     return T.msgs.map(msgHTML).join('');
   }
   function chatLog(){ var l = $('ws-chatlog'); if (l) { l.innerHTML = chatBody(); var s = $('screen'); if (s) s.scrollTop = s.scrollHeight; } }
@@ -551,15 +592,17 @@
     var t = function(k, ic, c, bg, a, b){ return '<button class="ws-st" style="background:' + bg + ';color:' + c + '" onclick="wsOpenSub(\'' + k + '\')"><span>' + I(ic, 22) + '</span><span><b>' + a + '</b><small>' + b + '</small></span></button>'; };
     return srcBar() + '<div class="ws-h2" style="margin-top:6px">Studio</div><div class="ws-stu">' +
       t('summary', 'lines', '#14804a', 'rgba(31,164,99,.14)', 'Summary', 'Key points in 1 min') + t('diagrams', 'tree', '#1673cc', 'rgba(30,144,255,.13)', 'Diagrams', 'Illustrated concepts') +
-      t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Practice', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
+      t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
   }
 
   /* ----- Sub pages ----- */
   window.wsOpenSub = function(s){
+    if (s === 'practice') { wsQuiz(); return; }
+    if (s === 'flashcards') { wsFlash(); return; }
     view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
-    if (s === 'summary') genSummary(); if (s === 'flashcards') prepFlash(); if (s === 'practice') prepPractice();
+    if (s === 'summary') genSummary();
   };
-  function subHeader(name){ return header('Workspace', 'AI Tutor \u00b7 ' + name, 'wsBackTutor()'); }
+  function subHeader(name){ return header('Workspace', 'Stitch Tutor \u00b7 ' + name, 'wsBackTutor()'); }
   window.wsBackTutor = function(){ T.sub = (T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
   function errBox(e, fn){ return '<div class="ws-blk" style="text-align:center"><div style="font-size:13px;color:var(--ws-sub)">' + E(e) + '</div><button class="filter-pill on" style="margin-top:10px" onclick="' + fn + '">Try again</button></div>'; }
@@ -654,6 +697,44 @@
     h += '<div style="margin-top:14px"><button class="filter-pill" onclick="wsRemake()">' + I('refresh', 14) + ' Write new questions</button><button class="filter-pill" onclick="wsQuizMode(\'past\')">Past questions</button><button class="filter-pill" onclick="wsOpenSub(\'flashcards\')">Flashcards</button></div>';
     return h;
   }
+  /* Quiz: opens the original Practice Tests screen (Mock Test / Score & Progress). Each ticked source becomes a
+     "course" in courseBank, then tapping one gives the set-up sheet (how many, which kinds, timed or self-paced),
+     the exam, the review and the saved scores. */
+  function syncQuizBank(){
+    wsBank.forEach(function(n){ var k = courseBank.findIndex(function(c){ return c.name === n; }); if (k > -1) courseBank.splice(k, 1); selectedCourseNames.delete(n); });
+    var names = [];
+    matList().forEach(function(x){
+      var m = matsOf(x), qs = m ? (m.questions || []).map(toBank) : [], n = nm(x);
+      if (!qs.length || courseBank.some(function(c){ return c.name === n; })) return;
+      courseBank.push({ name: n, questions: qs }); selectedCourseNames.add(n); names.push(n);
+    });
+    wsBank = names;
+  }
+  window.wsQuiz = async function(){
+    if (needSrc()) return;
+    if (T.quizBusy) return;
+    var need = matList().some(function(x){ return !matsOf(x); });
+    if (need) { T.quizBusy = true; toast('Writing your questions', 'This takes a moment.'); try { await makeAllMats(false); } catch(e){} T.quizBusy = false; }
+    syncQuizBank();
+    if (!courseBank.length) { toast('No questions yet', 'Try again in a moment, or pick a different source.'); return; }
+    if (typeof openPracticeTestsOverlay === 'function') openPracticeTestsOverlay();
+  };
+  /* Flashcards: same entry as the original Study tab. A "Study all flashcards" card plus one deck per source,
+     each opening the original swipe player (tap to flip, swipe right = got it, left = again, score ring at the end). */
+  window.wsFlash = async function(){
+    if (needSrc()) return;
+    if (T.flashBusy) return;
+    var need = matList().some(function(x){ return !matsOf(x); });
+    if (need) { T.flashBusy = true; toast('Writing your flashcards', 'This takes a moment.'); try { await makeAllMats(false); } catch(e){} T.flashBusy = false; }
+    var decks = matList().map(function(x){ var m = matsOf(x); return { id: x.id, name: nm(x), n: m ? (m.flashcards || []).length : 0, ext: x.ext }; }).filter(function(d){ return d.n; });
+    if (!decks.length) { toast('No flashcards yet', 'Try again in a moment, or pick a different source.'); return; }
+    var total = decks.reduce(function(a, d){ return a + d.n; }, 0);
+    sheet('<div class="ws-h1" style="font-size:22px;margin:0 0 4px">Flashcards</div><div class="ws-sub">Made from the sources you ticked</div>' +
+      '<button class="ws-cta" style="margin:0 0 6px" onclick="sheetClose();setTimeout(function(){wsStudyDeck(\'*\')},250)">Study all ' + total + ' flashcards</button>' +
+      '<div class="ws-h2" style="margin-top:14px">Decks</div>' +
+      decks.map(function(d){ var p = pal({ name: d.name });
+        return '<div class="ws-row" onclick="sheetClose();setTimeout(function(){wsStudyDeck(\'' + d.id + '\')},250)"><span class="ws-ft" style="background:' + p.a + '">' + I('card', 20) + '</span><div style="flex:1;min-width:0"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + E(d.name) + '</b><small>' + d.n + ' card' + (d.n === 1 ? '' : 's') + '</small></div><span class="ws-btn" style="padding:8px 18px;font-size:13px">Study</span></div>'; }).join(''));
+  };
   window.wsQuizMode = function(m){ if (m === 'past' && typeof openPracticeTestsOverlay === 'function') openPracticeTestsOverlay(); };
 
   // Summary: overview, key points, detailed sections, key terms with definitions, exam focus
@@ -744,7 +825,7 @@
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
     var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button></div>';
-    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'AI Tutor') + ' Space' : 'AI Tutor') + seg + (T.sub === 'chat' ? srcBar() + '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
+    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : 'Stitch Tutor') + seg + (T.sub === 'chat' ? srcBar() + '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
 
