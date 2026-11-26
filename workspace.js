@@ -12,9 +12,9 @@
   .ws-hdr.ws-hdr-s{position:sticky;top:0;z-index:30;background:var(--ws-bg);margin:0 -20px 14px;padding:var(--top-safe-pad) 20px 8px}
   .ws-page:has(> .ws-hdr-s:first-child){padding-top:0}
   .ws-circ{width:44px;height:44px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;color:var(--ws-ink);position:relative;flex-shrink:0}
-  /* Floating panels: back arrow + bell sit on raised round panels instead of a header bar */
-  .ws-hdr .ws-circ,.ws-fl .ws-circ{width:42px;height:42px;background:var(--ws-bg);box-shadow:0 2px 12px rgba(15,23,42,.16);margin:0 !important}
-  body.dark-mode .ws-hdr .ws-circ,body.dark-mode .ws-fl .ws-circ{box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  /* Back arrow + bell are plain icons: no floating panel behind them */
+  .ws-hdr .ws-circ,.ws-fl .ws-circ{width:42px;height:42px;background:transparent;box-shadow:none;margin:0 !important}
+  body.dark-mode .ws-hdr .ws-circ,body.dark-mode .ws-fl .ws-circ{background:transparent;box-shadow:none}
   .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(255,255,255,0))}
   body.dark-mode .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(18,18,18,0))}
   .ws-fl{position:sticky;top:0;height:0;z-index:40;overflow:visible;margin:0 -20px}
@@ -219,6 +219,7 @@
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div></div><div class="ws-fl-sp"></div>';
   }
   window.wsFloatNav = floatNav;
+  window.wsHeader = header;
   function fab(){
     if (view === 'courses') { var can = false; try { can = canCreateCourses(); } catch(e){} return can ? '<button class="ws-fab" onclick="openNewCourse()" aria-label="Create a course">' + I('plus', 22) + '</button>' : ''; }
     return (view !== 'tutor' && classes().length) ? '<button class="ws-fab" onclick="wsCreateJoin(\'create\')" aria-label="Create or join a space">' + I('plus', 22) + '</button>' : '';
@@ -376,7 +377,7 @@
   function coursesHTML(){
     if (!kLoaded && !allCrs().length && typeof loadCoursesRemote === 'function') { kLoaded = true; loadCoursesRemote().then(function(){ if (view === 'courses') render(); }); }
     var n = allCrs().length;
-    return floatNav('wsLeave()') + '<h1 class="ws-h1 font-display">Courses</h1><div class="ws-sub">' + n + (n === 1 ? ' course' : ' courses') + '</div>' +
+    return header('Courses', n + (n === 1 ? ' course' : ' courses'), 'wsLeave()') +
       '<div class="ws-search">' + I('search', 18) + '<input type="text" placeholder="Search courses" oninput="wsKSearch(this.value)" value="' + E(kQuery) + '"></div>' +
       '<div class="ws-chips" id="ws-kchips">' + crsChips() + '</div><div id="ws-klist">' + crsListHTML() + '</div>';
   }
@@ -780,6 +781,7 @@
     view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
   };
+  function subHeaderT(name, sub){ return header(name, sub || '', 'wsBackTutor()'); }
   function subHeader(name, sub){ return floatNav('wsBackTutor()') + '<h1 class="ws-h1 font-display">' + E(name) + '</h1><div class="ws-sub">' + E(sub || '') + '</div>'; }
   window.wsBackTutor = function(){ if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
@@ -952,7 +954,7 @@
   function summaryHTML(){
     var k = sumKey(), s = T.sums[k.key], n = readable().length, mode = T.sumMode === 'detailed' || T.sumMode === 'terms' || T.sumMode === 'exam' ? T.sumMode : 'short';
     var seg = '<div class="ws-seg">' + [['short', 'Overview'], ['detailed', 'Detailed'], ['terms', 'Terms'], ['exam', 'Exam']].map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (mode === x[0] ? 'on' : '') + '" onclick="wsSum(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
-    var h = subHeader('Summary', 'Key points from your sources') + seg;
+    var h = subHeaderT('Summary', 'Key points from your sources') + seg;
     if (n > 1) h += '<div class="ws-chips"><button class="filter-pill flex-shrink-0 ' + (T.sumScope === 'all' ? 'on' : '') + '" onclick="wsSumScope(\'all\')">All sources</button>' + readable().map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.sumScope === x.id ? 'on' : '') + '" onclick="wsSumScope(\'' + x.id + '\')">' + E(lbl(nm(x), 20)) + '</button>'; }).join('') + '</div>';
     if (!s || s.busy) return h + busyBox('Reading your sources and writing the summary\u2026');
     if (s.err) return h + errBox(s.err, 'wsRegenSum()');
@@ -1126,7 +1128,7 @@
 
   /* Saved library page */
   function savedHTML(){
-    var ss = savedSums(), ds = T.diagrams, h = subHeader('Saved');
+    var ss = savedSums(), ds = T.diagrams, h = subHeaderT('Saved');
     var row = function(badge, col, title, sub, open, dl, del){
       return '<div class="ws-row" onclick="' + open + '"><span class="ws-ft" style="background:' + col + '">' + badge + '</span><div style="flex:1;min-width:0"><b style="display:block;font-size:14px">' + E(lbl(title, 34)) + '</b><small style="color:var(--ws-sub);font-size:12px">' + sub + '</small></div>' +
         '<button class="ws-circ" style="color:#1e90ff" aria-label="Download" onclick="event.stopPropagation();' + dl + '">' + I('dl', 20) + '</button><button class="ws-circ" style="color:#9aa5bd" aria-label="Delete" onclick="event.stopPropagation();' + del + '">' + I('close', 18) + '</button></div>';
@@ -1139,7 +1141,7 @@
   window.wsOpenSavedDiag = function(i){ T.dfilter = 'all'; T.sub = 'diagrams'; T.openDiag = i; render(); var o = $('ws-dopen'); if (o && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); };
   window.wsDelSavedDiag = function(i){ T.diagrams = T.diagrams.filter(function(x, k){ return k !== i; }); lset('ws-diagrams', T.diagrams); T.openDiag = -1; render(); };
   function savedSumHTML(){
-    var it = savedSums().filter(function(x){ return x.id === T.savedId; })[0], h = subHeader('Saved summary');
+    var it = savedSums().filter(function(x){ return x.id === T.savedId; })[0], h = subHeaderT('Saved summary');
     if (!it) return h + '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">This summary is no longer saved.</div>';
     var s = it.data;
     h += '<div class="ws-h1" style="font-size:22px;margin:4px 0 12px">' + E(s.title || 'Summary') + '</div>' +
@@ -1160,7 +1162,7 @@
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
     var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button></div>';
-    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
+    return header('Stitch Tutor', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
 
