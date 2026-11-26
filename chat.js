@@ -5899,26 +5899,34 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 const outgoing = m.callDir === 'out';
                 const detail = missed ? 'No answer' : (cm[5] ? 'Declined' : (cm[4] || ''));
                 const bad = missed || cm[5] || /^(no answer|call declined|line busy|not connected|cancelled)$/i.test(detail);
-                const iconColor = bad ? '#ef4444' : '#16a34a';
-                const arrow = outgoing ? 'M7 17L17 7M9 7h8v8' : 'M17 7L7 17M7 9v8h8';
+                // WhatsApp-style call card: a darker inset card inside the normal Stitch bubble, a round icon
+                // (red for missed, soft for the rest), bold title, plain subtitle, time bottom right
+                const phoneG = '<path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a1 1 0 00-1.02.24l-1.57 1.97a15.05 15.05 0 01-6.59-6.59l1.97-1.58a1 1 0 00.25-1.02A11.36 11.36 0 018.99 3.5a1 1 0 00-1-1H4.5a1 1 0 00-1 1c0 9.39 7.61 17 17 17a1 1 0 001-1v-3.12a1 1 0 00-1-1z" fill="currentColor"/>';
+                const camG = '<path d="M3 7.5A2.5 2.5 0 015.5 5h7A2.5 2.5 0 0115 7.5v9a2.5 2.5 0 01-2.5 2.5h-7A2.5 2.5 0 013 16.5zM16.5 10.2L21 7.6v8.8l-4.5-2.6z" fill="currentColor"/>';
+                const arrowG = outgoing
+                  ? '<path d="M14 10.5L21 3.5M15.5 3.5H21v5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+                  : '<path d="M21 3.5L14 10.5M14 5v5.5h5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
                 const glyph = isVideo
-                  ? '<path d="M15 10l4.5-2.5v9L15 14M4 7h9a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
-                  : '<path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-                const title = (isVideo ? 'Video call' : 'Voice call');
-                // Same bubble as a normal chat message: same colour, shape, width and time underneath
+                  ? '<g transform="translate(0,3) scale(.82)">' + camG + '</g>' + '<g transform="translate(5,-1) scale(.7)">' + arrowG + '</g>'
+                  : '<g transform="translate(0,3.5) scale(.8)">' + phoneG + '</g>' + '<g transform="translate(5,-1) scale(.7)">' + arrowG + '</g>';
+                const title = missed ? (isVideo ? 'Missed video call' : 'Missed voice call') : (isVideo ? 'Video call' : 'Voice call');
+                const sub = missed ? 'Tap to call back' : (detail || 'Tap to call back');
                 const bubbleStyle = outgoing
-                  ? 'background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;'
-                  : 'border-radius:20px 20px 20px 0;';
+                  ? 'background:var(--sent-bubble);border-radius:20px 20px 0 20px;padding:6px;min-width:236px;'
+                  : 'border-radius:20px 20px 20px 0;padding:6px;min-width:236px;';
                 const bubbleCls = outgoing ? 'text-white' : 'bg-gray-100 text-gray-700';
-                const circleStyle = outgoing ? 'color:#ffffff;' : 'color:#8b93a1;';
-                const statusColor = bad ? (outgoing ? '#b91c1c' : '#ef4444') : (outgoing ? '#f0fdf4' : '#16a34a');
-                const callBubble = `<div class="${bubbleCls} px-4 py-2.5 text-sm flex items-center gap-3" style="${bubbleStyle}">
-                    <div class="flex items-center justify-center flex-shrink-0" style="width:34px;height:34px;border-radius:9999px;${circleStyle}"><svg viewBox="0 0 24 24" width="18" height="18">${glyph}</svg></div>
-                    <div class="min-w-0 flex-1">
-                      <div class="font-semibold">${title}</div>
-                      <div class="flex items-center gap-1 text-xs ${bad && outgoing ? 'cv-bad-out' : ''}" style="color:${statusColor};"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${arrow}"/></svg>${escapeHtml(detail)}</div>
+                const cardBg = outgoing ? 'rgba(0,0,0,.16)' : 'rgba(0,0,0,.06)';
+                const circleBg = outgoing ? 'rgba(255,255,255,.2)' : 'rgba(0,0,0,.09)';
+                const circleColor = (missed || (bad && !outgoing)) ? '#ef4444' : (outgoing ? '#ffffff' : '#6b7280');
+                const callBubble = `<div class="${bubbleCls} text-sm" style="${bubbleStyle}">
+                    <div class="flex items-center gap-3" style="background:${cardBg};border-radius:15px;padding:10px 12px 9px 10px;">
+                      <div class="flex items-center justify-center flex-shrink-0" style="width:46px;height:46px;border-radius:9999px;background:${circleBg};color:${circleColor};"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">${glyph}</svg></div>
+                      <div class="min-w-0 flex-1">
+                        <div class="font-semibold" style="font-size:15px;line-height:1.25;">${title}</div>
+                        <div style="font-size:13px;line-height:1.3;opacity:.82;">${escapeHtml(sub)}</div>
+                      </div>
+                      <span style="align-self:flex-end;margin:0 0 -1px 6px;font-size:10px;line-height:1;white-space:nowrap;${outgoing ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}</span>
                     </div>
-                    <span style="align-self:flex-end;margin:0 0 -2px 8px;font-size:10px;line-height:1;white-space:nowrap;${outgoing ? 'color:rgba(255,255,255,.85);' : 'color:#9ca3af;'}">${timeLabel}</span>
                   </div>`;
                 const callContent = `<div class="flex flex-col ${outgoing ? 'items-end' : 'items-start'} gap-1" style="max-width:75%;">${callBubble}</div>`;
                 const cPressKey = `${activeConvoId}|${ts}`;
@@ -5951,7 +5959,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               : '';
             const bubbleHTML = glimpseReplies.length ? convoGlimpseBubbleHTML(glimpseReplies, m, mine, convoFileAttachmentsHTML(files, mine)) : hasBubbleContent ? (
               mine
-                ? `<div class="cv-bub text-white px-4 py-2.5 text-sm" style="background:rgba(30,144,255,0.32); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
+                ? `<div class="cv-bub text-white px-4 py-2.5 text-sm" style="background:var(--sent-bubble); border-radius:20px 20px 0 20px;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
                 : `<div class="cv-bub bg-gray-100 px-4 py-2.5 text-sm text-gray-700" style="border-radius:20px 20px 20px 0;display:flow-root;">${convoFileAttachmentsHTML(files, mine)}${convoTextHTML(m.text, mine)}${inMeta}</div>`
             ) : '';
             const sharedPostsHTML = convoSharedPostAttachmentsHTML(sharedPosts, mine) + convoSharedChallengeAttachmentsHTML(sharedChallenges, mine) ;
@@ -6321,7 +6329,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="flex-1 flex flex-col" style="min-height:0;">
               ${overlayHeader('Edit message', '20px')}
               <div class="flex-1 overflow-y-auto p-5 flex flex-col justify-end" style="opacity:.55;">
-                <div class="flex justify-end"><div class="cv-bub text-white px-4 py-2.5 text-sm" style="max-width:80%;background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;word-break:break-word;white-space:pre-wrap;">${escapeHtml(body)}</div></div>
+                <div class="flex justify-end"><div class="cv-bub text-white px-4 py-2.5 text-sm" style="max-width:80%;background:var(--sent-bubble);border-radius:20px 20px 0 20px;word-break:break-word;white-space:pre-wrap;">${escapeHtml(body)}</div></div>
               </div>
               <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));">
                 <div class="wa-row">
@@ -6891,7 +6899,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function convoVoiceNoteHTML(voice, mine, m){
           const uid = 'voice-' + Math.random().toString(36).slice(2, 9);
           // Sent notes echo the outgoing text-bubble treatment
-          const bubbleBg = mine ? 'rgba(30,144,255,0.32)' : '#f3f4f6';
+          const bubbleBg = mine ? 'var(--sent-bubble)' : '#f3f4f6';
           const subColor = mine ? 'rgba(255,255,255,0.8)' : '#6b7280';
           const waveBg = mine ? 'rgba(255,255,255,0.4)' : '#d1d5db';
           const waveFg = mine ? '#ffffff' : NAVY;
@@ -11214,7 +11222,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div style="display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};margin:6px 0;">
               ${mine ? '' : `<span style="font-size:11px;font-weight:700;color:var(--cu-sub);margin:0 10px 2px;">${name}</span>`}
-              <div class="${mine ? 'text-white' : 'bg-gray-100 text-gray-700'}" style="max-width:82%;padding:10px 16px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;${mine ? 'background:rgba(30,144,255,0.32);border-radius:20px 20px 0 20px;' : 'border-radius:20px 20px 20px 0;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
+              <div class="${mine ? 'text-white' : 'bg-gray-100 text-gray-700'}" style="max-width:82%;padding:10px 16px;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;${mine ? 'background:var(--sent-bubble);border-radius:20px 20px 0 20px;' : 'border-radius:20px 20px 20px 0;'}${m.failed ? 'opacity:.55;' : ''}">${meetingChatBodyHTML(m, mine)}</div>
               <span style="font-size:10px;color:var(--cu-sub);margin:2px 10px 0;">${m.failed ? 'Not sent \u00b7 tap to retry' : (m.pending ? 'Sending\u2026' : meetingChatFmtTime(m.created_at))}</span>
             </div>`;
         }

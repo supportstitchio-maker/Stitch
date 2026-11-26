@@ -51,6 +51,7 @@
   .ws-motif.ws-m-sm{inset:auto;left:0;top:50%;transform:translateY(-50%);width:300px;height:100px;max-width:none}
   .ws-hdr-t b,.ws-h1,.ws-h2,.ws-tile b,.ws-cc h3,.ws-sp b,.ws-hero h2,.ws-cta,.ws-btn,.ws-seg button,.filter-pill flex-shrink-0,.filter-pill,.ws-cont b,.ws-st b,.ws-live b{font-family:'Gendy','Montserrat',sans-serif}
   .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ:first-child{color:#1e90ff}
+  .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
   .ws-hero{margin:0 -20px;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
   .ws-live{position:relative;margin:-40px 0 16px;background:var(--ws-bg);border-radius:20px;box-shadow:0 8px 24px rgba(11,31,63,.14);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -172,9 +173,12 @@
     ];
     return '<svg class="ws-art" viewBox="0 0 120 120">' + a[i % a.length] + '</svg>';
   }
+  function backBtn(fn){
+    return '<button class="ws-circ ws-back" onclick="' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="url(#navyRoyalGrad)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  }
   function header(title, sub, backFn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
-    return '<div class="ws-hdr"><button class="ws-circ" onclick="' + (backFn || 'wsLeave()') + '" aria-label="Back">' + I('back', 20) + '</button>' +
+    return '<div class="ws-hdr">' + backBtn(backFn || 'wsLeave()') +
       '<div class="ws-hdr-t"><b>' + E(title) + '</b><span>' + E(sub) + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
   }
@@ -413,7 +417,7 @@
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:var(--top-safe-pad)">' +
-      '<div class="ws-hdr"><button class="ws-circ" onclick="closeOverlay()" aria-label="Back">' + I('back', 20) + '</button><div class="ws-hdr-t"><b>Workspace</b><span>' + E(cls.name) + (teacher(cls) ? ' \u00b7 ' + E(teacher(cls)) : '') + '</span></div>' +
+      '<div class="ws-hdr">' + backBtn('closeOverlay()') + '<div class="ws-hdr-t"><b>Workspace</b><span>' + E(cls.name) + (teacher(cls) ? ' \u00b7 ' + E(teacher(cls)) : '') + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:22px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +

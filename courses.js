@@ -2603,7 +2603,7 @@ try {
           }
           return `
             <div class="flex-1 flex flex-col overflow-hidden relative">
-              <button onclick="${coursePreviewAsStudent ? 'exitCoursePreview()' : 'overlayGoBack()'}" aria-label="Back" class="absolute flex items-center justify-center rounded-full" style="top:14px;left:16px;width:40px;height:40px;z-index:30;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;">${Icon('arrowLeft','w-5 h-5')}</button>
+              <button onclick="${coursePreviewAsStudent ? 'exitCoursePreview()' : 'overlayGoBack()'}" aria-label="Back" class="absolute flex items-center justify-center rounded-full" style="top:14px;left:16px;width:40px;height:40px;z-index:30;background:#ffffff;box-shadow:0 2px 10px rgba(11,31,63,.18);color:#1e90ff;">${Icon('arrowLeft','w-5 h-5')}</button>
               <div class="flex-1 overflow-y-auto no-scrollbar pb-6">
                 <div class="relative overflow-hidden" style="height:250px;background:${courseFallbackGrad(c)};border-radius:0 0 32px 32px;">
                   ${courseCoverFill(c)}
@@ -5197,7 +5197,7 @@ try {
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
                 <h1 class="text-base font-semibold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Join a Space</h1>
-                <button onclick="toggleJoinClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
+                <button onclick="toggleJoinClassMenu()" class="hdr-circ" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${joinClassMenuOpen ? joinClassDropdownMenu() : ''}
             </div>
@@ -5226,7 +5226,7 @@ try {
               <div class="flex items-center justify-between">
                 <button onclick="closeOverlay()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${IconBold('back','w-5 h-5')}</button>
                 <h1 class="text-base font-semibold text-[${NAVY}] font-display truncate" style="margin-left:auto;margin-right:auto;text-align:center;max-width:60%;">Create a Space</h1>
-                <button onclick="toggleCreateClassMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
+                <button onclick="toggleCreateClassMenu()" class="hdr-circ" style="color:${NAVY};">${Icon('menuDrop','w-6 h-6')}</button>
               </div>
               ${createClassMenuOpen ? createClassDropdownMenu() : ''}
             </div>

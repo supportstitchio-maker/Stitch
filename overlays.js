@@ -591,7 +591,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function plainOverlayHeader(title){
           return `
             <div class="w-full px-5 pb-3" style="padding-top:var(--top-safe-pad);">
-              <button onclick="closeOverlay()" class="flex items-center gap-1.5 font-semibold text-sm mb-3 grad-text">
+              <button onclick="closeOverlay()" class="no-circ flex items-center gap-1.5 font-semibold text-sm mb-3 grad-text">
                 ${gradIcon(IconBold('back','w-5 h-5'))} Back
               </button>
               <h1 class="text-2xl font-bold font-display grad-text">${title}</h1>
@@ -632,12 +632,12 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function menuOverlayHeader(title, menuOpen, toggleFnName, dropdownHtml, opts){
           opts = opts || {};
           const backFnName = opts.backFn || 'closeOverlay';
-          const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
+          const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="hdr-circ">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
           const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes === false ? 'dashes' : 'menuDrop');
           const menuIconSize = opts.shortDashes === false ? 'w-5 h-5' : 'w-6 h-6';
           const menuIcon = opts.boldMenuIcon ? IconBold(menuIconName,menuIconSize) : Icon(menuIconName,menuIconSize);
-          const menuBtnClass = `${opts.menuEnd ? 'h-10 flex items-center justify-end flex-shrink-0' : 'w-8 h-8 flex items-center justify-center flex-shrink-0'}${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
-          const menuBtnStyle = opts.menuEnd ? ' style="width:32px;margin-right:-2px;"' : '';
+          const menuBtnClass = `hdr-circ${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
+          const menuBtnStyle = '';
           const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}"${menuBtnStyle}>${opts.flipMenuIcon ? `<span style="display:flex;transform:scaleX(-1);">${gradIcon(menuIcon)}</span>` : gradIcon(menuIcon)}</button>`;
           const titleSize = opts.titleSize || 'text-base';
           const titleClass = opts.titleRight
@@ -680,9 +680,9 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return `
             <div class="w-full px-5 relative" style="padding-top:var(--top-safe-pad);padding-bottom:calc(0.75rem + 10px);">
               <div class="flex items-center justify-between">
-                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this space?', 'You can come back to this space anytime from Workspace.')" title="Leave space" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <button onclick="openLeaveClassModal(closeOverlay, 'Exit this space?', 'You can come back to this space anytime from Workspace.')" title="Leave space" class="hdr-circ">${gradIcon(IconBold('back','w-5 h-5'))}</button>
                 <h1 class="nm-wrap text-base font-bold font-display absolute left-1/2 -translate-x-1/2" style="max-width:60%;"><span class="nm-inner grad-text">${escapeHtml(title)}</span></h1>
-                <button onclick="toggleClassDetailMenu()" class="w-8 h-8 flex items-center justify-center flex-shrink-0">${gradIcon(Icon('menuDrop','w-6 h-6'))}</button>
+                <button onclick="toggleClassDetailMenu()" class="hdr-circ">${gradIcon(Icon('menuDrop','w-6 h-6'))}</button>
               </div>
               ${classDetailMenuOpen ? classDetailMenuDropdown(isTeacher) : ''}
             </div>`;
@@ -2514,7 +2514,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           return `
             <div id="person-profile-action-row" class="flex items-center gap-2 mb-4 relative">
               ${pills}
-              <button onclick="togglePersonProfileMenu()" aria-label="More" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="border:1.5px solid #d1d5db;color:#374151;">${IconBold('dots','w-5 h-5')}</button>
+              <button onclick="togglePersonProfileMenu()" aria-label="More" class="hdr-circ" style="color:#374151;">${IconBold('dots','w-5 h-5')}</button>
               ${personProfileMenuOpen ? `<div onclick="closePersonProfileMenu()" onwheel="closePersonProfileMenu()" ontouchmove="closePersonProfileMenu()" class="fixed inset-0 z-10"></div>${personProfileDropdownMenuHTML(p)}` : ''}
             </div>`;
         }

@@ -6099,7 +6099,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="relative flex-shrink-0 w-full">
               ${overlayHeader('Match with CV', '20px', 'closeOverlay()', null, { center: true })}
-              <button onclick="openCareerCvMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
+              <button onclick="openCareerCvMenu()" aria-label="Menu" class="hdr-circ" style="position:absolute;right:20px;top:20px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
             </div>`;
         }
         function careerCvMenuInnerHTML(){
@@ -6160,7 +6160,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           return `
             <div class="relative flex-shrink-0 w-full">
               ${overlayHeader('Auto apply', '20px', 'overlayGoBack()', null, { center: true })}
-              <button onclick="openCareerAutoMenu()" aria-label="Menu" class="absolute flex items-center justify-end" style="right:20px;top:20px;height:28px;width:32px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
+              <button onclick="openCareerAutoMenu()" aria-label="Menu" class="hdr-circ" style="position:absolute;right:20px;top:20px;">${gradIcon(Icon('menuList','w-6 h-6'))}</button>
             </div>`;
         }
         function careerSubPageHeaderHTML(title){

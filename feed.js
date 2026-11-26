@@ -1288,7 +1288,7 @@
                     <div class="text-sm leading-tight" style="color:${fg};opacity:0.7;">${glimpseAgeLabel(item.createdAt || (s.mine ? item.id : 0))}</div>
                   </div>
                 </button>
-                <button onclick="toggleStoryMenu()" aria-label="Glimpse options" class="h-8 flex items-center justify-end flex-shrink-0" style="width:32px;color:${fg};">${IconBold('menuBars','w-6 h-6')}</button>
+                <button onclick="toggleStoryMenu()" aria-label="Glimpse options" class="hdr-circ" style="color:#1e90ff;">${IconBold('menuBars','w-6 h-6')}</button>
               </div>
               <div class="flex gap-1.5 px-3 pt-3 pb-1 flex-shrink-0">${segments}</div>
               <div class="flex-1 relative">
@@ -2266,7 +2266,7 @@
                 ${subLine}
               </button>
               ${status}
-              <button onclick="toggleMyGlimpseMenu(${g.id})" aria-label="Glimpse menu" class="h-8 flex items-center justify-end flex-shrink-0" style="width:32px;">${gradIcon(Icon('menuBars','w-6 h-6'))}</button>
+              <button onclick="toggleMyGlimpseMenu(${g.id})" aria-label="Glimpse menu" class="hdr-circ">${gradIcon(Icon('menuBars','w-6 h-6'))}</button>
             </div>`;
         }
 
