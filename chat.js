@@ -1728,7 +1728,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } else if (action === 'read'){
             ids.forEach(id => {
               const found = findConvoAndArray(id);
-              if (found) { found.arr[found.idx].read = true; found.arr[found.idx].unreadCount = 0; }
+              if (found) { found.arr[found.idx].read = true; found.arr[found.idx].unreadCount = 0; found.arr[found.idx].mentioned = false; }
             });
           } else if (action === 'block'){
             const names = new Set(ids.map(id => { const f = findConvoAndArray(id); return f && f.arr[f.idx].name; }));
@@ -1897,6 +1897,38 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return c.name || c.username || '';
         }
 
+
+        // ---- Inbox: "@" badge when I'm tagged, and "You:" / "~ Name:" in front of a group's last message ----
+        function convoTextMentionsMe(text, meta){
+          try {
+            if (!meta || meta.icon !== 'users') return false;
+            const body = meetingChatParse(text).body || '';
+            if (body.indexOf('@') === -1) return false;
+            const names = ['all', 'everyone'];
+            (meta.members || []).forEach(m => { if (m && m.mine && m.name) names.push(String(m.name)); });
+            if (typeof profileData !== 'undefined' && profileData) {
+              if (profileData.name) names.push(String(profileData.name));
+              if (profileData.username) names.push(String(profileData.username).replace(/^@/, ''));
+            }
+            const alt = names.filter(Boolean).sort((a, b) => b.length - a.length).map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+            return new RegExp('(^|[\\s(])@(' + alt + ')(?![\\w])', 'i').test(body);
+          } catch (e) { return false; }
+        }
+        function convoRowPreviewPrefix(c){
+          try {
+            if (!c || c.icon !== 'users') return '';
+            const msgs = conversationMessages[c.id] || [];
+            const last = msgs[msgs.length - 1];
+            if (!last || last.from === 'system') return '';
+            if (last.from === 'me') return 'You: ';
+            const meta = convoMeta[c.id] || c;
+            const mem = last.fromUser ? (meta.members || []).find(m => m && m.otherUserId === last.fromUser) : null;
+            return mem && mem.name ? '~ ' + mem.name + ': ' : '';
+          } catch (e) { return ''; }
+        }
+        function mentionAtBadge(){
+          return `<div class="rounded-full flex items-center justify-center flex-shrink-0" title="You were mentioned" style="width:1.25rem;height:1.25rem;background:#1e90ff;color:#fff;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg></div>`;
+        }
         function convoRow(c){
           const { id, icon, avatarBg, name, username, preview, time, photo } = c;
           if (!convoMeta[id]) convoMeta[id] = { icon, avatarBg, name, username, preview, photo };
@@ -1916,11 +1948,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   <div class="font-semibold text-sm ${showUnread ? '' : 'text-gray-700'}">${escapeHtml(name)}</div>
                   ${c.pinned ? Icon('pin','w-3.5 h-3.5 text-amber-600') : ''}
                 </div>
-                <div class="text-xs ${showUnread ? 'text-gray-800 font-medium' : 'text-gray-500'} truncate">${previewWithIconHTML(preview)}</div>
+                <div class="text-xs ${showUnread ? 'text-gray-800 font-medium' : 'text-gray-500'} truncate">${escapeHtml(convoRowPreviewPrefix(c))}${previewWithIconHTML(preview)}</div>
               </div>
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <div class="text-[11px] text-gray-400">${time}</div>
-                ${showUnread ? unreadCountBadge(c.unreadCount) : ''}
+                <div class="text-[11px] ${showUnread && c.mentioned ? '' : 'text-gray-400'}" style="${showUnread && c.mentioned ? 'color:#1e90ff;font-weight:600;' : ''}">${time}</div>
+                ${showUnread ? `<div class="flex items-center gap-1">${c.mentioned ? mentionAtBadge() : ''}${unreadCountBadge(c.unreadCount)}</div>` : ''}
               </div>
             </div>`;
         }
@@ -4051,7 +4083,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!activeConvoId || !convoIsInView(activeConvoId)) return;
           const f = findConvoAndArray(activeConvoId);
           if (f && (f.arr[f.idx].unread || f.arr[f.idx].unreadCount)) {
-            f.arr[f.idx].unread = false; f.arr[f.idx].read = true; f.arr[f.idx].unreadCount = 0;
+            f.arr[f.idx].unread = false; f.arr[f.idx].read = true; f.arr[f.idx].unreadCount = 0; f.arr[f.idx].mentioned = false;
             queueSaveUserState();
             try { markGroupConvoMessagesRead(activeConvoId); } catch (e) {}
             if (typeof markNotifsReadForConvo === 'function') markNotifsReadForConvo(activeConvoId);
@@ -4078,6 +4110,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             localId: row.local_id || undefined,
             edited: row.edited_at ? new Date(row.edited_at).getTime() : undefined,
             from: isSysEvent ? 'system' : 'them',
+            fromUser: row.sender_id || undefined,
             text: isSysEvent ? rawText.slice(SYS_MSG_PREFIX.length) : rawText,
             voice: isVoice ? sanitizeChatVoice({ src: row.voice_url, duration: row.voice_duration || 0 }) : undefined,
             attachments: hasAttachments ? sanitizeChatAttachments(row.attachments) : undefined,
@@ -4102,7 +4135,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             [c] = found.arr.splice(found.idx, 1);
             c.preview = previewText;
             c.time = formatRequestTime(Date.now());
-            if (!convoIsInView(convoId)) { c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1; }
+            if (!convoIsInView(convoId)) {
+              c.unread = true; c.read = false; c.unreadCount = (c.unreadCount || 0) + 1;
+              if (!isSysEvent && convoTextMentionsMe(rawText, convoMeta[convoId] || c)) c.mentioned = true;
+            }
             found.arr.unshift(c);
           }
 
@@ -4190,6 +4226,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             found.arr[found.idx].unread = false;
             found.arr[found.idx].read = true;
             found.arr[found.idx].unreadCount = 0;
+            found.arr[found.idx].mentioned = false;
             queueSaveUserState();
             saveUserStateNow();
           }
@@ -4283,6 +4320,199 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           log.normalize();
           __csHits = []; __csIdx = -1;
         }
+
+        // ---- Collaboration call menu (Voice call / Video call / Select people / Send call link / Schedule call) ----
+        function closeGroupCallMenu(){
+          const w = document.getElementById('convo-call-menu-wrap'); if (w) w.remove();
+        }
+        function toggleGroupCallMenu(ev){
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          if (document.getElementById('convo-call-menu-wrap')) { closeGroupCallMenu(); return; }
+          const head = document.querySelector('.cv-wa-head');
+          const top = head ? Math.round(head.getBoundingClientRect().bottom - 6) : 70;
+          const svg = p => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+          const row = (icon, label, fn, sep) => `<button type="button" class="cv-cm-row${sep ? ' cv-cm-sep' : ''}" onclick="${fn}"><span class="cv-cm-ic">${icon}</span><span>${label}</span></button>`;
+          const wrap = document.createElement('div');
+          wrap.id = 'convo-call-menu-wrap';
+          wrap.className = 'cv-cm-wrap';
+          wrap.onclick = closeGroupCallMenu;
+          wrap.innerHTML = `<div class="cv-cm" style="top:${top}px;" onclick="event.stopPropagation()">
+            ${row(Icon('phoneOutline','w-5 h-5'), 'Voice call', "closeGroupCallMenu();startCall(activeConvoId,'audio')")}
+            ${row(Icon('video','w-5 h-5'), 'Video call', "closeGroupCallMenu();startCall(activeConvoId,'video')")}
+            ${row(svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>'), 'Select people', 'groupCallPickPeople()', true)}
+            ${row(Icon('link','w-5 h-5'), 'Send call link', 'groupSendCallLink()')}
+            ${row(Icon('calendar','w-5 h-5'), 'Schedule call', 'groupScheduleCall()')}
+          </div>`;
+          document.body.appendChild(wrap);
+        }
+
+        // Post a line of text into a chat the same way typing it and pressing send would
+        function postTextToConvo(convoId, text){
+          const go = () => {
+            const inp = document.getElementById('convo-input');
+            if (!inp || activeConvoId !== convoId) return false;
+            inp.value = text; sendConvoMessage(); return true;
+          };
+          if (go()) return;
+          try { openConversation(convoId); } catch (e) {}
+          setTimeout(go, 400);
+        }
+
+        let groupCallSel = new Set();
+        function groupCallMembers(){
+          const meta = convoMeta[activeConvoId] || {};
+          return (meta.members || []).filter(m => m && !m.mine && m.otherUserId);
+        }
+        function groupCallPickPeople(){
+          closeGroupCallMenu();
+          if (!groupCallMembers().length) { openAppAlertModal('No one in this collaboration can be called yet.'); return; }
+          groupCallSel = new Set();
+          const wrap = document.createElement('div');
+          wrap.id = 'gc-people-wrap';
+          wrap.className = 'gc-wrap';
+          wrap.onclick = closeGroupCallPeople;
+          document.body.appendChild(wrap);
+          groupCallPeopleRender();
+        }
+        function closeGroupCallPeople(){ const w = document.getElementById('gc-people-wrap'); if (w) w.remove(); }
+        function groupCallPeopleRender(){
+          const wrap = document.getElementById('gc-people-wrap'); if (!wrap) return;
+          const list = groupCallMembers();
+          const n = groupCallSel.size;
+          wrap.innerHTML = `<div class="gc-sheet" onclick="event.stopPropagation()">
+            <div class="gc-grab"></div>
+            <div class="gc-title">Select people</div>
+            <div class="gc-sub">${n ? n + ' selected' : 'Only the people you pick will be rung'}</div>
+            <div class="gc-list">${list.map((m, i) => `
+              <button type="button" class="gc-row" onclick="groupCallToggle(${i})">
+                <div class="w-10 h-10 ${m.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(m, 'w-4 h-4')}</div>
+                <span class="gc-name truncate">${escapeHtml(m.name || 'Member')}</span>
+                <span class="gc-check${groupCallSel.has(m.otherUserId) ? ' on' : ''}">${groupCallSel.has(m.otherUserId) ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>' : ''}</span>
+              </button>`).join('')}</div>
+            <div class="gc-actions">
+              <button type="button" class="gc-go" ${n ? '' : 'disabled'} onclick="groupCallConfirm('audio')">${Icon('phoneOutline','w-5 h-5')}<span>Voice</span></button>
+              <button type="button" class="gc-go" ${n ? '' : 'disabled'} onclick="groupCallConfirm('video')">${Icon('video','w-5 h-5')}<span>Video</span></button>
+            </div>
+          </div>`;
+        }
+        function groupCallToggle(i){
+          const m = groupCallMembers()[i]; if (!m) return;
+          if (groupCallSel.has(m.otherUserId)) groupCallSel.delete(m.otherUserId); else groupCallSel.add(m.otherUserId);
+          groupCallPeopleRender();
+        }
+        function groupCallConfirm(type){
+          const ids = Array.from(groupCallSel);
+          if (!ids.length) return;
+          closeGroupCallPeople();
+          startCall(activeConvoId, type, false, { ringUserIds: ids });
+        }
+
+        // Creates a live meeting and drops its link into the collaboration chat
+        async function groupSendCallLink(){
+          closeGroupCallMenu();
+          const convoId = activeConvoId;
+          const meta = convoMeta[convoId] || {};
+          const sb = getSupabaseClient();
+          if (!sb) { openAppAlertModal("Couldn't create the call link right now. Check your connection and try again."); return; }
+          try {
+            const { data, error } = await sb.rpc('create_meeting', {
+              p_title: (meta.name || 'Group') + ' call', p_description: null, p_kind: 'live',
+              p_starts_at: null, p_duration_min: 60, p_admin_ids: [],
+            });
+            const created = error ? null : normalizeMeeting(data);
+            if (!created) { console.warn('create_meeting failed:', error || data); openAppAlertModal("Couldn't create the call link. Please try again."); return; }
+            postTextToConvo(convoId, 'Join our group call: ' + buildMeetingLink(created.code));
+          } catch (e) {
+            console.warn('groupSendCallLink threw:', e);
+            openAppAlertModal("Couldn't create the call link. Please try again.");
+          }
+        }
+
+        // Opens the Schedule meeting form with this collaboration's name filled in
+        function groupScheduleCall(){
+          closeGroupCallMenu();
+          const meta = convoMeta[activeConvoId] || {};
+          meetingKindFromMeetings = false;
+          meetingInline = false;
+          meetingDraft = { kind: 'scheduled', title: (meta.name || 'Group') + ' call', date: '', time: '', admins: [], search: '', postToConvo: activeConvoId };
+          openOverlay('newMeeting');
+        }
+        function meetingDoneNav(){
+          const id = meetingDraft && meetingDraft.postToConvo;
+          if (id) { meetingDraft.postToConvo = null; closeOverlay(); try { openConversation(id); } catch (e) {} return; }
+          openCreateMenu();
+        }
+        function meetingSendToGroup(code){
+          const id = meetingDraft && meetingDraft.postToConvo;
+          const m = meetingCreated;
+          if (!id || !m) return;
+          const text = 'Group call scheduled for ' + meetingWhenText(m.starts_at) + ': ' + buildMeetingLink(code);
+          meetingDraft.postToConvo = null;
+          closeOverlay();
+          try { openConversation(id); } catch (e) {}
+          setTimeout(() => postTextToConvo(id, text), 400);
+        }
+
+        // ---- @mentions in collaborations: suggestions while typing + highlighted tags in bubbles ----
+        let convoMentionItems = [];
+        function closeConvoMentionPop(){ const p = document.getElementById('convo-mention-pop'); if (p) p.remove(); convoMentionItems = []; }
+        function convoMentionCheck(el){
+          try {
+            const meta = convoMeta[activeConvoId];
+            if (!meta || meta.icon !== 'users' || meta.isMeeting || !el) { closeConvoMentionPop(); return; }
+            const caret = el.selectionStart == null ? el.value.length : el.selectionStart;
+            const m = /(^|\s)@([^\s@]*)$/.exec(el.value.slice(0, caret));
+            if (!m) { closeConvoMentionPop(); return; }
+            const q = m[2].toLowerCase();
+            const items = [{ label: 'all', sub: 'Notify everyone in this group', all: true }];
+            (meta.members || []).forEach(mem => { if (mem && !mem.mine && mem.name) items.push({ label: mem.name, mem }); });
+            convoMentionItems = items.filter(it => !q || it.label.toLowerCase().indexOf(q) !== -1);
+            if (!convoMentionItems.length) { closeConvoMentionPop(); return; }
+            let pop = document.getElementById('convo-mention-pop');
+            if (!pop) { pop = document.createElement('div'); pop.id = 'convo-mention-pop'; document.body.appendChild(pop); }
+            const wrap = document.getElementById('convo-composer-wrap');
+            const top = wrap ? wrap.getBoundingClientRect().top : window.innerHeight - 80;
+            pop.style.bottom = Math.max(8, Math.round(window.innerHeight - top + 6)) + 'px';
+            pop.innerHTML = convoMentionItems.map((it, i) => `
+              <button type="button" class="cmp-row" onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" onclick="convoMentionPick(${i})">
+                ${it.all
+                  ? `<div class="cmp-av cmp-all"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>`
+                  : `<div class="w-10 h-10 ${it.mem.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 flex-shrink-0 overflow-hidden">${avatarInnerHTML(it.mem, 'w-4 h-4')}</div>`}
+                <div class="cmp-t"><div class="cmp-n truncate">${it.all ? '@all' : escapeHtml(it.label)}</div>${it.sub ? `<div class="cmp-s">${escapeHtml(it.sub)}</div>` : ''}</div>
+              </button>`).join('');
+          } catch (e) { closeConvoMentionPop(); }
+        }
+        function convoMentionPick(i){
+          const it = convoMentionItems[i];
+          const el = document.getElementById('convo-input');
+          if (!it || !el) { closeConvoMentionPop(); return; }
+          const caret = el.selectionStart == null ? el.value.length : el.selectionStart;
+          const before = el.value.slice(0, caret);
+          const m = /(^|\s)@([^\s@]*)$/.exec(before);
+          if (!m) { closeConvoMentionPop(); return; }
+          const start = caret - m[2].length - 1;
+          const ins = '@' + it.label + ' ';
+          el.value = before.slice(0, start) + ins + el.value.slice(caret);
+          const pos = start + ins.length;
+          try { el.focus(); el.setSelectionRange(pos, pos); } catch (e) {}
+          try { autoGrowConvoInput(el); } catch (e) {}
+          closeConvoMentionPop();
+        }
+        // Wraps @all / @Member Name in the already-escaped message HTML (text segments only, never inside tags)
+        function convoMentionize(html, mine){
+          try {
+            const meta = convoMeta[activeConvoId];
+            const h = String(html == null ? '' : html);
+            if (!meta || meta.icon !== 'users' || h.indexOf('@') === -1) return h;
+            const names = ['all', 'everyone'];
+            (meta.members || []).forEach(m => { if (m && m.name) names.push(String(m.name)); });
+            names.sort((a, b) => b.length - a.length);
+            const alt = names.map(n => escapeHtml(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+            const re = new RegExp('(^|[\\s(])@(' + alt + ')(?![\\w])', 'gi');
+            return h.split(/(<[^>]*>)/).map(seg => seg.charAt(0) === '<' ? seg : seg.replace(re, (m0, pre, nm) => pre + '<span class="cv-mention' + (mine ? ' mine' : '') + '">@' + nm + '</span>')).join('');
+          } catch (e) { return html; }
+        }
+
         function openConvoSearch(){
           const wrap = document.getElementById('convo-log-wrap'); if (!wrap) return;
           let bar = document.getElementById('convo-search-bar');
@@ -4680,15 +4910,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   ${pd && typeof profileLinksHTML === 'function' ? profileLinksHTML(pd.links) : ''}
                 `}
                 <div class="flex w-full cp-tg-row">
-                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-tg cp-press">${cpTgIcon('comment')}<span>Message</span></button>`}
+                  ${embed ? '' : `<button onclick="closeConvoProfile()" class="cp-tg cp-press">${cpIcon('comment')}<span>Message</span></button>`}
                   <button onclick="toggleConvoNotifPref()" class="cp-tg cp-press">${cpIcon(notifOn ? 'bell' : 'bellOff')}<span>${notifOn ? 'Mute' : 'Unmute'}</span></button>
                   ${isGroup ? `
                     <button onclick="openCollabMembers()" class="cp-tg cp-press">${cpIcon('users')}<span>Members</span></button>
                     <button onclick="shareCollabInviteLink()" class="cp-tg cp-press">${cpIcon('send')}<span>Invite</span></button>
                   ` : `
-                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-tg cp-press">${cpTgIcon('phoneOutline')}<span>Call</span></button>
-                    <button onclick="startCall('${activeConvoId}','video')" class="cp-tg cp-press">${cpTgIcon('video')}<span>Video</span></button>
+                    <button onclick="startCall('${activeConvoId}','audio')" class="cp-tg cp-press">${cpIcon('phone')}<span>Call</span></button>
+                    <button onclick="startCall('${activeConvoId}','video')" class="cp-tg cp-press">${cpIcon('video')}<span>Video</span></button>
                   `}
+                  <button onclick="cpOpenSearch()" class="cp-tg cp-press">${cpIcon('search')}<span>Search</span></button>
                 </div>
               </div>
               <div class="px-5 pb-8">
@@ -4699,7 +4930,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               </div>` : ''}
 
               <div class="flat-list cp-list cp-grp mb-4">
+                ${!isGroup && pd && pd.username ? cpRow('at','Username', '@' + escapeHtml(String(pd.username).replace(/^@/, '')), 'cpCopyUsername()') : ''}
                 ${cpRow('image','Media, links and docs', String(mediaCount), 'openConvoMediaLinksDocs()')}
+                ${cpRow('star','Starred messages', '', 'cpOpenStarred()')}
+                ${!isGroup && pd && pd.username ? cpRow('share','Share contact', '', 'cpShareContact()') : ''}
                 ${cpToggleRow('bell','Notifications', notifOn, 'toggleConvoNotifPref()')}
                 ${cpToggleRow('star','Favourite', favorited, 'toggleFavoriteConvo()')}
               </div>
@@ -4746,13 +4980,47 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
           personPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
           bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
+          comment:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+          phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+          video:'<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+          search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+          share:'<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
+          at:'<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
           send:'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>'
         };
         function cpIcon(name){
           if (name === 'users') return Icon('users','w-[22px] h-[22px]');
           return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CP_PATHS[name] || ''}</svg>`;
         }
-        function cpTgIcon(name){ return Icon(name,'w-[22px] h-[22px]'); }
+        function cpTgIcon(name){ return cpIcon(name); }
+        function cpProfileUsername(){
+          try {
+            const meta = activeConvoMetaSafe(activeConvoId);
+            const c = (meta && meta.otherUserId && typeof personProfileCache !== 'undefined') ? personProfileCache[meta.otherUserId] : null;
+            const u = c && c.details && c.details.username;
+            return u ? String(u).replace(/^@/, '') : '';
+          } catch (e) { return ''; }
+        }
+        function cpCopyUsername(){
+          const u = cpProfileUsername();
+          if (!u) return;
+          if (window.haptic) window.haptic(8);
+          const done = () => { try { pushInAppNotification('Copied', '@' + u + ' copied to your clipboard.'); } catch (e) {} };
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText('@' + u).then(done).catch(() => {});
+        }
+        function cpShareContact(){
+          const u = cpProfileUsername();
+          if (!u) return;
+          const link = window.location.origin + '/u/' + encodeURIComponent(u);
+          const meta = activeConvoMetaSafe(activeConvoId);
+          if (navigator.share) {
+            navigator.share({ title: (meta && meta.name) || u, text: 'Check out @' + u + ' on Stitch', url: link }).catch(() => {});
+          } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(() => { try { pushInAppNotification('Link copied', 'Profile link copied to your clipboard.'); } catch (e) {} }).catch(() => {});
+          }
+        }
+        function cpOpenSearch(){ closeConvoProfile(); setTimeout(() => { try { openConvoSearch(); } catch (e) {} }, 60); }
+        function cpOpenStarred(){ closeConvoProfile(); setTimeout(() => { try { openStarredMessages(); } catch (e) {} }, 60); }
         function cpRow(icon, label, val, onclick, danger){
           return `
             <button onclick="${onclick}" class="cp-row cp-press w-full flex items-center text-left${danger ? ' cp-row-danger' : ''}" style="gap:14px;padding:13px 0;">
@@ -5101,19 +5369,23 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const blocked = isConvoBlocked(meta);
           const reported = isConvoReported(activeConvoId);
           return `
-            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:calc(var(--top-safe-pad) + 2px);padding-bottom:10px;padding-left:8px;padding-right:6px;gap:2px;">
+            <div class="cv-tg-head cv-wa-head flex items-center flex-shrink-0" style="padding-top:max(4px,calc(var(--top-safe-pad) - 14px));padding-bottom:6px;padding-left:2px;padding-right:2px;gap:2px;">
               <button onclick="closeConversationOverlay()" aria-label="Back" class="cv-wa-back">${gradIcon(IconBold('back','w-5 h-5'))}</button>
               <div class="cv-wa-main flex-1 min-w-0 cursor-pointer" onclick="openConvoProfile()">
                 <div id="chat-header-avatar" class="cv-wa-avatar">${avatarInnerHTML(meta, 'w-5 h-5')}</div>
                 <div class="flex-1 min-w-0">
-                  <div id="chat-header-name" class="font-semibold text-base truncate grad-text" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:600;">${escapeHtml(convoDisplayName(meta))}</div>
-                  <div id="chat-header-status" class="text-xs text-gray-400 chat-status-scroll">${convoLastSeenText(meta)}</div>
+                  <div id="chat-header-name" class="truncate grad-text" style="font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;line-height:1.25;">${escapeHtml(convoDisplayName(meta))}</div>
+                  <div id="chat-header-status" class="text-gray-400 chat-status-scroll" style="font-size:11px;line-height:1.25;">${convoLastSeenText(meta)}</div>
                 </div>
               </div>
               <div class="cv-wa-acts flex items-center flex-shrink-0" style="position:relative;">
-                <button onclick="startCall('${activeConvoId}','video')" title="Video call" aria-label="Video call" class="cv-act">${gradIcon(Icon('video','w-6 h-6'))}</button>
-                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" aria-label="Voice call" class="cv-act">${gradIcon(Icon('phoneOutline','w-6 h-6'))}</button>
-                <button onclick="toggleConvoOptionsMenu()" title="More" aria-label="More" class="cv-act">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
+                ${(meta.icon === 'users' && !meta.isMeeting) ? `
+                <button onclick="toggleGroupCallMenu(event)" title="Call" aria-label="Call options" class="cv-act cv-act-callgrp">${gradIcon(Icon('video','w-5 h-5'))}<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg></button>
+                ` : `
+                <button onclick="startCall('${activeConvoId}','video')" title="Video call" aria-label="Video call" class="cv-act">${gradIcon(Icon('video','w-5 h-5'))}</button>
+                <button onclick="startCall('${activeConvoId}','audio')" title="Voice call" aria-label="Voice call" class="cv-act">${gradIcon(Icon('phoneOutline','w-5 h-5'))}</button>
+                `}
+                <button onclick="toggleConvoOptionsMenu()" title="More" aria-label="More" class="cv-act">${gradIcon('<svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg>')}</button>
               </div>
             </div>
             <div id="convo-options-menu-backdrop" class="hidden convo-sheet-scrim" onclick="closeConvoOptionsMenuThen()" style="position:fixed;inset:0;z-index:25;"></div>
@@ -5141,7 +5413,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div class="wa-row">
                 <div class="wa-pill convo-composer-pill">
                   ${emojiButtonHTML('convo-input', 'wa-pill-icon', 'color:#6b7280;')}
-                  <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping();" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="wa-textarea convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
+                  <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping(); convoMentionCheck(this);" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur(); setTimeout(closeConvoMentionPop, 180);" class="wa-textarea convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
                   <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
                   <button id="convo-camera-btn" onclick="document.getElementById('convo-camera-input').click()" title="Camera" class="wa-pill-icon" style="color:#6b7280;">${Icon('camera','w-6 h-6')}</button>
                   <input type="file" id="convo-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleConvoFileSelect(event)">
@@ -6441,9 +6713,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         // Legacy previews start with an emoji (photo, video, voice, file). Show a proper icon instead.
         function previewWithIconHTML(text){
           const t = String(text == null ? '' : text);
-          const m = /^(\u{1F4F7}|\u{1F3A5}|\u{1F39E}\uFE0F?|\u{1F3A4}|\u{1F4CE})\s*([\s\S]*)$/u.exec(t);
+          const m = /^(\u{1F4F7}|\u{1F4F9}|\u{1F3A5}|\u{1F39E}\uFE0F?|\u{1F3A4}|\u{1F4CE}|\u{1F4DE})\s*([\s\S]*)$/u.exec(t);
           if (!m) return escapeHtml(t);
-          const name = m[1] === '\u{1F4F7}' ? 'camera' : (m[1] === '\u{1F3A4}' ? 'mic' : (m[1] === '\u{1F4CE}' ? 'paperclip' : 'video'));
+          const name = m[1] === '\u{1F4F7}' ? 'camera' : (m[1] === '\u{1F3A4}' ? 'mic' : (m[1] === '\u{1F4CE}' ? 'paperclip' : (m[1] === '\u{1F4DE}' ? 'phoneOutline' : 'video')));
           return `<span style="display:inline-flex;align-items:center;gap:5px;max-width:100%;vertical-align:middle;"><span style="display:inline-flex;flex-shrink:0;">${Icon(name,'w-3.5 h-3.5')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${escapeHtml(m[2])}</span></span>`;
         }
 
@@ -6701,10 +6973,11 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             else if (g.mediaType === 'video' && g.mediaUrl) thumb = `<video src="${escapeHtml(g.mediaUrl)}#t=0.1" class="gq-thumb" muted playsinline preload="metadata" style="pointer-events:none;"></video>`;
             else if (g.mediaUrl) thumb = `<img src="${escapeHtml(g.mediaUrl)}" alt="" class="gq-thumb" draggable="false">`;
             else thumb = `<div class="gq-thumb gq-thumb-text bg-${escapeHtml(g.bg || 'brand')}"></div>`;
-            return `<div class="gq-quote" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who === 'You' ? 'Your Glimpse' : who + ' \u00b7 Glimpse'}</div>${capText ? `<div class="gq-desc"><span>${capText}</span></div>` : ''}</div>${thumb}</div>`;
+            return `<div class="gq-quote${cgvIsExpired(g) ? ' gq-expired' : ''}" data-gidx="${idx}" role="button" tabindex="0" onclick="openGlimpseCardViewer(${idx})"><div class="gq-info"><div class="gq-name">${who === 'You' ? 'Your Glimpse' : who + ' \u00b7 Glimpse'}</div>${capText ? `<div class="gq-desc"><span>${capText}</span></div>` : ''}</div>${thumb}</div>`;
           }).join('');
           const body = (m.text && !isShare) ? `<div class="gq-body">${linkifyChatText(m.text)}</div>` : '';
           const radius = mine ? '20px 20px 0 20px' : '20px 20px 20px 0';
+          convoCheckExpiredSoon();
           return `<div class="gq-bubble ${mine ? 'gq-mine' : 'gq-theirs'}" style="border-radius:${radius};">${filesHTML || ''}${quotes}${body}</div>`;
         }
 
@@ -6723,7 +6996,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             else media = `<div class="grc-text bg-${escapeHtml(g.bg || 'brand')}">${escapeHtml((g.caption || '').slice(0, 90))}</div>`;
             const hasMedia = g.thumbnail || g.mediaUrl;
             const cap = (hasMedia && g.caption) ? `<div class="grc-cap">${escapeHtml(g.caption)}</div>` : '';
-            return `<div class="glimpse-reply-card" role="button" tabindex="0" style="cursor:pointer;" onclick="openGlimpseCardViewer(${idx})"><div class="grc-label">${label}</div>${media}${cap}</div>`;
+            return `<div class="glimpse-reply-card${cgvIsExpired(g) ? ' gq-expired' : ''}" data-gidx="${idx}" role="button" tabindex="0" style="cursor:pointer;" onclick="openGlimpseCardViewer(${idx})"><div class="grc-label">${label}</div>${media}${cap}</div>`;
           }).join('');
         }
 
@@ -6797,6 +7070,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           } catch (e) {}
           return null;
         }
+        // A glimpse lasts 24 hours. Once the live glimpses have loaded and this one isn't among them, it has expired.
+        function cgvIsExpired(g){
+          try {
+            if (typeof remoteGlimpsesLoaded !== 'undefined' && !remoteGlimpsesLoaded) return false;
+            return !cgvFind(g);
+          } catch (e) { return false; }
+        }
+        function convoMarkExpiredGlimpses(){
+          try {
+            document.querySelectorAll('[data-gidx]').forEach(el => {
+              const g = convoGlimpseCards[Number(el.getAttribute('data-gidx'))];
+              if (g && cgvIsExpired(g)) el.classList.add('gq-expired');
+            });
+          } catch (e) {}
+        }
+        function convoCheckExpiredSoon(){
+          // The first glimpse load may still be running when the chat draws: re-check once it is done
+          if (typeof remoteGlimpsesLoaded !== 'undefined' && !remoteGlimpsesLoaded && typeof loadRemoteGlimpses === 'function') {
+            Promise.resolve(loadRemoteGlimpses()).catch(() => {}).then(() => setTimeout(convoMarkExpiredGlimpses, 0));
+          } else setTimeout(convoMarkExpiredGlimpses, 0);
+        }
         function openGlimpseCardViewer(idx){
           const g = convoGlimpseCards[idx];
           if (!g) return;
@@ -6807,7 +7101,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (typeof remoteGlimpsesLoaded !== 'undefined' && !remoteGlimpsesLoaded && typeof loadRemoteGlimpses === 'function' && !g.__retried) {
               g.__retried = true;
               Promise.resolve(loadRemoteGlimpses()).catch(() => {}).then(() => openGlimpseCardViewer(idx));
+              return;
             }
+            convoMarkExpiredGlimpses();
+            if (typeof openAppAlertModal === 'function') openAppAlertModal("This glimpse isn't available anymore.");
             return;
           }
           closeGlimpseCardViewer();
@@ -7397,7 +7694,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const found = findConvoAndArray(convoId);
           if (found) {
             const [c] = found.arr.splice(found.idx, 1);
-            c.preview = previewText; c.time = formatRequestTime(Date.now()); c.unread = false; c.read = true; c.unreadCount = 0;
+            c.preview = previewText; c.time = formatRequestTime(Date.now()); c.unread = false; c.read = true; c.unreadCount = 0; c.mentioned = false;
             c._lastMsgAt = Date.now();
             found.arr.unshift(c);
           }
@@ -7490,6 +7787,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function sendConvoMessage(){
           if (window.haptic) window.haptic(6);
+          closeConvoMentionPop();
           const inputEl = document.getElementById('convo-input');
           let text = inputEl ? inputEl.value.trim() : '';
           const plainText = text;
@@ -7654,7 +7952,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               const meta = convoMeta[id];
               const isGroup = meta && meta.icon === 'users';
               if (isGroup) {
-                const ringTargets = (meta.members || []).filter(m => !m.mine && m.otherUserId);
+                const ringTargets = (meta.members || []).filter(m => !m.mine && m.otherUserId && (!(opts && Array.isArray(opts.ringUserIds)) || opts.ringUserIds.indexOf(m.otherUserId) !== -1));
                 if (ringTargets.length) {
                   callState.pendingRingTargets = new Set(ringTargets.map(m => m.otherUserId));
                   ringTargets.forEach(m => sendCallRing(id, type, m.otherUserId));
@@ -9503,6 +9801,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         // Back from the New / Schedule meeting form
         function meetingNewBack(){
+          if (meetingDraft && meetingDraft.postToConvo) { const id = meetingDraft.postToConvo; meetingDraft.postToConvo = null; closeOverlay(); try { openConversation(id); } catch (e) {} return; }
           if (meetingInline) { meetingInline = false; closeOverlay(); if (typeof renderInboxTab === 'function') renderInboxTab(); }
           else openOverlay('meetingKind');
         }
@@ -9866,7 +10165,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return `
             <div class="mj-screen" style="padding-top:var(--top-safe-pad);">
               <div class="mj-top">
-                <button onclick="openCreateMenu()" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
+                <button onclick="meetingDoneNav()" title="Back" class="cu-glass">${IconBold('back','w-5 h-5')}</button>
                 <div class="mj-topt">Meeting ready</div>
                 <div style="width:42px;flex-shrink:0;"></div>
               </div>
@@ -9879,7 +10178,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <div class="mj-label">Share this link with people you want in</div>
                 <button onclick="copyMeetingLink('${escapeHtml(m.code)}')" class="mj-link"><span>${escapeHtml(link.replace(/^https?:\/\//, ''))}</span>${Icon('copy','w-5 h-5')}</button>
                 <button onclick="shareMeetingLink('${escapeHtml(m.code)}')" class="mj-share">${Icon('send','w-4 h-4')}<span>Share invite link</span></button>
-                <button onclick="openCreateMenu()" class="mj-out">Done</button>
+                ${meetingDraft && meetingDraft.postToConvo ? `<button onclick="meetingSendToGroup('${escapeHtml(m.code)}')" class="mj-share">${Icon('send','w-4 h-4')}<span>Send to group chat</span></button>` : ''}
+                <button onclick="meetingDoneNav()" class="mj-out">Done</button>
               </div>
             </div>`;
         }
@@ -10728,7 +11028,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
         function meetingChatBodyHTML(m, mine){
           const p = meetingChatParse(m.text);
-          const quote = p.rname ? `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;white-space:normal;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>` : '';
+          const quote = p.rname ? `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;white-space:normal;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${previewWithIconHTML(p.rquote)}</div></div>` : '';
           return quote + escapeHtml(p.body);
         }
         let meetingChatReply = null;
@@ -10823,16 +11123,16 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function convoTextHTML(text, mine){
           const p = meetingChatParse(text);
-          if (!p.rname) return linkifyChatText(p.body);
-          const q = `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(p.rquote)}</div></div>`;
-          return q + linkifyChatText(p.body);
+          if (!p.rname) return convoMentionize(linkifyChatText(p.body), mine);
+          const q = `<div style="background:${mine ? 'rgba(255,255,255,.18)' : 'rgba(30,144,255,.10)'};border-radius:8px;padding:5px 9px;margin:-2px 0 6px;font-size:12.5px;line-height:1.3;"><div style="font-weight:700;opacity:.95;">${escapeHtml(p.rname)}</div><div style="opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${previewWithIconHTML(p.rquote)}</div></div>`;
+          return q + convoMentionize(linkifyChatText(p.body), mine);
         }
         function convoShowReply(){
           const bar = document.getElementById('convo-reply-bar');
           if (!bar) return;
           if (!convoReply || convoReply.convoId !== activeConvoId) { convoReply = null; bar.style.display = 'none'; bar.innerHTML = ''; return; }
           bar.style.display = 'flex';
-          bar.innerHTML = `<div style="min-width:0;flex:1;padding-left:4px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(convoReply.name)}</div><div style="font-size:13px;color:#6b7280;" class="truncate">${escapeHtml(convoReply.text)}</div></div><button type="button" onclick="convoClearReply()" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7280;flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
+          bar.innerHTML = `<div style="min-width:0;flex:1;padding-left:4px;"><div style="font-size:12.5px;font-weight:700;color:#1e90ff;" class="truncate">${escapeHtml(convoReply.name)}</div><div style="font-size:13px;color:#6b7280;" class="truncate">${previewWithIconHTML(convoReply.text)}</div></div><button type="button" onclick="convoClearReply()" aria-label="Cancel reply" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7280;flex-shrink:0;font-size:18px;line-height:1;">&times;</button>`;
         }
         function convoClearReply(){ convoReply = null; convoShowReply(); }
         function convoSetReply(key){
