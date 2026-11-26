@@ -1957,47 +1957,26 @@ try {
           return canManageCourse(c) ? `<button onclick="event.stopPropagation(); deleteCourse('${c.id}')" title="Delete course" class="absolute w-7 h-7 rounded-full flex items-center justify-center" style="top:8px;right:8px;background:transparent;color:#fff;filter:drop-shadow(0 1px 4px rgba(0,0,0,.55));z-index:2;">${Icon('trash','w-4 h-4')}</button>` : '';
         }
 
-        function courseFeaturedCardHTML(c){
-          const enrolled = enrolledCourseIds.includes(c.id);
-          const n = c.enrolledCount || 0;
-          return `
-            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer mb-3">
-              <div class="relative" style="height:150px;background:${courseFallbackGrad(c)};">
-                ${courseCoverFill(c)}
-                <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.55) 100%);"></div>
-                <div class="absolute flex items-center" style="top:12px;left:12px;gap:6px;">${courseBadgesHTML(c, enrolled)}</div>
-                ${courseAdminTrashHTML(c)}
-                <div class="absolute font-display text-white"  style="left:16px;right:16px;bottom:12px;font-size:19px;line-height:1.15;text-shadow:0 1px 6px rgba(0,0,0,.35);">${escapeHtml(c.title)}</div>
-              </div>
-              <div class="flex items-center gap-2" style="padding:12px 16px;">
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs text-gray-500 truncate">${escapeHtml(stitchOrgName(c.org))}</div>
-                  <div class="text-[11.5px] text-gray-400">${n ? `${n} enrolled · ` : ''}${(c.modules || []).length} module${(c.modules || []).length === 1 ? '' : 's'}</div>
-                </div>
-                <div class="font-bold text-sm flex-shrink-0" style="color:${courseIsPaid(c) ? NAVY : '#059669'};">${coursePriceLabel(c)}</div>
-              </div>
-            </div>`;
-        }
-
-        function courseCardHTML(c){
+        // Workspace course card: big colour card, title + teacher/lesson line, badge, progress bar.
+        // The cover (a picked illustration or an uploaded picture) fills the card behind the text.
+        function courseFeaturedCardHTML(c){ return courseCardHTML(c, 'Featured'); }
+        function courseCardHTML(c, tag){
           const enrolled = enrolledCourseIds.includes(c.id);
           const pct = enrolled ? coursePctOf(c) : 0;
           const total = courseTotalItems(c);
+          const badge = c.deliveryType === 'live' ? 'Live now' : (enrolled ? 'Enrolled' : (tag || ''));
+          const meta = [stitchOrgName(c.org), total ? `${total} lesson${total === 1 ? '' : 's'}` : '', (!enrolled ? coursePriceLabel(c) : '')].filter(Boolean).map(escapeHtml).join(' \u00b7 ');
           return `
-            <div onclick="openCourseDetail('${c.id}')" class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer relative flex flex-col">
-              <div class="relative" style="height:88px;background:${courseFallbackGrad(c)};">
-                ${courseCoverFill(c)}
-                <div class="absolute flex items-center" style="top:8px;left:8px;gap:4px;">${courseBadgesHTML(c, enrolled)}</div>
-                ${courseAdminTrashHTML(c)}
+            <div onclick="openCourseDetail('${c.id}')" class="course-ws-card relative overflow-hidden cursor-pointer" style="height:158px;border-radius:26px;background:${courseFallbackGrad(c)};box-shadow:0 6px 18px rgba(10,37,64,.14);">
+              ${courseCoverFill(c)}
+              <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,0) 62%);"></div>
+              ${badge ? `<span class="absolute" style="top:14px;left:16px;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.22);backdrop-filter:blur(6px);padding:4px 10px;border-radius:999px;">${escapeHtml(badge)}</span>` : ''}
+              ${courseAdminTrashHTML(c)}
+              <div class="absolute" style="left:18px;right:46%;bottom:${enrolled ? '34' : '16'}px;">
+                <div class="font-display text-white" style="font-size:20px;line-height:1.1;text-shadow:0 1px 6px rgba(0,0,0,.35);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(c.title)}</div>
+                <div class="truncate" style="font-size:12px;color:rgba(255,255,255,.9);margin-top:3px;">${meta}</div>
               </div>
-              <div class="flex-1 flex flex-col" style="padding:10px 12px 12px;">
-                <div class="font-bold text-[13.5px] leading-snug text-gray-800" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(c.title)}</div>
-                <div class="text-[11.5px] text-gray-400 truncate" style="margin-top:2px;">${escapeHtml(stitchOrgName(c.org))}</div>
-                <div class="flex-1"></div>
-                ${enrolled ? `
-                  <div class="mt-2"><div class="rounded-full bg-gray-100 overflow-hidden" style="height:6px;background:#eceff4;"><div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,${NAVY},${ROYAL});"></div></div><div class="text-[11px] text-gray-400 mt-1">${pct}% complete</div></div>`
-                : `<div class="flex items-center justify-between mt-2">${courseIsPaid(c) ? `<span class="text-xs font-bold" style="color:${NAVY};">${coursePriceLabel(c)}</span>` : `<span class="text-xs font-bold uppercase" style="color:#059669;letter-spacing:.03em;">${coursePriceLabel(c)}</span>`}<span class="text-[11px] text-gray-400">${total} lesson${total === 1 ? '' : 's'}</span></div>`}
-              </div>
+              ${enrolled ? `<div class="absolute" style="left:18px;right:18px;bottom:14px;"><div style="height:5px;border-radius:99px;background:rgba(255,255,255,.3);overflow:hidden;"><div style="height:100%;width:${pct}%;background:#fff;border-radius:99px;"></div></div></div>` : ''}
             </div>`;
         }
 
@@ -2037,7 +2016,7 @@ try {
             rest = shown.filter(c => c !== featured);
             if (rest.length) html += label('All courses');
           }
-          html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">${rest.map(courseCardHTML).join('')}</div>`;
+          html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">${rest.map(courseCardHTML).join('')}</div>`;
           return html;
         }
 
@@ -4535,7 +4514,7 @@ try {
             <div class="flex-1 overflow-y-auto">
             <div class="px-5 pb-8" style="padding-top:12px;">
               ${step === 1 ? `
-              ${(() => { return coverPickerHTML({ cover: d.photo, label: 'Course cover', pickFn: 'pickCourseCoverColor', uploadJs: 'triggerCoursePhotoUpload()', clearJs: 'clearCourseCover()', error: !!window.__courseCoverErr }); })()}
+              ${(() => { return coverPickerHTML({ art: true, cover: d.photo, label: 'Course cover', pickFn: 'pickCourseCoverColor', uploadJs: 'triggerCoursePhotoUpload()', clearJs: 'clearCourseCover()', error: !!window.__courseCoverErr }); })()}
               ${(() => {
                 const wv = d.welcomeVideo;
                 const err = !!window.__courseWelcomeErr && !(wv && wv.url);

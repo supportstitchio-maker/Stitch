@@ -4045,6 +4045,34 @@ function ghostWith(obj, key, sample, fn){
 
 
 // ---- Cover picker: same colours + line motifs as the Space cards, plus a few more patterns ----
+// Course cover illustrations (courses only; Spaces keep the line motifs)
+const COURSE_COVER_ART = [
+          // 0 biology: leaf + flask
+          `<path d="M62 12c20 4 30 24 22 46-18 2-34-8-38-26 4-10 10-16 16-20z" fill="#fff" opacity=".85"/><path d="M52 62C58 44 64 32 74 22" stroke="#34d399" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="16" y="44" width="14" height="10" rx="3" fill="#fff" opacity=".9"/><path d="M18 54h10l8 26a6 6 0 0 1-6 8H16a6 6 0 0 1-6-8z" fill="#fff" opacity=".6"/><path d="M14 72h18l4 10a4 4 0 0 1-4 6H14a4 4 0 0 1-4-6z" fill="#34d399" opacity=".85"/><circle cx="21" cy="78" r="2.5" fill="#fff"/>`,
+          // 1 maths: calculator
+          `<rect x="22" y="10" width="56" height="80" rx="9" fill="#fff" opacity=".88"/><rect x="30" y="18" width="40" height="16" rx="4" fill="#60a5fa"/><g fill="#94a3b8"><circle cx="38" cy="48" r="5"/><circle cx="50" cy="48" r="5"/><circle cx="62" cy="48" r="5"/><circle cx="38" cy="62" r="5"/><circle cx="50" cy="62" r="5"/><circle cx="62" cy="62" r="5"/><circle cx="38" cy="76" r="5"/><circle cx="50" cy="76" r="5"/></g><circle cx="62" cy="76" r="5" fill="#fb923c"/>`,
+          // 2 geography: globe
+          `<circle cx="50" cy="48" r="32" fill="#fff" opacity=".85"/><path d="M34 30c8-4 14 2 12 10s-10 6-12 14-8 4-10-4 2-16 10-20zM58 52c8-4 14 2 12 10s-8 8-14 4 0-12 2-14z" fill="#34d399" opacity=".9"/><ellipse cx="50" cy="48" rx="32" ry="10" fill="none" stroke="#fff" stroke-width="2" opacity=".7"/><rect x="40" y="82" width="20" height="5" rx="2.5" fill="#fff" opacity=".9"/><path d="M50 80v4" stroke="#fff" stroke-width="3"/>`,
+          // 3 books
+          `<rect x="14" y="62" width="72" height="14" rx="3" fill="#fff" opacity=".9"/><rect x="20" y="46" width="60" height="14" rx="3" fill="#fda4af"/><rect x="26" y="30" width="48" height="14" rx="3" fill="#fde68a"/><rect x="32" y="14" width="36" height="14" rx="3" fill="#a5b4fc"/><rect x="20" y="66" width="14" height="3" rx="1.5" fill="#94a3b8"/>`,
+          // 4 science: atom
+          `<ellipse cx="50" cy="50" rx="38" ry="14" fill="none" stroke="#fff" stroke-width="4" opacity=".85"/><ellipse cx="50" cy="50" rx="38" ry="14" transform="rotate(60 50 50)" fill="none" stroke="#fff" stroke-width="4" opacity=".85"/><ellipse cx="50" cy="50" rx="38" ry="14" transform="rotate(120 50 50)" fill="none" stroke="#fff" stroke-width="4" opacity=".85"/><circle cx="50" cy="50" r="8" fill="#fde68a"/><circle cx="86" cy="50" r="4" fill="#fff"/><circle cx="32" cy="19" r="4" fill="#fff"/>`,
+          // 5 idea: lightbulb
+          `<path d="M50 10c-16 0-28 12-28 28 0 10 6 16 11 22 3 3 4 6 4 10h26c0-4 1-7 4-10 5-6 11-12 11-22 0-16-12-28-28-28z" fill="#fde68a"/><rect x="38" y="72" width="24" height="7" rx="3" fill="#fff" opacity=".9"/><rect x="42" y="82" width="16" height="6" rx="3" fill="#fff" opacity=".9"/><path d="M42 36c2-6 8-9 14-8" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>`,
+          // 6 computing: laptop
+          `<rect x="20" y="20" width="60" height="42" rx="6" fill="#fff" opacity=".9"/><rect x="26" y="26" width="48" height="30" rx="3" fill="#60a5fa"/><path d="M34 36l-5 5 5 5M66 36l5 5-5 5M54 33l-8 16" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 68h80l-6 10a6 6 0 0 1-5 3H21a6 6 0 0 1-5-3z" fill="#fff" opacity=".75"/>`,
+          // 7 art: palette
+          `<path d="M50 12C28 12 10 28 10 48s16 38 36 38c8 0 10-6 6-11-4-5 0-11 7-11h13c8 0 18-4 18-14C90 26 72 12 50 12z" fill="#fff" opacity=".9"/><circle cx="30" cy="42" r="6" fill="#fb7185"/><circle cx="46" cy="30" r="6" fill="#fbbf24"/><circle cx="66" cy="32" r="6" fill="#34d399"/><circle cx="76" cy="50" r="6" fill="#60a5fa"/><circle cx="34" cy="62" r="5" fill="#a78bfa"/>`,
+          // 8 rocket
+          `<path d="M50 8c14 10 20 26 18 46H32C30 34 36 18 50 8z" fill="#fff" opacity=".92"/><circle cx="50" cy="34" r="8" fill="#60a5fa"/><path d="M32 46L16 62l4 12 12-8zM68 46l16 16-4 12-12-8z" fill="#fb7185"/><path d="M42 58h16l-4 14h-8z" fill="#fde68a"/><path d="M46 74h8l-4 14z" fill="#fb923c"/>`,
+          // 9 graduation cap
+          `<path d="M50 20L10 40l40 20 40-20z" fill="#fff" opacity=".92"/><path d="M26 50v16c0 6 11 12 24 12s24-6 24-12V50L50 62z" fill="#fff" opacity=".7"/><path d="M86 42v22" stroke="#fde68a" stroke-width="3" stroke-linecap="round"/><circle cx="86" cy="68" r="4" fill="#fde68a"/>`,
+          // 10 music
+          `<path d="M38 22l44-10v52" stroke="#fff" stroke-width="5" fill="none" stroke-linejoin="round" opacity=".9"/><path d="M38 22v50" stroke="#fff" stroke-width="5" opacity=".9"/><ellipse cx="29" cy="74" rx="12" ry="9" fill="#fff" opacity=".92"/><ellipse cx="73" cy="64" rx="12" ry="9" fill="#fda4af"/>`,
+          // 11 chart / data
+          `<rect x="14" y="14" width="72" height="72" rx="10" fill="#fff" opacity=".88"/><rect x="24" y="52" width="12" height="26" rx="3" fill="#60a5fa"/><rect x="44" y="36" width="12" height="42" rx="3" fill="#34d399"/><rect x="64" y="24" width="12" height="54" rx="3" fill="#fb923c"/><path d="M24 40l20-12 16 8 14-14" stroke="#a78bfa" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+];
+const COURSE_COVER_ART_KEYS = COURSE_COVER_ART.map((_, i) => 'i' + i);
 const COVER_PATTERNS = ['m0','m1','m2','m3','m4','m5','zigzag','diagonal','rings','stripes','grid','cross'];
 const __coverPatternCache = {};
 function coverPalette(){ return (typeof classCardPalette !== 'undefined' && classCardPalette.length) ? classCardPalette : [['#2563eb','#1d4ed8'],['#059669','#047857'],['#d97706','#b45309'],['#dc2626','#b91c1c'],['#7c3aed','#6d28d9'],['#0891b2','#0e7490'],['#db2777','#be185d'],['#65a30d','#4d7c0f']]; }
@@ -4055,6 +4083,18 @@ function coverPatternDataUrl(key, w){
   if (__coverPatternCache[ck]) return __coverPatternCache[ck];
   const parts = String(key).split(':'), ci = (parseInt(parts[0], 10) || 0), pk = parts[1] || 'm0';
   const pal = coverPalette(), col = pal[ci % pal.length];
+  const iArt = /^i(\d+)$/.exec(pk);
+  if (iArt) {
+    const art = COURSE_COVER_ART[parseInt(iArt[1], 10) % COURSE_COVER_ART.length] || '';
+    const sw = 960, sh = 540;
+    const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + sw + ' ' + sh + '" width="' + sw + '" height="' + sh + '">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + col[0] + '"/><stop offset="1" stop-color="' + col[1] + '"/></linearGradient></defs>' +
+      '<rect width="' + sw + '" height="' + sh + '" fill="url(#g)"/><circle cx="760" cy="300" r="230" fill="#fff" opacity=".1"/>' +
+      '<svg x="540" y="70" width="400" height="400" viewBox="0 0 100 100">' + art + '</svg></svg>';
+    const u = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29');
+    __coverPatternCache[ck] = u;
+    return u;
+  }
   const W = w, H = Math.round(w * 9 / 16), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   const grad = g.createLinearGradient(0, 0, W, H); grad.addColorStop(0, col[0]); grad.addColorStop(1, col[1]);
@@ -4108,12 +4148,12 @@ function coverPickerHTML(o){
   const pal = coverPalette();
   const selKey = coverKeyOfUrl(o.cover), sp = selKey.split(':');
   const selC = selKey ? (parseInt(sp[0], 10) || 0) : -1, selP = selKey ? sp[1] : '';
-  const useC = selC >= 0 ? selC : 0, useP = selP || 'm0';
+  const useC = selC >= 0 ? selC : 0, useP = selP || (o.art ? 'i0' : 'm0');
   const has = !!o.cover;
   const swatches = pal.map((c, i) =>
     '<button type="button" onclick="' + o.pickFn + '(\'' + i + ':' + useP + '\')" aria-label="Colour ' + (i + 1) + '" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');' +
     (selC === i ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + c[0] + ';' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);') + '"></button>').join('');
-  const tiles = COVER_PATTERNS.map(pk => {
+  const tiles = (o.art ? COURSE_COVER_ART_KEYS : COVER_PATTERNS).map(pk => {
     const src = coverPatternDataUrl(useC + ':' + pk, 200);
     return '<button type="button" onclick="' + o.pickFn + '(\'' + useC + ':' + pk + '\')" aria-label="Pattern ' + pk + '" style="width:64px;height:38px;border-radius:10px;flex-shrink:0;overflow:hidden;background:url(' + src + ') center/cover;' +
       (selP === pk ? 'box-shadow:0 0 0 2px #fff,0 0 0 4px ' + pal[useC % pal.length][0] + ';' : 'box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);') + '"></button>';
@@ -4123,12 +4163,12 @@ function coverPickerHTML(o){
     '<div class="relative rounded-2xl overflow-hidden mb-3" style="height:128px;' + (has ? '' : 'border:1.5px dashed ' + (o.error ? '#dc2626' : '#d1d5db') + ';background:rgba(10,37,64,.03);') + '">' +
       (has ? '<img src="' + o.cover + '" class="w-full h-full object-cover" alt="">' +
              '<button type="button" onclick="' + o.clearJs + '" aria-label="Remove" class="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white" style="background:rgba(0,0,0,0.5);font-size:16px;line-height:1;">×</button>'
-           : '<div class="w-full h-full flex items-center justify-center text-center px-6" style="font-size:13px;font-weight:600;color:' + (o.error ? '#dc2626' : '#9ca3af') + ';">Pick a colour and pattern, or upload a picture, to continue</div>') +
+           : '<div class="w-full h-full flex items-center justify-center text-center px-6" style="font-size:13px;font-weight:600;color:' + (o.error ? '#dc2626' : '#9ca3af') + ';">Pick a colour and ' + (o.art ? 'illustration' : 'pattern') + ', or upload a picture, to continue</div>') +
     '</div>' +
     '<button type="button" onclick="' + o.uploadJs + '" class="flex items-center justify-center gap-2 w-full" style="height:42px;border-radius:21px;font-size:14px;font-weight:700;color:#0a2540;background:rgba(10,37,64,.06);margin-bottom:12px;">' +
       '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload a picture</button>' +
     '<div style="display:flex;flex-wrap:nowrap;gap:8px;padding:3px 4px;margin-bottom:10px;overflow-x:auto;" class="no-scrollbar">' + swatches + '</div>' +
-    '<button type="button" onclick="var p=this.nextElementSibling;var o=p.style.display===\'none\';p.style.display=o?\'flex\':\'none\';this.setAttribute(\'aria-expanded\',o);this.lastElementChild.style.transform=o?\'rotate(270deg)\':\'rotate(90deg)\';" aria-expanded="false" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="border:1px solid rgba(128,128,128,0.25);border-radius:16px;padding:13px 16px;"><span style="font-weight:600;">Pattern</span><span style="display:inline-block;color:#9ca3af;transform:rotate(90deg);line-height:1;">&rsaquo;</span></button>' +
+    '<button type="button" onclick="var p=this.nextElementSibling;var o=p.style.display===\'none\';p.style.display=o?\'flex\':\'none\';this.setAttribute(\'aria-expanded\',o);this.lastElementChild.style.transform=o?\'rotate(270deg)\':\'rotate(90deg)\';" aria-expanded="false" class="w-full flex items-center justify-between text-left text-sm text-gray-700" style="border:1px solid rgba(128,128,128,0.25);border-radius:16px;padding:13px 16px;"><span style="font-weight:600;">' + (o.art ? 'Illustration' : 'Pattern') + '</span><span style="display:inline-block;color:#9ca3af;transform:rotate(90deg);line-height:1;">&rsaquo;</span></button>' +
     '<div style="display:none;flex-wrap:wrap;gap:10px;padding:10px 4px 3px;">' + tiles + '</div>' +
   '</div>';
 }
