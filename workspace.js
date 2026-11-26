@@ -145,6 +145,8 @@
 .ws-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.ws-stat{background:var(--ws-card);border-radius:18px;padding:12px 6px;text-align:center}.ws-stat b{display:block;font-size:19px;color:var(--ws-ink);font-family:'Gendy','Montserrat',sans-serif}.ws-stat span{font-size:11px;color:var(--ws-sub)}
 
   #classroom-nav{display:none!important}
+  /* Desktop: Home / Tutor / Courses live in the left rail, so the floating dock buttons are not drawn (the + button stays) */
+  @media (min-width:1100px){.ws-dock > button:not(.ws-fab){display:none!important}}
   .ws-sugs{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:22px}.ws-sugs .filter-pill{margin:0}
   .ws-hero{padding:54px 20px 20px;min-height:0}
   .ws-hero h2{font-size:16px!important;line-height:1.15!important;letter-spacing:.01em}
@@ -289,7 +291,23 @@
     if (wsPushed > 0) { var n = wsPushed; wsPushed = 0; try { history.go(-n); } catch(e){} }
     switchTab(0);
   };
-  window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
+  window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; railMark(); };
+  /* Desktop rail: highlight the Workspace page that is showing (Home, Tutor or Courses) */
+  function railMark(){
+    var cur = (view === 'spaces') ? 'home' : view, open = false;
+    try { open = !!currentOverlayKind; } catch(e){}
+    ['home','tutor','courses'].forEach(function(k){
+      var el = document.getElementById('dcnav-' + k);
+      if (el) el.classList.toggle('dnav-active', !open && k === cur);
+    });
+  }
+  window.wsRailMark = railMark;
+  /* Rail tap: close any page open on top of the Workspace, then go to that Workspace page */
+  window.wsRailGo = function(k){
+    try { if (currentOverlayKind && typeof closeOverlay === 'function') closeOverlay(); } catch(e){}
+    nav.length = 0;
+    window.wsGo(k);
+  };
 
   /* ---------- Class helpers ---------- */
   function classes(){ try { return myClasses || []; } catch(e){ return []; } }
@@ -1363,6 +1381,7 @@
     var ni = $('ws-in'); if (ni) { ni.value = T.draft || ''; wsGrow(); }
     var cn = $('classroom-nav'); if (cn) cn.style.display = 'none';
     var fab = $('study-fab-btn'); if (fab) fab.remove();
+    railMark();
   }
   window.renderStudy = function(){ render(); };
 

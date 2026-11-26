@@ -1978,11 +1978,9 @@
     <!-- Space tools: shown in place of the main group while a Space is open.
          Workspace sits on top and takes you back out to the Spaces list. -->
     <div id="dnav-classroom-list" class="dn-grp">
-    <button onclick="switchTab(0)" class="dnav-item" id="dcnav-back" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
-    <button onclick="studySubTab('resources')" class="dnav-item" id="dcnav-resources" title="Resources">${Icon('folderOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Resources</span></button>
-    <button onclick="studySubTab('exams')" class="dnav-item" id="dcnav-practice" title="Practice">${Icon('editOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Practice</span></button>
-    <button onclick="openAIClass()" class="dnav-item" id="dcnav-ai" title="Stitch Bot">${Icon('botOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Stitch Bot</span></button>
-    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item" id="dcnav-notif" title="Notice Board">${Icon('bellOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Notice Board</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
+    <button onclick="wsRailGo('home')" class="dnav-item" id="dcnav-home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span class="dside-label">Home</span></button>
+    <button onclick="wsRailGo('tutor')" class="dnav-item" id="dcnav-tutor" title="My Stitch Tutor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/></svg><span class="dside-label">My Stitch Tutor</span></button>
+    <button onclick="wsRailGo('courses')" class="dnav-item" id="dcnav-courses" title="Courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg><span class="dside-label">Courses</span></button>
     </div>
     <div id="dnav-bottom" class="dn-grp">
     <div id="dnav-themepair" role="group" aria-label="Theme">
