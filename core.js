@@ -2297,9 +2297,11 @@
           }
         }
 
-        // 2) Page headers inside #overlay (lists, settings, info pages). Headers opt in with
-        // overlayHeader(..., { hideOnScroll:true }), which marks them data-hos. Step-by-step flows,
-        // chats and form pages do not opt in, so they stay put.
+        // 2) Page headers inside #overlay (lists, settings, info pages, long reading pages). Long pages hide the
+        // header when the person scrolls down to read and bring it back as soon as they scroll up. Headers that
+        // pass hideOnScroll:true always do it; every other overlay header does it too on pages that are long
+        // enough, except step-by-step flows (.pa-flow), pages with typing fields, and headers marked
+        // hideOnScroll:false (data-hos-off). Chats have their own header and are not touched.
         (function(){
           const lastY = new WeakMap();
           function stickyTarget(head, scroller){
@@ -2319,12 +2321,38 @@
             }
             return null;
           }
+          // A header that sits above the scrolling area (not inside it): found by walking up from the scroller
+          function outsideHead(sc){
+            let el = sc;
+            while (el && el.id !== 'overlay') {
+              let p = el.previousElementSibling;
+              while (p) {
+                if (p.classList && p.classList.contains('ov-sticky-head')) return p.hasAttribute('data-hos-off') ? null : p;
+                if (p.children && p.children.length === 1 && p.firstElementChild.classList.contains('ov-sticky-head')) return p.firstElementChild.hasAttribute('data-hos-off') ? null : p.firstElementChild;
+                p = p.previousElementSibling;
+              }
+              el = el.parentElement;
+            }
+            return null;
+          }
+          function autoOk(sc){
+            if (sc.id === 'create-post-scroll' || sc.closest('.pa-flow') || sc.querySelector('.pa-flow')) return false;
+            return !sc.querySelector('textarea, input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range])');
+          }
           document.addEventListener('scroll', (e) => {
             const sc = e.target;
             if (!sc || sc.nodeType !== 1 || !sc.closest || !sc.closest('#overlay')) return;
-            const head = sc.querySelector('[data-hos]');
-            if (!head || head.closest('.pa-flow') || scrollerOf(head) !== sc) return;
-            const tgt = stickyTarget(head, sc);
+            if (sc.scrollHeight < sc.clientHeight * 1.35) return;      // short pages: nothing to hide
+            let head = sc.querySelector('[data-hos]'), tgt = null, outside = false;
+            if (!head) {
+              if (!autoOk(sc) || sc.querySelector('.ov-sticky-head[data-hos-off]')) return;
+              head = sc.querySelector('.ov-sticky-head:not([data-hos-off])');
+              if (!head) { tgt = outsideHead(sc); outside = !!tgt; }
+            }
+            if (head) {
+              if (head.closest('.pa-flow') || scrollerOf(head) !== sc) return;
+              tgt = stickyTarget(head, sc);
+            }
             if (!tgt) return;
             const y = Math.max(0, sc.scrollTop);
             const prev = lastY.has(sc) ? lastY.get(sc) : 0;
@@ -2336,6 +2364,16 @@
             const isHidden = tgt.dataset.hosHidden === '1';
             if (isHidden === hide) return;
             tgt.dataset.hosHidden = hide ? '1' : '0';
+            if (outside) {
+              // above the scroller: slide up and give the space back to the page
+              if (hide) tgt.dataset.hosH = String(tgt.offsetHeight);
+              tgt.style.transition = 'margin-top .22s ease-out, transform .22s ease-out, opacity .22s ease-out';
+              tgt.style.marginTop = hide ? ('-' + (tgt.dataset.hosH || tgt.offsetHeight) + 'px') : '0px';
+              tgt.style.transform = hide ? 'translateY(-30%)' : 'translateY(0)';
+              tgt.style.opacity = hide ? '0' : '1';
+              tgt.style.pointerEvents = hide ? 'none' : '';
+              return;
+            }
             tgt.style.transition = 'transform .22s ease-out';
             tgt.style.willChange = 'transform';
             tgt.style.transform = hide ? 'translateY(-110%)' : 'translateY(0)';

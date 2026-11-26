@@ -8,7 +8,10 @@
   body.dark-mode{--ws-bg:#121212;--ws-card:#1e1e1e;--ws-ink:#f2f2f2;--ws-sub:#9aa3b2;--ws-line:#2b2b2b;--ws-dock:#2b2b2b}
   .ws-page{padding:var(--top-safe-pad) 20px 130px;color:var(--ws-ink)}
   .ws-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .ws-circ{width:44px;height:44px;border-radius:50%;background:var(--ws-bg);box-shadow:0 2px 10px rgba(11,31,63,.12);display:flex;align-items:center;justify-content:center;color:var(--ws-ink);position:relative;flex-shrink:0}
+  .ws-hdr .ws-circ:first-child{margin-left:-11px}.ws-hdr .ws-circ:last-child{margin-right:-11px}
+  .ws-hdr.ws-hdr-s{position:sticky;top:0;z-index:30;background:var(--ws-bg);margin:0 -20px 14px;padding:var(--top-safe-pad) 20px 8px}
+  .ws-page:has(> .ws-hdr-s:first-child){padding-top:0}
+  .ws-circ{width:44px;height:44px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;color:var(--ws-ink);position:relative;flex-shrink:0}
   .ws-hdr-t{text-align:center;line-height:1.15}  .ws-hdr-t b{display:block;font-size:17px;font-weight:700}.ws-hdr-t span{font-size:12px;color:var(--ws-sub)}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
@@ -53,7 +56,7 @@
   .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ:first-child{color:#1e90ff}
   .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
-  .ws-hero{margin:0 -20px;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
+  .ws-hero{margin:0;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
   .ws-live{position:relative;margin:-40px 0 16px;background:var(--ws-bg);border-radius:20px;box-shadow:0 8px 24px rgba(11,31,63,.14);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
   .ws-btn{background:#1e90ff;color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:10px 22px}
   .ws-cta{display:block;width:100%;background:#1e90ff;color:#fff;font-weight:700;border-radius:999px;padding:16px;text-align:center;font-size:15px;margin:14px 0}
@@ -193,7 +196,7 @@
   }
   function header(title, sub, backFn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
-    return '<div class="ws-hdr">' + backBtn(backFn || 'wsLeave()') +
+    return '<div class="ws-hdr ws-hdr-s">' + backBtn(backFn || 'wsLeave()') +
       '<div class="ws-hdr-t"><b>' + E(title) + '</b><span>' + E(sub) + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
   }
@@ -431,8 +434,8 @@
     else if (cTab === 'classwork') body = classClassworkTabHTML(cls);
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
-    return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:var(--top-safe-pad)">' +
-      '<div class="ws-hdr">' + backBtn('closeOverlay()') + '<div class="ws-hdr-t"><b>Workspace</b><span>' + E(cls.name) + (teacher(cls) ? ' \u00b7 ' + E(teacher(cls)) : '') + '</span></div>' +
+    return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
+      '<div class="ws-hdr ws-hdr-s">' + backBtn('closeOverlay()') + '<div class="ws-hdr-t"><b>Workspace</b><span>' + E(cls.name) + (teacher(cls) ? ' \u00b7 ' + E(teacher(cls)) : '') + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:22px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
@@ -927,6 +930,17 @@
     var fab = $('study-fab-btn'); if (fab) fab.remove();
   }
   window.renderStudy = function(){ render(); };
+
+  /* Headers hide when you scroll down to read and come back as soon as you scroll up (long pages only) */
+  document.addEventListener('scroll', function(e){
+    var sc = e.target; if (!sc || sc.nodeType !== 1 || !sc.querySelector) return;
+    var h = sc.querySelector('.ws-hdr-s'); if (!h || sc.scrollHeight < sc.clientHeight * 1.35) return;
+    var y = Math.max(0, sc.scrollTop), dy = y - (sc.__wsY || 0), hide = null;
+    if (y <= 8) hide = false; else if (dy > 6) hide = true; else if (dy < -6) hide = false;
+    if (hide === null) return; sc.__wsY = y;
+    if (h.__hid === hide) return; h.__hid = hide;
+    h.style.transition = 'transform .22s ease-out'; h.style.transform = hide ? 'translateY(-110%)' : 'translateY(0)';
+  }, true);
 
   var oRefresh = (typeof refreshResourcesUI === 'function') ? refreshResourcesUI : null;
   window.refreshResourcesUI = function(){

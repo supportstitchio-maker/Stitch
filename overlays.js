@@ -580,7 +580,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const pbStyle = opts.pb ? ` style="padding-bottom:${opts.pb};"` : '';
           // Back-only headers are always left-aligned (opts.right / opts.center are ignored)
           return `
-            <div class="flex-shrink-0 w-full ov-sticky-head${opts.deskBig ? ' ov-desk-big' : ''}"${padStyle}${opts.hideOnScroll ? ' data-hos="1"' : ''}>
+            <div class="flex-shrink-0 w-full ov-sticky-head${opts.deskBig ? ' ov-desk-big' : ''}"${padStyle}${opts.hideOnScroll ? ' data-hos="1"' : (opts.hideOnScroll === false ? ' data-hos-off="1"' : '')}>
               <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center gap-4"${pbStyle}>
                 <button onclick="${backAction || 'overlayGoBack()'}">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
                 <div class="font-semibold ${titleSize} font-display grad-text${titleClass}">${title}</div>
