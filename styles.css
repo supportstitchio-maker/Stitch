@@ -7472,3 +7472,13 @@ body.dark-mode #overlay .ws-hdr-s{ background:#121212; }
 .nbn{ padding:7px 11px !important; border-radius:16px !important; gap:9px !important; max-width:320px !important; box-shadow:0 8px 22px rgba(15,23,42,.16) !important; }
 .nbn > :first-child{ zoom:.78; }
 .nbn-t{ font-size:13px !important; } .nbn-m{ font-size:12px !important; } .nbn-time{ font-size:10px !important; }
+
+
+/* Pills and tabs: no glow, no blue halo or focus ring around them (selected = blue outline only) */
+.filter-pill, .filter-pill.on, .outline-pill, .outline-pill.on, .outline-pill.is-selected, .auth-intent-chip, .auth-intent-chip.on,
+.seg-btn, .seg-btn.on, .ws-tabs button, .ws-chips button, .ws-seg button,
+body.dark-mode .filter-pill, body.dark-mode .filter-pill.on, html.dark-mode .filter-pill, html.dark-mode .filter-pill.on,
+body.dark-mode .outline-pill, body.dark-mode .outline-pill.on, body.dark-mode .outline-pill.is-selected,
+body.dark-mode .auth-intent-chip, body.dark-mode .auth-intent-chip.on, body.dark-mode .seg-btn, body.dark-mode .seg-btn.on{ box-shadow:none !important; -webkit-tap-highlight-color:transparent; }
+.filter-pill:focus, .filter-pill:focus-visible, .outline-pill:focus, .outline-pill:focus-visible, .seg-btn:focus, .seg-btn:focus-visible,
+.ws-tabs button:focus, .ws-tabs button:focus-visible, .ws-chips button:focus, .ws-chips button:focus-visible, .ws-seg button:focus, .ws-seg button:focus-visible{ outline:none !important; box-shadow:none !important; }

@@ -11,7 +11,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           // of leaving the class
           classDetail: (fromPopState) => {
             if (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.includes(classDetailTab)) {
-              if (fromPopState) overlayHistoryPushed = false;
+              // Stay inside the space: put back the history entry the phone back button just used
+              if (fromPopState) { try { history.pushState({ stitchOverlay: 'classDetail' }, ''); } catch (e) {} }
               classSubPageBack();
               return;
             }

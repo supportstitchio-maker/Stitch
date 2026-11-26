@@ -68,7 +68,7 @@
   body.dark-mode .ws-dock .ws-fab{background:#1e90ff;box-shadow:0 8px 24px rgba(0,0,0,.45)}
   .ws-motif.ws-m-sm{inset:auto;left:0;top:0;transform:none;width:300px;height:100px;max-width:none;overflow:visible}
   .ws-hdr-t b,.ws-h1,.ws-h2,.ws-tile b,.ws-cc h3,.ws-sp b,.ws-hero h2,.ws-cta,.ws-btn,.ws-seg button,.filter-pill flex-shrink-0,.filter-pill,.ws-cont b,.ws-st b,.ws-live b{font-family:'Gendy','Montserrat',sans-serif}
-  .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ:first-child{color:#1e90ff}.ws-hdr .ws-circ:last-child{color:#1e90ff}
+  .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ,.ws-fl .ws-circ,body.dark-mode .ws-hdr .ws-circ,body.dark-mode .ws-fl .ws-circ{color:#1e90ff}
   .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
   .ws-hero{margin:0;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
@@ -208,19 +208,20 @@
     ];
     return '<svg class="ws-art" viewBox="0 0 120 120">' + a[i % a.length] + '</svg>';
   }
+  function bellIcon(){ try { return '<span style="display:flex;color:#1e90ff">' + IconBold('bell', 'w-5 h-5') + '</span>'; } catch(e){ return I('bell', 20); } }
   function backBtn(fn){
-    return '<button class="ws-circ ws-back" onclick="' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="url(#navyRoyalGrad)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    return '<button class="ws-circ ws-back" onclick="' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="#1e90ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   }
   function header(title, sub, backFn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
     return '<div class="ws-hdr ws-hdr-s">' + backBtn(backFn || 'wsLeave()') +
       '<div class="ws-hdr-t"><b>' + E(title) + '</b><span>' + E(sub) + '</span></div>' +
-      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
+      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
   }
   function floatNav(backFn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
     return '<div class="ws-fl"><div class="ws-fl-in">' + backBtn(backFn || 'wsLeave()') +
-      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div></div><div class="ws-fl-sp"></div>';
+      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + (n ? '<i class="ws-dot"></i>' : '') + '</button></div></div><div class="ws-fl-sp"></div>';
   }
   window.wsFloatNav = floatNav;
   window.wsHeader = header;
@@ -237,16 +238,26 @@
      returns to the previous page, then to the Workspace home, and only then offers to leave. */
   var nav = [];
   function snap(){ return { view: view, sub: T.sub, savedId: T.savedId, openDiag: T.openDiag }; }
+  var wsPushed = 0;
   function pushNav(){
     var c = snap(), l = nav[nav.length - 1];
     if (l && l.view === c.view && l.sub === c.sub && l.savedId === c.savedId && l.openDiag === c.openDiag) return;
     nav.push(c); if (nav.length > 30) nav.shift();
+    try { wsPushed++; history.pushState({ wsNav: wsPushed }, ''); } catch(e){ wsPushed--; }
   }
-  function popNav(){
+  /* Drop the history entry that belongs to a page we leave by our own arrow, so phone back and the arrow stay in step */
+  function syncBack(){ if (wsPushed > 0) { wsPushed--; try { history.back(); } catch(e){} } }
+  function popNav(fromPop){
     if (!nav.length) return false;
     var x = nav.pop(); view = x.view; T.sub = x.sub; T.savedId = x.savedId; T.openDiag = x.openDiag;
+    if (fromPop !== true) syncBack();
     render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; return true;
   }
+  window.addEventListener('popstate', function(e){
+    var st = e && e.state; if (st && st.stitchOverlay) return;
+    var d = (st && st.wsNav) ? st.wsNav : 0;
+    if (d < wsPushed) { wsPushed = d; if (nav.length) popNav(true); }
+  });
   window.wsLeave = function(){
     if (popNav()) return;
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
@@ -479,11 +490,16 @@
     if (cHist.length) { showTab(cHist.pop()); return; }
     closeOverlay();
   };
+  /* Opening a space from anywhere starts it on a clean tab history */
+  try {
+    var obOpen = window.openClassDetail;
+    if (typeof obOpen === 'function') window.openClassDetail = function(id){ if (id !== currentClassId || !document.querySelector('#overlay .ws-tabs')) { cTab = 'resources'; cHist = []; tabsX = 0; } return obOpen.apply(this, arguments); };
+  } catch(e){}
   try {
     var obClass = overlayBackAction.classDetail;
     overlayBackAction.classDetail = function(fromPopState){
       var sub = (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1);
-      if (!sub && cHist.length) { if (fromPopState) overlayHistoryPushed = false; window.wsClassBack(); return; }
+      if (!sub && cHist.length) { if (fromPopState) { try { history.pushState({ stitchOverlay: 'classDetail' }, ''); } catch(e){} } window.wsClassBack(true); return; }
       obClass(fromPopState);
     };
   } catch(e){}
@@ -545,7 +561,7 @@
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
       '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"></div>' +
-      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
+      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:16px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
       (cls.code ? '<button class="ws-code" onclick="copyClassCode(\'' + cls.code + '\')"><span>Code: ' + E(cls.code) + '</span>' + I('copy', 14) + '</button>' : '') + '</div>' +
@@ -786,7 +802,7 @@
   }
   window.wsHistSearch = function(v){ T.hq = v; var r = $('ws-hist-rows'); if (r) r.innerHTML = histRows(); };
   window.wsHistory = function(){ pushNav(); T.hq = ''; T.sub = 'history'; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; };
-  window.wsNewChat = function(){ wsStopMic(); if (T.busy) return; if (T.sub === 'history') nav.pop(); T.msgs = []; T.sid = null; T.title = ''; T.sub = 'chat'; render(); };
+  window.wsNewChat = function(){ wsStopMic(); if (T.busy) return; if (T.sub === 'history') { nav.pop(); syncBack(); } T.msgs = []; T.sid = null; T.title = ''; T.sub = 'chat'; render(); };
   window.wsOpenChat = function(id){
     var x = sessList().filter(function(k){ return k.id === id; })[0]; if (!x || T.busy) return; pushNav();
     T.msgs = (x.messages || []).map(function(m){ return { r: m.role === 'user' ? 'u' : 'a', t: m.text || '', d: m.d || null, err: !!m.err }; });
@@ -1065,7 +1081,7 @@
   function diagList(){ return T.diagrams.filter(function(d){ return T.dfilter === 'all' || (T.dfilter === 'trees' && d.type === 'tree') || (T.dfilter === 'cycles' && d.type === 'cycle') || (T.dfilter === 'compare' && d.type === 'compare'); }); }
   function diagramsHTML(){
     var ds = diagList(), ic = { tree: 'tree', cycle: 'refresh', compare: 'card' }, tc = { tree: '#1e90ff', cycle: '#1fa463', compare: '#f7774a' };
-    var h = subHeader('Diagrams') + '<div class="ws-chips">' + [['all', 'All'], ['trees', 'Trees'], ['cycles', 'Cycles'], ['compare', 'Compare']].map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.dfilter === x[0] ? 'on' : '') + '" onclick="wsDF(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
+    var h = header('Diagrams', '', 'wsBackTutor()') + '<div class="ws-chips">' + [['all', 'All'], ['trees', 'Trees'], ['cycles', 'Cycles'], ['compare', 'Compare']].map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.dfilter === x[0] ? 'on' : '') + '" onclick="wsDF(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
     h += '<div class="ws-search" style="background:var(--ws-card)"><input id="ws-dq" placeholder="Describe a diagram to generate..." onkeydown="if(event.key===\'Enter\')wsGenDiagram()"><button class="ws-send" onclick="wsGenDiagram()" aria-label="Draw">' + I('send', 18) + '</button></div>';
     if (T.dBusy) h += busyBox('Drawing your diagram\u2026');
     if (T.openDiag > -1 && ds[T.openDiag]) h += '<div class="ws-blk" id="ws-dopen"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>' + E(ds[T.openDiag].title) + '</b><span><a style="color:#1e90ff;font-weight:700;font-size:12px;margin-right:14px" onclick="wsDownloadDiag(' + T.diagrams.indexOf(ds[T.openDiag]) + ')">Download</a><a style="color:#ef4444;font-weight:700;font-size:12px" onclick="wsDelD(' + T.openDiag + ')">Delete</a></span></div>' + diagHTML(ds[T.openDiag]) + '</div>';
