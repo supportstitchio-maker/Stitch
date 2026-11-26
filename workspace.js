@@ -126,7 +126,7 @@
   #classroom-nav{display:none!important}
   .ws-sugs{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:22px}.ws-sugs .filter-pill{margin:0}
   .ws-hero{padding:54px 20px 20px;min-height:0}
-  .ws-hero h2{font-size:22px!important;line-height:1.15!important;letter-spacing:.01em}
+  .ws-hero h2{font-size:16px!important;line-height:1.15!important;letter-spacing:.01em}
   .ws-code{display:inline-flex;align-items:center;gap:8px;position:relative;margin-top:12px;align-self:flex-start;background:rgba(255,255,255,.2);color:#fff;border-radius:999px;padding:6px 10px 6px 14px;font-size:12px;font-weight:700}
   .ws-code span{letter-spacing:.14em}
   .ws-av{width:46px;height:46px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--ws-card);color:var(--ws-sub)}
@@ -233,12 +233,27 @@
     return '<div id="study-fab-wrap" class="ws-dock">' + d('home','home') + d('tutor','board') + d('courses','cap') + fab() + '</div>';
   }
   function spaceName(){ return 'Workspace'; }
+  /* Back stack: every page you open from another remembers where you came from, so the back arrow
+     returns to the previous page, then to the Workspace home, and only then offers to leave. */
+  var nav = [];
+  function snap(){ return { view: view, sub: T.sub, savedId: T.savedId, openDiag: T.openDiag }; }
+  function pushNav(){
+    var c = snap(), l = nav[nav.length - 1];
+    if (l && l.view === c.view && l.sub === c.sub && l.savedId === c.savedId && l.openDiag === c.openDiag) return;
+    nav.push(c); if (nav.length > 30) nav.shift();
+  }
+  function popNav(){
+    if (!nav.length) return false;
+    var x = nav.pop(); view = x.view; T.sub = x.sub; T.savedId = x.savedId; T.openDiag = x.openDiag;
+    render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; return true;
+  }
   window.wsLeave = function(){
+    if (popNav()) return;
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
     if (view !== 'home') { view = 'home'; render(); var sc0 = $('screen'); if (sc0) sc0.scrollTop = 0; return; }
     if (typeof openLeaveClassModal === 'function') openLeaveClassModal(); else switchTab(0);
   };
-  window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
+  window.wsGo = function(k){ if (view !== k) pushNav(); view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
 
   /* ---------- Class helpers ---------- */
   function classes(){ try { return myClasses || []; } catch(e){ return []; } }
@@ -301,7 +316,7 @@
       (cs.length ? '' : '<div class="ws-tiles"><button class="ws-tile ws-t1" onclick="wsCreateJoin(\'create\')"><span class="ic">' + I('plus', 20) + '</span><b>Create space</b><span class="s">Start a space for your class or group</span></button>' +
       '<button class="ws-tile ws-t2" onclick="wsCreateJoin(\'join\')"><span class="ic">' + I('link', 20) + '</span><b>Join space</b><span class="s">Enter a code or link</span></button></div>') +
       '<div class="ws-h2">Continue with Stitch Tutor</div>' +
-      '<div class="ws-card ws-cont"><div class="r" onclick="wsGo(\'tutor\')"><div><b>' + E(last ? last.title : 'Stitch Tutor') + '</b><small>' + (last ? 'Continue where you stopped' : 'Add your sources and start studying') + '</small></div><span class="ws-cap">' + I('cap', 20) + '</span></div>' +
+      '<div class="ws-card ws-cont"><div class="r" onclick="wsContinue()"><div><b>' + E(last ? last.title : 'Stitch Tutor') + '</b><small>' + (last ? 'Continue where you stopped' : 'Add your sources and start studying') + '</small></div><span class="ws-cap">' + I('cap', 20) + '</span></div>' +
       '<div class="ws-acts"><button onclick="wsOpenSub(\'summary\')" aria-label="Summary">' + I('lines') + '</button><button onclick="wsOpenSub(\'saved\')" aria-label="Saved">' + I('folder') + '</button><button onclick="wsOpenSub(\'diagrams\')" aria-label="Diagrams">' + I('tree') + '</button></div></div>' +
       '<div class="ws-h2">Study tools</div><div class="ws-tools">' +
       '<button class="ws-tool" onclick="wsSources()"><span class="i" style="color:#1e90ff">' + I('book', 22) + '</span>Resources</button>' +
@@ -462,7 +477,6 @@
   };
   window.wsClassBack = function(){
     if (cHist.length) { showTab(cHist.pop()); return; }
-    view = 'home';
     closeOverlay();
   };
   try {
@@ -530,10 +544,10 @@
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
-      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"><b>Workspace</b></div>' +
+      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
-      '<h2 style="font-size:22px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
+      '<h2 style="font-size:16px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
       (cls.code ? '<button class="ws-code" onclick="copyClassCode(\'' + cls.code + '\')"><span>Code: ' + E(cls.code) + '</span>' + I('copy', 14) + '</button>' : '') + '</div>' +
       (live ? '<div class="ws-live"><div><b style="font-size:15px">' + E(live.title) + ' \u00b7 ' + (live.status === 'live' ? 'Live now' : E(live.time || 'Today')) + '</b><small style="display:block;color:var(--ws-sub);font-size:12px">' + E(teacher(cls)) + '</small></div>' +
         (live.status === 'live' ? '<button class="ws-btn" onclick="joinLiveLecture(\'' + live.id + '\',\'' + cls.id + '\')">Join</button>' : (teach ? '<button class="ws-btn" onclick="startScheduledLectureNow(\'' + live.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>' : '<div style="height:16px"></div>') +
@@ -729,9 +743,67 @@
       if (mm) { try { d = saveDiagram(jparse(mm[1])); } catch(e){ d = null; } out = out.replace(/<diagram>[\s\S]*?<\/diagram>/, ''); }
       m.t = out.trim(); m.d = d;
     } catch(e){ m.t = (e && e.message) || 'Something went wrong. Try again.'; m.err = true; }
-    m.busy = false; T.busy = false; chatLog();
+    m.busy = false; T.busy = false; chatLog(); wsPersistChat();
   };
   window.wsSave = function(i){ var s = lget('ws-saved', []); s.unshift({ t: T.msgs[i].t, at: Date.now() }); lset('ws-saved', s.slice(0, 50)); toast('Saved', 'Added to your saved answers.'); };
+
+  /* ----- Chat history (brought back from the old Stitch Bot). Uses the same synced list, aiChatSessions, so old chats appear too ----- */
+  T.sid = null; T.hq = '';
+  function sessList(){ try { return Array.isArray(aiChatSessions) ? aiChatSessions : []; } catch(e){ return []; } }
+  function sessTitle(x){
+    if (x.summary) return x.summary;
+    try { if (typeof fallbackAIChatSummary === 'function') return fallbackAIChatSummary(x); } catch(e){}
+    var f = (x.messages || []).filter(function(m){ return m.role === 'user' && m.text; })[0]; return f ? lbl(f.text, 40) : 'Chat';
+  }
+  function wsPersistChat(){
+    try {
+      var msgs = T.msgs.filter(function(x){ return !x.busy; }).slice(-80).map(function(x){ var o = { role: x.r === 'u' ? 'user' : 'bot', text: x.t || '' }; if (x.d) o.d = x.d; if (x.err) o.err = 1; return o; });
+      if (!msgs.some(function(x){ return x.role === 'user'; })) return;
+      var list = sessList(), cur = T.sid ? list.filter(function(x){ return x.id === T.sid; })[0] : null;
+      if (cur) { cur.messages = msgs; cur.at = Date.now(); }
+      else {
+        var id = (typeof aiChatSessionIdCounter === 'number' ? ++aiChatSessionIdCounter : Date.now());
+        cur = { id: id, messages: msgs, summary: T.title || null, tutor: true, at: Date.now() };
+        list.unshift(cur); T.sid = id;
+      }
+      if (typeof queueSaveUserState === 'function') queueSaveUserState();
+    } catch(e){}
+  }
+  window.wsPersistChat = wsPersistChat;
+  function histRows(){
+    var q = (T.hq || '').trim().toLowerCase(), list = sessList().filter(function(x){ return !q || sessTitle(x).toLowerCase().indexOf(q) >= 0; });
+    if (!list.length) return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">' + (q ? 'No chats match "' + E(T.hq) + '".' : 'No past chats yet. Ask Stitch Tutor something and it will be saved here.') + '</div>';
+    return list.map(function(x){
+      var n = (x.messages || []).filter(function(m){ return m.role === 'user'; }).length;
+      var sub = n + ' question' + (n === 1 ? '' : 's') + (x.at ? ' \u00b7 ' + new Date(x.at).toLocaleDateString() : '');
+      return '<div class="ws-row" onclick="wsOpenChat(' + x.id + ')"><span class="ws-ft" style="background:#1e90ff">AI</span><div style="flex:1;min-width:0"><b style="display:block;font-size:14px">' + E(lbl(sessTitle(x), 40)) + '</b><small style="color:var(--ws-sub);font-size:12px">' + sub + '</small></div>' +
+        '<button class="ws-circ" style="color:#9aa5bd" aria-label="Delete chat" onclick="event.stopPropagation();wsDelChat(' + x.id + ')">' + I('close', 18) + '</button></div>';
+    }).join('');
+  }
+  function historyHTML(){
+    return subHeaderT('Chat history') + '<div class="ws-search">' + I('search', 18) + '<input id="ws-hq" type="text" value="' + E(T.hq) + '" placeholder="Search chat history..." oninput="wsHistSearch(this.value)"></div>' +
+      '<button class="filter-pill on" style="margin-bottom:6px" onclick="wsNewChat()">' + I('plus', 15) + ' New chat</button><div id="ws-hist-rows">' + histRows() + '</div>';
+  }
+  window.wsHistSearch = function(v){ T.hq = v; var r = $('ws-hist-rows'); if (r) r.innerHTML = histRows(); };
+  window.wsHistory = function(){ pushNav(); T.hq = ''; T.sub = 'history'; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; };
+  window.wsNewChat = function(){ wsStopMic(); if (T.busy) return; if (T.sub === 'history') nav.pop(); T.msgs = []; T.sid = null; T.title = ''; T.sub = 'chat'; render(); };
+  window.wsOpenChat = function(id){
+    var x = sessList().filter(function(k){ return k.id === id; })[0]; if (!x || T.busy) return; pushNav();
+    T.msgs = (x.messages || []).map(function(m){ return { r: m.role === 'user' ? 'u' : 'a', t: m.text || '', d: m.d || null, err: !!m.err }; });
+    T.sid = id; T.title = sessTitle(x); T.sub = 'chat'; view = 'tutor'; render(); chatLog();
+  };
+  window.wsDelChat = function(id){
+    if (!window.confirm('Delete this chat?')) return;
+    try { aiChatSessions = sessList().filter(function(x){ return x.id !== id; }); } catch(e){}
+    if (T.sid === id) { T.sid = null; T.msgs = []; T.title = ''; }
+    if (typeof queueSaveUserState === 'function') queueSaveUserState();
+    var r = $('ws-hist-rows'); if (r) r.innerHTML = histRows(); else render();
+  };
+  window.wsContinue = function(){
+    var last = sessList().filter(function(x){ return x.tutor; })[0];
+    if (!T.msgs.length && last) { wsOpenChat(last.id); return; }
+    wsGo('tutor');
+  };
 
   /* ----- Sources sheet ----- */
   window.wsSources = function(){
@@ -767,7 +839,7 @@
     var cs = classes(); sheet('<b style="font-size:20px">From a space</b>' + (cs.length ? cs.map(function(c){ var p = pal(c); return '<div class="ws-row" onclick="wsUseCourse(\'' + c.id + '\')"><span class="ws-ft" style="background:' + p.a + '">' + I('book', 18) + '</span><div style="flex:1"><b>' + E(c.name) + '</b><small>' + materials(c).length + ' resources</small></div></div>'; }).join('') : '<div class="ws-blk" style="margin-top:10px;text-align:center;color:var(--ws-sub)">You are not in a course yet.</div>'));
   };
   window.wsUseCourse = function(id){ T.cls = id; wsSources(); };
-  window.wsTutorFromCourse = function(id){ T.cls = id; closeOverlay(); view = 'tutor'; T.sub = 'chat'; render(); };
+  window.wsTutorFromCourse = function(id){ pushNav(); T.cls = id; closeOverlay(); view = 'tutor'; T.sub = 'chat'; render(); };
 
   /* ----- Studio ----- */
   function studioHTML(){
@@ -782,12 +854,12 @@
   window.wsOpenSub = function(s){
     if (s === 'practice') { wsQuiz(); return; }
     if (s === 'flashcards') { wsFlash(); return; }
-    view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
+    pushNav(); view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
   };
   function subHeaderT(name, sub){ return header(name, sub || '', 'wsBackTutor()'); }
   function subHeader(name, sub){ return floatNav('wsBackTutor()') + '<h1 class="ws-h1 font-display">' + E(name) + '</h1><div class="ws-sub">' + E(sub || '') + '</div>'; }
-  window.wsBackTutor = function(){ if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
+  window.wsBackTutor = function(){ if (popNav()) return; if (T.sub === 'history') { T.sub = 'chat'; render(); return; } if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
   function errBox(e, fn){ return '<div class="ws-blk" style="text-align:center"><div style="font-size:13px;color:var(--ws-sub)">' + E(e) + '</div><button class="filter-pill on" style="margin-top:10px" onclick="' + fn + '">Try again</button></div>'; }
 
@@ -1141,8 +1213,8 @@
     h += '<div class="ws-h2" style="margin-top:14px">Illustrations</div>' + (ds.length ? ds.map(function(d, i){ return row('IMG', '#1e90ff', d.title, E(String(d.type || 'tree')), 'wsOpenSavedDiag(' + i + ')', 'wsDownloadDiag(' + i + ')', 'wsDelSavedDiag(' + i + ')'); }).join('') : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No illustrations yet. Make one under Diagrams.</div>');
     return h;
   }
-  window.wsOpenSaved = function(id){ T.savedId = id; T.sub = 'savedSum'; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; };
-  window.wsOpenSavedDiag = function(i){ T.dfilter = 'all'; T.sub = 'diagrams'; T.openDiag = i; render(); var o = $('ws-dopen'); if (o && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); };
+  window.wsOpenSaved = function(id){ pushNav(); T.savedId = id; T.sub = 'savedSum'; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; };
+  window.wsOpenSavedDiag = function(i){ pushNav(); T.dfilter = 'all'; T.sub = 'diagrams'; T.openDiag = i; render(); var o = $('ws-dopen'); if (o && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); };
   window.wsDelSavedDiag = function(i){ T.diagrams = T.diagrams.filter(function(x, k){ return k !== i; }); lset('ws-diagrams', T.diagrams); T.openDiag = -1; render(); };
   function savedSumHTML(){
     var it = savedSums().filter(function(x){ return x.id === T.savedId; })[0], h = subHeaderT('Saved summary');
@@ -1165,7 +1237,8 @@
     if (T.sub === 'flashcards') return flashHTML();
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
-    var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button></div>';
+    if (T.sub === 'history') return historyHTML();
+    var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button><button class="filter-pill flex-shrink-0" onclick="wsHistory()">History</button>' + (T.sub === 'chat' && T.msgs.length ? '<button class="filter-pill flex-shrink-0" onclick="wsNewChat()">New chat</button>' : '') + '</div>';
     return header('Stitch Tutor', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
