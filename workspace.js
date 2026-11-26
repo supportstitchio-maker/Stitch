@@ -1293,15 +1293,28 @@
   } catch(e){}
 
 
-  /* Headers hide when you scroll down to read and come back as soon as you scroll up (long pages only) */
+  /* Headers hide when you scroll down to read and come back as soon as you scroll up.
+     Works on the Workspace home and every other Workspace page. Tracks every scroll step (not just big jumps)
+     so a slow upward scroll still brings the header back. */
   document.addEventListener('scroll', function(e){
     var sc = e.target; if (!sc || sc.nodeType !== 1 || !sc.querySelector) return;
-    var h = sc.querySelector('.ws-hdr-s'); if (!h || sc.scrollHeight < sc.clientHeight + 140) return;
-    var y = Math.max(0, sc.scrollTop), dy = y - (sc.__wsY || 0), hide = null;
-    if (y <= 8) hide = false; else if (dy > 6) hide = true; else if (dy < -6) hide = false;
-    if (hide === null) return; sc.__wsY = y;
+    var h = sc.querySelector('.ws-hdr-s'); if (!h) return;
+    var y = Math.max(0, sc.scrollTop), last = (sc.__wsY == null) ? y : sc.__wsY, dy = y - last;
+    sc.__wsY = y;
+    /* page barely scrolls: keep the header visible so it does not flicker */
+    if (sc.scrollHeight < sc.clientHeight + 48) { if (h.__hid) { h.__hid = false; h.style.transform = 'translateY(0)'; } sc.__wsAcc = 0; return; }
+    /* ignore iOS rubber-band overscroll at the bottom */
+    if (y + sc.clientHeight >= sc.scrollHeight - 1 && dy < 0 && sc.__wsAcc >= 0) return;
+    /* add up movement in one direction; reset when the direction flips */
+    if (dy === 0) return;
+    sc.__wsAcc = ((sc.__wsAcc || 0) * dy > 0) ? sc.__wsAcc + dy : dy;
+    var hide = h.__hid || false;
+    if (y <= 8) hide = false;
+    else if (sc.__wsAcc > 8 && y > h.offsetHeight) hide = true;
+    else if (sc.__wsAcc < -4) hide = false;
     if (h.__hid === hide) return; h.__hid = hide;
-    h.style.transition = 'transform .22s ease-out'; h.style.transform = hide ? 'translateY(-110%)' : 'translateY(0)';
+    h.style.willChange = 'transform';
+    h.style.transition = 'transform .22s ease-out'; h.style.transform = hide ? 'translateY(-130%)' : 'translateY(0)';
   }, true);
 
   var oRefresh = (typeof refreshResourcesUI === 'function') ? refreshResourcesUI : null;

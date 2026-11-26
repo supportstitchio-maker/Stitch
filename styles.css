@@ -350,7 +350,7 @@
         }
         body.dark-mode {
           --c-black:#121212;
-          --c-blackout:#181818;
+          --c-blackout:#121212;
           --c-raven:#0d0d0d;
           --c-onyx:#1e1e1e;
           --c-licorice:#1f1f1f;
@@ -4476,7 +4476,7 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
 /* Static page headers: overlay headers stay put while the page scrolls */
 #overlay .ov-sticky-head, #overlay .ov-sticky-wrap, #overlay div:has(> .ov-sticky-head:only-child){position:sticky;top:0;z-index:40;background:#f9fafb;}
 body.dark-mode #overlay .ov-sticky-head, body.dark-mode #overlay .ov-sticky-wrap, body.dark-mode #overlay div:has(> .ov-sticky-head:only-child),
-html.dark-mode #overlay .ov-sticky-head, html.dark-mode #overlay .ov-sticky-wrap, html.dark-mode #overlay div:has(> .ov-sticky-head:only-child){background:#181818;}
+html.dark-mode #overlay .ov-sticky-head, html.dark-mode #overlay .ov-sticky-wrap, html.dark-mode #overlay div:has(> .ov-sticky-head:only-child){background:#121212;}
 
 /* Settings and activity: grouped cards */
 .stg-card{background:#fff;border-radius:22px;padding:2px 16px;box-shadow:0 4px 18px rgba(15,23,42,.08);border:1px solid rgba(0,0,0,.04)}
@@ -4729,7 +4729,7 @@ body.dark-mode .dnav-toggle{ background:#161a22; border-color:rgba(255,255,255,.
 #overlay div:has(> .ov-sticky-head:only-child) > .ov-sticky-head::before{ display:none; }
 body.dark-mode #overlay .pa-flow .pa-sticky::before, body.dark-mode #overlay .ov-sticky-head::before, body.dark-mode #overlay .ov-sticky-wrap::before, body.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before,
 html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov-sticky-head::before, html.dark-mode #overlay .ov-sticky-wrap::before, html.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before{
-  background:linear-gradient(to bottom,#181818 0,#181818 70%,rgba(24,24,24,.85) 82%,rgba(24,24,24,0) 100%); }
+  background:linear-gradient(to bottom,#121212 0,#121212 70%,rgba(18,18,18,.85) 82%,rgba(18,18,18,0) 100%); }
 
 /* Match with CV, Post an opportunity and other overlay page headers: white that vanishes downward */
 #overlay .pa-flow .pa-sticky::before, #overlay .ov-sticky-head::before, #overlay .ov-sticky-wrap::before, #overlay div:has(> .ov-sticky-head:only-child)::before{
@@ -4810,7 +4810,7 @@ body.dark-mode .cd-chip-amber, html.dark-mode .cd-chip-amber{ background:#3a2a10
 body.dark-mode .cd-chip-red, html.dark-mode .cd-chip-red{ background:#3b1717; color:#f87171; }
 body.dark-mode .cd-ghost, body.dark-mode .cd-danger, body.dark-mode .cd-note, html.dark-mode .cd-ghost, html.dark-mode .cd-danger, html.dark-mode .cd-note{ background:#1e1e1e; border-color:#333; }
 body.dark-mode .cd-ghost, html.dark-mode .cd-ghost{ color:#e5e7eb; }
-body.dark-mode .cd-actions, html.dark-mode .cd-actions{ background:linear-gradient(to top,#181818 0,#181818 55%,rgba(24,24,24,0) 100%); }
+body.dark-mode .cd-actions, html.dark-mode .cd-actions{ background:linear-gradient(to top,#121212 0,#121212 55%,rgba(18,18,18,0) 100%); }
 body.dark-mode .cd-v a, html.dark-mode .cd-v a{ color:#6aa8ff; }
 
 /* Header fade, second pass: the fade lives in its own strip under the header, so it never washes out
@@ -4821,7 +4821,7 @@ body.dark-mode .cd-v a, html.dark-mode .cd-v a{ color:#6aa8ff; }
   background:linear-gradient(to bottom,#f9fafb 0,#f9fafb calc(100% - 22px),rgba(249,250,251,.85) calc(100% - 12px),rgba(249,250,251,0) 100%); }
 body.dark-mode #overlay .pa-flow .pa-sticky::before, body.dark-mode #overlay .ov-sticky-head::before, body.dark-mode #overlay .ov-sticky-wrap::before, body.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before,
 html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov-sticky-head::before, html.dark-mode #overlay .ov-sticky-wrap::before, html.dark-mode #overlay div:has(> .ov-sticky-head:only-child)::before{
-  background:linear-gradient(to bottom,#181818 0,#181818 calc(100% - 22px),rgba(24,24,24,.85) calc(100% - 12px),rgba(24,24,24,0) 100%); }
+  background:linear-gradient(to bottom,#121212 0,#121212 calc(100% - 22px),rgba(18,18,18,.85) calc(100% - 12px),rgba(18,18,18,0) 100%); }
 #overlay .pa-flow .pa-sticky, #overlay .ov-sticky-wrap, #overlay div:has(> .ov-sticky-head:only-child),
 #overlay .ov-sticky-head:not(:only-child):not(.pa-sticky > .ov-sticky-head){ margin-bottom:22px; }
 /* Progress bars: stronger, so every step reads clearly */
@@ -5186,7 +5186,7 @@ html.dnav-collapsed body #desktop-nav #dcnav-theme .dside-label,html.dnav-collap
 .nrow-in.sel{ background:#e6ecfb !important; border-radius:14px; }
 .nstitch{ background:transparent !important; box-shadow:none !important; border:0 !important; border-bottom:1px solid rgba(15,23,42,.08) !important; border-radius:0 !important; padding:16px 6px !important; }
 body.dark-mode .nrow-swipe, body.dark-mode .nstitch{ border-bottom-color:rgba(255,255,255,.09) !important; }
-body.dark-mode .nrow-in{ background:#181818 !important; }
+body.dark-mode .nrow-in{ background:#121212 !important; }
 body.dark-mode .nstitch{ background:transparent !important; }
 body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
 
@@ -5202,7 +5202,7 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
 @media (min-width:1100px){
   :root{ --nav-width:96px; --dtop-h:76px; --pg-bg:#f1f4f9; --pn-bg:#ffffff; --pn-sh:0 4px 18px rgba(30,60,140,.06); }
   html, body, body.bg-gray-50{ background:var(--pg-bg) !important; }
-  body.dark-mode, body.dark-mode.bg-gray-50, html.dark-mode{ --pg-bg:#181818; --pn-bg:#222222; --pn-sh:none; background:#181818 !important; }
+  body.dark-mode, body.dark-mode.bg-gray-50, html.dark-mode{ --pg-bg:#121212; --pn-bg:#121212; --pn-sh:none; background:#121212 !important; }
   #app{ background:transparent !important; }
 
   /* shell: sits to the right of the rail, below the strip */
@@ -5673,12 +5673,12 @@ body.dark-mode #discover-search-input::placeholder{ color:#8b8f98; }
 .skd-post-media{width:100%;aspect-ratio:4/3;max-height:520px;border-radius:20px;}
 .skd-post-acts{display:flex;gap:28px;margin-top:12px;}
 .skd-right{position:absolute;top:76px;right:16px;bottom:16px;width:var(--rp-width,480px);background:#fff;border-radius:28px;box-shadow:0 4px 18px rgba(30,60,140,.06);overflow:hidden;}
-body.dark-mode .skd-wrap{background:#181818;}
+body.dark-mode .skd-wrap{background:#121212;}
 body.dark-mode .skd-rail-grp,body.dark-mode .skd-right{background:#222222;box-shadow:none;}
 body.dark-mode .skd-search{background:#2a2a2a !important;}
 body.dark-mode .skd-post{border-bottom-color:rgba(255,255,255,.08);}
 #auth-transition-loading.skel-desktop-mode{background:var(--pg-bg,#f1f4f9) !important;}
-body.dark-mode #auth-transition-loading.skel-desktop-mode{background:#181818 !important;}
+body.dark-mode #auth-transition-loading.skel-desktop-mode{background:#121212 !important;}
 
 .skd-wrap .skel-story-row,.skd-feed .skel-story-row{border-bottom:0;margin-bottom:0;padding-bottom:22px;}
 .skd-wrap .skel-story-wrap::after,.skd-feed .skel-story-wrap::after{content:'';width:48px;height:9px;border-radius:6px;background:#e7ebf3;}
@@ -5721,7 +5721,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   body.dark-mode #app-shell:not(.messaging-split) #overlay .ov-sticky-head::before,
   body.dark-mode #app-shell:not(.messaging-split) #overlay .ov-sticky-wrap::before,
   body.dark-mode #app-shell:not(.messaging-split) #overlay div:has(> .ov-sticky-head:only-child)::before{
-    background:linear-gradient(to bottom,#181818 0,#181818 calc(100% - 22px),rgba(24,24,24,.85) calc(100% - 12px),rgba(24,24,24,0) 100%) !important; }
+    background:linear-gradient(to bottom,#121212 0,#121212 calc(100% - 22px),rgba(18,18,18,.85) calc(100% - 12px),rgba(18,18,18,0) 100%) !important; }
 }
 /* Settings and activity (desktop): back arrow and title line up with the cards below, not centred in the wide panel */
 @media (min-width:1100px){
@@ -5755,7 +5755,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 @media (min-width:1100px){
   /* sticky header bars take the page colour, so scrolling rows still hide behind them */
   #inbox-titlebar, #inbox-searchbar, #inbox-filterbar, #career-titlebar, #career-searchbar, #career-filterbar{ background:var(--pg-bg,#f1f4f9) !important; border-bottom-color:transparent !important; }
-  body.dark-mode #inbox-titlebar, body.dark-mode #inbox-searchbar, body.dark-mode #inbox-filterbar, body.dark-mode #career-titlebar, body.dark-mode #career-searchbar, body.dark-mode #career-filterbar{ background:#181818 !important; }
+  body.dark-mode #inbox-titlebar, body.dark-mode #inbox-searchbar, body.dark-mode #inbox-filterbar, body.dark-mode #career-titlebar, body.dark-mode #career-searchbar, body.dark-mode #career-filterbar{ background:#121212 !important; }
   /* chat list rows rest on the background */
   #inbox-list > div:not(.convo-active), body.dark-mode #inbox-list > div:not(.convo-active){ background-color:transparent !important; }
   /* floating type boxes (Stitch Bot, chats): no strip behind them */
@@ -5764,8 +5764,8 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 /* Inside the main column and overlay pages "panel colour" IS the page colour (right panel and rail keep their own) */
 @media (min-width:1100px){
   #screen, #overlay{ --pn-bg:var(--pg-bg,#f1f4f9); }
-  body.dark-mode #screen, body.dark-mode #overlay{ --pn-bg:#181818; }
-  body.dark-mode #screen .sticky{ background-color:#181818 !important; }
+  body.dark-mode #screen, body.dark-mode #overlay{ --pn-bg:#121212; }
+  body.dark-mode #screen .sticky{ background-color:#121212 !important; }
 }
 @media (min-width:1100px){
   #inbox-searchbar > button, #inbox-searchbar > div, #career-searchbar > button, #career-searchbar > div, #career-searchbar input{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.06); }
@@ -5791,7 +5791,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #screen:has(#inbox-list) #inbox-searchbar > button, #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#f1f4f9 !important; box-shadow:none !important; }
   #screen:has(#inbox-list) #inbox-filterbar button{ box-shadow:0 1px 6px rgba(30,60,140,.10); }
   #screen:has(#inbox-list) .convo-active{ background:#f1f6ff !important; }
-  body.dark-mode #screen:has(#inbox-list){ background:#1e1e1e !important; --pn-bg:#1e1e1e; }
+  body.dark-mode #screen:has(#inbox-list){ background:#121212 !important; --pn-bg:#121212; }
   body.dark-mode #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #screen:has(#inbox-list) #inbox-filterbar{ background:#1e1e1e !important; }
   body.dark-mode #screen:has(#inbox-list) .convo-active{ background:#2a2a2a !important; }
 }
@@ -5827,7 +5827,7 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
   #app-shell:not(.messaging-split) #screen:has(#inbox-list), body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list){ background:transparent !important; border-radius:0 !important; box-shadow:none !important; overflow:visible; --pn-bg:var(--pg-bg,#f1f4f9); }
   #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:var(--pg-bg,#f1f4f9) !important; }
   #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > button, #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.08) !important; }
-  body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:#181818 !important; }
+  body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-titlebar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-filterbar{ background:#121212 !important; }
   body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > button, body.dark-mode #app-shell:not(.messaging-split) #screen:has(#inbox-list) #inbox-searchbar > div{ background-color:#2a2a2a !important; box-shadow:none !important; }
   /* Search bars are always ready to type (text cursor on hover, no tap needed first), and clearly visible */
   #screen #career-searchbar > div.bg-gray-100, #screen #inbox-searchbar > div.bg-gray-100{ background-color:#fff !important; box-shadow:0 2px 10px rgba(30,60,140,.08); cursor:text; }
@@ -7482,3 +7482,9 @@ body.dark-mode .outline-pill, body.dark-mode .outline-pill.on, body.dark-mode .o
 body.dark-mode .auth-intent-chip, body.dark-mode .auth-intent-chip.on, body.dark-mode .seg-btn, body.dark-mode .seg-btn.on{ box-shadow:none !important; -webkit-tap-highlight-color:transparent; }
 .filter-pill:focus, .filter-pill:focus-visible, .outline-pill:focus, .outline-pill:focus-visible, .seg-btn:focus, .seg-btn:focus-visible,
 .ws-tabs button:focus, .ws-tabs button:focus-visible, .ws-chips button:focus, .ws-chips button:focus-visible, .ws-seg button:focus, .ws-seg button:focus-visible{ outline:none !important; box-shadow:none !important; }
+
+/* ===== Dark mode: one #121212 page background on every page (same as the Workspace home), cards #1e1e1e, lines #2b2b2b ===== */
+html.dark-mode, body.dark-mode, body.dark-mode #app-shell, body.dark-mode #screen, body.dark-mode #overlay,
+body.dark-mode #overlay .ar-root, body.dark-mode #overlay .ar-page, body.dark-mode #overlay .overflow-y-auto{ background-color:#121212; }
+body.dark-mode, html.dark-mode, body.dark-mode #screen, body.dark-mode #overlay{ --pg-bg:#121212; --pn-bg:#121212; --c-black:#121212; --c-blackout:#121212; --ws-bg:#121212; }
+body.dark-mode #screen{ background:#121212 !important; }
