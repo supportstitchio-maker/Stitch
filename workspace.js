@@ -80,6 +80,7 @@
   .ws-cc .bd{position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px}
   .ws-cc h3,.ws-cc p{max-width:64%}
   .ws-cc h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:22px;font-weight:800;letter-spacing:.01em;line-height:1.05;position:relative}
+  .ws-cc h3{display:block;-webkit-line-clamp:unset;white-space:nowrap;text-overflow:ellipsis;max-width:100%;font-size:17px;line-height:1.2}
   .ws-cc p{font-size:13px;opacity:.9;margin:4px 0 12px;position:relative}
   .ws-bar{height:5px;border-radius:9px;background:rgba(255,255,255,.3);width:62%;position:relative}.ws-bar i{display:block;height:100%;border-radius:9px;background:#fff}
   .ws-motif{position:absolute;inset:0;width:100%;height:100%;opacity:.16;pointer-events:none}
@@ -1378,7 +1379,11 @@
         for (var i = 1; i < hs.length; i++) { var x = hs[i]; if (x.classList.contains('ws-fl') && x.nextElementSibling && x.nextElementSibling.classList.contains('ws-fl-sp')) x.nextElementSibling.remove(); x.remove(); }
       });
       var ov = document.getElementById('overlay'), on = !!(ov && ov.firstElementChild && getComputedStyle(ov).display !== 'none' && (ov.offsetHeight > window.innerHeight * 0.6 || currentOverlayKind));
+      /* A space page is open: nothing from the Workspace home (its title) may show behind or above it */
+      if (document.querySelector('#overlay .ws-hero, #screen .ws-hero')) on = true;
       document.body.classList.toggle('ws-covered', on);
+      /* Quizzes page: its title always reads Quizzes */
+      if (currentOverlayKind === 'practiceTests') document.querySelectorAll('#overlay .ws-hdr-t b').forEach(function(b){ if (b.textContent !== 'Quizzes') b.textContent = 'Quizzes'; });
     } catch(e){}
   }
   try {
