@@ -3326,7 +3326,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             let listHTML = '';
             if (newRows.length) listHTML += secHead('New', `<button onclick="notifMarkAllReadTap()">Mark all read</button>`) + `<div class="space-y-2">${newRows.map(renderRow).join('')}</div>`;
             if (oldRows.length) listHTML += (newRows.length ? secHead('Earlier') : '') + `<div class="space-y-2">${oldRows.map(renderRow).join('')}</div>`;
-            if (!rows.length) listHTML = `<div class="text-center py-14"><div class="text-sm font-semibold text-gray-500">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div></div>`;
+            if (!rows.length) listHTML = `<div class="text-center" style="padding:56px 0 40px;"><div class="text-gray-500" style="font-family:'Gendy','Montserrat',sans-serif;font-weight:400;font-size:16px;">${notifFilter === 'all' ? 'No notifications yet' : 'Nothing here'}</div></div>`;
             html = `
               <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
                 ${menuOverlayHeader('Notifications', notifMenuOpen, 'toggleNotifMenu', notifActionsDropdownHTML('handleNotifAction', { sheetToggle: 'toggleNotifMenu' }), { backFn: notifSelected.size ? 'notifCancelSelect' : 'closeOverlay', hideMenuOnDesktop: true, shortDashes: true, deskBig: true })}

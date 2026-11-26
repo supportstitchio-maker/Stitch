@@ -1671,6 +1671,97 @@
           return __kbLastReal || Math.round(window.innerHeight * 0.45);
         }
 
+        // ---- Keep any text box visible above the on-screen keyboard ----
+        // The keyboard overlays the page, so a box low on the screen (or a fixed composer) ends up hidden
+        // behind it. After the keyboard settles, if the focused box is covered it is lifted into view:
+        // fixed bars/sheets slide up by exactly the overlap, boxes inside a scrolling page scroll into view.
+        // Screens that already position themselves above the keyboard (chats, comment bars) are left
+        // alone because their box is not covered. Flow buttons (Next/Continue) are not text boxes, so
+        // they stay put and the keyboard still covers them.
+        (function(){
+          if (window.__kbLiftInit) return; window.__kbLiftInit = true;
+          const vv = window.visualViewport, vk = navigator.virtualKeyboard;
+          const NON_TEXT = /^(checkbox|radio|button|submit|reset|file|range|color|image|hidden)$/i;
+          let active = null, lifted = null, padded = null, raf = 0, timers = [];
+          function isField(el){
+            if (!el || el.nodeType !== 1 || el.disabled || el.readOnly) return false;
+            const t = el.tagName;
+            if (t === 'TEXTAREA') return true;
+            if (t === 'INPUT') return !NON_TEXT.test(el.type || 'text');
+            return el.isContentEditable;
+          }
+          function inset(){
+            let i = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+            if (vk && vk.boundingRect) i = Math.max(i, Math.round(vk.boundingRect.height || 0));
+            return i;
+          }
+          function fixedTarget(el){
+            let n = el, child = el;
+            while (n && n !== document.body && n !== document.documentElement) {
+              if (getComputedStyle(n).position === 'fixed') {
+                const r = n.getBoundingClientRect();
+                // a full-screen backdrop: lift only the panel inside it, not the whole screen
+                if (r.height > window.innerHeight * 0.9 && r.width > window.innerWidth * 0.9) return child !== n && child !== el ? child : null;
+                return n;
+              }
+              child = n; n = n.parentElement;
+            }
+            return null;
+          }
+          function scrollerOf(el){
+            let p = el.parentElement;
+            while (p && p !== document.body) {
+              const oy = getComputedStyle(p).overflowY;
+              if ((oy === 'auto' || oy === 'scroll') && (p.scrollHeight > p.clientHeight + 1 || p.clientHeight > window.innerHeight * 0.4)) return p;
+              p = p.parentElement;
+            }
+            return null;
+          }
+          function reset(){
+            if (lifted) { lifted.style.translate = ''; lifted._kbLift = 0; lifted = null; }
+            if (padded) { padded.style.paddingBottom = padded._kbOrigInline || ''; padded._kbBase = null; padded = null; }
+          }
+          function place(){
+            if (!active || !document.contains(active)) { active = null; reset(); return; }
+            const ins = inset();
+            if (ins < 80) { reset(); return; }
+            const kbTop = window.innerHeight - ins, r = active.getBoundingClientRect();
+            const t = fixedTarget(active);
+            if (t) {
+              const cur = t._kbLift || 0, tr = t.getBoundingClientRect();
+              const bottom = (tr.height < window.innerHeight * 0.5 ? tr.bottom : r.bottom + 16) + cur;
+              let want = Math.max(0, Math.round(bottom - (kbTop - 10)));
+              want = Math.min(want, Math.max(0, Math.round(tr.top + cur - 8)));
+              if (want !== cur) { t.style.translate = want ? '0 -' + want + 'px' : ''; t._kbLift = want; }
+              lifted = want ? t : null;
+              return;
+            }
+            const sc = scrollerOf(active);
+            if (!sc) return;
+            const need = Math.min(sc.getBoundingClientRect().bottom, window.innerHeight) - kbTop;
+            if (need > 0) {
+              if (padded !== sc) { reset(); padded = sc; sc._kbOrigInline = sc.style.paddingBottom; sc._kbBase = parseFloat(getComputedStyle(sc).paddingBottom) || 0; }
+              sc.style.paddingBottom = (sc._kbBase + need + 24) + 'px';
+            }
+            const over = r.bottom - (kbTop - 16);
+            if (over > 0) sc.scrollTop += over;
+          }
+          function sched(){ if (raf) return; raf = requestAnimationFrame(function(){ raf = 0; place(); }); }
+          document.addEventListener('focusin', function(e){
+            if (!isField(e.target)) return;
+            if (active && active !== e.target) reset();
+            active = e.target;
+            timers.forEach(clearTimeout);
+            timers = [60, 200, 400, 700].map(function(ms){ return setTimeout(place, ms); });
+          });
+          document.addEventListener('focusout', function(){
+            setTimeout(function(){ if (!isField(document.activeElement)) { active = null; reset(); } }, 250);
+          });
+          document.addEventListener('input', function(e){ if (e.target === active) sched(); }, true);
+          if (vv) { vv.addEventListener('resize', sched); vv.addEventListener('scroll', sched); }
+          if (vk) { try { vk.addEventListener('geometrychange', sched); } catch (e) {} }
+        })();
+
         // ---- Nav profile icon + unread badge counts ----
         // Photos are preloaded + decoded first, so users never see one painting in half-way;
         // until then the plain silhouette stays put and swaps once the real photo is ready
@@ -2264,9 +2355,16 @@
           if (!screenEl || !bar || screenEl._topBarBound) return;
           screenEl._topBarBound = true;
           let last = 0;
+          // Hiding/showing the bar resizes #screen, which makes the browser nudge scrollTop (clamping /
+          // scroll anchoring). That nudge used to read as "scrolled up" and flip the bar straight back,
+          // so it flickered. Turn anchoring off and ignore scroll events while the bar is animating.
+          screenEl.style.overflowAnchor = 'none';
+          let lockUntil = 0;
+          screenEl._topBarLock = () => { lockUntil = performance.now() + 380; };
           screenEl.addEventListener('scroll', () => {
             if (typeof currentTab !== 'undefined' && currentTab !== 0) return;
             const y = Math.max(0, screenEl.scrollTop);
+            if (performance.now() < lockUntil) { last = y; return; }
             const dy = y - last;
             if (y <= 8) setTopBarHidden(false);
             else if (dy > 6) setTopBarHidden(true);
@@ -2278,6 +2376,8 @@
           const bar = document.getElementById('top-bar');
           if (!bar || (bar.dataset.hidden === '1') === hide) return;
           bar.dataset.hidden = hide ? '1' : '0';
+          const scr = document.getElementById('screen');
+          if (scr && scr._topBarLock) scr._topBarLock();
           const h = bar.offsetHeight;
           bar.style.transition = 'transform .22s ease-out, margin-top .22s ease-out, opacity .22s ease-out';
           bar.style.transform = hide ? 'translateY(-24px)' : 'translateY(0)';
@@ -2355,6 +2455,7 @@
             }
             if (!tgt) return;
             const y = Math.max(0, sc.scrollTop);
+            if (performance.now() < (sc._hosLock || 0)) { lastY.set(sc, y); return; }   // ignore the scroll nudge caused by our own resize
             const prev = lastY.has(sc) ? lastY.get(sc) : 0;
             const dy = y - prev;
             let hide = null;
@@ -2366,6 +2467,7 @@
             tgt.dataset.hosHidden = hide ? '1' : '0';
             if (outside) {
               // above the scroller: slide up and give the space back to the page
+              sc._hosLock = performance.now() + 380; sc.style.overflowAnchor = 'none';
               if (hide) tgt.dataset.hosH = String(tgt.offsetHeight);
               tgt.style.transition = 'margin-top .22s ease-out, transform .22s ease-out, opacity .22s ease-out';
               tgt.style.marginTop = hide ? ('-' + (tgt.dataset.hosH || tgt.offsetHeight) + 'px') : '0px';

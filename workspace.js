@@ -51,9 +51,9 @@
   .ws-motif{position:absolute;inset:0;width:100%;height:100%;opacity:.16;pointer-events:none}
   .ws-dock .ws-fab{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom,0px) + 88px);width:44px;height:44px;border-radius:16px;background:var(--ws-bg);color:#1e90ff;border:1px solid transparent;box-shadow:0 8px 24px rgba(11,31,63,.16)}
   body.dark-mode .ws-dock .ws-fab{background:var(--ws-bg);box-shadow:0 8px 24px rgba(0,0,0,.45)}
-  .ws-motif.ws-m-sm{inset:auto;left:0;top:50%;transform:translateY(-50%);width:300px;height:100px;max-width:none}
+  .ws-motif.ws-m-sm{inset:auto;left:0;top:0;transform:none;width:300px;height:100px;max-width:none;overflow:visible}
   .ws-hdr-t b,.ws-h1,.ws-h2,.ws-tile b,.ws-cc h3,.ws-sp b,.ws-hero h2,.ws-cta,.ws-btn,.ws-seg button,.filter-pill flex-shrink-0,.filter-pill,.ws-cont b,.ws-st b,.ws-live b{font-family:'Gendy','Montserrat',sans-serif}
-  .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ:first-child{color:#1e90ff}
+  .ws-hdr-t b,.ws-h1{color:#1e90ff}.ws-hdr .ws-circ:first-child{color:#1e90ff}.ws-hdr .ws-circ:last-child{color:#1e90ff}
   .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
   .ws-hero{margin:0;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
@@ -225,10 +225,23 @@
     var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     return (c.lectures || []).filter(function(l){ return l.status !== 'live' && l.date === iso; })[0];
   }
+  // Timestamp of when the moderator added a stream post, resource or task. Newer items carry createdAt/timestamp;
+  // older ones only have it inside their id ('a-1700000000000', 'w-1700000000000').
+  function itemTime(x){
+    if (!x) return 0;
+    var t = x.createdAt || x.timestamp || 0;
+    if (!t && x.id) { var m = String(x.id).match(/(\d{12,14})/); if (m) t = parseInt(m[1], 10); }
+    return +t || 0;
+  }
+  var RECENT_MS = 3 * 24 * 3600 * 1000;
+  function recentlyUpdated(c){
+    var now = Date.now(), items = (c.announcements || []).concat(c.classwork || []);
+    return items.some(function(x){ var t = itemTime(x); return t && now - t < RECENT_MS; });
+  }
   function badge(c){
     var l = liveLec(c); if (l) return 'Live now';
     var t = todayLec(c); if (t) return 'Live today \u00b7 ' + E(t.time || '');
-    if ((c.announcements || []).length) return 'Recently updated';
+    if (recentlyUpdated(c)) return 'Recently updated';
     return c.role === 'teacher' ? 'Teaching' : 'Enrolled';
   }
   function progress(c){
@@ -343,7 +356,7 @@
   function coursesHTML(){
     if (!kLoaded && !allCrs().length && typeof loadCoursesRemote === 'function') { kLoaded = true; loadCoursesRemote().then(function(){ if (view === 'courses') render(); }); }
     var n = allCrs().length;
-    return header('Workspace', 'Courses') + '<h1 class="ws-h1 font-display">Courses</h1><div class="ws-sub">' + n + (n === 1 ? ' course' : ' courses') + '</div>' +
+    return header('Workspace', '') + '<h1 class="ws-h1 font-display">Courses</h1><div class="ws-sub">' + n + (n === 1 ? ' course' : ' courses') + '</div>' +
       '<div class="ws-search">' + I('search', 18) + '<input type="text" placeholder="Search courses" oninput="wsKSearch(this.value)" value="' + E(kQuery) + '"></div>' +
       '<div class="ws-chips" id="ws-kchips">' + crsChips() + '</div><div id="ws-klist">' + crsListHTML() + '</div>';
   }
@@ -375,6 +388,26 @@
 
   /* ---------- Course page (replaces classDetailHTML) ---------- */
   var cTab = 'resources';
+  // Download a shared resource. Works for every member, not only the moderator.
+  function wsSaveBlob(blob, name){
+    var u = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+  }
+  function wsGetFile(f){
+    return fetch(f.url).then(function(r){ if (!r.ok) throw new Error('bad'); return r.blob(); })
+      .then(function(b){ wsSaveBlob(b, f.name || 'resource'); })
+      .catch(function(){ var a = document.createElement('a'); a.href = f.url; a.download = f.name || 'resource'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); });
+  }
+  window.wsDownloadRes = function(id){
+    var cls = classes().filter(function(c){ return c.id === currentClassId; })[0]; if (!cls) return;
+    var w = (cls.classwork || []).filter(function(x){ return String(x.id) === String(id); })[0]; if (!w) return;
+    var files = (w.attachments || []).filter(function(f){ return f && f.url; });
+    if (files.length) { toast('Downloading', files.length > 1 ? files.length + ' files' : files[0].name || ''); files.forEach(function(f, i){ setTimeout(function(){ wsGetFile(f); }, i * 400); }); return; }
+    var text = (w.instructions || w.text || w.description || '').trim();
+    if (text) wsSaveBlob(new Blob([(w.title ? w.title + '\n\n' : '') + text], { type: 'text/plain' }), (String(w.title || 'resource').replace(/[^a-z0-9]+/gi, '_') || 'resource') + '.txt');
+    else toast('Nothing to download', 'This resource has no file attached.');
+  };
   window.wsCTab = function(t){
     cTab = t;
     if (['stream','classwork','dashboard'].indexOf(t) > -1) classDetailTab = t;
@@ -394,7 +427,8 @@
       var m = materials(cls);
       body = m.length ? m.map(function(w, i){ var ext = ((w.attachments && w.attachments[0] && w.attachments[0].name) || '').split('.').pop().toUpperCase().slice(0, 3) || 'DOC';
         var col = ext === 'PDF' ? '#e24d3f' : ext === 'PPT' ? '#1e90ff' : '#1fa463';
-        return '<div class="ws-row" onclick="wsCTab(\'classwork\')"><span class="ws-ft" style="background:' + col + '">' + E(ext) + '</span><div style="flex:1;min-width:0"><b>' + E(w.title || 'Resource') + '</b><small>' + E(w.date || w.createdAt ? new Date(w.createdAt || w.date).toLocaleDateString() : 'Shared') + '</small></div></div>'; }).join('')
+        return '<div class="ws-row" onclick="wsCTab(\'classwork\')"><span class="ws-ft" style="background:' + col + '">' + E(ext) + '</span><div style="flex:1;min-width:0"><b>' + E(w.title || 'Resource') + '</b><small>' + E(w.date || w.createdAt ? new Date(w.createdAt || w.date).toLocaleDateString() : 'Shared') + '</small></div>' +
+          '<button class="ws-circ" style="color:#1e90ff" aria-label="Download" onclick="event.stopPropagation();wsDownloadRes(\'' + String(w.id).replace(/'/g, '') + '\')">' + I('dl', 20) + '</button></div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No resources yet.' + (teach ? ' Add materials under Tasks.' : '') + '</div>';
     } else if (cTab === 'lectures') {
       var ls = (cls.lectures || []).slice().reverse();
@@ -541,7 +575,7 @@
   function diagHTML(d){
     try { d = normDiag(d); if (!d) return ''; if (d.type === 'cycle') return cycleSVG(d.items); if (d.type === 'compare') return compareHTML(d); return treeSVG(d.root); } catch(e){ return ''; }
   }
-  function saveDiagram(d){ d = normDiag(d); if (!d) return null; T.diagrams = [d].concat(T.diagrams.filter(function(x){ return x.title !== d.title; })).slice(0, 12); lset('ws-diagrams', T.diagrams); return d; }
+  function saveDiagram(d){ d = normDiag(d); if (!d) return null; T.diagrams = [d].concat(T.diagrams.filter(function(x){ return x.title !== d.title; })).slice(0, 30); lset('ws-diagrams', T.diagrams); return d; }
   var DIAG_FMT = 'Diagram JSON formats: {"title":"..","type":"tree","root":{"label":"..","children":[{"label":"..","children":[]}]}} (max 3 levels, max 4 children per node, max 20 nodes in total) or {"title":"..","type":"cycle","items":["..",".."]} or {"title":"..","type":"compare","left":{"label":"..","items":[".."]},"right":{"label":"..","items":[".."]},"shared":[".."]}. Keep labels short, under 30 characters.';
 
   /* ----- Chat ----- */
@@ -680,7 +714,7 @@
     var t = function(k, ic, c, bg, a, b){ return '<button class="ws-st" style="background:' + bg + ';color:' + c + '" onclick="wsOpenSub(\'' + k + '\')"><span>' + I(ic, 22) + '</span><span><b>' + a + '</b><small>' + b + '</small></span></button>'; };
     return '<div class="ws-h2" style="margin-top:6px">Studio</div><div class="ws-stu">' +
       t('summary', 'lines', '#14804a', 'rgba(31,164,99,.14)', 'Summary', 'Key points in 1 min') + t('diagrams', 'tree', '#1673cc', 'rgba(30,144,255,.13)', 'Diagrams', 'Illustrated concepts') +
-      t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
+      t('saved', 'folder', '#6a4fd8', 'rgba(139,108,240,.15)', 'Saved', (savedSums().length + T.diagrams.length) ? (savedSums().length + ' summaries \u00b7 ' + T.diagrams.length + ' illustrations') : 'Summaries and illustrations') + t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
   }
 
   /* ----- Sub pages ----- */
@@ -690,8 +724,8 @@
     view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
   };
-  function subHeader(name){ return header('Workspace', 'Stitch Tutor \u00b7 ' + name, 'wsBackTutor()'); }
-  window.wsBackTutor = function(){ T.sub = (T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
+  function subHeader(name){ return header('Workspace', name, 'wsBackTutor()'); }
+  window.wsBackTutor = function(){ if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
   function errBox(e, fn){ return '<div class="ws-blk" style="text-align:center"><div style="font-size:13px;color:var(--ws-sub)">' + E(e) + '</div><button class="filter-pill on" style="margin-top:10px" onclick="' + fn + '">Try again</button></div>'; }
 
@@ -866,7 +900,7 @@
     if (n > 1) h += '<div class="ws-chips"><button class="filter-pill flex-shrink-0 ' + (T.sumScope === 'all' ? 'on' : '') + '" onclick="wsSumScope(\'all\')">All sources</button>' + readable().map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.sumScope === x.id ? 'on' : '') + '" onclick="wsSumScope(\'' + x.id + '\')">' + E(lbl(nm(x), 20)) + '</button>'; }).join('') + '</div>';
     if (!s || s.busy) return h + busyBox('Reading your sources and writing the summary\u2026');
     if (s.err) return h + errBox(s.err, 'wsRegenSum()');
-    var tools = '<div style="margin-top:14px"><button class="filter-pill on" onclick="wsOpenSub(\'flashcards\')">Make flashcards</button><button class="filter-pill" onclick="wsOpenSub(\'practice\')">Practice quiz</button><button class="filter-pill" onclick="wsCopySum()">Copy</button><button class="filter-pill" onclick="wsRegenSum()">' + I('refresh', 14) + ' Regenerate</button></div>';
+    var tools = '<div style="margin-top:14px"><button class="filter-pill on" onclick="wsOpenSub(\'flashcards\')">Make flashcards</button><button class="filter-pill" onclick="wsOpenSub(\'practice\')">Practice quiz</button><button class="filter-pill ' + (isSaved(s) ? 'on' : '') + '" onclick="wsSaveSum()">' + (isSaved(s) ? 'Saved' : 'Save') + '</button><button class="filter-pill" onclick="wsDownloadSum(\'cur\')">' + I('dl', 14) + ' Download</button><button class="filter-pill" onclick="wsCopySum()">Copy</button><button class="filter-pill" onclick="wsRegenSum()">' + I('refresh', 14) + ' Regenerate</button></div>';
     if (mode === 'short') {
       h += '<div class="ws-h1" style="font-size:22px;margin:4px 0 4px">' + E(s.title || 'Summary') + '</div><div class="ws-sub" style="margin-bottom:12px">' + k.list.length + ' source' + (k.list.length === 1 ? '' : 's') + ' \u00b7 about ' + readMin(s) + ' min read</div>' +
         '<div class="ws-stats"><div class="ws-stat"><b>' + (s.points || []).length + '</b><span>key points</span></div><div class="ws-stat"><b>' + (s.detailed || []).length + '</b><span>sections</span></div><div class="ws-stat"><b>' + (s.terms || []).length + '</b><span>key terms</span></div></div>' +
@@ -900,20 +934,177 @@
     var h = subHeader('Diagrams') + '<div class="ws-chips">' + [['all', 'All'], ['trees', 'Trees'], ['cycles', 'Cycles'], ['compare', 'Compare']].map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.dfilter === x[0] ? 'on' : '') + '" onclick="wsDF(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
     h += '<div class="ws-search" style="background:var(--ws-card)"><input id="ws-dq" placeholder="Describe a diagram to generate..." onkeydown="if(event.key===\'Enter\')wsGenDiagram()"><button class="ws-send" onclick="wsGenDiagram()" aria-label="Draw">' + I('send', 18) + '</button></div>';
     if (T.dBusy) h += busyBox('Drawing your diagram\u2026');
-    if (T.openDiag > -1 && ds[T.openDiag]) h += '<div class="ws-blk" id="ws-dopen"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>' + E(ds[T.openDiag].title) + '</b><a style="color:#ef4444;font-weight:700;font-size:12px" onclick="wsDelD(' + T.openDiag + ')">Delete</a></div>' + diagHTML(ds[T.openDiag]) + '</div>';
+    if (T.openDiag > -1 && ds[T.openDiag]) h += '<div class="ws-blk" id="ws-dopen"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>' + E(ds[T.openDiag].title) + '</b><span><a style="color:#1e90ff;font-weight:700;font-size:12px;margin-right:14px" onclick="wsDownloadDiag(' + T.diagrams.indexOf(ds[T.openDiag]) + ')">Download</a><a style="color:#ef4444;font-weight:700;font-size:12px" onclick="wsDelD(' + T.openDiag + ')">Delete</a></span></div>' + diagHTML(ds[T.openDiag]) + '</div>';
     h += ds.length ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + ds.map(function(d, i){ var t = d.type || 'tree', n = t === 'tree' ? (function c(x){ return 1 + (x.children || []).reduce(function(a, k){ return a + c(k); }, 0); })(d.root) : t === 'cycle' ? d.items.length : (d.left.items.length + d.right.items.length);
       return '<div class="ws-card" style="padding:8px;cursor:pointer;' + (T.openDiag === i ? 'border-color:#1e90ff' : '') + '" onclick="wsOpenD(' + i + ')"><div style="background:' + tc[t] + '1f;color:' + tc[t] + ';border-radius:14px;height:78px;display:flex;align-items:center;justify-content:center">' + I(ic[t] || 'tree', 34) + '</div><b style="font-size:13px;display:block;margin:8px 4px 0">' + E(lbl(d.title, 22)) + '</b><small style="color:var(--ws-sub);margin:0 4px 4px;display:block;text-transform:capitalize">' + E(t) + ' \u00b7 ' + n + (t === 'cycle' ? ' steps' : ' items') + '</small></div>'; }).join('') + '</div>' : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No diagrams yet. Describe one above.</div>';
     return h;
   }
 
+  /* ----- Save & download pipeline (summaries + illustrations) -----
+     Save: a summary is stored on the device in the "Saved" library (illustrations are stored there as they are drawn).
+     Download: a summary exports as PDF or text; an illustration exports as PNG, SVG or PDF. Everything is built in the browser. */
+  var SAVED_KEY = 'ws-summaries';
+  function savedSums(){ var l = lget(SAVED_KEY, []); return Array.isArray(l) ? l : []; }
+  function slug(s){ return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'stitch'; }
+  function pdfClean(s){
+    return String(s == null ? '' : s).replace(/[‘’‚]/g, "'").replace(/[“”„]/g, '"').replace(/[–—−]/g, '-').replace(/…/g, '...')
+      .replace(/[•·●]/g, '-').replace(/→/g, '->').replace(/[^\n\x20-\x7E -ÿ]/g, '');
+  }
+  function sumText(s){
+    return (s.title || 'Summary') + '\n\n' + (s.one || '') + '\n\nKey points\n' + (s.points || []).map(function(p, i){ return (i + 1) + '. ' + p.t; }).join('\n') +
+      '\n\n' + (s.detailed || []).map(function(d){ return d.h + '\n' + d.t; }).join('\n\n') +
+      ((s.terms || []).length ? '\n\nKey terms\n' + s.terms.map(function(x){ return x.t + ': ' + x.d; }).join('\n') : '') +
+      ((s.exam || []).length ? '\n\nExam focus\n' + s.exam.map(function(x){ return '- ' + x; }).join('\n') : '') + '\n\nMade with Stitch Tutor';
+  }
+  function sumByRef(ref){ if (ref === 'cur') { var c = T.sums[sumKey().key]; return (c && !c.busy && !c.err) ? c : null; } var it = savedSums().filter(function(x){ return x.id === ref; })[0]; return it ? it.data : null; }
+  function isSaved(s){ return !!s && savedSums().some(function(x){ return x.data && x.data.at === s.at && x.title === (s.title || 'Summary'); }); }
+
+  window.wsSaveSum = function(){
+    var s = sumByRef('cur'); if (!s) return;
+    if (isSaved(s)) { toast('Already saved', 'Find it under Saved in Studio.'); return; }
+    var title = s.title || 'Summary', list = savedSums().filter(function(x){ return x.title !== title; });
+    list.unshift({ id: 'sum' + Date.now(), title: title, savedAt: Date.now(), data: s });
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, 30))); toast('Saved', 'Find it under Saved in Studio.'); }
+    catch(e){ toast('Could not save', 'Your device storage is full. Delete something under Saved first.'); }
+    render();
+  };
+  window.wsDelSaved = function(id){ lset(SAVED_KEY, savedSums().filter(function(x){ return x.id !== id; })); if (T.sub === 'savedSum') T.sub = 'saved'; render(); };
+
+  function dlSheet(title, sub, opts){
+    sheet('<b style="font-size:20px">' + E(title) + '</b><div style="font-size:13px;color:var(--ws-sub);margin:4px 0 14px">' + E(sub) + '</div>' +
+      opts.map(function(o){ return '<button class="ws-res" onclick="' + o[3] + '"><span class="ic" style="background:' + o[0] + ';font-size:11px;font-weight:800">' + o[1] + '</span><span class="t"><b>' + o[2][0] + '</b><small>' + o[2][1] + '</small></span></button>'; }).join(''));
+  }
+  window.wsDownloadSum = function(ref){
+    var s = sumByRef(ref); if (!s) return;
+    dlSheet('Download summary', lbl(s.title || 'Summary', 40), [
+      ['#e24d3f', 'PDF', ['PDF document', 'Neat pages to print or share'], 'wsDoSum(\'pdf\',\'' + ref + '\')'],
+      ['#1fa463', 'TXT', ['Plain text', 'Opens in any notes app'], 'wsDoSum(\'txt\',\'' + ref + '\')']
+    ]);
+  };
+  window.wsDoSum = async function(fmt, ref){
+    var s = sumByRef(ref); if (!s) return; sheetClose();
+    var name = 'stitch-summary-' + slug(s.title);
+    try {
+      if (fmt === 'txt') { wsSaveBlob(new Blob([sumText(s)], { type: 'text/plain' }), name + '.txt'); toast('Downloaded', name + '.txt'); return; }
+      toast('Preparing your PDF', 'One moment…');
+      var JsPDF = await loadJsPdfLib(), doc = new JsPDF({ unit: 'mm', format: 'a4' }), PW = 210, PH = 297, M = 16, CW = PW - M * 2, y = M;
+      var put = function(text, size, bold, col, gap, indent){
+        doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(col[0], col[1], col[2]);
+        var lh = size * 0.3528 * 1.4;
+        doc.splitTextToSize(pdfClean(text), CW - (indent || 0)).forEach(function(l){ if (y + lh > PH - M) { doc.addPage(); y = M; } y += lh; doc.text(l, M + (indent || 0), y); });
+        y += gap || 0;
+      };
+      var INK = [20, 30, 50], BLUE = [30, 144, 255], GREY = [110, 122, 145];
+      put('STITCH TUTOR SUMMARY', 9, true, BLUE, 1);
+      put(s.title || 'Summary', 22, true, INK, 2);
+      put(new Date(s.at || Date.now()).toLocaleDateString(), 9, false, GREY, 6);
+      if (s.one) { put('In one minute', 11, true, BLUE, 1); put(s.one, 11, false, INK, 6); }
+      if ((s.points || []).length) { put('Key points', 13, true, BLUE, 2); s.points.forEach(function(p, i){ put((i + 1) + '. ' + p.t, 11, false, INK, 2, 3); }); y += 4; }
+      if ((s.detailed || []).length) { put('In detail', 13, true, BLUE, 2); s.detailed.forEach(function(d){ put(d.h || '', 12, true, INK, 0.5); put(d.t || '', 11, false, INK, 4); }); y += 2; }
+      if ((s.terms || []).length) { put('Key terms', 13, true, BLUE, 2); s.terms.forEach(function(x){ put(x.t, 11, true, INK, 0); if (x.d) put(x.d, 10.5, false, GREY, 3); }); y += 2; }
+      if ((s.exam || []).length) { put('Exam focus', 13, true, BLUE, 2); s.exam.forEach(function(x){ put('- ' + x, 11, false, INK, 2, 3); }); }
+      var n = doc.internal.getNumberOfPages();
+      for (var i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(GREY[0], GREY[1], GREY[2]); doc.text('Made with Stitch Tutor  ·  page ' + i + ' of ' + n, PW / 2, PH - 8, { align: 'center' }); }
+      doc.save(name + '.pdf'); toast('Downloaded', name + '.pdf');
+    } catch(e){ toast('Could not download', (e && e.message) || 'Check your connection and try again.'); }
+  };
+
+  /* Illustrations: build a standalone SVG (white page, title, footer), then turn it into PNG or PDF */
+  function wrapTxt(s, n){
+    var out = [], cur = ''; String(s || '').split(/\s+/).forEach(function(w){ if ((cur + ' ' + w).trim().length > n && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); });
+    if (cur) out.push(cur); return out.length ? out : [''];
+  }
+  function compareSVG(d){
+    var cols = [[d.left || {}, '#1e90ff', 5], [d.right || {}, '#f7774a', 175]], LH = 14, hs = [], body = [];
+    cols.forEach(function(c){
+      var y = 26, s = '<text x="' + (c[2] + 10) + '" y="' + y + '" font-size="12" font-weight="700" fill="#111">' + E(lbl(c[0].label, 24)) + '</text>';
+      (c[0].items || []).forEach(function(it){ wrapTxt(it, 25).forEach(function(l, k){ y += LH; s += '<text x="' + (c[2] + 10) + '" y="' + y + '" font-size="10.5" fill="#222">' + (k === 0 ? '• ' : '  ') + E(l) + '</text>'; }); y += 3; });
+      hs.push(y + 12); body.push(s);
+    });
+    var H = Math.max(hs[0], hs[1]), s = '<svg viewBox="0 0 340 ' + (H + ((d.shared || []).length ? 34 : 0)) + '" style="width:100%;height:auto">';
+    cols.forEach(function(c, i){ s += '<rect x="' + c[2] + '" y="0" width="160" height="' + H + '" rx="14" fill="' + c[1] + '" fill-opacity=".13"/>' + body[i]; });
+    if ((d.shared || []).length) wrapTxt('Shared: ' + d.shared.join(', '), 62).slice(0, 2).forEach(function(l, k){ s += '<text x="8" y="' + (H + 18 + k * 13) + '" font-size="10.5" fill="#6b7a99">' + E(l) + '</text>'; });
+    return s + '</svg>';
+  }
+  function diagStandalone(d){
+    d = normDiag(d); if (!d) return null;
+    var inner = d.type === 'cycle' ? cycleSVG(d.items) : d.type === 'compare' ? compareSVG(d) : treeSVG(d.root);
+    var m = inner.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/), iw = +m[1], ih = +m[2], W = Math.round(iw + 28), H = Math.round(ih + 50 + 30);
+    inner = inner.replace('style="width:100%;height:auto"', 'x="14" y="50" width="' + iw + '" height="' + ih + '"');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" font-family="Helvetica, Arial, sans-serif"><rect width="' + W + '" height="' + H + '" fill="#ffffff"/>' +
+      '<text x="14" y="32" font-size="16" font-weight="700" fill="#1e90ff">' + E(lbl(d.title, 38)) + '</text>' + inner + '<text x="' + (W - 12) + '" y="' + (H - 10) + '" font-size="9" text-anchor="end" fill="#9fb0cc">Made with Stitch Tutor</text></svg>';
+    return { svg: svg, W: W, H: H, title: d.title };
+  }
+  function svgToPng(o){
+    return new Promise(function(res, rej){
+      var img = new Image();
+      img.onload = function(){
+        var c = document.createElement('canvas'); c.width = o.W * 3; c.height = o.H * 3; var g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function(b){ b ? res({ blob: b, url: c.toDataURL('image/png') }) : rej(new Error('Could not make the picture.')); }, 'image/png');
+      };
+      img.onerror = function(){ rej(new Error('Could not draw the picture.')); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(o.svg);
+    });
+  }
+  window.wsDownloadDiag = function(i){
+    var d = T.diagrams[i]; if (!d) return;
+    dlSheet('Download illustration', lbl(d.title, 40), [
+      ['#1e90ff', 'PNG', ['Picture (PNG)', 'Sharp image for chats and slides'], 'wsDoDiag(\'png\',' + i + ')'],
+      ['#e24d3f', 'PDF', ['PDF document', 'One clean page'], 'wsDoDiag(\'pdf\',' + i + ')'],
+      ['#1fa463', 'SVG', ['Vector (SVG)', 'Scales to any size'], 'wsDoDiag(\'svg\',' + i + ')']
+    ]);
+  };
+  window.wsDoDiag = async function(fmt, i){
+    var d = T.diagrams[i]; if (!d) return; sheetClose();
+    try {
+      var o = diagStandalone(d); if (!o) throw new Error('Nothing to download.');
+      var name = 'stitch-illustration-' + slug(d.title);
+      if (fmt === 'svg') { wsSaveBlob(new Blob([o.svg], { type: 'image/svg+xml' }), name + '.svg'); toast('Downloaded', name + '.svg'); return; }
+      var png = await svgToPng(o);
+      if (fmt === 'png') { wsSaveBlob(png.blob, name + '.png'); toast('Downloaded', name + '.png'); return; }
+      var JsPDF = await loadJsPdfLib(), doc = new JsPDF({ unit: 'mm', format: 'a4' }), w = 178, h = Math.min(250, w * o.H / o.W);
+      doc.addImage(png.url, 'PNG', 16, 20, h < w * o.H / o.W ? h * o.W / o.H : w, h); doc.save(name + '.pdf'); toast('Downloaded', name + '.pdf');
+    } catch(e){ toast('Could not download', (e && e.message) || 'Try again.'); }
+  };
+
+  /* Saved library page */
+  function savedHTML(){
+    var ss = savedSums(), ds = T.diagrams, h = subHeader('Saved');
+    var row = function(badge, col, title, sub, open, dl, del){
+      return '<div class="ws-row" onclick="' + open + '"><span class="ws-ft" style="background:' + col + '">' + badge + '</span><div style="flex:1;min-width:0"><b style="display:block;font-size:14px">' + E(lbl(title, 34)) + '</b><small style="color:var(--ws-sub);font-size:12px">' + sub + '</small></div>' +
+        '<button class="ws-circ" style="color:#1e90ff" aria-label="Download" onclick="event.stopPropagation();' + dl + '">' + I('dl', 20) + '</button><button class="ws-circ" style="color:#9aa5bd" aria-label="Delete" onclick="event.stopPropagation();' + del + '">' + I('close', 18) + '</button></div>';
+    };
+    h += '<div class="ws-h2" style="margin-top:8px">Summaries</div>' + (ss.length ? ss.map(function(x){ return row('SUM', '#1fa463', x.title, new Date(x.savedAt).toLocaleDateString(), 'wsOpenSaved(\'' + x.id + '\')', 'wsDownloadSum(\'' + x.id + '\')', 'wsDelSaved(\'' + x.id + '\')'); }).join('') : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No saved summaries yet. Tap Save on a summary.</div>');
+    h += '<div class="ws-h2" style="margin-top:14px">Illustrations</div>' + (ds.length ? ds.map(function(d, i){ return row('IMG', '#1e90ff', d.title, E(String(d.type || 'tree')), 'wsOpenSavedDiag(' + i + ')', 'wsDownloadDiag(' + i + ')', 'wsDelSavedDiag(' + i + ')'); }).join('') : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No illustrations yet. Make one under Diagrams.</div>');
+    return h;
+  }
+  window.wsOpenSaved = function(id){ T.savedId = id; T.sub = 'savedSum'; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; };
+  window.wsOpenSavedDiag = function(i){ T.dfilter = 'all'; T.sub = 'diagrams'; T.openDiag = i; render(); var o = $('ws-dopen'); if (o && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' }); };
+  window.wsDelSavedDiag = function(i){ T.diagrams = T.diagrams.filter(function(x, k){ return k !== i; }); lset('ws-diagrams', T.diagrams); T.openDiag = -1; render(); };
+  function savedSumHTML(){
+    var it = savedSums().filter(function(x){ return x.id === T.savedId; })[0], h = subHeader('Saved summary');
+    if (!it) return h + '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">This summary is no longer saved.</div>';
+    var s = it.data;
+    h += '<div class="ws-h1" style="font-size:22px;margin:4px 0 12px">' + E(s.title || 'Summary') + '</div>' +
+      '<div class="ws-blk" style="background:rgba(30,144,255,.09)"><b style="color:#1e90ff;font-size:13px">In one minute</b><div style="font-size:14px;line-height:1.55;margin-top:6px">' + rich(s.one || '') + '</div></div>';
+    if ((s.points || []).length) h += '<div class="ws-h2" style="margin-top:8px">Key points</div>' + s.points.map(function(p, i){ return '<div style="display:flex;gap:12px;margin-bottom:12px"><span style="width:26px;height:26px;border-radius:9px;background:var(--ws-card);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">' + (i + 1) + '</span><div style="font-size:14px;line-height:1.5">' + E(p.t) + '</div></div>'; }).join('');
+    h += (s.detailed || []).map(function(d){ return '<div class="ws-blk"><b style="font-size:16px">' + E(d.h) + '</b><div class="ws-ans" style="margin:6px 0 0">' + E(d.t) + '</div></div>'; }).join('');
+    if ((s.terms || []).length) h += '<div class="ws-h2" style="margin-top:8px">Key terms</div>' + s.terms.map(function(x){ return '<div class="ws-blk"><b style="font-size:15px">' + E(x.t) + '</b>' + (x.d ? '<div style="font-size:13.5px;line-height:1.5;color:var(--ws-sub);margin-top:4px">' + E(x.d) + '</div>' : '') + '</div>'; }).join('');
+    if ((s.exam || []).length) h += '<div class="ws-h2" style="margin-top:8px">Exam focus</div>' + s.exam.map(function(x){ return '<div class="ws-blk" style="font-size:14px">' + E(x) + '</div>'; }).join('');
+    return h + '<div style="margin-top:14px"><button class="filter-pill on" onclick="wsDownloadSum(\'' + it.id + '\')">' + I('dl', 14) + ' Download</button><button class="filter-pill" onclick="wsDelSaved(\'' + it.id + '\')">Delete</button></div>';
+  }
+
   /* ----- Tutor shell ----- */
   function tutorHTML(){
     if (T.sub === 'summary') return summaryHTML();
+    if (T.sub === 'saved') return savedHTML();
+    if (T.sub === 'savedSum') return savedSumHTML();
     if (T.sub === 'flashcards') return flashHTML();
     if (T.sub === 'practice') return practiceHTML();
     if (T.sub === 'diagrams') return diagramsHTML();
     var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button></div>';
-    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : 'Stitch Tutor') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
+    return header('Workspace', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
   window.wsTab = function(t){ T.sub = t; render(); };
 
