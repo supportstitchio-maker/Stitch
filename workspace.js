@@ -18,11 +18,15 @@
   .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(255,255,255,0))}
   body.dark-mode .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(18,18,18,0))}
   .ws-fl{position:sticky;top:0;height:0;z-index:40;overflow:visible;margin:0 -20px}
-  .ws-fl-in{position:absolute;left:0;right:0;top:calc(var(--top-safe-pad,20px) - 6px);padding:0 20px;display:flex;justify-content:space-between;pointer-events:none}
+  .ws-fl-in{position:absolute;left:0;right:0;top:var(--top-safe-pad,20px);padding:0 20px;display:flex;justify-content:space-between;align-items:center;height:42px;pointer-events:none}
   .ws-fl-in .ws-circ{pointer-events:auto}
-  .ws-fl-sp{height:calc(var(--top-safe-pad,20px) + 46px)}
+  .ws-fl-sp{height:calc(var(--top-safe-pad,20px) + 64px)}
   .ws-page:has(> .ws-fl:first-child){padding-top:0}
   .overflow-y-auto > .ws-fl:first-child{margin:0}.overflow-y-auto > .ws-fl:first-child .ws-fl-in{padding:0 20px}
+
+  /* One header at a time: while a page is open over the Workspace, the header underneath stays hidden */
+  body.ws-covered #screen .ws-hdr-s,body.ws-covered #screen .ws-fl{visibility:hidden}
+  .ws-hdr-s + .ws-hdr-s,.ws-hdr-s + .ws-fl,.ws-fl + .ws-hdr-s,.ws-fl + .ws-fl-sp + .ws-fl,.ws-fl + .ws-fl-sp + .ws-hdr-s{display:none !important}
   .ws-hdr-t{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 6px}.ws-hdr-t b,.ws-hdr-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}  .ws-hdr-t b{display:block;font-size:17px;font-weight:700}.ws-hdr-t span{font-size:12px;color:var(--ws-sub)}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
@@ -1181,6 +1185,24 @@
     var fab = $('study-fab-btn'); if (fab) fab.remove();
   }
   window.renderStudy = function(){ render(); };
+
+  /* Header guard: a page never keeps two back/bell rows, and the Workspace header hides when a page is open on top */
+  function wsGuard(){
+    try {
+      document.querySelectorAll('.ws-page, #overlay .overflow-y-auto, #overlay .ar-in').forEach(function(box){
+        var hs = box.querySelectorAll(':scope > .ws-hdr-s, :scope > .ws-fl, :scope > .px-5 > .ws-hdr-s');
+        for (var i = 1; i < hs.length; i++) { var x = hs[i]; if (x.classList.contains('ws-fl') && x.nextElementSibling && x.nextElementSibling.classList.contains('ws-fl-sp')) x.nextElementSibling.remove(); x.remove(); }
+      });
+      var ov = document.getElementById('overlay'), on = !!(ov && ov.firstElementChild && getComputedStyle(ov).display !== 'none' && ov.offsetHeight > window.innerHeight * 0.6);
+      document.body.classList.toggle('ws-covered', on);
+    } catch(e){}
+  }
+  try {
+    var wsMo = new MutationObserver(function(){ if (wsMo.__t) return; wsMo.__t = setTimeout(function(){ wsMo.__t = 0; wsGuard(); }, 30); });
+    var wsWatch = function(){ var a = document.getElementById('overlay'), b = document.getElementById('screen'); if (a) wsMo.observe(a, { childList: true, attributes: true, attributeFilter: ['style', 'class'] }); if (b) wsMo.observe(b, { childList: true }); wsGuard(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wsWatch); else wsWatch();
+  } catch(e){}
+
 
   /* Headers hide when you scroll down to read and come back as soon as you scroll up (long pages only) */
   document.addEventListener('scroll', function(e){

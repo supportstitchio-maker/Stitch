@@ -6386,7 +6386,7 @@ try {
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:${hasFooter ? 0 : 50}px;">
                 ${(typeof wsFloatNav === 'function') ? wsFloatNav('classSubPageBack()') : overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}
-                ${(typeof wsFloatNav === 'function') ? `<div class="px-5"><h1 class="text-2xl font-bold font-display grad-text" style="margin:0 0 12px;">${title}</h1></div>` : ''}
+                ${(typeof wsFloatNav === 'function') ? `<div class="px-5"><h1 class="ws-h1 font-display">${title}</h1></div>` : ''}
                 <div class="px-5">
                   ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
@@ -6524,7 +6524,7 @@ try {
               title = s ? classStudentName(cls, s) : 'Member';
             } else title = classTeacherDisplayName(cls);
           }
-          const header = overlayHeader(escapeHtml(title), 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '16px', titleSize: 'text-xl', titleClass: 'truncate min-w-0' });
+          const header = overlayHeader(escapeHtml(title), 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '22px', titleSize: 'text-xl', titleClass: 'truncate min-w-0' });
           if (!inThread) {
             return `
               <div class="flex-1 flex flex-col overflow-hidden">
