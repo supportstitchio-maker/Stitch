@@ -588,6 +588,19 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>`;
         }
 
+        // Wizard top bar (Post an opportunity, Create a course): floating circle back button with the
+        // progress bar filling the row beside it. No page title, no Workspace label, no bell.
+        function wizTopHTML(backAction, step, total){
+          const segs = Array.from({ length: total }, (_, i) => `<i style="flex:1;height:2px;border-radius:9px;background:${(i + 1) <= step ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
+          return `
+            <div class="wiz-top w-full">
+              <div class="max-w-2xl mx-auto px-5 flex items-center" style="gap:14px;">
+                <button onclick="${backAction}" class="wiz-back no-circ" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button>
+                <div class="wiz-bars" style="flex:1;display:flex;gap:5px;">${segs}</div>
+              </div>
+            </div>`;
+        }
+
         function plainOverlayHeader(title){
           return `
             <div class="w-full px-5 pb-3" style="padding-top:var(--top-safe-pad);">

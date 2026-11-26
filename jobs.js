@@ -8992,14 +8992,12 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const pg = Math.min(Math.max(newOppPage, 0), NEW_OPP_PAGES.length - 1);
           const meta = NEW_OPP_PAGES[pg];
           const isLast = pg === NEW_OPP_PAGES.length - 1;
-          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:2px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const goLabel = isLast ? (isEditing ? 'Save changes' : (newOppDraft.type === 'Course' ? 'Post course' : 'Post opportunity')) : 'Continue';
           return `
             <div class="flex-1 overflow-y-auto pa-flow">
             <div class="pa-sticky">
-            ${overlayHeader(isEditing ? (newOppDraft.type === 'Course' ? 'Edit Course' : 'Edit Opportunity') : 'Post an Opportunity', '20px', 'newOppBack()', null, { center: true, titleSize: 'text-xl', titleClass: 'career-flow-title', pb: '0px' })}
-            <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">${segs}</div></div>
-            <div class="px-5" style="padding-top:18px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
+            ${wizTopHTML('newOppBack()', pg + 1, NEW_OPP_PAGES.length)}
+            <div class="px-5" style="padding-top:14px;padding-bottom:12px;"><div class="max-w-2xl mx-auto">
               <div class="pa-kick">Step ${pg + 1} of ${NEW_OPP_PAGES.length} · ${meta.kicker}</div>
               <h2 class="pa-h2">${meta.title}</h2>
               <div class="pa-sub">${meta.sub}</div>

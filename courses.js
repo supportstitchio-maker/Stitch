@@ -4500,15 +4500,13 @@ try {
           const isEditing = !!newCourseEditingId;
           const step = newCourseStep;
           const stepLabels = ['The basics', 'About the course', 'Content', 'Review & publish'];
-          const segs = [1,2,3,4].map(n => `<i style="flex:1;height:2px;border-radius:9px;background:${n <= step ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const isLast = step === 4;
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
             <div class="flex-shrink-0 w-full">
-              ${overlayHeader(isEditing ? 'Edit Course' : 'Create a Course', '20px', 'overlayGoBack()', null, { pb: '6px', hideOnScroll: false })}
+              ${wizTopHTML('overlayGoBack()', step, 4)}
               <div class="max-w-2xl mx-auto px-5 pb-2">
-                <div style="display:flex;gap:5px;margin-top:12px;">${segs}</div>
-                <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin-top:12px;">Step ${step} of 4 · ${stepLabels[step - 1]}</div>
+                <div class="text-[11px] font-bold uppercase tracking-wide text-gray-400" style="margin-top:14px;">Step ${step} of 4 · ${stepLabels[step - 1]}</div>
               </div>
             </div>
             <div class="flex-1 overflow-y-auto">

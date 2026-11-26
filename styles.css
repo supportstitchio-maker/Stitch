@@ -7443,3 +7443,23 @@ body.dark-mode button:has(> svg > path[d^="M11 4.5L3.8 12l7.2 7.5"]):not(.no-cir
   .cp-menu.cp-menu{ corner-shape:squircle; border-radius:30px; }
   .cp-menu-item.cp-menu-item{ corner-shape:squircle; border-radius:21px; }
 }
+
+/* ===== Wizard top bar (Post an opportunity, Create a course): floating circle back + progress bar in one row ===== */
+.wiz-top{ padding-top:calc(var(--top-safe-pad,20px) + 4px); flex-shrink:0; }
+#overlay .wiz-back, .wiz-back{ width:42px !important; height:42px !important; min-width:42px; padding:0 !important; border:0 !important; border-radius:9999px !important;
+  display:inline-flex !important; align-items:center; justify-content:center; flex-shrink:0;
+  background:#ffffff !important; box-shadow:0 2px 10px rgba(11,31,63,.12) !important; -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
+.wiz-back:active{ transform:scale(.94); }
+.wiz-back svg{ flex-shrink:0; }
+body.dark-mode #overlay .wiz-back, body.dark-mode .wiz-back{ background:#121212 !important; box-shadow:0 2px 10px rgba(0,0,0,.5) !important; }
+.wiz-bars i{ height:2px; }
+
+/* ===== One white for every Workspace page background (overlay pages, header band, Practice Tests) ===== */
+#overlay{ background:#ffffff; }
+body.dark-mode #overlay{ background:#121212; }
+#overlay .ar-root{ --bg:#ffffff; }
+body.dark-mode #overlay .ar-root{ --bg:#121212; }
+#overlay .ar-page{ background:#ffffff; }
+body.dark-mode #overlay .ar-page{ background:#121212; }
+#overlay .ws-hdr-s{ background:#ffffff; }
+body.dark-mode #overlay .ws-hdr-s{ background:#121212; }
