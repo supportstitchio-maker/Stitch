@@ -313,7 +313,7 @@
                 <form onsubmit="authSubmitLogin(event); return false;" novalidate>
                   <div class="auth-field auth-field-icon">
                     <svg class="auth-field-ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5l8.5 6 8.5-6"/></svg>
-                    <input id="auth-li-email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" inputmode="email">
+                    <input id="auth-li-email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" name="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">
                   </div>
                   <div class="auth-error" id="auth-login-error">Enter your email to continue.</div>
                   <button class="auth-cta" type="submit" id="auth-li-submit-btn">Continue</button>
@@ -338,7 +338,7 @@
                   <div class="auth-info-banner">We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>.</div>
 
                   <div class="auth-otp-row">
-                    <input id="auth-otp-0" type="text" inputmode="none" readonly enterkeyhint="go" autocomplete="one-time-code" maxlength="1" oninput="authOtpInput(event,0)" onkeydown="authOtpKeydown(event,0)" onpaste="authOtpPaste(event)">
+                    <input id="auth-otp-0" type="text" inputmode="none" enterkeyhint="go" autocomplete="one-time-code" name="one-time-code" autocapitalize="none" autocorrect="off" spellcheck="false" oninput="authOtpInput(event,0)" onkeydown="authOtpKeydown(event,0)" onpaste="authOtpPaste(event)">
                     <input id="auth-otp-1" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,1)" onkeydown="authOtpKeydown(event,1)">
                     <input id="auth-otp-2" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,2)" onkeydown="authOtpKeydown(event,2)">
                     <input id="auth-otp-3" type="text" inputmode="none" readonly enterkeyhint="go" maxlength="1" oninput="authOtpInput(event,3)" onkeydown="authOtpKeydown(event,3)">
@@ -348,6 +348,7 @@
                   <div class="auth-error" id="auth-verify-error">That code doesn't match. Check it and try again.</div>
                   <div class="auth-resend">Didn't get a code? Check your spam/junk folder, or <button type="button" id="auth-resend-btn" onclick="authResendCode()">Resend code</button><span id="auth-resend-countdown" class="hidden"></span></div>
 
+                  <div class="auth-resend" style="margin-top:-6px;"><button type="button" id="auth-paste-btn" onclick="authPasteCode()">Paste code from clipboard</button></div>
                   <button class="auth-cta" type="submit">Verify &amp; Continue</button>
                 </form>
               </div></div>

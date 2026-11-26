@@ -1878,7 +1878,7 @@
        the left edge instead of living in the top bar or bottom tab bar. -->
   <div id="desktop-nav">
     <div id="dnav-main-list" class="dn-grp">
-    <button onclick="switchTab(0)" class="dnav-item" id="dnav-0" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
+    <button onclick="homeTabTap()" class="dnav-item" id="dnav-0" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
     <button onclick="switchTab(1)" class="dnav-item" id="dnav-1" title="Explore">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
     <button onclick="switchTab(3)" class="dnav-item" id="dnav-3" title="Messages">${Icon('commentOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
     <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
@@ -1907,7 +1907,7 @@
   <!-- Desktop top strip: logo, search, bell, New and the person's name sit straight on the page
        background (no bar). Hidden on phones, which keep #top-bar. -->
   <div id="dtop">
-    <img id="dtop-logo" class="dtop-logo" src="${STITCH_WORDMARK_GRADIENT}" data-logo-light="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" onclick="switchTab(0)">
+    <img id="dtop-logo" class="dtop-logo" src="${STITCH_WORDMARK_GRADIENT}" data-logo-light="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" onclick="homeTabTap()">
     <label id="dtop-search" class="dtop-search" aria-label="Search people">${Icon('search','w-4 h-4')}<input id="dtop-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search people" onfocus="dtopSearchFocus()" oninput="dtopSearchInput(this.value)"></label>
     <div class="dtop-spacer"></div>
     <button type="button" id="dtop-bell" class="dtop-bell" onclick="dtopOpenFromHere('notifications', function(){ openRightPanel('profile');openOverlay('notifications'); })" title="Notifications" aria-label="Notifications">${Icon('bellOutline','w-5 h-5')}${unreadNotifCount() ? `<span id="dtop-bell-badge">${unreadNotifCount()}</span>` : ''}</button>
@@ -1939,7 +1939,7 @@
   <!-- Top Bar -->
   <div id="top-bar" class="flex-shrink-0 sticky top-0 z-10" style="margin-bottom:10px;">
     <div class="max-w-2xl mx-auto px-5 flex items-center justify-between" style="padding-bottom:0.75rem;">
-      <div class="flex items-center cursor-pointer" id="topbar-brand" onclick="switchTab(0)">
+      <div class="flex items-center cursor-pointer" id="topbar-brand" onclick="homeTabTap()">
         <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:48px;width:auto;object-fit:contain;">
       </div>
       <div class="flex items-center gap-5" id="topbar-icons">
@@ -2198,7 +2198,7 @@
   <!-- Bottom Nav -->
   <div id="bottom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare">
     <div class="max-w-2xl mx-auto flex pt-3">
-      <button onclick="switchTab(0)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
+      <button onclick="homeTabTap()" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
       <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcaseOutline','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
       <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center" id="nav-2">
         <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookStack','w-7 h-7')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Workspace</span>
@@ -2255,16 +2255,92 @@
         let topBarLastScroll = 0;
 
         // ---- Top/bottom nav bar scroll & show/hide behavior ----
+        // Hide-on-scroll headers: scrolling down tucks the header away, scrolling up (even a little) brings
+        // it straight back, and at the very top it is always showing.
+        // 1) Home feed top bar (logo, +, bell, search row), which sits above #screen.
         function setupTopBarScroll(){
-          return;
+          const screenEl = document.getElementById('screen');
+          const bar = document.getElementById('top-bar');
+          if (!screenEl || !bar || screenEl._topBarBound) return;
+          screenEl._topBarBound = true;
+          let last = 0;
+          screenEl.addEventListener('scroll', () => {
+            if (typeof currentTab !== 'undefined' && currentTab !== 0) return;
+            const y = Math.max(0, screenEl.scrollTop);
+            const dy = y - last;
+            if (y <= 8) setTopBarHidden(false);
+            else if (dy > 6) setTopBarHidden(true);
+            else if (dy < -6) setTopBarHidden(false);
+            if (Math.abs(dy) > 6 || y <= 8) last = y;
+          }, { passive: true });
+        }
+        function setTopBarHidden(hide){
+          const bar = document.getElementById('top-bar');
+          if (!bar || (bar.dataset.hidden === '1') === hide) return;
+          bar.dataset.hidden = hide ? '1' : '0';
+          const h = bar.offsetHeight;
+          bar.style.transition = 'transform .22s ease-out, margin-top .22s ease-out, opacity .22s ease-out';
+          bar.style.transform = hide ? 'translateY(-24px)' : 'translateY(0)';
+          bar.style.marginTop = hide ? ('-' + (h + 10) + 'px') : '0px';
+          bar.style.opacity = hide ? '0' : '1';
+          bar.style.pointerEvents = hide ? 'none' : '';
         }
 
         function resetTopBar(){
           topBarOffset = 0;
           topBarLastScroll = 0;
           const topBar = document.getElementById('top-bar');
-          if (topBar) { topBar.style.transform = 'translateY(0)'; topBar.style.opacity = '1'; }
+          if (topBar) {
+            topBar.dataset.hidden = '0';
+            topBar.style.transform = 'translateY(0)'; topBar.style.opacity = '1';
+            topBar.style.marginTop = '0px'; topBar.style.pointerEvents = '';
+          }
         }
+
+        // 2) Page headers inside #overlay (lists, settings, info pages). Headers opt in with
+        // overlayHeader(..., { hideOnScroll:true }), which marks them data-hos. Step-by-step flows,
+        // chats and form pages do not opt in, so they stay put.
+        (function(){
+          const lastY = new WeakMap();
+          function stickyTarget(head, scroller){
+            let el = head;
+            while (el && el !== scroller) {
+              if (getComputedStyle(el).position === 'sticky') return el;
+              el = el.parentElement;
+            }
+            return null;
+          }
+          function scrollerOf(el){
+            let p = el.parentElement;
+            while (p) {
+              const oy = getComputedStyle(p).overflowY;
+              if (oy === 'auto' || oy === 'scroll') return p;
+              p = p.parentElement;
+            }
+            return null;
+          }
+          document.addEventListener('scroll', (e) => {
+            const sc = e.target;
+            if (!sc || sc.nodeType !== 1 || !sc.closest || !sc.closest('#overlay')) return;
+            const head = sc.querySelector('[data-hos]');
+            if (!head || head.closest('.pa-flow') || scrollerOf(head) !== sc) return;
+            const tgt = stickyTarget(head, sc);
+            if (!tgt) return;
+            const y = Math.max(0, sc.scrollTop);
+            const prev = lastY.has(sc) ? lastY.get(sc) : 0;
+            const dy = y - prev;
+            let hide = null;
+            if (y <= 8) hide = false; else if (dy > 6) hide = true; else if (dy < -6) hide = false;
+            if (hide === null) return;
+            lastY.set(sc, y);
+            const isHidden = tgt.dataset.hosHidden === '1';
+            if (isHidden === hide) return;
+            tgt.dataset.hosHidden = hide ? '1' : '0';
+            tgt.style.transition = 'transform .22s ease-out';
+            tgt.style.willChange = 'transform';
+            tgt.style.transform = hide ? 'translateY(-110%)' : 'translateY(0)';
+          }, true);
+        })();
 
         let bottomNavOffset = 0;
         let bottomNavLastScroll = 0;
@@ -2603,6 +2679,20 @@
           const sc = document.getElementById('screen');
           if (!sc) return;
           sc.classList.remove('pg-in'); void sc.offsetWidth; sc.classList.add('pg-in');
+        }
+        // Tapping Home while already on the Home feed: jump to the top and refresh it, like pulling down.
+        function homeTabTap(){
+          try {
+            const onFeed = currentTab === 0 && !currentOverlayKind && document.getElementById('feed-list');
+            const shell = document.getElementById('app-shell');
+            if (onFeed && !(shell && (shell.classList.contains('boot-locked') || shell.classList.contains('ws-locked')))) {
+              const scr = document.getElementById('screen');
+              if (scr) scr.scrollTo({ top: 0, behavior: 'smooth' });
+              if (typeof startHomeFeedRefresh === 'function') startHomeFeedRefresh();
+              return;
+            }
+          } catch (e) {}
+          switchTab(0);
         }
         function switchTab(n, fromPopState) {
           try { if (n !== currentTab) deskPageAnim(); } catch (e) {}

@@ -63,7 +63,7 @@
           const active = homeFeedRefreshing;
           return `
             <div id="ptr-indicator" class="w-full flex items-center justify-center flex-shrink-0" style="height:${active ? '64px' : '0px'};overflow:hidden;transition:height .18s ease;">
-              <div style="width:32px;height:32px;border-radius:50%;border:3px solid rgba(10,37,64,0.15);border-top-color:${NAVY};${active ? 'animation:classroom-spin .7s linear infinite;' : ''}"></div>
+              <div style="width:32px;height:32px;border-radius:50%;border:3px solid rgba(156,163,175,0.30);border-top-color:#9ca3af;${active ? 'animation:classroom-spin .7s linear infinite;' : ''}"></div>
             </div>`;
         }
 
@@ -1997,7 +1997,8 @@
             // Other people's glimpses only: never my own account's rows, and never a row that is
             // already one of my local glimpses (same id), whatever its user_id says
             const myLocalIds = new Set(myGlimpses.map(g => String(g.id)));
-            const rows = data.filter(row => row.user_id !== meId && !myLocalIds.has(String(row.id)));
+            try { await loadUserBlocks(); } catch (e) {}
+            const rows = data.filter(row => row.user_id !== meId && !myLocalIds.has(String(row.id)) && !isBlockedWith(row.user_id));
             const glimpseSig = st => String(st.id) + ':' + ((st.items || []).map(it => it.id).join('/'));
             const otherIdsBefore = stories.filter(s => !s.mine).map(glimpseSig).sort().join(',');
             if (!rows.length) {
@@ -5701,14 +5702,85 @@
 
         let blockedAccounts = [];
 
+        // ---- Blocking, both directions ----
+        // blockedByMeIds: people I blocked. blockedMeIds: people who blocked me. Either way the pair is
+        // cut off: no messages, no glimpses, no profile photo, no last seen / online. The list lives in the
+        // user_blocks table (see supabase-blocking.sql); the checks here keep the app in step with it.
+        let blockedByMeIds = new Set();
+        let blockedMeIds = new Set();
+        let userBlocksPromise = null;
+        let userBlocksChannel = null;
+        function isBlockedWith(userId){
+          if (!userId) return false;
+          const id = String(userId);
+          return blockedByMeIds.has(id) || blockedMeIds.has(id);
+        }
+        function loadUserBlocks(force){
+          if (userBlocksPromise && !force) return userBlocksPromise;
+          userBlocksPromise = (async () => {
+            try {
+              const sb = getSupabaseClient();
+              const myId = sb ? await getCurrentUserId() : null;
+              const mine = new Set(), theirs = new Set();
+              // Blocks saved on this account (they carry the person's id) count even before the server answers
+              blockedAccounts.forEach(b => { if (b && b.userId) mine.add(String(b.userId)); });
+              if (sb && myId) {
+                const { data, error } = await sb.from('user_blocks').select('blocker_id,blocked_id').or(`blocker_id.eq.${myId},blocked_id.eq.${myId}`);
+                if (error) console.warn('Could not load blocks (run supabase-blocking.sql):', error.message || error);
+                (data || []).forEach(r => {
+                  if (String(r.blocker_id) === String(myId)) mine.add(String(r.blocked_id));
+                  else theirs.add(String(r.blocker_id));
+                });
+                if (!userBlocksChannel) {
+                  userBlocksChannel = sb.channel('user-blocks:' + myId)
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_blocks' }, () => { loadUserBlocks(true); })
+                    .subscribe();
+                }
+              }
+              blockedByMeIds = mine; blockedMeIds = theirs;
+              applyBlocksToUI();
+            } catch (e) { console.warn('loadUserBlocks failed', e); }
+          })();
+          return userBlocksPromise;
+        }
+        // Clears photos and last-seen for blocked people already on screen, and drops their glimpses
+        function applyBlocksToUI(){
+          try {
+            if (typeof convoMeta !== 'undefined') {
+              Object.keys(convoMeta).forEach(id => {
+                const m = convoMeta[id];
+                if (m && m.otherUserId && isBlockedWith(m.otherUserId)) { m.photo = null; m.lastActive = null; }
+              });
+              if (typeof activeConvoId !== 'undefined' && activeConvoId && typeof refreshConvoStatusLine === 'function') refreshConvoStatusLine(activeConvoId);
+            }
+            if (typeof stories !== 'undefined' && Array.isArray(stories)) {
+              const before = stories.length;
+              stories = stories.filter(s => s.mine || !isBlockedWith(s.otherUserId || s.id));
+              if (stories.length !== before && typeof refreshStoryStrip === 'function') refreshStoryStrip();
+            }
+            if (typeof scheduleLiveGlimpseRefresh === 'function') scheduleLiveGlimpseRefresh();
+          } catch (e) {}
+        }
+
         const NetworkAPI = {
           listBlocked(){
             return mockRequest(() => blockedAccounts);
           },
-          block(name, icon, avatarBg, photo){
+          block(name, icon, avatarBg, photo, userId){
             return mockRequest(() => {
-              if (!blockedAccounts.some(b => b.name === name)) {
-                blockedAccounts.push({ name, icon: icon || 'user', avatarBg: avatarBg || 'bg-gray-200', photo: photo || null });
+              const existing = blockedAccounts.find(b => b.name === name);
+              if (!existing) {
+                blockedAccounts.push({ name, icon: icon || 'user', avatarBg: avatarBg || 'bg-gray-200', photo: photo || null, userId: userId || null });
+              } else if (userId && !existing.userId) {
+                existing.userId = userId;
+              }
+              if (userId) {
+                blockedByMeIds.add(String(userId));
+                getCurrentUserId().then(myId => {
+                  const sb = getSupabaseClient();
+                  if (sb && myId) sb.from('user_blocks').upsert({ blocker_id: myId, blocked_id: userId }, { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }).then(({ error }) => { if (error) console.warn('Saving block failed (run supabase-blocking.sql):', error.message); });
+                }).catch(() => {});
+                applyBlocksToUI();
               }
               queueSaveUserState();
               return blockedAccounts;
@@ -5716,7 +5788,16 @@
           },
           unblock(name){
             return mockRequest(() => {
+              const entry = blockedAccounts.find(b => b.name === name);
               blockedAccounts = blockedAccounts.filter(b => b.name !== name);
+              if (entry && entry.userId) {
+                blockedByMeIds.delete(String(entry.userId));
+                getCurrentUserId().then(myId => {
+                  const sb = getSupabaseClient();
+                  if (sb && myId) sb.from('user_blocks').delete().eq('blocker_id', myId).eq('blocked_id', entry.userId).then(() => {});
+                }).catch(() => {});
+                if (typeof scheduleLiveGlimpseRefresh === 'function') scheduleLiveGlimpseRefresh();
+              }
               queueSaveUserState();
               return blockedAccounts;
             });
@@ -5724,9 +5805,9 @@
         };
 
         // ---- Post-level actions (block/save/menu/delete/report) ----
-        function blockAccount(name, icon, avatarBg, photo){
+        function blockAccount(name, icon, avatarBg, photo, userId){
           if (!name) return;
-          NetworkAPI.block(name, icon, avatarBg, photo);
+          NetworkAPI.block(name, icon, avatarBg, photo, userId);
           PostsAPI.removeByAuthor(name);
         }
 

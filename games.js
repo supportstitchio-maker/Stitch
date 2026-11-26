@@ -2135,15 +2135,45 @@ let userPoints = 0;
           for (let i = 0; i < 6; i++) {
             const el = document.getElementById('auth-otp-' + i);
             if (!el) continue;
-            el.readOnly = !desk;
+            el.readOnly = !desk && i !== 0; // first box stays editable so the phone can autofill the emailed code into it
             el.setAttribute('inputmode', desk ? 'numeric' : 'none');
           }
         }
         authApplyOtpInputMode();
         window.addEventListener('resize', authApplyOtpInputMode);
 
+        // Fills the six boxes from a string of digits (autofill from the phone, or paste). A full 6-digit
+        // code is submitted straight away.
+        function authOtpFill(raw){
+          const digits = String(raw || '').replace(/[^0-9]/g, '').slice(0, 6);
+          if (!digits) return false;
+          for (let i = 0; i < 6; i++) {
+            const el = document.getElementById('auth-otp-' + i);
+            if (el) el.value = digits[i] || '';
+          }
+          const target = document.getElementById('auth-otp-' + Math.min(digits.length, 5));
+          if (target) target.focus();
+          const err = document.getElementById('auth-verify-error');
+          if (err) err.classList.remove('show');
+          if (digits.length === 6) setTimeout(authKeypadDone, 150);
+          return true;
+        }
+        // "Paste code from clipboard": copy the code from the email, come back and tap this
+        async function authPasteCode(){
+          const btn = document.getElementById('auth-paste-btn');
+          const say = (t) => { if (!btn) return; const old = btn.dataset.l || (btn.dataset.l = btn.textContent); btn.textContent = t; setTimeout(() => { btn.textContent = old; }, 2200); };
+          try {
+            const txt = await navigator.clipboard.readText();
+            if (!authOtpFill(txt)) say('No 6-digit code copied yet');
+          } catch (e) {
+            say('Copy the code from your email first');
+          }
+        }
         function authOtpInput(e, idx){
-          const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
+          const raw = e.target.value.replace(/[^0-9]/g, '');
+          // Autofill (e.g. "From Mail" / Google autofill) drops the whole code into one box
+          if (raw.length > 1) { authOtpFill(raw); return; }
+          const val = raw.slice(0, 1);
           e.target.value = val;
           if (val && idx < 5) {
             const next = document.getElementById('auth-otp-' + (idx + 1));
@@ -2162,15 +2192,9 @@ let userPoints = 0;
         }
         function authOtpPaste(e){
           const raw = (e.clipboardData || window.clipboardData).getData('text');
-          const digits = raw.replace(/[^0-9]/g, '').slice(0, 6);
-          if (!digits) return;
+          if (!/[0-9]/.test(raw)) return;
           e.preventDefault();
-          for (let i = 0; i < 6; i++) {
-            const el = document.getElementById('auth-otp-' + i);
-            if (el) el.value = digits[i] || '';
-          }
-          const target = document.getElementById('auth-otp-' + Math.min(digits.length, 5));
-          if (target) target.focus();
+          authOtpFill(raw);
         }
         let appConfirmModalAction = null; 
         function openAppConfirmModal(title, message, confirmLabel, action, iconType, cancelLabel){

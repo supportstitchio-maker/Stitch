@@ -1639,7 +1639,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             <div class="bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl p-3 text-xs mb-5">Your previous application wasn't approved. Feel free to update the details below and reapply.</div>` : '';
           const segs = isWelcome ? '' : `
             <div class="w-full px-5" style="margin-top:12px;"><div class="max-w-2xl mx-auto" style="display:flex;gap:5px;">
-              ${stepPages.map((pg, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNo ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('')}
+              ${stepPages.map((pg, i) => `<i style="flex:1;height:2px;border-radius:9px;background:${i < stepNo ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('')}
             </div></div>`;
           const goLabel = isWelcome ? 'Start application' : (isLast ? posterApplicationFormHTML_submitBtnLabel() : 'Continue');
           return `
@@ -7188,7 +7188,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const resumeBusy = isLastStep && careerStartResumeUploading;
           const nextBtnLabel = resumeBusy ? 'Fetching…' : (isLastStep ? 'Submit' : 'Continue');
           const hint = (careerStartParts(stepId).length === 1 && stepId !== 'age') ? careerStartStepHint(stepId) : '';
-          const segs = careerStartFormStepIds.map((id, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i < stepNum ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
+          const segs = careerStartFormStepIds.map((id, i) => `<i style="flex:1;height:2px;border-radius:9px;background:${i < stepNum ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const bg = '';
           return `
             ${bg}
@@ -8992,7 +8992,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
           const pg = Math.min(Math.max(newOppPage, 0), NEW_OPP_PAGES.length - 1);
           const meta = NEW_OPP_PAGES[pg];
           const isLast = pg === NEW_OPP_PAGES.length - 1;
-          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:5px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
+          const segs = NEW_OPP_PAGES.map((_, i) => `<i style="flex:1;height:2px;border-radius:9px;background:${i <= pg ? `linear-gradient(90deg, ${NAVY}, ${ROYAL})` : 'rgba(120,130,150,0.30)'};"></i>`).join('');
           const goLabel = isLast ? (isEditing ? 'Save changes' : (newOppDraft.type === 'Course' ? 'Post course' : 'Post opportunity')) : 'Continue';
           return `
             <div class="flex-1 overflow-y-auto pa-flow">

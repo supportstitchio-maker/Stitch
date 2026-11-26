@@ -381,7 +381,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           <div id="profile-screen-root">
             <div class="px-5 pb-3 flex items-center justify-between" style="padding-top:var(--top-safe-pad);">
               ${asOverlay
-                ? `<button onclick="closeOverlay()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
+                ? `<button onclick="closeOverlay()" class="ph-gear-panel flex items-center justify-center" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button>`
                 : ''}
               <span style="flex:1;min-width:0;"></span>
               <div class="flex items-center">
@@ -2244,7 +2244,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const nBlocked = blockedAccounts.length;
           return `
             <div class="flex-1 overflow-y-auto">
-              ${overlayHeader('Settings', '20px', null, null, {right:true, deskBig:true, titleClass:'stg-head-title'})}
+              ${overlayHeader('Settings', '20px', null, null, { hideOnScroll:true, right:true, deskBig:true, titleClass:'stg-head-title'})}
               <div class="px-5" style="padding-bottom:28px;">
               ${stgProfileCardHTML()}
               ${stgGroup('Account', `

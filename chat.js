@@ -194,7 +194,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const { data } = await sb.from(PUBLIC_PROFILES_TABLE).select('user_id,photo').in('user_id', ids);
             if (!data) return false;
             const photoById = {};
-            data.forEach(r => { photoById[r.user_id] = r.photo || null; });
+            data.forEach(r => { photoById[r.user_id] = isBlockedWith(r.user_id) ? null : (r.photo || null); });
             let changed = false;
             entries.forEach(e => {
               if (!e.otherUserId || !Object.prototype.hasOwnProperty.call(photoById, e.otherUserId)) return;
@@ -234,9 +234,10 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               if (ph) ph.name = realName;
               nameFixed = true;
             }
-            const freshPhoto = (row && row.photo) || null;
+            const blockedPair = isBlockedWith(meta.otherUserId);
+            const freshPhoto = blockedPair ? null : ((row && row.photo) || null);
             const freshUsername = (row && row.username) || '';
-            const freshLastActive = (row && row.last_active) || null;
+            const freshLastActive = blockedPair ? null : ((row && row.last_active) || null);
             const photoChanged = freshPhoto !== meta.photo;
             const usernameChanged = freshUsername && freshUsername !== meta.username;
             const lastActiveChanged = freshLastActive !== meta.lastActive;
@@ -306,6 +307,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         }
 
         function isUserOnline(userId){
+          if (isBlockedWith(userId)) return false;
           return !!userId && onlineUserIds.has(String(userId));
         }
 
@@ -470,7 +472,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             return true;
           });
           return `
-            ${overlayHeader('My Network', '20px')}
+            ${overlayHeader('My Network', '20px', null, null, { hideOnScroll:true })}
             <div class="flex-1 overflow-y-auto px-5 pb-6">
               <div class="divide-y divide-gray-100">
                 ${networkContacts.length ? networkContacts.map(contactListRow).join('') : `<div class="py-6 text-center text-gray-400 text-sm">No network connections yet.</div>`}
@@ -2712,6 +2714,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const sb = getSupabaseClient();
           const myId = await getCurrentUserId();
           if (!sb || !myId) return null;
+          // Blocked either way: the message never leaves this device. It still looks sent to the sender.
+          try { await loadUserBlocks(); } catch (e) {}
+          if (otherUserId && isBlockedWith(otherUserId)) return 'blocked-' + (localId || Date.now());
           try {
             const row = {
               convo_id: convoId,
@@ -2800,6 +2805,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             if (error || !data) return;
             // Test/reviewer account: only its own messages, never anything a real user sent it
             if (isStitchTestAccount()) data = data.filter(r => String(r.sender_id) === String(myId));
+            try { await loadUserBlocks(); } catch (e) {}
+            data = data.filter(r => !(r.sender_id && String(r.sender_id) !== String(myId) && isBlockedWith(r.sender_id)));
             const seenLocalIds = new Set();
             const prevLocalMsgs = conversationMessages[convoId] || [];
             const serverLocalIds = new Set(data.map(r => r.local_id).filter(Boolean));
@@ -3079,12 +3086,15 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const myId = await getCurrentUserId();
           if (!myId) return;
           try {
-            const { data, error } = await sb.from(MESSAGES_TABLE)
+            let { data, error } = await sb.from(MESSAGES_TABLE)
               .select('convo_id,text,voice_url,attachments,created_at,sender_id,read')
               .or(`sender_id.eq.${myId},recipient_id.eq.${myId}`)
               .order('created_at', { ascending: false })
               .limit(500);
             if (error || !data || !data.length) return;
+            try { await loadUserBlocks(); } catch (e) {}
+            data = data.filter(r => !(r.sender_id && String(r.sender_id) !== String(myId) && isBlockedWith(r.sender_id)));
+            if (!data.length) return;
             const latestByConvo = new Map();
             data.forEach(row => {
               if (!latestByConvo.has(row.convo_id)) latestByConvo.set(row.convo_id, row);
@@ -3145,6 +3155,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!sb) return;
           const myId = await getCurrentUserId();
           if (!myId) return;
+          try { loadUserBlocks(); } catch (e) {}
           if (messagesChannel && messagesSubscribedForUserId === myId) return;
           if (messagesChannel) { try { sb.removeChannel(messagesChannel); } catch (e) {  } messagesChannel = null; }
           messagesSubscribedForUserId = myId;
@@ -4100,6 +4111,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           // Test/reviewer account: never take in messages from real users
           if (isStitchTestAccount()) return;
           if (!row || !row.convo_id) return;
+          // Nothing from someone I blocked, or who blocked me
+          if (row.sender_id && isBlockedWith(row.sender_id)) return;
           const convoId = row.convo_id;
           if (!conversationMessages[convoId]) conversationMessages[convoId] = [];
           if (row.id != null && conversationMessages[convoId].some(m => m.id === row.id)) return;
@@ -4612,7 +4625,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           const meta = convoMeta[activeConvoId];
           if (!meta) return;
           if (isConvoBlocked(meta)) unblockAccount(meta.name);
-          else blockAccount(meta.name, meta.icon, meta.avatarBg, meta.photo);
+          else blockAccount(meta.name, meta.icon, meta.avatarBg, meta.photo, meta.otherUserId);
           renderConvoProfile();
           try {
             const sh = document.getElementById('app-shell');
@@ -5331,7 +5344,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (isConvoBlocked(meta)) {
             unblockAccount(meta.name);
           } else {
-            blockAccount(meta.name, meta.icon, meta.avatarBg, meta.photo);
+            blockAccount(meta.name, meta.icon, meta.avatarBg, meta.photo, meta.otherUserId);
           }
           const ov = document.getElementById('overlay');
           if (ov) ov.innerHTML = conversationHTML();
@@ -5348,6 +5361,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             const names = orderedCollabMemberNames(meta.members);
             return names.length ? names.join(', ') : 'Group';
           }
+          if (meta.otherUserId && isBlockedWith(meta.otherUserId)) return '';
           if (meta.otherUserId && isUserOnline(meta.otherUserId)) return 'Online';
           // "Last seen" is only for people in my network: strangers (e.g. someone I messaged from
           // their glimpse) get no last-seen line at all
@@ -6256,7 +6270,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           }).join('');
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-              ${overlayHeader('Starred messages', '20px')}
+              ${overlayHeader('Starred messages', '20px', null, null, { hideOnScroll:true })}
               ${rows || '<div class="text-sm text-gray-400 text-center" style="padding:60px 24px;line-height:1.5;">No starred messages in this chat.<br>Hold a message and choose Star.</div>'}
             </div>`;
         }

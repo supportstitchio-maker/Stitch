@@ -3209,7 +3209,7 @@ body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode){
   }
   #auth-gate .auth-stepbar-track{
     width:100%;
-    height:6px;
+    height:2px;
     border-radius:9999px;
     background:rgba(10,37,64,0.12);
     overflow:hidden;
@@ -4361,7 +4361,7 @@ body.dark-mode #auth-gate .auth-keypad .auth-keypad-done{color:#1e90ff !importan
 #auth-gate .auth-seg-row{ display:none; }
 #auth-gate .auth-stepbar.seg .auth-stepbar-track{ display:none; }
 #auth-gate .auth-stepbar.seg .auth-seg-row{ display:flex; gap:5px; width:100%; }
-#auth-gate .auth-seg-row i{ flex:1; height:5px; border-radius:9px; background:rgba(15,23,42,.12); }
+#auth-gate .auth-seg-row i{ flex:1; height:2px; border-radius:9999px; background:rgba(15,23,42,.12); }
 #auth-gate .auth-seg-row i.f{ background:linear-gradient(90deg, #1e90ff, #4169e1); }
 /* Bigger circles in the background artwork */
 #auth-gate.auth-compact-mode:not(.auth-verify-mode):not(.auth-photo-stage)::before,
@@ -4448,7 +4448,7 @@ body.dark-mode .pa-flow button[style*="height:42px"][style*="border-radius:21px"
 @media (min-width:1100px){
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-stepbar.show{
     display:flex; align-items:center; position:fixed; top:30px; left:50%; margin-left:calc(min(536px, 100vw - 320px) / -2);
-    width:min(536px, calc(100vw - 320px)); height:5px; z-index:12; }
+    width:min(536px, calc(100vw - 320px)); height:2px; z-index:12; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-back{ position:fixed; top:14px; left:32px; z-index:13; }
   #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-form-side{ padding-top:96px; }
 }
@@ -4818,7 +4818,7 @@ html.dark-mode #overlay .pa-flow .pa-sticky::before, html.dark-mode #overlay .ov
 #overlay .pa-flow .pa-sticky, #overlay .ov-sticky-wrap, #overlay div:has(> .ov-sticky-head:only-child),
 #overlay .ov-sticky-head:not(:only-child):not(.pa-sticky > .ov-sticky-head){ margin-bottom:22px; }
 /* Progress bars: stronger, so every step reads clearly */
-#overlay .pa-flow .pa-sticky > div[class*="px-5"] i{ height:6px !important; }
+#overlay .pa-flow .pa-sticky > div[class*="px-5"] i{ height:2px !important; }
 
 /* Call screen: fill the whole width when the side panel is collapsed (no empty strip on the right) */
 @media (min-width:1100px){
@@ -6837,7 +6837,7 @@ html.dark-mode .pref-card .auth-intent-chip.on{ background:rgba(30,144,255,0.22)
 html.dark-mode button[onclick^="careerBotDecline"]{ background:rgba(255,255,255,0.12) !important; color:#e5e7eb !important; }
 
 /* Pull-up panels: a lone red row has no separator above it */
-.sheet-row-red:first-of-type{ border-top:none !important; margin-top:0 !important; width:100% !important; padding-left:1.5rem !important; padding-right:1.5rem !important; }
+.sheet-row-red:first-of-type{ border-top:none !important; margin-top:0 !important; width:100% !important; padding-left:1.5rem !important; padding-right:1.5rem !important; margin-left:0 !important; margin-right:0 !important; }
 html.dark-mode .sheet-row-red{ border-top-color:rgba(255,255,255,0.12) !important; }
 
 /* Class tools + People sheets: same look as the other pull-up panels */
@@ -7142,10 +7142,10 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
 body.dark-mode .ph-username{ color:#ffffff; }
 
 /* Profile page: the settings gear floats on its own small round panel */
-.ph-gear-panel{ width:44px; height:44px; border-radius:50%; background:#ffffff; border:0; box-shadow:0 4px 16px rgba(30,60,140,.16), 0 1px 3px rgba(30,60,140,.08); flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
+.ph-gear-panel{ width:42px; height:42px; border-radius:50%; background:rgba(120,125,135,.16); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border:0; box-shadow:none; flex-shrink:0; -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
 .ph-gear-panel:active{ transform:scale(.94); }
 .ph-gear-panel svg{ width:22px; height:22px; }
-body.dark-mode .ph-gear-panel{ background:#1e1e1e; box-shadow:none; }
+body.dark-mode .ph-gear-panel{ background:rgba(120,125,135,.16); box-shadow:none; }
 
 /* Contact info, Telegram style: floating round back button, simple action tiles, grouped rows */
 .cp-float-back{ position:absolute; left:14px; top:calc(var(--top-safe-pad,20px) + 4px); width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center; background:rgba(120,125,135,.16); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border:0; }

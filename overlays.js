@@ -580,7 +580,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const pbStyle = opts.pb ? ` style="padding-bottom:${opts.pb};"` : '';
           // Back-only headers are always left-aligned (opts.right / opts.center are ignored)
           return `
-            <div class="flex-shrink-0 w-full ov-sticky-head${opts.deskBig ? ' ov-desk-big' : ''}"${padStyle}>
+            <div class="flex-shrink-0 w-full ov-sticky-head${opts.deskBig ? ' ov-desk-big' : ''}"${padStyle}${opts.hideOnScroll ? ' data-hos="1"' : ''}>
               <div class="max-w-2xl mx-auto px-5${pbClass} flex items-center gap-4"${pbStyle}>
                 <button onclick="${backAction || 'overlayGoBack()'}">${gradIcon(IconBold(icon || 'back','w-5 h-5'))}</button>
                 <div class="font-semibold ${titleSize} font-display grad-text${titleClass}">${title}</div>
@@ -1473,7 +1473,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             sub: row.bio || '',
             icon: 'user',
             avatarBg: 'bg-blue-50',
-            photo: row.photo || null,
+            photo: (typeof isBlockedWith === 'function' && isBlockedWith(row.user_id)) ? null : (row.photo || null),
             requestSent: false,
             connected: false,
           });
@@ -1631,7 +1631,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                 sub: row.bio || '',
                 icon: 'user',
                 avatarBg: 'bg-blue-50',
-                photo: row.photo || null,
+                photo: (typeof isBlockedWith === 'function' && isBlockedWith(row.user_id)) ? null : (row.photo || null),
                 requestSent: sentTo.has(row.user_id),
                 connected: connectedIds.has(row.user_id),
               }));
@@ -1663,7 +1663,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function discoverHTML(){
           return `
-            ${overlayHeader('Discover', '20px', null, null, {right:true})}
+            ${overlayHeader('Discover', '20px', null, null, { hideOnScroll:true, right:true})}
             <div class="px-5 pt-3 pb-3 flex-shrink-0" style="padding-bottom:calc(0.75rem + 5px);">
               <input id="discover-search-input" value="${escapeHtml(discoverSearchQuery)}" oninput="onDiscoverSearchInput(this.value)" placeholder="Search by name, school, field..." class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm" autocomplete="off">
             </div>
@@ -1994,7 +1994,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
               username: (row && row.username) || (existing && existing.username) || '',
               pronouns: (row && row.pronouns) || (existing && existing.pronouns) || '',
               bio: (row && row.bio) || '',
-              photo: (row && row.photo) || (existing && existing.photo) || null,
+              photo: isBlockedWith(userId) ? null : ((row && row.photo) || (existing && existing.photo) || null),
               links: (row && Array.isArray(row.links)) ? row.links : [],
               // Server is the source of truth: if the other person removed the connection, local network
               // state is stale and must not keep showing them as connected
@@ -2163,7 +2163,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const p = viewedProfile || {};
           const list = p.network || [];
           return `
-            ${overlayHeader('Network', '20px', "openOverlay('personProfile')")}
+            ${overlayHeader('Network', '20px', "openOverlay('personProfile')", null, { hideOnScroll:true })}
             <div class="flex-1 overflow-y-auto px-5 pb-6">
               ${!p.networkLoaded ? `<div class="text-center text-gray-400 text-xs py-8">Loading network...</div>` : (
                 list.length ? `<div class="divide-y divide-gray-100">${list.map(personNetworkRow).join('')}</div>`
@@ -2489,7 +2489,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const p = viewedProfile;
           if (!p) return;
           if (isPersonProfileBlocked(p)) unblockAccount(p.name);
-          else blockAccount(p.name, p.icon, p.avatarBg, p.photo);
+          else blockAccount(p.name, p.icon, p.avatarBg, p.photo, p.id);
           renderPersonProfile();
         }
 

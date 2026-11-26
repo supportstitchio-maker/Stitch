@@ -67,7 +67,7 @@ let appPrefs = {
         function notificationSettingsHTML(){
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Notifications', '20px', null, null, { right: true, deskBig: true })}
+            ${overlayHeader('Notifications', '20px', null, null, { hideOnScroll:true, right: true, deskBig: true })}
             <div class="p-5">
               <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Notifications</div>
               <div class="rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">
@@ -113,7 +113,7 @@ let appPrefs = {
           const savedJobs = allJobs().filter(j => j.saved);
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Saved', '20px', "openOverlay('profileMenu')", null, { right: true })}
+            ${overlayHeader('Saved', '20px', "openOverlay('profileMenu')", null, { hideOnScroll:true, right: true })}
             <div class="px-5 pb-3 flex flex-shrink-0" style="padding-top:20px;">
               ${savedTabBtn('posts','Posts')}
               ${savedTabBtn('career','Career')}
@@ -146,7 +146,7 @@ let appPrefs = {
         function blockedAccountsHTML(){
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Blocked', '20px', "openOverlay('profileMenu')", null, { right: true })}
+            ${overlayHeader('Blocked', '20px', "openOverlay('profileMenu')", null, { hideOnScroll:true, right: true })}
             <div id="blocked-accounts-body" class="p-5">
               ${blockedAccounts.length
                 ? `<div class="flat-list rounded-2xl border border-gray-100 divide-y px-4 bg-white shadow-sm">${blockedAccounts.map(blockedAccountRow).join('')}</div>`
@@ -315,7 +315,7 @@ let appPrefs = {
         function legalPageHTML(title, sections){
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { right: true })}
+            ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { hideOnScroll:true, right: true })}
             <div class="p-5">
               <div class="text-sm leading-relaxed text-gray-600 space-y-3 legal-app">
                 ${legalDateLineHTML('app')}
@@ -414,7 +414,7 @@ let appPrefs = {
           const cats = ['All'].concat(helpFAQData.map(s => s.category));
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Help Center', '20px', "openOverlay('profileMenu')", null, { right: true })}
+            ${overlayHeader('Help Center', '20px', "openOverlay('profileMenu')", null, { hideOnScroll:true, right: true })}
             <div class="sp-wrap">
               <label class="sp-search">${Icon('search','w-4 h-4')}<input type="search" value="${escapeHtml(helpSearchText)}" oninput="setHelpSearch(this.value)" placeholder="Search help, e.g. payment, calls, profile" autocomplete="off"></label>
               <div class="sp-two">
@@ -486,7 +486,7 @@ let appPrefs = {
         function supportSentHTML(title, sub, ref){
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { right: true })}
+            ${overlayHeader(title, '20px', "openOverlay('profileMenu')", null, { hideOnScroll:true, right: true })}
             <div class="sp-wrap" style="text-align:center;">
               <div class="sp-ok">${IconBold('check','w-8 h-8')}</div>
               <div class="sp-done-t">Thanks, we have it</div>
@@ -558,7 +558,7 @@ let appPrefs = {
           const d = contactFormDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Contact Support', '20px', null, null, { right: true })}
+            ${overlayHeader('Contact Support', '20px', null, null, { hideOnScroll:true, right: true })}
             <div class="sp-wrap">
               <div class="sp-hero">
                 <span class="sp-qa-ic sp-b1">${Icon('mail','w-5 h-5')}</span>
@@ -646,7 +646,7 @@ let appPrefs = {
           const d = reportIssueDraft;
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar">
-            ${overlayHeader('Report an Issue', '20px', null, null, { right: true })}
+            ${overlayHeader('Report an Issue', '20px', null, null, { hideOnScroll:true, right: true })}
             <div class="sp-wrap">
               <div class="sp-lab" style="margin-top:0;">What kind of issue?</div>
               <div class="sp-grid2" id="report-types">

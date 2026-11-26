@@ -296,7 +296,7 @@
 
         function creatorWalletHTML(){
           return `
-            ${overlayHeader('Wallet', '20px', null, null, { center: true })}
+            ${overlayHeader('Wallet', '20px', null, null, { hideOnScroll:true, center: true })}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:50px;">
               <div class="max-w-2xl mx-auto">${creatorWalletBodyHTML()}</div>
             </div>`;
@@ -576,7 +576,7 @@
         }
         function receiptsHTML(){
           return `
-            ${overlayHeader('Receipts', '20px', null, null, { right: true })}
+            ${overlayHeader('Receipts', '20px', null, null, { hideOnScroll:true, right: true })}
             <div class="flex-1 overflow-y-auto px-5" style="padding-bottom:40px;"><div class="max-w-2xl mx-auto pt-2">${receiptsBodyHTML()}</div></div>`;
         }
         // The receipts list on its own, so the Dashboard can show it as a tab.
