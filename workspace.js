@@ -12,6 +12,17 @@
   .ws-hdr.ws-hdr-s{position:sticky;top:0;z-index:30;background:var(--ws-bg);margin:0 -20px 14px;padding:var(--top-safe-pad) 20px 8px}
   .ws-page:has(> .ws-hdr-s:first-child){padding-top:0}
   .ws-circ{width:44px;height:44px;border:0;border-radius:50%;background:transparent;box-shadow:none;display:flex;align-items:center;justify-content:center;color:var(--ws-ink);position:relative;flex-shrink:0}
+  /* Floating panels: back arrow + bell sit on raised round panels instead of a header bar */
+  .ws-hdr .ws-circ,.ws-fl .ws-circ{width:42px;height:42px;background:var(--ws-bg);box-shadow:0 2px 12px rgba(15,23,42,.16);margin:0 !important}
+  body.dark-mode .ws-hdr .ws-circ,body.dark-mode .ws-fl .ws-circ{box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(255,255,255,0))}
+  body.dark-mode .ws-hdr.ws-hdr-s{background:linear-gradient(var(--ws-bg) 72%,rgba(18,18,18,0))}
+  .ws-fl{position:sticky;top:0;height:0;z-index:40;overflow:visible;margin:0 -20px}
+  .ws-fl-in{position:absolute;left:0;right:0;top:calc(var(--top-safe-pad,20px) - 6px);padding:0 20px;display:flex;justify-content:space-between;pointer-events:none}
+  .ws-fl-in .ws-circ{pointer-events:auto}
+  .ws-fl-sp{height:calc(var(--top-safe-pad,20px) + 46px)}
+  .ws-page:has(> .ws-fl:first-child){padding-top:0}
+  .overflow-y-auto > .ws-fl:first-child{margin:0}.overflow-y-auto > .ws-fl:first-child .ws-fl-in{padding:0 20px}
   .ws-hdr-t{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 6px}.ws-hdr-t b,.ws-hdr-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}  .ws-hdr-t b{display:block;font-size:17px;font-weight:700}.ws-hdr-t span{font-size:12px;color:var(--ws-sub)}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
@@ -202,6 +213,12 @@
       '<div class="ws-hdr-t"><b>' + E(title) + '</b><span>' + E(sub) + '</span></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div>';
   }
+  function floatNav(backFn){
+    var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
+    return '<div class="ws-fl"><div class="ws-fl-in">' + backBtn(backFn || 'wsLeave()') +
+      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + (n ? '<i class="ws-dot"></i>' : '') + '</button></div></div><div class="ws-fl-sp"></div>';
+  }
+  window.wsFloatNav = floatNav;
   function fab(){
     if (view === 'courses') { var can = false; try { can = canCreateCourses(); } catch(e){} return can ? '<button class="ws-fab" onclick="openNewCourse()" aria-label="Create a course">' + I('plus', 22) + '</button>' : ''; }
     return (view !== 'tutor' && classes().length) ? '<button class="ws-fab" onclick="wsCreateJoin(\'create\')" aria-label="Create or join a space">' + I('plus', 22) + '</button>' : '';
@@ -212,7 +229,8 @@
   }
   function spaceName(){ return 'Workspace'; }
   window.wsLeave = function(){
-    if (view !== 'home' && !(view === 'tutor' && T.sub === 'chat')) { if (view === 'tutor') { T.sub = 'chat'; render(); } else { view = 'home'; render(); } return; }
+    if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
+    if (view !== 'home') { view = 'home'; render(); var sc0 = $('screen'); if (sc0) sc0.scrollTop = 0; return; }
     if (typeof openLeaveClassModal === 'function') openLeaveClassModal(); else switchTab(0);
   };
   window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; };
@@ -308,7 +326,7 @@
   window.wsSearch = function(v){ cQuery = v || ''; var l = $('ws-clist'); if (l) l.innerHTML = spaceList(); };
   function spacesHTML(){
     var n = classes().length;
-    return header('Workspace', 'Spaces') + '<h1 class="ws-h1 font-display">Spaces</h1><div class="ws-sub">' + n + (n === 1 ? ' space' : ' spaces') + '</div>' +
+    return floatNav('wsLeave()') + '<h1 class="ws-h1 font-display">Spaces</h1><div class="ws-sub">' + n + (n === 1 ? ' space' : ' spaces') + '</div>' +
       '<div class="ws-search">' + I('search', 18) + '<input type="text" placeholder="Search spaces" oninput="wsSearch(this.value)" value="' + E(cQuery) + '"></div>' +
       '<div class="ws-chips" id="ws-cchips">' + chips() + '</div><div id="ws-clist">' + spaceList() + '</div>';
   }
@@ -358,7 +376,7 @@
   function coursesHTML(){
     if (!kLoaded && !allCrs().length && typeof loadCoursesRemote === 'function') { kLoaded = true; loadCoursesRemote().then(function(){ if (view === 'courses') render(); }); }
     var n = allCrs().length;
-    return header('Workspace', '') + '<h1 class="ws-h1 font-display">Courses</h1><div class="ws-sub">' + n + (n === 1 ? ' course' : ' courses') + '</div>' +
+    return floatNav('wsLeave()') + '<h1 class="ws-h1 font-display">Courses</h1><div class="ws-sub">' + n + (n === 1 ? ' course' : ' courses') + '</div>' +
       '<div class="ws-search">' + I('search', 18) + '<input type="text" placeholder="Search courses" oninput="wsKSearch(this.value)" value="' + E(kQuery) + '"></div>' +
       '<div class="ws-chips" id="ws-kchips">' + crsChips() + '</div><div id="ws-klist">' + crsListHTML() + '</div>';
   }
@@ -439,6 +457,7 @@
   };
   window.wsClassBack = function(){
     if (cHist.length) { showTab(cHist.pop()); return; }
+    view = 'home';
     closeOverlay();
   };
   try {
@@ -506,7 +525,7 @@
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
-      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"><b>' + E(cls.name) + '</b></div>' +
+      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"><b>Workspace</b></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + I('bell', 20) + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:22px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
@@ -761,7 +780,7 @@
     view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
   };
-  function subHeader(name, sub){ return header('Workspace', '', 'wsBackTutor()') + '<h1 class="ws-h1 font-display">' + E(name) + '</h1><div class="ws-sub">' + E(sub || '') + '</div>'; }
+  function subHeader(name, sub){ return floatNav('wsBackTutor()') + '<h1 class="ws-h1 font-display">' + E(name) + '</h1><div class="ws-sub">' + E(sub || '') + '</div>'; }
   window.wsBackTutor = function(){ if (T.sub === 'savedSum') { T.sub = 'saved'; render(); return; } T.sub = (T.sub === 'saved' || T.sub === 'summary' || T.sub === 'flashcards' || T.sub === 'practice' || T.sub === 'diagrams') ? 'studio' : 'chat'; render(); };
   function busyBox(t){ return '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);padding:30px"><div class="ws-dots"><span></span><span></span><span></span></div><div style="margin-top:10px;font-size:13px">' + t + '</div></div>'; }
   function errBox(e, fn){ return '<div class="ws-blk" style="text-align:center"><div style="font-size:13px;color:var(--ws-sub)">' + E(e) + '</div><button class="filter-pill on" style="margin-top:10px" onclick="' + fn + '">Try again</button></div>'; }

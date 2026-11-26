@@ -3487,7 +3487,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const notice = document.getElementById('app-notice-banner');
           if (notice) { try { el.style.top = Math.round(notice.getBoundingClientRect().bottom + 8) + 'px'; } catch (e) {} }
           el.innerHTML = notifAvatar2(n) +
-            `<div style="flex:1;min-width:0;"><div style="display:flex;justify-content:space-between;gap:8px;"><div class="nbn-t">${escapeHtml(n.name || 'Stitch')}</div><div class="nbn-time">now</div></div><div class="nbn-m">${escapeHtml(notifPreviewText(n))}</div></div>` +
+            `<div style="flex:1;min-width:0;"><div style="display:flex;justify-content:space-between;gap:8px;"><div class="nbn-t">${escapeHtml(n.name || 'Stitch')}</div><div class="nbn-time">now</div></div><div class="nbn-m">${escapeHtml(String(notifPreviewText(n) || '').slice(0, 50))}</div></div>` +
             `<span style="color:#9ca3af;flex-shrink:0;">${RowArrow('w-4 h-4')}</span>`;
           el.addEventListener('click', () => { el.remove(); notifBannerTap(n.id); });
           document.body.appendChild(el);

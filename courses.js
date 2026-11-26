@@ -5175,13 +5175,13 @@ try {
               textarea.select();
               document.execCommand('copy');
               document.body.removeChild(textarea);
-              openAppAlertModal('Space code copied: ' + code);
+              openAppAlertModal('Code copied');
             } catch (err) {
               openAppAlertModal('Space code: ' + code);
             }
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => openAppAlertModal('Space code copied: ' + code)).catch(legacyCopy);
+            navigator.clipboard.writeText(code).then(() => openAppAlertModal('Code copied')).catch(legacyCopy);
           } else {
             legacyCopy();
           }
@@ -6385,7 +6385,8 @@ try {
           return `
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:${hasFooter ? 0 : 50}px;">
-                ${overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}
+                ${(typeof wsFloatNav === 'function') ? wsFloatNav('classSubPageBack()') : overlayHeader(title, 'var(--top-safe-pad)', 'classSubPageBack()', null, { right: true, pb: '20px', titleSize: 'text-xl' })}
+                ${(typeof wsFloatNav === 'function') ? `<div class="px-5"><h1 class="text-2xl font-bold font-display grad-text" style="margin:0 0 12px;">${title}</h1></div>` : ''}
                 <div class="px-5">
                   ${hasFooter ? `<div class="nm-wrap text-sm text-gray-400" style="margin-bottom:14px;"><span class="nm-inner">${escapeHtml(cls.name)}${cls.section ? ' &middot; ' + escapeHtml(cls.section) : ''}</span></div><div style="margin-bottom:20px;">${classSubPageHeroHTML(cls, tab, isTeacher)}</div>` : ''}
                   ${body}
@@ -12243,7 +12244,8 @@ try {
 
         function pushInAppNotification(title, body){
           const el = document.createElement('div');
-          el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-5 py-3 flex items-start gap-4';
+          el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-3 py-2 flex items-start gap-3';
+          if (typeof shortToast === 'function') { title = shortToast(title, 36); body = shortToast(body, 60); }
           el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:max-content; min-width:min(220px, calc(100% - 32px)); max-width:min(480px, calc(100% - 32px)); box-shadow:0 10px 30px rgba(0,0,0,.18);';
           el.innerHTML = `
             <div class="min-w-0 flex-1">

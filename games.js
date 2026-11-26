@@ -2313,7 +2313,7 @@ let userPoints = 0;
           } catch (e) {}
           const place = () => {
             if (!el.isConnected) { window.removeEventListener('resize', place); if (el.__toastRO) { try { el.__toastRO.disconnect(); } catch (e) {} } return; }
-            if (window.innerWidth < 1100) { el.style.left = ''; el.style.width = 'calc(100% - 24px)'; el.style.maxWidth = 'none'; return; }   // phones: stretch to the side margins
+            if (window.innerWidth < 1100) { el.style.left = ''; el.style.width = 'max-content'; el.style.maxWidth = 'calc(100% - 56px)'; return; }   // phones: small panel, centred
             const nav = document.getElementById('desktop-nav');
             const rp = document.getElementById('desktop-right-panel');
             let l = 0, r = window.innerWidth;
@@ -2335,9 +2335,11 @@ let userPoints = 0;
             }
           } catch (e) {}
         }
+        function shortToast(t, n){ t = String(t == null ? '' : t).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1).trim() + '\u2026' : t; }
         function openAppAlertModal(message, title, onClose){
           const el = document.createElement('div');
-          el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-4 py-3 flex items-start gap-3';
+          el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-3 py-2 flex items-start gap-3';
+          message = shortToast(message, 60); if (title) title = shortToast(title, 36);
           el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:max-content; min-width:min(220px, calc(100% - 32px)); max-width:min(480px, calc(100% - 32px)); box-shadow:0 10px 30px rgba(0,0,0,.18);';
           const hasTitle = !!(title && title.trim());
           el.innerHTML = `

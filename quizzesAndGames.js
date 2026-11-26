@@ -1818,7 +1818,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         function practiceTestsHTML(){
           return `
             <div class="ar-root ar-page"><div class="ar-in">
-              <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>
+              ${(typeof wsFloatNav === 'function') ? `${wsFloatNav('closeOverlay()')}<div class="ar-title grad-text" style="margin:0 0 12px;">Practice Tests</div>` : `<div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice Tests</div></div>`}
               <div class="seg-bar mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
               <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
             </div></div>`;

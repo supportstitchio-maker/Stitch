@@ -7463,3 +7463,12 @@ body.dark-mode #overlay .ar-root{ --bg:#121212; }
 body.dark-mode #overlay .ar-page{ background:#121212; }
 #overlay .ws-hdr-s{ background:#ffffff; }
 body.dark-mode #overlay .ws-hdr-s{ background:#121212; }
+
+/* Smaller, calmer top notices */
+.app-toast{ padding:7px 14px !important; border-radius:14px !important; box-shadow:0 6px 18px rgba(15,23,42,.14) !important; min-width:0 !important; }
+.app-toast .text-sm{ font-size:12.5px !important; line-height:1.25 !important; }
+.app-toast .text-xs{ font-size:11px !important; line-height:1.25 !important; }
+.app-toast .truncate, .app-toast .break-words{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nbn{ padding:7px 11px !important; border-radius:16px !important; gap:9px !important; max-width:320px !important; box-shadow:0 8px 22px rgba(15,23,42,.16) !important; }
+.nbn > :first-child{ zoom:.78; }
+.nbn-t{ font-size:13px !important; } .nbn-m{ font-size:12px !important; } .nbn-time{ font-size:10px !important; }
