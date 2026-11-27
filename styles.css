@@ -7944,3 +7944,39 @@ body.dark-mode #overlay .nf-opt input[type=radio]:checked{ background:#1e90ff; b
 /* Live lecture: plain white page, so the Workspace header underneath never shows through */
 #lecture-call-screen.cu-screen{ --cu-bg:#ffffff; background:#ffffff; }
 body.dark-mode #lecture-call-screen.cu-screen{ --cu-bg:#121212; background:#121212; }
+
+/* ===== Class tools sheet: Gendy type, three squircle pills (People now lives in the top-right button) ===== */
+.cu-tools-sheet .cu-sheet-title{ font-family:'Gendy','Montserrat',system-ui,sans-serif !important; font-weight:600 !important; font-size:20px !important; letter-spacing:.01em; }
+.cu-tools-sheet .cu-bsheet-row,
+.cu-tools-sheet .cu-bsheet-row > span:first-child,
+.cu-tools-sheet .cu-tile2{ font-family:'Gendy','Montserrat',system-ui,sans-serif !important; font-weight:600 !important; letter-spacing:.01em; }
+.cu-tools-sheet .cu-bsheet-row small{ font-family:'Gendy','Montserrat',system-ui,sans-serif !important; font-weight:500 !important; }
+
+.cu-tools-sheet .cu-tilegrid4{ gap:8px !important; margin:10px 0 8px !important; }
+.cu-tools-sheet .cu-tilegrid4 .cu-tile2{ border-radius:18px !important; corner-shape:squircle; padding:12px 6px !important; font-size:13px !important;
+  border:1.5px solid transparent !important; box-shadow:none !important; transition:transform .1s ease, background-color .12s ease; }
+.cu-tools-sheet .cu-tilegrid4 .cu-tile2:active{ transform:scale(.96); }
+/* action pills = dodger blue, same blue as the selected pill tabs */
+body:not(.dark-mode) .cu-tools-sheet .cu-tilegrid4 .cu-tile2{ background:#eef6ff !important; color:#1e90ff !important; }
+body:not(.dark-mode) .cu-tools-sheet .cu-tilegrid4 .cu-tile2:active{ background:#dcecff !important; }
+body.dark-mode .cu-tools-sheet .cu-tilegrid4 .cu-tile2{ background:rgba(30,144,255,.16) !important; color:#60a5fa !important; }
+
+/* ===== Pills that continue an action: dodger blue instead of grey ===== */
+.sheet-pill.sheet-pill-go{ background:#1e90ff !important; color:#fff !important; }
+.sheet-pill.sheet-pill-go:active{ background:#1678d8 !important; box-shadow:none; }
+@media (hover:hover){ .sheet-pill.sheet-pill-go:hover{ background:#1a85ee !important; } }
+body.dark-mode .sheet-pill.sheet-pill-go{ background:#1e90ff !important; color:#fff !important; }
+body.dark-mode .sheet-pill.sheet-pill-go:active{ background:#1678d8 !important; }
+
+body:not(.dark-mode) .mh-join.mh-join, body.dark-mode .mh-join.mh-join,
+body:not(.dark-mode) .mh-act.mh-act:not(.out), body.dark-mode .mh-act.mh-act:not(.out){
+  background:#1e90ff !important; color:#fff !important; border-color:transparent !important; box-shadow:none !important; }
+
+body.dark-mode .ws-btn{ background:#1e90ff; color:#fff; }
+button.filter-pill[onclick^="startScheduledLectureNow"], button.filter-pill[onclick^="startCourseSessionNow"], button.filter-pill[onclick="startLiveLectureNow()"]{
+  background:#1e90ff !important; color:#fff !important; border-color:#1e90ff !important; }
+
+/* tappable live card on the space page */
+.ws-live[role="button"]{ -webkit-tap-highlight-color:transparent; transition:transform .1s ease; }
+.ws-live[role="button"]:active{ transform:scale(.985); }
+.ws-live .ws-btn{ pointer-events:none; }

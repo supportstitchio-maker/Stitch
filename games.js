@@ -341,7 +341,7 @@ let userPoints = 0;
                 <div class="text-xs text-gray-500">Coins you can stake later in the Join Quiz</div>
               </div>
             </div>
-            <button onclick="closeChallengeModal(); startDailyQuiz();" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm mb-3">Start Quiz</button>
+            <button onclick="closeChallengeModal(); startDailyQuiz();" class="sheet-pill sheet-pill-go w-full text-center py-3 rounded-2xl text-sm mb-3">Start Quiz</button>
             <button onclick="closeChallengeModal()" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Cancel</button>`;
         }
 
@@ -393,7 +393,7 @@ let userPoints = 0;
             <div class="text-sm text-gray-500 mb-4">Send a stake invite to a friend's ID, or pick from your quiz friends below.</div>
             <div class="flex gap-2 mb-5">
               <input id="quiz-friend-id-input" type="text" placeholder="Friend's ID (e.g. NEX-1234)" class="flex-1 min-w-0 rounded-2xl px-4 py-3 text-sm font-semibold text-gray-800" style="background:rgba(65,105,225,0.08); border:1px solid rgba(65,105,225,0.2);">
-              <button onclick="quizInviteById()" class="sheet-pill text-sm rounded-2xl px-4 flex-shrink-0">Send</button>
+              <button onclick="quizInviteById()" class="sheet-pill sheet-pill-go text-sm rounded-2xl px-4 flex-shrink-0">Send</button>
             </div>
             ${quizFriends.length ? `
               <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Your quiz friends</div>
@@ -577,8 +577,8 @@ let userPoints = 0;
               ${Icon('bolt','w-5 h-5 text-amber-500 flex-shrink-0')}
               <div class="font-bold text-sm flex-shrink-0" style="color:${NAVY};">You</div>
             </div>
-            <button onclick="quizAddFriendFromMatch(${amount})" class="sheet-pill w-full flex items-center justify-center gap-2 text-center py-3 rounded-2xl text-sm mb-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>
-            <button onclick="joinWeeklyQuizWithStake(${amount})" class="sheet-pill w-full text-center py-3 rounded-2xl text-sm">Start Match</button>`;
+            <button onclick="quizAddFriendFromMatch(${amount})" class="sheet-pill sheet-pill-go w-full flex items-center justify-center gap-2 text-center py-3 rounded-2xl text-sm mb-3 ${isFriend ? 'opacity-60 pointer-events-none' : ''}">${Icon('personPlus','w-4 h-4')} ${isFriend ? 'Added as Friend' : 'Add as Friend'}</button>
+            <button onclick="joinWeeklyQuizWithStake(${amount})" class="sheet-pill sheet-pill-go w-full text-center py-3 rounded-2xl text-sm">Start Match</button>`;
         }
 
         function quizAddFriendFromMatch(amount){

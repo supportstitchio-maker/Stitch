@@ -5909,7 +5909,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
             <div class="text-xs text-gray-400 mb-5">Cancel any time from your Career Profile and keep access until the end of the period you paid for.</div>
             <div class="flex gap-3">
               <button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Back</button>
-              <button onclick="confirmCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
+              <button onclick="confirmCareerSubscribeSheet()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
             </div>`;
           const wasHidden = modal.classList.contains('hidden');
           modal.classList.remove('hidden');
@@ -9416,7 +9416,7 @@ const careerStartStepIds = ['intro1', 'intro2', 'interests', 'experience', 'age'
               </div>
               <div style="display:flex;gap:8px;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid #eef0f3;background:#fff;">
                 <button onclick="adminCloseMenuSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
-                <button id="admin-msg-send" onclick="adminSendPosterMessage('${userId}')" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Send</button>
+                <button id="admin-msg-send" onclick="adminSendPosterMessage('${userId}')" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Send</button>
               </div>
             </div>`);
           const vv = window.visualViewport;

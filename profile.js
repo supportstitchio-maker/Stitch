@@ -1414,7 +1414,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
             <div class="flex gap-3">
               <button id="edit-profile-cancel-btn" onclick="cancelEditProfileWithSpinner()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2">Cancel</button>
-              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2" style="white-space:nowrap;">Save Changes</button>
+              <button id="edit-profile-save-btn" onclick="saveEditProfile()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm flex items-center justify-center gap-2" style="white-space:nowrap;">Save Changes</button>
             </div>`;
         }
 

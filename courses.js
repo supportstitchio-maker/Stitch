@@ -8134,6 +8134,12 @@ try {
         }
 
         async function joinLiveLecture(id, classId){
+          // Already in this session and just minimized: Join takes you back into it instead of
+          // starting a fresh connection
+          if (liveLectureState.connected && liveLectureState.lectureId === id) {
+            if (lectureMinimized) resumeLecture();
+            return;
+          }
           const cls = lectureClassById(classId || currentClassId);
           if (!cls) return;
           const l = (cls.lectures || []).find(x => x.id === id);
@@ -10237,11 +10243,10 @@ try {
             </button>`;
           const tile = (onclick, icon, label) => `<button onclick="${onclick}" class="cu-tile2"><span>${label}</span></button>`;
           return `
-            <div class="cu-bsheet"><div class="cu-bsheet-grab"></div>
+            <div class="cu-bsheet cu-tools-sheet"><div class="cu-bsheet-grab"></div>
               <div class="cu-sheet-title">Class tools</div>
               <div class="cu-tilegrid cu-tilegrid4">
                 ${tile("toggleLectureReactionsSheet()", 'laugh', 'Reactions')}
-                ${tile("openLecturePeopleSheet()", 'users', `People (${peerCount})`)}
                 ${tile("closeLectureSheets();openMeetingChatPage()", 'commentText', 'Messages')}
                 ${tile(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share link')}
               </div>

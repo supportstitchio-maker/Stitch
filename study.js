@@ -1660,8 +1660,8 @@ let studyFabMenuOpen = false;
             <div class="mb-4">${usage}</div>
             <div class="pro3-bar">
               ${proState.cancelled
-                ? `<button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Close</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe again</button>`
-                : `<button onclick="proShowCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button><button onclick="proShowPlans()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Extend</button>`}
+                ? `<button onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Close</button><button onclick="proShowPlans()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Subscribe again</button>`
+                : `<button onclick="proShowCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button><button onclick="proShowPlans()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Extend</button>`}
             </div>`;
         }
         function proCancelHTML(){
@@ -1672,7 +1672,7 @@ let studyFabMenuOpen = false;
               <div class="pro3-grab"></div>
               <div class="pro3-sheet-text">You keep every Pro benefit until ${end}. After that your account goes back to the free plan. You can subscribe again whenever you like.</div>
               <div class="flex gap-3">
-                <button onclick="proShowManage()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>
+                <button onclick="proShowManage()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Keep Pro</button>
                 <button id="pro-cancel-btn" onclick="confirmProCancel()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel it</button>
               </div>
             </div>`;
@@ -1746,7 +1746,7 @@ let studyFabMenuOpen = false;
             <div class="pro4-list">${rows}</div>
             <div class="pro4-cta flex gap-3">
               <button type="button" onclick="closeCareerSubscribeSheet()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Not now</button>
-              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
+              <button id="pro-pay-btn" type="button" onclick="startProPayment()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Subscribe</button>
             </div>`;
         }
         function setProPlan(id){

@@ -295,8 +295,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             ${challengeSheetHeader('Invite a friend to the Arena')}
             <div class="text-sm text-gray-500 mb-5">Share this code with a friend. They can enter it under Join with a Code, or open the link you send.</div>
             ${challengeCodeBoxHTML(code)}
-            <button onclick="openChallengeSendPicker('${code}','invite')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
-            <button onclick="startWaitingForChallengeFriend('${code}')" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">Start Now</button>`;
+            <button onclick="openChallengeSendPicker('${code}','invite')" class="sheet-pill sheet-pill-go w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;">${Icon('send','w-4 h-4 inline-block mr-1 -mt-0.5')} Send</button>
+            <button onclick="startWaitingForChallengeFriend('${code}')" class="sheet-pill sheet-pill-go w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">Start Now</button>`;
         }
 
         // ---- Send the challenge to people in your chats as a tappable card ----
@@ -328,7 +328,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <input id="ch-send-search" oninput="filterChallengeSendContacts()" placeholder="Search" class="w-full bg-gray-100 rounded-full text-sm mb-2" style="outline:none;padding:0.6rem 1rem;">
               <div id="ch-send-list" style="max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;">${rows}</div>
               <div id="ch-send-empty" class="hidden text-center text-sm text-gray-400 py-4">No matches</div>` : `<div class="text-center text-sm text-gray-400 py-6">No chats yet.</div>`}
-            <button id="ch-send-go" onclick="sendChallengeToSelected('${code}','${from}')" class="sheet-pill w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;opacity:.55;pointer-events:none;">Send</button>
+            <button id="ch-send-go" onclick="sendChallengeToSelected('${code}','${from}')" class="sheet-pill sheet-pill-go w-full rounded-2xl text-center mb-3" style="padding-top:11px;padding-bottom:11px;opacity:.55;pointer-events:none;">Send</button>
             <button onclick="shareChallengeLink('${code}')" class="sheet-pill w-full rounded-2xl text-center" style="padding-top:11px;padding-bottom:11px;">More apps</button>`;
         }
 
@@ -1591,11 +1591,11 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           if (examContext === 'weeklyQuiz') {
             return `
               <button onclick="closeOverlay()" class="sheet-pill">Back</button>
-              <button onclick="openWeeklyQuizJoin()" class="sheet-pill">Play Again</button>`;
+              <button onclick="openWeeklyQuizJoin()" class="sheet-pill sheet-pill-go">Play Again</button>`;
           }
           return `
             <button id="exam-close-btn" onclick="closeExamResultWithSpinner()" class="sheet-pill" style="display:flex;align-items:center;justify-content:center;gap:8px;">Close</button>
-            <button id="exam-again-btn" onclick="startMockTest(examMode)" class="sheet-pill">Practice Again</button>`;
+            <button id="exam-again-btn" onclick="startMockTest(examMode)" class="sheet-pill sheet-pill-go">Practice Again</button>`;
         }
 
         function quizRewardBannerHTML(){

@@ -2256,7 +2256,7 @@
       <div class="text-sm text-gray-500 mb-6" id="leaveClassModalMessage">You'll be removed from this space and its materials until you rejoin.</div>
       <div class="flex gap-3">
         <button onclick="closeLeaveClassModal()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">No</button>
-        <button onclick="confirmLeaveClassroomYes()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Yes</button>
+        <button onclick="confirmLeaveClassroomYes()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Yes</button>
       </div>
     </div>
   </div>
@@ -2285,7 +2285,7 @@
       <div class="text-sm text-gray-500 mb-6" id="appConfirmModalMessage"></div>
       <div class="flex gap-3">
         <button onclick="closeAppConfirmModal()" id="appConfirmModalCancelBtn" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
-        <button onclick="confirmAppConfirmYes()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm" id="appConfirmModalConfirmBtn">Confirm</button>
+        <button onclick="confirmAppConfirmYes()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm" id="appConfirmModalConfirmBtn">Confirm</button>
       </div>
     </div>
   </div>
@@ -2300,7 +2300,7 @@
       <textarea id="appPromptModalTextarea" rows="4" class="hidden w-full bg-gray-100 rounded-2xl px-4 py-3 text-sm mb-5" style="outline:none;resize:none;"></textarea>
       <div class="flex gap-3">
         <button onclick="closeAppPromptModal()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
-        <button onclick="confirmAppPromptSave()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm" id="appPromptModalSaveBtn">Save</button>
+        <button onclick="confirmAppPromptSave()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm" id="appPromptModalSaveBtn">Save</button>
       </div>
     </div>
   </div>
