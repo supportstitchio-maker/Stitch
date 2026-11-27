@@ -8421,3 +8421,36 @@ body.dark-mode .dsk-dialog, body.dark-mode #ws-sheet.ws-sheet{ box-shadow:0 24px
   /* the shared floating back-arrow rule positions it; it must show here */
   .exam-exit-arrow{ display:flex; }
 }
+
+/* =====================================================================================
+   Practice / Mock test pass: squircle pill tabs, no white header strip, back arrow like the Workspace,
+   and the whole screen used while the side menu is hidden for a test.
+   ===================================================================================== */
+/* Pill tabs (Mock Test / Score & Progress, Overview / Review answers): same squircle pills and Gendy font as the other tabs */
+.ar-tabs{ display:flex; gap:10px; padding:4px 2px 10px; margin:0 -2px 4px; }
+.ar-tabs .ar-tab{
+  flex:1 1 0; min-width:0; justify-content:center; padding:12px 16px;
+  font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:.98rem; letter-spacing:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  border-radius:18px !important; corner-shape:squircle;
+}
+/* the Practice header sits on the page colour, no white strip */
+#overlay .ar-root .ws-hdr, #overlay .ar-root .ws-hdr-s,
+body.dark-mode #overlay .ar-root .ws-hdr, body.dark-mode #overlay .ar-root .ws-hdr-s{ background:transparent !important; box-shadow:none !important; }
+/* the Workspace back arrow inside the test screens: hidden next to the "Exit" word on phones, floating on desktop */
+.ws-circ.exam-exit-arrow{ display:none; }
+.exam-sk-arrow{ display:none; }
+@media (min-width:1100px){
+  .exam-sk-arrow{ display:block; position:absolute; left:16px; top:14px; width:44px; height:44px; border-radius:50%; z-index:2; }
+  .exam-sk-exit{ display:none !important; }
+}
+/* Taking a test on desktop: the side menu is hidden, so the page uses the full width (no empty strip where the menu was) */
+@media (min-width:1100px){
+  #app-shell.exam-focus,
+  #app-shell.exam-focus.right-panel-open,
+  #app-shell.exam-focus.right-panel-open.rp-collapsed:not(.call-fullscreen){ margin-left:0 !important; width:100% !important; }
+  #app-shell.exam-focus #overlay{ left:0 !important; right:16px !important; }
+  #app-shell.exam-focus .ar-in{ max-width:1360px; }
+  #app-shell.exam-focus .ar-foot-in{ max-width:1360px; }
+  #app-shell.exam-focus .ar-take{ grid-template-columns:minmax(0,1fr) 340px; gap:22px; }
+}

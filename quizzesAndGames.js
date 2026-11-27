@@ -66,7 +66,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         function challengeSkeletonHTML(){
-          const chip = `<div class="sk" style="width:64px;height:38px;border-radius:9999px;"></div>`;
+          const chip = (w) => `<div class="sk" style="width:${w}px;height:38px;border-radius:9999px;"></div>`;
           return `
             <div id="challenge-skeleton" aria-busy="true">
               <div class="flex items-center justify-between gap-4 mb-4">
@@ -74,9 +74,15 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                 <div class="sk" style="width:150px;height:20px;"></div>
               </div>
               <div class="sk" style="width:96%;height:12px;margin-bottom:8px;"></div>
-              <div class="sk" style="width:72%;height:12px;margin-bottom:22px;"></div>
-              <div class="sk" style="width:38%;height:14px;margin-bottom:12px;"></div>
-              <div style="display:flex;gap:10px;margin-bottom:26px;">${chip}${chip}${chip}${chip}</div>
+              <div class="sk" style="width:72%;height:12px;margin-bottom:18px;"></div>
+              <div class="ar-root ar-card mb-4" style="padding:18px;">
+                <div class="sk" style="width:42%;height:12px;margin-bottom:12px;"></div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">${chip(64)}${chip(64)}${chip(64)}${chip(84)}</div>
+                <div class="sk" style="width:80%;height:10px;margin-top:12px;"></div>
+                <div class="sk" style="width:26%;height:12px;margin:22px 0 12px;"></div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">${chip(104)}${chip(104)}${chip(104)}${chip(48)}</div>
+                <div class="sk" style="width:88%;height:10px;margin-top:12px;"></div>
+              </div>
               <div style="display:flex;gap:12px;">
                 <div class="sk" style="flex:1;height:48px;border-radius:9999px;"></div>
                 <div class="sk" style="flex:1;height:48px;border-radius:9999px;"></div>
@@ -606,7 +612,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         function practiceTestsTabBtn(key, label){
           const active = practiceTestsTab === key;
-          return `<button onclick="switchPracticeTestsTab('${key}')" class="seg-btn ${active ? 'on' : ''}">${label}</button>`;
+          return `<button onclick="switchPracticeTestsTab('${key}')" class="filter-pill ar-tab ${active ? 'on' : ''}">${label}</button>`;
         }
 
 
@@ -918,16 +924,22 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const opt = `<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);margin-bottom:10px;">
               <div class="sk" style="flex:0 0 28px;height:28px;border-radius:9px;"></div>
               <div class="sk" style="height:13px;flex:1;max-width:78%;"></div></div>`;
+          const palSq = `<div class="sk" style="aspect-ratio:1;border-radius:10px;"></div>`;
+          const legendRow = `<div class="sk" style="width:64px;height:10px;"></div>`;
           return `
             <div id="exam-loading-overlay" class="classroom-slide-cover flex flex-col" aria-busy="true" style="overflow:hidden;">
               <div class="ar-root ar-page" style="overflow:hidden;">
                 <div class="ar-in">
+                  <div class="exam-sk-arrow sk"></div>
                   <div class="ar-top">
                     <div class="flex items-center gap-3 min-w-0">
-                      <div class="sk" style="width:30px;height:14px;"></div>
+                      <div class="exam-sk-exit sk" style="width:30px;height:14px;"></div>
                       <div class="sk" style="width:120px;height:18px;"></div>
                     </div>
-                    <div class="sk" style="width:68px;height:30px;border-radius:999px;"></div>
+                    <div class="flex items-center gap-2">
+                      <div class="sk" style="width:64px;height:30px;border-radius:999px;"></div>
+                      <div class="sk" style="width:56px;height:30px;border-radius:999px;"></div>
+                    </div>
                   </div>
                   <div class="ar-strip" style="overflow:hidden;">${Array.from({ length: n }, () => sq).join('')}</div>
                   <div class="ar-take">
@@ -942,6 +954,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
                       <div class="sk" style="width:56%;height:15px;margin-bottom:22px;"></div>
                       ${opt}${opt}${opt}${opt}
                     </div>
+                    <aside class="ar-side ar-card">
+                      <div class="sk" style="width:130px;height:11px;margin-bottom:14px;"></div>
+                      <div class="flex items-center justify-between mb-2"><div class="sk" style="width:36px;height:14px;"></div><div class="sk" style="width:62px;height:12px;"></div></div>
+                      <div class="ar-bar mb-4"><div class="sk" style="height:10px;width:100%;border-radius:99px;"></div></div>
+                      <div class="ar-pal mb-4">${Array.from({ length: Math.min(n, 12) }, () => palSq).join('')}</div>
+                      <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:12px;">${legendRow}${legendRow}${legendRow}${legendRow}</div>
+                      <div class="sk" style="width:70%;height:11px;"></div>
+                    </aside>
                   </div>
                   <span id="exam-loading-text" style="display:none;">${examLoadingLabel()}</span>
                 </div>
@@ -1459,6 +1479,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           examStage = 'result';
           examResultTab = 'overview';
           examQuestionPickerOpen = false;
+          // the test is over: bring the side menu (and right panel) back
+          if (typeof examFocusExit === 'function') examFocusExit();
           gradeWrittenExamAnswers();
         }
 
@@ -1831,14 +1853,16 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return Object.keys(m).map(k => ({ name: k, c: m[k].c, n: m[k].n, pct: Math.round(m[k].c / m[k].n * 100) })).sort((a, b) => b.pct - a.pct);
         }
 
-        function arBack(action){ return `<button onclick="${action}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>`; }
+        // Same back arrow as the Workspace header (thin dodger-blue arrow, floats at the top-left on desktop)
+        const AR_WS_BACK_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="#1e90ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        function arBack(action){ return `<button class="ws-circ ws-back" onclick="${action}" aria-label="Back">${AR_WS_BACK_SVG}</button>`; }
 
         // ---- Practice tests overlay ----
         function practiceTestsHTML(){
           return `
             <div class="ar-root ar-page"><div class="ar-in">
               ${(typeof wsHeader === 'function') ? wsHeader('Practice', '', 'closeOverlay()') : `<div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice</div></div>`}
-              <div class="seg-bar mb-4">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
+              <div class="ar-tabs mb-3">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
               <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
             </div></div>`;
         }
@@ -1985,7 +2009,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
               <div class="ar-top">
-                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="exam-exit-txt text-sm font-semibold" style="color:#dc2626;">Exit</button><button onclick="examExit()" class="exam-exit-arrow" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
+                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="exam-exit-txt text-sm font-semibold" style="color:#dc2626;">Exit</button><button onclick="examExit()" class="ws-circ ws-back exam-exit-arrow" aria-label="Back">${AR_WS_BACK_SVG}</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
                 ${examMode === 'timed' ? `<div class="flex items-center gap-2"><span class="ar-timer" id="exam-timer-display" style="${examTimerHidden ? 'display:none;' : ''}">${formatExamTime(examTimeLeft)}</span><button id="exam-timer-toggle" onclick="toggleExamTimerHidden()" class="ar-chip" style="padding:.3rem .7rem;min-width:3.4rem;">${examTimerHidden ? 'Show' : 'Hide'}</button></div>` : `<span class="ar-chip on">Self-paced</span>`}
               </div>
               <div class="ar-strip">${arNums()}</div>
@@ -2047,14 +2071,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const pct = total ? Math.round(correct / total * 100) : 0;
           const isQuiz = examContext === 'dailyQuiz' || examContext === 'weeklyQuiz';
           const isChallengeVsFriend = examContext === 'challenge' && !!activeChallengeCode;
-          const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="seg-btn ${examResultTab === k ? 'on' : ''}">${l}</button>`;
+          const tab = (k, l) => `<button onclick="switchExamResultTab('${k}')" class="filter-pill ar-tab ${examResultTab === k ? 'on' : ''}">${l}</button>`;
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
-              <div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>
+              ${(typeof wsHeader === 'function') ? wsHeader(examTest.title, '', 'closeOverlay()') : `<div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">${escapeHtml(examTest.title)}</div></div>`}
               <div class="ar-fade">
                 ${isQuiz ? quizRewardBannerHTML() : ''}
                 ${isChallengeVsFriend ? challengeMatchResultHTML() : ''}
-                <div class="seg-bar mb-4">${tab('overview','Overview')}${tab('review','Review answers')}</div>
+                <div class="ar-tabs mb-3">${tab('overview','Overview')}${tab('review','Review answers')}</div>
                 ${examResultTab === 'overview' ? examResultOverviewHTML() : examResultReviewHTML()}
               </div>
               <div class="ar-end">${examResultFooterHTML()}</div>

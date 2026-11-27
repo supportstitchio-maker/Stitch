@@ -2268,7 +2268,7 @@
       <div class="text-sm text-gray-500 mb-6" id="examExitMessage">Leaving now ends the test and locks in your current progress. Your score won't be shown until the test is complete.</div>
       <div class="flex gap-3">
         <button onclick="closeExamExitModal()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Cancel</button>
-        <button onclick="confirmExamExitYes()" class="sheet-pill flex-1 py-3 rounded-2xl text-sm">Exit</button>
+        <button onclick="confirmExamExitYes()" class="sheet-pill sheet-pill-go flex-1 py-3 rounded-2xl text-sm">Exit</button>
       </div>
     </div>
   </div>
