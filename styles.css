@@ -7673,3 +7673,40 @@ body:not(.dark-mode) .fc-act-flip, body.dark-mode .fc-act-flip{ background:linea
 
 .mt-row{ padding:16px 14px 16px 18px; }
 .mt-row.mt-all{ padding:14px 14px 14px 12px; }
+
+/* ===== One look for every type box: the message box sheet, in a squircle shape =====
+   White sheet, soft 1.5px border and soft shadow, blue border on focus, Apple-style continuous (squircle) corners.
+   Applies to search boxes, form fields and text areas everywhere. Boxes that sit inside another sheet (transparent
+   inputs inside the message pill) and the sign-in flow keep their own styling. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
+select:not(#auth-gate *),
+div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
+  background-color:#ffffff !important;
+  border:1.5px solid rgba(10,37,64,0.10) !important;
+  box-shadow:0 8px 24px rgba(10,37,64,0.10) !important;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+/* squircle shape (continuous corners) on the message box and every type box */
+@supports (corner-shape: squircle){
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *),
+  textarea:not(.bg-transparent):not(#auth-gate *), select:not(#auth-gate *), .convo-composer-pill,
+  div:has(> input.bg-transparent[placeholder*="earch" i]){ corner-shape:squircle; }
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):focus,
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):focus,
+select:not(#auth-gate *):focus{
+  border-color:#1e90ff !important;
+  box-shadow:0 8px 24px rgba(30,144,255,0.16) !important;
+  outline:none;
+}
+input::placeholder,textarea::placeholder{color:#8a93a6}
+body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
+body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
+body.dark-mode select:not(#auth-gate *),
+body.dark-mode div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
+  background-color:var(--c-onyx) !important;
+  border-color:rgba(255,255,255,0.10) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
+}
+body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:#9a9a9a}

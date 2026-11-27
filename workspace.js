@@ -30,9 +30,14 @@
   /* A page opened from the Workspace (Quizzes, a space...) is white edge to edge with its own back arrow and bell:
      the Workspace header and content never show behind it */
   body:has(#overlay .ws-hdr) #screen .ws-hdr, body:has(#overlay .ws-hdr) #screen .ws-fl{display:none !important}
+  /* Any page opened over the Workspace (a member chat, a space sub-page, any overlay with its own header) is plain white
+     and fully covers the Workspace title, back arrow and bell underneath */
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-hdr,
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-fl,
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-hdr-home{display:none !important}
   @media (max-width:1099px){
-    body:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero){background:var(--ws-bg,#fff) !important}
-    body.dark-mode:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero){background:#121212 !important}
+    body:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top){background:var(--ws-bg,#fff) !important}
+    body.dark-mode:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top){background:#121212 !important}
   }
   /* Desktop: bigger header text on every Workspace page */
   @media (min-width:1100px){
@@ -194,7 +199,23 @@
   .ws-sub-bell{position:absolute;right:8px;top:calc(var(--top-safe-pad) + 6px);z-index:60;width:42px;height:42px;background:transparent;box-shadow:none}
   .ws-subpage .ov-sticky-head{background:var(--ws-bg)}
   .ws-subpage .ov-sticky-head > div{padding-right:60px}
+  .ws-subpage:not(:has(.ws-sub-bell)) .ov-sticky-head > div{padding-right:20px}
   .ws-res .ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--ws-ink);background:none;flex-shrink:0}
+  /* Dashboard cards: 2-column grid of tinted tiles, same look as the Studio tiles */
+  .ws-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .ws-grid .ws-res{flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;margin:0;padding:18px 16px;min-height:136px;border-radius:26px;position:relative;--tc:#14804a;--tb:rgba(31,164,99,.14);background:var(--tb);color:var(--tc)}
+  .ws-grid .ws-res:nth-child(5n+2){--tc:#1673cc;--tb:rgba(30,144,255,.13)}
+  .ws-grid .ws-res:nth-child(5n+3){--tc:#6a4fd8;--tb:rgba(139,108,240,.15)}
+  .ws-grid .ws-res:nth-child(5n+4){--tc:#c4481f;--tb:rgba(247,119,74,.16)}
+  .ws-grid .ws-res:nth-child(5n+5){--tc:#a0690a;--tb:rgba(245,158,11,.17)}
+  .ws-grid .ws-res .ic{width:auto;height:auto;justify-content:flex-start;color:var(--tc)}
+  .ws-grid .ws-res .t{flex:none;width:100%}
+  .ws-grid .ws-res b{font-size:17px;font-weight:700;font-family:'Gendy','Montserrat',sans-serif;color:var(--tc)}
+  .ws-grid .ws-res small{display:block;margin-top:4px;line-height:1.35;font-size:12px;color:var(--tc);opacity:.8}
+  /* Space header: Space profile + Messages icons sit beside the bell, same blue and stroke */
+  .ws-hdr-m3 .ws-hdr-t{padding-left:76px}
+  .ws-hdr-m3 .ws-hdr-r .ws-circ{width:36px !important}
+  .ws-cnt{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
   `;
   document.head.appendChild(st);
 
@@ -593,7 +614,8 @@
     if (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1) {
       var isMsg = classDetailTab === 'messages', isPpl = classDetailTab === 'people';
       var ov0 = $('overlay'); if (ov0 && !isPpl) ov0.style.background = 'var(--ws-bg)';
-      var bell0 = isMsg ? '<button class="ws-circ ws-sub-bell" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button>' : '';
+      var inThread = false; try { inThread = isMsg && (cls.role === 'teacher' ? !!classMsgThread : !!classMsgMyId); } catch(e){}
+      var bell0 = (isMsg && !inThread) ? '<button class="ws-circ ws-sub-bell" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button>' : '';
       return '<div class="ws-subpage" style="flex:1;display:flex;flex-direction:column;min-height:0;position:relative;background:var(--ws-bg)">' + bell0 + origDetail() + '</div>';
     }
     var ov1 = $('overlay'); if (ov1) ov1.style.background = '';
@@ -644,8 +666,6 @@
       body = '';
       if (teach) {
         body += card('downloadClassReport()', 'dl', 'Download student results', 'PDF with every member\'s grades, ranking and graphs');
-        body += card('classDetailSwitchTab(\'profile\')', 'chart', 'Space profile', 'Averages, top performers and who needs a check-in');
-        body += card('openClassMessages()', 'msg', 'Messages', 'Chat with members of this space', badge2(unread));
         body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to open' : (nLec ? nLec + ' scheduled. Start, present and record' : 'Schedule or start a live lecture'));
         body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' saved lecture' + (recs > 1 ? 's' : '') : 'Recorded lectures appear here');
         body += card('wsCTab(\'people\')', 'users', 'People', members(cls) + ' member' + (members(cls) === 1 ? '' : 's') + '. Add, invite or message');
@@ -653,19 +673,23 @@
         body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' shared with the space' : 'Share slides and notes with the space');
       } else {
         body += card('downloadClassReport()', 'dl', 'Download my report', 'PDF with your grades and progress in this space');
-        body += card('classDetailSwitchTab(\'report\')', 'chart', 'My space report', 'See how you are doing against the space average');
-        body += card('openClassMessages()', 'msg', 'Messages', 'Chat with your moderator', badge2(unread));
         body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to join' : 'See upcoming lectures');
         body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' lecture' + (recs > 1 ? 's' : '') + ' to rewatch' : 'Recorded lectures appear here');
         body += card('wsCTab(\'classwork\')', 'check', 'Tasks', nWork ? nWork + ' task' + (nWork > 1 ? 's' : '') + ' in this space' : 'Nothing posted yet');
         body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' to study' : 'No resources yet');
       }
+      body = '<div class="ws-grid">' + body + '</div>';
     } else if (cTab === 'stream') body = classStreamTabHTML(cls);
     else if (cTab === 'classwork') body = classClassworkTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
+    var hdrUnread = 0; try { hdrUnread = classMsgUnreadIn(cls.id); } catch(e){}
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
-      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t" title="' + E(cls.name) + '"><b>' + E(cls.name) + '</b></div>' +
-      '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button></div>' +
+      '<div class="ws-hdr ws-hdr-s ws-hdr-m ws-hdr-m3">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t" title="' + E(cls.name) + '"><b>' + E(cls.name) + '</b></div>' +
+      '<div class="ws-hdr-r">' +
+        '<button class="ws-circ" onclick="classDetailSwitchTab(\'' + (teach ? 'profile' : 'report') + '\')" aria-label="' + (teach ? 'Space profile' : 'My space report') + '">' + I('chart', 20) + '</button>' +
+        '<button class="ws-circ" onclick="openClassMessages()" aria-label="Messages">' + I('msg', 20) + (hdrUnread ? '<i class="ws-cnt">' + (hdrUnread > 9 ? '9+' : hdrUnread) + '</i>' : '') + '</button>' +
+        '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button>' +
+      '</div></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:16px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
       (cls.code ? '<button class="ws-code" onclick="copyClassCode(\'' + cls.code + '\')"><span>Code: ' + E(cls.code) + '</span>' + I('copy', 14) + '</button>' : '') + '</div>' +
@@ -1463,6 +1487,7 @@
       var ov = document.getElementById('overlay'), on = !!(ov && ov.firstElementChild && getComputedStyle(ov).display !== 'none' && (ov.offsetHeight > window.innerHeight * 0.6 || currentOverlayKind));
       /* A space page is open: nothing from the Workspace home (its title) may show behind or above it */
       if (document.querySelector('#overlay .ws-hero, #screen .ws-hero')) on = true;
+      if (document.querySelector('#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top')) on = true;
       document.body.classList.toggle('ws-covered', on);
       /* Practice page: its title always reads Practice */
       if (currentOverlayKind === 'practiceTests') document.querySelectorAll('#overlay .ws-hdr-t b').forEach(function(b){ if (b.textContent !== 'Practice') b.textContent = 'Practice'; });
