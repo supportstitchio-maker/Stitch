@@ -310,16 +310,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           return profileTab + '|' + items.map(p => `${p.id}:${p.reposted?1:0}:${p.saved?1:0}:${p.uploading?1:0}:${p.mediaHtml?1:0}`).join(',');
         }
 
-        // Split out so both the initial render (profileScreenHTML) and the in-place patch
-        // (patchProfileHeaderInPlace) can share it
+        // The Admin Dashboard / Dashboard buttons no longer live on the Profile page: both are opened from the
+        // Career Space menu (careerMenuDashItemHTML in jobs.js). Kept as an empty stub so older callers still work.
         function profileAdminDashboardButtonHTML(){
-          const isAdmin = typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin();
-          const btn = (fn, label) => `<button onclick="${fn}()" class="profile-sq-btn w-full flex items-center justify-center py-2.5 text-sm" style="background:#eceef1;color:#4b5563;font-family:'Montserrat',system-ui,sans-serif;font-weight:400;">${label}</button>`;
-          return `
-            <div class="mb-2 flex flex-col gap-2">
-              ${isAdmin ? btn('openAdminDashboard', 'Admin Dashboard') : ''}
-              ${isAdmin ? '' : btn('openPosterDashboard', 'Dashboard')}
-            </div>`;
+          return '';
         }
 
         // Repaints just this button
@@ -408,11 +402,10 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
               <div id="profile-bio-el" class="text-sm text-gray-600 mb-4">${escapeHtml(profileData.bio)}</div>
               <div id="profile-links-el">${profileLinksHTML(profileData.links)}</div>
 
-              <div class="flex gap-3 mb-2">
+              <div class="flex gap-3 mb-4">
                 <button onclick="openEditProfileModal()" class="profile-sq-btn flex-1 bg-gray-100 py-2.5 font-medium text-sm">Edit profile</button>
                 <button onclick="openOverlay('profileQR')" class="profile-sq-btn flex-1 bg-gray-100 py-2.5 font-medium text-sm">Share profile</button>
               </div>
-              <div id="profile-admin-btn-el">${profileAdminDashboardButtonHTML()}</div>
             </div>
 
             <div class="flex border-t border-gray-200" id="profile-tabs">${profileTabsHTML()}</div>

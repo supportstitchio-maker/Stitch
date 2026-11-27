@@ -10108,8 +10108,10 @@ try {
           const stageHTML = view === 'whiteboard' ? lectureWhiteboardHTML() : (view === 'slides' ? lectureSlidesHTML() : lectureGridHTML());
           const resourceCount = lectureAttachments.length + (whiteboardAttachment ? 1 : 0);
           const isDesktopLecture = window.innerWidth >= 1100;
+          const peerCountTop = Object.keys(lecturePresence || {}).length + 1;
           return `
             <div id="lecture-call-screen" class="cu-screen" style="padding-top:var(--top-safe-pad);">
+              <span class="cw-page" aria-hidden="true" style="display:none;"></span>
               <input type="file" id="lecture-slide-input" accept=".pdf,.pptx" class="hidden" onchange="handleLectureSlideFile(event)">
               <input type="file" id="lecture-doc-input" accept=".pdf" class="hidden" onchange="handleLectureDocAttach(event)">
               <input type="file" id="lecture-media-input" accept="image/*,video/*" class="hidden" onchange="handleLectureMediaAttach(event)">
@@ -10120,9 +10122,9 @@ try {
                   <div class="cu-status"><span id="lecture-call-timer">${formatCallTime(liveLectureState.seconds)}</span> · Live</div>
                 </div>
                 ${!isDesktopLecture ? `
-                <button onclick="toggleLectureResourcesPanel()" title="Space Pad" class="cu-glass">
-                  ${Icon('doc','w-5 h-5')}
-                  ${resourceCount ? `<span class="cu-count">${resourceCount}</span>` : ''}
+                <button onclick="openLecturePeopleSheet()" title="People" aria-label="People" class="cu-glass">
+                  ${Icon('users','w-5 h-5')}
+                  <span class="cu-count">${peerCountTop}</span>
                 </button>` : `<div style="width:42px;height:42px;flex-shrink:0;"></div>`}
               </div>
               <div class="flex-1 flex flex-col min-h-0 relative">

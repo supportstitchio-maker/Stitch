@@ -7940,3 +7940,7 @@ body.dark-mode #overlay .nf-opt input[type=radio]:checked{ background:#1e90ff; b
 
 /* Task creation pages: the Post / Share button is a squircle, not a full pill */
 .nf-create, .nf-create.ready{ border-radius:20px !important; corner-shape:squircle; }
+
+/* Live lecture: plain white page, so the Workspace header underneath never shows through */
+#lecture-call-screen.cu-screen{ --cu-bg:#ffffff; background:#ffffff; }
+body.dark-mode #lecture-call-screen.cu-screen{ --cu-bg:#121212; background:#121212; }
