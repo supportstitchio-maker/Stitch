@@ -175,6 +175,15 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           return careerMenuRowHTML("closeCareerMenuThen(() => openPaidSellerApplicationForm())", 'plus', 'Add course & paid spaces');
         }
 
+        // Dashboard row: admins get the Admin Dashboard, everyone else gets their own Dashboard
+        // (listings, wallet, receipts and their analytics). Same split as the Profile page buttons.
+        function careerMenuDashItemHTML(){
+          if (typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) {
+            return careerMenuRowHTML("closeCareerMenuThen(() => openAdminDashboard())", 'settings', 'Admin Dashboard');
+          }
+          return careerMenuRowHTML("closeCareerMenuThen(() => openPosterDashboard())", 'chart', 'Dashboard');
+        }
+
         // Shared with refreshPosterStatusUI() below, which swaps this back in live if the sheet
         // happens to be open when a poster_approved/poster_denied notification lands
         function careerMenuDropdownInnerHTML(){
@@ -184,7 +193,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             ${CAREER_MATCH_ENABLED ? careerMenuRowHTML("closeCareerMenuThen(() => openCareerStartForm())", 'file', 'Match with CV') : ''}
             ${careerMenuPostItemHTML()}
             ${careerMenuPaidItemHTML()}
-            ${careerMenuRowHTML("closeCareerMenuThen(() => openOverlay('careerAnalytics'))", 'trending', 'Analytics')}`;
+            ${careerMenuDashItemHTML()}`;
         }
 
         function careerMenuDropdownHTML(){
@@ -260,6 +269,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
                 ${CAREER_MATCH_ENABLED ? careerMenuTileHTML("openCareerStartForm()", 'file', 'Match with CV', 'Find opportunities that fit your CV') : ''}
                 ${careerMenuPostTileHTML()}
                 ${careerMenuPaidTileHTML()}
+                ${(typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) ? careerMenuTileHTML("openAdminDashboard()", 'settings', 'Admin Dashboard', 'Review posters, listings and reports') : careerMenuTileHTML("openPosterDashboard()", 'chart', 'Dashboard', 'Your listings, wallet and receipts')}
                 ${careerMenuTileHTML("openOverlayFrom('careerMenu','careerAnalytics')", 'trending', 'Analytics', 'See how your career activity is doing')}
               </div>
             </div>

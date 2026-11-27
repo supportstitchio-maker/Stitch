@@ -7794,3 +7794,31 @@ body.dark-mode #overlay:has(.flow-float) .filter-pill.on, body.dark-mode #overla
   /* a few pills only had a fixed radius, give them the same full-height curve */
   .wa-pill{ border-radius:9999px; }
 }
+
+/* ===== Workspace / Space loading skeleton: solid white page, real Workspace header hidden underneath =====
+   The sticky Workspace header and floating back/bell bar (z-index 50) were drawing on top of the skeleton.
+   Now the skeleton sits above them with a solid background, and they are hidden while it is on screen. */
+#class-action-loading-overlay, #classroom-loading-overlay{ z-index:60 !important; background:#ffffff !important; }
+body.dark-mode #class-action-loading-overlay, body.dark-mode #classroom-loading-overlay{ background:#121212 !important; }
+body:has(#class-action-loading-overlay) #screen .ws-hdr,
+body:has(#class-action-loading-overlay) #screen .ws-fl,
+body:has(#class-action-loading-overlay) #screen .ws-fl-sp{ visibility:hidden !important; }
+
+/* ===== Squircle round buttons: Workspace nav button, mic / send in Messaging and Stitch Tutor ===== */
+@supports (corner-shape: squircle){
+  .nav-protrude, .nav-protrude-inner,
+  .wa-main-btn, #convo-mic-btn,
+  .ws-main, .ws-send{ corner-shape:squircle; border-radius:36%; }
+}
+
+/* ===== Same solid blue as the Workspace plus button (no gradients) =====
+   Workspace nav button, Messaging mic / send, Stitch Tutor mic / send. */
+.nav-protrude-inner, body.dark-mode .nav-protrude-inner{ background:#1e90ff !important; color:#fff !important; }
+.wa-main-btn, #convo-mic-btn, body.dark-mode .wa-main-btn{ background:#1e90ff !important; color:#fff !important; box-shadow:0 8px 24px rgba(30,144,255,.35) !important; }
+.ws-main[data-mode="mic"], .ws-main[data-mode="send"], body.dark-mode .ws-main[data-mode="send"], .ws-send{ background:#1e90ff !important; color:#fff !important; }
+body.dark-mode .wa-main-btn{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
+
+/* Stitch Tutor mic / send: the Workspace script injects its own 50% radius later, so force the squircle */
+@supports (corner-shape: squircle){
+  .ws-comp .ws-main, .ws-main, .ws-main[data-mode], .ws-send{ corner-shape:squircle !important; border-radius:36% !important; }
+}

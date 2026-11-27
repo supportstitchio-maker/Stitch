@@ -30,6 +30,12 @@
   /* A page opened from the Workspace (Quizzes, a space...) is white edge to edge with its own back arrow and bell:
      the Workspace header and content never show behind it */
   body:has(#overlay .ws-hdr) #screen .ws-hdr, body:has(#overlay .ws-hdr) #screen .ws-fl{display:none !important}
+  /* Loading skeleton of a space: plain white edge to edge, the Workspace header never shows through it */
+  body:has(#class-action-loading-overlay) #screen .ws-hdr,
+  body:has(#class-action-loading-overlay) #screen .ws-fl,
+  body:has(#class-action-loading-overlay) #screen .ws-hdr-home{display:none !important}
+  #class-action-loading-overlay{background:#ffffff !important;z-index:200 !important}
+  body.dark-mode #class-action-loading-overlay{background:#121212 !important}
   /* Any page opened over the Workspace (a member chat, a space sub-page, any overlay with its own header) is plain white
      and fully covers the Workspace title, back arrow and bell underneath */
   body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-hdr,
@@ -211,9 +217,10 @@
   .ws-grid .ws-res .ic{width:auto;height:auto;justify-content:flex-start;color:var(--tc)}
   .ws-grid .ws-res .t{flex:none;width:100%}
   .ws-grid .ws-res b{font-size:17px;font-weight:700;font-family:'Gendy','Montserrat',sans-serif;color:var(--tc)}
+  .ws-grid .ws-res small:empty{display:none}
   .ws-grid .ws-res small{display:block;margin-top:4px;line-height:1.35;font-size:12px;color:var(--tc);opacity:.8}
   /* Space header: Space profile + Messages icons sit beside the bell, same blue and stroke */
-  .ws-hdr-m3 .ws-hdr-t{padding-left:76px}
+  .ws-hdr-m3 .ws-hdr-t{padding-left:34px}
   .ws-hdr-m3 .ws-hdr-r .ws-circ{width:36px !important}
   .ws-cnt{position:absolute;top:2px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#1e90ff;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
   `;
@@ -623,7 +630,7 @@
     var p = pal(cls), live = liveLec(cls) || todayLec(cls), teach = cls.role === 'teacher';
     var admin = false; try { admin = isCurrentUserAdmin() && teach; } catch(e){}
     if (cTab === 'results') cTab = 'dashboard';
-    var tabs = [['dashboard','Dashboard'],['resources','Resources'],['lectures','Lectures'],['people','People'],['stream','Stream'],['classwork','Tasks']];
+    var tabs = [['dashboard','Dashboard'],['lectures','Lectures'],['stream','Stream'],['classwork','Tasks']];
     var body = '';
     if (cTab === 'resources') {
       var m = materials(cls);
@@ -665,16 +672,17 @@
       var nLec = (cls.lectures || []).length, nWork = (cls.classwork || []).filter(function(w){ return w.type !== 'material'; }).length, nMat = materials(cls).length;
       body = '';
       if (teach) {
-        body += card('downloadClassReport()', 'dl', 'Download student results', 'PDF with every member\'s grades, ranking and graphs');
+        body += card('downloadClassReport()', 'dl', 'Class report', '');
         body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to open' : (nLec ? nLec + ' scheduled. Start, present and record' : 'Schedule or start a live lecture'));
         body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' saved lecture' + (recs > 1 ? 's' : '') : 'Recorded lectures appear here');
         body += card('wsCTab(\'people\')', 'users', 'People', members(cls) + ' member' + (members(cls) === 1 ? '' : 's') + '. Add, invite or message');
         body += card('wsCTab(\'classwork\')', 'check', 'Tasks', nWork ? nWork + ' task' + (nWork > 1 ? 's' : '') + ' posted. Grade and add more' : 'Post an assignment, quiz or question');
         body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' shared with the space' : 'Share slides and notes with the space');
       } else {
-        body += card('downloadClassReport()', 'dl', 'Download my report', 'PDF with your grades and progress in this space');
+        body += card('downloadClassReport()', 'dl', 'Download my report', '');
         body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to join' : 'See upcoming lectures');
         body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' lecture' + (recs > 1 ? 's' : '') + ' to rewatch' : 'Recorded lectures appear here');
+        body += card('wsCTab(\'people\')', 'users', 'People', members(cls) + ' member' + (members(cls) === 1 ? '' : 's') + '. Tap to message');
         body += card('wsCTab(\'classwork\')', 'check', 'Tasks', nWork ? nWork + ' task' + (nWork > 1 ? 's' : '') + ' in this space' : 'Nothing posted yet');
         body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' to study' : 'No resources yet');
       }
@@ -686,7 +694,6 @@
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
       '<div class="ws-hdr ws-hdr-s ws-hdr-m ws-hdr-m3">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t" title="' + E(cls.name) + '"><b>' + E(cls.name) + '</b></div>' +
       '<div class="ws-hdr-r">' +
-        '<button class="ws-circ" onclick="classDetailSwitchTab(\'' + (teach ? 'profile' : 'report') + '\')" aria-label="' + (teach ? 'Space profile' : 'My space report') + '">' + I('chart', 20) + '</button>' +
         '<button class="ws-circ" onclick="openClassMessages()" aria-label="Messages">' + I('msg', 20) + (hdrUnread ? '<i class="ws-cnt">' + (hdrUnread > 9 ? '9+' : hdrUnread) + '</i>' : '') + '</button>' +
         '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button>' +
       '</div></div>' +
@@ -1201,7 +1208,7 @@
       '<button class="ws-cta" style="margin:0 0 6px" onclick="sheetClose();setTimeout(function(){wsStudyDeck(\'*\')},250)">Study all ' + total + ' flashcards</button>' +
       '<div class="ws-h2" style="margin-top:14px">Decks</div>' +
       decks.map(function(d){ var p = pal({ name: d.name });
-        return '<div class="ws-row" onclick="sheetClose();setTimeout(function(){wsStudyDeck(\'' + d.id + '\')},250)"><span class="ws-ft" style="background:' + p.a + '">' + I('card', 20) + '</span><div style="flex:1;min-width:0"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + E(d.name) + '</b><small>' + d.n + ' card' + (d.n === 1 ? '' : 's') + '</small></div><span class="ws-btn" style="padding:8px 18px;font-size:13px">Study</span></div>'; }).join(''));
+        return '<div class="ws-row" onclick="sheetClose();setTimeout(function(){wsStudyDeck(\'' + d.id + '\')},250)"><span class="ws-ft" style="background:none;color:#1e90ff">' + I('card', 24) + '</span><div style="flex:1;min-width:0"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + E(d.name) + '</b><small>' + d.n + ' card' + (d.n === 1 ? '' : 's') + '</small></div><span class="ws-btn" style="padding:8px 18px;font-size:13px">Study</span></div>'; }).join(''));
   };
   window.wsQuizMode = function(m){ if (m === 'past' && typeof openPracticeTestsOverlay === 'function') openPracticeTestsOverlay(); };
 
