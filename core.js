@@ -2390,7 +2390,7 @@
     <div class="max-w-2xl mx-auto flex pt-3">
       <button onclick="homeTabTap()" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
       <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcaseOutline','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
-      <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center nav-flat-item text-gray-400" id="nav-2">
+      <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center" id="nav-2">
         <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookStack','w-7 h-7')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Workspace</span>
       </button>
       <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${Icon('commentOutline','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
