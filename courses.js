@@ -9088,7 +9088,7 @@ try {
             otherTileHTML[peerId] = lectureTileWrapperHTML(videoInner, badgesInner, caption, null, null, isSpotlight, peerId);
           });
 
-          const mediaErr = liveLectureState.mediaError ? `<div class="cu-alert">${escapeHtml(liveLectureState.mediaError)}</div>` : '';
+          const mediaErr = liveLectureState.mediaError ? (/denied/i.test(liveLectureState.mediaError) ? `<button type="button" class="cu-grant" onclick="grantCameraMicAccess('lecture')">Tap to grant camera/mic access</button>` : `<div class="cu-grant cu-grant-text">${escapeHtml(liveLectureState.mediaError)}</div>`) : '';
 
           if (spotlightId) {
             const spotlightTile = spotlightId === 'local' ? localTile : otherTileHTML[spotlightId];
@@ -12568,15 +12568,64 @@ try {
           if (!shown) pushInAppNotification(title, body);
         }
 
+        // Tap-to-grant: re-asks the browser for camera/mic. If the browser has blocked it for good,
+        // tells the person exactly where to switch it back on.
+        async function grantCameraMicAccess(scope){
+          const isLecture = scope === 'lecture';
+          const howTo = 'Tap the lock icon next to the address bar, open Permissions, allow Camera and Microphone, then tap here again.';
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            pushInAppNotification('Not supported', 'This browser cannot use the camera or mic.');
+            return;
+          }
+          let stream = null, camMissing = false;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: isLecture ? { facingMode: 'user' } : true, audio: true });
+          } catch (e) {
+            try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); camMissing = true; } catch (e2) { stream = null; }
+          }
+          if (!stream) {
+            let state = '';
+            try { state = (await navigator.permissions.query({ name: 'microphone' })).state; } catch (e) {}
+            pushInAppNotification('Access still blocked', state === 'denied' ? howTo : 'Allow camera and mic when your browser asks.');
+            return;
+          }
+          if (isLecture) {
+            if (!liveLectureState || !liveLectureState.connected) { stream.getTracks().forEach(t => t.stop()); return; }
+            stopLectureLocalStream();
+            lectureLocalStream = stream;
+            liveLectureState.mediaError = null;
+            if (camMissing) liveLectureState.camOff = true;
+            applyLectureTrackStates();
+            attachLocalTracksToLecturePeers();
+            try { updateLecturePresenceTrack(); } catch (e) {}
+            rerenderLectureScreen();
+          } else {
+            if (!callState || !callState.convoId) { stream.getTracks().forEach(t => t.stop()); return; }
+            try { stopCallLocalStream(); } catch (e) {}
+            callLocalStream = stream;
+            callState.mediaError = null;
+            if (camMissing) callState.camOff = true;
+            applyCallTrackStates();
+            Object.values(callPeers).forEach(entry => {
+              if (!entry || !entry.pc) return;
+              const already = entry.pc.getSenders().map(x => x.track);
+              stream.getTracks().forEach(t => { if (!already.includes(t)) { try { entry.pc.addTrack(t, stream); } catch (e) {} } });
+            });
+            const scr = document.getElementById('call-screen');
+            if (scr) scr.outerHTML = callHTML();
+            attachCallLocalVideo();
+          }
+        }
+
         function pushInAppNotification(title, body){
           const el = document.createElement('div');
           el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-3 py-2 flex items-start gap-3';
           if (typeof shortToast === 'function') { title = shortToast(title, 36); body = shortToast(body, 60); }
           el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:max-content; min-width:min(220px, calc(100% - 32px)); max-width:min(480px, calc(100% - 32px)); box-shadow:0 10px 30px rgba(0,0,0,.18);';
           el.innerHTML = `
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-sm text-[${NAVY}] truncate">${escapeHtml(title)}</div>
-              <div class="text-xs text-gray-500 break-words" style="overflow-wrap:break-word;">${escapeHtml(body)}</div>
+            <div class="min-w-0 flex-1" style="text-align:left;">
+              <div class="text-sm text-[${NAVY}] truncate" style="text-align:left;font-family:'Gendy','Montserrat',sans-serif;font-weight:400;">${escapeHtml(title)}</div>
+              <div class="text-xs text-gray-500 break-words" style="text-align:left;overflow-wrap:break-word;">${escapeHtml(body)}</div>
             </div>`;
           el.style.cursor = 'pointer';
           el.addEventListener('click', () => el.remove());   // tap anywhere on the notice to close it

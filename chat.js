@@ -8956,6 +8956,9 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             @keyframes cuPulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%,100%{box-shadow:0 0 0 7px rgba(52,211,153,0);}}
             @keyframes cuPulseWarn{0%{box-shadow:0 0 0 0 rgba(251,191,36,.55);}70%,100%{box-shadow:0 0 0 7px rgba(251,191,36,0);}}
             .cu-alert{margin:6px 14px 0;padding:8px 12px;border-radius:14px;background:rgba(251,191,36,.16);color:var(--cu-alerttxt);font-size:12px;font-weight:600;flex-shrink:0;}
+            .cu-grant{display:block;width:100%;margin:6px 0 0;padding:6px 14px;background:none;border:0;box-shadow:none;color:#1e90ff;font-size:13px;font-weight:600;text-align:center;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+            .cu-grant:active{opacity:.6;}
+            .cu-grant-text{color:var(--cu-sub);cursor:default;}
             .cu-adminbar{display:flex;justify-content:center;padding:6px 14px 0;flex-shrink:0;}
             .cu-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;color:var(--cu-fg);font-size:13px;font-weight:700;background:var(--cu-soft);border:1px solid var(--cu-line);transition:transform .12s ease,background .15s ease;}
             .cu-pill:active{transform:scale(.96);background:var(--cu-soft2);}
@@ -9719,7 +9722,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 </div>
                 ${headRight}
               </div>
-              ${callState.mediaError && isVideo ? `<div class="cu-alert">${escapeHtml(callState.mediaError)}</div>` : ''}
+              ${callState.mediaError && isVideo ? (/denied/i.test(callState.mediaError) ? `<button type="button" class="cu-grant" onclick="grantCameraMicAccess('call')">Tap to grant camera/mic access</button>` : `<div class="cu-grant cu-grant-text">${escapeHtml(callState.mediaError)}</div>`) : ''}
               ${callAdminBarHTML()}
               <div class="cu-stage" id="call-stage-wrap">${callStageHTML()}</div>
               <div id="call-controls-bar" class="cu-bar">${callControlsHTML()}</div>
