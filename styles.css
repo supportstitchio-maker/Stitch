@@ -7899,3 +7899,40 @@ body.dark-mode #overlay .tk-main b, body.dark-mode #overlay .tk-empty b{ color:#
 body.dark-mode #overlay .tk-main small, body.dark-mode #overlay .tk-empty span, body.dark-mode #overlay .tk-first p{ color:#9aa3b2; }
 body.dark-mode #overlay .tk-chip.open{ color:#5cb0ff; }
 body.dark-mode #overlay .tk-chip.done{ color:#4ade80; }
+
+/* ---- Task forms (assignment, question, material, quiz, poll): filled fields, Colmeak labels, Inter text ---- */
+#overlay .nf{ display:flex; flex-direction:column; gap:16px; padding:6px 0 28px; }
+#overlay .nf-in{ width:100%; background:#f3f6fb; border:1.5px solid transparent; border-radius:18px; padding:14px 16px; font-family:'Inter',system-ui,sans-serif; font-size:15px; line-height:1.4; color:#111; outline:none; box-shadow:none; transition:border-color .15s, background .15s; }
+#overlay .nf-in::placeholder{ color:#94a3b8; }
+#overlay .nf-in:focus{ background:#fff; border-color:#1e90ff; }
+#overlay .nf-title{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:19px; }
+#overlay textarea.nf-in{ line-height:1.5; }
+#overlay .nf-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start; }
+#overlay .nf-l{ display:block; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:14px; color:#111; margin-bottom:7px; }
+#overlay .nf-h{ display:block; font-family:'Inter',system-ui,sans-serif; font-size:12px; line-height:1.4; color:#8a97ab; margin-top:6px; }
+#overlay .nf-attach{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; color:#1e90ff; background:rgba(30,144,255,.05); border:1.5px dashed rgba(30,144,255,.45); border-radius:18px; padding:14px 16px; }
+#overlay .nf-attach b{ display:block; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:15px; }
+#overlay .nf-attach small{ display:block; font-family:'Inter',system-ui,sans-serif; font-size:12.5px; color:#6b7a90; margin-top:2px; }
+#overlay .nf-sec{ display:flex; align-items:baseline; gap:10px; margin-top:6px; }
+#overlay .nf-sec h3{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:18px; color:#1e90ff; margin:0; }
+#overlay .nf-card{ border:1px solid rgba(128,128,128,.22); border-radius:22px; padding:16px; display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+#overlay .nf-card-h{ display:flex; align-items:center; justify-content:space-between; }
+#overlay .nf-card-h b{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:15px; color:#111; }
+#overlay .nf-x{ width:34px; height:34px; display:flex; align-items:center; justify-content:center; color:#9aa7b8; flex-shrink:0; }
+#overlay .nf-opt{ display:flex; align-items:center; gap:12px; }
+#overlay .nf-opt input[type=radio]{ -webkit-appearance:none; appearance:none; width:24px; height:24px; min-width:24px; margin:0; border-radius:50%; border:2px solid #c3ccd9; background:#fff; flex-shrink:0; }
+#overlay .nf-opt input[type=radio]:checked{ border-color:#1e90ff; background:#1e90ff; box-shadow:inset 0 0 0 4px #fff; }
+#overlay .nf-add{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; border:1.5px dashed #c3ccd9; border-radius:18px; padding:14px; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:15px; color:#1e90ff; }
+#overlay .nf-foot{ flex-shrink:0; width:100%; padding:0 1.25rem calc(env(safe-area-inset-bottom,0px) + 16px); }
+#overlay .nf-create{ width:100%; padding:15px; border-radius:999px; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:16px; color:#9aa7b8; background:#eef1f6; transition:background .15s, color .15s; }
+#overlay .nf-create.ready{ color:#fff; background:#1e90ff; box-shadow:0 8px 20px rgba(30,144,255,.3); }
+body.dark-mode #overlay .nf-in{ background:#1e1e1e; color:#f2f2f2; }
+body.dark-mode #overlay .nf-in:focus{ background:#121212; }
+body.dark-mode #overlay .nf-l, body.dark-mode #overlay .nf-card-h b{ color:#f2f2f2; }
+body.dark-mode #overlay .nf-create{ background:#2b2b2b; color:#7b8494; }
+body.dark-mode #overlay .nf-create.ready{ background:#1e90ff; color:#fff; }
+body.dark-mode #overlay .nf-opt input[type=radio]{ background:#1e1e1e; border-color:#555; }
+body.dark-mode #overlay .nf-opt input[type=radio]:checked{ background:#1e90ff; border-color:#1e90ff; box-shadow:inset 0 0 0 4px #1e1e1e; }
+
+/* Space page tabs (Dashboard / Lectures / Tasks): squircle instead of a full pill */
+#overlay .ws-tabs button, #overlay .ws-tabs .filter-pill{ border-radius:18px !important; corner-shape:squircle; }

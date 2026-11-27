@@ -11032,38 +11032,53 @@ try {
           return 'Assignment';
         }
 
+        // Shared bits of the task forms: filled fields, Colmeak labels, Inter text, sentence case throughout
+        function nfReady(el, btnId){
+          const b = document.getElementById(btnId); if (!b) return;
+          const ok = el.value.trim().length > 0;
+          b.disabled = !ok; b.classList.toggle('ready', ok);
+        }
+        function nfDueInput(id){
+          return `<input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="${id}" class="nf-in">`;
+        }
+
         function newClassworkHTML(){
-          const cls = myClasses.find(c => c.id === currentClassId);
-          const label = classworkTypeLabel(classworkDraftType);
-          const showScoring = classworkDraftType !== 'material';
+          const type = classworkDraftType;
+          const copy = {
+            assignment: { head: 'New assignment', title: 'Assignment title', note: 'What should members do? (optional)', cta: 'Post assignment', files: 'Worksheets or reference files (optional)' },
+            question:   { head: 'New question',   title: 'Your question',    note: 'Add context or hints (optional)',    cta: 'Post question',   files: 'A picture or file to go with it (optional)' },
+            material:   { head: 'New material',   title: 'Material title',   note: 'What is this for? (optional)',        cta: 'Share material',  files: 'Slides, notes, readings or images' },
+          }[type] || { head: 'New task', title: 'Title', note: 'Instructions (optional)', cta: 'Post', files: '' };
+          const scored = type !== 'material';
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader(label, '20px', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
-              <input type="text" id="classwork-title-input" oninput="const b=document.getElementById('classwork-create-btn'); if(b){const c=this.value.trim().length>0; b.disabled=!c; b.className='ff-colmeak w-full font-semibold py-3 rounded-full '+(c?'text-white':'text-gray-400 bg-gray-100'); b.style.background=c?'linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%)':''; b.style.boxShadow=c?'0 4px 14px rgba(65,105,225,0.35)':'';}" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
-              <textarea id="classwork-instructions-input" placeholder="Instructions (optional)" rows="4" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
-              ${showScoring ? `
-              <div class="grid grid-cols-2 gap-3 mb-6">
-                <div>
-                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Points</label>
-                  <input type="number" id="classwork-points-input" placeholder="100" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
-                </div>
-                <div>
-                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
-                  <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="classwork-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
-                  ${typedDateHintHTML()}
-                </div>
-              </div>` : `
-              <div class="mb-6">
-                <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date (optional)</label>
-                <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="classwork-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
-                ${typedDateHintHTML()}
-              </div>`}
-              <input type="file" id="classwork-attach-input" multiple class="hidden" onchange="handleClassworkAttachFile(event)">
-              <button onclick="document.getElementById('classwork-attach-input').click()" class="ff-colmeak flex items-center gap-2 text-sm font-semibold" style="color:${NAVY};">${Icon('paperclip','w-4 h-4')} Add attachment</button>
-              <div id="classwork-attach-strip" class="mt-3">${classworkAttachStripHTML()}</div>
+<div class="-mx-5">${overlayHeader(copy.head, '20px', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+              <div class="nf">
+                <input type="text" id="classwork-title-input" class="nf-in nf-title" placeholder="${copy.title}" autocomplete="off" oninput="nfReady(this,'classwork-create-btn')">
+                <textarea id="classwork-instructions-input" class="nf-in" rows="4" placeholder="${copy.note}"></textarea>
+                ${scored ? `
+                <div class="nf-row">
+                  <div class="nf-f">
+                    <label class="nf-l">Points</label>
+                    <input type="number" inputmode="numeric" id="classwork-points-input" placeholder="100" class="nf-in">
+                    <span class="nf-h">Leave empty for no grade</span>
+                  </div>
+                  <div class="nf-f">
+                    <label class="nf-l">Due date</label>
+                    ${nfDueInput('classwork-due-input')}
+                    ${typedDateHintHTML()}
+                  </div>
+                </div>` : ''}
+                <input type="file" id="classwork-attach-input" multiple class="hidden" onchange="handleClassworkAttachFile(event)">
+                <button onclick="document.getElementById('classwork-attach-input').click()" class="nf-attach">
+                  ${Icon('paperclip','w-5 h-5')}
+                  <span><b>Add files</b><small>${copy.files}</small></span>
+                </button>
+                <div id="classwork-attach-strip">${classworkAttachStripHTML()}</div>
+              </div>
             </div>
-            <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitNewClasswork()" id="classwork-create-btn" class="ff-colmeak w-full font-semibold py-3 rounded-full text-gray-400 bg-gray-100">Create</button>
+            <div class="nf-foot">
+              <button onclick="submitNewClasswork()" id="classwork-create-btn" class="nf-create" disabled>${copy.cta}</button>
             </div>`;
         }
 
@@ -11149,20 +11164,20 @@ try {
 
         function quizQuestionBlockHTML(n){
           return `
-            <div class="quiz-question-block" style="margin-bottom:28px;" data-qindex="${n}">
-              <div class="flex items-center justify-between" style="margin-bottom:14px;">
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-wide">Question ${n + 1}</div>
-                <button onclick="removeQuizQuestionBlock(this)" class="w-8 h-8 flex items-center justify-center text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>
+            <div class="quiz-question-block nf-card" data-qindex="${n}">
+              <div class="nf-card-h">
+                <b>Question ${n + 1}</b>
+                <button onclick="removeQuizQuestionBlock(this)" class="nf-x" aria-label="Remove question">${Icon('close','w-4 h-4')}</button>
               </div>
-              <input type="text" class="quiz-q-text w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold" style="margin-bottom:20px;" placeholder="Question text">
-              <div style="display:flex;flex-direction:column;gap:14px;">
+              <input type="text" class="quiz-q-text nf-in nf-title" placeholder="Type the question" autocomplete="off">
+              <div class="nf-h" style="margin:2px 0 0;">Fill in four answers, then tap the circle beside the right one.</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
                 ${[0,1,2,3].map(i => `
-                  <label class="flex items-center gap-3 text-sm">
-                    <input type="radio" name="quiz-correct-${n}" value="${i}" class="quiz-q-correct flex-shrink-0" style="width:22px;height:22px;" ${i === 0 ? 'checked' : ''}>
-                    <input type="text" class="quiz-q-option flex-1 bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm" placeholder="Option ${i + 1}">
+                  <label class="nf-opt">
+                    <input type="radio" name="quiz-correct-${n}" value="${i}" class="quiz-q-correct" ${i === 0 ? 'checked' : ''}>
+                    <input type="text" class="quiz-q-option nf-in" placeholder="Answer ${i + 1}" autocomplete="off">
                   </label>`).join('')}
               </div>
-              <div class="text-[11px] text-gray-400" style="margin-top:18px;">Tap the circle next to the correct option.</div>
             </div>`;
         }
 
@@ -11179,30 +11194,31 @@ try {
         }
 
         function newQuizHTML(){
-          const cls = myClasses.find(c => c.id === currentClassId);
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('Quiz', '20px', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
-              <input type="text" id="quiz-title-input" placeholder="Title" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
-              <textarea id="quiz-instructions-input" placeholder="Instructions (optional)" rows="3" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm mb-4"></textarea>
-              <div class="grid grid-cols-2 gap-3 mb-6">
-                <div>
-                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Points (optional)</label>
-                  <input type="number" id="quiz-points-input" placeholder="e.g. 100" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
+<div class="-mx-5">${overlayHeader('New quiz', '20px', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+              <div class="nf">
+                <input type="text" id="quiz-title-input" class="nf-in nf-title" placeholder="Quiz title" autocomplete="off">
+                <textarea id="quiz-instructions-input" class="nf-in" rows="3" placeholder="Anything members should know first? (optional)"></textarea>
+                <div class="nf-row">
+                  <div class="nf-f">
+                    <label class="nf-l">Points</label>
+                    <input type="number" inputmode="numeric" id="quiz-points-input" placeholder="e.g. 100" class="nf-in">
+                    <span class="nf-h">Leave empty for no grade</span>
+                  </div>
+                  <div class="nf-f">
+                    <label class="nf-l">Due date</label>
+                    ${nfDueInput('quiz-due-input')}
+                    ${typedDateHintHTML()}
+                  </div>
                 </div>
-                <div>
-                  <label class="ff-colmeak text-xs font-semibold text-gray-500 mb-1 block">Due date</label>
-                  <input type="text" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="10" placeholder="DD/MM/YYYY" oninput="this.value=formatTypedDateDigits(this.value)" id="quiz-due-input" class="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm">
-                  ${typedDateHintHTML()}
-                </div>
+                <div class="nf-sec"><h3>Questions</h3></div>
+                <div id="quiz-questions-container">${quizQuestionBlockHTML(0)}</div>
+                <button onclick="addQuizQuestionBlock()" class="nf-add">${Icon('plus','w-4 h-4')} Add another question</button>
               </div>
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin-bottom:16px;">Questions</div>
-              <div id="quiz-questions-container">${quizQuestionBlockHTML(0)}</div>
-              <button onclick="addQuizQuestionBlock()" class="ff-colmeak w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add question</button>
-              <div style="height:24px;"></div>
             </div>
-            <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitNewQuiz()" class="ff-colmeak w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>
+            <div class="nf-foot">
+              <button onclick="submitNewQuiz()" class="nf-create ready">Post quiz</button>
             </div>`;
         }
 
@@ -11226,7 +11242,7 @@ try {
             const correct = correctRadio ? parseInt(correctRadio.value, 10) : 0;
             if (text && options.every(o => o)) questions.push({ text, options, correct });
           }
-          if (!questions.length) { openAppAlertModal('Add at least one complete question (text + all 4 options).'); return; }
+          if (!questions.length) { openAppAlertModal('Add at least one complete question: the question and all four answers.'); return; }
           cls.classwork.unshift({
             id: 'w-' + Date.now(), type: 'quiz', title, instructions, points,
             due: due ? formatDueDate(due) : '', dueRaw: due || '',
@@ -11248,9 +11264,9 @@ try {
 
         function pollOptionRowHTML(n){
           return `
-            <div class="poll-option-row flex items-center gap-2 mb-3">
-              <input type="text" class="poll-option-input flex-1 bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 text-sm" placeholder="Option ${n + 1}">
-              <button onclick="removePollOptionRow(this)" class="text-gray-300 flex-shrink-0">${Icon('close','w-4 h-4')}</button>
+            <div class="poll-option-row nf-opt">
+              <input type="text" class="poll-option-input nf-in" placeholder="Choice ${n + 1}" autocomplete="off">
+              <button onclick="removePollOptionRow(this)" class="nf-x" aria-label="Remove choice">${Icon('close','w-4 h-4')}</button>
             </div>`;
         }
 
@@ -11267,17 +11283,18 @@ try {
         }
 
         function newPollHTML(){
-          const cls = myClasses.find(c => c.id === currentClassId);
           return `
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('Poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { center: true, pb: '20px' })}</div>
-              <input type="text" id="poll-title-input" placeholder="Ask a question" class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-lg font-semibold mb-4">
-              <div class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-3">Options</div>
-              <div id="poll-options-container">${pollOptionRowHTML(0)}${pollOptionRowHTML(1)}</div>
-              <button onclick="addPollOptionRow()" class="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-2xl py-3 font-semibold text-sm text-[${NAVY}]">${Icon('plus','w-4 h-4')} Add option</button>
+<div class="-mx-5">${overlayHeader('New poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+              <div class="nf">
+                <input type="text" id="poll-title-input" class="nf-in nf-title" placeholder="What do you want to ask?" autocomplete="off">
+                <div class="nf-sec"><h3>Choices</h3><span class="nf-h" style="margin:0;">Add at least two</span></div>
+                <div id="poll-options-container" style="display:flex;flex-direction:column;gap:10px;">${pollOptionRowHTML(0)}${pollOptionRowHTML(1)}</div>
+                <button onclick="addPollOptionRow()" class="nf-add">${Icon('plus','w-4 h-4')} Add a choice</button>
+              </div>
             </div>
-            <div class="flex-shrink-0 w-full" style="padding:0 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);">
-              <button onclick="submitNewPoll()" class="w-full font-semibold py-3 rounded-full text-white" style="background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);box-shadow:0 4px 14px rgba(65,105,225,0.35);">Create</button>
+            <div class="nf-foot">
+              <button onclick="submitNewPoll()" class="nf-create ready">Post poll</button>
             </div>`;
         }
 
@@ -11285,10 +11302,10 @@ try {
           if (!requireCompleteProfile()) return;
           const cls = myClasses.find(c => c.id === currentClassId);
           const title = (document.getElementById('poll-title-input') || {}).value.trim();
-          if (!cls || !title) { openAppAlertModal('Give the poll a question first.'); return; }
+          if (!cls || !title) { openAppAlertModal('Ask the class something first.'); return; }
           const optionTexts = Array.from(document.querySelectorAll('#poll-options-container .poll-option-input'))
             .map(i => i.value.trim()).filter(Boolean);
-          if (optionTexts.length < 2) { openAppAlertModal('Add at least 2 options.'); return; }
+          if (optionTexts.length < 2) { openAppAlertModal('Add at least 2 choices.'); return; }
           cls.classwork.unshift({
             id: 'w-' + Date.now(), type: 'poll', title, instructions: '',
             options: optionTexts.map(text => ({ text, votes: 0 })),
