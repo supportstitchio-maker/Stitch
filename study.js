@@ -1204,7 +1204,7 @@ let studyFabMenuOpen = false;
         // ---- Flashcard deck viewer modal ----
         // Card-stack study session: tap to flip, swipe right = "Got it", swipe left = "Again".
         // Ends in a summary with a ring score and a one-tap review of the missed cards.
-        const FC_TINTS = ['#dfe5ff', '#ffd9d6', '#e6f5b5', '#d2ecff', '#ebdcff'];
+        const FC_TINTS = ['#E8312F', '#F7861E', '#FFC20E', '#2EA84B', '#1F4FB5', '#7B3FA8', '#F06A9B', '#1FA3C9'];
         let fcQueue = [], fcPos = 0, fcKnown = [], fcLearning = [], fcHistory = [];
         let fcDone = false, fcBusy = false, fcStartedAt = 0, fcElapsedMs = 0, fcTimerId = null, fcRound = 1;
 
@@ -1297,7 +1297,7 @@ let studyFabMenuOpen = false;
           const text = fcCleanText(isFront ? card.term : card.def);
           const source = card.source ? escapeHtml(card.source) : '';
           return `
-            <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back fc-bk-' + (idx % 3)}" ${isFront ? `style="--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};"` : ''}>
+            <div class="fc-face ${isFront ? 'fc-face-front' : 'fc-face-back fc-bk'}" style="--fc-c:${FC_TINTS[idx % FC_TINTS.length]};--fc-tint:${FC_TINTS[idx % FC_TINTS.length]};">
               <div class="fc-face-top">
                 ${source ? `<span class="fc-source">${source}</span>` : ''}
                 <span class="fc-chip">${isFront ? 'Term' : 'Definition'}</span>
@@ -1317,7 +1317,7 @@ let studyFabMenuOpen = false;
           const pct = Math.round((fcPos / total) * 100);
           const ghosts = [2, 1].map(i => {
             if (fcPos + i >= total) return '';
-            return `<div class="fc-ghost fc-ghost-${i}" style="background:${FC_TINTS[(idx + i) % FC_TINTS.length]};"></div>`;
+            return `<div class="fc-ghost fc-ghost-${i}" style="--g:${FC_TINTS[(idx + i) % FC_TINTS.length]};background:${FC_TINTS[(idx + i) % FC_TINTS.length]};"></div>`;
           }).join('');
           const upNext = fcQueue.slice(fcPos + 1, fcPos + 5).map(c => {
             const t = fcCleanText(c.term);

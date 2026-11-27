@@ -7535,3 +7535,141 @@ body.dark-mode .sk-ws-desk{ background:#121212; }
 .sk-ws-desk .skd-main .ws-hdr.ws-hdr-s{ background:transparent !important; }
 .sk-ws-desk .sk-ws-deskfab{ right:calc(var(--rp-width,480px) + 32px + 24px); bottom:24px; }
 @media (max-width:1099px){ .sk-ws-desk{ display:none !important; } }
+
+
+/* ===== Flashcards: bold, colourful "card game" look (front = solid colour, back = white with coloured type) ===== */
+.fc-root{ background:#fff7ec !important; }
+body.dark-mode .fc-root{ background:#141414 !important; }
+.fc-ghost{ box-shadow:0 6px 0 rgba(0,0,0,.10) !important; opacity:1 !important; border:0 !important; }
+.fc-ghost-1{ transform:translateY(16px) scale(0.965) rotate(-2deg) !important; }
+.fc-ghost-2{ transform:translateY(32px) scale(0.93) rotate(2.2deg) !important; }
+.fc-face{ border-radius:30px; padding:24px 24px 20px; box-shadow:0 10px 0 rgba(0,0,0,.14), 0 24px 40px rgba(0,0,0,.16) !important; }
+/* front: solid colour, big white chunky type */
+.fc-face-front, body.dark-mode .fc-face-front{ background:var(--fc-c,#1F4FB5) !important; color:#fff !important; border:0 !important; }
+.fc-face-front .fc-text{ color:#fff !important; font-family:'Gendy','Montserrat',sans-serif !important; font-weight:700 !important; letter-spacing:-0.005em; line-height:1.12; }
+.fc-face-front .fc-t-lg{ font-size:2.6rem; }
+.fc-face-front .fc-t-md{ font-size:1.8rem; }
+.fc-face-front .fc-t-sm{ font-size:1.25rem; line-height:1.3; font-weight:600 !important; }
+.fc-face-front .fc-chip{ background:rgba(255,255,255,.95) !important; color:var(--fc-c) !important; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; letter-spacing:.02em !important; padding:5px 14px !important; border-radius:9999px !important; font-size:13px !important; }
+.fc-face-front .fc-source{ color:rgba(255,255,255,.85) !important; font-family:'Montserrat',sans-serif; }
+.fc-face-front .fc-face-foot{ color:rgba(255,255,255,.9) !important; font-family:'Gendy','Montserrat',sans-serif; font-weight:500; font-size:13px; }
+/* yellow is light: use dark type there */
+.fc-face-front[style*="#FFC20E"] .fc-text, .fc-face-front[style*="#FFC20E"] .fc-source, .fc-face-front[style*="#FFC20E"] .fc-face-foot{ color:#2b1d00 !important; }
+.fc-face-front[style*="#FFC20E"] .fc-chip{ background:#2b1d00 !important; color:#FFC20E !important; }
+/* back: white card, coloured type, colour band + corner squiggle */
+.fc-face-back.fc-bk, body.dark-mode .fc-face-back.fc-bk{ background:#fff !important; color:var(--fc-c) !important; border:0 !important; }
+.fc-face-back.fc-bk::before{ content:''; position:absolute; left:0; right:0; top:0; height:12px; background:var(--fc-c); }
+.fc-face-back.fc-bk::after{ content:''; position:absolute; right:-18px; bottom:-18px; width:84px; height:84px; border-radius:50%; border:14px solid var(--fc-c); border-left-color:transparent; border-top-color:transparent; transform:rotate(20deg); opacity:.95; }
+.fc-face-back.fc-bk .fc-text{ color:var(--fc-c) !important; font-family:'Montserrat',sans-serif !important; font-weight:600 !important; line-height:1.4; }
+.fc-face-back.fc-bk .fc-t-lg{ font-size:1.7rem; line-height:1.25; }
+.fc-face-back.fc-bk .fc-t-md{ font-size:1.35rem; }
+.fc-face-back.fc-bk .fc-chip{ background:var(--fc-c) !important; color:#fff !important; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; padding:5px 14px !important; border-radius:9999px !important; font-size:13px !important; letter-spacing:.02em !important; }
+.fc-face-back.fc-bk .fc-source{ color:#6b7280 !important; font-family:'Montserrat',sans-serif; }
+.fc-face-back.fc-bk .fc-face-foot{ color:#9ca3af !important; font-family:'Montserrat',sans-serif; }
+.fc-face-back.fc-bk[style*="#FFC20E"] .fc-text{ color:#8a5a00 !important; }
+.fc-face-back.fc-bk[style*="#FFC20E"] .fc-chip{ background:#FFC20E !important; color:#2b1d00 !important; }
+/* controls */
+.fc-head-title, .fc-summary-title, .fc-ring-pct{ font-family:'Gendy','Montserrat',sans-serif; }
+.fc-act, .fc-cta, .fc-ghost-cta, .fc-end-btn{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; }
+body:not(.dark-mode) .fc-act-flip{ background:#1F4FB5 !important; box-shadow:0 5px 0 #14367f !important; }
+.fc-act-no{ background:#ffe0de !important; } .fc-act-yes{ background:#d8f5de !important; }
+.fc-progress{ background:rgba(0,0,0,.08); }
+.fc-progress-fill{ background:linear-gradient(90deg,#E8312F,#F7861E,#FFC20E,#2EA84B,#1F4FB5,#7B3FA8) !important; background-size:100vw 100%; }
+
+/* ===== Practice (Mock Test / Score & Progress): new type ===== */
+.ar-root, .ar-root button{ font-family:'Montserrat',system-ui,sans-serif; }
+.ar-root .ar-title, .ar-root .ws-hdr-t, .ar-root h1, .ar-root h2, .ar-root .ar-h{ font-family:'Gendy','Montserrat',sans-serif !important; font-weight:600; letter-spacing:0; }
+.ar-root .seg-btn{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:1.02rem; }
+.ar-root .ar-fade > .text-base.font-bold{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:1.5rem; line-height:1.15; margin-bottom:6px; }
+.ar-root .ar-fade > .text-base.text-gray-400{ font-size:.98rem; line-height:1.5; color:#6b7280; }
+body.dark-mode /* Practice: setup chips, buttons and result headings use the same display font */
+.ar-root .ar-chip, .ar-root .ar-btn{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; }
+.ar-root .ar-chip.on{ box-shadow:0 3px 0 rgba(0,0,0,.15); }
+.ar-root .ar-btn.p{ box-shadow:0 5px 0 #14367f; }
+
+/* ---- fixes found when running the real app ---- */
+.fc-ghost-1, .fc-ghost-2{ background:var(--g,#ddd) !important; }
+.fc-ghost-1{ transform:translateY(14px) scale(0.965) rotate(-2deg) !important; }
+.fc-ghost-2{ transform:translateY(28px) scale(0.93) rotate(2deg) !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk .fc-chip, body.dark-mode .fc-face-back.fc-bk .fc-chip{ background:var(--fc-c) !important; color:#fff !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk .fc-text, body.dark-mode .fc-face-back.fc-bk .fc-text{ color:var(--fc-c) !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk[style*="#FFC20E"] .fc-chip{ background:#FFC20E !important; color:#2b1d00 !important; }
+body:not(.dark-mode) .fc-face-back.fc-bk[style*="#FFC20E"] .fc-text{ color:#8a5a00 !important; }
+body .fc-act-flip, body .fc-act-flip *{ color:#fff !important; }
+body .fc-act-flip{ background:#1F4FB5 !important; box-shadow:0 5px 0 #14367f !important; }
+.fc-act-no{ box-shadow:0 4px 0 #f3bcb9; } .fc-act-yes{ box-shadow:0 4px 0 #b4e3bf; }
+.fc-ring circle#fcRingArc{ stroke:#2EA84B !important; }
+.fc-ring-pct, .fc-summary-title{ font-family:'Gendy','Montserrat',sans-serif !important; }
+.fc-cta{ background:#1F4FB5 !important; box-shadow:0 5px 0 #14367f !important; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; }
+.fc-ghost-cta{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; border-width:2px; }
+.fc-sum-chip b{ font-family:'Gendy','Montserrat',sans-serif; }
+.fc-sum-yes{ background:#d8f5de; } .fc-sum-no{ background:#ffe0de; }
+.fc-chip{ text-transform:none !important; letter-spacing:.02em !important; }
+/* practice: header + sheet title + chips + buttons */
+.ar-root .ws-hdr-t, .ar-root .ws-hdr-t b, .ar-root .font-display, .ar-root .ar-title{ font-family:'Gendy','Montserrat',sans-serif !important; font-weight:600 !important; letter-spacing:0 !important; }
+.ar-root .ar-chip, .ar-root .ar-btn, .ar-chip, .ar-btn{ font-family:'Gendy','Montserrat',sans-serif !important; font-weight:600 !important; }
+.ar-root .ar-card .text-lg.font-semibold{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:1.3rem; line-height:1.3; }
+.ar-opt{ border-width:2px !important; border-radius:18px !important; box-shadow:0 3px 0 #e8e2d8; }
+.ar-opt.on{ box-shadow:0 3px 0 #1F4FB5; }
+.ar-opt .l{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; }
+/* Practice set-up sheet: beat the sheet-wide font rule */
+html body #challengeModalContent .ar-root .ar-chip, html body #challengeModalContent .ar-root .ar-btn, html body #challengeModalContent .ar-root .font-display, html body #challengeModalContent .ar-root .ar-h{ font-family:'Gendy','Montserrat',sans-serif !important; font-weight:600 !important; }
+html body #challengeModalContent .ar-root .ar-chip.on{ background:#1F4FB5 !important; color:#fff !important; border-color:#1F4FB5 !important; box-shadow:0 3px 0 #14367f; }
+html body #challengeModalContent .ar-root .ar-btn.p{ background:#1F4FB5 !important; color:#fff !important; box-shadow:0 5px 0 #14367f; }
+html body #challengeModalContent .ar-root .font-display{ color:#1F4FB5 !important; background:none !important; -webkit-text-fill-color:#1F4FB5 !important; }
+
+/* ===== Flashcards: tighter spacing ===== */
+.fc-progress-wrap{ padding-top:10px; }
+.fc-stage{ flex:0 0 auto; padding:14px 22px 0; }
+.fc-stack{ height:23rem; max-height:none; margin-bottom:38px; }
+.fc-face{ padding:18px 20px 16px; }
+.fc-face-front .fc-t-lg{ font-size:2.3rem; } .fc-face-front .fc-t-md{ font-size:1.6rem; }
+.fc-body{ justify-content:flex-start; }
+.fc-tools{ padding-top:2px; } .fc-actions{ padding-top:6px; }
+.fc-face-front .fc-text, .fc-head-title, .fc-summary-title, .fc-ring-pct, .fc-act, .fc-cta, .fc-ghost-cta{ font-weight:700; }
+
+
+/* flashcards: balance the card height, give thin Gendy more weight on the colour front */
+.fc-stage{ flex:1 1 auto !important; min-height:0; padding:12px 22px 0 !important; align-items:center; }
+.fc-stack{ height:100% !important; max-height:25rem !important; margin-bottom:34px; }
+.fc-face-front .fc-text{ -webkit-text-stroke:1.1px #fff; }
+.fc-face-front[style*="#FFC20E"] .fc-text{ -webkit-text-stroke:1.1px #2b1d00; }
+.fc-face-front .fc-t-sm{ -webkit-text-stroke:.5px #fff; }
+
+/* ===== Flashcards: white background, the app's normal blues for controls ===== */
+.fc-root, body:not(.dark-mode) .fc-root{ background:#ffffff !important; }
+.fc-progress-fill{ background:linear-gradient(90deg,#1e90ff,#4169e1) !important; }
+body .fc-act-flip{ background:linear-gradient(135deg,#1e90ff 0%,#4169e1 100%) !important; box-shadow:0 5px 0 #2f4fb0 !important; }
+.fc-cta{ background:linear-gradient(135deg,#1e90ff 0%,#4169e1 100%) !important; box-shadow:0 5px 0 #2f4fb0 !important; }
+html body #challengeModalContent .ar-root .ar-chip.on{ background:#4169e1 !important; border-color:#4169e1 !important; box-shadow:0 3px 0 #2f4fb0; }
+html body #challengeModalContent .ar-root .ar-btn.p{ background:linear-gradient(135deg,#1e90ff,#4169e1) !important; box-shadow:0 5px 0 #2f4fb0; }
+html body #challengeModalContent .ar-root .font-display{ color:#4169e1 !important; -webkit-text-fill-color:#4169e1 !important; }
+
+/* ===== Practice: course list (new layout) ===== */
+.mt-list{ display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+.mt-hero{ position:relative; overflow:hidden; width:100%; text-align:left; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:20px 18px; border-radius:26px; color:#fff; background:linear-gradient(135deg,#0a2540 0%,#1b3f86 55%,#4169e1 100%); box-shadow:0 12px 26px rgba(65,105,225,.30); font-family:'Gendy','Montserrat',sans-serif; }
+.mt-hero::after{ content:''; position:absolute; right:-40px; top:-50px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,.10); }
+.mt-hero:active, .mt-row:active{ transform:scale(.985); }
+.mt-hero-txt{ display:flex; flex-direction:column; gap:6px; position:relative; z-index:1; min-width:0; }
+.mt-hero-t{ font-size:22px; font-weight:700; }
+.mt-hero-s{ font-family:'Montserrat',sans-serif; font-size:13px; font-weight:500; opacity:.85; line-height:1.4; }
+.mt-hero-chip{ align-self:flex-start; margin-top:4px; font-family:'Montserrat',sans-serif; font-size:12px; font-weight:700; padding:5px 12px; border-radius:99px; background:rgba(255,255,255,.18); }
+.mt-hero-go{ position:relative; z-index:1; flex-shrink:0; width:52px; height:52px; border-radius:50%; background:#fff; color:#4169e1; display:flex; align-items:center; justify-content:center; }
+.mt-row{ width:100%; text-align:left; display:flex; align-items:center; gap:14px; padding:12px 14px 12px 12px; border-radius:20px; background:#fff; border:1.5px solid #e6ecf7; box-shadow:0 4px 14px rgba(10,37,64,.06); font-family:'Gendy','Montserrat',sans-serif; }
+.mt-badge{ width:48px; height:48px; border-radius:15px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; }
+.mt-txt{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mt-name{ font-family:'Montserrat',sans-serif; font-weight:700; font-size:15.5px; color:#0a2540; line-height:1.25; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.mt-sub{ font-family:'Montserrat',sans-serif; font-weight:500; font-size:12.5px; color:#7b8aa6; }
+.mt-go{ width:36px; height:36px; border-radius:50%; background:#eef3ff; color:#4169e1; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+body.dark-mode .mt-row{ background:#1e1e1e; border-color:#333; box-shadow:none; } body.dark-mode .mt-name{ color:#f2f2f2; } body.dark-mode .mt-go{ background:rgba(65,105,225,.22); }
+body:not(.dark-mode) .fc-act-flip, body.dark-mode .fc-act-flip{ background:linear-gradient(135deg,#1e90ff 0%,#4169e1 100%) !important; box-shadow:0 5px 0 #2f4fb0 !important; }
+
+/* All Courses = same card as the course rows, in solid app blue; same arrow everywhere */
+.mt-row.mt-all{ background:#4169e1; border-color:#4169e1; box-shadow:0 6px 16px rgba(65,105,225,.28); }
+.mt-row.mt-all .mt-badge{ background:rgba(255,255,255,.2); color:#fff; }
+.mt-row.mt-all .mt-name{ color:#fff; } .mt-row.mt-all .mt-sub{ color:rgba(255,255,255,.85); }
+.mt-row.mt-all .mt-go{ background:rgba(255,255,255,.2); color:#fff; }
+.mt-hero, .mt-hero::after{ display:none; }
+
+.mt-row{ padding:16px 14px 16px 18px; }
+.mt-row.mt-all{ padding:14px 14px 14px 12px; }

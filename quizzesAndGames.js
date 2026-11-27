@@ -618,6 +618,25 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
             </button>`;
         }
 
+        const MT_TINTS = [['#e8f0ff', '#4169e1'], ['#e0f4ff', '#0a8ad6'], ['#ece8ff', '#6a4fd8'], ['#e2f7ee', '#13875a']];
+        function mockCourseTile(label, onclick, sub, i, isAll){
+          const safe = escapeHtml(label).replace(/([_\-])/g, "$1\u200b");
+          const go = '<span class="mt-go"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>';
+          if (isAll) {
+            return `<button onclick="${onclick}" class="mt-row mt-all">
+              <span class="mt-badge"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span>
+              <span class="mt-txt"><span class="mt-name">All Courses</span><span class="mt-sub">${sub} \u00b7 test yourself on everything</span></span>
+              <span class="mt-go"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+            </button>`;
+          }
+          const t = MT_TINTS[(i - 1) % MT_TINTS.length];
+          const initial = escapeHtml(String(label).trim().charAt(0).toUpperCase());
+          return `<button onclick="${onclick}" class="mt-row">
+            <span class="mt-txt"><span class="mt-name">${safe}</span><span class="mt-sub">${sub}</span></span>
+            ${go}
+          </button>`;
+        }
+
         function practiceTestsTestPane(){
           if (!courseBank.length) {
             return `
@@ -629,9 +648,9 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="text-base font-bold mb-1" style="color:${NAVY};">Build a Mock Test</div>
             <div class="text-base text-gray-400 mb-4">Choose from the courses and slides you've uploaded; tap one to start, or test yourself on everything.</div>
-            <div class="space-y-4 mb-6">
-              ${courseListRow('All Courses', "openMockTestForCourse('__ALL__')")}
-              ${courseBank.map(c => courseListRow(c.name, `openMockTestForCourse('${escapeHtml(c.name)}')`)).join('')}
+            <div class="mt-list">
+              ${mockCourseTile('All Courses', "openMockTestForCourse('__ALL__')", courseBank.reduce((a, c) => a + c.questions.length, 0) + ' questions', 0, true)}
+              ${courseBank.map((c, i) => mockCourseTile(c.name, `openMockTestForCourse('${escapeHtml(c.name)}')`, c.questions.length + ' question' + (c.questions.length === 1 ? '' : 's'), i + 1, false)).join('')}
             </div>
           `;
         }
