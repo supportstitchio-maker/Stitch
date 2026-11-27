@@ -144,7 +144,7 @@
             if (isStandalone) document.documentElement.classList.add('standalone-splash');
           } catch (e) {}
           var darkTheme = document.documentElement.classList.contains('dark-mode'); // no splash in dark mode
-          window.__stitchSkipSplash = seen || authReturn || !!isStandalone; // splash plays in dark mode too (dark background)
+          window.__stitchSkipSplash = seen || authReturn || darkTheme || !!isStandalone;
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
           try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
         } catch (e) { window.__stitchSkipSplash = false; }
@@ -510,12 +510,12 @@
               // Same markup as desktopShellSkeletonHTML() in feed.js (that file loads later than this script).
               var sh = function (w, h, extra) { return '<div class="skel-line skel-shimmer" style="width:' + w + ';height:' + (h || 12) + 'px;' + (extra || '') + '"></div>'; };
               var icon = '<div style="height:46px;display:flex;align-items:center;justify-content:center;"><div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div></div>';
-              var top = '<div class="skd-top"><div class="skel-shimmer" style="width:104px;height:34px;border-radius:12px;"></div><div class="skd-search skel-shimmer"></div><div class="skd-top-right"><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div class="skel-shimmer" style="width:96px;height:42px;border-radius:9999px;"></div><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div>' + sh('70px', 9, 'margin-bottom:7px;') + sh('96px', 12) + '</div></div></div>';
+              var top = '<div class="skd-top"><div class="skel-shimmer" style="width:104px;height:34px;border-radius:12px;"></div><div class="skd-top-right"><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div class="skel-shimmer" style="width:96px;height:42px;border-radius:9999px;"></div><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div>' + sh('70px', 9, 'margin-bottom:7px;') + sh('96px', 12) + '</div></div></div>';
               var rail = '<div class="skd-rail"><div class="skd-rail-grp skd-rail-main">' + new Array(6).join(icon) + '</div><div class="skd-rail-grp skd-rail-bot">' + new Array(4).join(icon) + '<div style="height:36px;display:flex;align-items:center;justify-content:center;"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div></div></div></div>';
               var dpost = '<div class="skd-post"><div class="skd-post-head"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div><div style="flex:1;">' + sh('26%', 11, 'margin-bottom:7px;') + sh('14%', 9) + '</div></div><div class="skd-post-media skel-shimmer"></div><div class="skd-post-acts">' + sh('44px', 12) + sh('44px', 12) + sh('44px', 12) + '</div>' + sh('30%', 11, 'margin:12px 0 8px;') + sh('70%', 10) + '</div>';
               var main = '<div class="skd-main"><div class="skd-main-in"><div class="skel-story-row">' + story + '</div><div>' + dpost + dpost + '</div></div></div>';
               var rows = '';
-              for (i = 0; i < 5; i++) rows += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">' + sh('45%', 12, 'margin-bottom:9px;') + sh('70%', 10) + '</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:9999px;"></div></div>';
+              for (i = 0; i < 5; i++) rows += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">' + sh('45%', 12, 'margin-bottom:9px;') + sh('70%', 10) + '</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:16px;corner-shape:squircle;"></div></div>';
               var right = '<div class="skd-right"><div style="padding:26px 20px 0;">' + sh('90px', 14, 'margin-bottom:28px;') + '<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>' + rows + '</div></div>';
               el.innerHTML = '<div class="skd-wrap">' + top + rail + main + right + '</div>';
               el.classList.add('skeleton-mode', 'skel-desktop-mode');

@@ -1736,11 +1736,11 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           const avatarInner = avatarMediaHTML(p.photo, p.icon || 'user', 'w-5 h-5');
           let actionHTML;
           if (p.connected) {
-            actionHTML = `<span class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-400">Connected</span>`;
+            actionHTML = `<span class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-400" style="border-radius:16px !important;corner-shape:squircle;">Connected</span>`;
           } else if (p.requestSent) {
-            actionHTML = `<button onclick="cancelConnectionRequest('${p.id}')" class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-600">Cancel Request</button>`;
+            actionHTML = `<button onclick="cancelConnectionRequest('${p.id}')" class="text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-600" style="border-radius:16px !important;corner-shape:squircle;">Cancel Request</button>`;
           } else {
-            actionHTML = `<button onclick="connectToDiscoverPerson('${p.id}')" class="text-xs font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};">Connect</button>`;
+            actionHTML = `<button onclick="connectToDiscoverPerson('${p.id}')" class="text-xs font-semibold px-4 py-2 rounded-full" style="background:rgba(10,37,64,0.08);color:${NAVY};border:1.5px solid ${NAVY};border-radius:16px !important;corner-shape:squircle;">Connect</button>`;
           }
           return `
             <div class="w-full flex items-center gap-4" style="padding:10px 0;margin-bottom:5px;border-bottom:1px solid rgba(0,0,0,0.08);">
@@ -1985,7 +1985,16 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           // photo, members) instead of a person's profile
           if (meta.icon === 'users') { openConvoProfile(); return; }
           if (!meta.otherUserId) return;
-          openPersonProfile(meta.otherUserId, { name: meta.name, photo: meta.photo, icon: meta.icon, avatarBg: meta.avatarBg });
+          // The chat list row holds the freshest name/username; convoMeta can still say "Stitch member"
+          let live = null;
+          try { live = convoArrays().flat().find(c => c.id === convoId) || null; } catch (e) {}
+          const real = v => (v && v !== 'Stitch member' && v !== 'Someone') ? v : '';
+          openPersonProfile(meta.otherUserId, {
+            name: real(live && live.name) || real(meta.name) || 'Stitch member',
+            username: (live && live.username) || meta.username || '',
+            photo: (live && live.photo) || meta.photo,
+            icon: meta.icon, avatarBg: meta.avatarBg
+          });
         }
 
         function openPersonProfileFromDiscover(id){
@@ -2008,7 +2017,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const existing = (viewedProfile && viewedProfile.id === userId) ? viewedProfile : null;
             const acceptedEitherWay = [...(fromRows || []), ...(toRows || [])].some(r => r.status === 'accepted');
             const details = {
-              name: (row && (row.name || row.username)) || (existing && existing.name) || 'Stitch member',
+              name: (row && row.name) || ((existing && existing.name && existing.name !== 'Stitch member') ? existing.name : '') || (row && row.username) || (existing && existing.name) || 'Stitch member',
               username: (row && row.username) || (existing && existing.username) || '',
               pronouns: (row && row.pronouns) || (existing && existing.pronouns) || '',
               bio: (row && row.bio) || '',
@@ -2663,7 +2672,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
                   <button ${showPhoto ? `onclick="viewProfilePhoto('${escapeForJsAttr(p.photo)}', '${escapeForJsAttr(p.name || 'Stitch member')}')"` : ''} class="w-20 h-20 ${p.avatarBg || 'bg-blue-50'} rounded-full flex items-center justify-center text-gray-600 overflow-hidden">${avatarInner}</button>
                 </div>
                 <div class="flex-1">
-                  <div class="font-bold text-base mb-2">${escapeHtml(p.name || 'Stitch member')}${p.pronouns ? ` <span class="font-normal text-gray-400">${escapeHtml(p.pronouns)}</span>` : ''}</div>
+                  <div class="font-bold text-base">${escapeHtml(p.name || 'Stitch member')}${p.pronouns ? ` <span class="font-normal text-gray-400">${escapeHtml(p.pronouns)}</span>` : ''}</div>
+                  ${p.username ? `<div class="ph-username"><span class="nm-inner">${escapeHtml(p.username)}</span></div>` : '<div class="mb-2"></div>'}
                   <div class="flex items-start gap-6">
                     <div class="text-left"><div class="text-base font-bold">${theirPostsCount}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">Posts</div></div>
                     <button onclick="openPersonNetwork()" class="text-left"><div class="text-base font-bold">${networkCount}</div><div class="text-[11px] text-gray-500 whitespace-nowrap">Network</div></button>

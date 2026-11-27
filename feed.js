@@ -20,13 +20,13 @@
           const sq = (n, m) => Array.from({ length: n }).map(() => `<div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;margin:${m}px 0;"></div>`).join('');
           const top = `<div class="skd-top">
             <div class="skel-shimmer" style="width:104px;height:34px;border-radius:12px;"></div>
-            <div class="skd-search skel-shimmer"></div>
+            
             <div class="skd-top-right"><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div class="skel-shimmer" style="width:96px;height:42px;border-radius:9999px;"></div><div class="skel-avatar skel-shimmer" style="width:42px;height:42px;"></div><div><div class="skel-line skel-shimmer" style="width:70px;height:9px;margin-bottom:7px;"></div><div class="skel-line skel-shimmer" style="width:96px;height:12px;"></div></div></div>
           </div>`;
           const icon = `<div style="height:46px;display:flex;align-items:center;justify-content:center;"><div class="skel-shimmer" style="width:22px;height:22px;border-radius:7px;"></div></div>`;
           const rail = `<div class="skd-rail"><div class="skd-rail-grp skd-rail-main">${icon.repeat(5)}</div><div class="skd-rail-grp skd-rail-bot">${icon.repeat(3)}<div style="height:36px;display:flex;align-items:center;justify-content:center;"><div class="skel-avatar skel-shimmer" style="width:36px;height:36px;"></div></div></div></div>`;
           const main = `<div class="skd-main"><div class="skd-main-in">${skeletonStoryRowHTML(5)}<div>${skeletonPostDeskHTML()}${skeletonPostDeskHTML()}</div></div></div>`;
-          const right = `<div class="skd-right"><div style="padding:26px 20px 0;">${bar('90px', 14, 'margin-bottom:28px;')}<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>${[0,1,2,3,4].map(() => `<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">${bar('45%', 12, 'margin-bottom:9px;')}${bar('70%', 10)}</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:9999px;"></div></div>`).join('')}</div></div>`;
+          const right = `<div class="skd-right"><div style="padding:26px 20px 0;">${bar('90px', 14, 'margin-bottom:28px;')}<div class="skel-shimmer" style="height:52px;border-radius:18px;margin-bottom:22px;"></div>${[0,1,2,3,4].map(() => `<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;"><div class="skel-avatar skel-shimmer" style="width:50px;height:50px;"></div><div style="flex:1;">${bar('45%', 12, 'margin-bottom:9px;')}${bar('70%', 10)}</div><div class="skel-shimmer" style="width:96px;height:40px;border-radius:16px;corner-shape:squircle;"></div></div>`).join('')}</div></div>`;
           return `<div class="skd-wrap">${top}${rail}${main}${right}</div>`;
         }
         function isDesktopLayout(){ return !!(window.matchMedia && window.matchMedia('(min-width:1100px)').matches); }
