@@ -162,6 +162,19 @@
   #classroom-nav{display:none!important}
   /* Desktop: Home / Tutor / Courses live in the left rail, so the floating dock buttons are not drawn (the + button stays) */
   @media (min-width:1100px){.ws-dock > button:not(.ws-fab){display:none!important}}
+  /* Desktop: the header stays put and uses the page background (no white bar, no gradient fade);
+     the + button sits in the middle column, clear of the right panel, and follows it when it opens, closes or resizes */
+  @media (min-width:1100px){
+    #screen .ws-hdr.ws-hdr-s{position:sticky !important;top:0 !important;z-index:50 !important;background:var(--pg-bg,#f1f4f9) !important;background-image:none !important;margin-bottom:0;padding-bottom:10px}
+    body.dark-mode #screen .ws-hdr.ws-hdr-s{background:#121212 !important;background-image:none !important}
+    #screen .ws-fl{position:sticky !important;top:0 !important;z-index:50 !important}
+    #screen .ws-fl::before{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--top-safe-pad,20px) + 64px);background:var(--pg-bg,#f1f4f9);z-index:-1}
+    body.dark-mode #screen .ws-fl::before{background:#121212}
+    /* the rail already has the bell, so the header bell is not drawn (its space is kept so the title stays centred) */
+    #screen .ws-hdr .ws-circ[aria-label="Notifications"],#screen .ws-fl .ws-circ[aria-label="Notifications"]{visibility:hidden !important;pointer-events:none !important}
+    .ws-dock .ws-fab{position:fixed !important;bottom:24px !important;right:40px !important;z-index:40;transition:right .25s cubic-bezier(.22,.68,0,1)}
+    #app-shell.right-panel-open:not(.rp-collapsed) .ws-dock .ws-fab{right:calc(var(--rp-width,480px) + 32px + 24px) !important}
+  }
   .ws-sugs{display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:22px}.ws-sugs .filter-pill{margin:0}
   .ws-hero{padding:54px 20px 20px;min-height:0}
   .ws-hero h2{font-size:16px!important;line-height:1.15!important;letter-spacing:.01em}
