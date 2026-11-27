@@ -8454,3 +8454,8 @@ body.dark-mode #overlay .ar-root .ws-hdr, body.dark-mode #overlay .ar-root .ws-h
   #app-shell.exam-focus .ar-foot-in{ max-width:1360px; }
   #app-shell.exam-focus .ar-take{ grid-template-columns:minmax(0,1fr) 340px; gap:22px; }
 }
+
+/* Long call-to-action pills: New note (Notes), Submit report, Send message (Settings help), and their siblings, squircle like the other pills */
+@supports (corner-shape: squircle){
+  .nt-new, .sp-cta, .sp-cta-sm, .sp-still, .ws-cta{ corner-shape:squircle; }
+}
