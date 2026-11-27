@@ -189,6 +189,11 @@
   .ws-res .t{flex:1;min-width:0}.ws-res b{display:block;font-size:14px}.ws-res small{font-size:12px;color:var(--ws-sub)}
   /* Empty states ("No courses yet", "No lectures scheduled"...): thin text only, no grey panel */
   .ws-blk[style*="color:var(--ws-sub)"]{background:none!important;box-shadow:none!important;border:0!important;padding:18px 0!important;font-family:'Gendy','Montserrat',sans-serif;font-weight:300;font-size:15px;letter-spacing:.01em;line-height:1.5}
+  .ws-subpage{background:var(--ws-bg)}
+  .ws-subpage .ws-fl,.ws-subpage .ws-fl-in{background:var(--ws-bg)}
+  .ws-sub-bell{position:absolute;right:8px;top:calc(var(--top-safe-pad) + 6px);z-index:60;width:42px;height:42px;background:transparent;box-shadow:none}
+  .ws-subpage .ov-sticky-head{background:var(--ws-bg)}
+  .ws-subpage .ov-sticky-head > div{padding-right:60px}
   .ws-res .ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--ws-ink);background:none;flex-shrink:0}
   `;
   document.head.appendChild(st);
@@ -395,7 +400,7 @@
     if (cls && cls.role === 'teacher' && cls.teacherId !== id && typeof openClassMsgFromPeople === 'function') { openClassMsgFromPeople(id); return; }
     wsOpenPerson(id);
   };
-  window.wsOpenCourse = function(id){ cTab = 'resources'; cHist = []; tabsX = 0; if (typeof openClassDetailWithLoading === 'function') openClassDetailWithLoading(id); else openClassDetail(id); };
+  window.wsOpenCourse = function(id){ cTab = 'dashboard'; cHist = []; tabsX = 0; if (typeof openClassDetailWithLoading === 'function') openClassDetailWithLoading(id); else openClassDetail(id); };
 
   /* ---------- Home ---------- */
   function homeHTML(){
@@ -518,7 +523,7 @@
   };
 
   /* ---------- Course page (replaces classDetailHTML) ---------- */
-  var cTab = 'resources';
+  var cTab = 'dashboard';
   // Download a shared resource. Works for every member, not only the moderator.
   function wsSaveBlob(blob, name){
     var u = URL.createObjectURL(blob), a = document.createElement('a');
@@ -572,7 +577,7 @@
   /* Opening a space from anywhere starts it on a clean tab history */
   try {
     var obOpen = window.openClassDetail;
-    if (typeof obOpen === 'function') window.openClassDetail = function(id){ if (id !== currentClassId || !document.querySelector('#overlay .ws-tabs')) { cTab = 'resources'; cHist = []; tabsX = 0; } return obOpen.apply(this, arguments); };
+    if (typeof obOpen === 'function') window.openClassDetail = function(id){ if (id !== currentClassId || !document.querySelector('#overlay .ws-tabs')) { cTab = 'dashboard'; cHist = []; tabsX = 0; } return obOpen.apply(this, arguments); };
   } catch(e){}
   try {
     var obClass = overlayBackAction.classDetail;
@@ -585,12 +590,18 @@
   window.classDetailHTML = function(){
     var cls = classes().filter(function(c){ return c.id === currentClassId; })[0];
     if (!cls) { setTimeout(closeOverlay, 0); return '<div class="flex-1"></div>'; }
-    if (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1) return origDetail();
+    if (typeof CLASS_SUBPAGES !== 'undefined' && CLASS_SUBPAGES.indexOf(classDetailTab) > -1) {
+      var isMsg = classDetailTab === 'messages', isPpl = classDetailTab === 'people';
+      var ov0 = $('overlay'); if (ov0 && !isPpl) ov0.style.background = 'var(--ws-bg)';
+      var bell0 = isMsg ? '<button class="ws-circ ws-sub-bell" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button>' : '';
+      return '<div class="ws-subpage" style="flex:1;display:flex;flex-direction:column;min-height:0;position:relative;background:var(--ws-bg)">' + bell0 + origDetail() + '</div>';
+    }
+    var ov1 = $('overlay'); if (ov1) ov1.style.background = '';
     setTimeout(function(){ fixTabs(false); }, 0);
     var p = pal(cls), live = liveLec(cls) || todayLec(cls), teach = cls.role === 'teacher';
     var admin = false; try { admin = isCurrentUserAdmin() && teach; } catch(e){}
-    var tabs = [['resources','Resources'],['lectures','Lectures'],['people','People'],['stream','Stream'],['classwork','Tasks'],['results', teach ? 'Results' : 'My report']];
-    if (admin) tabs.push(['dashboard','Dashboard']);
+    if (cTab === 'results') cTab = 'dashboard';
+    var tabs = [['dashboard','Dashboard'],['resources','Resources'],['lectures','Lectures'],['people','People'],['stream','Stream'],['classwork','Tasks']];
     var body = '';
     if (cTab === 'resources') {
       var m = materials(cls);
@@ -605,6 +616,7 @@
         return '<div class="ws-row"><span class="ws-ft" style="background:' + p.a + '">' + I('users', 18) + '</span><div style="flex:1"><b>' + E(l.title) + '</b><small>' + (lv ? 'Live now' : E((l.date || '') + ' ' + (l.time || ''))) + '</small></div>' +
           (lv ? '<button class="ws-btn" style="padding:8px 16px" onclick="joinLiveLecture(\'' + l.id + '\',\'' + cls.id + '\')">Join</button>' : (teach && l.status === 'scheduled' ? '<button class="filter-pill" onclick="startScheduledLectureNow(\'' + l.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No lectures scheduled.</div>' + (teach && typeof lectureActionPillsHTML === 'function' ? lectureActionPillsHTML() : '');
+      try { if (typeof classRecordingsListHTML === 'function') body += classRecordingsListHTML(cls); } catch(e){}
     } else if (cTab === 'people') {
       try { loadClassStudentProfiles(cls); } catch(e){}
       var ro = []; try { ro = classRosterList(cls); } catch(e){}
@@ -623,19 +635,33 @@
         var prof = (s2.id && typeof classStudentProfiles !== 'undefined' && classStudentProfiles[s2.id]) || {};
         return row(s2.id, nm, prof.photo || s2.photo || '', s2.pending ? 'Invited' : 'Member', !!s2.id && !s2.pending && s2.id !== me); }).join('');
       if (!ro.length) body += '<div class="ws-blk" style="text-align:center;color:var(--ws-sub);margin-top:12px">No other members yet.</div>';
-    } else if (cTab === 'results') {
+    } else if (cTab === 'dashboard') {
+      var card = function(js, ic, title, sub, extra){ return '<button class="ws-res" onclick="' + js + '"><span class="ic">' + I(ic, 20) + '</span><span class="t"><b>' + title + '</b><small>' + sub + '</small></span>' + (extra || '') + '</button>'; };
+      var badge2 = function(n){ return n ? '<span style="background:#1e90ff;color:#fff;font-size:11px;font-weight:700;border-radius:999px;min-width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px">' + n + '</span>' : ''; };
+      var unread = 0; try { unread = classMsgUnreadIn(cls.id); } catch(e){}
+      var recs = (cls.callLog || []).filter(function(c){ return c.recordingUrl; }).length;
+      var nLec = (cls.lectures || []).length, nWork = (cls.classwork || []).filter(function(w){ return w.type !== 'material'; }).length, nMat = materials(cls).length;
       body = '';
       if (teach) {
-        body += '<button class="ws-res" onclick="downloadClassReport()"><span class="ic class-report-dl">' + I('dl', 20) + '</span><span class="t"><b>Download student results</b><small>PDF with every member\'s grades, ranking and graphs</small></span></button>' +
-          '<button class="ws-res" onclick="classDetailSwitchTab(\'profile\')"><span class="ic">' + I('chart', 20) + '</span><span class="t"><b>Space profile</b><small>Averages, top performers and who needs a check-in</small></span></button>';
+        body += card('downloadClassReport()', 'dl', 'Download student results', 'PDF with every member\'s grades, ranking and graphs');
+        body += card('classDetailSwitchTab(\'profile\')', 'chart', 'Space profile', 'Averages, top performers and who needs a check-in');
+        body += card('openClassMessages()', 'msg', 'Messages', 'Chat with members of this space', badge2(unread));
+        body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to open' : (nLec ? nLec + ' scheduled. Start, present and record' : 'Schedule or start a live lecture'));
+        body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' saved lecture' + (recs > 1 ? 's' : '') : 'Recorded lectures appear here');
+        body += card('wsCTab(\'people\')', 'users', 'People', members(cls) + ' member' + (members(cls) === 1 ? '' : 's') + '. Add, invite or message');
+        body += card('wsCTab(\'classwork\')', 'check', 'Tasks', nWork ? nWork + ' task' + (nWork > 1 ? 's' : '') + ' posted. Grade and add more' : 'Post an assignment, quiz or question');
+        body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' shared with the space' : 'Share slides and notes with the space');
       } else {
-        body += '<button class="ws-res" onclick="downloadClassReport()"><span class="ic class-report-dl">' + I('dl', 20) + '</span><span class="t"><b>Download my report</b><small>PDF with your grades and progress in this space</small></span></button>' +
-          '<button class="ws-res" onclick="classDetailSwitchTab(\'report\')"><span class="ic">' + I('chart', 20) + '</span><span class="t"><b>My space report</b><small>See how you are doing against the space average</small></span></button>';
+        body += card('downloadClassReport()', 'dl', 'Download my report', 'PDF with your grades and progress in this space');
+        body += card('classDetailSwitchTab(\'report\')', 'chart', 'My space report', 'See how you are doing against the space average');
+        body += card('openClassMessages()', 'msg', 'Messages', 'Chat with your moderator', badge2(unread));
+        body += card('wsCTab(\'lectures\')', 'board', live ? 'Live lecture' : 'Lectures', live ? 'A lecture is live now. Tap to join' : 'See upcoming lectures');
+        body += card('wsCTab(\'lectures\')', 'folder', 'Recordings', recs ? recs + ' lecture' + (recs > 1 ? 's' : '') + ' to rewatch' : 'Recorded lectures appear here');
+        body += card('wsCTab(\'classwork\')', 'check', 'Tasks', nWork ? nWork + ' task' + (nWork > 1 ? 's' : '') + ' in this space' : 'Nothing posted yet');
+        body += card('wsCTab(\'resources\')', 'book', 'Resources', nMat ? nMat + ' file' + (nMat > 1 ? 's' : '') + ' to study' : 'No resources yet');
       }
-      body += '<button class="ws-res" onclick="openClassMessages()"><span class="ic">' + I('msg', 20) + '</span><span class="t"><b>Messages</b><small>' + (teach ? 'Chat with members of this space' : 'Chat with your moderator') + '</small></span></button>';
     } else if (cTab === 'stream') body = classStreamTabHTML(cls);
     else if (cTab === 'classwork') body = classClassworkTabHTML(cls);
-    else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
       '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t" title="' + E(cls.name) + '"><b>' + E(cls.name) + '</b></div>' +
