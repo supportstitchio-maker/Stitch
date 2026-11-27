@@ -8191,3 +8191,20 @@ html body.dark-mode #auth-gate.auth-verify-mode::before{
   html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login.active{margin-top:auto;}
   html body #auth-gate:has(#auth-panel-login.active) .auth-body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px) !important;}
 }
+
+/* ---- Phones: Welcome / Sign in or register here on top, Google, "Or continue with", then email ---- */
+@media (max-width:699px){
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login.active > div{display:flex;flex-direction:column;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-social-ctas{display:contents !important;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-login-sub{display:block !important;order:0;text-align:center;margin:0 0 20px !important;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-login-sub .auth-wel{font-size:28px;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-google-cta{order:1;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid{display:flex !important;order:2;margin:16px 0 !important;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::after{content:"";flex:1;height:1px;background:#d5def0;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::before{background:#d5def0;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid{gap:12px;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-m-email-cta{order:3;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-m-legal{order:4;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::before,
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::after{background:rgba(255,255,255,.14);}
+}
