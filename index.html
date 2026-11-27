@@ -144,7 +144,7 @@
             if (isStandalone) document.documentElement.classList.add('standalone-splash');
           } catch (e) {}
           var darkTheme = document.documentElement.classList.contains('dark-mode'); // no splash in dark mode
-          window.__stitchSkipSplash = seen || authReturn || darkTheme || !!isStandalone;
+          window.__stitchSkipSplash = seen || authReturn || !!isStandalone; // splash plays in dark mode too (dark background)
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
           try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
         } catch (e) { window.__stitchSkipSplash = false; }

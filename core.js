@@ -2099,7 +2099,6 @@
        background (no bar). Hidden on phones, which keep #top-bar. -->
   <div id="dtop">
     <img id="dtop-logo" class="dtop-logo" src="${STITCH_WORDMARK_GRADIENT}" data-logo-light="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" onclick="homeTabTap()">
-    <label id="dtop-search" class="dtop-search" aria-label="Search people">${Icon('search','w-4 h-4')}<input id="dtop-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search people" onfocus="dtopSearchFocus()" oninput="dtopSearchInput(this.value)"></label>
     <div class="dtop-spacer"></div>
     <button type="button" id="dtop-bell" class="dtop-bell" onclick="dtopOpenFromHere('notifications', function(){ openRightPanel('profile');openOverlay('notifications'); })" title="Notifications" aria-label="Notifications">${Icon('bellOutline','w-5 h-5')}${unreadNotifCount() ? `<span id="dtop-bell-badge">${unreadNotifCount()}</span>` : ''}</button>
     <button type="button" id="dtop-new" class="dtop-new" onclick="dtopOpenFromHere('create', function(){ spinDeskPlus();openOverlay('create'); })"><span id="dtop-new-icon" class="plus-morph-icon is-plus" style="display:inline-flex;">${IconBold('plus','w-4 h-4')}</span><span>New</span></button>
@@ -2765,6 +2764,7 @@
             const el = document.getElementById(id);
             if (el) el.classList.toggle('dnav-active', currentOverlayKind === map[id]);
           });
+          try { if (typeof window.wsRailMark === 'function') window.wsRailMark(); } catch (e) {}
           // Analytics and Settings take the selected pill from the page buttons while their page is open
           const railKinds = { profileAnalytics: 'dnav-analytics', profileMenu: 'dnav-settings' };
           const want = railKinds[currentOverlayKind] || null;
@@ -4897,4 +4897,46 @@ function coverPickerHTML(o){
     }
   }, { passive: true });
   document.addEventListener('touchend', function(){ out = null; }, { passive: true });
+})();
+
+
+/* ---- Desktop back arrows: always pinned to the top-left of the page ----
+   The round back button is position:fixed. If any parent has a transform / filter / contain etc.
+   the browser measures "fixed" from that parent instead of the window, so the arrow drifts
+   when the page changes (Workspace home, Tutor...). Neutralise those on the arrow's parents. */
+(function(){
+  var SEL = '#app-shell .ws-back, #app-shell #screen button[aria-label="Back"], #overlay button[aria-label="Back"], #overlay .wiz-back';
+  var raf = 0;
+  function breaksFixed(cs){
+    return (cs.transform && cs.transform !== 'none') || (cs.filter && cs.filter !== 'none') ||
+      (cs.backdropFilter && cs.backdropFilter !== 'none') || (cs.perspective && cs.perspective !== 'none') ||
+      /transform|filter|perspective/.test(cs.willChange || '') || /paint|layout|strict|content/.test(cs.contain || '') ||
+      (cs.containerType && cs.containerType !== 'normal');
+  }
+  function fix(){
+    raf = 0;
+    if (window.innerWidth < 1100) return;
+    document.querySelectorAll(SEL).forEach(function(btn){
+      for (var p = btn.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement){
+        if (p.id === 'app-shell') break;
+        var cs = getComputedStyle(p);
+        if (!breaksFixed(cs)) continue;
+        p.style.setProperty('transform','none','important');
+        p.style.setProperty('filter','none','important');
+        p.style.setProperty('backdrop-filter','none','important');
+        p.style.setProperty('perspective','none','important');
+        p.style.setProperty('will-change','auto','important');
+        p.style.setProperty('contain','none','important');
+        p.style.setProperty('container-type','normal','important');
+      }
+    });
+  }
+  function queue(){ if (!raf) raf = requestAnimationFrame(fix); }
+  function start(){
+    var root = document.getElementById('app-shell') || document.body;
+    new MutationObserver(queue).observe(root, { childList: true, subtree: true });
+    window.addEventListener('resize', queue);
+    queue();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
