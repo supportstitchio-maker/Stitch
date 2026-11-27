@@ -8173,3 +8173,21 @@ html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-terms a{color
   html body.dark-mode #auth-gate.auth-verify-mode .auth-card{background:#14161c !important;box-shadow:0 18px 40px -14px rgba(0,0,0,.7) !important;}
   html body.dark-mode #auth-gate.auth-verify-mode .auth-info-banner{color:#f2f2f2 !important;}
 }
+
+/* ---- Sign-up screen: remove the old swoosh/line-pattern overlay, keep only the new background ---- */
+html body #auth-gate:has(#auth-panel-login.active)::before,
+html body #auth-gate.auth-verify-mode::before,
+html body.dark-mode #auth-gate:has(#auth-panel-login.active)::before,
+html body.dark-mode #auth-gate.auth-verify-mode::before{
+  display:none !important; content:none !important; background:none !important;
+}
+
+/* ---- Phones: Continue with Google / email + Privacy / Terms pinned to the bottom ---- */
+@media (max-width:699px){
+  html body #auth-gate:has(#auth-panel-login.active) .auth-form-side{display:contents;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-card{display:flex;flex-direction:column;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-body{flex:1 1 auto;min-height:0;justify-content:flex-end;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-panels{flex:1 1 auto;justify-content:flex-end;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login.active{margin-top:auto;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px) !important;}
+}
