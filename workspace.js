@@ -38,12 +38,12 @@
   body.dark-mode #class-action-loading-overlay{background:#121212 !important}
   /* Any page opened over the Workspace (a member chat, a space sub-page, any overlay with its own header) is plain white
      and fully covers the Workspace title, back arrow and bell underneath */
-  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-hdr,
-  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-fl,
-  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top) #screen .ws-hdr-home{display:none !important}
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top, #overlay .cw-page) #screen .ws-hdr,
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top, #overlay .cw-page) #screen .ws-fl,
+  body:has(#overlay .ws-subpage, #overlay .ov-sticky-head, #overlay .wiz-top, #overlay .cw-page) #screen .ws-hdr-home{display:none !important}
   @media (max-width:1099px){
-    body:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top){background:var(--ws-bg,#fff) !important}
-    body.dark-mode:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top){background:#121212 !important}
+    body:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top, .cw-page){background:var(--ws-bg,#fff) !important}
+    body.dark-mode:has(#screen .ws-page) #overlay:has(.ws-hdr, .ws-hero, .ws-subpage, .ov-sticky-head, .wiz-top, .cw-page){background:#121212 !important}
   }
   /* Desktop: bigger header text on every Workspace page */
   @media (min-width:1100px){

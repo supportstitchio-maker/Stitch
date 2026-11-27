@@ -7936,3 +7936,7 @@ body.dark-mode #overlay .nf-opt input[type=radio]:checked{ background:#1e90ff; b
 
 /* Space page tabs (Dashboard / Lectures / Tasks): squircle instead of a full pill */
 #overlay .ws-tabs button, #overlay .ws-tabs .filter-pill{ border-radius:18px !important; corner-shape:squircle; }
+
+
+/* Task creation pages: the Post / Share button is a squircle, not a full pill */
+.nf-create, .nf-create.ready{ border-radius:20px !important; corner-shape:squircle; }

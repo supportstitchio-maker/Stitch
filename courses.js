@@ -10871,9 +10871,10 @@ try {
 
         function classworkCreateMenuHTML(){
           return `
-            <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
-<div class="-mx-5">${overlayHeader('New task', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { pb: '12px' })}</div>
-              <div class="tk-first" style="margin-top:4px;"><p>What would you like to post?</p></div>
+            <span class="cw-page" aria-hidden="true" style="display:none;"></span>
+            <div class="flex-1 overflow-y-auto px-5" style="display:flex;flex-direction:column;gap:0;">
+<div class="-mx-5" style="margin-bottom:6px !important;">${overlayHeader('New task', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { pb: '12px' })}</div>
+              <div class="tk-first" style="margin-top:0;padding-top:8px;"><p>What would you like to post?</p></div>
               <div class="tk-opts">
                 ${classworkCreateMenuOptionRow('doc','Assignment','The class hands in work and you grade it', "openNewAssignmentOverlay()")}
                 ${classworkCreateMenuOptionRow('edit','Quiz','Questions that are marked for you', "openNewQuizOverlay()")}
@@ -11062,8 +11063,9 @@ try {
           }[type] || { head: 'New task', title: 'Title', note: 'Instructions (optional)', cta: 'Post', files: '' };
           const scored = type !== 'material';
           return `
+            <span class="cw-page" aria-hidden="true" style="display:none;"></span>
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader(copy.head, '20px', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+<div class="-mx-5" style="margin-bottom:6px !important;">${overlayHeader(copy.head, 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
               <div class="nf">
                 <input type="text" id="classwork-title-input" class="nf-in nf-title" placeholder="${copy.title}" autocomplete="off" oninput="nfReady(this,'classwork-create-btn')">
                 <textarea id="classwork-instructions-input" class="nf-in" rows="4" placeholder="${copy.note}"></textarea>
@@ -11206,8 +11208,9 @@ try {
 
         function newQuizHTML(){
           return `
+            <span class="cw-page" aria-hidden="true" style="display:none;"></span>
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('New quiz', '20px', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+<div class="-mx-5" style="margin-bottom:6px !important;">${overlayHeader('New quiz', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
               <div class="nf">
                 <input type="text" id="quiz-title-input" class="nf-in nf-title" placeholder="Quiz title" autocomplete="off">
                 <textarea id="quiz-instructions-input" class="nf-in" rows="3" placeholder="Anything members should know first? (optional)"></textarea>
@@ -11295,8 +11298,9 @@ try {
 
         function newPollHTML(){
           return `
+            <span class="cw-page" aria-hidden="true" style="display:none;"></span>
             <div class="flex-1 overflow-y-auto px-5">
-<div class="-mx-5">${overlayHeader('New poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
+<div class="-mx-5" style="margin-bottom:6px !important;">${overlayHeader('New poll', 'var(--top-safe-pad)', 'openClassworkCreateMenu()', null, { pb: '12px' })}</div>
               <div class="nf">
                 <input type="text" id="poll-title-input" class="nf-in nf-title" placeholder="What do you want to ask?" autocomplete="off">
                 <div class="nf-sec"><h3>Choices</h3><span class="nf-h" style="margin:0;">Add at least two</span></div>
@@ -11367,6 +11371,7 @@ try {
           const cls = myClasses.find(c => c.id === currentClassId);
           const isTeacher = cls && cls.role === 'teacher';
           return `
+            <span class="cw-page" aria-hidden="true" style="display:none;"></span>
             <div class="flex-1 flex flex-col overflow-hidden">
               <div class="flex-1 overflow-y-auto px-5 pb-8">
 <div class="-mx-5">
