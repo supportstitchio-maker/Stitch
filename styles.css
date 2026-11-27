@@ -7870,3 +7870,32 @@ body.dark-mode .nav-protrude-inner{ background:transparent !important; color:#8b
 .ws-stream-fab.on{ background:#0f6fd6; }
 /* Where a "+" (Create) button is already in that corner, the speaker stacks just above it */
 #overlay:has(button[title="Create"].fixed) .ws-stream-fab{ bottom:calc(1.25rem + 2.5rem + 0.75rem + env(safe-area-inset-bottom, 0px)); }
+
+/* ---- Tasks tab: assigned work first, study materials after; Colmeak titles over Inter details ---- */
+#overlay .tk-sec{ margin:22px 0 6px; }
+#overlay .tk-h{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+#overlay .tk-h h3{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:18px; line-height:1.2; color:#1e90ff; margin:0; letter-spacing:0; }
+#overlay .tk-h span{ font-family:'Inter',system-ui,sans-serif; font-size:12px; font-weight:600; color:#6b7a90; background:rgba(30,144,255,.1); border-radius:999px; padding:2px 9px; }
+#overlay .tk-row, #overlay .tk-opt{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:14px 0; border-bottom:1px solid rgba(128,128,128,.18); background:transparent; }
+#overlay .tk-sec .tk-row:last-child, #overlay .tk-opts .tk-opt:last-child{ border-bottom:0; }
+#overlay .tk-row:active, #overlay .tk-opt:active{ opacity:.7; }
+#overlay .tk-ic{ width:42px; height:42px; border-radius:14px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#1e90ff; background:rgba(30,144,255,.1); }
+#overlay .tk-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+#overlay .tk-main b{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:15.5px; line-height:1.25; color:#111; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#overlay .tk-main small{ font-family:'Inter',system-ui,sans-serif; font-size:12.5px; font-weight:500; color:#6b7a90; line-height:1.35; }
+#overlay .tk-note{ font-family:'Inter',system-ui,sans-serif; font-size:12.5px; color:#94a3b8; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#overlay .tk-chip{ flex-shrink:0; max-width:40%; font-family:'Inter',system-ui,sans-serif; font-size:12px; font-weight:600; line-height:1.2; border-radius:999px; padding:5px 10px; text-align:center; }
+#overlay .tk-chip.idle{ color:#6b7a90; background:rgba(128,128,128,.12); }
+#overlay .tk-chip.open{ color:#0f6fd6; background:rgba(30,144,255,.12); }
+#overlay .tk-chip.done{ color:#15803d; background:rgba(31,164,99,.14); }
+#overlay .tk-empty{ padding:10px 0 4px; text-align:left; }
+#overlay .tk-empty b{ display:block; font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:15.5px; color:#111; margin-bottom:4px; }
+#overlay .tk-empty span{ font-family:'Inter',system-ui,sans-serif; font-size:13.5px; line-height:1.5; color:#6b7a90; }
+#overlay .tk-first{ padding:22px 0 6px; }
+#overlay .tk-first h3{ font-family:'Gendy','Montserrat',sans-serif; font-weight:600; font-size:20px; color:#1e90ff; margin:0 0 6px; }
+#overlay .tk-first p{ font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.5; color:#6b7a90; margin:0; }
+#overlay .tk-go{ font-size:22px; color:#9aa7b8; flex-shrink:0; }
+body.dark-mode #overlay .tk-main b, body.dark-mode #overlay .tk-empty b{ color:#f2f2f2; }
+body.dark-mode #overlay .tk-main small, body.dark-mode #overlay .tk-empty span, body.dark-mode #overlay .tk-first p{ color:#9aa3b2; }
+body.dark-mode #overlay .tk-chip.open{ color:#5cb0ff; }
+body.dark-mode #overlay .tk-chip.done{ color:#4ade80; }

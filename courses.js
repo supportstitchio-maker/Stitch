@@ -10765,55 +10765,83 @@ try {
           return `<span class="text-[10px] font-bold uppercase whitespace-nowrap text-gray-500">Not submitted</span>`;
         }
 
+        // Tasks tab: assigned work first (it is what people act on), study materials after.
+        function classworkMetaLine(w){
+          const kind = classworkTypeLabel(w.type);
+          let detail = '';
+          if (w.type === 'quiz') { const n = (w.questions || []).length; detail = n + (n === 1 ? ' question' : ' questions'); }
+          else if (w.type === 'poll') { const n = (w.options || []).length; detail = n + (n === 1 ? ' choice' : ' choices'); }
+          else if (w.type !== 'material') detail = w.points ? w.points + (w.points === 1 ? ' point' : ' points') : 'Not graded';
+          return [kind, detail, w.due ? 'Due ' + w.due : ''].filter(Boolean).join(' \u00b7 ');
+        }
+
+        // Status shown at the right of a task row: [text, tone] where tone is done, open or idle
+        function classworkStatusChip(w, isTeacher){
+          if (w.type === 'material') return null;
+          if (w.type === 'quiz') {
+            if (isTeacher) { const n = Object.keys(classworkQuizSubmissionsMap(w)).length; return n ? [n + ' taken', 'open'] : ['No attempts yet', 'idle']; }
+            const mine = myClassworkQuizSubmission(w);
+            return mine ? ['Scored ' + mine.autoScore + '/' + mine.total, 'done'] : ['Not taken yet', 'idle'];
+          }
+          if (w.type === 'poll') return w.myVote !== null ? ['You voted', 'open'] : ['Not voted yet', 'idle'];
+          if (isTeacher) { const n = Object.keys(classworkSubmissionsMap(w)).length; return n ? [n + ' handed in', 'open'] : ['None handed in', 'idle']; }
+          const mine = myClassworkSubmission(w);
+          if (mine && mine.graded) return ['Graded ' + mine.score + (w.points ? '/' + w.points : ''), 'done'];
+          if (mine) return ['Handed in', 'open'];
+          return ['Not handed in', 'idle'];
+        }
+
+        function classworkTaskRow(w, isTeacher){
+          const chip = classworkStatusChip(w, isTeacher);
+          const note = w.instructions ? String(w.instructions).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
+          return `
+            <button onclick="openClassworkDetail('${w.id}')" class="tk-row">
+              <span class="tk-ic">${Icon(classworkTypeIcon(w.type),'w-5 h-5')}</span>
+              <span class="tk-main">
+                <b>${escapeHtml(w.title)}</b>
+                <small>${escapeHtml(classworkMetaLine(w))}</small>
+                ${note ? `<span class="tk-note">${escapeHtml(note)}</span>` : ''}
+              </span>
+              ${chip ? `<span class="tk-chip ${chip[1]}">${escapeHtml(chip[0])}</span>` : ''}
+            </button>`;
+        }
+
+        function classworkSectionHTML(title, count, rowsHTML, emptyTitle, emptySub){
+          return `
+            <section class="tk-sec">
+              <div class="tk-h"><h3>${title}</h3>${count ? `<span>${count}</span>` : ''}</div>
+              ${count ? rowsHTML : `<div class="tk-empty"><b>${emptyTitle}</b><span>${emptySub}</span></div>`}
+            </section>`;
+        }
+
         function classClassworkTabHTML(cls){
           const isTeacher = cls.role === 'teacher';
           const materials = cls.classwork.filter(w => w.type === 'material');
           const work = cls.classwork.filter(w => w.type !== 'material');
-          const row = (w, i, arr) => `
-            <div onclick="openClassworkDetail('${w.id}')" class="flex items-start gap-3 py-4 cursor-pointer" style="${i < arr.length - 1 ? 'border-bottom:1px solid rgba(0,0,0,0.07);' : ''}">
-              <span class="w-10 h-10 flex items-center justify-center flex-shrink-0 text-[${NAVY}]">${Icon(classworkTypeIcon(w.type),'w-5 h-5')}</span>
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-sm text-gray-800 truncate">${escapeHtml(w.title)}</div>
-                ${w.instructions ? `<div class="text-xs text-gray-400 mt-0.5 line-clamp-2">${w.instructions}</div>` : ''}
-                <div class="text-xs text-gray-400 mt-1.5 flex items-center justify-between gap-2">
-                  <span class="min-w-0">${w.type === 'quiz' ? (w.questions.length + ' questions') : w.type === 'poll' ? (w.options.length + ' options') : (w.points ? w.points + ' points' : 'Unscored')}${w.due ? ' · Due ' + w.due : ''}</span>
-                  ${classworkStatusBadge(w, isTeacher)}
-                </div>
-              </div>
-              <div class="text-gray-300 flex-shrink-0" style="align-self:center;">›</div>
-            </div>`;
           // Same static plus button as the main Classroom page.
           const createFab = isTeacher ? `
             <button onclick="openClassworkCreateMenu()" title="Create" class="fixed flex items-center justify-center text-white rounded-2xl z-30" style="right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;background:rgba(30,144,255,0.85);box-shadow:0 8px 18px rgba(30,144,255,0.38),0 3px 8px rgba(0,0,0,0.22);">${IconBold('plus','w-5 h-5')}</button>` : '';
           if (isTeacher && !cls.classwork.length) {
             return `
-              <div class="text-center mb-4">
-                <div class="font-bold text-gray-700 mb-1">Create your first task</div>
-                <div class="text-sm text-gray-400 leading-relaxed">Pick a type below. Members can turn in work, take quizzes and vote, and you score and give feedback right here in Tasks.</div>
+              <div class="tk-first">
+                <h3>What would you like to post?</h3>
+                <p>Pick a type to get started. You can add more any time with the plus button.</p>
               </div>
-              <div style="display:flex;flex-direction:column;gap:0;padding:0 4px;">
-                ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
-                ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
-                ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
-                ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the space', "openNewPollOverlay()")}
-                ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()", true)}
+              <div class="tk-opts">
+                ${classworkCreateMenuOptionRow('doc','Assignment','The class hands in work and you grade it', "openNewAssignmentOverlay()")}
+                ${classworkCreateMenuOptionRow('edit','Quiz','Questions that are marked for you', "openNewQuizOverlay()")}
+                ${classworkCreateMenuOptionRow('help','Question','Ask the class something to answer', "openNewQuestionOverlay()")}
+                ${classworkCreateMenuOptionRow('chart','Poll','Collect quick votes', "openNewPollOverlay()")}
+                ${classworkCreateMenuOptionRow('file','Material','Share a file or reading, nothing to hand in', "openNewMaterialOverlay()", true)}
               </div>`;
           }
-
           return `
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:26px 0 12px;">Course Materials</div>
-            ${materials.length ? materials.map(row).join('') : `
-              <div class="cw-empty">
-                <div class="cw-empty-t">${isTeacher ? 'No materials yet' : 'Nothing here yet'}</div>
-                <div class="cw-empty-s">${isTeacher ? 'Share slides, notes, or readings with your space.' : "Your moderator hasn't uploaded any course materials yet."}</div>
-              </div>`}
-
-            <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:34px 0 12px;">Assignments &amp; Quizzes</div>
-            ${work.length ? work.map(row).join('') : `
-              <div class="cw-empty">
-                <div class="cw-empty-t">${isTeacher ? 'Create your first task' : 'No assignments yet'}</div>
-                <div class="cw-empty-s">${isTeacher ? 'Pick a type to post. Members can turn in work, take quizzes and vote, and you score and give feedback right here in Tasks.' : 'Assignments and quizzes from your moderator will show up here.'}</div>
-              </div>`}
+            ${classworkSectionHTML('Assigned work', work.length, work.map(w => classworkTaskRow(w, isTeacher)).join(''),
+              'Nothing assigned yet',
+              isTeacher ? 'Tap + to post an assignment, quiz, question or poll.' : 'When your moderator posts work, it will show up here.')}
+            ${classworkSectionHTML('Study materials', materials.length, materials.map(w => classworkTaskRow(w, isTeacher)).join(''),
+              'No study materials yet',
+              isTeacher ? 'Slides, notes and readings you add will live here.' : "Your moderator hasn't shared any yet.")}
             ${isTeacher ? `<div style="height:60px;"></div>${createFab}` : ''}`;
         }
 
@@ -10823,23 +10851,25 @@ try {
 
         function classworkCreateMenuOptionRow(icon, label, sub, onclick, isLast){
           return `
-            <button onclick="${onclick}" class="w-full flex items-center gap-4 py-4 text-left" style="${isLast ? '' : 'border-bottom:1px solid rgba(0,0,0,0.07);'}">
-              <div class="min-w-0">
-                <div class="font-semibold text-sm text-gray-800">${label}</div>
-                <div class="text-xs text-gray-400">${sub}</div>
-              </div>
+            <button onclick="${onclick}" class="tk-opt">
+              <span class="tk-ic">${Icon(icon,'w-5 h-5')}</span>
+              <span class="tk-main"><b>${label}</b><small>${sub}</small></span>
+              <span class="tk-go" aria-hidden="true">\u203a</span>
             </button>`;
         }
 
         function classworkCreateMenuHTML(){
           return `
             <div class="flex-1 overflow-y-auto px-5" style="padding-top:10px;display:flex;flex-direction:column;gap:0;">
-<div class="-mx-5">${overlayHeader('Create', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { center: true, pb: '20px' })}</div>
-              ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
-              ${classworkCreateMenuOptionRow('edit','Quiz','Auto-graded questions, remark after submission', "openNewQuizOverlay()")}
-              ${classworkCreateMenuOptionRow('help','Question','Post a question for the space to answer', "openNewQuestionOverlay()")}
-              ${classworkCreateMenuOptionRow('chart','Poll','Quick multiple-choice vote for the space', "openNewPollOverlay()")}
-              ${classworkCreateMenuOptionRow('file','Material','Share a resource, no submission needed', "openNewMaterialOverlay()", true)}
+<div class="-mx-5">${overlayHeader('New task', 'var(--top-safe-pad)', "classDetailTab='classwork'; openOverlay('classDetail')", null, { pb: '12px' })}</div>
+              <div class="tk-first" style="margin-top:4px;"><p>What would you like to post?</p></div>
+              <div class="tk-opts">
+                ${classworkCreateMenuOptionRow('doc','Assignment','The class hands in work and you grade it', "openNewAssignmentOverlay()")}
+                ${classworkCreateMenuOptionRow('edit','Quiz','Questions that are marked for you', "openNewQuizOverlay()")}
+                ${classworkCreateMenuOptionRow('help','Question','Ask the class something to answer', "openNewQuestionOverlay()")}
+                ${classworkCreateMenuOptionRow('chart','Poll','Collect quick votes', "openNewPollOverlay()")}
+                ${classworkCreateMenuOptionRow('file','Material','Share a file or reading, nothing to hand in', "openNewMaterialOverlay()", true)}
+              </div>
             </div>`;
         }
 
