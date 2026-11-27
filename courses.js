@@ -5254,35 +5254,46 @@ try {
 
         let classSkeletonRole = 'teacher';
         function classDetailSkeletonMarkup(text){
-          const isTeacher = text === 'Creating space' ? true : text === 'Adding you to space' ? false : classSkeletonRole !== 'student';
+          // Mirrors the real space page (workspace.js, classDetailHTML dashboard tab): header with back + messages + bell,
+          // coloured hero card, Dashboard / Lectures / Tasks pills, 2-column tile grid, and the floating stream button.
           const white = 'background:rgba(255,255,255,.55);';
-          const card = `<div class="sk" style="height:112px;border-radius:24px;margin-bottom:12px;"></div>`;
+          const pill = (w, on) => `<span class="filter-pill flex-shrink-0 ${on ? 'on' : ''}" style="pointer-events:none;border-radius:18px;"><span class="sk" style="width:${w}px;height:16px;"></span></span>`;
+          // Teachers get two-line descriptions on every tile; students get shorter one-line ones on Lectures, Tasks and Resources
+          const isTeacher = text === 'Creating space' ? true : text === 'Adding you to space' ? false : classSkeletonRole !== 'student';
+          const tile = (lines) => `
+            <div class="ws-res" style="pointer-events:none;min-height:147px;">
+              <span class="ic"><span class="sk" style="display:block;width:24px;height:24px;border-radius:7px;background-color:currentColor;opacity:.18;"></span></span>
+              <span class="t">
+                <span class="sk" style="display:block;width:62%;height:18px;margin-bottom:${lines ? '10px' : '0'};background-color:currentColor;opacity:.18;"></span>
+                ${lines >= 1 ? `<span class="sk" style="display:block;width:${lines === 1 ? '70%' : '92%'};height:12px;margin-bottom:${lines === 2 ? '6px' : '0'};background-color:currentColor;opacity:.12;"></span>` : ''}
+                ${lines === 2 ? `<span class="sk" style="display:block;width:58%;height:12px;background-color:currentColor;opacity:.12;"></span>` : ''}
+              </span>
+            </div>`;
+          const tileLines = isTeacher ? [0, 2, 2, 2, 2, 2] : [0, 1, 2, 2, 1, 1];
           return `
             <div id="class-action-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Preparing space" style="overflow:hidden;">
-              <div style="padding-top:var(--top-safe-pad, 20px);padding-bottom:calc(0.75rem + 10px);position:relative;" class="px-5">
-                <div class="sk-row" style="justify-content:space-between;height:32px;">
-                  <div class="sk" style="width:22px;height:22px;border-radius:6px;"></div>
-                  <div class="sk" style="width:150px;height:18px;position:absolute;left:50%;transform:translateX(-50%);"></div>
-                  <div class="sk" style="width:24px;height:18px;border-radius:6px;"></div>
+              <div class="px-5" style="padding-top:0;">
+                <div class="ws-hdr ws-hdr-s ws-hdr-m ws-hdr-m3" style="position:relative !important;">
+                  <span class="ws-circ"><span class="sk sk-round" style="width:26px;height:26px;"></span></span>
+                  <div class="ws-hdr-t" style="display:flex;justify-content:center;"><span class="sk" style="width:150px;height:20px;"></span></div>
+                  <div class="ws-hdr-r">
+                    <span class="ws-circ"><span class="sk sk-round" style="width:24px;height:24px;"></span></span>
+                    <span class="ws-circ"><span class="sk sk-round" style="width:24px;height:24px;"></span></span>
+                  </div>
+                </div>
+                <div class="ws-hero sk" style="border-radius:26px;min-height:169px;justify-content:flex-end;">
+                  <span style="position:absolute;top:14px;left:14px;width:128px;height:26px;border-radius:9999px;${white}"></span>
+                  <span style="display:block;width:62%;height:18px;border-radius:8px;position:relative;${white}"></span>
+                  <span style="display:block;width:36%;height:13px;border-radius:8px;position:relative;margin-top:8px;${white}"></span>
+                  <span style="display:block;width:150px;height:30px;border-radius:9999px;position:relative;margin-top:12px;${white}"></span>
+                </div>
+                <div style="height:16px;"></div>
+                <div class="ws-tabs" style="justify-content:center;overflow-x:hidden;">${pill(75, true)}${pill(61, false)}${pill(40, false)}</div>
+                <div class="ws-grid" style="margin-top:4px;">
+                  ${tileLines.map(tile).join('')}
                 </div>
               </div>
-              <div class="px-5">
-                <div class="sk" style="height:132px;border-radius:24px;margin-bottom:16px;position:relative;">
-                  <div style="position:absolute;left:20px;top:20px;width:55%;height:20px;border-radius:8px;${white}"></div>
-                  <div style="position:absolute;left:20px;top:52px;width:30%;height:14px;border-radius:8px;${white}"></div>
-                  <div style="position:absolute;left:20px;bottom:18px;width:42%;height:26px;border-radius:9999px;${white}"></div>
-                </div>
-                ${isTeacher ? `
-                <div class="sk-row" style="gap:8px;margin-bottom:16px;">
-                  <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
-                  <div class="sk" style="flex:1;height:42px;border-radius:9999px;"></div>
-                </div>` : ''}
-                <div class="sk-tabs" style="display:flex;gap:4px;margin-bottom:12px;background:#f3f4f6;border-radius:16px;padding:4px;">
-                  <div class="sk sk-tab-on" style="flex:1;height:38px;border-radius:12px;background-color:#e1e4ea;"></div>
-                  <div style="flex:1;height:38px;display:flex;align-items:center;justify-content:center;"><div class="sk" style="width:56px;height:12px;"></div></div>
-                </div>
-                ${card}${card}${card}
-              </div>
+              <div class="sk" style="position:absolute;right:1.25rem;bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px));width:2.5rem;height:2.5rem;border-radius:16px;"></div>
             </div>`;
         }
 
