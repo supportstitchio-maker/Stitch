@@ -6660,9 +6660,9 @@ body.dark-mode .ce-stack i{background:#1e1e1e;box-shadow:0 2px 10px rgba(0,0,0,.
 body.dark-mode .ce-btn{background:#1e1e1e;color:#f2f2f2;box-shadow:0 2px 10px rgba(0,0,0,.5);} body.dark-mode .ce-btn svg{color:#9a9a9a;}
 
 /* New collaboration screens: pill back arrow, white pill Next/Create, outlined fields */
-.collab-pill-back{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,0.10); color:#1f2937; border:1.5px solid transparent; }
+.collab-pill-back{ width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,0.10); color:#1e90ff; border:1.5px solid transparent; }
 .collab-pill-back svg{ color:inherit; }
-body.dark-mode .collab-pill-back{ background:#1e1e1e; color:#f2f2f2; box-shadow:0 2px 10px rgba(0,0,0,.5); }
+body.dark-mode .collab-pill-back{ background:#1e1e1e; color:#1e90ff; box-shadow:0 2px 10px rgba(0,0,0,.5); }
 body:not(.dark-mode) .collab-pill-cta{ background:#fff !important; color:#1f2937 !important; box-shadow:0 2px 10px rgba(15,23,42,0.14) !important; padding:14px 30px !important; font-size:15px !important; font-weight:700 !important; }
 body.dark-mode .collab-pill-cta{ background:#1e1e1e !important; color:#f2f2f2 !important; box-shadow:0 2px 10px rgba(0,0,0,.5) !important; padding:14px 30px !important; font-size:15px !important; font-weight:700 !important; }
 body:not(.dark-mode) .collab-field{ background:#fff !important; border:1.5px solid #cbd5e1 !important; box-shadow:0 2px 10px rgba(15,23,42,0.08); }
@@ -7821,4 +7821,10 @@ body.dark-mode .wa-main-btn{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
 /* Stitch Tutor mic / send: the Workspace script injects its own 50% radius later, so force the squircle */
 @supports (corner-shape: squircle){
   .ws-comp .ws-main, .ws-main, .ws-main[data-mode], .ws-send{ corner-shape:squircle !important; border-radius:36% !important; }
+}
+
+/* Profile buttons (Edit profile, Share profile, Dashboard / Admin Dashboard): squircle instead of a pill */
+.profile-sq-btn{ border-radius:18px; }
+@supports (corner-shape: squircle){
+  .profile-sq-btn.profile-sq-btn{ corner-shape:squircle; border-radius:24px; }
 }
