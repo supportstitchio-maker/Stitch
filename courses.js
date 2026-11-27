@@ -6539,14 +6539,13 @@ try {
               title = s ? classStudentName(cls, s) : 'Member';
             } else title = classTeacherDisplayName(cls);
           }
-          const header = overlayHeader(escapeHtml(title), 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, pb: '22px', titleSize: 'text-xl', titleClass: 'truncate min-w-0' });
+          const header = overlayHeader(escapeHtml(title), 'var(--top-safe-pad)', 'classMsgBack()', null, { right: true, titleSize: 'text-xl', titleClass: 'truncate min-w-0' });
           if (!inThread) {
             return `
               <div class="flex-1 flex flex-col overflow-hidden">
                 <div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:50px;">
                   ${header}
                   <div class="px-5">
-                    <div class="nm-wrap text-sm text-gray-400" style="margin-bottom:10px;"><span class="nm-inner">${escapeHtml(cls.name)}</span></div>
                     <div id="cm-list">${classMsgListHTML(cls)}</div>
                   </div>
                 </div>

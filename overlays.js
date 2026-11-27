@@ -646,13 +646,17 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function menuOverlayHeader(title, menuOpen, toggleFnName, dropdownHtml, opts){
           opts = opts || {};
           const backFnName = opts.backFn || 'closeOverlay';
-          const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="hdr-circ">${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
+          const backBtn = opts.hideBack ? '' : `<button onclick="${backFnName}()" class="hdr-circ"${opts.deskBack ? ' aria-label="Back"' : ''}>${gradIcon(IconBold('back','w-5 h-5'))}</button>`;
           const menuIconName = opts.dotsMenuIcon ? 'dots' : (opts.shortDashes === false ? 'dashes' : 'menuDrop');
           const menuIconSize = opts.shortDashes === false ? 'w-5 h-5' : 'w-6 h-6';
           const menuIcon = opts.boldMenuIcon ? IconBold(menuIconName,menuIconSize) : Icon(menuIconName,menuIconSize);
           const menuBtnClass = `hdr-circ${opts.hideMenuOnDesktop ? ' notif-header-menu-btn' : ''}`;
-          const menuBtnStyle = '';
-          const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}"${menuBtnStyle}>${opts.flipMenuIcon ? `<span style="display:flex;transform:scaleX(-1);">${gradIcon(menuIcon)}</span>` : gradIcon(menuIcon)}</button>`;
+          const menuBtnStyle = opts.deskBack ? ' style="margin-left:auto;"' : '';
+          // deskDashes: the round drop icon on phones, three dashes on desktop (swapped by CSS)
+          const menuIconHTML = opts.deskDashes
+            ? `<span class="mh-ico-m">${gradIcon(menuIcon)}</span><span class="mh-ico-d">${gradIcon(Icon('dashes','w-5 h-5'))}</span>`
+            : (opts.flipMenuIcon ? `<span style="display:flex;transform:scaleX(-1);">${gradIcon(menuIcon)}</span>` : gradIcon(menuIcon));
+          const menuBtn = `<button onclick="${toggleFnName}()" class="${menuBtnClass}"${menuBtnStyle}>${menuIconHTML}</button>`;
           const titleSize = opts.titleSize || 'text-base';
           const titleClass = opts.titleRight
             ? `${titleSize} font-bold font-display grad-text truncate`
@@ -2714,7 +2718,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           opts = opts || {};
           const showDelete = opts.showDelete !== false;
           const side = opts.align === 'left' ? 'left:1.25rem;' : 'right:1.25rem;';
-          if (opts.sheetToggle) {
+          const deskWide = typeof window !== 'undefined' && window.innerWidth >= 1100;
+          if (opts.sheetToggle && !deskWide) {
             const rows = [
               { onclick: `${handlerName}('pin')`, icon: 'pin', label: 'Pin' },
               { onclick: `${handlerName}('read')`, icon: 'check', label: 'Mark as read' },
@@ -3839,7 +3844,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>` : '';
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              <div class="notif-wrap">${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'right', sheetToggle: 'toggleNoticeBoardMenu' }), { shortDashes: true, titleSize: 'text-xl', deskBig: true, hideMenuOnDesktop: true })}</div>
+              <div class="notif-wrap">${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'right', sheetToggle: 'toggleNoticeBoardMenu' }), { shortDashes: true, titleSize: 'text-xl', deskDashes: true, deskBack: true })}</div>
               <div class="p-5 notif-wrap">
                 ${stitchCard}
                 <div class="space-y-2">${classroomNotifs.length ? noticePinnedFirstHTML(classroomNotifs) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>

@@ -5350,9 +5350,9 @@ body.dark-mode .nrow-in.sel{ background:#1d2740 !important; }
   .rp-contact-row{ transition:background-color .15s ease; }
   .rp-contact-row:hover{ background:rgba(30,144,255,.07); }
 }
-@keyframes pgIn{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
+@keyframes pgIn{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes rpSwap{ from{ opacity:0; transform:translateX(10px); } to{ opacity:1; transform:none; } }
-@keyframes ovIn{ from{ opacity:0; transform:translateY(12px) scale(.992); } to{ opacity:1; transform:none; } }
+@keyframes ovIn{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes dtopIn{ from{ opacity:0; transform:translateY(-8px); } to{ opacity:1; transform:none; } }
 @keyframes railIn{ from{ opacity:0; transform:translateX(-14px); } to{ opacity:1; transform:none; } }
 @media (min-width:1100px){
@@ -7678,9 +7678,9 @@ body:not(.dark-mode) .fc-act-flip, body.dark-mode .fc-act-flip{ background:linea
    White sheet, soft 1.5px border and soft shadow, blue border on focus, Apple-style continuous (squircle) corners.
    Applies to search boxes, form fields and text areas everywhere. Boxes that sit inside another sheet (transparent
    inputs inside the message pill) and the sign-in flow keep their own styling. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
-select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
 div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:#ffffff !important;
   border:1.5px solid rgba(10,37,64,0.10) !important;
@@ -7689,21 +7689,21 @@ div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-texta
 }
 /* squircle shape (continuous corners) on the message box and every type box */
 @supports (corner-shape: squircle){
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
-  textarea:not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *), select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *), .convo-composer-pill,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+  textarea:not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *), select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *), .convo-composer-pill,
   div:has(> input.bg-transparent[placeholder*="earch" i]){ corner-shape:squircle; }
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus,
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus,
-select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus{
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus,
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus,
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus{
   border-color:#1e90ff !important;
   box-shadow:0 8px 24px rgba(30,144,255,0.16) !important;
   outline:none;
 }
 input::placeholder,textarea::placeholder{color:#8a93a6}
-body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
-body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
-body.dark-mode select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+body.dark-mode select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
 body.dark-mode div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:var(--c-onyx) !important;
   border-color:rgba(255,255,255,0.10) !important;
@@ -7712,18 +7712,18 @@ body.dark-mode div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo
 body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:#9a9a9a}
 
 /* Wrapper boxes carry the sheet (the input inside stays transparent, like the messaging page) */
-.ws-comp,.ws-search{
+.ws-comp,.ws-search,.nt-search{
   background-color:#ffffff !important;
   border:1.5px solid rgba(10,37,64,0.10) !important;
   box-shadow:0 8px 24px rgba(10,37,64,0.10) !important;
 }
-body.dark-mode .ws-comp, body.dark-mode .ws-search{
+body.dark-mode .ws-comp, body.dark-mode .ws-search, body.dark-mode .nt-search{
   background-color:var(--c-onyx) !important;
   border-color:rgba(255,255,255,0.10) !important;
   box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
 }
-.ws-comp textarea,.ws-search input{background:transparent !important;border:0 !important;box-shadow:none !important;outline:none !important;border-radius:0 !important}
-@supports (corner-shape: squircle){ .ws-comp,.ws-search{ corner-shape:squircle; } }
+.ws-comp textarea,.ws-search input,.nt-search input{background:transparent !important;border:0 !important;box-shadow:none !important;outline:none !important;border-radius:0 !important}
+@supports (corner-shape: squircle){ .ws-comp,.ws-search,.nt-search{ corner-shape:squircle; } }
 /* old flat rules made these square: give them the rounded sheet back so the squircle shows */
 #course-search-input{border:1.5px solid rgba(10,37,64,0.10) !important;border-radius:999px !important;padding-top:.65rem !important;padding-bottom:.65rem !important}
 body.dark-mode #course-search-input{border-color:rgba(255,255,255,0.10) !important}
@@ -8039,3 +8039,67 @@ button.filter-pill[onclick^="startScheduledLectureNow"], button.filter-pill[oncl
   /* clear space under the floating arrow so page titles never touch it */
   #screen .ws-hdr.ws-hdr-s{ padding-top:14px; }
 }
+
+
+/* ===== Notice Board / Notes fixes ===== */
+/* Notes search: one squircle box (the input inside is plain) */
+.nt-search{ height:46px; }
+.nt-search input{ background:transparent !important; border:0 !important; box-shadow:none !important; outline:none !important; border-radius:0 !important; }
+body.dark-mode .nt-search input{ color:#f2f2f2; }
+/* Notice Board header: round drop icon on phones, three dashes on desktop */
+.mh-ico-m{ display:flex; } .mh-ico-d{ display:none; }
+@media (min-width:1100px){ .mh-ico-m{ display:none; } .mh-ico-d{ display:flex; } }
+/* Notice detail pop-up: centred card on desktop instead of a bottom sheet */
+@media (min-width:1100px){
+  #notifDetailModal{ align-items:center !important; justify-content:center; }
+  #notifDetailModal > div{ max-width:480px; border-radius:24px !important; padding:22px 24px !important; }
+  body.dark-mode #notifDetailModal > div{ background:#1c1c1e !important; }
+}
+
+
+/* ===== Workspace pills: squircle, and the flashcard player always on top ===== */
+.ws-seg button, .ws-chips .filter-pill, .ws-sugs .filter-pill, #ws-sheet .filter-pill, .ws-seg .filter-pill{ border-radius:22px !important; }
+@supports (corner-shape: squircle){
+  .ws-seg button, .ws-chips .filter-pill, .ws-sugs .filter-pill, #ws-sheet .filter-pill, .ws-seg .filter-pill{ corner-shape:squircle; }
+}
+#flashModal{ z-index:1200 !important; }
+
+/* Messages page bell: dodger blue in light and dark mode */
+.ws-sub-bell, .ws-sub-bell svg, body.dark-mode .ws-sub-bell, body.dark-mode .ws-sub-bell svg{ color:#1e90ff !important; stroke:#1e90ff !important; }
+
+/* Phone header logo: dodger blue in dark mode, same as the + and bell beside it */
+body.dark-mode #topbar-brand img{ filter:brightness(0) saturate(100%) invert(49%) sepia(96%) saturate(2400%) hue-rotate(196deg) brightness(102%) contrast(101%); }
+
+
+/* ===== Loading skeletons in dark mode: also follow <html class="dark-mode">, which is set before first paint
+   (body.dark-mode only arrives later), so the sign-in skeleton never flashes light ===== */
+html.dark-mode .skel-post { background:var(--c-onyx) !important; box-shadow:none !important; }
+html.dark-mode .skel-shimmer { background:var(--c-charcoal) !important; }
+html.dark-mode .skel-shimmer::after { background:linear-gradient(90deg, rgba(43,43,43,0) 0%, rgba(255,255,255,0.10) 50%, rgba(43,43,43,0) 100%) !important; }
+html.dark-mode .skel-story-badge { border-color:var(--c-onyx) !important; }
+html.dark-mode .skel-story-row { border-bottom-color:var(--c-licorice) !important; }
+html.dark-mode #auth-transition-loading.skeleton-mode { background:var(--c-black) !important; }
+html.dark-mode #auth-transition-loading { background:linear-gradient(160deg, var(--c-black) 0%, var(--c-onyx) 50%, var(--c-black) 100%) !important; }
+html.dark-mode #auth-transition-loading.skeleton-mode.plain-mode{ background:#121212 !important; }
+html.dark-mode .sk{ background-color:rgba(255,255,255,.08); background-image:linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(255,255,255,.10) 50%, rgba(255,255,255,0) 100%); }
+html.dark-mode .fc-face-front, html.dark-mode .myact-dl-pill, html.dark-mode .skel-post { border:1px solid var(--c-tapshoe); }
+html.dark-mode .sk-tabs{ background:var(--c-onyx) !important; }
+html.dark-mode .sk-tabs .sk-tab-on{ background-color:var(--c-charcoal) !important; }
+html.dark-mode .skel-desk,html.dark-mode .skel-desk{background:#121212;}
+html.dark-mode .skel-dnav,html.dark-mode .skel-dright,html.dark-mode .skel-dright-head,html.dark-mode .skel-dnav,html.dark-mode .skel-dright,html.dark-mode .skel-dright-head{border-color:#2a2a2a;}
+html.dark-mode .skd-wrap{background:#121212;}
+html.dark-mode .skd-rail-grp,html.dark-mode .skd-right{background:#222222;box-shadow:none;}
+html.dark-mode .skd-search{background:#2a2a2a !important;}
+html.dark-mode .skd-post{border-bottom-color:rgba(255,255,255,.08);}
+html.dark-mode #auth-transition-loading.skel-desktop-mode{background:#121212 !important;}
+html.dark-mode .skd-wrap .skel-story-wrap::after,html.dark-mode .skd-feed .skel-story-wrap::after{background:var(--c-charcoal,#2b2b2b);}
+html.dark-mode .sk-ws-cover{ background:#121212 !important; }
+html.dark-mode .sk-ws-desk{ background:#121212; }
+
+/* Admin Dashboard Overview cards in dark mode (they were hard-coded white, hiding the white text) */
+body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"],
+body.dark-mode #admin-scroll [style*="background:#fff;border-radius:24px"]{ background:#1e1e1e !important; border-color:rgba(255,255,255,.08) !important; box-shadow:none !important; }
+body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] .text-gray-900,
+body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] .text-gray-800{ color:#f2f2f2 !important; }
+body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] button{ color:#f2f2f2; }
+body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] span[style*="color:#0A2540"]{ color:#f2f2f2 !important; }

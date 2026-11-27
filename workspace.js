@@ -1150,8 +1150,8 @@
         return '<div class="ws-row"><span class="ws-ft" style="background:' + (col[k] || '#1e90ff') + '">' + E(k.toUpperCase().slice(0, 3)) + '</span><div style="flex:1;min-width:0"><b>' + E(x.name) + '</b><small>' + E(x.from) + (x.busy ? ' \u00b7 reading\u2026' : (!x.text ? ' \u00b7 no readable text' : '')) + '</small></div>' +
           '</div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No sources yet.</div>') +
-      '<div style="margin-top:14px"><button class="filter-pill" onclick="document.getElementById(\'ws-file\').click()">' + I('plus', 15) + ' Upload file</button><button class="filter-pill" onclick="wsPaste()">' + I('plus', 15) + ' Paste notes</button><button class="filter-pill" onclick="wsPickCourse()">' + I('plus', 15) + ' From a space</button></div>' +
-      '<button class="ws-cta" onclick="wsSrcDone()">Done</button>');
+      '<div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:12px"><button class="filter-pill" onclick="document.getElementById(\'ws-file\').click()">' + I('plus', 15) + ' Upload file</button><button class="filter-pill" onclick="wsPaste()">' + I('plus', 15) + ' Paste notes</button><button class="filter-pill" onclick="wsPickCourse()">' + I('plus', 15) + ' From a space</button></div>' +
+      '<button class="ws-cta" style="margin-top:26px" onclick="wsSrcDone()">Done</button>');
   };
   window.wsTogSrc = function(id){ T.off[id] = !T.off[id]; wsSources(); };
   window.wsAllSrc = function(){ T.off = {}; wsSources(); };
@@ -1249,8 +1249,12 @@
     var list = id === '*' ? matList() : matList().filter(function(x){ return x.id === id; }), cards = [], seen = {};
     list.forEach(function(s){ var m = matsOf(s); if (!m) return; (m.flashcards || []).forEach(function(c){ var k = String(c.term || '').toLowerCase(); if (!c.term || !c.def || seen[k]) return; seen[k] = 1; cards.push({ term: c.term, def: c.def, source: list.length > 1 ? nm(s) : '' }); }); });
     if (!cards.length) { toast('No flashcards yet', 'Make some from your sources first.'); return; }
-    var key = 'ws:' + id; flashDecks[key] = { name: id === '*' ? 'Selected sources' : nm(list[0]), cards: cards };
-    openFlashDeck(key);
+    try {
+      var key = 'ws:' + id; flashDecks[key] = { name: id === '*' ? 'Selected sources' : nm(list[0]), cards: cards };
+      openFlashDeck(key);
+      var fm = document.getElementById('flashModal');
+      if (fm) { fm.classList.remove('hidden'); fm.style.zIndex = '1200'; }
+    } catch (e) { toast('Could not open flashcards', String((e && e.message) || e)); }
   };
   function prepFlash(){ if (needSrc()) return; makeAllMats(false); }
   function flashHTML(){

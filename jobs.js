@@ -4278,13 +4278,13 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
             const def = JOB_DASHBOARD_LISTS[key];
             const n = people.filter(def.match).length;
             const on = key === activeKey;
-            return `<button data-active="${on ? 1 : 0}" onclick="openJobDashboardList('${key}')" class="flex-shrink-0 flex items-center gap-1.5 px-4 py-3 text-sm whitespace-nowrap" style="background:none;border:none;border-bottom:2.5px solid ${on ? ROYAL : 'transparent'};color:${on ? ROYAL : '#9ca3af'};font-weight:${on ? 700 : 500};">${def.label}<span style="font-weight:700;color:${on ? ROYAL : '#6b7280'};">${n}</span></button>`;
+            return `<button data-active="${on ? 1 : 0}" onclick="openJobDashboardList('${key}')" class="filter-pill flex-shrink-0 whitespace-nowrap${on ? ' on' : ''}" style="padding:10px 16px;gap:8px;font-weight:${on ? 700 : 500};">${def.label}<span style="font-weight:700;opacity:${on ? 1 : .7};">${n}</span></button>`;
           };
           const activeDef = JOB_DASHBOARD_LISTS[activeKey];
           const activeRows = people.filter(activeDef.match);
           const activeShowStatus = activeKey === 'decisions' ? 'decision' : (activeKey === 'applicants');
           const tabsAndList = `
-            <div id="job-dash-tabs" class="flex overflow-x-auto no-scrollbar mb-4" style="border-bottom:1.5px solid #e5e7eb;margin-left:-1.25rem;margin-right:-1.25rem;padding-left:0.5rem;padding-right:0.5rem;-webkit-overflow-scrolling:touch;">
+            <div id="job-dash-tabs" class="flex overflow-x-auto no-scrollbar mb-4" style="gap:10px;margin-left:-1.25rem;margin-right:-1.25rem;padding:4px 1.25rem 10px;-webkit-overflow-scrolling:touch;">
               ${tabKeys.map(tabBtn).join('')}
             </div>
             ${activeRows.length ? activeRows.map((a, i) => jobDashboardApplicantRowHTML(job, a, i === activeRows.length - 1, activeShowStatus)).join('') : `

@@ -2132,7 +2132,7 @@
   <div id="top-bar" class="flex-shrink-0 sticky top-0 z-10" style="margin-bottom:10px;">
     <div class="max-w-2xl mx-auto px-5 flex items-center justify-between" style="padding-bottom:0.75rem;">
       <div class="flex items-center cursor-pointer" id="topbar-brand" onclick="homeTabTap()">
-        <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:48px;width:auto;object-fit:contain;">
+        <img src="${STITCH_WORDMARK_GRADIENT}" alt="Stitch" style="height:40px;width:auto;object-fit:contain;">
       </div>
       <div class="flex items-center gap-5" id="topbar-icons">
         <button onclick="morphPlusIcon('topbar-create-icon');openOverlay('create')" class="hover:text-blue-300"><span id="topbar-create-icon" class="plus-morph-icon">${gradIcon('<svg viewBox="0 0 24 24" class="w-6 h-6" fill="none"><line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>')}</span></button>
