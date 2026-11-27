@@ -1338,7 +1338,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
         function restoreInboxPillScroll(prevLeft, nudge){
           const row = document.getElementById('inbox-filterbar-row');
           if (!row) return;
-          if (prevLeft != null) row.scrollLeft = prevLeft;
+          row.scrollLeft = 0;   // pills are static: never leave them scrolled sideways
+          return;
           // Only bring the selected pill into view right after tapping a pill; background refreshes must leave the row where the finger left it
           if (!nudge) return;
           const active = row.querySelector('[data-pill-active="1"]');

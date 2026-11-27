@@ -5779,6 +5779,8 @@ try {
             const ov = document.getElementById('overlay');
             if (gotName && ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && (classDetailTab === 'people' || classDetailTab === 'stream')) {
               ov.innerHTML = classDetailHTML();
+            } else if (ov && currentOverlayKind === 'classDetail' && currentClassId === cls.id && classDetailTab === 'messages') {
+              classMsgRefresh();
             }
           } catch (e) {  }
         }
@@ -6492,6 +6494,8 @@ try {
         }
 
         function classMsgListHTML(cls){
+          // Members only show as "Member" until their public profiles are fetched, so fetch them here
+          try { setTimeout(() => loadClassStudentProfiles(cls), 0); } catch (e) {}
           const roster = classRosterList(cls).filter(s => s.id && !s.pending);
           const rows = roster.map(s => {
             const msgs = (classMsgs[cls.id] || []).filter(m => m.student_id === s.id);
@@ -10784,8 +10788,8 @@ try {
           if (isTeacher && !cls.classwork.length) {
             return `
               <div class="text-center mb-4">
-                <div class="font-bold text-gray-700 mb-1">Assign work to your space</div>
-                <div class="text-sm text-gray-400 leading-relaxed">Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks</div>
+                <div class="font-bold text-gray-700 mb-1">Create your first task</div>
+                <div class="text-sm text-gray-400 leading-relaxed">Pick a type below. Members can turn in work, take quizzes and vote, and you score and give feedback right here in Tasks.</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:0;padding:0 4px;">
                 ${classworkCreateMenuOptionRow('doc','Assignment','Members turn in work, you score & remark it', "openNewAssignmentOverlay()")}
@@ -10807,8 +10811,8 @@ try {
             <div class="text-xs font-bold uppercase tracking-wide text-gray-400" style="margin:34px 0 12px;">Assignments &amp; Quizzes</div>
             ${work.length ? work.map(row).join('') : `
               <div class="cw-empty">
-                <div class="cw-empty-t">${isTeacher ? 'Assign work to your space' : 'No assignments yet'}</div>
-                <div class="cw-empty-s">${isTeacher ? 'Post assignments and quizzes here; they can be turned in, scored, and remarked right here in Tasks.' : 'Assignments and quizzes from your moderator will show up here.'}</div>
+                <div class="cw-empty-t">${isTeacher ? 'Create your first task' : 'No assignments yet'}</div>
+                <div class="cw-empty-s">${isTeacher ? 'Pick a type to post. Members can turn in work, take quizzes and vote, and you score and give feedback right here in Tasks.' : 'Assignments and quizzes from your moderator will show up here.'}</div>
               </div>`}
             ${isTeacher ? `<div style="height:60px;"></div>${createFab}` : ''}`;
         }

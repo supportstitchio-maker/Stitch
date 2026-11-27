@@ -630,7 +630,7 @@
     var p = pal(cls), live = liveLec(cls) || todayLec(cls), teach = cls.role === 'teacher';
     var admin = false; try { admin = isCurrentUserAdmin() && teach; } catch(e){}
     if (cTab === 'results') cTab = 'dashboard';
-    var tabs = [['dashboard','Dashboard'],['lectures','Lectures'],['stream','Stream'],['classwork','Tasks']];
+    var tabs = [['dashboard','Dashboard'],['lectures','Lectures'],['classwork','Tasks']]; /* Stream lives behind the floating speaker button */
     var body = '';
     if (cTab === 'resources') {
       var m = materials(cls);
@@ -703,7 +703,9 @@
       (live ? '<div class="ws-live"><div><b style="font-size:15px">' + E(live.title) + ' \u00b7 ' + (live.status === 'live' ? 'Live now' : E(live.time || 'Today')) + '</b><small style="display:block;color:var(--ws-sub);font-size:12px">' + E(teacher(cls)) + '</small></div>' +
         (live.status === 'live' ? '<button class="ws-btn" onclick="joinLiveLecture(\'' + live.id + '\',\'' + cls.id + '\')">Join</button>' : (teach ? '<button class="ws-btn" onclick="startScheduledLectureNow(\'' + live.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>' : '<div style="height:16px"></div>') +
       '<div class="ws-tabs">' + tabs.map(function(t){ return '<button class="filter-pill flex-shrink-0 ' + (cTab === t[0] ? 'on' : '') + '" onclick="wsCTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>' +
-      '<div>' + body + '</div></div></div></div>';
+      '<div>' + body + '</div></div></div>' +
+      '<button class="ws-stream-fab' + (cTab === 'stream' ? ' on' : '') + '" onclick="wsCTab(\'stream\')" aria-label="Stream" title="Stream">' +
+        '<svg width="26" height="22" viewBox="1.6 2.6 19.2 14.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7.2" y="3.6" width="2.6" height="11.2" rx="1.3"/><path d="M9.8 5.4 14 7.4M9.8 13 14 11"/><rect x="14" y="7.4" width="4" height="3.6" rx="1"/><path d="M18 8.2h.5a1.5 1.5 0 0 1 0 2.8H18M15.3 11v4.6a1 1 0 0 0 2 0V11M2.6 9.2H4.6M3.4 5.6l1.5 1.4M3.4 12.8l1.5-1.4"/></svg></button></div>';
   };
 
   /* ================= STITCH TUTOR ================= */

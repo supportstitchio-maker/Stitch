@@ -7838,10 +7838,10 @@ body.dark-mode .wa-main-btn{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
 /* Workspace nav item sits in line with Home / Messaging: same icon size, no raised box,
    same gap between icon and label. */
 
-/* Messaging main button: green mic while the box is empty; turns blue as soon as you type / attach / record a voice note */
-#convo-mic-btn[data-mode="mic"]{ background:#22c55e !important; box-shadow:0 8px 24px rgba(34,197,94,.35) !important; }
-body.dark-mode #convo-mic-btn[data-mode="mic"]{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
-#convo-mic-btn[data-mode="send"]{ background:#1e90ff !important; }
+/* Messaging main button: grey mic while the box is empty; turns blue as soon as you type / attach / record a voice note */
+#convo-mic-btn[data-mode="mic"]{ background:#eceef1 !important; color:#4b5563 !important; box-shadow:0 4px 14px rgba(15,23,42,.10) !important; }
+body.dark-mode #convo-mic-btn[data-mode="mic"]{ background:#2a2a2a !important; color:#f2f2f2 !important; box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
+#convo-mic-btn[data-mode="send"]{ background:#1e90ff !important; color:#fff !important; }
 
 /* Workspace nav item is grey like the other inactive tabs (opening Workspace hides this bar, so it is never "selected" here) */
 
@@ -7855,3 +7855,18 @@ body.dark-mode #convo-mic-btn[data-mode="mic"]{ box-shadow:0 8px 24px rgba(0,0,0
 .nav-protrude-label{ color:#9ca3af; }
 body.dark-mode .nav-protrude-inner{ background:transparent !important; color:#8b93a1 !important; }
 .nav-protrude, .nav-protrude-inner{ corner-shape:round !important; border-radius:9999px !important; }
+
+/* Messaging inbox: the General / Collaborations / Requests pills stay put (no sideways scrolling or drifting) */
+#inbox-filterbar-row{ overflow-x:hidden !important; overflow-y:hidden; touch-action:pan-y; overscroll-behavior-x:none; }
+#inbox-filterbar-row > *{ flex-shrink:0; }
+
+/* Swipeable pill rows: when scrolled to the end, the last pill sits exactly on the page margin (same as the left side) */
+.pill-bleed::after{ content:none !important; display:none !important; }
+
+/* Space page: tabs are centred and never slide sideways; Stream opens from a floating speaker button in the bottom-right, exactly where the "+" buttons sit */
+#overlay .ws-tabs{ justify-content:center; overflow-x:hidden !important; touch-action:pan-y; }
+.ws-stream-fab{ position:fixed; right:1.25rem; bottom:calc(1.25rem + env(safe-area-inset-bottom, 0px)); width:2.5rem; height:2.5rem; display:flex; align-items:center; justify-content:center; z-index:30; border:0; color:#fff; background:rgba(30,144,255,0.85); border-radius:16px; corner-shape:squircle; box-shadow:0 8px 18px rgba(30,144,255,0.38), 0 3px 8px rgba(0,0,0,0.22); }
+.ws-stream-fab:active{ transform:scale(.95); }
+.ws-stream-fab.on{ background:#0f6fd6; }
+/* Where a "+" (Create) button is already in that corner, the speaker stacks just above it */
+#overlay:has(button[title="Create"].fixed) .ws-stream-fab{ bottom:calc(1.25rem + 2.5rem + 0.75rem + env(safe-area-inset-bottom, 0px)); }
