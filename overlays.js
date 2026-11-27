@@ -3854,7 +3854,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             </div>` : '';
           ov.innerHTML = `
             <div class="overflow-y-auto no-scrollbar flex-1 bg-gray-50">
-              <div class="notif-wrap">${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'right', sheetToggle: 'toggleNoticeBoardMenu' }), { shortDashes: false, titleSize: 'text-xl' })}</div>
+              <div class="notif-wrap">${menuOverlayHeader('Notice Board', noticeBoardMenuOpen, 'toggleNoticeBoardMenu', notifActionsDropdownHTML('handleNoticeAction', { align: 'right', sheetToggle: 'toggleNoticeBoardMenu' }), { shortDashes: false, titleSize: 'text-xl', deskBack: true })}</div>
               <div class="p-5 notif-wrap">
                 ${stitchCard}
                 <div class="space-y-2">${classroomNotifs.length ? noticePinnedFirstHTML(classroomNotifs) : '<div class="text-sm text-gray-400 text-center py-6">No space announcements yet.</div>'}</div>

@@ -1985,7 +1985,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root ar-page" id="exam-scroll-container"><div class="ar-in">
               <div class="ar-top">
-                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="text-sm font-semibold" style="color:#dc2626;">Exit</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
+                <div class="flex items-center gap-3 min-w-0"><button onclick="examExit()" class="exam-exit-txt text-sm font-semibold" style="color:#dc2626;">Exit</button><button onclick="examExit()" class="exam-exit-arrow" aria-label="Back">${gradIcon(IconBold('back','w-5 h-5'))}</button><div class="ar-title">${escapeHtml(examTest.title)}</div></div>
                 ${examMode === 'timed' ? `<div class="flex items-center gap-2"><span class="ar-timer" id="exam-timer-display" style="${examTimerHidden ? 'display:none;' : ''}">${formatExamTime(examTimeLeft)}</span><button id="exam-timer-toggle" onclick="toggleExamTimerHidden()" class="ar-chip" style="padding:.3rem .7rem;min-width:3.4rem;">${examTimerHidden ? 'Show' : 'Hide'}</button></div>` : `<span class="ar-chip on">Self-paced</span>`}
               </div>
               <div class="ar-strip">${arNums()}</div>

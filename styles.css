@@ -7665,9 +7665,9 @@ body:not(.dark-mode) .fc-act-flip, body.dark-mode .fc-act-flip{ background:linea
    White sheet, soft 1.5px border and soft shadow, blue border on focus, Apple-style continuous (squircle) corners.
    Applies to search boxes, form fields and text areas everywhere. Boxes that sit inside another sheet (transparent
    inputs inside the message pill) and the sign-in flow keep their own styling. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
-select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
 div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:#ffffff !important;
   border:1.5px solid rgba(10,37,64,0.10) !important;
@@ -7676,21 +7676,21 @@ div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-texta
 }
 /* squircle shape (continuous corners) on the message box and every type box */
 @supports (corner-shape: squircle){
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
-  textarea:not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *), select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *), .convo-composer-pill,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
+  textarea:not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *), select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *), .convo-composer-pill,
   div:has(> input.bg-transparent[placeholder*="earch" i]){ corner-shape:squircle; }
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus,
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus,
-select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *):focus{
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *):focus,
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *):focus,
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *):focus{
   border-color:#1e90ff !important;
   box-shadow:0 8px 24px rgba(30,144,255,0.16) !important;
   outline:none;
 }
 input::placeholder,textarea::placeholder{color:#8a93a6}
-body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
-body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
-body.dark-mode select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.convo-composer-pill *),
+body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
+body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
+body.dark-mode select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.nt-search *):not(.sp-search *):not(.convo-composer-pill *),
 body.dark-mode div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:var(--c-onyx) !important;
   border-color:rgba(255,255,255,0.10) !important;
@@ -8303,4 +8303,121 @@ html body.dark-mode #auth-gate.auth-verify-mode::before{
   html body.dark-mode #auth-gate.auth-verify-mode:not(.auth-verify-entry) #auth-panel-verify.active > div{
     background:rgba(14,17,24,.82);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 18px 40px -20px rgba(0,0,0,.8);}
   html body.dark-mode #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-otp-row input{background:#26282e !important;}
+}
+
+/* =====================================================================================
+   Desktop titles: every page header (My Activity, Settings, Help Center, Contact support, Report an issue...)
+   and every right-panel title (Profile, Dashboard, Notes...) uses the same size as the Career Space and
+   Workspace titles (1.65rem).
+   ===================================================================================== */
+@media (min-width:1100px){
+  html body .ov-sticky-head.ov-sticky-head.ov-sticky-head .font-display,
+  html body .ov-sticky-head.ov-sticky-head.ov-sticky-head .grad-text,
+  html body .ov-sticky-head.ov-sticky-head.ov-sticky-head .career-flow-title,
+  html body #overlay .ov-sticky-head.ov-sticky-head .font-display,
+  html body #overlay .ov-sticky-head.ov-sticky-head .grad-text,
+  html body .ov-desk-big-m h1{
+    font-size:1.65rem !important; line-height:1.2 !important; font-weight:700 !important;
+  }
+  html body #desktop-right-panel-header #desktop-right-panel-title{
+    font-size:1.65rem !important; line-height:1.2 !important;
+  }
+}
+
+/* =====================================================================================
+   Squircle search bar + tab pills (Help Center search, Help Center / My Activity / Career / Messaging /
+   Notifications tabs). The search input no longer draws its own box inside the bar.
+   ===================================================================================== */
+.sp-search{ border-radius:18px !important; overflow:hidden; }
+.sp-search input,
+.sp-search input[type="search"],
+body.dark-mode .sp-search input{
+  -webkit-appearance:none !important; appearance:none !important;
+  background:transparent !important; background-color:transparent !important; background-image:none !important;
+  border:0 !important; border-radius:0 !important; box-shadow:none !important; outline:0 !important;
+  padding:0 !important; margin:0 !important;
+}
+.sp-search input::-webkit-search-decoration,
+.sp-search input::-webkit-search-cancel-button,
+.sp-search input::-webkit-search-results-button,
+.sp-search input::-webkit-search-results-decoration{ -webkit-appearance:none; appearance:none; display:none; }
+
+.sp-chip, .sp-chip.outline-pill,
+.filter-pill.flex-shrink-0,
+.filter-pill[data-k],
+.filter-pill[data-act-tab],
+#career-tabs-scroller .filter-pill,
+#inbox-filterbar .filter-pill,
+.nfilter .filter-pill,
+.nfilter button{ border-radius:14px !important; }
+@supports (corner-shape: squircle){
+  .sp-search{ corner-shape:squircle; border-radius:26px !important; }
+  .sp-chip, .sp-chip.outline-pill, .filter-pill.flex-shrink-0, .filter-pill[data-k], .filter-pill[data-act-tab],
+  #career-tabs-scroller .filter-pill, #inbox-filterbar .filter-pill, .nfilter .filter-pill, .nfilter button{ corner-shape:squircle; border-radius:20px !important; }
+}
+
+/* =====================================================================================
+   Desktop back arrow never drifts: it is position:fixed, so any parent that gets a transform, scale,
+   filter, will-change, contain... (a pressed card gets scale:.985, a header that slides away on scroll
+   gets translateY) turns "fixed" into "relative to that parent" and the arrow moves with the scroll.
+   Every parent that holds a floating back arrow is therefore kept free of those properties.
+   ===================================================================================== */
+@media (min-width:1100px){
+  :is(div,section,main,header,aside,form):has(.ws-back, button[aria-label="Back"], .wiz-back){
+    transform:none !important; translate:none !important; scale:none !important; rotate:none !important;
+    filter:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+    perspective:none !important; will-change:auto !important; contain:none !important; container-type:normal !important;
+  }
+}
+
+/* Spaces list ("See all"): two cards per row */
+#ws-clist{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+#ws-clist > .ws-cc{ margin-bottom:0; min-width:0; }
+#ws-clist > :not(.ws-cc){ grid-column:1 / -1; }
+
+/* =====================================================================================
+   Desktop: the Workspace pull-up sheet (Flashcards, Quiz, Resources...) opens as a centred dialog in the
+   middle column, between the side rail and the right panel (it follows the panel when it opens or closes),
+   instead of sliding up from the bottom across the whole window.
+   ===================================================================================== */
+@media (min-width:1100px){
+  #ws-sheet-bg.ws-sheet-bg{
+    left:var(--nav-width,96px); right:0; top:0; bottom:0;
+    transition:opacity .25s ease, right .25s cubic-bezier(.22,.68,0,1);
+  }
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #ws-sheet-bg.ws-sheet-bg{ right:calc(var(--rp-width,480px) + 32px); }
+  #ws-sheet.ws-sheet{
+    left:calc(var(--nav-width,96px) + 24px); right:40px; bottom:auto; top:50%;
+    width:min(620px, calc(100% - var(--nav-width,96px) - 64px)); margin:0 auto;
+    max-height:82vh; border-radius:28px; padding:10px 24px 24px;
+    box-shadow:0 24px 70px rgba(15,23,42,.28);
+    opacity:0; transform:translateY(-46%) scale(.98);
+    transition:transform .28s cubic-bezier(.22,.68,0,1), opacity .22s ease, right .25s cubic-bezier(.22,.68,0,1), left .25s cubic-bezier(.22,.68,0,1);
+  }
+  #ws-sheet.ws-sheet.in{ opacity:1; transform:translateY(-50%) scale(1); }
+  body:has(#app-shell.right-panel-open:not(.rp-collapsed)) #ws-sheet.ws-sheet{ right:calc(var(--rp-width,480px) + 32px + 24px); }
+  #ws-sheet .ws-grab{ display:none; }
+}
+
+/* Dark mode: dim layers behind menus and dialogs are plain black, not the blue-grey slate, so the app keeps its normal black */
+body.dark-mode .ws-sheet-bg,
+html.dark-mode .ws-sheet-bg,
+body.dark-mode .dsk-scrim-dim,
+body.dark-mode .confirm-sheet-wrap,
+body.dark-mode #callNotesModal, body.dark-mode #lectureAddModal, body.dark-mode #notifDetailModal,
+body.dark-mode .convo-sheet-scrim.items-end,
+body.dark-mode .msg-sel-scrim, body.dark-mode .pro3-scrim{ background:rgba(0,0,0,.6) !important; }
+body.dark-mode .dsk-dialog, body.dark-mode #ws-sheet.ws-sheet{ box-shadow:0 24px 70px rgba(0,0,0,.6) !important; }
+
+/* =====================================================================================
+   Taking a test on desktop: no side navigation at all (nothing to switch to mid-test). The page gets a round
+   back arrow at the top-left instead of the "Exit" word (it asks to confirm leaving, like Exit did).
+   ===================================================================================== */
+.exam-exit-arrow{ display:none; }
+@media (min-width:1100px){
+  #app-shell.exam-focus{ --nav-width:0px; }
+  #app-shell.exam-focus #desktop-nav, #app-shell.exam-focus #nav-reopen-tab{ display:none !important; }
+  .exam-exit-txt{ display:none !important; }
+  /* the shared floating back-arrow rule positions it; it must show here */
+  .exam-exit-arrow{ display:flex; }
 }
