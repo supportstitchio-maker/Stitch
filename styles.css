@@ -5874,11 +5874,6 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 /* Login panel: no "Get Started" heading; the welcome line is centred */
 #auth-gate:has(#auth-panel-login.active) .auth-login-title, body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-title{ display:none !important; }
 #auth-gate:has(#auth-panel-login.active) .auth-login-sub{ text-align:center !important; margin:2px 0 22px !important; font-size:15px !important; }
-/* Phone sign-up (login) page: real photo background, day photo in light mode and dusk photo in dark mode */
-@media (max-width:1099px){
-  #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
-  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-dusk.webp') 44% 66% / 158% auto no-repeat, #0b0d18 !important; }
-}
 
 /* Phone sign-up: only 15px of white below the terms/privacy line (panel sits lower) */
 @media (max-width:1099px){
@@ -5890,9 +5885,6 @@ body.dark-mode .skd-wrap .skel-story-wrap::after,body.dark-mode .skd-feed .skel-
 body.dark-mode #auth-gate:has(#auth-panel-login.active){ background:#ffffff !important; }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card,
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-body{ background:#ffffff !important; }
-@media (max-width:1099px){
-  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-day.webp') 44% 60% / 136% auto no-repeat, #8fb6dc !important; }
-}
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head::after{ background:#ffffff !important; }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub{ color:#55688a !important; }
 body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid{ color:#55688a !important; }
@@ -6697,11 +6689,6 @@ body.dark-mode .nc-label{ color:#9a9a9a; }
 /* Confirm sheets (delete / leave / go back): no circle icon above the message */
 .sheet-top-icon{ display:none !important; }
 
-/* Welcome / sign-up hero: group-of-students photo (light and dark) */
-@media (max-width:1099px){
-  #auth-gate:has(#auth-panel-login.active) .auth-head,
-  body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-head{ background:url('assets/auth-photo-group.webp') 50% 30% / cover no-repeat, #d9c9a8 !important; }
-}
 
 /* Pro subscription: the header stays put while the page scrolls */
 #careerSubscribeModal.pro-page .pro-sticky-head{ position:sticky !important; top:0 !important; z-index:5 !important; background:#f8fafc !important; padding-bottom:12px !important; margin-bottom:0 !important; }
@@ -8103,3 +8090,86 @@ body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] .te
 body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] .text-gray-800{ color:#f2f2f2 !important; }
 body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] button{ color:#f2f2f2; }
 body.dark-mode #admin-tab-body [style*="background:#fff;border-radius:24px"] span[style*="color:#0A2540"]{ color:#f2f2f2 !important; }
+
+/* =====================================================================================
+   Sign-up: new light + dark "planet horizon" backgrounds (replace the old photo header).
+   Phones (<700px): full-screen background, Continue with Google / Continue with email,
+   small Privacy / Terms links. Continue with email opens the code page with the email field on it.
+   700px and up: the sign-up panel stays, floating over the background.
+   ===================================================================================== */
+html body #auth-gate:has(#auth-panel-login.active), html body #auth-gate.auth-verify-mode{background:#9cc3f2 url('assets/auth-bg-light-wide.webp') center / cover no-repeat !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active), html body.dark-mode #auth-gate.auth-verify-mode{background:#000 url('assets/auth-bg-dark-wide.webp') center / cover no-repeat !important;}
+@media (max-width:699px), (max-aspect-ratio:1/1){
+  html body #auth-gate:has(#auth-panel-login.active), html body #auth-gate.auth-verify-mode{background:#9cc3f2 url('assets/auth-bg-light-tall.webp') center top / cover no-repeat !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active), html body.dark-mode #auth-gate.auth-verify-mode{background:#000 url('assets/auth-bg-dark-tall.webp') center top / cover no-repeat !important;}
+}
+
+/* phone-only pieces hidden by default */
+#auth-gate .auth-m-email-cta, #auth-gate .auth-m-legal, #auth-gate .auth-lbl-m, #auth-gate .auth-ve-row{display:none;}
+
+/* email row on the code page: only when opened with "Continue with email" */
+#auth-gate.auth-verify-entry .auth-ve-row{display:block;margin:0 0 14px;}
+#auth-gate.auth-verify-entry .auth-ve-row .auth-field{margin-bottom:0;}
+#auth-gate.auth-verify-entry .auth-ve-row .auth-field input{padding-right:122px;}
+#auth-gate .auth-ve-send{position:absolute;right:8px;top:50%;transform:translateY(-50%);height:40px;padding:0 18px;border:0;border-radius:999px;
+  background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;font-family:'Montserrat',system-ui,sans-serif;font-size:14px;font-weight:600;cursor:pointer;}
+#auth-gate.auth-verify-entry .auth-keypad, #auth-gate.auth-verify-entry:has(#auth-panel-verify.active) .auth-keypad{display:none !important;}
+
+/* ---------- Phones ---------- */
+@media (max-width:699px){
+  html body #auth-gate:has(#auth-panel-login.active){padding:0 !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-scroll-inner{min-height:100dvh;display:flex;flex-direction:column;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-stage{max-width:none;width:100%;min-height:100dvh;margin:0;flex:1;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-card{background:transparent !important;box-shadow:none !important;border-radius:0 !important;min-height:100dvh;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-head{display:none !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-body{background:transparent !important;display:flex;flex-direction:column;padding:0 24px calc(env(safe-area-inset-bottom,0px) + 50px) !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-panels{flex:1;display:flex;flex-direction:column;}
+  html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login.active{margin-top:auto;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-login-sub, html body #auth-gate:has(#auth-panel-login.active) .auth-divider-mid, html body #auth-gate:has(#auth-panel-login.active) .auth-terms, html body #auth-gate:has(#auth-panel-login.active) #auth-panel-login form{display:none !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-lbl-m{display:inline;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-social-ctas{display:flex;flex-direction:column;gap:12px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-google-cta, html body #auth-gate:has(#auth-panel-login.active) .auth-m-email-cta{width:100%;height:56px;margin:0;padding:0 18px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:'Montserrat',system-ui,sans-serif;font-size:16px;font-weight:600;cursor:pointer;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-m-email-cta{background:linear-gradient(135deg,#1e90ff,#4169e1);color:#fff;box-shadow:0 12px 22px -10px rgba(65,105,225,.6);}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-google-cta{background:#fff !important;color:#0f1f33 !important;box-shadow:0 8px 24px -10px rgba(15,31,51,.3) !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-google-cta{background:#26282e !important;color:#f2f2f2 !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12) !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-m-legal{display:flex;justify-content:center;gap:22px;margin-top:26px;font-size:13px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-m-legal a{color:#55688a;text-decoration:none;font-weight:500;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-m-legal a{color:#8e929c;}
+}
+
+/* ---------- Tablet / desktop: the sign-up panel stays, floating over the background ---------- */
+@media (min-width:700px){
+  html body #auth-gate:has(#auth-panel-login.active){padding:24px !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-scroll-inner{display:flex;align-items:center;justify-content:center;min-height:100%;height:auto;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-stage{width:100%;max-width:420px;height:auto !important;min-height:0 !important;margin:0;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-card{flex:none;height:auto !important;min-height:0 !important;border-radius:28px !important;overflow:hidden;
+    background:rgba(255,255,255,.97) !important;box-shadow:0 30px 70px -26px rgba(8,30,70,.5) !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-head{display:none !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-body{background:transparent !important;overflow:visible !important;padding:34px 30px 26px !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-login-sub{display:block !important;text-align:center;margin:0 0 22px !important;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-wel{font-size:28px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-google-cta{height:48px;font-size:14px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-field-icon input{height:48px;font-size:14px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-cta{height:48px;font-size:15px;}
+  html body #auth-gate:has(#auth-panel-login.active) .auth-terms{font-size:11.5px;line-height:1.5;text-align:center;margin-top:20px;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card{background:rgba(14,17,24,.9) !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 30px 70px -26px rgba(0,0,0,.8) !important;
+    -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-google-cta{background:#26282e !important;color:#f2f2f2 !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12) !important;}
+}
+
+/* ---------- Dark mode: the sign-up panel is dark now (it used to be forced light) ---------- */
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-login-sub .auth-wel-sub{color:#98a2b3 !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid{color:#98a2b3 !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid::before, html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-divider-mid::after{background:rgba(255,255,255,.12) !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field input{background:#2a2c31 !important;border-color:rgba(255,255,255,.08) !important;color:#f2f2f2 !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field input::placeholder{color:#8e929c !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field-icon .auth-field-ic{color:#a8a8a8 !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-terms{color:#8e929c !important;}
+html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-terms a{color:#5b8cff !important;}
+
+/* ---------- Code page on phones, dark mode: dark card over the dark background ---------- */
+@media (max-width:1099px){
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-card{background:#14161c !important;box-shadow:0 18px 40px -14px rgba(0,0,0,.7) !important;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-info-banner{color:#f2f2f2 !important;}
+}

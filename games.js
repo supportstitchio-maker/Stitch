@@ -1007,6 +1007,7 @@ let userPoints = 0;
           document.getElementById('auth-gate').classList.remove('auth-compact-mode');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           document.getElementById('auth-gate').classList.remove('auth-photo-stage');
+          document.getElementById('auth-gate').classList.remove('auth-verify-entry');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
           setAuthProgress(null);
@@ -1034,6 +1035,48 @@ let userPoints = 0;
         }
         // The verify-your-email step is remembered for this tab (sessionStorage) so that if the
         // page gets reloaded while the person is off checking their inbox
+        // "Continue with email" (phone): opens the code page with an email field on top, so the email and
+        // the code are done on the same page. Nothing is remembered or sent until "Send code".
+        function authOpenEmailEntry(){
+          if (window.__stitchInApp) return;
+          authForgetPendingVerify();
+          authPendingEmail = '';
+          authHideAllPanels();
+          document.getElementById('auth-panel-verify').classList.add('active');
+          document.getElementById('authHeadTitle').textContent = 'Verify your email';
+          document.getElementById('authHeadSub').textContent = 'Enter your email to get a code';
+          setAuthProgress(null);
+          document.getElementById('authBackBtn').style.display = 'flex';
+          document.getElementById('authBackToLandingBtn').style.display = 'none';
+          const gate = document.getElementById('auth-gate');
+          gate.classList.add('auth-compact-mode'); gate.classList.remove('auth-photo-stage');
+          gate.classList.add('auth-verify-mode'); gate.classList.add('auth-verify-entry');
+          const eyebrow = document.getElementById('authEyebrow');
+          if (eyebrow) eyebrow.textContent = 'ONE MORE STEP';
+          const banner = document.querySelector('#auth-panel-verify .auth-info-banner');
+          if (banner) banner.textContent = 'Enter your email and we will send you a 6-digit code.';
+          const ve = document.getElementById('auth-ve-error'); if (ve) ve.classList.remove('show');
+          const verr = document.getElementById('auth-verify-error'); if (verr) verr.classList.remove('show');
+          for (let i = 0; i < 6; i++) { const el = document.getElementById('auth-otp-' + i); if (el) el.value = ''; }
+          authStopResendCountdown();
+          // carry over an email already typed on the first screen (desktop-style field), if any
+          const prev = document.getElementById('auth-li-email');
+          const inp = document.getElementById('auth-ve-email');
+          if (inp && prev && prev.value && !inp.value) inp.value = prev.value;
+          setTimeout(() => { if (inp) inp.focus(); }, 60);
+        }
+        function authVerifySendCode(){
+          const inp = document.getElementById('auth-ve-email');
+          const err = document.getElementById('auth-ve-error');
+          const email = inp ? inp.value.trim() : '';
+          if (!email) { if (err) { err.textContent = 'Enter your email to continue.'; err.classList.add('show'); } return; }
+          if (!isValidEmail(email)) { if (err) { err.textContent = 'Enter a valid email address (e.g. name@example.com).'; err.classList.add('show'); } return; }
+          if (!getSupabaseClient()) { if (err) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); } return; }
+          if (err) err.classList.remove('show');
+          if (inp) inp.blur();
+          // same path as before: remembers the email, sends the code, starts the resend timer
+          authShowVerify(email);
+        }
         const AUTH_PENDING_VERIFY_KEY = 'stitch_pending_verify_email';
         function authRememberPendingVerify(email){
           try { sessionStorage.setItem(AUTH_PENDING_VERIFY_KEY, String(email || '')); } catch (e) {}
@@ -1061,6 +1104,9 @@ let userPoints = 0;
           // Simple, un-decorated verify screen: no big brand logo, no gradient hero title, and (see
           // auth-verify-mode CSS) pinned near the top of the viewport instead of vertically
           document.getElementById('auth-gate').classList.add('auth-verify-mode');
+          document.getElementById('auth-gate').classList.remove('auth-verify-entry');
+          const infoBanner = document.querySelector('#auth-panel-verify .auth-info-banner');
+          if (infoBanner) infoBanner.innerHTML = 'We emailed a 6-digit code to <span id="auth-verify-email-label">you</span>.';
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'ONE MORE STEP';
           document.getElementById('auth-verify-error').classList.remove('show');
@@ -2553,6 +2599,8 @@ let userPoints = 0;
         let authSubmittingVerify = false;
         async function authSubmitVerify(e){
           if (e) e.preventDefault();
+          const gateV = document.getElementById('auth-gate');
+          if (gateV && gateV.classList.contains('auth-verify-entry')) { authVerifySendCode(); return; }
           if (authSubmittingVerify) return;
           const entered = [0,1,2,3,4,5].map(i => {
             const el = document.getElementById('auth-otp-' + i);
