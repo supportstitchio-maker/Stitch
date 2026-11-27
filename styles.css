@@ -7766,3 +7766,31 @@ body.dark-mode #overlay:has(.flow-float) .filter-pill.on, body.dark-mode #overla
 @supports (corner-shape: squircle){
   .auth-intent-chip, .flow-pill{ corner-shape:squircle; }
 }
+
+/* ===== Squircle pills, tabs and navs: everywhere =====
+   Messaging, Career Space, Study, Settings, Profile, sheets and every nav / tab / chip.
+   Shape only: colors, sizes and shadows are untouched. The 9999px radius stays so each pill still
+   rounds to its full height, and corner-shape turns that curve into the continuous squircle.
+   Browsers without corner-shape keep the normal round pill. */
+@supports (corner-shape: squircle){
+  /* chips, filter pills, option pills, step pills */
+  .filter-pill, .filter-pill.nowrap-pill, .outline-pill, .auth-intent-chip, .class-choice-pill,
+  .flow-pill, .flow-pill-back, .flow-pill-go, .sheet-pill, .menu-item-pill,
+  .myact-dl-pill, .glimpse-add-pill, .wa-pill, .convo-composer-pill, .stat-hero-pill,
+  /* call-to-action pills */
+  .pill-cta, .collab-pill-cta, button.rounded-full[style*="linear-gradient"],
+  /* pill tabs and segmented controls */
+  .seg-bar, .seg-btn, .classroom-toggle-pill, .classroom-toggle-wrap,
+  .ws-tabs, .ws-tabs button, .ws-chips, .ws-chips button, .ws-seg, .ws-seg button,
+  .ws-dock, .ws-dock button, [data-people-tab], [data-pill-active],
+  /* nav pills: desktop sidebar, classroom nav, landing nav, header pills */
+  .dnav-item, .dnav-item.dnav-pill, .dnav-item.dnav-active, .nav-flat-item,
+  #landing-page .nav-pill, #landing-page .nav-cta, #landing-page .nav-signin, #landing-page .apply-pill,
+  .ai-header-pill-group, .ai-header-pill-btn,
+  /* Tailwind pill buttons / links / labels built inline with rounded-full */
+  button.rounded-full[class*="px-"], a.rounded-full[class*="px-"], label.rounded-full[class*="px-"]{
+    corner-shape:squircle;
+  }
+  /* a few pills only had a fixed radius, give them the same full-height curve */
+  .wa-pill{ border-radius:9999px; }
+}
