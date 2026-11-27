@@ -7848,3 +7848,7 @@ body.dark-mode .wa-main-btn{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
 #convo-mic-btn[data-mode="mic"]{ background:#22c55e !important; box-shadow:0 8px 24px rgba(34,197,94,.35) !important; }
 body.dark-mode #convo-mic-btn[data-mode="mic"]{ box-shadow:0 8px 24px rgba(0,0,0,.45) !important; }
 #convo-mic-btn[data-mode="send"]{ background:#1e90ff !important; }
+
+/* Workspace nav item is grey like the other inactive tabs (opening Workspace hides this bar, so it is never "selected" here) */
+#bottom-nav .nav-protrude-inner, body.dark-mode #bottom-nav .nav-protrude-inner{ color:inherit !important; }
+#bottom-nav .nav-protrude-label, body.dark-mode #bottom-nav .nav-protrude-label{ color:inherit !important; }
