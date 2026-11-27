@@ -351,6 +351,8 @@
               <!-- VERIFY EMAIL CODE PANEL -->
               <!-- Shown after every Get Started / Log In -->
               <div class="auth-panel" id="auth-panel-verify"><div>
+                <!-- Phone: same "Welcome" heading as the first page, so the page just transforms in place -->
+                <p class="auth-ve-welcome"><span class="auth-wel">Welcome</span><span class="auth-wel-sub">Sign in or register here</span></p>
                 <form onsubmit="authSubmitVerify(event); return false;">
                   <!-- Shown only when the page was opened with "Continue with email": email + code on one page -->
                   <div class="auth-ve-row">

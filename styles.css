@@ -8226,3 +8226,81 @@ html body.dark-mode #auth-gate.auth-verify-mode::before{
   html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card{background:rgba(14,17,24,.92) !important;}
   html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field-icon .auth-field-ic{color:#a8a8a8 !important;}
 }
+
+/* =====================================================================================
+   Phones: "Continue with email" transforms the FIRST page in place (same background, same
+   Welcome heading). The email field + Send code, then the code boxes, appear on it; no
+   separate second page / dark card.
+   ===================================================================================== */
+#auth-gate .auth-ve-welcome{display:none;}
+
+/* no envelope icon once you start typing (it was eating the space and cutting off the email) */
+#auth-gate .auth-ve-row .auth-field-icon:focus-within .auth-field-ic,
+#auth-gate .auth-ve-row .auth-field-icon:has(input:not(:placeholder-shown)) .auth-field-ic{display:none !important;}
+#auth-gate .auth-ve-row .auth-field-icon:focus-within input,
+#auth-gate .auth-ve-row .auth-field-icon:has(input:not(:placeholder-shown)) input{padding-left:22px !important;}
+
+@keyframes aveIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+
+@media (max-width:699px){
+  html body #auth-gate.auth-verify-mode{padding:0 !important;}
+  html body #auth-gate.auth-verify-mode .auth-scroll-inner{min-height:100dvh;justify-content:flex-end !important;padding-bottom:0;}
+  html body #auth-gate.auth-verify-mode:has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:0;}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry):has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:290px;}
+  html body #auth-gate.auth-verify-mode .auth-stage{width:100%;max-width:none;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;}
+  html body #auth-gate.auth-verify-mode .auth-card,
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-card{background:transparent !important;box-shadow:none !important;border-radius:0 !important;min-height:0;}
+  html body #auth-gate.auth-verify-mode .auth-body,
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-body{background:transparent !important;padding:0 24px calc(env(safe-area-inset-bottom,0px) + 28px) !important;}
+  html body #auth-gate.auth-verify-mode .auth-back{top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;}
+
+  html body #auth-gate.auth-verify-mode #auth-panel-verify.active > div{animation:aveIn .3s ease both;}
+  html body #auth-gate.auth-verify-mode .auth-ve-welcome{display:block;text-align:center;margin:0 0 18px;}
+  html body #auth-gate.auth-verify-mode .auth-ve-welcome .auth-wel{display:block;font-family:'Gendy','Montserrat',sans-serif;font-weight:400;font-size:28px;line-height:1.15;color:#1e90ff;}
+  html body #auth-gate.auth-verify-mode .auth-ve-welcome .auth-wel-sub{display:block;font-family:'Montserrat',system-ui,sans-serif;font-weight:500;font-size:15px;margin-top:4px;color:#55688a;}
+
+  /* email pill + Send code, like the buttons on the first page */
+  html body #auth-gate.auth-verify-mode .auth-ve-row .auth-field-icon input{height:56px;border-radius:999px;background:#fff !important;border:0 !important;box-shadow:0 8px 24px -10px rgba(15,31,51,.3);color:#0f1f33 !important;}
+  html body #auth-gate.auth-verify-mode .auth-ve-send{height:42px;}
+
+  /* instruction text: plain text, no box */
+  html body #auth-gate.auth-verify-mode .auth-info-banner,
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-info-banner{background:transparent !important;border:0 !important;box-shadow:none !important;text-align:center;font-size:14px;line-height:1.45;color:#55688a !important;padding:4px 6px;margin:2px 0 16px;}
+  html body #auth-gate.auth-verify-mode .auth-info-banner b,
+  html body #auth-gate.auth-verify-mode #auth-verify-email-label{color:#0f1f33;font-weight:700;}
+  html body #auth-gate.auth-verify-mode .auth-otp-row{gap:8px;margin-bottom:14px;}
+  html body #auth-gate.auth-verify-mode .auth-otp-row input{height:54px;border-radius:14px;background:#fff !important;border:1px solid #dbe3f2 !important;color:#0f1f33 !important;font-size:20px;}
+  html body #auth-gate.auth-verify-mode .auth-resend{font-size:12.5px;color:#55688a;margin:0 0 12px;}
+
+  /* dark mode */
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-ve-welcome .auth-wel-sub{color:#b4bccb;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-info-banner{color:#b4bccb !important;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-info-banner b,
+  html body.dark-mode #auth-gate.auth-verify-mode #auth-verify-email-label{color:#f2f2f2;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-ve-row .auth-field-icon input{background:#26282e !important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);color:#f2f2f2 !important;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-otp-row input{background:#26282e !important;border-color:rgba(255,255,255,.14) !important;color:#f2f2f2 !important;}
+  html body.dark-mode #auth-gate.auth-verify-mode .auth-resend{color:#b4bccb;}
+}
+
+/* ---- in-place email flow: refinements ---- */
+@media (max-width:699px){
+  /* back arrow always at the top-left of the screen */
+  html body #auth-gate.auth-verify-mode .auth-back{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;z-index:30;}
+  /* step 1 (typing the email): only the email field + Send code. Code boxes appear after "Send code". */
+  html body #auth-gate.auth-verify-mode.auth-verify-entry .auth-otp-row,
+  html body #auth-gate.auth-verify-mode.auth-verify-entry .auth-resend{display:none !important;}
+  /* step 2 (code boxes): keep everything above the number pad */
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry):has(#auth-panel-verify.active) .auth-scroll-inner{padding-bottom:280px;}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-stage{min-height:0;}
+}
+
+/* code step sits on a soft frosted panel so it stays readable over the sky */
+@media (max-width:699px){
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) #auth-panel-verify.active > div{
+    background:rgba(255,255,255,.9);border-radius:26px;padding:22px 16px 14px;
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 18px 40px -20px rgba(8,30,70,.45);}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-otp-row input{background:#f4f6fb !important;}
+  html body.dark-mode #auth-gate.auth-verify-mode:not(.auth-verify-entry) #auth-panel-verify.active > div{
+    background:rgba(14,17,24,.82);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 18px 40px -20px rgba(0,0,0,.8);}
+  html body.dark-mode #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-otp-row input{background:#26282e !important;}
+}
