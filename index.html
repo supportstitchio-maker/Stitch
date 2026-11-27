@@ -8,9 +8,19 @@
     <!-- Dark-mode first paint: apply the last-used theme before anything paints, so the splash and
          skeleton are dark from the first frame instead of flashing white. -->
     <script>
+    /* Theme: follows the phone (dark / light) until the person picks one in Settings.
+       'stitchThemeUser' = '1' means they chose; then 'stitchTheme' is used instead of the phone. */
+    window.stitchResolveTheme = function(){
+      try {
+        var s = localStorage.getItem('stitchTheme');
+        if (localStorage.getItem('stitchThemeUser') === '1' && (s === 'dark' || s === 'light')) return s;
+      } catch (e) {}
+      try { return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; } catch (e) {}
+      return 'light';
+    };
     (function(){
       try {
-        if (localStorage.getItem('stitchTheme') === 'dark') {
+        if (window.stitchResolveTheme() === 'dark') {
           document.documentElement.classList.add('dark-mode');
           var t = document.querySelector('meta[name="theme-color"]');
           if (t) t.setAttribute('content', '#121212');
@@ -245,6 +255,7 @@
     <link rel="stylesheet" href="styles.css?v=20261127d">
 </head>
 <body class="bg-gray-50">
+<script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
     <div id="app-splash" aria-hidden="true">
       <div class="app-splash-inner">

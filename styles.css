@@ -8208,3 +8208,21 @@ html body.dark-mode #auth-gate.auth-verify-mode::before{
   html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::before,
   html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid::after{background:rgba(255,255,255,.14);}
 }
+
+/* ---- Phones, dark mode: let the dark background show (old rules forced a white card) ---- */
+@media (max-width:699px){
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card,
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-body,
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-form-side{background:transparent !important;box-shadow:none !important;-webkit-backdrop-filter:none;backdrop-filter:none;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-login-sub .auth-wel-sub{color:#b4bccb !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-divider-mid{color:#b4bccb !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) #auth-panel-login .auth-m-legal a{color:#b4bccb;}
+}
+
+/* ---- Tablet / desktop, dark mode: dark card (old rules forced a white one) ---- */
+@media (min-width:700px){
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-body,
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-form-side{background:transparent !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-card{background:rgba(14,17,24,.92) !important;}
+  html body.dark-mode #auth-gate:has(#auth-panel-login.active) .auth-field-icon .auth-field-ic{color:#a8a8a8 !important;}
+}

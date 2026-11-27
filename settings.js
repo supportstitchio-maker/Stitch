@@ -21,7 +21,7 @@ let appPrefs = {
           appPrefs.theme = appPrefs.theme === 'light' ? 'dark' : 'light';
           document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
-          try { localStorage.setItem('stitchTheme', appPrefs.theme); } catch (e) {}
+          try { localStorage.setItem('stitchTheme', appPrefs.theme); localStorage.setItem('stitchThemeUser', '1'); } catch (e) {}
           applyThemeColorMeta();
           if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'profileMenu') rerenderOverlayKeepScroll('profileMenu');
           queueSaveUserState();
@@ -29,6 +29,18 @@ let appPrefs = {
         // Sidebar sun/moon button: flips light/dark right where you are
         function toggleThemeQuick(){ toggleTheme(); }
         // Sun / moon pair in the desktop rail: pick a mode directly
+        // Until the person picks a theme in Settings, follow the phone's dark / light setting live
+        try {
+          const mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+          const onSystemTheme = () => {
+            try { if (localStorage.getItem('stitchThemeUser') === '1') return; } catch (e) {}
+            appPrefs.theme = mqDark.matches ? 'dark' : 'light';
+            document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+            document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
+            applyThemeColorMeta();
+          };
+          if (mqDark.addEventListener) mqDark.addEventListener('change', onSystemTheme); else if (mqDark.addListener) mqDark.addListener(onSystemTheme);
+        } catch (e) {}
         function setThemeQuick(mode){ if ((appPrefs.theme === 'dark') !== (mode === 'dark')) toggleTheme(); }
 
         // Re-draws a settings screen after a toggle without jumping back to the top

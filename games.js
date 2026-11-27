@@ -1873,7 +1873,7 @@ let userPoints = 0;
           // The account's saved theme (appPrefs) only arrives after the data loads below, which is
           // after the loading skeleton is already on screen
           try {
-            if (localStorage.getItem('stitchTheme') === 'dark') {
+            if ((typeof stitchResolveTheme === 'function' ? stitchResolveTheme() === 'dark' : localStorage.getItem('stitchTheme') === 'dark')) {
               document.body.classList.add('dark-mode');
               document.documentElement.classList.add('dark-mode');
               if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();
@@ -2439,7 +2439,7 @@ let userPoints = 0;
             // This skeleton can show before authEnterApp() applies the saved theme, so it used to
             // flash white first and turn dark later.
             try {
-              if (localStorage.getItem('stitchTheme') === 'dark') {
+              if ((typeof stitchResolveTheme === 'function' ? stitchResolveTheme() === 'dark' : localStorage.getItem('stitchTheme') === 'dark')) {
                 document.body.classList.add('dark-mode');
                 document.documentElement.classList.add('dark-mode');
                 if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();

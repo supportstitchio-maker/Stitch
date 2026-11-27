@@ -1174,7 +1174,7 @@
           appPrefs = (d.appPrefs && typeof d.appPrefs === 'object') ? Object.assign({ theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false }, d.appPrefs) : { theme: 'light', accountPrivacy: 'Private', notifReminders: true, notifMessages: true, notifEmail: false };
           // Theme is a per-device choice made on this phone: an older saved copy from the server must
           // never flip it back (this is what switched dark mode to light by itself)
-          try { const lt = localStorage.getItem('stitchTheme'); if (lt === 'dark' || lt === 'light') appPrefs.theme = lt; } catch (e) {}
+          try { appPrefs.theme = (typeof stitchResolveTheme === 'function') ? stitchResolveTheme() : appPrefs.theme; } catch (e) {}
           if (typeof contentInterestAuthorIds !== 'undefined') contentInterestAuthorIds = Array.isArray(d.contentInterestAuthorIds) ? d.contentInterestAuthorIds : [];
           if (typeof contentInterestTerms !== 'undefined') contentInterestTerms = Array.isArray(d.contentInterestTerms) ? d.contentInterestTerms : [];
           if (typeof callNotes !== 'undefined') callNotes = (d.callNotes && typeof d.callNotes === 'object') ? d.callNotes : {};
@@ -1182,7 +1182,6 @@
             document.body.classList.toggle('dark-mode', appPrefs.theme === 'dark');
             if (document.documentElement) document.documentElement.classList.toggle('dark-mode', appPrefs.theme === 'dark');
           }
-          try { localStorage.setItem('stitchTheme', appPrefs.theme); } catch (e) {}
           if (typeof applyThemeColorMeta === 'function') applyThemeColorMeta();
           const me = (typeof leaderboard !== 'undefined' && leaderboard) ? leaderboard.find(p => p.me) : null;
           if (me) me.pts = userPoints;
