@@ -169,6 +169,99 @@
             return isNativeApp() || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
           } catch (e) { return false; }
         }
+
+        // ---- Upload guard: checks what is really inside a file before it is stored ----
+        // Looks at the first bytes (the "magic numbers"), not the name or the type the browser reports.
+        // A script, web page or program renamed to .jpg, .pdf or anything else is refused.
+        const STITCH_BAD_NAME = /\.(php\d?|phtml|phar|jsp|asp|aspx|cgi|pl|py|rb|sh|bash|bat|cmd|com|exe|dll|msi|scr|js|mjs|cjs|html?|xhtml|svg|xml|swf|jar|apk|vbs|ps1|htaccess)(\.|$)/i;
+        const STITCH_EXT_FAMILY = {
+          jpg:'image', jpeg:'image', png:'image', gif:'image', webp:'image', heic:'image', heif:'image', avif:'image',
+          pdf:'pdf', docx:'office', pptx:'office', xlsx:'office', doc:'ole', xls:'ole', ppt:'ole', zip:'zip', csv:'text', txt:'text',
+          mp4:'av', m4v:'av', mov:'av', webm:'av', mkv:'av', m4a:'av', mp3:'av', ogg:'av', opus:'av', wav:'av', aac:'av', '3gp':'av'
+        };
+        const STITCH_OFFICE_MIME = {
+          docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        };
+        const STITCH_OLE_MIME = { doc:'application/msword', xls:'application/vnd.ms-excel', ppt:'application/vnd.ms-powerpoint' };
+
+        function stitchSniffBytes(b){
+          const at = (i) => b[i] === undefined ? -1 : b[i];
+          const str = (i, n) => String.fromCharCode.apply(null, Array.prototype.slice.call(b, i, i + n));
+          if (at(0) === 0xFF && at(1) === 0xD8 && at(2) === 0xFF) return { family: 'image', mime: 'image/jpeg' };
+          if (at(0) === 0x89 && str(1, 3) === 'PNG' && at(4) === 0x0D && at(5) === 0x0A && at(6) === 0x1A && at(7) === 0x0A) return { family: 'image', mime: 'image/png' };
+          if (str(0, 6) === 'GIF87a' || str(0, 6) === 'GIF89a') return { family: 'image', mime: 'image/gif' };
+          if (str(0, 4) === 'RIFF' && str(8, 4) === 'WEBP') return { family: 'image', mime: 'image/webp' };
+          if (str(0, 4) === 'RIFF' && str(8, 4) === 'WAVE') return { family: 'av', mime: 'audio/wav' };
+          if (str(4, 4) === 'ftyp') {
+            const brand = str(8, 4);
+            if (/^(heic|heix|hevc|heim|heis|mif1|msf1)$/.test(brand)) return { family: 'image', mime: 'image/heic' };
+            if (/^(avif|avis)$/.test(brand)) return { family: 'image', mime: 'image/avif' };
+            if (brand === 'qt  ') return { family: 'av', mime: 'video/quicktime' };
+            if (/^M4A/.test(brand)) return { family: 'av', mime: 'audio/mp4' };
+            return { family: 'av', mime: 'video/mp4' };
+          }
+          if (at(0) === 0x1A && at(1) === 0x45 && at(2) === 0xDF && at(3) === 0xA3) return { family: 'av', mime: 'video/webm' };
+          if (str(0, 4) === 'OggS') return { family: 'av', mime: 'audio/ogg' };
+          if (str(0, 3) === 'ID3' || (at(0) === 0xFF && (at(1) & 0xE0) === 0xE0)) return { family: 'av', mime: 'audio/mpeg' };
+          if (str(0, 5) === '%PDF-') return { family: 'pdf', mime: 'application/pdf' };
+          if (at(0) === 0xD0 && at(1) === 0xCF && at(2) === 0x11 && at(3) === 0xE0 && at(4) === 0xA1 && at(5) === 0xB1) return { family: 'ole', mime: 'application/x-ole' };
+          if (at(0) === 0x50 && at(1) === 0x4B && (at(2) === 3 || at(2) === 5)) {
+            const head = str(30, 80);
+            const office = /\[Content_Types\]\.xml|_rels\/|docProps\/|word\/|ppt\/|xl\//.test(head);
+            return { family: office ? 'office' : 'zip', mime: office ? 'application/x-office' : 'application/zip' };
+          }
+          // Windows programs, Linux programs, Mac programs and shell scripts are never allowed
+          if ((at(0) === 0x4D && at(1) === 0x5A) || (at(0) === 0x7F && str(1, 3) === 'ELF') || (at(0) === 0x23 && at(1) === 0x21) ||
+              (at(0) === 0xCA && at(1) === 0xFE && at(2) === 0xBA && at(3) === 0xBE) || (at(0) === 0xFE && at(1) === 0xED && at(2) === 0xFA)) return { family: 'blocked', mime: null };
+          // plain text: no zero bytes and valid UTF-8
+          for (let i = 0; i < b.length; i++) if (b[i] === 0) return null;
+          try { new TextDecoder('utf-8', { fatal: true }).decode(b); } catch (e) { return null; }
+          return { family: 'text', mime: 'text/plain' };
+        }
+
+        async function stitchVerifyUpload(path, body, opts){
+          const name = String(path || '').split('/').pop() || '';
+          if (STITCH_BAD_NAME.test(name)) return { ok: false, reason: 'This file name is not allowed.' };
+          let blob = body;
+          if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) blob = new Blob([body]);
+          if (!(blob instanceof Blob)) return { ok: false, reason: 'This kind of upload is not allowed.' };
+          if (!blob.size) return { ok: false, reason: 'This file is empty.' };
+          const ext = (name.split('.').pop() || '').toLowerCase();
+          const claimed = String((opts && opts.contentType) || blob.type || '').toLowerCase();
+          let head;
+          try { head = new Uint8Array(await blob.slice(0, 4096).arrayBuffer()); } catch (e) { return { ok: false, reason: 'Could not read this file.' }; }
+          const sn = stitchSniffBytes(head);
+          if (!sn || sn.family === 'blocked') return { ok: false, reason: 'This file type is not allowed.' };
+          // 1) the name must agree with the real contents
+          const extFamily = STITCH_EXT_FAMILY[ext];
+          if (extFamily && extFamily !== sn.family) return { ok: false, reason: 'This file is not really a .' + ext + ' file.' };
+          // 2) the type the browser reported must agree too
+          const cf = /^image\//.test(claimed) ? 'image' : /^(video|audio)\//.test(claimed) ? 'av' : claimed === 'application/pdf' ? 'pdf' :
+                     /^text\//.test(claimed) ? 'text' : /officedocument/.test(claimed) ? 'office' : /^application\/(msword|vnd\.ms-)/.test(claimed) ? 'ole' :
+                     /zip/.test(claimed) ? 'zip' : null;
+          if (cf && cf !== sn.family) return { ok: false, reason: 'The file contents do not match its type.' };
+          // 3) hidden code inside pictures, text, PDFs and Office files
+          const tailStart = Math.max(0, blob.size - 262144);
+          let scan = '';
+          try {
+            const limit = 20 * 1024 * 1024;
+            if (blob.size <= limit) scan = new TextDecoder('latin1').decode(await blob.arrayBuffer());
+            else scan = new TextDecoder('latin1').decode(await blob.slice(0, 524288).arrayBuffer()) + new TextDecoder('latin1').decode(await blob.slice(tailStart).arrayBuffer());
+          } catch (e) {}
+          if (sn.family === 'image' && /<\?php|<script|<%@|<iframe|<svg|<html|javascript:/i.test(scan)) return { ok: false, reason: 'This picture contains hidden code.' };
+          if (sn.family === 'text' && /<\?php|<script|<%@|<iframe|<html|<!doctype|<svg/i.test(scan)) return { ok: false, reason: 'This text file contains code.' };
+          if (sn.family === 'pdf' && /\/(Launch|JavaScript|JS|EmbeddedFile|OpenAction)\b/.test(scan)) return { ok: false, reason: 'This PDF contains scripts or attachments.' };
+          if (sn.family === 'office' && /vbaProject\.bin|\.exe|\.dll/i.test(scan)) return { ok: false, reason: 'This document contains macros or programs.' };
+          // always store with the type we measured, never the type the sender claimed
+          let mime = sn.mime;
+          if (sn.family === 'office') mime = STITCH_OFFICE_MIME[ext] || 'application/octet-stream';
+          if (sn.family === 'ole') mime = STITCH_OLE_MIME[ext] || 'application/octet-stream';
+          return { ok: true, mime, body: blob };
+        }
+        window.stitchVerifyUpload = stitchVerifyUpload;
+
         function getSupabaseClient(){
           if (SUPABASE_PROJECT_REF === 'YOUR_PROJECT_REF' || !window.supabase) return null;
           if (!_sbClient) {
@@ -193,7 +286,14 @@
                 try {
                   const __up = api.upload.bind(api);
                   api.upload = function (path, body, opts) {
-                    const p = __up(path, body, opts);
+                    const p = stitchVerifyUpload(path, body, opts).then(r => {
+                      if (!r.ok) {
+                        try { if (typeof pushInAppNotification === 'function') pushInAppNotification('File blocked', r.reason); } catch (e) {}
+                        console.warn('Upload blocked:', path, r.reason);
+                        return { data: null, error: new Error(r.reason) };
+                      }
+                      return __up(path, r.body, Object.assign({}, opts || {}, { contentType: r.mime }));
+                    });
                     try { return window.StitchUploadProgress ? window.StitchUploadProgress.wrap(p, body, path) : p; } catch (e) { return p; }
                   };
                 } catch (e) {}

@@ -7421,15 +7421,168 @@ try {
             </div>`;
         }
 
+
+        // ---- Lecture recording (teacher): mixes mic + everyone's audio, records video, saves to storage ----
+        let lectureRec = { on: false, recorder: null, chunks: [], ctx: null, dest: null, srcIds: {}, syncTimer: null, drawTimer: null, mime: '', startedAt: 0 };
+
+        function lectureRecSyncSources(){
+          if (!lectureRec.on || !lectureRec.ctx) return;
+          const add = (key, stream) => {
+            if (!stream || lectureRec.srcIds[key] === stream.id) return;
+            if (!stream.getAudioTracks().length) return;
+            try { lectureRec.ctx.createMediaStreamSource(stream).connect(lectureRec.dest); lectureRec.srcIds[key] = stream.id; } catch (e) {}
+          };
+          add('me', lectureLocalStream);
+          Object.keys(lectureRemoteStreams || {}).forEach(pid => add(pid, lectureRemoteStreams[pid]));
+        }
+
+
+        // Draws what the class is looking at (slides, whiteboard, shared screen or camera) onto one canvas for the recording
+        function lectureRecMakeCompositor(){
+          const cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720;
+          const g = cv.getContext('2d');
+          const mkVid = () => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.style.cssText = 'position:fixed;left:-9999px;width:2px;height:2px;opacity:0;'; document.body.appendChild(v); return v; };
+          const camVid = mkVid(), scrVid = mkVid();
+          const feed = (v, st) => { if (v.srcObject !== st) { v.srcObject = st || null; if (st) v.play().catch(() => {}); } };
+          const fit = (src, sw, sh) => { if (!sw || !sh) return; const k = Math.min(1280 / sw, 720 / sh); const w = sw * k, h = sh * k; try { g.drawImage(src, (1280 - w) / 2, (720 - h) / 2, w, h); } catch (e) {} };
+          const wrap = (txt, x, y, maxW, lh) => { const words = String(txt).split(' '); let line = ''; words.forEach(w => { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, y); y += lh; line = w; } else line = t; }); g.fillText(line, x, y); return y + lh; };
+          const draw = () => {
+            g.fillStyle = '#14235a'; g.fillRect(0, 0, 1280, 720);
+            const view = liveLectureState.view;
+            if (view === 'slides' && lectureSlides) {
+              if (lectureSlides.type === 'pdf') {
+                const c = document.getElementById('lecture-slide-canvas');
+                if (c && c.width) fit(c, c.width, c.height);
+              } else {
+                const sl = lectureSlides.slides[lectureSlides.current];
+                if (sl) {
+                  g.fillStyle = '#fff'; g.fillRect(80, 60, 1120, 600);
+                  g.fillStyle = '#14235a'; g.font = 'bold 54px sans-serif';
+                  let y = wrap(sl.title, 130, 150, 1020, 64) + 20;
+                  g.font = '36px sans-serif'; g.fillStyle = '#374151';
+                  sl.bullets.slice(0, 8).forEach(b => { y = wrap('•  ' + b, 140, y, 1000, 46) + 6; });
+                }
+              }
+            } else if (view === 'whiteboard') {
+              const c = document.getElementById('lecture-whiteboard-canvas');
+              g.fillStyle = '#fff'; g.fillRect(0, 0, 1280, 720);
+              if (c && c.width) fit(c, c.width, c.height);
+            } else if (lectureScreenStream && lectureScreenStream.getVideoTracks()[0]) {
+              feed(scrVid, lectureScreenStream); fit(scrVid, scrVid.videoWidth, scrVid.videoHeight);
+            } else if (lectureLocalStream && lectureLocalStream.getVideoTracks()[0] && !liveLectureState.camOff) {
+              feed(camVid, lectureLocalStream); fit(camVid, camVid.videoWidth, camVid.videoHeight);
+            } else {
+              g.fillStyle = '#fff'; g.font = 'bold 48px sans-serif'; g.textAlign = 'center'; g.fillText('Live lecture', 640, 370); g.textAlign = 'left';
+            }
+          };
+          draw();
+          const timer = setInterval(draw, 66);
+          const stream = cv.captureStream(15);
+          return { stream, timer, cleanup: () => { clearInterval(timer); [camVid, scrVid].forEach(v => { try { v.srcObject = null; v.remove(); } catch (e) {} }); } };
+        }
+
+        function toggleLectureRecording(){
+          closeLectureSheets();
+          if (lectureRec.on) { endLectureRecordingEarly(); return; }
+          if (!lectureIsTeacher()) return;
+          if (typeof MediaRecorder === 'undefined') { pushInAppNotification('Recording not supported', 'Try Chrome or Safari 14.5 or newer.'); return; }
+          try {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AC();
+            const dest = ctx.createMediaStreamDestination();
+            const out = new MediaStream(dest.stream.getAudioTracks());
+            const comp = lectureRecMakeCompositor();
+            comp.stream.getVideoTracks().forEach(t => out.addTrack(t));
+            const mimes = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+            const mime = mimes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+            const rec = new MediaRecorder(out, mime ? { mimeType: mime } : undefined);
+            lectureRec = { on: true, recorder: rec, chunks: [], ctx, dest, srcIds: {}, syncTimer: null, drawTimer: null, cleanup: comp.cleanup, mime: rec.mimeType || mime, startedAt: Date.now() };
+            rec.ondataavailable = e => { if (e.data && e.data.size) lectureRec.chunks.push(e.data); };
+            lectureRecSyncSources();
+            lectureRec.syncTimer = setInterval(lectureRecSyncSources, 3000);
+            rec.start(2000);
+            pushInAppNotification('Recording started', 'Everyone in class can see you are recording.');
+            try { broadcastLectureSignal({ type: 'recording', on: true }); } catch (e) {}
+          } catch (err) {
+            console.warn('Lecture recording failed to start', err);
+            lectureRec.on = false;
+            pushInAppNotification('Could not start recording', 'Check mic permission and try again.');
+          }
+        }
+
+        // stop and keep chunks; resolves to a Blob (or null when nothing was captured)
+        function stopLectureRecording(){
+          const r = lectureRec;
+          if (!r.on || !r.recorder) return Promise.resolve(null);
+          clearInterval(r.syncTimer);
+          try { r.cleanup && r.cleanup(); } catch (e) {}
+          return new Promise(resolve => {
+            const finish = () => {
+              const blob = r.chunks.length ? new Blob(r.chunks, { type: r.mime || 'video/webm' }) : null;
+              try { r.ctx && r.ctx.close(); } catch (e) {}
+              resolve(blob);
+            };
+            r.recorder.onstop = finish;
+            try { if (r.recorder.state !== 'inactive') r.recorder.stop(); else finish(); } catch (e) { finish(); }
+            lectureRec = { on: false, recorder: null, chunks: [], ctx: null, dest: null, srcIds: {}, syncTimer: null, drawTimer: null, mime: '', startedAt: 0 };
+            try { broadcastLectureSignal({ type: 'recording', on: false }); } catch (e) {}
+          });
+        }
+
+        function endLectureRecordingEarly(){
+          // stop now, keep the file, upload with the lecture when it ends
+          const p = stopLectureRecording();
+          lectureRecPending = p;
+          pushInAppNotification('Recording stopped', 'It will be saved when you end the class.');
+        }
+        let lectureRecPending = null;
+
+        async function saveLectureRecording(cls, lectureId, stopPromise){
+          const blob = await (lectureRecPending || stopPromise);
+          lectureRecPending = null;
+          if (!blob || blob.size < 2048) return;
+          const sb = getSupabaseClient();
+          if (!sb) { pushInAppNotification('Recording not saved', 'You are offline.'); return; }
+          const ext = /mp4/.test(blob.type) ? 'mp4' : 'webm';
+          const path = `${lectureId}/recording-${Date.now()}.${ext}`;
+          pushInAppNotification('Saving recording', 'Keep the app open until it finishes.');
+          try {
+            const { error } = await sb.storage.from(LECTURE_STORAGE_BUCKET).upload(path, blob, { contentType: blob.type, upsert: true });
+            if (error) throw error;
+            const { data } = sb.storage.from(LECTURE_STORAGE_BUCKET).getPublicUrl(path);
+            const url = data && data.publicUrl;
+            const entry = (cls.callLog || []).find(c => c.id === lectureId);
+            if (entry && url) { entry.recordingUrl = url; entry.recordingType = blob.type; queueSaveClassRemote(cls); }
+            pushInAppNotification('Recording saved', 'Students can now watch it from the class page.');
+          } catch (err) {
+            console.warn('Recording upload failed', err);
+            pushInAppNotification('Recording not saved', 'Upload failed. Check your connection and the lecture-files bucket.');
+          }
+        }
+
+        function playLectureRecording(url){
+          window.open(url, '_blank', 'noopener');
+        }
+
+        function classRecordingsListHTML(cls){
+          const recs = (cls.callLog || []).filter(c => c.recordingUrl).slice(-5).reverse();
+          if (!recs.length) return '';
+          return `<div class="mb-5"><div class="text-sm font-semibold mb-2">Recordings</div>${recs.map(c => `
+            <button onclick="playLectureRecording('${escapeHtml(c.recordingUrl)}')" class="w-full flex items-center justify-between p-3 mb-2 rounded-xl border text-left">
+              <span><b>${escapeHtml(c.title || 'Live session')}</b><br><small>${new Date(c.endedAt).toLocaleDateString()} · ${Math.round((c.seconds || 0) / 60)} min</small></span>
+              <span class="text-xs font-semibold">Watch</span>
+            </button>`).join('')}</div>`;
+        }
+
         function classLecturesListHTML(cls){
           const lectures = (cls.lectures || []).filter(l => !lectureIsExpired(l));
-          if (!lectures.length) return '';
+          if (!lectures.length) return classRecordingsListHTML(cls);
           const isTeacher = cls.role === 'teacher';
           const sorted = [...lectures].sort((a,b) => (b.status === 'live') - (a.status === 'live') || (a.date+a.time).localeCompare(b.date+b.time));
           return `
             <div class="mb-5">
               ${sorted.map(l => lectureCardHTML(l, isTeacher)).join('')}
-            </div>`;
+            </div>${classRecordingsListHTML(cls)}`;
         }
 
 
@@ -8402,10 +8555,90 @@ try {
           updateLectureControlBarButtons();
         }
 
+
+        // ---- Presenting slides to the whole class (teacher sends, students follow) ----
+        let lectureSlidesResyncTimer = null;
+        let lectureSlidesRemote = null;      // { url, name, ext } of the deck the teacher announced
+        let lectureSlidesPendingPage = null;
+        let lectureSlidesLoadingUrl = null;
+
+        function lectureBroadcastSlides(){
+          if (!lectureIsTeacher() || !lectureSlides || !lectureSlides.remoteUrl) return;
+          broadcastLectureSignal({ type: 'slides', url: lectureSlides.remoteUrl, name: lectureSlides.fileName, ext: lectureSlides.type, current: lectureSlides.current });
+          broadcastLectureSignal({ type: 'view', view: 'slides' });
+        }
+
+        function lectureSlidesResyncSet(on){
+          clearInterval(lectureSlidesResyncTimer); lectureSlidesResyncTimer = null;
+          if (!on) return;
+          // late joiners get the deck and the current slide within a few seconds
+          lectureSlidesResyncTimer = setInterval(() => {
+            if (!lectureIsTeacher() || liveLectureState.view !== 'slides' || !lectureSlides) { lectureSlidesResyncSet(false); return; }
+            lectureBroadcastSlides();
+          }, 5000);
+        }
+
+        async function lectureUploadAndAnnounceSlides(file, ext){
+          const lectureId = liveLectureState.lectureId;
+          const id = 'slides' + Date.now();
+          lectureBroadcastNotice('Uploading slides for the class…');
+          const url = await uploadLectureFileToStorage(file, lectureId, id);
+          if (!url) { pushInAppNotification('Slides not shared', 'Students could not receive the file. Check your connection.'); return; }
+          if (liveLectureState.lectureId !== lectureId || !lectureSlides) return;
+          lectureSlides.remoteUrl = url;
+          lectureBroadcastSlides();
+          lectureSlidesResyncSet(true);
+          pushInAppNotification('Presenting', 'Students now see your slides and follow along.');
+        }
+        function lectureBroadcastNotice(t){ try { pushInAppNotification('Slides', t); } catch (e) {} }
+
+        async function lectureReceiveSlides(payload){
+          if (!payload || !payload.url) return;
+          const sameDeck = lectureSlidesRemote && lectureSlidesRemote.url === payload.url;
+          lectureSlidesRemote = { url: payload.url, name: payload.name, ext: payload.ext };
+          if (sameDeck && lectureSlides) {
+            if (typeof payload.current === 'number' && payload.current !== lectureSlides.current) {
+              lectureSlides.current = payload.current;
+              if (liveLectureState.view === 'slides') rerenderLectureScreen();
+            }
+            return;
+          }
+          if (lectureSlidesLoadingUrl === payload.url) return;
+          lectureSlidesLoadingUrl = payload.url;
+          try {
+            const res = await fetch(payload.url);
+            if (!res.ok) throw new Error('download failed');
+            const buf = await res.arrayBuffer();
+            if (payload.ext === 'pdf') {
+              const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+              lectureSlides = { type: 'pdf', pdfDoc: pdf, total: pdf.numPages, current: payload.current || 1, fileName: payload.name || 'Slides' };
+            } else {
+              const zip = await JSZip.loadAsync(buf);
+              const names = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+                .sort((a, b) => parseInt(a.match(/slide(\d+)\.xml/)[1]) - parseInt(b.match(/slide(\d+)\.xml/)[1]));
+              const parser = new DOMParser(); const slides = [];
+              for (const n of names) {
+                const doc = parser.parseFromString(await zip.files[n].async('text'), 'application/xml');
+                const texts = [...doc.getElementsByTagName('a:p')].map(pp => [...pp.getElementsByTagName('a:t')].map(t => t.textContent).join('')).filter(t => t.trim());
+                slides.push({ title: texts[0] || '(untitled slide)', bullets: texts.slice(1) });
+              }
+              lectureSlides = { type: 'pptx', slides, current: payload.current || 0, fileName: payload.name || 'Slides' };
+            }
+            if (lectureSlidesPendingPage != null) { lectureSlides.current = lectureSlidesPendingPage; lectureSlidesPendingPage = null; }
+            liveLectureState.view = 'slides';
+            rerenderLectureScreen();
+          } catch (err) {
+            console.warn('Could not load presented slides', err);
+            lectureSlidesLoadingUrl = null;
+            pushInAppNotification('Could not load slides', 'Ask your moderator to share them again.');
+          }
+        }
+
         function toggleLecturePresent(){
+          if (!lectureIsTeacher()) return;
           closeLectureSheets();
-          if (liveLectureState.view === 'slides') { setLectureView('grid'); return; }
-          if (lectureSlides) { setLectureView('slides'); return; }
+          if (liveLectureState.view === 'slides') { setLectureView('grid'); broadcastLectureSignal({ type: 'view', view: 'grid' }); lectureSlidesResyncSet(false); return; }
+          if (lectureSlides) { setLectureView('slides'); lectureBroadcastSlides(); lectureSlidesResyncSet(true); return; }
           const input = document.getElementById('lecture-slide-input');
           if (input) input.click();
         }
@@ -8677,6 +8910,9 @@ try {
         }
 
         function endLecture(remoteEnded){
+          const recStopPromise = lectureRec.on ? stopLectureRecording() : null;
+          lectureSlidesResyncSet(false); lectureSlidesRemote = null; lectureSlidesPendingPage = null; lectureSlidesLoadingUrl = null;
+          const recLectureId = liveLectureState.lectureId;
           lectureMinimized = false;
           hideLectureBanner();
           removeLectureBgAudio();
@@ -8701,6 +8937,7 @@ try {
             }
             cls.lectures = (cls.lectures || []).filter(l => l.id !== liveLectureState.lectureId);
             if (isTeacher) queueSaveClassRemote(cls);
+            if (isTeacher && recStopPromise) saveLectureRecording(cls, recLectureId, recStopPromise);
           }
           const wasGuest = guestLectureMode;
           guestLectureMode = false;
@@ -9131,12 +9368,22 @@ try {
             }
             return;
           }
+          if (payload.type === 'recording') {
+            if (!lectureIsTeacher()) pushInAppNotification(payload.on ? 'This lecture is being recorded' : 'Recording stopped', payload.on ? 'The lecturer is recording this session.' : '');
+            return;
+          }
           if (payload.type === 'end') {
             endLecture(true);
             openAppAlertModal('Your moderator ended the session.');
             return;
           }
           if (lectureIsTeacher()) return; 
+          if (payload.type === 'slides') { lectureReceiveSlides(payload); return; }
+          if (payload.type === 'slide-page') {
+            if (lectureSlides && payload.current !== lectureSlides.current) { lectureSlides.current = payload.current; if (liveLectureState.view === 'slides') rerenderLectureScreen(); }
+            else if (!lectureSlides) lectureSlidesPendingPage = payload.current;
+            return;
+          }
           if (payload.type === 'view') {
             const _prevView = liveLectureState.view;
             if (Array.isArray(payload.strokes)) whiteboardStrokes = payload.strokes.slice();
@@ -9727,6 +9974,7 @@ try {
             const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
             lectureSlides = { type: 'pdf', pdfDoc: pdf, total: pdf.numPages, current: 1, fileName: file.name };
             setLectureView('slides');
+            lectureUploadAndAnnounceSlides(file, 'pdf');
           } catch (err) {
             openAppAlertModal('Could not open this PDF: ' + err.message);
           }
@@ -9752,6 +10000,7 @@ try {
             }
             lectureSlides = { type: 'pptx', slides, current: 0, fileName: file.name };
             setLectureView('slides');
+            lectureUploadAndAnnounceSlides(file, 'pptx');
           } catch (err) {
             openAppAlertModal('Could not read this PPTX file: ' + err.message);
           }
@@ -9772,7 +10021,7 @@ try {
         }
 
         function lectureSlideNav(dir){
-          if (!lectureSlides) return;
+          if (!lectureSlides || !lectureIsTeacher()) return;
           if (lectureSlides.type === 'pdf') {
             const next = lectureSlides.current + dir;
             if (next < 1 || next > lectureSlides.total) return;
@@ -9783,6 +10032,7 @@ try {
             lectureSlides.current = next;
           }
           rerenderLectureScreen();
+          if (lectureIsTeacher()) broadcastLectureSignal({ type: 'slide-page', current: lectureSlides.current });
         }
 
         function lectureSlidesHTML(){
@@ -9790,8 +10040,8 @@ try {
             return `
               <div class="flex-1 flex flex-col items-center justify-center text-white/70 px-8 text-center gap-3">
                 ${Icon('monitor','w-10 h-10')}
-                <div class="text-sm">Present a PDF or PowerPoint to the space</div>
-                <button onclick="toggleLecturePresent()" class="text-sm font-bold px-4 py-2 rounded-full bg-white text-[${NAVY}]">Choose file</button>
+                <div class="text-sm">${lectureIsTeacher() ? 'Present a PDF or PowerPoint to the space' : 'Loading the slides…'}</div>
+                ${lectureIsTeacher() ? `<button onclick="toggleLecturePresent()" class="text-sm font-bold px-4 py-2 rounded-full bg-white text-[${NAVY}]">Choose file</button>` : ''}
               </div>`;
           }
           if (lectureSlides.type === 'pdf') {
@@ -9801,9 +10051,9 @@ try {
                   <canvas id="lecture-slide-canvas" class="max-w-full max-h-full bg-white rounded-lg shadow"></canvas>
                 </div>
                 <div class="flex items-center justify-center gap-4 pb-2 flex-shrink-0">
-                  <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
+                  ${lectureIsTeacher() ? `<button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>` : ''}
                   <div class="text-sm font-semibold text-white">Slide ${lectureSlides.current} / ${lectureSlides.total}</div>
-                  <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
+                  ${lectureIsTeacher() ? `<button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>` : ''}
                 </div>
               </div>`;
           }
@@ -9817,9 +10067,9 @@ try {
                 </div>
               </div>
               <div class="flex items-center justify-center gap-4 pb-2 flex-shrink-0">
-                <button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>
+                ${lectureIsTeacher() ? `<button onclick="lectureSlideNav(-1)" title="Previous" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${IconBold('back','w-4 h-4')}</button>` : ''}
                 <div class="text-sm font-semibold text-white">Slide ${lectureSlides.current + 1} / ${lectureSlides.slides.length}</div>
-                <button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>
+                ${lectureIsTeacher() ? `<button onclick="lectureSlideNav(1)" title="Next" class="w-9 h-9 rounded-full cu-soft-btn flex items-center justify-center">${Icon('arrowRight','w-4 h-4')}</button>` : ''}
               </div>
             </div>`;
         }
@@ -9978,8 +10228,10 @@ try {
                 ${tile("closeLectureSheets();openMeetingChatPage()", 'commentText', 'Messages')}
                 ${tile(`closeLectureSheets();shareLectureLink('${liveLectureState.classId}','${liveLectureState.lectureId}')`, 'link', 'Share link')}
               </div>
+              ${isTeacher ? row('toggleLecturePresent()', 'monitor', view === 'slides' ? 'Stop presenting' : 'Present slides', 'PDF or PowerPoint. Students follow your slide', view === 'slides') : ''}
               ${isTeacher ? row('toggleLectureWhiteboard()', 'edit', 'Whiteboard', 'Draw for the class', view === 'whiteboard') : ''}
               ${isTeacher ? row('toggleLectureScreenShare()', 'monitor', 'Share screen', '', isSharingScreen) : ''}
+              ${isTeacher ? row('toggleLectureRecording()', 'video', lectureRec.on ? 'Stop recording' : 'Record lecture', lectureRec.on ? 'Recording now. Saved when you end the class' : 'Saves your slides, board, screen or camera with audio', lectureRec.on, lectureRec.on) : ''}
               ${row('lectureAttachDocuments()', 'doc', 'Slides and resources', 'Share a PDF with the class', false)}
               ${isTeacher ? row("closeLectureSheets();muteEveryoneInLecture()", 'muteAll', lectureEveryoneMuted ? 'Unmute everyone' : 'Mute everyone', '', false) : ''}
             </div>`;
