@@ -6990,7 +6990,7 @@ html.dark-mode #courses-chips button[style*="gradient"], body.dark-mode #courses
 .seg-btn.on{color:#1e90ff !important;box-shadow:inset 0 -2px 0 #1e90ff !important;}
 html.dark-mode .seg-btn, body.dark-mode .seg-btn{color:#9ca3af !important;}
 html.dark-mode .seg-btn.on, body.dark-mode .seg-btn.on{color:#5cb0ff !important;box-shadow:inset 0 -2px 0 #5cb0ff !important;}
-textarea[id^="stream-comment-input"]{background:transparent !important;border-radius:0 !important;border-bottom:1px solid rgba(128,128,128,.35) !important;}
+textarea[id^="stream-comment-input"]{border-radius:22px !important;padding:10px 16px !important;}
 textarea[id^="stream-comment-input"]+button{background:transparent !important;color:#1e90ff !important;box-shadow:none !important;}
 .filter-pill[data-people-tab]{background:transparent !important;border:0 !important;box-shadow:none !important;border-radius:0 !important;color:#6b7280 !important;padding:8px 4px !important;}
 .filter-pill[data-people-tab].on{color:#1e90ff !important;box-shadow:inset 0 -2px 0 #1e90ff !important;}
@@ -7678,9 +7678,9 @@ body:not(.dark-mode) .fc-act-flip, body.dark-mode .fc-act-flip{ background:linea
    White sheet, soft 1.5px border and soft shadow, blue border on focus, Apple-style continuous (squircle) corners.
    Applies to search boxes, form fields and text areas everywhere. Boxes that sit inside another sheet (transparent
    inputs inside the message pill) and the sign-in flow keep their own styling. */
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
-select:not(#auth-gate *),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
 div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:#ffffff !important;
   border:1.5px solid rgba(10,37,64,0.10) !important;
@@ -7689,24 +7689,80 @@ div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-texta
 }
 /* squircle shape (continuous corners) on the message box and every type box */
 @supports (corner-shape: squircle){
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *),
-  textarea:not(.bg-transparent):not(#auth-gate *), select:not(#auth-gate *), .convo-composer-pill,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+  textarea:not(.bg-transparent):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *), select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *), .convo-composer-pill,
   div:has(> input.bg-transparent[placeholder*="earch" i]){ corner-shape:squircle; }
 }
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):focus,
-textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):focus,
-select:not(#auth-gate *):focus{
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus,
+textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus,
+select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *):focus{
   border-color:#1e90ff !important;
   box-shadow:0 8px 24px rgba(30,144,255,0.16) !important;
   outline:none;
 }
 input::placeholder,textarea::placeholder{color:#8a93a6}
-body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
-body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *),
-body.dark-mode select:not(#auth-gate *),
+body.dark-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="color"]):not([type="button"]):not([type="submit"]):not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+body.dark-mode textarea:not(.bg-transparent):not(.convo-composer-textarea):not(.wa-textarea):not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
+body.dark-mode select:not(#auth-gate *):not(.ws-comp *):not(.ws-search *):not(.convo-composer-pill *),
 body.dark-mode div:has(> input.bg-transparent[placeholder*="earch" i]:not(.convo-composer-textarea)){
   background-color:var(--c-onyx) !important;
   border-color:rgba(255,255,255,0.10) !important;
   box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
 }
 body.dark-mode input::placeholder,body.dark-mode textarea::placeholder{color:#9a9a9a}
+
+/* Wrapper boxes carry the sheet (the input inside stays transparent, like the messaging page) */
+.ws-comp,.ws-search{
+  background-color:#ffffff !important;
+  border:1.5px solid rgba(10,37,64,0.10) !important;
+  box-shadow:0 8px 24px rgba(10,37,64,0.10) !important;
+}
+body.dark-mode .ws-comp, body.dark-mode .ws-search{
+  background-color:var(--c-onyx) !important;
+  border-color:rgba(255,255,255,0.10) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
+}
+.ws-comp textarea,.ws-search input{background:transparent !important;border:0 !important;box-shadow:none !important;outline:none !important;border-radius:0 !important}
+@supports (corner-shape: squircle){ .ws-comp,.ws-search{ corner-shape:squircle; } }
+/* old flat rules made these square: give them the rounded sheet back so the squircle shows */
+#course-search-input{border:1.5px solid rgba(10,37,64,0.10) !important;border-radius:999px !important;padding-top:.65rem !important;padding-bottom:.65rem !important}
+body.dark-mode #course-search-input{border-color:rgba(255,255,255,0.10) !important}
+textarea[id^="stream-comment-input"]{border:1.5px solid rgba(10,37,64,0.10) !important;border-radius:22px !important}
+
+/* ===== Pill navs and pill tabs: squircle shape (colors and sizes unchanged) ===== */
+@supports (corner-shape: squircle){
+  .filter-pill, .ws-tabs button, .ws-seg button, .ws-dock button, .ws-dock .ws-fab,
+  .pill-bleed .filter-pill, [data-people-tab]{ corner-shape:squircle; }
+}
+
+/* ===== Step pages (Apply to post, Post an opportunity, Match with CV, Create a course): shadows back on the pills =====
+   Every page with a progress bar or a floating Back / Continue bar. Same soft shadow the pills originally had. */
+.pa-flow .filter-pill, .pa-flow .auth-intent-chip, .aa-flow .filter-pill, .aa-flow .auth-intent-chip,
+#overlay:has(.wiz-top) .filter-pill, #overlay:has(.wiz-top) .auth-intent-chip,
+#overlay:has(.flow-float) .filter-pill, #overlay:has(.flow-float) .auth-intent-chip{
+  border:1.5px solid transparent !important;
+  box-shadow:0 2px 10px rgba(15,23,42,0.10) !important;
+}
+.pa-flow .filter-pill.on, .pa-flow .auth-intent-chip.on, .aa-flow .filter-pill.on, .aa-flow .auth-intent-chip.on,
+#overlay:has(.wiz-top) .filter-pill.on, #overlay:has(.wiz-top) .auth-intent-chip.on,
+#overlay:has(.flow-float) .filter-pill.on, #overlay:has(.flow-float) .auth-intent-chip.on{
+  border-color:#1e90ff !important;
+  box-shadow:0 3px 12px rgba(30,144,255,0.22) !important;
+}
+body.dark-mode .pa-flow .filter-pill, body.dark-mode .pa-flow .auth-intent-chip,
+body.dark-mode .aa-flow .filter-pill, body.dark-mode .aa-flow .auth-intent-chip,
+body.dark-mode #overlay:has(.wiz-top) .filter-pill, body.dark-mode #overlay:has(.wiz-top) .auth-intent-chip,
+body.dark-mode #overlay:has(.flow-float) .filter-pill, body.dark-mode #overlay:has(.flow-float) .auth-intent-chip{
+  border-color:transparent !important;
+  box-shadow:0 2px 10px rgba(0,0,0,0.5) !important;
+}
+body.dark-mode .pa-flow .filter-pill.on, body.dark-mode .pa-flow .auth-intent-chip.on,
+body.dark-mode .aa-flow .filter-pill.on, body.dark-mode .aa-flow .auth-intent-chip.on,
+body.dark-mode #overlay:has(.wiz-top) .filter-pill.on, body.dark-mode #overlay:has(.wiz-top) .auth-intent-chip.on,
+body.dark-mode #overlay:has(.flow-float) .filter-pill.on, body.dark-mode #overlay:has(.flow-float) .auth-intent-chip.on{
+  border-color:#1e90ff !important;
+  box-shadow:0 3px 12px rgba(30,144,255,0.22) !important;
+}
+@supports (corner-shape: squircle){
+  .auth-intent-chip, .flow-pill{ corner-shape:squircle; }
+}
