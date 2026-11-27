@@ -1981,6 +1981,7 @@
     <button onclick="wsRailGo('home')" class="dnav-item" id="dcnav-home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span class="dside-label">Home</span></button>
     <button onclick="wsRailGo('tutor')" class="dnav-item" id="dcnav-tutor" title="My Stitch Tutor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/></svg><span class="dside-label">My Stitch Tutor</span></button>
     <button onclick="wsRailGo('courses')" class="dnav-item" id="dcnav-courses" title="Courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg><span class="dside-label">Courses</span></button>
+    <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item relative" id="dcnav-notif" title="Notifications">${Icon('bellOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
     </div>
     <div id="dnav-bottom" class="dn-grp">
     <div id="dnav-themepair" role="group" aria-label="Theme">
@@ -3021,21 +3022,74 @@
         let classroomNeedsLoadingAnimation = true;
 
         // ---- Classroom loading transition + leave-class modal ----
+        function classroomSkelHelpers(){
+          const b = (w, h, extra) => `<div class="sk" style="width:${w};height:${h}px;${extra || ''}"></div>`;
+          const circ = (label) => `<div class="ws-circ"${label ? ` aria-label="${label}"` : ''}>${b('22px', 22, 'border-radius:50%;')}</div>`;
+          const tool = `<div class="ws-tool" style="pointer-events:none;"><span class="i">${b('22px', 22, 'border-radius:7px;')}</span>${b('64%', 13)}</div>`;
+          return { b, circ, tool };
+        }
+        function classroomHomeSkeletonInner(){
+          const { b, circ, tool } = classroomSkelHelpers();
+          return `<div class="ws-page sk-ws-page" style="padding-bottom:0;overflow:hidden;height:100%;box-sizing:border-box;">
+            <div class="ws-hdr ws-hdr-s ws-hdr-home">
+              ${circ('')}
+              <div class="ws-hdr-t" style="display:flex;justify-content:center;">${b('120px', 22, 'border-radius:8px;')}</div>
+              ${circ('Notifications')}
+            </div>
+            ${b('52%', 32, 'margin:6px 0 8px;border-radius:10px;')}
+            ${b('46%', 12, 'margin-bottom:16px;')}
+            ${b('58%', 18, 'margin:22px 0 10px;border-radius:8px;')}
+            <div class="ws-card ws-cont" style="pointer-events:none;">
+              <div class="r">
+                <div style="flex:1;min-width:0;">${b('42%', 15, 'margin-bottom:8px;')}${b('68%', 12)}</div>
+                ${b('40px', 40, 'border-radius:50%;flex-shrink:0;')}
+              </div>
+              <div class="ws-acts">
+                <div style="padding:11px 0;display:flex;justify-content:center;">${b('20px', 16)}</div>
+                <div style="padding:11px 0;display:flex;justify-content:center;border-left:1px solid var(--ws-line);">${b('20px', 16)}</div>
+                <div style="padding:11px 0;display:flex;justify-content:center;border-left:1px solid var(--ws-line);">${b('20px', 16)}</div>
+              </div>
+            </div>
+            ${b('36%', 18, 'margin:22px 0 10px;border-radius:8px;')}
+            <div class="ws-tools">${tool}${tool}${tool}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px;">${b('34%', 18, 'border-radius:8px;')}${b('44px', 13)}</div>
+            <div class="ws-hs" style="overflow:hidden;">
+              <div class="sk ws-sp" style="pointer-events:none;"></div>
+              <div class="sk ws-sp" style="pointer-events:none;"></div>
+            </div>
+          </div>`;
+        }
         function classroomLoadingMarkup(){
-          const card = `<div class="sk sk-card" style="height:104px;margin-bottom:12px;"></div>`;
+          const { b } = classroomSkelHelpers();
           return `
-            <div id="classroom-loading-overlay" class="classroom-slide-cover" aria-busy="true" aria-label="Loading workspace">
-              <div class="sk-wrap">
-                <div class="sk-row" style="justify-content:space-between;margin-bottom:16px;">
-                  <div class="sk" style="width:120px;height:14px;"></div>
-                  <div class="sk" style="width:150px;height:30px;"></div>
-                </div>
-                <div class="sk sk-card" style="height:46px;border-radius:16px;margin-bottom:20px;"></div>
-                <div class="sk" style="width:90px;height:11px;margin-bottom:14px;"></div>
-                ${card}${card}${card}
-                <div class="sk sk-card" style="height:150px;margin-top:20px;"></div>
+            <div id="classroom-loading-overlay" class="classroom-slide-cover sk-ws-cover" aria-busy="true" aria-label="Loading workspace">
+              ${classroomHomeSkeletonInner()}
+              <div class="ws-dock sk-ws-dock" aria-hidden="true">
+                <button type="button" tabindex="-1" disabled>${b('24px', 24, 'border-radius:8px;')}</button>
+                <button type="button" tabindex="-1" disabled>${b('24px', 24, 'border-radius:8px;')}</button>
+                <button type="button" tabindex="-1" disabled>${b('24px', 24, 'border-radius:8px;')}</button>
+                <div class="sk sk-ws-fab"></div>
               </div>
             </div>`;
+        }
+        // Desktop: the skeleton covers the whole app (top strip with profile, rail, page and Notes panel), not just the page
+        function classroomDeskCoverHTML(){
+          const { b } = classroomSkelHelpers();
+          const icon = `<div style="height:46px;display:flex;align-items:center;justify-content:center;">${b('22px', 22, 'border-radius:7px;')}</div>`;
+          const top = `<div class="skd-top">${b('104px', 34, 'border-radius:12px;')}<div class="skd-search sk"></div><div class="skd-top-right">${b('42px', 42, 'border-radius:50%;')}<div>${b('70px', 9, 'margin-bottom:7px;')}${b('96px', 12)}</div></div></div>`;
+          const rail = `<div class="skd-rail"><div class="skd-rail-grp skd-rail-main">${icon.repeat(4)}</div><div class="skd-rail-grp skd-rail-bot">${icon.repeat(3)}<div style="height:50px;display:flex;align-items:center;justify-content:center;">${b('40px', 40, 'border-radius:50%;')}</div></div></div>`;
+          const main = `<div class="skd-main">${classroomHomeSkeletonInner()}</div>`;
+          const right = `<div class="skd-right"><div style="padding:26px 24px 0;">${b('70px', 18, 'margin-bottom:34px;border-radius:8px;')}${b('100%', 52, 'border-radius:26px;margin-bottom:20px;')}${b('100%', 60, 'border-radius:30px;margin-bottom:50px;')}<div style="display:flex;justify-content:center;">${b('60%', 14)}</div></div></div>`;
+          return `<div id="classroom-desk-cover" class="skd-wrap sk-ws-desk" aria-busy="true" aria-label="Loading workspace">${top}${rail}${main}${right}<div class="sk sk-ws-fab sk-ws-deskfab"></div></div>`;
+        }
+        function showClassroomDeskCover(){
+          if (!(window.matchMedia && window.matchMedia('(min-width:1100px)').matches)) return;
+          let el = document.getElementById('classroom-desk-cover'); if (el) el.remove();
+          document.body.insertAdjacentHTML('beforeend', classroomDeskCoverHTML());
+        }
+        function hideClassroomDeskCover(){
+          const el = document.getElementById('classroom-desk-cover'); if (!el) return;
+          el.classList.add('out'); setTimeout(() => { if (el.isConnected) el.remove(); }, 400);
         }
 
         function renderClassroomWithLoading() {
@@ -3056,6 +3110,7 @@
 
           screenEl.style.position = 'relative';
           screenEl.innerHTML = classroomLoadingMarkup();
+          showClassroomDeskCover();
           const wsLockShell = document.getElementById('app-shell');
           if (wsLockShell) wsLockShell.classList.add('ws-locked');
 
@@ -3072,6 +3127,7 @@
             clearInterval(dotTimer);
             const wsUnlockShell = document.getElementById('app-shell');
             if (wsUnlockShell) wsUnlockShell.classList.remove('ws-locked');
+            if (!(myToken === classroomLoadToken && currentTab === 2)) hideClassroomDeskCover();
             if (myToken === classroomLoadToken && currentTab === 2) {
               classroomNeedsLoadingAnimation = false;
               revealClassroom(myToken);
@@ -3090,6 +3146,8 @@
 
           const classroomNav = document.getElementById('classroom-nav');
           if (classroomNav) classroomNav.style.display = 'none';
+
+          if (window.matchMedia && window.matchMedia('(min-width:1100px)').matches) { screenEl.style.position = ''; hideClassroomDeskCover(); return; }
 
           screenEl.style.position = 'relative';
           screenEl.insertAdjacentHTML('afterbegin', classroomLoadingMarkup());

@@ -7508,3 +7508,30 @@ body.dark-mode #screen{ background:#121212 !important; }
   [style*="classroom-spin"]{ border-color:rgba(156,163,175,.30) !important; border-top-color:#9ca3af !important; }
   .career-refresh-spinning{ color:#9ca3af !important; }
 }
+
+
+/* Workspace loading skeleton: same page colour and spacing as the real Workspace home */
+.sk-ws-cover{ background:var(--ws-bg,#fff) !important; overflow:hidden; }
+body.dark-mode .sk-ws-cover{ background:#121212 !important; }
+.sk-ws-cover .ws-hdr.ws-hdr-s{ background:transparent !important; background-image:none !important; position:relative; }
+.sk-ws-cover .ws-hs .ws-sp{ flex:0 0 150px; height:190px; border-radius:22px; }
+.sk-ws-dock{ position:absolute !important; left:0; right:0; bottom:14px; pointer-events:none; }
+.sk-ws-dock button{ opacity:1; }
+.sk-ws-fab{ position:absolute; right:20px; bottom:88px; width:44px; height:44px; border-radius:16px; }
+@media (min-width:1100px){
+  .sk-ws-cover{ background:var(--pg-bg,#f1f4f9) !important; }
+  body.dark-mode .sk-ws-cover{ background:#121212 !important; }
+  .sk-ws-cover .ws-circ[aria-label="Notifications"]{ visibility:hidden; }
+  .sk-ws-dock > button{ display:none !important; }
+  .sk-ws-fab{ right:40px; bottom:24px; width:48px; height:48px; }
+}
+
+/* Workspace loading skeleton, desktop: covers the whole app and fades out when the page is ready */
+.sk-ws-desk{ position:fixed !important; inset:0; z-index:300; background:var(--pg-bg,#f1f4f9); opacity:1; transition:opacity .35s ease; }
+body.dark-mode .sk-ws-desk{ background:#121212; }
+.sk-ws-desk.out{ opacity:0; pointer-events:none; }
+.sk-ws-desk .skd-main{ overflow:hidden; }
+.sk-ws-desk .skd-main .ws-page{ padding-top:0; padding-bottom:0; height:100%; }
+.sk-ws-desk .skd-main .ws-hdr.ws-hdr-s{ background:transparent !important; }
+.sk-ws-desk .sk-ws-deskfab{ right:calc(var(--rp-width,480px) + 32px + 24px); bottom:24px; }
+@media (max-width:1099px){ .sk-ws-desk{ display:none !important; } }

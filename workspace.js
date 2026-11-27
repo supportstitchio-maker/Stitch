@@ -170,6 +170,8 @@
     #screen .ws-fl{position:sticky !important;top:0 !important;z-index:50 !important}
     #screen .ws-fl::before{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--top-safe-pad,20px) + 64px);background:var(--pg-bg,#f1f4f9);z-index:-1}
     body.dark-mode #screen .ws-fl::before{background:#121212}
+    /* inside the Workspace the top strip shows no bell and no New button */
+    #app-shell.classroom-active #dtop-bell,#app-shell.classroom-active #dtop-new{display:none !important}
     /* the rail already has the bell, so the header bell is not drawn (its space is kept so the title stays centred) */
     #screen .ws-hdr .ws-circ[aria-label="Notifications"],#screen .ws-fl .ws-circ[aria-label="Notifications"]{visibility:hidden !important;pointer-events:none !important}
     .ws-dock .ws-fab{position:fixed !important;bottom:24px !important;right:40px !important;z-index:40;transition:right .25s cubic-bezier(.22,.68,0,1)}
@@ -334,6 +336,7 @@
       var el = document.getElementById('dcnav-' + k);
       if (el) el.classList.toggle('dnav-active', !open && k === cur);
     });
+    var nb = document.getElementById('dcnav-notif'); if (nb) { var isN = false; try { isN = currentOverlayKind === 'classAnnouncements'; } catch(e){} nb.classList.toggle('dnav-active', isN); }
   }
   window.wsRailMark = railMark;
   /* Rail tap: close any page open on top of the Workspace, then go to that Workspace page */
@@ -635,7 +638,7 @@
     else if (cTab === 'dashboard' && admin) body = classDashboardTabHTML(cls);
     var hdr = (typeof classDetailHeaderHTML === 'function') ? '' : '';
     return '<div class="flex-1 flex flex-col overflow-hidden"><div class="flex-1 overflow-y-auto no-scrollbar" style="padding-bottom:60px"><div class="px-5" style="padding-top:0">' +
-      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t"></div>' +
+      '<div class="ws-hdr ws-hdr-s">' + backBtn('wsClassBack()') + '<div class="ws-hdr-t" title="' + E(cls.name) + '"><b>' + E(cls.name) + '</b></div>' +
       '<button class="ws-circ" onclick="openClassroomNavOverlay(\'classAnnouncements\')" aria-label="Notifications">' + bellIcon() + '</button></div>' +
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:16px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
