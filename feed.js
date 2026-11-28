@@ -6718,7 +6718,7 @@
           }
           return `
             <div class="flex-1 overflow-y-auto no-scrollbar" id="post-feed-list">
-              <div class="bg-white" style="padding-bottom:20px;">${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null)}</div>
+              ${overlayHeader(escapeHtml(postFeedTitle(postFeedSource)), '20px', null, null, { hideOnScroll:true, pb:'20px' })}
               ${items.length
                 ? `<div class="px-5 space-y-3">${items.map(feedPost).join('')}</div>`
                 : '<div class="text-center text-gray-400 text-sm py-10">Nothing here yet.</div>'}
