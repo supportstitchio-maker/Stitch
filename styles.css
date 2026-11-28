@@ -8693,3 +8693,8 @@ html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-
 html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-head.ov-sticky-head.ov-sticky-head, .cv-wa-head, .ws-hdr, header:has(#chat-header-name), div:has(> #chat-header-name)) :is([fill*="url(#"], [fill="#1e90ff" i], [fill="#4169e1" i]){ fill:#ffffff !important; }
 /* the Stitch wordmark in the top bar turns white */
 html body.dark-mode #topbar-brand img{ filter:brightness(0) invert(1) !important; }
+
+/* Dark mode: the profile settings gear and the post menu dashes in the feed are white */
+html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) svg{ color:#ffffff !important; }
+html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) :is([stroke*="url(#"], [stroke="currentColor"], [stroke="#1e90ff" i], [stroke="#4169e1" i]){ stroke:#ffffff !important; }
+html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) :is([fill*="url(#"], [fill="#1e90ff" i], [fill="#4169e1" i]){ fill:#ffffff !important; }
