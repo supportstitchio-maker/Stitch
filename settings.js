@@ -11,8 +11,8 @@ let appPrefs = {
         // ---- Theme toggle ----
         function applyThemeColorMeta(){
           const isDark = document.body.classList.contains('dark-mode');
-          const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-          if (themeColorMeta) themeColorMeta.setAttribute('content', isDark ? '#121212' : '#ffffff');
+          // every theme-color tag (including the phone-dark one in index.html) follows the chosen theme
+          document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.setAttribute('content', isDark ? '#121212' : '#ffffff'); m.removeAttribute('media'); });
           const colorSchemeMeta = document.querySelector('meta[name="color-scheme"]');
           if (colorSchemeMeta) colorSchemeMeta.setAttribute('content', isDark ? 'dark' : 'light');
         }

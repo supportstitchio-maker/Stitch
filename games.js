@@ -2907,8 +2907,21 @@ let userPoints = 0;
           if (m) { m.style.display = 'none'; m.classList.add('hidden'); }
           resetStitchPageTitle();
         }
+        // The phone's sign-in window takes its top and bottom bar colour from the page's theme colour,
+        // so in dark mode set it dark before leaving for Google / Apple (otherwise white bars show)
+        function authDarkBarsBeforeRedirect(){
+          try {
+            const dark = document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode');
+            if (!dark) return;
+            document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.setAttribute('content', '#121212'); m.removeAttribute('media'); });
+            const c = document.querySelector('meta[name="color-scheme"]'); if (c) c.setAttribute('content', 'dark');
+            document.documentElement.style.backgroundColor = '#121212';
+            document.body.style.backgroundColor = '#121212';
+          } catch (e) {}
+        }
         async function authContinueWithGoogle(){
           await authAwaitPendingDiscard();
+          authDarkBarsBeforeRedirect();
           const sb = getSupabaseClient();
           if (!sb) {
             openAppAlertModal('Sign-in is not available right now. Please try again in a moment.');
@@ -2932,6 +2945,7 @@ let userPoints = 0;
 
         async function authContinueWithApple(){
           await authAwaitPendingDiscard();
+          authDarkBarsBeforeRedirect();
           const sb = getSupabaseClient();
           if (!sb) {
             openAppAlertModal('Sign-in is not available right now. Please try again in a moment.');

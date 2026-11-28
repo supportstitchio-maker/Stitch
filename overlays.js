@@ -2664,7 +2664,6 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="${embed ? '' : 'flex-1 overflow-y-auto'}">
             ${embed ? '' : `<div class="px-5 pb-3 flex items-center gap-1 relative" style="padding-top:var(--top-safe-pad);">
               <button onclick="overlayGoBack()" class="w-10 h-10 flex items-center justify-center">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <span class="nm-wrap font-bold absolute left-1/2 -translate-x-1/2" style="max-width:60%;font-family:'Montserrat',sans-serif;font-size:16px;"><span class="nm-inner grad-text">${escapeHtml(p.username ? String(p.username) : String(p.name || 'Profile'))}</span></span>
             </div>`}
             <div class="p-5">
               <div class="flex items-center gap-5 mb-4">
