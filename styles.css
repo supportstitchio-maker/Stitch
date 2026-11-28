@@ -8623,3 +8623,31 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
   #auth-gate .auth-ve-row .auth-field-icon input,
   #auth-gate .auth-ve-row .auth-field-icon{ corner-shape:squircle; }
 }
+
+/* hint turns white while the email box sits over the darker top of the sky */
+@media (max-width:699px){
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-info-banner,
+  html body.dark-mode #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-info-banner{color:#ffffff !important;}
+}
+
+/* ---- Auth: email step hint stays white while typing; code step is smaller and has no Welcome ---- */
+@media (max-width:699px){
+  /* typing the email: hint is white (wins over every earlier colour rule) */
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-info-banner,
+  html body.dark-mode #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-info-banner{
+    color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; opacity:1 !important;
+  }
+  /* code step: no "Welcome / Sign in or register here" */
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-ve-welcome{display:none !important;}
+  /* smaller text, email not bold */
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-info-banner,
+  html body.dark-mode #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-info-banner{font-size:12px !important;line-height:1.35 !important;padding:2px 4px !important;margin:0 0 10px !important;}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-info-banner b,
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) #auth-verify-email-label{font-weight:500 !important;}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-resend{font-size:11px !important;line-height:1.35 !important;margin:0 0 6px !important;}
+  /* tighter panel so it sits clear of the back arrow */
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) #auth-panel-verify.active > div{padding:16px 16px 12px !important;}
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-otp-row{margin-bottom:10px !important;}
+  /* never let the panel reach the back arrow */
+  html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-scroll-inner{padding-top:calc(env(safe-area-inset-top,0px) + 64px) !important;}
+}
