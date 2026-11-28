@@ -1607,8 +1607,12 @@ let studyFabMenuOpen = false;
           { key: 'arena',       label: 'Challenge Arena games',         per: 'week',  free: 2, pro: 20, daily: 8 },
           { key: 'ai_generate', label: 'Uploads turned into questions', per: 'month', free: 3, pro: 30, daily: 5 }
         ];
-        // Stitch Tutor (chat, summaries, diagrams) has daily, weekly and monthly caps. Display only: the server enforces the real ones.
-        const TUTOR_FREE_CAPS = { day: 30, week: 150, month: 500 };
+        // Stitch Tutor works like Stitch Bot: the free caps are the same as AI_PROMPT_LIMITS (30 a day, 150 a week, 500 a month).
+        // Each Pro plan shows only its own cap, like the other rows. Display only: the server enforces the real ones.
+        const TUTOR_CAPS = {
+          free: { daily: 30,  weekly: 150,  monthly: 500  },
+          pro:  { daily: 300, weekly: 1500, monthly: 5000 }
+        };
         let proState = { loaded: false, pro: false, plan: null, expiresAt: null, cancelled: false, startedAt: null, features: {} };
         let proView = 'auto'; // 'auto' (manage when active, plans otherwise) | 'plans' | 'cancel'
         let proPlanChoice = 'monthly';
@@ -1737,8 +1741,8 @@ let studyFabMenuOpen = false;
             </div>`;
           }).join('') + `<div class="pro4-row">
               <span class="pro4-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v4M6 17v-3h12v3"/></svg></span>
-              <div class="pro4-rm"><div class="pro4-rn">Stitch Tutor</div><div class="pro4-rs">Includes diagrams. Free: ${TUTOR_FREE_CAPS.day} a day, ${TUTOR_FREE_CAPS.week} a week, ${TUTOR_FREE_CAPS.month} a month</div></div>
-              <span class="pro4-rv" style="color:#1e90ff;">10\u00d7 more</span>
+              <div class="pro4-rm"><div class="pro4-rn">Stitch Tutor</div><div class="pro4-rs">Ask questions and study from your own sources. Free: ${TUTOR_CAPS.free[proPlanChoice] || TUTOR_CAPS.free.monthly} a ${PRO_PLANS[proPlanChoice] ? PRO_PLANS[proPlanChoice].unit : 'month'}</div></div>
+              <span class="pro4-rv">${(TUTOR_CAPS.pro[proPlanChoice] || TUTOR_CAPS.pro.monthly).toLocaleString('en-US')} a ${PRO_PLANS[proPlanChoice] ? PRO_PLANS[proPlanChoice].unit : 'month'}</span>
             </div>`;
           const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.monthly;
           const notes = { daily: '24 hours of Pro. No auto-renew.', weekly: '7 days of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
