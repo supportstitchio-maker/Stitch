@@ -134,11 +134,11 @@
           var qs = (window.location.hash || '') + (window.location.search || '');
           var authReturn = window.__stitchFreshOAuthReturn ||
             /access_token|provider_token|token_hash|[?&#]code=|type=(signup|magiclink|recovery|email|invite)/.test(qs);
-          // The animation plays on every fresh open (installed app or browser tab): a new open has an empty
-          // sessionStorage, while a page reload inside the same session skips it.
-          var launched = false;
-          try { launched = sessionStorage.getItem('stitchSplashLaunch') === '1'; sessionStorage.setItem('stitchSplashLaunch', '1'); } catch (e) {}
-          seen = launched;
+          // One splash everywhere (installed app, browser tab, light or dark): it shows on every fresh open and is
+          // skipped only on a page reload or a sign-in return, where the screen has to come back instantly.
+          var reloaded = false;
+          try { var nav = performance.getEntriesByType('navigation')[0]; reloaded = !!nav && nav.type === 'reload'; } catch (e) {}
+          seen = reloaded;
           try {
             var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
             window.__stitchStandalone = !!isStandalone;
@@ -147,7 +147,7 @@
           // Installed app and dark mode get a short static splash (logo only, in the phone's theme) instead of
           // none, so the first thing on screen is Stitch's own, not Android's generic icon tile.
           var darkTheme = document.documentElement.classList.contains('dark-mode');
-          if (isStandalone || darkTheme) document.documentElement.classList.add('static-splash');
+          document.documentElement.classList.add('static-splash');
           window.__stitchSkipSplash = seen || authReturn;
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
           try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
@@ -155,6 +155,9 @@
       })();
     </script>
     <style>html.no-splash #app-splash{display:none !important;}</style>
+    <!-- Welcome backdrop: start fetching it now so it is already painted when the splash fades out. -->
+    <link rel="preload" as="image" href="assets/auth-bg-light-tall.webp" media="(prefers-color-scheme: light) and (max-width:699px)">
+    <link rel="preload" as="image" href="assets/auth-bg-dark-tall.webp" media="(prefers-color-scheme: dark) and (max-width:699px)">
     <!-- Critical CSS: inlined so it applies immediately, before the external styles.css request
        even resolves -->
     <style>
@@ -164,12 +167,11 @@
       #auth-gate .auth-panel.active { display: block; }
       /* Mirrors the splash logo rules so the very first paint is already correct. */
       #app-splash { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: #ffffff; }
-      #app-splash .app-splash-logo { width: 112px; height: auto; opacity: 0; }
+      #app-splash .app-splash-logo { width: 125px; height: auto; opacity: 1; }
       /* Static splash (installed app / dark mode): logo already in place on the first frame, per theme */
       html.static-splash #app-splash .app-splash-logo { opacity: 1 !important; transform: none !important; animation: none !important; }
       html:not(.dark-mode) #app-splash { background: #ffffff; }
       html.dark-mode #app-splash { background: #121212; }
-      html.dark-mode #app-splash .app-splash-logo { filter: drop-shadow(0 0 28px rgba(30,144,255,0.22)); }
     </style>
     <!-- Content-Security-Policy: only lets scripts, styles, connections and media load from the origins
          this app uses (CDNs, Google Fonts, Supabase, Sentry, Formspree, Paystack, Pixabay). -->
@@ -263,16 +265,16 @@
     </script>
     <!-- While the splash is showing, load the big stylesheet without blocking the first paint, so the
          splash appears at once. Without a splash it stays blocking, so nothing unstyled ever shows. -->
-    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128a"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
-    <noscript><link rel="stylesheet" href="styles.css?v=20261128a"></noscript>
+    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128b"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
+    <noscript><link rel="stylesheet" href="styles.css?v=20261128b"></noscript>
 </head>
 <body class="bg-gray-50">
 <script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>
     <!-- Splash animation: covers the screen on first load, removed once it finishes. -->
     <div id="app-splash" aria-hidden="true">
       <div class="app-splash-inner">
-        <!-- Inline style so the splash logo is hidden from first paint, even before styles.css loads. -->
-        <img src="assets/landing-1.png" id="app-splash-logo" alt="" class="app-splash-logo" style="opacity:0;width:112px;height:auto;">
+        <!-- Same size and position on every launch, already in place on the first frame (no pop-in, no glow), so it carries on from the phone's own launch logo. -->
+        <img src="assets/landing-1.png" id="app-splash-logo" alt="" class="app-splash-logo" style="opacity:1;width:125px;height:auto;">
       </div>
     </div>
     <!-- Shared gradient definition (Dodger Blue -> Royal Blue) referenced by any icon that
@@ -1031,9 +1033,9 @@
     <script src="jobs.js?v=20261113g"></script>
     <script src="creator.js?v=20261113g"></script>
     <script src="settings.js?v=20261113g"></script>
-    <script src="profile.js?v=20261113g"></script>
-    <script src="overlays.js?v=20261126b"></script>
-    <script src="games.js?v=20261113g"></script>
+    <script src="profile.js?v=20261128a"></script>
+    <script src="overlays.js?v=20261128a"></script>
+    <script src="games.js?v=20261128a"></script>
     <script src="workspace.js?v=20261127b"></script>
 </body>
 </html>

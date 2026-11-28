@@ -3050,7 +3050,7 @@ let userPoints = 0;
           if (instant) { el.remove(); return; }
           el.classList.add('splash-leaving');
           el.addEventListener('animationend', () => el.remove(), { once: true });
-          setTimeout(() => { if (el.parentNode) el.remove(); }, 600);
+          setTimeout(() => { if (el.parentNode) el.remove(); }, 700);
         }
         // A Google/Apple OAuth sign-in redirects back to this same page with the session tokens in
         // the URL hash (see authContinueWithGoogle / authContinueWithApple's redirectTo)
@@ -3109,13 +3109,20 @@ let userPoints = 0;
           // Not the first open (or returning from a sign-in / verification link): no splash
           dismissSplash(true);
         } else {
-          const openedViaLink = !!(window.location.search || window.location.hash);
-          const staticSplash = document.documentElement.classList.contains('static-splash');
-          const splashWait = staticSplash ? 450 : (openedViaLink ? 1000 : 2550);
+          // One splash for every launch: short, and only lifted once the stylesheet and the Welcome backdrop are in,
+          // so the fade always lands on a finished screen.
+          const splashWait = 700;
           const splashT0 = Date.now();
-          // Never lift the splash before the stylesheet is in (it loads without blocking while the splash shows)
+          try {
+            const dk = document.documentElement.classList.contains('dark-mode');
+            const tall = window.innerWidth < 700 || window.innerHeight > window.innerWidth;
+            const bg = new Image();
+            bg.onload = bg.onerror = () => { window.__stitchBgReady = true; };
+            bg.src = 'assets/auth-bg-' + (dk ? 'dark' : 'light') + '-' + (tall ? 'tall' : 'wide') + '.webp';
+          } catch (e) { window.__stitchBgReady = true; }
           const liftSplash = () => {
-            if (window.__stitchCssReady || Date.now() - splashT0 > 5000) dismissSplash();
+            const waited = Date.now() - splashT0;
+            if ((window.__stitchCssReady && (window.__stitchBgReady || waited > 2500)) || waited > 5000) dismissSplash();
             else setTimeout(liftSplash, 60);
           };
           setTimeout(liftSplash, splashWait);
