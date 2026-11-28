@@ -8569,15 +8569,19 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
 
 /* ===== Home feed, phones: edge-to-edge. The header (logo, icons, search) sits below the status bar and tucks
    away on scroll; once it is gone the posts run all the way up under the clock and battery, with a soft
-   frosted band over them so the status icons stay readable. Same idea as X. ===== */
+   frosted band over them so the status icons stay readable. The band is only as tall as the real status-bar inset: where the
+   phone draws its own solid status bar (Android installed app) the inset is 0, so no second band appears under it. Same idea as X. ===== */
 @media (max-width:1099px){
   #app-shell.home-active{ padding-top:0 !important; }
   #app-shell.home-active #top-bar{ padding-top:var(--top-safe-pad, 20px); background:#fff; }
   #app-shell.home-active:has(#top-bar[data-hidden="1"])::after{
-    content:""; position:absolute; top:0; left:0; right:0; height:var(--top-safe-pad, 20px);
+    content:""; position:absolute; top:0; left:0; right:0; height:env(safe-area-inset-top, 0px);
     z-index:11; pointer-events:none;
     background:rgba(255,255,255,.62);
     -webkit-backdrop-filter:blur(14px) saturate(1.2); backdrop-filter:blur(14px) saturate(1.2);
   }
   body.dark-mode #app-shell.home-active:has(#top-bar[data-hidden="1"])::after{ background:rgba(18,18,18,.55); }
 }
+
+/* Floating call card hovers above the workspace's sticky headers and top fades (ws-hdr z-index 30/50, ws-fl 40/50) */
+#call-minimized-banner{ z-index:90 !important; }
