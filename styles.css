@@ -7079,7 +7079,7 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
 .flow-pill.qr-pill, .qr-fail .flow-pill{ border-radius:20px; }
 @supports (corner-shape: squircle){ .flow-pill.qr-pill, .qr-fail .flow-pill{ corner-shape:squircle; border-radius:30px; } }
 .qr-pill svg{ flex:0 0 auto; }
-.qr-share{ grid-column:1 / -1; }
+.qr-share{ grid-column:auto; }
 .qr-pill.flow-pill-back svg{ color:#8a94a6; }
 html.dark-mode .qr-pill.flow-pill-back svg, body.dark-mode .qr-pill.flow-pill-back svg{ color:#9ca3af; }
 .qr-pill:focus-visible{ outline:2px solid #1e90ff; outline-offset:2px; }
@@ -8737,3 +8737,25 @@ input#meeting-chat-input, input#ws-st-input{
 .cu-bsheet .cu-tilegrid4 .cu-tile2{ flex-direction:column !important; gap:6px !important; border-radius:20px !important; corner-shape:squircle; padding:14px 4px 12px !important; font-size:12px !important; line-height:1.15; text-align:center; white-space:normal !important; min-width:0; }
 .cu-bsheet .cu-tilegrid4 .cu-tile2 .cu-tile2-ic{ display:flex; align-items:center; justify-content:center; width:26px; height:26px; flex-shrink:0; }
 .cu-bsheet .cu-tilegrid4 .cu-tile2 .cu-tile2-ic svg{ width:24px !important; height:24px !important; }
+
+/* Diagram prompt bar: exactly the height of the Search courses bar (the send button no longer makes it taller) */
+.ws-search.ws-dqbar .ws-send{ width:26px !important; height:26px !important; margin:-3px -6px -3px 0; flex-shrink:0; }
+.ws-search.ws-dqbar .ws-send svg{ width:15px; height:15px; }
+
+/* Posts page (dark): one background colour for the header, the posts and the page behind them */
+body.dark-mode #post-feed-list, html.dark-mode #post-feed-list,
+body.dark-mode #post-feed-list > .bg-white, body.dark-mode #post-feed-list [id^="post-"],
+body.dark-mode #post-feed-list .space-y-3{ background-color:#121212 !important; border-color:transparent !important; }
+body.dark-mode #post-feed-list > .bg-white::before{ background:#121212 !important; }
+
+/* Phone first screen, after the keyboard was put away: the Continue with email button becomes the email box + Send code */
+#auth-gate .auth-m-email-pill{display:none;}
+@media (max-width:699px){
+  html body #auth-gate.auth-email-back:has(#auth-panel-login.active) #auth-panel-login .auth-m-email-cta{display:none !important;}
+  html body #auth-gate.auth-email-back:has(#auth-panel-login.active) #auth-panel-login .auth-m-email-pill{display:flex !important;order:3;align-items:center;gap:8px;width:100%;height:56px;padding:0 7px 0 22px;border-radius:999px;background:#fff;box-shadow:0 8px 24px -10px rgba(15,31,51,.3);}
+  html body #auth-gate.auth-email-back:has(#auth-panel-login.active) #auth-panel-login #auth-m-pill-error{order:3;}
+  html body #auth-gate .auth-m-email-pill input#auth-m-pill-email{flex:1;min-width:0;height:44px;padding:0 !important;border:0 !important;background:transparent !important;box-shadow:none !important;outline:none !important;border-radius:0 !important;font-size:16px;color:#0f1f33 !important;}
+  html body #auth-gate .auth-m-email-pill .auth-m-pill-send{position:static;transform:none;height:42px;flex-shrink:0;}
+  html body.dark-mode #auth-gate.auth-email-back:has(#auth-panel-login.active) #auth-panel-login .auth-m-email-pill{background:#26282e;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);}
+  html body.dark-mode #auth-gate .auth-m-email-pill input#auth-m-pill-email{color:#f2f2f2 !important;}
+}

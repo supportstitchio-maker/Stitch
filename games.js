@@ -1008,6 +1008,7 @@ let userPoints = 0;
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-entry');
+          document.getElementById('auth-gate').classList.remove('auth-email-back');
           const eyebrow = document.getElementById('authEyebrow');
           if (eyebrow) eyebrow.textContent = 'YOUR WORKSPACE AWAITS';
           setAuthProgress(null);
@@ -1069,12 +1070,45 @@ let userPoints = 0;
           const inp = document.getElementById('auth-ve-email');
           const err = document.getElementById('auth-ve-error');
           const email = inp ? inp.value.trim() : '';
-          if (!email) { if (err) { err.textContent = 'Enter your email to continue.'; err.classList.add('show'); } return; }
+          if (!email) { if (err) err.classList.remove('show'); if (inp) inp.focus(); return; }
           if (!isValidEmail(email)) { if (err) { err.textContent = 'Enter a valid email address (e.g. name@example.com).'; err.classList.add('show'); } return; }
           if (!getSupabaseClient()) { if (err) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); } return; }
           if (err) err.classList.remove('show');
           if (inp) inp.blur();
           // same path as before: remembers the email, sends the code, starts the resend timer
+          authShowVerify(email);
+        }
+        // Phone "Continue with email" page: when the keyboard is put away (the email box loses focus) the page
+        // goes back to the first screen with Continue with Google / Continue with email. Whatever was typed
+        // is kept. Tapping Send code (or pressing Enter) does not count as putting the keyboard away.
+        document.addEventListener('pointerdown', function(e){
+          if (e.target && e.target.closest && e.target.closest('#auth-ve-send')) { window.__authVeSending = true; setTimeout(function(){ window.__authVeSending = false; }, 1200); }
+        }, true);
+        document.addEventListener('focusout', function(e){
+          if (!e.target || e.target.id !== 'auth-ve-email') return;
+          setTimeout(function(){
+            const gate = document.getElementById('auth-gate');
+            const inp = document.getElementById('auth-ve-email');
+            if (!gate || !inp || window.__authVeSending) return;
+            if (gate.classList.contains('auth-hidden') || !gate.classList.contains('auth-verify-entry')) return;
+            if (document.activeElement === inp) return;
+            const prev = document.getElementById('auth-li-email');
+            if (prev && inp.value) prev.value = inp.value;
+            authShowLogin();
+            // the Continue with email button turns into the email box + Send code
+            gate.classList.add('auth-email-back');
+            const pi = document.getElementById('auth-m-pill-email'); if (pi) pi.value = inp.value || '';
+          }, 250);
+        });
+        function authPillSend(){
+          const inp = document.getElementById('auth-m-pill-email');
+          const err = document.getElementById('auth-m-pill-error');
+          const email = inp ? inp.value.trim() : '';
+          if (!email) { if (inp) inp.focus(); return; }
+          if (!isValidEmail(email)) { if (err) { err.textContent = 'Enter a valid email address (e.g. name@example.com).'; err.classList.add('show'); } return; }
+          if (!getSupabaseClient()) { if (err) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); } return; }
+          if (err) err.classList.remove('show');
+          if (inp) inp.blur();
           authShowVerify(email);
         }
         const AUTH_PENDING_VERIFY_KEY = 'stitch_pending_verify_email';

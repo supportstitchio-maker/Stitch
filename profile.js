@@ -2112,9 +2112,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
                 <div class="text-[13px] mt-2 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
                 <div class="flex-1" style="min-height:24px;"></div>
                 <div class="qr-pills">
-                  ${qrPillHTML('share','send','Share',shareFn,true)}
                   ${qrPillHTML('copy','link','Copy link',copyFn,false)}
-                  ${qrPillHTML('save','download','Save image',downloadFn,false)}
+                  ${qrPillHTML('share','send','Share',shareFn,true)}
                 </div>
               </div>
             </div>`;

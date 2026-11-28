@@ -369,7 +369,9 @@
     try { wsPushed++; history.pushState({ wsNav: wsPushed }, ''); } catch(e){ wsPushed--; }
   }
   /* Drop the history entry that belongs to a page we leave by our own arrow, so phone back and the arrow stay in step */
-  function syncBack(){ if (wsPushed > 0) { wsPushed--; try { history.back(); } catch(e){} } }
+  var wsSwallow = 0;
+  function swallowPop(n){ wsSwallow += n; setTimeout(function(){ wsSwallow = 0; }, 900); }
+  function syncBack(){ if (wsPushed > 0) { wsPushed--; swallowPop(1); try { history.back(); } catch(e){} } }
   function popNav(fromPop){
     if (!nav.length) return false;
     var x = nav.pop(); view = x.view; T.sub = x.sub; T.savedId = x.savedId; T.openDiag = x.openDiag;
@@ -378,21 +380,22 @@
   }
   window.addEventListener('popstate', function(e){
     var st = e && e.state; if (st && st.stitchOverlay) return;
+    if (wsSwallow > 0) { wsSwallow--; e.stopImmediatePropagation(); return; }
     var d = (st && st.wsNav) ? st.wsNav : 0;
-    if (d < wsPushed) { wsPushed = d; if (nav.length) popNav(true); }
-  });
+    if (d < wsPushed) { wsPushed = d; if (nav.length) { popNav(true); e.stopImmediatePropagation(); } }
+  }, true);
   window.wsLeave = function(){
     /* Pages inside the tutor (chat history, summaries...) step back to their parent */
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
     /* Tutor, Courses and the Spaces list step back to the Workspace home first; only the home's arrow exits */
     if (view !== 'home') {
       nav.length = 0;
-      if (wsPushed > 0) { var m = wsPushed; wsPushed = 0; try { history.go(-m); } catch(e){} }
+      if (wsPushed > 0) { var m = wsPushed; wsPushed = 0; swallowPop(1); try { history.go(-m); } catch(e){} }
       view = 'home'; render(); var hs = $('screen'); if (hs) hs.scrollTop = 0; return;
     }
     /* On the Workspace home itself the arrow simply exits it: no previous-page lookup */
     nav.length = 0;
-    if (wsPushed > 0) { var n = wsPushed; wsPushed = 0; try { history.go(-n); } catch(e){} }
+    if (wsPushed > 0) { var n = wsPushed; wsPushed = 0; swallowPop(1); try { history.go(-n); } catch(e){} }
     switchTab(0);
   };
   window.wsGo = function(k){ view = k; if (k === 'tutor') T.sub = 'chat'; render(); var s = $('screen'); if (s) s.scrollTop = 0; railMark(); };
@@ -1246,6 +1249,8 @@
     if (s === 'practice') { wsQuiz(); return; }
     if (s === 'challenge') { wsChallenge(); return; }
     if (s === 'flashcards') { wsFlash(); return; }
+    /* Opened from the Workspace home shortcuts: remember the Tutor page too, so Back lands on Stitch Tutor first */
+    if (view !== 'tutor') { pushNav(); view = 'tutor'; T.sub = 'chat'; }
     pushNav(); view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
   };
@@ -1462,7 +1467,7 @@
   function diagramsHTML(){
     var ds = diagList(), ic = { tree: 'tree', cycle: 'refresh', compare: 'card' }, tc = { tree: '#1e90ff', cycle: '#1fa463', compare: '#f7774a' };
     var h = header('Diagrams', '', 'wsBackTutor()') + '<div class="ws-chips">' + [['all', 'All'], ['trees', 'Trees'], ['cycles', 'Cycles'], ['compare', 'Compare']].map(function(x){ return '<button class="filter-pill flex-shrink-0 ' + (T.dfilter === x[0] ? 'on' : '') + '" onclick="wsDF(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('') + '</div>';
-    h += '<div class="ws-search" style="background:var(--ws-card)"><input id="ws-dq" oninput="this.nextElementSibling.classList.toggle(\'on\',!!this.value.trim())" placeholder="Describe a diagram to generate..." onkeydown="if(event.key===\'Enter\')wsGenDiagram()"><button class="ws-send" onclick="wsGenDiagram()" aria-label="Draw">' + I('send', 18) + '</button></div>';
+    h += '<div class="ws-search ws-dqbar" style="background:var(--ws-card)"><input id="ws-dq" oninput="this.nextElementSibling.classList.toggle(\'on\',!!this.value.trim())" placeholder="Describe a diagram to generate..." onkeydown="if(event.key===\'Enter\')wsGenDiagram()"><button class="ws-send" onclick="wsGenDiagram()" aria-label="Draw">' + I('send', 18) + '</button></div>';
     if (T.dBusy) h += busyBox('Drawing your diagram\u2026');
     if (T.openDiag > -1 && ds[T.openDiag]) h += '<div class="ws-blk" id="ws-dopen"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>' + E(ds[T.openDiag].title) + '</b><span><a style="color:#1e90ff;font-weight:700;font-size:12px;margin-right:14px" onclick="wsDownloadDiag(' + T.diagrams.indexOf(ds[T.openDiag]) + ')">Download</a><a style="color:#ef4444;font-weight:700;font-size:12px" onclick="wsDelD(' + T.openDiag + ')">Delete</a></span></div>' + diagHTML(ds[T.openDiag]) + '</div>';
     h += ds.length ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + ds.map(function(d, i){ var t = d.type || 'tree', n = t === 'tree' ? (function c(x){ return 1 + (x.children || []).reduce(function(a, k){ return a + c(k); }, 0); })(d.root) : t === 'cycle' ? d.items.length : (d.left.items.length + d.right.items.length);
