@@ -75,6 +75,20 @@
   .ws-dr-row span{flex:1;min-width:0;padding:17px 0;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ws-dr-row button{width:40px;height:40px;background:none;border:0;color:var(--ws-sub);display:flex;align-items:center;justify-content:center}
   .ws-dr-empty{padding:30px 20px;color:var(--ws-sub);font-size:15px}
+  /* History panel: one background colour in light and dark mode */
+  .ws-dr,body.dark-mode .ws-dr{--ws-bg:#ffffff;--ws-card:#ffffff;--ws-ink:#111111;--ws-sub:#6b7a90;--ws-line:#e6ebf3;background:#ffffff !important;color:#111111 !important}
+  .ws-dr .ws-dr-h,.ws-dr .ws-dr-s,.ws-dr .ws-dr-l,.ws-dr .ws-dr-rows{background:#ffffff !important}
+  .ws-dr .ws-dr-row.cur{background:#f3f6fb}
+  .ws-dr .ws-dr-h button,.ws-dr .ws-dr-s input{background:#ffffff !important;color:#111111 !important}
+  /* Sources sheet: Gendy font + dodger blue */
+  .ws-srcs,.ws-srcs *{font-family:'Gendy','Montserrat',sans-serif}
+  .ws-srcs > div:first-child b{color:#1e90ff}
+  .ws-srcs .ws-row small{color:#1e90ff}
+  .ws-srcs .ws-row b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .ws-srcs .ws-row small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ws-srcs .filter-pill{color:#1e90ff !important;border:1.5px solid #1e90ff !important;background:transparent !important}
+  .ws-srcs .filter-pill svg{color:#1e90ff;stroke:#1e90ff}
+  .ws-srcs .ws-cta,body.dark-mode .ws-srcs .ws-cta{background:#1e90ff !important;color:#ffffff !important}
   .ws-hdr-sub{margin:-6px 0 12px;text-align:left;font-size:11px;line-height:1.2}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
@@ -132,9 +146,10 @@
   .ws-btn{background:#111111;color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:10px 22px}
   .ws-cta{display:block;width:100%;background:#111111;color:#fff;font-weight:700;border-radius:999px;padding:16px;text-align:center;font-size:15px;margin:14px 0}
   body.dark-mode .ws-cta{background:#3a3a3a}
-  .ws-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--ws-line);cursor:pointer}
+  .ws-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--ws-line);cursor:pointer}
   .ws-ft{width:42px;height:42px;border-radius:12px;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .ws-row b{font-size:14px;display:block}.ws-row small{font-size:12px;color:var(--ws-sub)}
+  .ws-row b{font-size:14px;display:block;line-height:1.25;margin:0}.ws-row small{display:block;font-size:12px;line-height:1.25;margin-top:2px;color:var(--ws-sub)}
+  .ws-row > div{display:flex;flex-direction:column;gap:0;justify-content:center}
   .ws-tabs{display:flex;gap:8px;overflow-x:auto;margin:0 -20px 8px;padding:4px 20px 6px;scrollbar-width:none}.ws-tabs::-webkit-scrollbar{display:none}
   .ws-sheet-bg{position:fixed;inset:0;background:rgba(10,15,25,.45);z-index:60;opacity:0;transition:opacity .45s}
   .ws-sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--ws-bg);color:var(--ws-ink);border-radius:28px 28px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 20px);max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform .5s cubic-bezier(.22,.68,0,1)}
@@ -245,7 +260,7 @@
     folder:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>', check:'<path d="M5 12l5 5 9-10"/>',
     close:'<path d="M6 6l12 12M18 6L6 18"/>', send:'<path d="M12 19V5M6 11l6-6 6 6"/>', tree:'<circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v4M6 17v-3h12v3"/>',
     heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.500-7 10-7 10z"/>', dots:'<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
-    upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>', msg:'<path d="M4 5h16v11H9l-5 4z"/>', dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', copy:'<rect x="8" y="8" width="11" height="11" rx="3"/><path d="M5 15V6a2 2 0 012-2h9"/>', chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'
+    upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>', msg:'<path d="M4 5h16v11H9l-5 4z"/>', dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', copy:'<rect x="8" y="8" width="11" height="11" rx="3"/><path d="M5 15V6a2 2 0 012-2h9"/>', chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'
   };
   P.courses = '<path d="M12 6.5C10.3 5.2 8 4.7 4.5 5v12.5c3.5-.3 5.8.2 7.5 1.5 1.7-1.3 4-1.8 7.5-1.5V5c-3.5-.3-5.8.2-7.5 1.5zM12 6.5V19"/>';
   P.clip = '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>';
@@ -266,6 +281,7 @@
     sh.classList.remove('in'); if (bg) bg.classList.remove('in');
     setTimeout(function(){ if (sh.parentNode) sh.remove(); if (bg && bg.parentNode) bg.remove(); }, 520);
   }
+  window.sheetClose = sheetClose;
   function sheet(html){
     var old = $('ws-sheet'); if (old) old.remove(); var ob = $('ws-sheet-bg'); if (ob) ob.remove();
     var bg = document.createElement('div'); bg.id = 'ws-sheet-bg'; bg.className = 'ws-sheet-bg'; bg.onclick = sheetClose;
@@ -1171,13 +1187,13 @@
   /* ----- Sources sheet ----- */
   window.wsSources = function(){
     var s = srcs(), col = { pdf: '#e24d3f', ppt: '#1e90ff', pptx: '#1e90ff', doc: '#1fa463', docx: '#1fa463', txt: '#f59e0b' };
-    sheet('<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:20px">Sources</b></div>' +
+    sheet('<div class="ws-srcs"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:20px">Sources</b></div>' +
       (s.length ? s.map(function(x){ var k = (x.ext || 'doc');
         return '<div class="ws-row"><span class="ws-ft" style="background:' + (col[k] || '#1e90ff') + '">' + E(k.toUpperCase().slice(0, 3)) + '</span><div style="flex:1;min-width:0"><b>' + E(x.name) + '</b><small>' + E(x.from) + (x.busy ? ' \u00b7 reading\u2026' : (!x.text ? ' \u00b7 no readable text' : '')) + '</small></div>' +
           '</div>'; }).join('')
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No sources yet.</div>') +
       '<div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:12px"><button class="filter-pill" onclick="document.getElementById(\'ws-file\').click()">' + I('plus', 15) + ' Upload file</button><button class="filter-pill" onclick="wsPaste()">' + I('plus', 15) + ' Paste notes</button><button class="filter-pill" onclick="wsPickCourse()">' + I('plus', 15) + ' From a space</button></div>' +
-      '<button class="ws-cta" style="margin-top:26px" onclick="wsSrcDone()">Done</button>');
+      '<button class="ws-cta" style="margin-top:26px" onclick="wsSrcDone()">Done</button></div>');
   };
   window.wsTogSrc = function(id){ T.off[id] = !T.off[id]; wsSources(); };
   window.wsAllSrc = function(){ T.off = {}; wsSources(); };
