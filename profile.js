@@ -1942,47 +1942,73 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function qrTheme(){
           const dark = document.body.classList.contains('dark-mode');
           return dark
-            ? { dark: true, page: '#121212', card: '#1e1e1e', border: '#2b2b2b', mod: '#1e90ff', light: '#1e1e1e', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
-            : { dark: false, page: '#ffffff', card: '#ffffff', border: '#e6ecf5', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
+            ? { dark: true, page: '#121212', card: '#1e1e1e', border: '#2b2b2b', mod: '#1e90ff', light: '#121212', text: '#ffffff', sub: '#9ca3af', bar: '#1e1e1e' }
+            : { dark: false, page: '#ffffff', card: '#ffffff', border: '#e6eaf3', mod: NAVY, light: '#ffffff', text: NAVY, sub: '#6b7280', bar: '#ffffff' };
         }
 
-        // Action tile with a large faded outline icon in the background (same style as the Career Space tiles)
-        const QR_TILE_PATHS = {
+        // Action pills: the same pill spec as Back / Continue (flow-pill). Share is the one primary action,
+        // Copy link and Save image are white pills with grey icons. Labels never change width (nowrap, fixed cells).
+        const QR_PILL_PATHS = {
           send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
           link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
           download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'
         };
-        function qrTileHTML(icon, label, onclick){
+        function qrPillHTML(kind, icon, label, onclick, primary){
           return `
-            <button type="button" onclick="${onclick}" class="ct-tile qr-t">
-              <span class="ct-wm"><svg viewBox="0 0 24 24" width="76" height="76" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${QR_TILE_PATHS[icon]}</svg></span>
-              <b>${label}</b>
+            <button type="button" data-qr="${kind}" onclick="${onclick}" class="flow-pill qr-pill ${primary ? 'flow-pill-go qr-share' : 'flow-pill-back'}">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${QR_PILL_PATHS[icon]}</svg>
+              <span class="qr-lbl">${label}</span>
             </button>`;
+        }
+
+        // Short confirmation inside the pill itself ("Link copied", "Saved"), then it goes back
+        function qrFlash(kind, text){
+          document.querySelectorAll('.qr-pill[data-qr="' + kind + '"]').forEach(btn => {
+            const l = btn.querySelector('.qr-lbl'); if (!l) return;
+            const orig = l.dataset.o || l.textContent; l.dataset.o = orig; l.textContent = text;
+            clearTimeout(btn._qt); btn._qt = setTimeout(() => { l.textContent = orig; }, 1600);
+          });
+        }
+
+        // Friendly error with a retry pill when the QR library is not available
+        function qrFail(el, retryCall){
+          if (!el || el.querySelector('.qr-fail')) return;
+          const sk = el.querySelector('.qr-skel'); if (sk) sk.remove();
+          el.insertAdjacentHTML('beforeend', `<div class="qr-fail"><div>We could not make the QR code.<br>Check your connection and try again.</div><button type="button" class="flow-pill flow-pill-go" onclick="qrRetry('${retryCall}')">Try again</button></div>`);
+        }
+
+        // Retry: load the QR library if it never arrived, then build the code again
+        function qrRetry(initFn){
+          const run = () => { try { window[initFn](); } catch (e) {} };
+          if (typeof QRCode !== 'undefined') { run(); return; }
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+          s.onload = run;
+          document.head.appendChild(s);
         }
 
         function qrScreenHTML(codeId, photoHTML, label, shareFn, copyFn, downloadFn){
           const t = qrTheme();
           const mine = codeId === 'profile-qr-code';
-          const title = mine ? 'My QR code' : 'QR code';
+          const title = 'Share profile';
           const hint = mine ? 'Anyone can scan this to open<br>your profile on Stitch' : 'Scan this to open<br>this profile on Stitch';
           return `
             <div class="flex-1 flex flex-col overflow-y-auto" style="background:${t.page};">
               ${overlayHeader(title, '20px')}
-              <div class="flex-1 flex flex-col items-center px-6" style="padding-top:28px;">
-                <div style="width:310px;max-width:100%;padding:27px;border-radius:30px;background:${t.card};border:1px solid ${t.border};${t.dark ? '' : 'box-shadow:0 14px 36px rgba(30,60,140,.10);'}">
-                  <div id="${codeId}" class="relative flex items-center justify-center" style="width:256px;height:256px;max-width:100%;margin:0 auto;">
-                    <div class="absolute rounded-full flex items-center justify-center" style="width:58px;height:58px;background:${t.card};box-shadow:0 0 0 4px ${t.card};z-index:2;">
-                      <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:36px;height:auto;display:block;">
-                    </div>
+              <div class="flex-1 flex flex-col items-center px-6" style="padding-top:44px;">
+                <div id="${codeId}" role="img" aria-label="${mine ? 'Your Stitch profile QR code' : 'Stitch profile QR code'}" class="relative flex items-center justify-center" style="width:256px;height:256px;max-width:100%;margin:0 auto;">
+                  <div class="qr-skel skel-shimmer" aria-hidden="true"></div>
+                  <div class="absolute rounded-full flex items-center justify-center" style="width:58px;height:58px;background:${t.page};box-shadow:0 0 0 4px ${t.page};z-index:2;">
+                    <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:36px;height:auto;display:block;">
                   </div>
                 </div>
-                <div class="text-xl mt-6 text-center" style="font-family:'Gendy','Montserrat',sans-serif;font-weight:700;color:${t.text};word-break:break-word;">${label}</div>
-                <div class="text-[13px] mt-1.5 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
+                <div class="qr-name mt-6 text-center" style="color:${t.text};">${label}</div>
+                <div class="text-[13px] mt-2 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
                 <div class="flex-1" style="min-height:24px;"></div>
-                <div class="qr-tiles">
-                  ${qrTileHTML('send','Share',shareFn)}
-                  ${qrTileHTML('link','Copy link',copyFn)}
-                  ${qrTileHTML('download','Save image',downloadFn)}
+                <div class="qr-pills">
+                  ${qrPillHTML('share','send','Share',shareFn,true)}
+                  ${qrPillHTML('copy','link','Copy link',copyFn,false)}
+                  ${qrPillHTML('save','download','Save image',downloadFn,false)}
                 </div>
               </div>
             </div>`;
@@ -2068,6 +2094,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           const a = document.createElement('a');
           a.download = filename; a.href = url; a.click();
           setTimeout(() => URL.revokeObjectURL(url), 4000);
+          qrFlash('save', 'Saved');
         }
 
         function profileQRHTML(){
@@ -2085,7 +2112,8 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
 
         function initProfileQRCode(){
           const el = document.getElementById('profile-qr-code');
-          if (!el || typeof QRCode === 'undefined') return;
+          if (!el) return;
+          if (typeof QRCode === 'undefined') { qrFail(el, 'initProfileQRCode'); return; }
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: profileQRLink(),
@@ -2118,7 +2146,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         function copyProfileQRLink(){
           const link = profileQRLink();
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Link copied to clipboard')).catch(() => openAppAlertModal(link));
+            navigator.clipboard.writeText(link).then(() => qrFlash('copy', 'Link copied')).catch(() => openAppAlertModal(link));
           } else {
             openAppAlertModal(link);
           }

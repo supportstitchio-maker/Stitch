@@ -7070,11 +7070,23 @@ body.dark-mode .ct-wm{ color:#ffffff; opacity:.1; }
   .msg-hov .cv-bub{ padding-right:2rem !important; }
 }
 
-/* Profile QR page: three action tiles in a row (large faded icon in the background) */
-.qr-tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:360px; margin-bottom:34px; }
-.ct-tile.qr-t{ min-height:92px; padding:12px 14px; }
-.qr-t .ct-wm{ right:-12px; top:-10px; }
-.qr-t b{ font-size:13px; font-weight:600; }
+/* Profile QR page: action pills (same pill spec as the Back / Continue flow pills) */
+.qr-pills{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; width:100%; max-width:360px; margin-bottom:max(26px, env(safe-area-inset-bottom)); }
+.qr-pill{ min-height:52px; gap:8px; }
+/* Squircle pills: soft rounded squares instead of full capsules */
+.flow-pill.qr-pill, .qr-fail .flow-pill{ border-radius:20px; }
+@supports (corner-shape: squircle){ .flow-pill.qr-pill, .qr-fail .flow-pill{ corner-shape:squircle; border-radius:30px; } }
+.qr-pill svg{ flex:0 0 auto; }
+.qr-share{ grid-column:1 / -1; }
+.qr-pill.flow-pill-back svg{ color:#8a94a6; }
+html.dark-mode .qr-pill.flow-pill-back svg, body.dark-mode .qr-pill.flow-pill-back svg{ color:#9ca3af; }
+.qr-pill:focus-visible{ outline:2px solid #1e90ff; outline-offset:2px; }
+.qr-name{ font-family:'Gendy','Montserrat',sans-serif !important; font-size:22px; font-weight:700; line-height:1.25; word-break:break-word; }
+.qr-skel{ position:absolute; inset:0; border-radius:14px; }
+.qr-fail{ position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; font-size:13px; line-height:1.45; color:#6b7280; padding:0 12px; }
+body.dark-mode .qr-fail{ color:#9ca3af; }
+.qr-fail .flow-pill{ width:auto; padding-left:1.6rem; padding-right:1.6rem; }
+@media (prefers-reduced-motion:reduce){ .qr-pill{ transition:none; } .qr-pill:active{ transform:none; } }
 
 /* Visually hidden live region for screen-reader announcements */
 .a11y-sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }

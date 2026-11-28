@@ -2574,7 +2574,8 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
 
         function initPersonProfileQRCode(){
           const el = document.getElementById('person-profile-qr-code');
-          if (!el || typeof QRCode === 'undefined') return;
+          if (!el) return;
+          if (typeof QRCode === 'undefined') { qrFail(el, 'initPersonProfileQRCode'); return; }
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
           new QRCode(el, {
             text: personProfileQRLink(viewedProfile || {}),
@@ -2606,7 +2607,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
         function copyPersonProfileQRLink(){
           const link = personProfileQRLink(viewedProfile || {});
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(link).then(() => openAppAlertModal('Link copied to clipboard')).catch(() => openAppAlertModal(link));
+            navigator.clipboard.writeText(link).then(() => qrFlash('copy', 'Link copied')).catch(() => openAppAlertModal(link));
           } else {
             openAppAlertModal(link);
           }
