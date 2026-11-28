@@ -1733,7 +1733,11 @@ let studyFabMenuOpen = false;
               <div class="pro4-rm"><div class="pro4-rn">${f.label}</div><div class="pro4-rs">${sub}</div></div>
               <span class="pro4-rv">${proPlanChoice === 'daily' ? (f.daily + ' a day') : (f.pro + ' a ' + f.per)}</span>
             </div>`;
-          }).join('');
+          }).join('') + `<div class="pro4-row">
+              <span class="pro4-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v4M6 17v-3h12v3"/></svg></span>
+              <div class="pro4-rm"><div class="pro4-rn">Diagrams in Stitch Tutor</div><div class="pro4-rs">Trees, cycles and comparisons drawn from your sources</div></div>
+              <span class="pro4-rv" style="color:#1e90ff;">New</span>
+            </div>`;
           const chosen = PRO_PLANS[proPlanChoice] || PRO_PLANS.monthly;
           const notes = { daily: '24 hours of Pro. No auto-renew.', weekly: '7 days of Pro. No auto-renew.', monthly: 'Pay month by month. Cancel any time.', yearly: 'About GH\u20b5' + Math.round(PRO_PLANS.yearly.price / 12) + ' a month. Billed once a year.' };
           const tiles = ['daily', 'weekly', 'monthly'].map(id => { const p = PRO_PLANS[id]; return `<button type="button" onclick="setProPlan('${id}')" class="pro4-tile${proPlanChoice === id ? ' on' : ''}"><span class="pro4-tn">${p.label}</span><span class="pro4-tp">GH\u20b5${p.price}</span><span class="pro4-tu">per ${p.unit}</span></button>`; }).join('');

@@ -170,7 +170,7 @@ let appPrefs = {
         // ---- Legal pages (terms + privacy policy) ----
         // Single source of truth: the in-app pages (Profile -> Terms / Privacy) AND the pre-login
         // Terms modal + footer Privacy modal (games.js) all render from these section lists.
-        const LEGAL_LAST_UPDATED = 'October 2026';
+        const LEGAL_LAST_UPDATED = 'November 2026';
         const LEGAL_SUPPORT_EMAIL = 'support.stitch.io@gmail.com';
         function legalPlanPricesText(){
           try {
@@ -187,7 +187,7 @@ let appPrefs = {
           return [
             ['1. Introduction and Acceptance', [
               `Welcome to Stitch. These Terms of Service (the "Terms") are an agreement between you and Stitch ("Stitch", "we", "us"). By creating an account or using the Stitch app or website (the "Service"), you agree to these Terms and to our Privacy Policy. If you do not agree, please do not use the Service.`,
-              `Stitch is a community, study and career platform for students. It includes spaces and courses, study notes, flashcards, quizzes and exams, a feed with short-lived "glimpses" (stories), messaging, voice and video calls, an AI study assistant called Stitch Bot, an Opportunities and Career Space for internships, courses and jobs, and paid features described in section 7.`
+              `Stitch is a community, study and career platform for students. It includes spaces and courses, study notes, flashcards, quizzes and exams, a feed with short-lived "glimpses" (stories), messaging, voice and video calls, an AI study assistant called Stitch Bot, Stitch Tutor (a study workspace that answers from your own sources and draws diagrams), an Opportunities and Career Space for internships, courses and jobs, and paid features described in section 7.`
             ]],
             ['2. Eligibility', [
               `To use Stitch you must be at least 16 years old, provide accurate information when you sign up, have a working email address, and not have been previously suspended or removed from the Service. If you are under 18, you confirm that you have your parent or guardian's permission to use Stitch where the law requires it.`,
@@ -204,8 +204,9 @@ let appPrefs = {
               `Voice and video calls connect directly between users (peer-to-peer). We do not record call content. Glimpses are removed automatically after 24 hours, but we cannot control copies or screenshots made by other users before then.`
             ]],
             ['5. Uploaded Documents and AI-Generated Content', [
-              `You can upload documents (such as PDFs and Word files) so that Stitch can extract text and generate study material such as notes, summaries, flashcards and practice questions, and so that Stitch Bot can answer questions about them. By uploading a document you confirm that you have the right to use it, and you give us a limited licence to process it only to provide your study content and Stitch Bot answers.`,
+              `You can upload documents (such as PDFs and Word files) so that Stitch can extract text and generate study material such as notes, summaries, flashcards and practice questions, and so that Stitch Bot and Stitch Tutor can answer questions about them and draw diagrams from them. By uploading a document you confirm that you have the right to use it, and you give us a limited licence to process it only to provide your study content and Stitch Bot answers.`,
               `AI-generated content can be wrong, incomplete or out of date. It is a study aid, not professional, legal, medical or academic advice. Always check it against your original materials. You are responsible for following your school's rules on AI use and academic integrity, and we are not responsible for academic results that depend on AI-generated content.`,
+              `Stitch Tutor can draw diagrams (such as trees, cycles and comparisons) from your sources or from a description you type. Diagrams are drawn by the app from AI-generated outlines, so they can contain mistakes or leave things out. Check them against your original materials before you rely on them or share them. Diagrams you save are kept on your own device, and you can download them as a picture, PDF or SVG.`,
               `To keep your practice pool useful, Stitch checks each upload against your other uploaded resources and rejects a file if it detects duplicate content, including the same document uploaded again under a different name or file type. Rejected duplicates are not processed.`
             ]],
             ['6. Spaces, Courses and Opportunities', [
@@ -257,7 +258,7 @@ let appPrefs = {
             ]],
             ['2. Data We Collect', [
               `<strong>Account and profile:</strong> your name, username, email address, profile photo, bio, pronouns, school or department, and your settings. If you sign in with Google, we receive your Google account email and basic profile details. Stitch does not use passwords.`,
-              `<strong>Content you create:</strong> notes, flashcards, quiz and exam results, posts, glimpses, comments, messages, space activity, and the questions you ask Stitch Bot.`,
+              `<strong>Content you create:</strong> notes, flashcards, quiz and exam results, posts, glimpses, comments, messages, space activity, the questions you ask Stitch Bot and Stitch Tutor, and the diagrams and summaries you save in Stitch Tutor (these are kept on your device).`,
               `<strong>Documents you upload:</strong> study documents (such as PDFs and Word files), and CVs or resumes if you use "Match with CV/Resume" in Career Space.`,
               `<strong>Payments:</strong> if you buy or sell a paid space or course, or buy a Stitch Pro plan, we keep a record of the payment (who paid, who was paid, amount, date and payment reference). Creators also give us a payout account (mobile money or bank) and its account name. Paystack handles card and mobile money details; Stitch does not store them.`,
               `<strong>Verification (only if you apply to post or sell):</strong> your role and business details, ID document, proof of residence, business documents and a live selfie, together with the results of automated ID, liveness and face-match checks run by our verification provider, Smile ID.`,
@@ -265,11 +266,11 @@ let appPrefs = {
               `<strong>Usage and device data:</strong> the features you use, pages or screens you view, app errors, device and browser type, and approximate time and activity information. We do not collect your precise location.`
             ]],
             ['3. How We Use Your Data', [
-              `We use your data to: create and secure your account; run Stitch and its features, including generating study content and Stitch Bot answers; connect you with fellow members, spaces, courses and opportunities; process payments, subscriptions, refunds and payouts; verify people who want to post or sell, and prevent fraud and abuse; moderate content and keep the community safe; send you notifications and service messages; understand how Stitch is used so we can fix problems and improve it; and meet our legal duties.`,
+              `We use your data to: create and secure your account; run Stitch and its features, including generating study content, Stitch Bot and Stitch Tutor answers and diagrams; connect you with fellow members, spaces, courses and opportunities; process payments, subscriptions, refunds and payouts; verify people who want to post or sell, and prevent fraud and abuse; moderate content and keep the community safe; send you notifications and service messages; understand how Stitch is used so we can fix problems and improve it; and meet our legal duties.`,
               `Under Act 843 we rely on: your consent (for example, for notifications or when you submit verification documents); the need to provide the Service you asked for; our legitimate interests in running, securing and improving Stitch; and legal obligations. Where we rely on consent, you can withdraw it at any time.`
             ]],
             ['4. AI Features', [
-              `Stitch uses third-party AI services to generate exam questions, summaries, flashcards and notes from your documents, to power Stitch Bot, to mark your written practice answers, and, if CV matching is switched on again, to match your CV with opportunities. When you use these features, the relevant text, documents and prompts are sent to the AI provider to produce your result. They are used to provide your result and are not used by us to train AI models. Please do not upload or type in information that you do not want processed this way, such as other people's sensitive details.`
+              `Stitch uses third-party AI services to generate exam questions, summaries, flashcards and notes from your documents, to power Stitch Bot and Stitch Tutor (including the diagrams it draws), to mark your written practice answers, and, if CV matching is switched on again, to match your CV with opportunities. When you use these features, the relevant text, documents and prompts are sent to the AI provider to produce your result. They are used to provide your result and are not used by us to train AI models. Please do not upload or type in information that you do not want processed this way, such as other people's sensitive details.`
             ]],
             ['5. Who We Share Data With', [
               `We do not sell your personal data and we do not use it for advertising. We share it only as follows:`,
@@ -346,6 +347,8 @@ let appPrefs = {
           ]},
           { category: 'Stitch Bot AI Tutor', items: [
             { id: 'sb-help', q: 'What can Stitch Bot help me with?', a: "Stitch Bot can explain concepts, generate notes and flashcards from your uploaded documents, quiz you on a topic, and answer questions about your course material in plain language." },
+            { id: 'sb-tutor', q: 'What is Stitch Tutor?', a: "Stitch Tutor is your study workspace. Add your own sources, then chat with it, make summaries, flashcards and practice quizzes, and ask it to draw diagrams from your material." },
+            { id: 'sb-diagrams', q: 'How do I make a diagram?', a: "Open Stitch Tutor, tap Studio, then Diagrams, and describe what you want, for example \"the water cycle\" or \"types of rock\". You can also ask for one in the chat. It draws trees, cycles and comparisons, saves them under Saved, and lets you download them as a picture (PNG), PDF or SVG. Diagrams can contain mistakes, so check them against your notes." },
             { id: 'sb-docs', q: 'Can Stitch Bot use my uploaded documents?', a: "Yes. Once you upload a PDF or Word file, Stitch Bot can read its content and use it to generate summaries, flashcards, and practice questions, or to answer your questions directly from that document." },
           ]},
           { category: 'Feed & Stories', items: [

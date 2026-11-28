@@ -147,7 +147,7 @@
   .ws-cite{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:6px;background:rgba(30,144,255,.14);color:#1e90ff;font-size:10px;font-weight:700;margin-left:4px;vertical-align:middle;padding:0 3px}
   .ws-bub{max-width:88%;padding:12px 16px;border-radius:20px;font-size:14px;line-height:1.45;margin:0 0 12px auto;background:#1e90ff;color:#fff;border-bottom-right-radius:6px;width:fit-content}
   body.dark-mode .ws-bub{background:#3a3a3a}
-  .ws-ans{font-size:14px;line-height:1.55;margin-bottom:12px}.ws-ans ul{padding-left:18px;margin:6px 0;list-style:disc}.ws-ans li{margin:5px 0}
+  .ws-ans{font-size:14px;line-height:1.55;margin-bottom:12px}.ws-ans .ws-ans-name{font-family:'Gendy','Montserrat',sans-serif;font-weight:400;font-size:15px;color:#1e90ff;letter-spacing:.2px}.ws-ans ul{padding-left:18px;margin:6px 0;list-style:disc}.ws-ans li{margin:5px 0}
   .ws-src{display:flex;align-items:center;gap:10px;background:var(--ws-card);border-radius:16px;padding:10px 12px;margin-bottom:12px}
   .ws-comp{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);background:var(--ws-bg);border:1px solid var(--ws-line);border-radius:28px;box-shadow:0 6px 22px rgba(11,31,63,.16);padding:5px;z-index:24;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chips chips chips" "clip ta main";align-items:center;column-gap:2px;transition:border-radius .18s ease}
   .ws-comp.ws-exp{border-radius:26px;grid-template-areas:"chips chips chips" "ta ta ta" "clip . main"}
@@ -951,8 +951,8 @@
   /* ----- Chat ----- */
   function msgHTML(m, i){
     if (m.r === 'u') return '<div class="ws-bub">' + E(m.t) + '</div>';
-    if (m.busy) return '<div class="ws-ans"><b style="color:#1e90ff;font-size:13px">Stitch Tutor</b><div class="ws-dots" style="margin-top:8px"><span></span><span></span><span></span></div></div>';
-    return '<div class="ws-ans"><b style="color:#1e90ff;font-size:13px">Stitch Tutor</b>' + rich(m.t) +
+    if (m.busy) return '<div class="ws-ans"><b class="ws-ans-name">Stitch Tutor</b><div class="ws-dots" style="margin-top:8px"><span></span><span></span><span></span></div></div>';
+    return '<div class="ws-ans"><b class="ws-ans-name">Stitch Tutor</b>' + rich(m.t) +
       (m.d && diagHTML(m.d) ? '<div class="ws-blk" style="margin-top:8px">' + diagHTML(m.d) + '<div style="font-size:11px;color:#1e90ff;font-weight:600;margin-top:4px">Illustration \u00b7 ' + E(m.d.title) + '</div></div>' : '') +
       (m.err ? '' : '<div><button class="filter-pill on" onclick="wsOpenSub(\'flashcards\')">Make flashcards</button><button class="filter-pill" onclick="wsOpenSub(\'practice\')">Practice quiz</button><button class="filter-pill" onclick="wsSave(' + i + ')">Save</button></div>') + '</div>';
   }
