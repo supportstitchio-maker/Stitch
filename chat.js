@@ -7076,7 +7076,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div class="flex flex-col gap-1.5">
               ${items.map(sp => `
                 <button type="button" onclick="openSharedPostFromChat(${escapeHtml(JSON.stringify(sp.postId))})" class="block text-left overflow-hidden bg-white" style="max-width:230px;width:100%;border-radius:16px;border:1px solid rgba(0,0,0,0.08);">
-                  ${sp.thumbnail ? `<img src="${escapeHtml(sp.thumbnail)}" alt="" style="width:100%;height:140px;object-fit:cover;display:block;">` : ''}
+                  ${sp.thumbnail ? `<img src="${escapeHtml(sp.thumbnail)}" alt="" onerror="this.outerHTML='<div style=&quot;width:100%;height:110px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,${NAVY},${ROYAL});color:rgba(255,255,255,.85);font-weight:700;font-size:15px;padding:0 14px;text-align:center;&quot;>${escapeHtml((sp.authorName || 'Stitch').replace(/[\\'\"<>&]/g,'')).slice(0,30)}</div>'" style="width:100%;height:140px;object-fit:cover;display:block;">` : ''}
                   <div style="padding:8px 12px 10px;">
                     <div class="text-[11px] font-semibold" style="color:${ROYAL};">${sp.tagged ? (mine ? `You tagged &ldquo;${escapeHtml(sp.taggedName || 'them')}&rdquo;` : `${escapeHtml(sp.authorName || 'Stitch member')} tagged you`) : `${escapeHtml(sp.authorName || 'Stitch member')}'s post`}</div>
                     ${sp.caption ? `<div class="text-[11px] text-gray-700 mt-0.5" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(sp.caption)}</div>` : ''}
@@ -7366,14 +7366,14 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           modal.id = 'stitchGalleryModal';
           modal.style.cssText = 'position:fixed;inset:0;z-index:12500;background:#000;display:flex;flex-direction:column;touch-action:pan-x;';
           const n = items.length;
-          const thumbs = n > 1 ? items.map((it, i) => `<button type="button" data-sg-thumb="${i}" onclick="stitchGalleryGo(${i})" aria-label="Photo ${i + 1}" style="flex:0 0 auto;width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid transparent;padding:0;background:#222;opacity:.6;"><img src="${escapeHtml(it.src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></button>`).join('') : '';
+          const thumbs = n > 1 ? items.map((it, i) => `<button type="button" data-sg-thumb="${i}" onclick="stitchGalleryGo(${i})" aria-label="Photo ${i + 1}" style="flex:0 0 auto;width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid transparent;padding:0;background:#222;opacity:.6;"><img data-sg-thumbimg="${i}" src="${escapeHtml(chatMediaSrc(it.src))}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></button>`).join('') : '';
           const topPad = 'calc(env(safe-area-inset-top, 0px) + 8px)';
           modal.innerHTML = `
             <div id="sg-top" style="position:absolute;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:6px;padding:${topPad} 8px 18px;background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,0));color:#fff;transition:opacity .2s;">
-              <button type="button" onclick="closeImageGallery()" aria-label="Back" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;">${IconBold('back','w-6 h-6')}</button>
+              <button type="button" onclick="closeImageGallery()" aria-label="Back" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50% !important;background:#fff !important;color:#111 !important;box-shadow:0 4px 14px rgba(0,0,0,.35) !important;flex-shrink:0;">${IconBold('back','w-6 h-6')}</button>
               <div style="flex:1;min-width:0;"><div id="sg-title" style="font-size:16px;font-weight:600;line-height:1.2;"></div><div id="sg-sub" style="font-size:12px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div></div>
-              <button type="button" onclick="stitchGallerySave()" aria-label="Save" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>
-              <button type="button" onclick="stitchGalleryToggleMenu(event)" aria-label="More options" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+              <button type="button" onclick="stitchGallerySave()" aria-label="Save" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50% !important;background:#fff !important;color:#111 !important;box-shadow:0 4px 14px rgba(0,0,0,.35) !important;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>
+              <button type="button" onclick="stitchGalleryToggleMenu(event)" aria-label="More options" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50% !important;background:#fff !important;color:#111 !important;box-shadow:0 4px 14px rgba(0,0,0,.35) !important;flex-shrink:0;"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
             </div>
             <div id="sg-menu" style="display:none;position:absolute;top:calc(env(safe-area-inset-top, 0px) + 56px);right:10px;z-index:4;min-width:190px;background:#fff;color:#111;border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:6px 0;">
               <button type="button" onclick="stitchGallerySave()" style="display:block;width:100%;text-align:left;padding:13px 18px;font-size:15px;">Save</button>
@@ -7417,6 +7417,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               chatMediaResolve(it.src).then(u => {
                 const im = modal.querySelector(`[data-sg-img="${i}"]`);
                 if (im && u && u !== im.getAttribute('src')) im.src = u;
+                const th = modal.querySelector(`[data-sg-thumbimg="${i}"]`);
+                if (th && u && u !== th.getAttribute('src')) th.src = u;
               });
             }
           });

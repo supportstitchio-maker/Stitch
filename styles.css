@@ -8729,3 +8729,11 @@ input#meeting-chat-input, input#ws-st-input{
   outline:none !important;
   border-radius:0 !important;
 }
+
+/* Diagram prompt send button: grey when empty, workspace blue once there is text */
+.ws-search .ws-send.on, body.dark-mode .ws-search .ws-send.on{ background:#1e90ff !important; color:#fff !important; }
+
+/* In-call "More" sheet: squircle tiles with the icon above the label so everything fits */
+.cu-bsheet .cu-tilegrid4 .cu-tile2{ flex-direction:column !important; gap:6px !important; border-radius:20px !important; corner-shape:squircle; padding:14px 4px 12px !important; font-size:12px !important; line-height:1.15; text-align:center; white-space:normal !important; min-width:0; }
+.cu-bsheet .cu-tilegrid4 .cu-tile2 .cu-tile2-ic{ display:flex; align-items:center; justify-content:center; width:26px; height:26px; flex-shrink:0; }
+.cu-bsheet .cu-tilegrid4 .cu-tile2 .cu-tile2-ic svg{ width:24px !important; height:24px !important; }

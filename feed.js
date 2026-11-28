@@ -7543,7 +7543,34 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           };
         }
 
-        function sendPostToSelectedContacts(postId){
+        // Saves a small copy of the thumbnail inside the message, so the card still looks right
+        // after the post is deleted or its media expires. Falls back to the original link.
+        function postShareThumbSnapshot(url){
+          return new Promise(resolve => {
+            if (!url || /^data:/i.test(url)) return resolve(url || null);
+            let done = false;
+            const finish = v => { if (!done) { done = true; resolve(v); } };
+            setTimeout(() => finish(url), 4000);
+            try {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => {
+                try {
+                  const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+                  const sc = Math.min(1, 360 / Math.max(w, h));
+                  const c = document.createElement('canvas');
+                  c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+                  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                  finish(c.toDataURL('image/jpeg', 0.72));
+                } catch (e) { finish(url); }
+              };
+              img.onerror = () => finish(url);
+              img.src = url;
+            } catch (e) { finish(url); }
+          });
+        }
+
+        async function sendPostToSelectedContacts(postId){
           if (!shareSelected.size) return;
           const post = findPost(postId);
           if (!post) { closeShareSheet(); return; }
@@ -7552,6 +7579,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           // only needs to exist as an inbox preview / fallback for clients that don't render the
           const previewText = caption ? `Shared a post: "${caption.slice(0,60)}"` : 'Shared a post';
           const attachment = buildPostShareAttachment(post);
+          try { attachment.thumbnail = await postShareThumbSnapshot(attachment.thumbnail); } catch (e) {}
           const ids = Array.from(shareSelected);
           ids.forEach(contactId => deliverSharedMessage(contactId, '', { attachments: [attachment], previewText }));
           PostsAPI.share(postId).then(() => bumpShareCountDisplay(postId));

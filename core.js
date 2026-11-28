@@ -253,8 +253,8 @@
           if (sn.family === 'image' && /<\?php|<script|<%@|<iframe|<svg|<html|javascript:/i.test(scan)) return { ok: false, reason: 'This picture contains hidden code.' };
           if (sn.family === 'text' && /<\?php|<script|<%@|<iframe|<html|<!doctype|<svg/i.test(scan)) return { ok: false, reason: 'This text file contains code.' };
           // Scripts, launch actions and embedded files are blocked. A plain "open at this page / zoom" setting (/OpenAction [page /FitH null]),
-          // which every jsPDF file carries, is not a script, so it is allowed; an OpenAction that points to an action object is still blocked.
-          if (sn.family === 'pdf' && /\/(?:Launch|JavaScript|EmbeddedFiles?)\b|\/JS[ \t\r\n]*[(<]|\/OpenAction[ \t\r\n]*(?![ \t\r\n\[])/.test(scan)) return { ok: false, reason: 'This PDF contains scripts or attachments.' };
+          // which every jsPDF file carries, is not a script, so it is allowed; OpenAction is not checked on its own, because a dangerous action still needs /JavaScript, /JS or /Launch, which are blocked. Compressed page data (streams) is skipped so random bytes in slide images cannot trigger a false block.
+          if (sn.family === 'pdf' && /\/(?:Launch|JavaScript|EmbeddedFiles?)\b|\/JS[ \t\r\n]*[(<]/.test(scan.replace(/stream\r?\n[\s\S]*?endstream/g, 'stream endstream'))) return { ok: false, reason: 'This PDF contains scripts or attachments.' };
           if (sn.family === 'office' && /vbaProject\.bin|\.exe|\.dll/i.test(scan)) return { ok: false, reason: 'This document contains macros or programs.' };
           // always store with the type we measured, never the type the sender claimed
           let mime = sn.mime;
