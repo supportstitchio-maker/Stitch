@@ -4530,6 +4530,8 @@ function coverPickerHTML(o){
     if (yes) yes.onclick = async function(){
       const d = deferred; deferred = null;
       if (!d) { closeCard(); return; }
+      // take our own card away first, so the browser's install box is never shown on top of it
+      if (card) { const c0 = card; card = null; if (c0.parentNode) c0.parentNode.removeChild(c0); }
       try { d.prompt(); const r = await d.userChoice; if (r && r.outcome === 'accepted') write(Object.assign(read(), { done: 1 })); else write({ n: (read().n || 0) + 1, t: Date.now(), done: read().done }); } catch (e) {}
       closeCard();
     };

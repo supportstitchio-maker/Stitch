@@ -387,6 +387,12 @@
   window.wsLeave = function(){
     /* Pages inside the tutor (chat history, summaries...) step back to their parent */
     if (view === 'tutor' && ['chat','studio'].indexOf(T.sub) < 0) { wsBackTutor(); return; }
+    /* Studio tab: the arrow goes back to the Chat tab first (the page you were on), then on to the Workspace home */
+    if (view === 'tutor' && T.sub === 'studio') {
+      var lp = nav[nav.length - 1];
+      if (lp && lp.view === 'tutor' && lp.sub === 'chat') { popNav(); return; }
+      T.sub = 'chat'; render(); return;
+    }
     /* Tutor, Courses and the Spaces list step back to the Workspace home first; only the home's arrow exits */
     if (view !== 'home') {
       nav.length = 0;
@@ -1642,7 +1648,7 @@
     var seg = '<div class="ws-seg"><button class="filter-pill flex-shrink-0 ' + (T.sub === 'chat' ? 'on' : '') + '" onclick="wsTab(\'chat\')">Chat</button><button class="filter-pill flex-shrink-0 ' + (T.sub === 'studio' ? 'on' : '') + '" onclick="wsTab(\'studio\')">Studio</button>' + (T.sub === 'chat' && T.msgs.length ? '<button class="filter-pill flex-shrink-0" onclick="wsNewChat()">New chat</button>' : '') + '</div>';
     return header('Stitch Tutor', T.cls ? ((classes().filter(function(c){ return c.id === T.cls; })[0] || {}).name || 'Stitch Tutor') + ' Space' : '', 'wsLeave()', '', '<button class="ws-circ ws-more" onclick="wsMenu(event)" aria-label="More options">' + I('dots', 22) + '</button>') + seg + (T.sub === 'chat' ? '<div id="ws-chatlog">' + chatBody() + '</div>' : studioHTML());
   }
-  window.wsTab = function(t){ T.sub = t; render(); };
+  window.wsTab = function(t){ if (T.sub !== t) pushNav(); T.sub = t; render(); };
 
   function render(){
     var s = $('screen'); if (!s) return;
