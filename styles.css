@@ -7975,7 +7975,14 @@ body:not(.dark-mode) .mh-join.mh-join, body.dark-mode .mh-join.mh-join,
 body:not(.dark-mode) .mh-act.mh-act:not(.out), body.dark-mode .mh-act.mh-act:not(.out){
   background:#1e90ff !important; color:#fff !important; border-color:transparent !important; box-shadow:none !important; }
 
-body.dark-mode .ws-btn{ background:#1e90ff; color:#fff; }
+body.dark-mode .ws-btn{ background:#3a3a3a; color:#fff; }
+/* Join / Return / Start pills on call and live cards: black (grey in dark mode), same as the workspace */
+.ws-btn, .ws-cta{ background:#111111; color:#fff; }
+.call-min-card button[style*="background:#1e90ff"], #call-minimized-banner button[style*="background:#1e90ff"], #lecture-inline-panel button[style*="background:#1e90ff"]{ background:#111111 !important; color:#fff !important; }
+.call-min-card button[style*="rgba(30,144,255"]{ background:rgba(17,17,17,0.08) !important; color:#111111 !important; }
+body.dark-mode .ws-cta{ background:#3a3a3a; }
+body.dark-mode .call-min-card button[style*="background:#1e90ff"], body.dark-mode #call-minimized-banner button[style*="background:#1e90ff"], body.dark-mode #lecture-inline-panel button[style*="background:#1e90ff"]{ background:#3a3a3a !important; color:#fff !important; }
+body.dark-mode .call-min-card button[style*="rgba(30,144,255"]{ background:rgba(255,255,255,0.1) !important; color:#f2f2f2 !important; }
 button.filter-pill[onclick^="startScheduledLectureNow"], button.filter-pill[onclick^="startCourseSessionNow"], button.filter-pill[onclick="startLiveLectureNow()"]{
   background:#1e90ff !important; color:#fff !important; border-color:#1e90ff !important; }
 

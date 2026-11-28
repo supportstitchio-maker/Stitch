@@ -119,9 +119,15 @@
   .ws-hdr .ws-back{width:42px;height:42px;-webkit-tap-highlight-color:transparent;transition:transform .15s ease}.ws-hdr .ws-back:active{transform:scale(.94)}
   .ws-art{position:absolute;right:10px;bottom:8px;width:120px;height:120px;opacity:.95;pointer-events:none}
   .ws-hero{margin:0;padding:18px 20px 64px;color:#fff;position:relative;overflow:hidden;min-height:170px;display:flex;flex-direction:column;justify-content:flex-end}
+  .ws-live-call{margin:12px 0 16px}
+  .ws-live-call .call-min-card{margin:0 !important}
+  body.dark-mode .ws-live,body.dark-mode .ws-live-call .call-min-card,body.dark-mode #lecture-inline-panel{background:var(--ws-card) !important;border:1px solid rgba(255,255,255,.12) !important;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+  body.dark-mode .ws-live-call .call-min-card .call-min-actions{border-top-color:rgba(255,255,255,.1) !important}
+  body.dark-mode .ws-live-call .call-min-card .text-gray-900{color:var(--ws-ink) !important}
+  body.dark-mode .ws-live-call .call-min-card .text-gray-500,body.dark-mode .ws-live-call .call-min-card .call-min-actions button{color:var(--ws-sub) !important}
   .ws-live{position:relative;margin:12px 0 16px;background:var(--ws-bg);border-radius:20px;box-shadow:0 8px 24px rgba(11,31,63,.14);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .ws-btn{background:#1e90ff;color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:10px 22px}
-  .ws-cta{display:block;width:100%;background:#1e90ff;color:#fff;font-weight:700;border-radius:999px;padding:16px;text-align:center;font-size:15px;margin:14px 0}
+  .ws-btn{background:#111111;color:#fff;font-weight:700;font-size:14px;border-radius:999px;padding:10px 22px}
+  .ws-cta{display:block;width:100%;background:#111111;color:#fff;font-weight:700;border-radius:999px;padding:16px;text-align:center;font-size:15px;margin:14px 0}
   body.dark-mode .ws-cta{background:#3a3a3a}
   .ws-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--ws-line);cursor:pointer}
   .ws-ft{width:42px;height:42px;border-radius:12px;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -385,6 +391,10 @@
   function materials(c){ return (c.classwork || []).filter(function(w){ return w.type === 'material'; }); }
   function members(c){ try { return classRosterList(c).length; } catch(e){ return (c.students || []).length; } }
   function teacher(c){ return c.teacherName || c.ownerName || (c.role === 'teacher' && typeof profileData !== 'undefined' ? profileData.name : '') || c.section || ''; }
+  /* True when I'm in this lecture's call and have minimised it: the call panel then takes the live card's place */
+  function inMyCall(l){
+    try { return !!(l && l.status === 'live' && typeof liveLectureState !== 'undefined' && liveLectureState.connected && typeof lectureMinimized !== 'undefined' && lectureMinimized && liveLectureState.lectureId === l.id && typeof lectureInlineCallPanelHTML === 'function'); } catch(e){ return false; }
+  }
   function liveLec(c){ return (c.lectures || []).filter(function(l){ return l.status === 'live'; })[0]; }
   function todayLec(c){
     var d = new Date(), iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -748,6 +758,8 @@
     var admin = false; try { admin = isCurrentUserAdmin() && teach; } catch(e){}
     if (cTab === 'results') cTab = 'dashboard';
     var tabs = [['dashboard','Dashboard'],['lectures','Lectures'],['classwork','Tasks']]; /* Stream lives behind the floating speaker button */
+    var liveCardHtml = (inMyCall(live) ? '<div class="ws-live-call">' + lectureInlineCallPanelHTML(live) + '</div>' : live ? '<div class="ws-live" role="button" tabindex="0" style="cursor:pointer" onclick="' + (live.status === 'live' ? 'joinLiveLecture(\'' + live.id + '\',\'' + cls.id + '\')' : (teach ? 'startScheduledLectureNow(\'' + live.id + '\',\'' + cls.id + '\')' : 'void 0')) + '"><div><b style="font-size:15px">' + E(live.title) + ' \u00b7 ' + (live.status === 'live' ? 'Live now' : E(live.time || 'Today')) + '</b><small style="display:block;color:var(--ws-sub);font-size:12px">' + E(teacher(cls)) + '</small></div>' +
+        (live.status === 'live' ? '<button class="ws-btn">Join</button>' : (teach ? '<button class="ws-btn">Start</button>' : '')) + '</div>' : '');
     var body = '';
     if (cTab === 'resources') {
       var m = materials(cls);
@@ -758,10 +770,14 @@
         : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No resources yet.' + (teach ? ' Add materials under Tasks.' : '') + '</div>';
     } else if (cTab === 'lectures') {
       var ls = (cls.lectures || []).slice().reverse();
+      /* live lectures only appear as the card under the class header, never as a list row */
+      var hadLive = !!live || ls.some(function(l){ return l.status === 'live'; });
+      ls = ls.filter(function(l){ return l.status !== 'live' && !(live && l.id === live.id); });
       body = ls.length ? ls.map(function(l){ var lv = l.status === 'live';
         return '<div class="ws-row"' + (lv ? ' style="cursor:pointer" onclick="joinLiveLecture(\'' + l.id + '\',\'' + cls.id + '\')"' : '') + '><span class="ws-ft" style="background:' + p.a + '">' + I('users', 18) + '</span><div style="flex:1"><b>' + E(l.title) + '</b><small>' + (lv ? 'Live now' : E((l.date || '') + ' ' + (l.time || ''))) + '</small></div>' +
           (lv ? '<button class="ws-btn" style="padding:8px 16px">Join</button>' : (teach && l.status === 'scheduled' ? '<button class="filter-pill" onclick="startScheduledLectureNow(\'' + l.id + '\',\'' + cls.id + '\')">Start</button>' : '')) + '</div>'; }).join('')
-        : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No lectures scheduled.</div>' + (teach && typeof lectureActionPillsHTML === 'function' ? lectureActionPillsHTML() : '');
+        : hadLive ? '' : '<div class="ws-blk" style="text-align:center;color:var(--ws-sub)">No lectures scheduled.</div>' + (teach && typeof lectureActionPillsHTML === 'function' ? lectureActionPillsHTML() : '');
+      body = liveCardHtml + body;
       try { if (typeof classRecordingsListHTML === 'function') body += classRecordingsListHTML(cls); } catch(e){}
     } else if (cTab === 'people') {
       try { loadClassStudentProfiles(cls); } catch(e){}
@@ -816,8 +832,7 @@
       '<div class="ws-hero" style="background:linear-gradient(135deg,' + p.a + ',' + p.b + ');border-radius:26px">' + motif(cls, 0, 'lg') + '<span class="bd" style="position:absolute;top:14px;left:14px;font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:4px 11px;border-radius:999px">' + badge(cls) + '</span>' +
       '<h2 style="font-size:16px;font-weight:800;line-height:1.15;position:relative">' + E(String(cls.name).toUpperCase()) + '</h2><div style="font-size:12px;opacity:.9;position:relative;margin-top:4px">' + E(cls.section || '') + (cls.section ? ' \u00b7 ' : '') + members(cls) + ' members</div>' +
       (cls.code ? '<button class="ws-code" onclick="copyClassCode(\'' + cls.code + '\')"><span>Code: ' + E(cls.code) + '</span>' + I('copy', 14) + '</button>' : '') + '</div>' +
-      (live ? '<div class="ws-live" role="button" tabindex="0" style="cursor:pointer" onclick="' + (live.status === 'live' ? 'joinLiveLecture(\'' + live.id + '\',\'' + cls.id + '\')' : (teach ? 'startScheduledLectureNow(\'' + live.id + '\',\'' + cls.id + '\')' : 'void 0')) + '"><div><b style="font-size:15px">' + E(live.title) + ' \u00b7 ' + (live.status === 'live' ? 'Live now' : E(live.time || 'Today')) + '</b><small style="display:block;color:var(--ws-sub);font-size:12px">' + E(teacher(cls)) + '</small></div>' +
-        (live.status === 'live' ? '<button class="ws-btn">Join</button>' : (teach ? '<button class="ws-btn">Start</button>' : '')) + '</div>' : '<div style="height:16px"></div>') +
+      '<div style="height:16px"></div>' +
       '<div class="ws-tabs">' + tabs.map(function(t){ return '<button class="filter-pill flex-shrink-0 ' + (cTab === t[0] ? 'on' : '') + '" onclick="wsCTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>' +
       '<div>' + body + '</div></div></div>' +
       '<button class="ws-stream-fab" onclick="wsOpenStream()" aria-label="Announcements' + (streamUnread(cls) ? ', ' + streamUnread(cls) + ' unread' : '') + '" title="Stream">' +
