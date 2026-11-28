@@ -8673,3 +8673,23 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
 /* Notifications filter pills: cut off at the page margin like the other pill navs */
 .notif-wrap > .nfilter{ margin-left:0 !important; margin-right:0 !important; padding-left:0 !important; padding-right:0 !important; scroll-padding-left:0 !important; scroll-padding-right:0 !important; }
 .notif-wrap > .nfilter::after{ display:none; }
+
+/* Dark mode: bottom-nav icon outlines are white (the labels stay as they were) */
+body.dark-mode #bottom-nav .nav-flat-item svg,
+body.dark-mode #classroom-nav .nav-flat-item svg,
+body.dark-mode #bottom-nav .nav-protrude svg,
+body.dark-mode #classroom-nav .nav-protrude svg{ color:#ffffff !important; stroke:#ffffff !important; opacity:1 !important; }
+
+/* Dark mode: tell the browser the whole page is dark so the area behind and under the nav (bottom edge / overscroll) is dark too */
+html.dark-mode{ color-scheme:dark; background-color:#121212 !important; }
+html.dark-mode, body.dark-mode{ min-height:100%; }
+
+/* ===== Dark mode: everything in the headers is white (titles, back arrows, icons, menu dashes, the logo) ===== */
+html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-head.ov-sticky-head.ov-sticky-head, .cv-wa-head, .ws-hdr, header:has(#chat-header-name), div:has(> #chat-header-name)) :is(.grad-text, .font-display, h1, h2, .career-flow-title, .ws-hdr-t b, #chat-header-name, [style*="#4169e1" i], [style*="#1e90ff" i], [class*="text-[#1e90ff]"], [class*="text-[#4169e1]"], [class*="text-blue"]){
+  color:#ffffff !important; -webkit-text-fill-color:#ffffff !important; background-image:none !important;
+}
+html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-head.ov-sticky-head.ov-sticky-head, .cv-wa-head, .ws-hdr, header:has(#chat-header-name), div:has(> #chat-header-name)) svg{ color:#ffffff !important; }
+html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-head.ov-sticky-head.ov-sticky-head, .cv-wa-head, .ws-hdr, header:has(#chat-header-name), div:has(> #chat-header-name)) :is([stroke*="url(#"], [stroke="currentColor"], [stroke="#1e90ff" i], [stroke="#4169e1" i]){ stroke:#ffffff !important; }
+html body.dark-mode :is(#top-bar, #career-titlebar, #inbox-titlebar, .ov-sticky-head.ov-sticky-head.ov-sticky-head, .cv-wa-head, .ws-hdr, header:has(#chat-header-name), div:has(> #chat-header-name)) :is([fill*="url(#"], [fill="#1e90ff" i], [fill="#4169e1" i]){ fill:#ffffff !important; }
+/* the Stitch wordmark in the top bar turns white */
+html body.dark-mode #topbar-brand img{ filter:brightness(0) invert(1) !important; }
