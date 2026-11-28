@@ -8518,3 +8518,59 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
   }
   html body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode) .auth-scroll-inner{ background:rgba(24,24,24,.88); }
 }
+
+
+/* ===== "Almost there" (profile) page, phones: Welcome-page stars backdrop, softly blurred, no panel behind the
+   fields, no progress bar or eyebrow, arrow-style back button, squircle fields and pills ===== */
+@media (max-width:699px), (max-aspect-ratio:1/1){
+  html body #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(#auth-panel-complete-profile.active){
+    background:#000 !important; background-image:none !important; position:fixed;
+  }
+  html body #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(#auth-panel-complete-profile.active)::before{
+    display:block !important; content:"" !important; position:fixed !important; inset:-24px !important; height:auto !important;
+    z-index:0; pointer-events:none; opacity:1 !important; transform:translateZ(0);
+    background:#9cc3f2 url('assets/auth-bg-light-tall.webp') center top / cover no-repeat !important;
+    filter:blur(7px);
+  }
+  html body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(#auth-panel-complete-profile.active)::before{
+    background:#000 url('assets/auth-bg-dark-tall.webp') center top / cover no-repeat !important;
+  }
+  /* no frosted sheet: the fields sit straight on the backdrop */
+  html body #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(#auth-panel-complete-profile.active) .auth-scroll-inner,
+  html body.dark-mode #auth-gate.auth-compact-mode:not(.auth-verify-mode):has(#auth-panel-complete-profile.active) .auth-scroll-inner{
+    background:transparent !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+    border-radius:0 !important; position:relative; z-index:1;
+  }
+  #auth-gate:has(#auth-panel-complete-profile.active) .auth-card{ background:transparent !important; box-shadow:none !important; }
+  /* no "YOUR PROFILE" label, no progress bar */
+  #auth-gate:has(#auth-panel-complete-profile.active) .auth-eyebrow{ display:none !important; }
+  #auth-gate:has(#auth-panel-complete-profile.active) .auth-stepbar{ display:none !important; }
+  /* arrow-style back button instead of the chevron */
+  #auth-gate:has(#auth-panel-complete-profile.active) .auth-back .auth-back-chev{ display:none !important; }
+  #auth-gate:has(#auth-panel-complete-profile.active) .auth-back .auth-back-arrow{ display:block !important; }
+  /* squircle fields and pills */
+  #auth-panel-complete-profile .auth-field input,
+  #auth-panel-complete-profile .flow-pill{ corner-shape:squircle; border-radius:34px !important; }
+  body.dark-mode #auth-panel-complete-profile .auth-field input{
+    background:rgba(10,14,24,.6) !important; border:1.5px solid rgba(255,255,255,.28) !important; color:#f1f5fb !important;
+  }
+  body.dark-mode #auth-panel-complete-profile .auth-field label{ color:#bfcde6 !important; }
+  body.dark-mode #auth-gate:has(#auth-panel-complete-profile.active) .auth-head h1{ color:#fff !important; }
+  body.dark-mode #auth-gate:has(#auth-panel-complete-profile.active) .auth-head p{ color:rgba(190,205,230,.95) !important; }
+  body.dark-mode #auth-gate:has(#auth-panel-complete-profile.active) .auth-back{ color:#fff; }
+}
+
+/* ===== Home feed, phones: edge-to-edge. The header (logo, icons, search) sits below the status bar and tucks
+   away on scroll; once it is gone the posts run all the way up under the clock and battery, with a soft
+   frosted band over them so the status icons stay readable. Same idea as X. ===== */
+@media (max-width:1099px){
+  #app-shell.home-active{ padding-top:0 !important; }
+  #app-shell.home-active #top-bar{ padding-top:var(--top-safe-pad, 20px); background:#fff; }
+  #app-shell.home-active:has(#top-bar[data-hidden="1"])::after{
+    content:""; position:absolute; top:0; left:0; right:0; height:var(--top-safe-pad, 20px);
+    z-index:11; pointer-events:none;
+    background:rgba(255,255,255,.62);
+    -webkit-backdrop-filter:blur(14px) saturate(1.2); backdrop-filter:blur(14px) saturate(1.2);
+  }
+  body.dark-mode #app-shell.home-active:has(#top-bar[data-hidden="1"])::after{ background:rgba(18,18,18,.55); }
+}

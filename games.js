@@ -1140,8 +1140,9 @@ let userPoints = 0;
           document.getElementById('auth-gate').classList.add('auth-compact-mode'); document.getElementById('auth-gate').classList.remove('auth-photo-stage');
           document.getElementById('auth-gate').classList.remove('auth-verify-mode');
           const eyebrow = document.getElementById('authEyebrow');
-          if (eyebrow) eyebrow.textContent = 'YOUR PROFILE';
-          setAuthSegments(1, authOnboardingTotal());
+          if (eyebrow) eyebrow.textContent = '';
+          // Finish saves the profile and opens Home, so there is no progress to show on this page
+          setAuthProgress(null);
           setTimeout(() => { const first = document.getElementById('auth-cp-fname'); if (first) first.focus(); }, 50);
         }
         // Shown once, right after Complete Profile, so the Career Space "post or explore" question

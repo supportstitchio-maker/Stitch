@@ -265,8 +265,8 @@
     </script>
     <!-- While the splash is showing, load the big stylesheet without blocking the first paint, so the
          splash appears at once. Without a splash it stays blocking, so nothing unstyled ever shows. -->
-    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128b"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
-    <noscript><link rel="stylesheet" href="styles.css?v=20261128b"></noscript>
+    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128d"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
+    <noscript><link rel="stylesheet" href="styles.css?v=20261128d"></noscript>
 </head>
 <body class="bg-gray-50">
 <script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>
@@ -551,7 +551,7 @@
             var t = document.getElementById('authHeadTitle'), sub = document.getElementById('authHeadSub'), eb = document.getElementById('authEyebrow');
             if (t) t.textContent = 'Almost there';
             if (sub) sub.textContent = "Let's set up your profile";
-            if (eb) eb.textContent = 'ONE LAST STEP';
+            if (eb) eb.textContent = '';
             var back = document.getElementById('authBackToLandingBtn');
             if (back) back.style.display = 'none';
             document.documentElement.classList.add('oauth-onboarding');
@@ -1035,7 +1035,7 @@
     <script src="settings.js?v=20261113g"></script>
     <script src="profile.js?v=20261128a"></script>
     <script src="overlays.js?v=20261128a"></script>
-    <script src="games.js?v=20261128a"></script>
+    <script src="games.js?v=20261128b"></script>
     <script src="workspace.js?v=20261127b"></script>
 </body>
 </html>
