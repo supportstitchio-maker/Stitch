@@ -12620,6 +12620,10 @@ try {
           const el = document.createElement('div');
           el.className = 'fixed left-1/2 -translate-x-1/2 z-50 bg-white rounded-2xl shadow-lg px-3 py-2 flex items-start gap-3';
           if (typeof shortToast === 'function') { title = shortToast(title, 36); body = shortToast(body, 60); }
+          // Tapping something repeatedly must not pile up the same notice: if it is already showing, leave it be
+          const toastKey = (title || '') + '|' + (body || '');
+          if (Array.from(document.querySelectorAll('.app-toast')).some(o => o.isConnected && o.dataset.toastKey === toastKey)) return;
+          el.dataset.toastKey = toastKey;
           el.style.cssText = 'top:calc(env(safe-area-inset-top, 12px) + 12px); width:max-content; min-width:min(220px, calc(100% - 32px)); max-width:min(480px, calc(100% - 32px)); box-shadow:0 10px 30px rgba(0,0,0,.18);';
           el.innerHTML = `
             <div class="min-w-0 flex-1" style="text-align:left;">
