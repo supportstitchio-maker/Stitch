@@ -7308,17 +7308,190 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
 
         function convoImageAttachmentsHTML(images){
           if (!images || !images.length) return '';
-          return `
-            <div class="flex flex-col gap-1.5">
-              ${images.map(f => {
-                const src = f.url || f.dataUrl;
-                const name = f.name || 'photo.jpg';
-                return `<div class="relative" style="max-width:220px;width:100%;">
-                  <img src="${escapeHtml(src)}" alt="${escapeHtml(name)}" onclick="openConvoImageViewer('${encUriArg(src)}')" class="cursor-pointer" style="max-width:220px;max-height:280px;width:100%;border-radius:16px;object-fit:cover;display:block;">
-                  <button type="button" onclick="event.stopPropagation();convoDownloadDocument('${encUriArg(src)}','${encUriArg(name)}')" aria-label="Download photo" class="convo-media-action-btn" style="top:8px;right:8px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></button>
-                </div>`;
-              }).join('')}
+          return stitchImageGridHTML(images.map(f => ({ src: f.url || f.dataUrl, name: f.name || 'photo.jpg' })), { download: true });
+        }
+
+        // ---- Photo grid + swipe gallery (messaging and Stitch Tutor) ----
+        // Several photos in one message sit in a tidy grid (1, 2, 3 or 2x2 with a "+N" tile). Tapping one opens a
+        // full-screen gallery you can swipe through, with a back arrow on top and save / share options.
+        const stitchGalleryRegistry = {};
+        let stitchGalleryCounter = 0;
+        function stitchGalleryRegister(items){
+          const id = 'g' + (++stitchGalleryCounter);
+          stitchGalleryRegistry[id] = items;
+          const keys = Object.keys(stitchGalleryRegistry);
+          if (keys.length > 400) delete stitchGalleryRegistry[keys[0]];
+          return id;
+        }
+        function stitchImageGridHTML(items, opts){
+          opts = opts || {};
+          items = (items || []).filter(it => it && it.src);
+          if (!items.length) return '';
+          const gid = stitchGalleryRegister(items);
+          const n = items.length;
+          const tile = (it, i, extra) => `<div class="sg-tile" style="position:relative;overflow:hidden;background:#e5e7eb;${extra || ''}">
+              <img src="${escapeHtml(it.src)}" alt="${escapeHtml(it.name || 'photo')}" loading="lazy" onclick="event.stopPropagation();openImageGallery('${gid}',${i})" class="cursor-pointer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;">
             </div>`;
+          const wrapStyle = 'width:240px;max-width:100%;border-radius:16px;overflow:hidden;' + (opts.align === 'end' ? 'margin-left:auto;' : '');
+          if (n === 1) {
+            const it = items[0], name = it.name || 'photo.jpg';
+            return `<div class="relative" style="max-width:220px;width:100%;${opts.align === 'end' ? 'margin-left:auto;' : ''}">
+              <img src="${escapeHtml(it.src)}" alt="${escapeHtml(name)}" onclick="openImageGallery('${gid}',0)" class="cursor-pointer" style="max-width:220px;max-height:280px;width:100%;border-radius:16px;object-fit:cover;display:block;">
+              ${opts.download ? `<button type="button" onclick="event.stopPropagation();convoDownloadDocument('${encUriArg(it.src)}','${encUriArg(name)}')" aria-label="Download photo" class="convo-media-action-btn" style="top:8px;right:8px;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>` : ''}
+            </div>`;
+          }
+          if (n === 2) {
+            return `<div class="sg-grid" style="${wrapStyle}display:grid;grid-template-columns:1fr 1fr;gap:3px;aspect-ratio:2/1.35;">${tile(items[0],0)}${tile(items[1],1)}</div>`;
+          }
+          if (n === 3) {
+            return `<div class="sg-grid" style="${wrapStyle}display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;aspect-ratio:1/1;">${tile(items[0],0,'grid-row:1 / span 2;')}${tile(items[1],1)}${tile(items[2],2)}</div>`;
+          }
+          const extra = n - 4;
+          const four = items.slice(0, 4).map((it, i) => {
+            const cell = tile(it, i);
+            if (i === 3 && extra > 0) {
+              return cell.replace(/<\/div>\s*$/, `<div onclick="event.stopPropagation();openImageGallery('${gid}',3)" style="position:absolute;inset:0;background:rgba(0,0,0,.52);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;cursor:pointer;">+${extra}</div></div>`);
+            }
+            return cell;
+          }).join('');
+          return `<div class="sg-grid" style="${wrapStyle}display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;aspect-ratio:1/1;">${four}</div>`;
+        }
+
+        let stitchGallery = null;
+        function openImageGallery(gid, startIndex){
+          const items = stitchGalleryRegistry[gid];
+          if (!items || !items.length) return;
+          if (stitchGallery) closeImageGallery();
+          const modal = document.createElement('div');
+          modal.id = 'stitchGalleryModal';
+          modal.style.cssText = 'position:fixed;inset:0;z-index:12500;background:#000;display:flex;flex-direction:column;touch-action:pan-x;';
+          const n = items.length;
+          const thumbs = n > 1 ? items.map((it, i) => `<button type="button" data-sg-thumb="${i}" onclick="stitchGalleryGo(${i})" aria-label="Photo ${i + 1}" style="flex:0 0 auto;width:46px;height:46px;border-radius:8px;overflow:hidden;border:2px solid transparent;padding:0;background:#222;opacity:.6;"><img src="${escapeHtml(it.src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></button>`).join('') : '';
+          const topPad = 'calc(env(safe-area-inset-top, 0px) + 8px)';
+          modal.innerHTML = `
+            <div id="sg-top" style="position:absolute;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;gap:6px;padding:${topPad} 8px 18px;background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,0));color:#fff;transition:opacity .2s;">
+              <button type="button" onclick="closeImageGallery()" aria-label="Back" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;">${IconBold('back','w-6 h-6')}</button>
+              <div style="flex:1;min-width:0;"><div id="sg-title" style="font-size:16px;font-weight:600;line-height:1.2;"></div><div id="sg-sub" style="font-size:12px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div></div>
+              <button type="button" onclick="stitchGallerySave()" aria-label="Save" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg></button>
+              <button type="button" onclick="stitchGalleryToggleMenu(event)" aria-label="More options" class="no-circ" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#fff;"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+            </div>
+            <div id="sg-menu" style="display:none;position:absolute;top:calc(env(safe-area-inset-top, 0px) + 56px);right:10px;z-index:4;min-width:190px;background:#fff;color:#111;border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:6px 0;">
+              <button type="button" onclick="stitchGallerySave()" style="display:block;width:100%;text-align:left;padding:13px 18px;font-size:15px;">Save</button>
+              <button type="button" onclick="stitchGalleryShare()" style="display:block;width:100%;text-align:left;padding:13px 18px;font-size:15px;">Share</button>
+              <button type="button" onclick="stitchGalleryOpenTab()" style="display:block;width:100%;text-align:left;padding:13px 18px;font-size:15px;">View original</button>
+            </div>
+            <div id="sg-scroller" style="flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain;">
+              ${items.map((it, i) => `<div data-sg-slide="${i}" style="flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;"><img data-sg-img="${i}" src="${escapeHtml(chatMediaSrc(it.src))}" alt="${escapeHtml(it.name || 'photo')}" draggable="false" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-select:none;"></div>`).join('')}
+            </div>
+            ${n > 1 ? `<div id="sg-thumbs" style="position:relative;z-index:3;display:flex;gap:6px;overflow-x:auto;padding:10px 12px calc(env(safe-area-inset-bottom, 0px) + 12px);justify-content:${n > 6 ? 'flex-start' : 'center'};background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.7));scrollbar-width:none;">${thumbs}</div>` : '<div style="height:calc(env(safe-area-inset-bottom, 0px) + 12px);"></div>'}`;
+          document.body.appendChild(modal);
+          const scroller = modal.querySelector('#sg-scroller');
+          stitchGallery = { items, index: 0, modal, scroller, barsHidden: false, timer: null, keyFn: null };
+          const start = Math.max(0, Math.min(n - 1, startIndex | 0));
+          scroller.style.scrollBehavior = 'auto';
+          scroller.scrollLeft = start * scroller.clientWidth;
+          stitchGallery.index = start;
+          stitchGalleryUpdateUI();
+          scroller.addEventListener('scroll', () => {
+            clearTimeout(stitchGallery && stitchGallery.timer);
+            if (!stitchGallery) return;
+            stitchGallery.timer = setTimeout(() => {
+              if (!stitchGallery) return;
+              const w = scroller.clientWidth || 1;
+              const i = Math.max(0, Math.min(n - 1, Math.round(scroller.scrollLeft / w)));
+              if (i !== stitchGallery.index) { stitchGallery.index = i; stitchGalleryUpdateUI(); }
+            }, 60);
+          }, { passive: true });
+          scroller.addEventListener('click', (e) => {
+            const menu = modal.querySelector('#sg-menu');
+            if (menu && menu.style.display !== 'none') { menu.style.display = 'none'; return; }
+            if (e.target && e.target.tagName === 'IMG' || e.target === scroller || (e.target.dataset && e.target.dataset.sgSlide !== undefined)) stitchGalleryToggleBars();
+          });
+          modal.addEventListener('click', (e) => {
+            const menu = modal.querySelector('#sg-menu');
+            if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) menu.style.display = 'none';
+          });
+          // Photos in the private chat bucket need a signed link: swap it in once we have it
+          items.forEach((it, i) => {
+            if (chatMediaSrc(it.src) === it.src && typeof parseChatMediaUrl === 'function' && parseChatMediaUrl(it.src)) {
+              chatMediaResolve(it.src).then(u => {
+                const im = modal.querySelector(`[data-sg-img="${i}"]`);
+                if (im && u && u !== im.getAttribute('src')) im.src = u;
+              });
+            }
+          });
+          stitchGallery.keyFn = (e) => {
+            if (e.key === 'ArrowRight') stitchGalleryGo(stitchGallery.index + 1);
+            else if (e.key === 'ArrowLeft') stitchGalleryGo(stitchGallery.index - 1);
+            else if (e.key === 'Escape') closeImageGallery();
+          };
+          document.addEventListener('keydown', stitchGallery.keyFn);
+          if (typeof pushModalBackHandler === 'function') pushModalBackHandler(fromPopState => closeImageGallery(fromPopState));
+          stitchGallery.pushed = typeof pushModalBackHandler === 'function';
+        }
+        function stitchGalleryUpdateUI(){
+          const g = stitchGallery; if (!g) return;
+          const n = g.items.length, it = g.items[g.index] || {};
+          const t = g.modal.querySelector('#sg-title'), s = g.modal.querySelector('#sg-sub');
+          if (t) t.textContent = n > 1 ? (g.index + 1) + ' of ' + n : 'Photo';
+          if (s) s.textContent = it.name || '';
+          g.modal.querySelectorAll('[data-sg-thumb]').forEach(b => {
+            const on = Number(b.getAttribute('data-sg-thumb')) === g.index;
+            b.style.borderColor = on ? '#fff' : 'transparent';
+            b.style.opacity = on ? '1' : '.6';
+            if (on && b.scrollIntoView) { try { b.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {} }
+          });
+        }
+        function stitchGalleryGo(i){
+          const g = stitchGallery; if (!g) return;
+          const n = g.items.length;
+          if (i < 0 || i >= n) return;
+          g.scroller.style.scrollBehavior = 'smooth';
+          g.scroller.scrollTo({ left: i * g.scroller.clientWidth, behavior: 'smooth' });
+        }
+        function stitchGalleryToggleBars(){
+          const g = stitchGallery; if (!g) return;
+          g.barsHidden = !g.barsHidden;
+          const top = g.modal.querySelector('#sg-top'), th = g.modal.querySelector('#sg-thumbs');
+          if (top) { top.style.opacity = g.barsHidden ? '0' : '1'; top.style.pointerEvents = g.barsHidden ? 'none' : ''; }
+          if (th) { th.style.opacity = g.barsHidden ? '0' : '1'; th.style.pointerEvents = g.barsHidden ? 'none' : ''; th.style.transition = 'opacity .2s'; }
+        }
+        function stitchGalleryToggleMenu(e){
+          if (e) e.stopPropagation();
+          const g = stitchGallery; if (!g) return;
+          const m = g.modal.querySelector('#sg-menu');
+          if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+        }
+        function stitchGalleryCurrent(){ return stitchGallery ? (stitchGallery.items[stitchGallery.index] || null) : null; }
+        function stitchGallerySave(){
+          const it = stitchGalleryCurrent(); if (!it) return;
+          const m = stitchGallery.modal.querySelector('#sg-menu'); if (m) m.style.display = 'none';
+          if (typeof convoDownloadDocument === 'function') convoDownloadDocument(encodeURIComponent(it.src), encodeURIComponent(it.name || 'photo.jpg'));
+        }
+        async function stitchGalleryShare(){
+          const it = stitchGalleryCurrent(); if (!it) return;
+          const m = stitchGallery.modal.querySelector('#sg-menu'); if (m) m.style.display = 'none';
+          try {
+            const src = chatMediaSrc(it.src);
+            const blob = await (await fetch(src)).blob();
+            const file = new File([blob], it.name || 'photo.jpg', { type: blob.type || 'image/jpeg' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+          } catch (err) { if (err && err.name === 'AbortError') return; }
+          stitchGallerySave();
+        }
+        function stitchGalleryOpenTab(){
+          const it = stitchGalleryCurrent(); if (!it) return;
+          const m = stitchGallery.modal.querySelector('#sg-menu'); if (m) m.style.display = 'none';
+          try { window.open(chatMediaSrc(it.src), '_blank'); } catch (e) {}
+        }
+        function closeImageGallery(fromPopState){
+          const g = stitchGallery;
+          if (!g) return;
+          stitchGallery = null;
+          if (g.keyFn) document.removeEventListener('keydown', g.keyFn);
+          clearTimeout(g.timer);
+          g.modal.remove();
+          if (g.pushed && typeof popModalBackHandler === 'function') popModalBackHandler(fromPopState === true);
         }
 
         // Per-URL download state so re-renders (new messages arriving, etc.) don't reset an in-

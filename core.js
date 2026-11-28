@@ -3073,6 +3073,7 @@
           // Safety net: if a render got skipped or threw, the old tab's screen can stay on
           // (e.g. Home highlighted but the inbox showing). Fix the screen to match the tab.
           ensureScreenMatchesTab(n);
+          if (typeof tabHistorySync === 'function') tabHistorySync(n, fromPopState);
         }
 
         // Marker elements that only exist while a given tab's screen is painted.

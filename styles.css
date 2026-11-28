@@ -8698,3 +8698,34 @@ html body.dark-mode #topbar-brand img{ filter:brightness(0) invert(1) !important
 html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) svg{ color:#ffffff !important; }
 html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) :is([stroke*="url(#"], [stroke="currentColor"], [stroke="#1e90ff" i], [stroke="#4169e1" i]){ stroke:#ffffff !important; }
 html body.dark-mode :is(.ph-gear-panel, [aria-label="Post menu"], [aria-label="Settings"]) :is([fill*="url(#"], [fill="#1e90ff" i], [fill="#4169e1" i]){ fill:#ffffff !important; }
+
+/* ===== In-call chat + Stream announcement boxes: one squircle sheet, no inner shape =====
+   The wrapper carries the sheet (like the other type boxes); the input inside is plain and transparent. */
+#meeting-chat-bar > div:first-of-type,
+.ws-st-comp{
+  background-color:var(--cu-sheet,#ffffff) !important;
+  border:1.5px solid rgba(10,37,64,0.10) !important;
+  box-shadow:0 8px 24px rgba(10,37,64,0.10) !important;
+  border-radius:24px !important;
+}
+.ws-st-comp{ background-color:#ffffff !important; }
+body.dark-mode .ws-st-comp, body.dark-mode #meeting-chat-bar > div:first-of-type{
+  background-color:var(--c-onyx,#1e1e1e) !important;
+  border-color:rgba(255,255,255,0.10) !important;
+  box-shadow:0 8px 24px rgba(0,0,0,0.45) !important;
+}
+@supports (corner-shape: squircle){
+  #meeting-chat-bar > div:first-of-type, .ws-st-comp{ corner-shape:squircle; border-radius:30px !important; }
+}
+#meeting-chat-bar > div:first-of-type:focus-within, .ws-st-comp:focus-within{
+  border-color:#1e90ff !important;
+  box-shadow:0 8px 24px rgba(30,144,255,0.16) !important;
+}
+/* ids beat the long global input selector, so the inner boxes lose their border / shadow / background */
+input#meeting-chat-input, input#ws-st-input{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  outline:none !important;
+  border-radius:0 !important;
+}

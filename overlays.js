@@ -523,8 +523,46 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (wasAIClass && typeof aiChatInputFocused !== 'undefined') aiChatInputFocused = false;
         }
 
+        // ---- Phone back on the main tabs ----
+        // Profile, Messaging, Career and Workspace each add one history entry when you land on them from
+        // the feed, so the phone back button returns to the feed instead of closing the app.
+        let tabHistoryPushed = false, pendingTabPush = false, pendingTabPop = false;
+        function tabHistoryFlushPending(){
+          if (pendingTabPop) {
+            pendingTabPop = false;
+            if (tabHistoryPushed) {
+              tabHistoryPushed = false;
+              suppressNextPopstate = true;
+              try { history.back(); } catch (e) { suppressNextPopstate = false; }
+              setTimeout(() => { suppressNextPopstate = false; }, 600);
+            }
+            return;
+          }
+          if (pendingTabPush) {
+            pendingTabPush = false;
+            if (!tabHistoryPushed && typeof currentTab !== 'undefined' && currentTab !== 0) {
+              try { history.pushState({ stitchTab: currentTab }, ''); tabHistoryPushed = true; } catch (e) {}
+            }
+          }
+        }
+        function tabHistorySync(n, fromPopState){
+          if (fromPopState) return;
+          // closeOverlay (run by switchTab) may still be waiting on its own history.back():
+          // wait for that popstate before touching history again
+          const waiting = suppressNextPopstate;
+          if (n === 0) {
+            if (!tabHistoryPushed) { pendingTabPush = false; return; }
+            if (waiting) { pendingTabPop = true; pendingTabPush = false; setTimeout(tabHistoryFlushPending, 700); return; }
+            pendingTabPop = true; tabHistoryFlushPending();
+            return;
+          }
+          if (tabHistoryPushed) return;
+          if (waiting) { pendingTabPush = true; setTimeout(tabHistoryFlushPending, 700); return; }
+          pendingTabPush = true; tabHistoryFlushPending();
+        }
+
         window.addEventListener('popstate', function(){
-          if (suppressNextPopstate) { suppressNextPopstate = false; return; }
+          if (suppressNextPopstate) { suppressNextPopstate = false; tabHistoryFlushPending(); return; }
           if (modalBackStack.length) {
             const closeFn = modalBackStack[modalBackStack.length - 1];
             if (closeFn) closeFn(true);
@@ -535,6 +573,12 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             const backAction = overlayBackAction[currentOverlayKind];
             if (backAction) { backAction(true); return; }
             closeOverlay(true);
+            return;
+          }
+          // No page open on top: back from Profile / Messaging / Career / Workspace goes to the feed
+          if (tabHistoryPushed) {
+            tabHistoryPushed = false;
+            if (typeof currentTab !== 'undefined' && currentTab !== 0) switchTab(0, true);
           }
         });
 

@@ -265,9 +265,11 @@ try {
             <div id="ai-attach-strip" class="flex-shrink-0">${aiAttachStripHTML()}</div>
             <div id="ai-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="ai-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx" multiple class="hidden" onchange="handleAIFileSelect(event)">
+              <input type="file" id="ai-photo-input" accept="image/*" multiple class="hidden" onchange="handleAIFileSelect(event)">
               <div class="wa-row">
                 <div class="wa-pill convo-composer-pill">
                   <button onclick="document.getElementById('ai-file-input').click()" title="Attach images, PDFs, or PPTX" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
+                  <button onclick="document.getElementById('ai-photo-input').click()" title="Upload photos" aria-label="Upload photos" class="wa-pill-icon" style="color:#6b7280;">${Icon('camera','w-5 h-5')}</button>
                   <textarea id="ai-chat-input" rows="1" placeholder="Ask Stitch Bot anything..." onkeydown="handleAIChatInputKeydown(event)" oninput="autoGrowAIChatInput(this)" onfocus="handleAIChatInputFocus()" onblur="handleAIChatInputBlur()" class="wa-textarea" style="max-height:120px; overflow-y:auto;"></textarea>
                 </div>
                 <button id="ai-mic-btn" data-mode="mic" onclick="aiMainAction()" title="Ask by voice" class="wa-main-btn">${Icon('mic','w-6 h-6')}</button>
@@ -292,7 +294,7 @@ try {
                 <div class="relative overflow-hidden flex-shrink-0" style="width:3.5rem;height:3.5rem;border-radius:0.75rem;background:${NAVY};">
                   ${f.type && f.type.startsWith('video/')
                     ? `<video src="${f.previewUrl}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover block"></video>`
-                    : `<img src="${f.previewUrl}" alt="${escapeHtml(f.name)}" class="absolute inset-0 w-full h-full object-cover block" />`}
+                    : `<img src="${f.previewUrl}" alt="${escapeHtml(f.name)}" onclick="openAIPendingGallery(${i})" class="absolute inset-0 w-full h-full object-cover block cursor-pointer" />`}
                   <button onclick="removeAIAttachment(${i})" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white rounded-full flex items-center justify-center text-gray-500 shadow">${Icon('close','w-3 h-3')}</button>
                 </div>` : `
                 <div class="flex items-center gap-1.5 bg-gray-100 rounded-full pl-1 pr-2 py-1 text-xs text-gray-700">
@@ -301,6 +303,17 @@ try {
                   <button onclick="removeAIAttachment(${i})" class="text-gray-400 flex-shrink-0">${Icon('close','w-3 h-3')}</button>
                 </div>`).join('')}
             </div>`;
+        }
+
+        // Tap a photo waiting to be sent: swipe through all the photos in the tray
+        function openAIPendingGallery(index){
+          if (typeof stitchGalleryRegister !== 'function') return;
+          const imgs = [], map = {};
+          pendingAIAttachments.forEach((f, i) => {
+            if (f.previewUrl && !(f.type && f.type.startsWith('video/'))) { map[i] = imgs.length; imgs.push({ src: f.previewUrl, name: f.name }); }
+          });
+          if (!imgs.length) return;
+          openImageGallery(stitchGalleryRegister(imgs), map[index] || 0);
         }
 
         function handleAIFileSelect(event){
@@ -1079,14 +1092,16 @@ try {
         function aiUserBubble(text, attachments, id, isEditing, voice){
           const imageAttachments = (attachments || []).filter(f => f.previewUrl);
           const fileAttachments = (attachments || []).filter(f => !f.previewUrl);
+          const stillImages = imageAttachments.filter(f => !(f.type && f.type.startsWith('video/')));
+          const videoAttachments = imageAttachments.filter(f => f.type && f.type.startsWith('video/'));
+          // Several photos sit in a grid; tapping one opens a swipeable gallery (same as the messaging page)
           const images = imageAttachments.length ? `
-            <div class="flex flex-wrap gap-1">
-              ${imageAttachments.map(f => `
+            <div class="flex flex-col items-end gap-1">
+              ${stillImages.length && typeof stitchImageGridHTML === 'function' ? stitchImageGridHTML(stillImages.map(f => ({ src: f.previewUrl, name: f.name })), { align: 'end' }) : ''}
+              ${videoAttachments.length ? `<div class="flex flex-wrap gap-1 justify-end">${videoAttachments.map(f => `
                 <div class="relative overflow-hidden flex-shrink-0" style="width:9.5rem;height:9.5rem;max-width:100%;border-radius:1rem;background:${NAVY};">
-                  ${f.type && f.type.startsWith('video/')
-                    ? `<video src="${f.previewUrl}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover block"></video>`
-                    : `<img src="${f.previewUrl}" alt="${escapeHtml(f.name)}" onclick="openConvoImageViewer('${encodeURIComponent(f.previewUrl)}')" class="absolute inset-0 w-full h-full object-cover block cursor-pointer" />`}
-                </div>`).join('')}
+                  <video src="${f.previewUrl}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover block"></video>
+                </div>`).join('')}</div>` : ''}
             </div>` : '';
           const files = fileAttachments.length ? `
             <div class="flex flex-col gap-1.5 rounded-2xl px-2.5 py-2" style="background:${NAVY};">
@@ -5135,14 +5150,14 @@ try {
           return `
             <div id="create-class-entrance" class="mb-5">
               <label class="text-xs font-semibold text-gray-500 mb-2 block">Who can join</label>
-              <div class="auth-intent-row" style="padding:4px 2px 8px;">
+              <div class="auth-intent-row" style="padding:4px 2px 8px;max-width:100%;box-sizing:border-box;">
                 ${options.map(o => `<button type="button" aria-pressed="${mode===o.key}" onclick="setNewClassEntrance('${o.key}')" class="auth-intent-chip ${mode===o.key ? 'on' : ''}"><span>${o.label}</span></button>`).join('')}
               </div>
               ${mode !== 'paid' ? `<div class="text-xs text-gray-400">${mode === 'approved' ? 'You approve each person before they join.' : 'Anyone can join straight away.'}</div>` : ''}
               ${mode === 'paid' ? `
-                <div class="flex gap-2 mt-3">
-                  <input type="number" min="1" step="1" oninput="updateNewClassPaymentField('paymentAmount', this.value)" value="${escapeHtml(d.paymentAmount)}" placeholder="Amount" class="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm">
-                  <select onchange="updateNewClassPaymentField('paymentCurrency', this.value)" class="bg-gray-100 rounded-2xl px-3 py-3 text-sm">
+                <div class="flex gap-2 mt-3" style="width:100%;max-width:100%;box-sizing:border-box;">
+                  <input type="number" min="1" step="1" oninput="updateNewClassPaymentField('paymentAmount', this.value)" value="${escapeHtml(d.paymentAmount)}" placeholder="Amount" class="flex-1 bg-gray-100 rounded-2xl px-4 py-3 text-sm" style="min-width:0;width:0;box-sizing:border-box;">
+                  <select onchange="updateNewClassPaymentField('paymentCurrency', this.value)" class="bg-gray-100 rounded-2xl px-3 py-3 text-sm" style="flex:0 0 96px;width:96px;min-width:0;box-sizing:border-box;">
                     ${['GHS','NGN','USD','ZAR','KES'].map(c => `<option value="${c}" ${d.paymentCurrency===c ? 'selected' : ''}>${c}</option>`).join('')}
                   </select>
                 </div>
