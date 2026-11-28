@@ -2621,16 +2621,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (!el) return;
           if (typeof QRCode === 'undefined') { qrFail(el, 'initPersonProfileQRCode'); return; }
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
-          new QRCode(el, {
-            text: personProfileQRLink(viewedProfile || {}),
-            width: 256,
-            height: 256,
-            colorDark: qrTheme().mod,
-            colorLight: qrTheme().light,
-            correctLevel: QRCode.CorrectLevel.H
-          });
-          const canvas = el.querySelector('canvas') || el.querySelector('img:not([data-qr-logo])');
-          if (canvas) canvas.style.position = 'relative';
+          try { const pq = viewedProfile || {}; renderStyledQRInto(el, personProfileQRLink(pq), pq.username || pq.name || 'Stitch member'); } catch (e) { qrFail(el, 'initPersonProfileQRCode'); return; }
           const pp = viewedProfile || {};
           prepareQRShare('person-profile-qr-code', personProfileQRLink(pp), pp.username || pp.name || 'Stitch member', pp.photo);
         }

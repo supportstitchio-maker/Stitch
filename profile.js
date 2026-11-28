@@ -1938,6 +1938,114 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         }
 
 
+        // ---- Styled QR codes: eight looks, one is assigned to each person from their username ----
+        const STITCH_QR_STYLES = [
+          { name: 'Rounded dots', shape: 'dots', fg: '#3d4a5c', bg: '#ffffff', frame: '#3d4a5c' },
+          { name: 'Classic squares', shape: 'square', fg: '#141414', bg: '#ffffff' },
+          { name: 'Circles', shape: 'circles', fg: '#141e46', bg: '#ffffff' },
+          { name: 'Fluid', shape: 'fluid', fg: '#3d4a5c', bg: '#ffffff', frame: '#3d4a5c' },
+          { name: 'Blue gradient', shape: 'dots', fg: '#1e90ff', grad: ['#1e90ff', '#2846c8'], bg: '#ffffff', frame: '#4169e1' },
+          { name: 'Dark', shape: 'dots', fg: '#ffffff', bg: '#121212', frame: '#ffffff' },
+          { name: 'Bars', shape: 'bars', fg: '#141e46', bg: '#ffffff' },
+          { name: 'Soft green', shape: 'soft', fg: '#168c5a', bg: '#ffffff', frame: '#168c5a' }
+        ];
+
+        // Same person always gets the same look (a hash of the username picks one of the eight)
+        function qrStyleIndex(key){
+          const s = String(key || '').trim().toLowerCase().replace(/^@/, '');
+          let h = 2166136261;
+          for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+          return (h >>> 0) % STITCH_QR_STYLES.length;
+        }
+
+        // Dark/light module grid from the QR library
+        function qrModuleRows(link){
+          const holder = document.createElement('div');
+          const q = new QRCode(holder, { text: link, width: 64, height: 64, correctLevel: QRCode.CorrectLevel.H });
+          const m = q && q._oQRCode;
+          if (!m || !m.getModuleCount) return null;
+          const n = m.getModuleCount(), rows = [];
+          for (let r = 0; r < n; r++) { const row = []; for (let c = 0; c < n; c++) row.push(!!m.isDark(r, c)); rows.push(row); }
+          return rows;
+        }
+
+        // Draws one styled QR onto a new square canvas (size in pixels)
+        function drawStyledQR(rows, size, def){
+          const cv = document.createElement('canvas'); cv.width = cv.height = size;
+          const ctx = cv.getContext('2d'), n = rows.length;
+          const on = (r, c) => r >= 0 && c >= 0 && r < n && c < n && rows[r][c];
+          const isFinder = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+          const rr = (x, y, w, h, rad) => {
+            const R = Array.isArray(rad) ? rad : [rad, rad, rad, rad];
+            const k = Math.min(w, h) / 2; const [a, b, c, d] = R.map(v => Math.min(v, k));
+            ctx.beginPath(); ctx.moveTo(x + a, y); ctx.lineTo(x + w - b, y); ctx.arcTo(x + w, y, x + w, y + b, b || 0.0001);
+            ctx.lineTo(x + w, y + h - c); ctx.arcTo(x + w, y + h, x + w - c, y + h, c || 0.0001);
+            ctx.lineTo(x + d, y + h); ctx.arcTo(x, y + h, x, y + h - d, d || 0.0001);
+            ctx.lineTo(x, y + a); ctx.arcTo(x, y, x + a, y, a || 0.0001); ctx.closePath();
+          };
+          // card
+          ctx.fillStyle = def.bg; rr(0, 0, size, size, size * 0.06); ctx.fill();
+          const pad = size * (def.frame ? 0.17 : 0.11), m = (size - 2 * pad) / n;
+          let paint = def.fg;
+          if (def.grad) { const g = ctx.createLinearGradient(0, 0, 0, size); g.addColorStop(0, def.grad[0]); g.addColorStop(1, def.grad[1]); paint = g; }
+          ctx.fillStyle = paint;
+          for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+            if (!rows[r][c] || isFinder(r, c)) continue;
+            const x = pad + c * m, y = pad + r * m;
+            if (def.shape === 'dots') { const g = m * 0.06; rr(x + g, y + g, m - 2 * g, m - 2 * g, m * 0.42); ctx.fill(); }
+            else if (def.shape === 'circles') { const g = m * 0.03; ctx.beginPath(); ctx.arc(x + m / 2, y + m / 2, m / 2 - g, 0, Math.PI * 2); ctx.fill(); }
+            else if (def.shape === 'square') { ctx.fillRect(x, y, m, m); }
+            else if (def.shape === 'soft') { const g = m * 0.07; rr(x + g, y + g, m - 2 * g, m - 2 * g, m * 0.22); ctx.fill(); }
+            else if (def.shape === 'bars') {
+              const up = on(r - 1, c), dn = on(r + 1, c), x0 = x + m * 0.22, w = m * 0.56, t = up ? 0 : m * 0.28, b = dn ? 0 : m * 0.28;
+              rr(x0, y, w, m, [t, t, b, b]); ctx.fill();
+            } else if (def.shape === 'fluid') {
+              const t = on(r - 1, c), b = on(r + 1, c), l = on(r, c - 1), rt = on(r, c + 1), R = m * 0.48;
+              rr(x, y, m, m, [(t || l) ? 0 : R, (t || rt) ? 0 : R, (b || rt) ? 0 : R, (b || l) ? 0 : R]); ctx.fill();
+            }
+          }
+          // the three corner marks
+          [[0, 0], [0, n - 7], [n - 7, 0]].forEach(([r0, c0]) => {
+            const x = pad + c0 * m, y = pad + r0 * m;
+            let o, i1, i2;
+            if (def.shape === 'circles') {
+              ctx.fillStyle = paint; ctx.beginPath(); ctx.arc(x + 3.5 * m, y + 3.5 * m, 3.5 * m, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = def.bg; ctx.beginPath(); ctx.arc(x + 3.5 * m, y + 3.5 * m, 2.5 * m, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = paint; ctx.beginPath(); ctx.arc(x + 3.5 * m, y + 3.5 * m, 1.5 * m, 0, Math.PI * 2); ctx.fill();
+              return;
+            }
+            if (def.shape === 'square') { o = 0; i1 = 0; i2 = 0; } else if (def.shape === 'soft') { o = 1.3; i1 = 0.6; i2 = 0.1; } else { o = 2.3; i1 = 1.6; i2 = 1.1; }
+            ctx.fillStyle = paint; rr(x, y, 7 * m, 7 * m, o * m); ctx.fill();
+            ctx.fillStyle = def.bg; rr(x + m, y + m, 5 * m, 5 * m, i1 * m); ctx.fill();
+            ctx.fillStyle = paint; rr(x + 2 * m, y + 2 * m, 3 * m, 3 * m, i2 * m); ctx.fill();
+          });
+          // scan-frame corner brackets
+          if (def.frame) {
+            const L = size * 0.15, w = size * 0.034, o = size * 0.04;
+            ctx.strokeStyle = def.frame; ctx.fillStyle = def.frame; ctx.lineWidth = w; ctx.lineCap = 'round';
+            [[o, o, 1, 1], [size - o, o, -1, 1], [o, size - o, 1, -1], [size - o, size - o, -1, -1]].forEach(([sx, sy, dx, dy]) => {
+              ctx.beginPath(); ctx.moveTo(sx + dx * L, sy); ctx.lineTo(sx, sy); ctx.lineTo(sx, sy + dy * L); ctx.stroke();
+            });
+          }
+          return cv;
+        }
+
+        // Styled QR canvas for a link; the look comes from the person's username
+        function makeStyledQRCanvas(link, key, size){
+          const rows = qrModuleRows(link);
+          if (!rows) throw new Error('qr');
+          return drawStyledQR(rows, size || 768, STITCH_QR_STYLES[qrStyleIndex(key)]);
+        }
+
+        // Puts the styled QR on screen in place of the loading skeleton
+        function renderStyledQRInto(el, link, key){
+          const cv = makeStyledQRCanvas(link, key, 768);
+          cv.style.cssText = 'width:100%;height:100%;display:block;border-radius:18px;';
+          Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo]), .qr-skel')).forEach(n => n.remove());
+          el.appendChild(cv);
+          return cv;
+        }
+
         // ---- Shared QR card (profile + someone else's profile): theme-aware, names in Colmeak ----
         function qrTheme(){
           const dark = document.body.classList.contains('dark-mode');
@@ -1996,11 +2104,9 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
             <div class="flex-1 flex flex-col overflow-y-auto" style="background:${t.page};">
               ${overlayHeader(title, '20px')}
               <div class="flex-1 flex flex-col items-center px-6" style="padding-top:44px;">
-                <div id="${codeId}" role="img" aria-label="${mine ? 'Your Stitch profile QR code' : 'Stitch profile QR code'}" class="relative flex items-center justify-center" style="width:256px;height:256px;max-width:100%;margin:0 auto;">
+                <div id="${codeId}" role="img" aria-label="${mine ? 'Your Stitch profile QR code' : 'Stitch profile QR code'}" class="relative flex items-center justify-center" style="width:288px;height:288px;max-width:100%;margin:0 auto;">
                   <div class="qr-skel skel-shimmer" aria-hidden="true"></div>
-                  <div class="absolute rounded-full flex items-center justify-center" style="width:58px;height:58px;background:${t.page};box-shadow:0 0 0 4px ${t.page};z-index:2;">
-                    <img data-qr-logo="1" src="${STITCH_LOGO_ICON}" alt="Stitch" style="width:36px;height:auto;display:block;">
-                  </div>
+                  
                 </div>
                 <div class="qr-name mt-6 text-center" style="color:${t.text};">${label}</div>
                 <div class="text-[13px] mt-2 text-center" style="color:${t.sub};line-height:1.5;">${hint}</div>
@@ -2021,10 +2127,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
         async function buildQRCardCanvas(link, label, photo){
           const t = qrExportTheme();
           try { if (document.fonts && document.fonts.load) await document.fonts.load("700 38px 'Gendy'"); } catch (e) {}
-          const holder = document.createElement('div');
-          new QRCode(holder, { text: link, width: 240, height: 240, colorDark: t.mod, colorLight: t.light, correctLevel: QRCode.CorrectLevel.H });
-          const qrCanvas = holder.querySelector('canvas');
-          if (!qrCanvas) throw new Error('qr');
+          const qrCanvas = makeStyledQRCanvas(link, label, 1000);
           const size = 640, pad = 60;
           const out = document.createElement('canvas');
           out.width = size; out.height = size + 140;
@@ -2032,32 +2135,12 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           ctx.fillStyle = t.card;
           roundRect(ctx, 0, 0, out.width, out.height, 36);
           ctx.fill();
-          ctx.imageSmoothingEnabled = false;
+          ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(qrCanvas, pad, pad, size - pad * 2, size - pad * 2);
-          ctx.imageSmoothingEnabled = true;
           ctx.fillStyle = t.text;
           ctx.font = "700 38px 'Gendy','Montserrat',sans-serif";
           ctx.textAlign = 'center';
           ctx.fillText(String(label || '').toUpperCase(), out.width / 2, size + 84);
-          const cx = size / 2, cy = size / 2;
-          // Centre badge: the Stitch logo on a plain circle (the person's photo is no longer used here)
-          const badge = (img) => {
-            ctx.save();
-            ctx.beginPath(); ctx.arc(cx, cy, 42, 0, Math.PI * 2); ctx.fillStyle = t.card; ctx.fill();
-            if (img) {
-              const w = 60, h = w * (img.naturalHeight || img.height) / (img.naturalWidth || img.width);
-              ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
-            } else {
-              ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fillStyle = ROYAL; ctx.fill();
-            }
-            ctx.restore();
-          };
-          await new Promise(res => {
-            const img = new Image();
-            img.onload = () => { badge(img); res(); };
-            img.onerror = () => { badge(null); res(); };
-            img.src = STITCH_LOGO_ICON;
-          });
           return out;
         }
 
@@ -2115,16 +2198,7 @@ const PUBLIC_PROFILES_TABLE = 'public_profiles';
           if (!el) return;
           if (typeof QRCode === 'undefined') { qrFail(el, 'initProfileQRCode'); return; }
           Array.from(el.querySelectorAll('canvas, table, img:not([data-qr-logo])')).forEach(n => n.remove());
-          new QRCode(el, {
-            text: profileQRLink(),
-            width: 256,
-            height: 256,
-            colorDark: qrTheme().mod,
-            colorLight: qrTheme().light,
-            correctLevel: QRCode.CorrectLevel.H
-          });
-          const canvas = el.querySelector('canvas') || el.querySelector('img:not([data-qr-logo])');
-          if (canvas) canvas.style.position = 'relative';
+          try { renderStyledQRInto(el, profileQRLink(), profileData.username); } catch (e) { qrFail(el, 'initProfileQRCode'); return; }
           prepareQRShare('profile-qr-code', profileQRLink(), profileData.username, profileData.photo);
         }
 
