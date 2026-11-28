@@ -144,8 +144,11 @@
             window.__stitchStandalone = !!isStandalone;
             if (isStandalone) document.documentElement.classList.add('standalone-splash');
           } catch (e) {}
-          var darkTheme = document.documentElement.classList.contains('dark-mode'); // no splash in dark mode
-          window.__stitchSkipSplash = seen || authReturn || darkTheme || !!isStandalone;
+          // Installed app and dark mode get a short static splash (logo only, in the phone's theme) instead of
+          // none, so the first thing on screen is Stitch's own, not Android's generic icon tile.
+          var darkTheme = document.documentElement.classList.contains('dark-mode');
+          if (isStandalone || darkTheme) document.documentElement.classList.add('static-splash');
+          window.__stitchSkipSplash = seen || authReturn;
           if (window.__stitchSkipSplash) document.documentElement.classList.add('no-splash');
           try { localStorage.setItem('stitchSplashSeen', '1'); } catch (e) {}
         } catch (e) { window.__stitchSkipSplash = false; }
@@ -162,6 +165,11 @@
       /* Mirrors the splash logo rules so the very first paint is already correct. -->
       #app-splash { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: #ffffff; }
       #app-splash .app-splash-logo { width: 112px; height: auto; opacity: 0; }
+      /* Static splash (installed app / dark mode): logo already in place on the first frame, per theme */
+      html.static-splash #app-splash .app-splash-logo { opacity: 1 !important; transform: none !important; animation: none !important; }
+      html:not(.dark-mode) #app-splash { background: #ffffff; }
+      html.dark-mode #app-splash { background: #121212; }
+      html.dark-mode #app-splash .app-splash-logo { filter: drop-shadow(0 0 28px rgba(30,144,255,0.22)); }
     </style>
     <!-- Content-Security-Policy: only lets scripts, styles, connections and media load from the origins
          this app uses (CDNs, Google Fonts, Supabase, Sentry, Formspree, Paystack, Pixabay). -->
@@ -253,7 +261,10 @@
         } catch (e) { /* detection failed -- keep the default Google-first order */ }
       })();
     </script>
-    <link rel="stylesheet" href="styles.css?v=20261127d">
+    <!-- While the splash is showing, load the big stylesheet without blocking the first paint, so the
+         splash appears at once. Without a splash it stays blocking, so nothing unstyled ever shows. -->
+    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128a"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
+    <noscript><link rel="stylesheet" href="styles.css?v=20261128a"></noscript>
 </head>
 <body class="bg-gray-50">
 <script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>

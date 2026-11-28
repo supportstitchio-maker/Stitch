@@ -3110,7 +3110,15 @@ let userPoints = 0;
           dismissSplash(true);
         } else {
           const openedViaLink = !!(window.location.search || window.location.hash);
-          setTimeout(dismissSplash, window.__stitchStandalone ? 550 : (openedViaLink ? 1000 : 2550));
+          const staticSplash = document.documentElement.classList.contains('static-splash');
+          const splashWait = staticSplash ? 450 : (openedViaLink ? 1000 : 2550);
+          const splashT0 = Date.now();
+          // Never lift the splash before the stylesheet is in (it loads without blocking while the splash shows)
+          const liftSplash = () => {
+            if (window.__stitchCssReady || Date.now() - splashT0 > 5000) dismissSplash();
+            else setTimeout(liftSplash, 60);
+          };
+          setTimeout(liftSplash, splashWait);
         }
 
         window.onload = async function(){

@@ -6506,7 +6506,9 @@ body.dark-mode .pro4-nn{background:#262626;color:#cbd5e1;}
 @media (max-width:1099px){ html body #app-shell #rp-reopen-tab, html body #rp-reopen-tab{ display:none !important; } }
 
 /* Installed app: the splash is one second and the logo is already in place, so it carries on from the phone's own launch logo */
-html.standalone-splash #app-splash .app-splash-logo{opacity:1 !important;transform:none !important;animation:none !important;}
+html.standalone-splash #app-splash .app-splash-logo,
+html.static-splash #app-splash .app-splash-logo{opacity:1 !important;transform:none !important;animation:none !important;}
+html.dark-mode #app-splash .app-splash-logo{filter:drop-shadow(0 0 28px rgba(30,144,255,.22));}
 
 /* Flashcards: three definition-side colours in sequence, plain centred label, white header pills,
    grey flip button, Got it on the right / Again on the left */
@@ -8469,3 +8471,14 @@ body.dark-mode #overlay .ar-root .ws-hdr, body.dark-mode #overlay .ar-root .ws-h
 #bottom-nav .nav-on .ni-solid, #classroom-nav .nav-on .ni-solid{ display:block !important; }
 #bottom-nav .nav-on .ni-line, #classroom-nav .nav-on .ni-line{ display:none !important; }
 #bottom-nav .ni-line, #classroom-nav .ni-line{ display:block; }
+
+
+/* Attach sheet (paperclip): WhatsApp-style grid of tiles */
+.cv-attach-sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));}
+.cv-attach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 4px;padding:12px 14px 8px;}
+.cv-attach-item{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.cv-attach-tile{width:64px;height:64px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border:1px solid #e5e7eb;transition:transform .12s ease;}
+.cv-attach-item:active .cv-attach-tile{transform:scale(.92);}
+.cv-attach-label{font-size:13px;color:#374151;font-weight:500;}
+body.dark-mode .cv-attach-tile{background:#1f2933;border-color:#2f3b46;}
+body.dark-mode .cv-attach-label{color:#d1d5db;}

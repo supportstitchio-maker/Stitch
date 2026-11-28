@@ -5446,11 +5446,30 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             <div id="convo-reply-bar" class="flex-shrink-0 items-center gap-2 px-4 py-2" style="display:none;"></div>
             <div id="convo-composer-wrap" class="flex-shrink-0 px-3 pt-2 convo-composer-anim" style="padding-bottom:20px;">
               <input type="file" id="convo-file-input" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
+              <input type="file" id="convo-doc-input" accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" multiple class="hidden" onchange="handleConvoFileSelect(event)">
+              <input type="file" id="convo-gallery-input" accept="image/*,video/*" multiple class="hidden" onchange="handleConvoFileSelect(event)">
+              <input type="file" id="convo-audio-input" accept="audio/*" multiple class="hidden" onchange="handleConvoFileSelect(event)">
+              <div id="convo-attach-backdrop" class="hidden convo-sheet-scrim" onclick="closeConvoAttachSheet()" style="position:fixed;inset:0;z-index:25;"></div>
+              <div id="convo-attach-sheet" class="hidden convo-sheet cv-attach-sheet" style="position:fixed;left:0;right:0;bottom:0;z-index:30;">
+                <div class="convo-sheet-grabber"></div>
+                <div class="cv-attach-grid">
+                  ${[
+                    ['convo-doc-input','Document','#7c5cff','<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" fill="currentColor" stroke="none"/><path d="M14 3v5h5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 13h6M9 16.5h4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" fill="none"/>'],
+                    ['convo-camera-input','Camera','#ff2d78','<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1-1.5h6L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="currentColor" stroke="none"/><circle cx="12" cy="12.5" r="3.2" fill="none" stroke="#fff" stroke-width="2"/>'],
+                    ['convo-gallery-input','Gallery','#1e90ff','<rect x="3" y="6" width="15" height="13" rx="2.5" fill="currentColor" stroke="none"/><path d="M6 4h13a2 2 0 0 1 2 2v11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 17l3.5-4 2.5 2.5 2-2.2 2.5 3.7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'],
+                    ['convo-audio-input','Audio','#ff6a1f','<path d="M4 14v-2a8 8 0 0 1 16 0v2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="3.5" y="13" width="4.5" height="7" rx="2" fill="currentColor" stroke="none"/><rect x="16" y="13" width="4.5" height="7" rx="2" fill="currentColor" stroke="none"/>']
+                  ].map(t => `
+                  <button type="button" class="cv-attach-item" onclick="pickConvoAttach('${t[0]}')">
+                    <span class="cv-attach-tile" style="color:${t[2]};"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">${t[3]}</svg></span>
+                    <span class="cv-attach-label">${t[1]}</span>
+                  </button>`).join('')}
+                </div>
+              </div>
               <div class="wa-row">
                 <div class="wa-pill convo-composer-pill">
                   ${emojiButtonHTML('convo-input', 'wa-pill-icon', 'color:#6b7280;')}
                   <textarea id="convo-input" placeholder="Message" rows="1" enterkeyhint="enter" oninput="autoGrowConvoInput(this); notifyConvoTyping(); convoMentionCheck(this);" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur(); setTimeout(closeConvoMentionPop, 180);" class="wa-textarea convo-composer-textarea" style="max-height:120px;overflow-y:auto;"></textarea>
-                  <button onclick="document.getElementById('convo-file-input').click()" title="Attach a file" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
+                  <button onclick="openConvoAttachSheet()" title="Attach" class="wa-pill-icon" style="color:#6b7280;">${Icon('clip','w-5 h-5')}</button>
                   <button id="convo-camera-btn" onclick="document.getElementById('convo-camera-input').click()" title="Camera" class="wa-pill-icon" style="color:#6b7280;">${Icon('camera','w-6 h-6')}</button>
                   <input type="file" id="convo-camera-input" accept="image/*" capture="environment" class="hidden" onchange="handleConvoFileSelect(event)">
                 </div>
@@ -5491,11 +5510,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             </div>`;
         }
 
+        function openConvoAttachSheet(){
+          try { const i = document.getElementById('convo-input'); if (i) i.blur(); } catch (e) {}
+          const sh = document.getElementById('convo-attach-sheet'), bd = document.getElementById('convo-attach-backdrop');
+          if (!sh) { const f = document.getElementById('convo-file-input'); if (f) f.click(); return; }
+          sh.classList.remove('hidden'); if (bd) bd.classList.remove('hidden');
+        }
+        function closeConvoAttachSheet(){
+          const sh = document.getElementById('convo-attach-sheet'), bd = document.getElementById('convo-attach-backdrop');
+          if (sh) sh.classList.add('hidden'); if (bd) bd.classList.add('hidden');
+        }
+        function pickConvoAttach(inputId){
+          closeConvoAttachSheet();
+          const el = document.getElementById(inputId);
+          if (el) setTimeout(() => el.click(), 120);
+        }
+
         function handleConvoFileSelect(event){
           const files = Array.from(event.target.files || []);
-          const allowed = /^image\/|^video\/|application\/pdf|application\/msword|application\/vnd\.openxmlformats|application\/vnd\.ms-excel|application\/vnd\.ms-powerpoint|text\/plain|text\/csv|application\/zip/;
+          const allowed = /^image\/|^video\/|application\/pdf|application\/msword|application\/vnd\.openxmlformats|application\/vnd\.ms-excel|application\/vnd\.ms-powerpoint|text\/plain|text\/csv|application\/zip|^audio\//;
           files.forEach(f => {
-            const okType = allowed.test(f.type) || /\.(pdf|pptx?|docx?|xlsx?|csv|txt|zip|jpe?g|png|gif|webp|mp4|mov|webm|mkv|m4v)$/i.test(f.name);
+            const okType = allowed.test(f.type) || /\.(pdf|pptx?|docx?|xlsx?|csv|txt|zip|jpe?g|png|gif|webp|mp4|mov|webm|mkv|m4v|mp3|m4a|aac|wav|ogg|opus|amr)$/i.test(f.name);
             if (!okType) return;
             const entry = { name: f.name, type: f.type, dataUrl: null, file: f };
             pendingConvoAttachments.push(entry);
