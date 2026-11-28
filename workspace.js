@@ -229,7 +229,7 @@
   var P = {
     back:'<path d="M15 5l-7 7 7 7"/>', bell:'<path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15zM10 21h4"/>', plus:'<path d="M12 5v14M5 12h14"/>',
     link:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3A4 4 0 0011 18.7l1-1"/>',
-    board:'<rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/>', home:'<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>', cap:'<path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/>',
+    board:'<rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/>', home:'<path d="M4 11l8-7 8 7v8a2 2 0 01-2 2H6a2 2 0 01-2-2zM10 21v-6h4v6"/>', cap:'<path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/>',
     book:'<rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 17h6"/>', search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>',
     lines:'<path d="M5 8h14M5 12h14M5 16h9"/>', card:'<rect x="2.5" y="8" width="14" height="11" rx="2.5"/><path d="M7 5.5h12a2.5 2.5 0 012.5 2.5v7"/>', pen:'<rect x="5" y="4.5" width="14" height="17" rx="3"/><path d="M9.5 3h5v3h-5zM9 12l1.6 1.6L14 10M9 17h6"/>',
     folder:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>', check:'<path d="M5 12l5 5 9-10"/>',

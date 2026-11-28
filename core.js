@@ -1897,9 +1897,9 @@
           return photo
             ? `<span class="${cls} rounded-full overflow-hidden items-center justify-center" style="display:inline-flex;flex-shrink:0;">
                 <img src="${photo}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <span class="w-full h-full items-center justify-center" style="display:none;">${Icon(outline ? 'userOutline' : 'user', cls)}</span>
+                <span class="w-full h-full items-center justify-center" style="display:none;">${outline ? NavIcon('userOutline','user',cls) : Icon('user', cls)}</span>
               </span>`
-            : Icon(outline ? 'userOutline' : 'user', cls);
+            : (outline ? NavIcon('userOutline','user',cls) : Icon('user', cls));
         }
 
         function dnavDisplayName(){
@@ -2070,16 +2070,16 @@
        the left edge instead of living in the top bar or bottom tab bar. -->
   <div id="desktop-nav">
     <div id="dnav-main-list" class="dn-grp">
-    <button onclick="homeTabTap()" class="dnav-item" id="dnav-0" title="Home">${Icon('homeOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Home</span></button>
-    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1" title="Explore">${Icon('briefcaseOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Explore</span></button>
-    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3" title="Messages">${Icon('commentOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
-    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace">${Icon('bookStack','w-5 h-5 dnav-icon')}<span class="dside-label">Workspace</span></button>
+    <button onclick="homeTabTap()" class="dnav-item" id="dnav-0" title="Home"><svg viewBox="0 0 24 24" class="w-5 h-5 dnav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="3.5" width="16" height="7.5" rx="2"/><rect x="4" y="13" width="16" height="7.5" rx="2"/></svg><span class="dside-label">Home</span></button>
+    <button onclick="switchTab(1)" class="dnav-item" id="dnav-1" title="Opportunities"><svg viewBox="0 0 24 24" class="w-5 h-5 dnav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0012 3z"/></svg><span class="dside-label">Opportunities</span></button>
+    <button onclick="switchTab(3)" class="dnav-item" id="dnav-3" title="Messages"><svg viewBox="0 0 24 24" class="w-5 h-5 dnav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.5 2.5H13A2.5 2.5 0 0115.5 5V8.5A2.5 2.5 0 0113 11H7.5L4 14V5A2.5 2.5 0 016.5 2.5Z"/><path d="M11.5 13H18A2.5 2.5 0 0120.5 15.5V22L17 19.5H11.5A2.5 2.5 0 019 17V15.5A2.5 2.5 0 0111.5 13Z"/></svg><span class="dside-label">Messaging</span>${unreadMessageCount() ? `<span id="dnav-msg-badge">${unreadMessageCount()}</span>` : ''}</button>
+    <button onclick="switchTab(2)" class="dnav-item" id="dnav-2" title="Workspace"><svg viewBox="0 0 24 24" class="w-5 h-5 dnav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8 12 3.5zM3.5 12.5l8.5 4.5 8.5-4.5M3.5 16.5l8.5 4.5 8.5-4.5"/></svg><span class="dside-label">Workspace</span></button>
     <button onclick="openOverlay('profileAnalytics')" class="dnav-item" id="dnav-analytics" title="Analytics">${Icon('trendingOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Analytics</span></button>
     </div>
     <!-- Space tools: shown in place of the main group while a Space is open.
          Workspace sits on top and takes you back out to the Spaces list. -->
     <div id="dnav-classroom-list" class="dn-grp">
-    <button onclick="wsRailGo('home')" class="dnav-item" id="dcnav-home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg><span class="dside-label">Home</span></button>
+    <button onclick="wsRailGo('home')" class="dnav-item" id="dcnav-home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M4 11l8-7 8 7v8a2 2 0 01-2 2H6a2 2 0 01-2-2zM10 21v-6h4v6"/></svg><span class="dside-label">Home</span></button>
     <button onclick="wsRailGo('tutor')" class="dnav-item" id="dcnav-tutor" title="My Stitch Tutor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/></svg><span class="dside-label">My Stitch Tutor</span></button>
     <button onclick="wsRailGo('courses')" class="dnav-item" id="dcnav-courses" title="Courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 dnav-icon"><path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg><span class="dside-label">Courses</span></button>
     <button onclick="openClassroomNavOverlay('classAnnouncements')" class="dnav-item relative" id="dcnav-notif" title="Notifications">${Icon('bellOutline','w-5 h-5 dnav-icon')}<span class="dside-label">Notifications</span>${unreadClassroomNotifCount() ? `<span id="dcnav-notif-badge">${unreadClassroomNotifCount()}</span>` : ''}</button>
@@ -2388,12 +2388,12 @@
   <!-- Bottom Nav -->
   <div id="bottom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare">
     <div class="max-w-2xl mx-auto flex pt-3">
-      <button onclick="homeTabTap()" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${Icon('homeOutline','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
-      <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${Icon('briefcaseOutline','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Explore</span></button>
+      <button onclick="homeTabTap()" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-0">${NavIcon('feed','feed','w-6 h-6')}<span class="text-[9px] font-medium leading-none mt-1">Home</span></button>
+      <button onclick="switchTab(1)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-1">${NavIcon('bulb','bulb','w-7 h-7')}<span class="text-[9px] font-medium leading-none mt-1">Opportunities</span></button>
       <button onclick="switchTab(2)" class="flex-1 flex flex-col items-center" id="nav-2">
-        <span class="nav-protrude"><span class="nav-protrude-inner">${Icon('bookStack','w-7 h-7')}</span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Workspace</span>
+        <span class="nav-protrude"><span class="nav-protrude-inner"><svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8 12 3.5zM3.5 12.5l8.5 4.5 8.5-4.5M3.5 16.5l8.5 4.5 8.5-4.5"/></svg></span></span><span class="nav-protrude-label text-[9px] font-medium leading-none">Workspace</span>
       </button>
-      <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${Icon('commentOutline','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
+      <button onclick="switchTab(3)" class="flex-1 flex flex-col items-center relative nav-flat-item" id="nav-3"><span class="relative">${NavIcon('messages','messages','w-6 h-6')}${unreadMessageCount() ? `<span id="nav3-msg-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadMessageCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Messaging</span></button>
       <button onclick="switchTab(4)" class="flex-1 flex flex-col items-center nav-flat-item" id="nav-4"><span id="nav-4-icon">${navProfileIconHTML(undefined, true)}</span><span class="text-[9px] font-medium leading-none mt-1">Profile</span></button>
     </div>
   </div>
@@ -2404,10 +2404,10 @@
        and Alerts reserving a gap for it) instead of being hidden there. -->
   <div id="classroom-nav" class="bg-white flex-shrink-0 sticky bottom-0 z-10 nav-bar-floating nav-bare" style="display:none;">
     <div class="max-w-2xl mx-auto flex pt-3">
-      <button onclick="studySubTab('resources')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-resources">${Icon('folderOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Resources</span></button>
-      <button onclick="studySubTab('exams')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-practice">${Icon('editOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Practice</span></button>
-      <button onclick="openAIClass()" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-ai">${Icon('botOutline','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Stitch Bot</span></button>
-      <button onclick="openClassroomNavOverlay('classAnnouncements')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-notif"><span class="relative">${Icon('bellOutline','w-5 h-5')}${unreadClassroomNotifCount() ? `<span id="cnav-notif-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadClassroomNotifCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Notice Board</span></button>
+      <button onclick="studySubTab('resources')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-resources">${NavIcon('folderOutline','folder','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Resources</span></button>
+      <button onclick="studySubTab('exams')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-practice">${NavIcon('editOutline','edit','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Practice</span></button>
+      <button onclick="openAIClass()" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-ai">${NavIcon('botOutline','bot','w-5 h-5')}<span class="text-[9px] font-medium leading-none mt-1">Stitch Bot</span></button>
+      <button onclick="openClassroomNavOverlay('classAnnouncements')" class="flex-1 flex flex-col items-center nav-flat-item" id="cnav-notif"><span class="relative">${NavIcon('bellOutline','bell','w-5 h-5')}${unreadClassroomNotifCount() ? `<span id="cnav-notif-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">${unreadClassroomNotifCount()}</span>` : ''}</span><span class="text-[9px] font-medium leading-none mt-1">Notice Board</span></button>
     </div>
   </div>
 
@@ -2750,7 +2750,7 @@
         }
 
         function navClass(active){
-          return `flex-1 flex flex-col items-center relative nav-flat-item ${active ? `text-[${NAVY}]` : 'text-gray-400'}`;
+          return `flex-1 flex flex-col items-center relative nav-flat-item ${active ? `nav-on text-[${NAVY}]` : 'text-gray-400'}`;
         }
 
         let currentOverlayKind = null;
@@ -2795,7 +2795,7 @@
           else activeId = (typeof classroomAreaTab !== 'undefined' && classroomAreaTab === 'courses') ? null : ids[studySub];
           if (activeId) {
             const el = document.getElementById(activeId);
-            if (el) el.className = `flex-1 flex flex-col items-center justify-center nav-flat-item text-[${NAVY}]`;
+            if (el) el.className = `flex-1 flex flex-col items-center justify-center nav-flat-item nav-on text-[${NAVY}]`;
           }
 
           const dIds = { resources: 'dcnav-resources', exams: 'dcnav-practice', games: 'dcnav-practice' };

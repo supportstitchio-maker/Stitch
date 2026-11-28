@@ -525,8 +525,7 @@
             heartOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>`,
             thumbUp: `<path d="M2.5 10.5a1.5 1.5 0 011.5-1.5h2.25a.75.75 0 01.75.75v9.5a.75.75 0 01-.75.75H4a1.5 1.5 0 01-1.5-1.5v-8z"/><path d="M9.9 8.05L14.02 3c.3-.37.82-.48 1.24-.26A3.25 3.25 0 0117 5.6c0 1.14-.24 2.23-.68 3.22a.4.4 0 00.37.56h3.44c1.6 0 2.94 1.25 2.99 2.85.04.9-.06 1.79-.29 2.65l-1.35 5.02a3.26 3.26 0 01-3.15 2.4H10.5a2.75 2.75 0 01-2.75-2.75V9.6c0-.58.2-1.14.57-1.6l1.58-1.95z"/>`,
             thumbUpOutline: `<path d="M2.5 10.5a1.5 1.5 0 011.5-1.5h2.25a.75.75 0 01.75.75v9.5a.75.75 0 01-.75.75H4a1.5 1.5 0 01-1.5-1.5v-8z"/><path fill="none" stroke-linecap="round" stroke-linejoin="round" d="M9.9 8.05L14.02 3c.3-.37.82-.48 1.24-.26A3.25 3.25 0 0117 5.6c0 1.14-.24 2.23-.68 3.22a.4.4 0 00.37.56h3.44c1.6 0 2.94 1.25 2.99 2.85.04.9-.06 1.79-.29 2.65l-1.35 5.02a3.26 3.26 0 01-3.15 2.4H10.5a2.75 2.75 0 01-2.75-2.75V9.6c0-.58.2-1.14.57-1.6l1.58-1.95z"/>`,
-            comment: `<path fill-rule="evenodd" d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223z" clip-rule="evenodd"/><circle cx="8.2" cy="11.2" r="1.15" fill="white"/><circle cx="12" cy="11.2" r="1.15" fill="white"/><circle cx="15.8" cy="11.2" r="1.15" fill="white"/>`,
-            repost: `<path d="M18 6.41V4a1 1 0 011.707-.707l3 3a1 1 0 010 1.414l-3 3A1 1 0 0118 10V7.5H8a1 1 0 00-1 1V11H5V8.5a3 3 0 013-3h10z"/><path d="M6 17.59V20a1 1 0 01-1.707.707l-3-3a1 1 0 010-1.414l3-3A1 1 0 016 14v2.5h10a1 1 0 001-1V13h2v2.5a3 3 0 01-3 3H6z"/>`,
+              repost: `<path d="M18 6.41V4a1 1 0 011.707-.707l3 3a1 1 0 010 1.414l-3 3A1 1 0 0118 10V7.5H8a1 1 0 00-1 1V11H5V8.5a3 3 0 013-3h10z"/><path d="M6 17.59V20a1 1 0 01-1.707.707l-3-3a1 1 0 010-1.414l3-3A1 1 0 016 14v2.5h10a1 1 0 001-1V13h2v2.5a3 3 0 01-3 3H6z"/>`,
             repostOutline: `<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-4.992M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>`,
             send: `<path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z"/>`,
             link: `<path fill-rule="evenodd" d="M19.902 4.098a3.75 3.75 0 00-5.304 0l-4.5 4.5a3.75 3.75 0 001.035 6.037.75.75 0 01-.646 1.353 5.25 5.25 0 01-1.449-8.45l4.5-4.5a5.25 5.25 0 117.424 7.424l-1.757 1.757a.75.75 0 11-1.06-1.06l1.757-1.757a3.75 3.75 0 000-5.304zm-7.389 4.192a5.25 5.25 0 011.449 8.45l-4.5 4.5a5.25 5.25 0 11-7.424-7.424l1.757-1.757a.75.75 0 111.06 1.06l-1.757 1.757a3.75 3.75 0 105.304 5.304l4.5-4.5a3.75 3.75 0 00-1.035-6.037.75.75 0 01.646-1.353z" clip-rule="evenodd"/>`,
@@ -668,6 +667,34 @@
           return `<svg ${attrs} class="${cls}">${body}</svg>`;
         }
         function silhouetteIcon(type, cls){ return Icon(type, cls); }
+
+        // Bottom nav icons: every tab draws a thin line icon (.ni-line) and a solid silhouette (.ni-solid).
+        // CSS shows the silhouette only on the selected tab (.nav-on), see styles.css.
+        const NAV_LINE_PATHS = {
+          feed: `<rect x="4" y="3.5" width="16" height="7.5" rx="2"/><rect x="4" y="13" width="16" height="7.5" rx="2"/>`,
+          bulb: `<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0012 3z"/>`,
+          messages: `<path d="M6.5 2.5H13A2.5 2.5 0 0115.5 5V8.5A2.5 2.5 0 0113 11H7.5L4 14V5A2.5 2.5 0 016.5 2.5Z"/><path d="M11.5 13H18A2.5 2.5 0 0120.5 15.5V22L17 19.5H11.5A2.5 2.5 0 019 17V15.5A2.5 2.5 0 0111.5 13Z"/>`
+        };
+        const NAV_SOLID_PATHS = {
+          feed: `<rect x="3.5" y="3" width="17" height="8" rx="2.2"/><rect x="3.5" y="13" width="17" height="8" rx="2.2"/>`,
+          bulb: `<path d="M12 2.5a6.5 6.5 0 00-3.9 11.7c.5.4.9 1 .9 1.7V17h6v-1.1c0-.7.4-1.3.9-1.7A6.5 6.5 0 0012 2.5z"/><rect x="9.5" y="18" width="5" height="1.6" rx=".8"/><rect x="10.3" y="20.4" width="3.4" height="1.6" rx=".8"/>`,
+          messages: `<path d="M6.5 2.5H13A2.5 2.5 0 0115.5 5V8.5A2.5 2.5 0 0113 11H7.5L4 14V5A2.5 2.5 0 016.5 2.5Z"/><path d="M11.5 13H18A2.5 2.5 0 0120.5 15.5V22L17 19.5H11.5A2.5 2.5 0 019 17V15.5A2.5 2.5 0 0111.5 13Z"/>`,
+          briefcase: `<path fill-rule="evenodd" d="M7.5 5.25a3 3 0 013-3h3a3 3 0 013 3v.205c.933.085 1.857.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.352-1.936 2.752A24.726 24.726 0 0112 15.75c-2.73 0-5.357-.442-7.814-1.259-1.202-.4-1.936-1.541-1.936-2.752V8.706c0-1.434 1.022-2.7 2.476-2.917A48.814 48.814 0 017.5 5.455V5.25zm7.5 0v.09a49.488 49.488 0 00-6 0v-.09a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5zm-3 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/><path d="M3 18.4v-2.796a4.3 4.3 0 00.713.31A26.226 26.226 0 0012 17.25c2.892 0 5.68-.468 8.287-1.335.252-.084.49-.189.713-.311V18.4c0 1.452-1.047 2.728-2.523 2.923-2.12.282-4.282.427-6.477.427a49.19 49.19 0 01-6.477-.427C4.047 21.128 3 19.852 3 18.4z"/>`,
+          comment: `<path fill-rule="evenodd" d="M4.804 21.644A6.707 6.707 0 006 21.75a6.721 6.721 0 003.583-1.029c.774.182 1.584.279 2.417.279 5.322 0 9.75-3.97 9.75-9 0-5.03-4.428-9-9.75-9s-9.75 3.97-9.75 9c0 2.409 1.025 4.587 2.674 6.192.232.226.277.428.254.543a3.73 3.73 0 01-.814 1.686.75.75 0 00.44 1.223z" clip-rule="evenodd"/><circle cx="8.2" cy="11.2" r="1.15" fill="white"/><circle cx="12" cy="11.2" r="1.15" fill="white"/><circle cx="15.8" cy="11.2" r="1.15" fill="white"/>`,
+          edit: `<path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32l8.4-8.4z"/><path d="M5.25 5.25a3 3 0 00-3 3v10.5a3 3 0 003 3h10.5a3 3 0 003-3V13.5a.75.75 0 00-1.5 0v5.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V8.25a1.5 1.5 0 011.5-1.5h5.25a.75.75 0 000-1.5H5.25z"/>`
+        };
+        function navSolidIcon(type, cls){
+          if (NAV_SOLID_PATHS[type]) return `<svg viewBox="0 0 24 24" class="${cls || ''}" fill="currentColor" aria-hidden="true" focusable="false">${NAV_SOLID_PATHS[type]}</svg>`;
+          return Icon(type, cls);
+        }
+        function navLineIcon(type, cls){
+          if (NAV_LINE_PATHS[type]) return `<svg viewBox="0 0 24 24" class="${cls || ''}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${NAV_LINE_PATHS[type]}</svg>`;
+          return Icon(type, cls);
+        }
+        function NavIcon(lineType, solidType, cls){
+          const c = cls ? cls + ' ' : '';
+          return navLineIcon(lineType, c + 'ni-line') + navSolidIcon(solidType, c + 'ni-solid');
+        }
 
         // Outline (stroke-only) versions of the icons used by notifications, so notification
         // badges read as line icons everywhere (Notifications, Notice Board, class notifications)

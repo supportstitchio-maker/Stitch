@@ -8459,3 +8459,13 @@ body.dark-mode #overlay .ar-root .ws-hdr, body.dark-mode #overlay .ar-root .ws-h
 @supports (corner-shape: squircle){
   .nt-new, .sp-cta, .sp-cta-sm, .sp-still, .ws-cta{ corner-shape:squircle; }
 }
+
+
+/* ===== Bottom nav icons: thin lines, solid silhouette on the selected tab =====
+   Each tab renders both a line icon (.ni-line) and a solid one (.ni-solid); .nav-on marks the selected tab. */
+#bottom-nav svg.ni-line, #classroom-nav svg.ni-line{ stroke-width:1.1 !important; }
+#bottom-nav .nav-protrude-inner svg rect, #bottom-nav .nav-protrude-inner svg path{ stroke-width:1.1 !important; }
+#bottom-nav .ni-solid, #classroom-nav .ni-solid{ display:none !important; }
+#bottom-nav .nav-on .ni-solid, #classroom-nav .nav-on .ni-solid{ display:block !important; }
+#bottom-nav .nav-on .ni-line, #classroom-nav .nav-on .ni-line{ display:none !important; }
+#bottom-nav .ni-line, #classroom-nav .ni-line{ display:block; }
