@@ -4284,7 +4284,7 @@ const jobsTabs = [['all','All'],['opportunities','Opportunities'],['internships'
           const activeRows = people.filter(activeDef.match);
           const activeShowStatus = activeKey === 'decisions' ? 'decision' : (activeKey === 'applicants');
           const tabsAndList = `
-            <div id="job-dash-tabs" class="flex overflow-x-auto no-scrollbar mb-4" style="gap:10px;margin-left:-1.25rem;margin-right:-1.25rem;padding:4px 1.25rem 10px;-webkit-overflow-scrolling:touch;">
+            <div id="job-dash-tabs" class="flex overflow-x-auto no-scrollbar mb-4" style="gap:10px;padding:4px 0 10px;-webkit-overflow-scrolling:touch;">
               ${tabKeys.map(tabBtn).join('')}
             </div>
             ${activeRows.length ? activeRows.map((a, i) => jobDashboardApplicantRowHTML(job, a, i === activeRows.length - 1, activeShowStatus)).join('') : `

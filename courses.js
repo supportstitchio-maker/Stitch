@@ -1219,7 +1219,7 @@ try {
               </div>
               <div id="ai-voice-status" class="hidden text-sm flex-1 min-w-0" style="color:#6b7280;">Transcribing…</div>
               <button id="ai-voice-stop" type="button" onclick="stopAIVoiceInput(false)" aria-label="Stop" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(10,37,64,0.08);color:${NAVY};">${Icon('square','w-4 h-4')}</button>
-              <button id="ai-voice-send" type="button" onclick="stopAIVoiceInput(true)" aria-label="Stop and send" class="w-9 h-9 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+              <button id="ai-voice-send" type="button" onclick="stopAIVoiceInput(true)" aria-label="Stop and send" class="w-9 h-9 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,.72);">${Icon('send','w-4 h-4')}</button>
             </div>`;
         }
 
@@ -6559,7 +6559,7 @@ try {
                 <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5 convo-composer-pill">
                   ${emojiButtonHTML('cm-input', 'w-8 h-8 rounded-full convo-composer-icon-btn')}
                   <textarea id="cm-input" placeholder="Message" rows="1" maxlength="2000" oninput="classMsgDraft=this.value; autoGrowConvoInput(this);" onfocus="handleConvoInputFocus()" onblur="handleConvoInputBlur()" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center convo-composer-textarea" style="max-height:120px;overflow-y:auto;">${escapeHtml(classMsgDraft)}</textarea>
-                  <button onclick="sendClassMessage()" title="Send" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+                  <button onclick="sendClassMessage()" title="Send" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,.72);">${Icon('send','w-4 h-4')}</button>
                 </div>
               </div>
             </div>`;
@@ -7304,7 +7304,7 @@ try {
                 </div>` : ''}
               <div class="flex items-end gap-2">
                 <textarea id="stream-comment-input-${a.id}" placeholder="Add space comment" rows="1" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); addStreamComment('${a.id}'); }" class="flex-1 min-w-0 bg-gray-100 rounded-3xl px-4 py-2 text-sm resize-none overflow-hidden" style="max-height:140px;"></textarea>
-                <button onclick="addStreamComment('${a.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+                <button onclick="addStreamComment('${a.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0" style="background:rgba(30,144,255,.72);">${Icon('send','w-4 h-4')}</button>
               </div>
             </div>`;
         }
@@ -10169,7 +10169,7 @@ try {
             <div id="lecture-comment-sheet" class="fixed z-30 flex items-center gap-2 rounded-full shadow-lg bg-white" style="bottom:calc(124px + env(safe-area-inset-bottom,0px));left:10px;right:10px;max-width:380px;margin:0 auto;padding:10px;transition:bottom 0.15s ease-out;">
               ${emojiButtonHTML('lecture-comment-input', 'w-8 h-8 rounded-full', 'background:rgba(10,37,64,0.06);color:'+NAVY+';')}
               <input id="lecture-comment-input" type="text" placeholder="Type a comment..." maxlength="200" class="flex-1 min-w-0 text-sm outline-none bg-transparent" onkeydown="if(event.key==='Enter'){event.preventDefault();sendLectureComment();}" onfocus="handleLectureCommentFocus()" onblur="handleLectureCommentBlur()">
-              <button onclick="sendLectureComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+              <button onclick="sendLectureComment()" title="Send" class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background:rgba(30,144,255,.72);">${Icon('send','w-4 h-4')}</button>
             </div>`;
         }
 

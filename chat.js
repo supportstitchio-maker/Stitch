@@ -5616,7 +5616,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;">
                 <button type="button" onclick="discardConvoRecording()" aria-label="Delete recording" style="${iconBtn}color:#ef4444;background:rgba(239,68,68,0.10);">${Icon('trash','w-5 h-5')}</button>
                 <button type="button" onclick="${paused ? 'resumeConvoRecording()' : 'pauseConvoRecording()'}" class="font-semibold" style="flex:1;height:42px;border-radius:9999px;background:rgba(10,37,64,0.07);color:${NAVY};display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;">${Icon(paused ? 'mic' : 'pause','w-4 h-4')} ${paused ? 'Resume' : 'Pause'}</button>
-                <button type="button" onclick="sendConvoRecording()" aria-label="Send voice note" class="text-white" style="${iconBtn}background:linear-gradient(135deg, ${NAVY} 0%, ${ROYAL} 100%);">${Icon('send','w-5 h-5')}</button>
+                <button type="button" onclick="sendConvoRecording()" aria-label="Send voice note" class="text-white" style="${iconBtn}background:rgba(30,144,255,.72);">${Icon('send','w-5 h-5')}</button>
               </div>
             </div>`;
         }
@@ -8940,7 +8940,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                 <input id="${o.inputId}" type="text" placeholder="${o.placeholder}" maxlength="200" enterkeyhint="send" autocomplete="off"
                   style="flex:1;min-width:0;height:46px;border-radius:999px;padding:0 18px;font-size:16px;outline:none;border:0;background:var(--cu-soft);color:var(--cu-fg);"
                   onkeydown="if(event.key==='Enter'){event.preventDefault();${o.onSend};}">
-                <button onclick="${o.onSend}" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1e90ff;">${Icon('send','w-5 h-5')}</button>
+                <button onclick="${o.onSend}" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:rgba(30,144,255,.72);">${Icon('send','w-5 h-5')}</button>
               </div>
             </div>`;
           document.body.appendChild(w);
@@ -10479,7 +10479,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!count) return '';
           return `
             <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
-              <button onclick="sendMeetingToSelectedContacts()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+              <button onclick="sendMeetingToSelectedContacts()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:rgba(30,144,255,.72);color:#fff;">
                 ${Icon('send','w-4 h-4')}
                 <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
               </button>
@@ -10646,7 +10646,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (!count) return '';
           return `
             <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
-              <button onclick="sendCallShareToSelected()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+              <button onclick="sendCallShareToSelected()" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:rgba(30,144,255,.72);color:#fff;">
                 ${Icon('send','w-4 h-4')}
                 <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
               </button>
@@ -11433,7 +11433,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
                   style="flex:1;min-width:0;height:44px;padding:0 6px;font-size:16px;outline:none;border:0;background:transparent;color:var(--cu-fg);"
                   onkeydown="if(event.key==='Enter'){event.preventDefault();sendMeetingChatMessage();}">
               </div>
-              <button onclick="sendMeetingChatMessage()" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:#1e90ff;">${Icon('send','w-5 h-5')}</button>
+              <button onclick="sendMeetingChatMessage()" title="Send" style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:rgba(30,144,255,.72);">${Icon('send','w-5 h-5')}</button>
             </div>`;
           document.body.appendChild(page);
           meetingChatPlacePage();

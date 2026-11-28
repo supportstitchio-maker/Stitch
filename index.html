@@ -135,9 +135,9 @@
           var authReturn = window.__stitchFreshOAuthReturn ||
             /access_token|provider_token|token_hash|[?&#]code=|type=(signup|magiclink|recovery|email|invite)/.test(qs);
           // One splash everywhere (installed app, browser tab, light or dark): it shows on every fresh open and is
-          // skipped only on a page reload or a sign-in return, where the screen has to come back instantly.
+          // skipped on a page reload, a browser Back/Forward (e.g. coming back from the Google account chooser) or a sign-in return, where the screen has to come back instantly.
           var reloaded = false;
-          try { var nav = performance.getEntriesByType('navigation')[0]; reloaded = !!nav && nav.type === 'reload'; } catch (e) {}
+          try { var nav = performance.getEntriesByType('navigation')[0]; reloaded = !!nav && (nav.type === 'reload' || nav.type === 'back_forward'); } catch (e) {}
           seen = reloaded;
           try {
             var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
@@ -265,8 +265,8 @@
     </script>
     <!-- While the splash is showing, load the big stylesheet without blocking the first paint, so the
          splash appears at once. Without a splash it stays blocking, so nothing unstyled ever shows. -->
-    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128i"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
-    <noscript><link rel="stylesheet" href="styles.css?v=20261128i"></noscript>
+    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128q"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
+    <noscript><link rel="stylesheet" href="styles.css?v=20261128q"></noscript>
 </head>
 <body class="bg-gray-50">
 <script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>
@@ -1023,17 +1023,17 @@
     <script src="vendor-posthog.js?v=1435_8"></script>
     <script src="analytics.js?v=20261113g"></script>
     <script src="core.js?v=20261127c"></script>
-    <script src="feed.js?v=20261113g"></script>
-    <script src="chat.js?v=20261113g"></script>
-    <script src="study.js?v=20261113g"></script>
-    <script src="courses.js?v=20261113g"></script>
+    <script src="feed.js?v=20261128n"></script>
+    <script src="chat.js?v=20261128m"></script>
+    <script src="study.js?v=20261128p"></script>
+    <script src="courses.js?v=20261128m"></script>
     <script src="quizzesAndGames.js?v=20261126a"></script>
-    <script src="jobs.js?v=20261113g"></script>
+    <script src="jobs.js?v=20261128h"></script>
     <script src="creator.js?v=20261113g"></script>
-    <script src="settings.js?v=20261113g"></script>
+    <script src="settings.js?v=20261128p"></script>
     <script src="profile.js?v=20261128a"></script>
-    <script src="overlays.js?v=20261128a"></script>
+    <script src="overlays.js?v=20261128m"></script>
     <script src="games.js?v=20261128b"></script>
-    <script src="workspace.js?v=20261128g"></script>
+    <script src="workspace.js?v=20261128h"></script>
 </body>
 </html>

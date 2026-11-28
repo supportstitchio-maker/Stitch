@@ -2889,8 +2889,8 @@ body.dark-mode #profile-tabs button[class*="text-[#1e90ff]"] {
     width:38px; height:38px; padding:0; gap:0;
     background:transparent; box-shadow:none; border-radius:0;
   }
-  #auth-gate .auth-back .auth-back-chev{display:block;}
-  #auth-gate .auth-back .auth-back-arrow,
+  #auth-gate .auth-back .auth-back-chev{display:none !important;}
+  #auth-gate .auth-back .auth-back-arrow{display:block !important;}
   #auth-gate .auth-back .auth-back-label{display:none !important;}
 
   /* Phone background artwork: sits behind everything, blended softly */
@@ -8651,3 +8651,18 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
   /* never let the panel reach the back arrow */
   html body #auth-gate.auth-verify-mode:not(.auth-verify-entry) .auth-scroll-inner{padding-top:calc(env(safe-area-inset-top,0px) + 64px) !important;}
 }
+
+
+/* Pill navs that scroll: they are cut off at the page margin (same edge as the cards) instead of running to the screen edge */
+.pill-bleed:not([id*="share-grid"]){margin-left:0 !important;margin-right:0 !important;padding-left:0 !important;padding-right:0 !important;scroll-padding-left:0 !important;scroll-padding-right:0 !important;}
+
+/* Messaging send button: no glow, and a softer (less opaque) blue */
+#convo-mic-btn[data-mode="send"], body.dark-mode #convo-mic-btn[data-mode="send"]{ background:rgba(30,144,255,.72) !important; box-shadow:none !important; filter:none !important; }
+
+/* Stitch Tutor: the round button turns from grey (mic) to blue as soon as you start typing (send), no glow */
+.ws-main[data-mode="send"], body.dark-mode .ws-main[data-mode="send"]{ background:rgba(30,144,255,.72) !important; color:#fff !important; box-shadow:none !important; }
+
+/* Pro plans page scrolls, so the rows and the Subscribe buttons that sit below the screen can be reached */
+#careerSubscribeModal.pro-page .confirm-sheet:has(.pro-page-body.pro4){ overflow-y:auto !important; overflow-x:hidden !important; overscroll-behavior:contain !important; touch-action:pan-y !important; -webkit-overflow-scrolling:touch; }
+#careerSubscribeModal.pro-page .pro-page-body.pro4{ padding-bottom:12px !important; }
+#careerSubscribeModal.pro-page .pro4 .pro4-cta{ padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)) !important; }

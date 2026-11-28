@@ -2316,7 +2316,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
             <div class="flex-shrink-0 px-3 pt-2" style="padding-bottom:20px;">
               <div class="flex items-center gap-2 rounded-3xl px-2 py-1.5" style="background:#ffffff;border:1.5px solid rgba(10,37,64,0.10);box-shadow:0 8px 24px rgba(10,37,64,0.10);">
                 <textarea id="message-request-compose-input" placeholder="Write a message..." rows="1" enterkeyhint="send" oninput="autoGrowConvoInput(this); messageRequestComposeDraft = this.value;" onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); submitMessageRequestCompose(); }" class="flex-1 min-w-0 bg-transparent text-sm resize-none leading-snug self-center" style="max-height:120px;overflow-y:auto;">${escapeHtml(messageRequestComposeDraft)}</textarea>
-                <button onclick="submitMessageRequestCompose()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:${NAVY};">${Icon('send','w-4 h-4')}</button>
+                <button onclick="submitMessageRequestCompose()" class="w-8 h-8 text-white rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,.72);">${Icon('send','w-4 h-4')}</button>
               </div>
             </div>`;
         }

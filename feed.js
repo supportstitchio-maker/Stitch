@@ -2760,7 +2760,7 @@
                   style="font-size:${GLIMPSE_COMPOSE_FONT_SIZE}; font-family:${GLIMPSE_COMPOSE_FONTS[glimpseComposeFontIndex]}; line-height:1.4; color:${fg}; caret-color:${fg}; outline:none; resize:none;">${glimpseComposeText}</textarea>
               </div>
               <div id="glimpse-compose-bar" class="flex items-center px-4 flex-shrink-0" style="justify-content:flex-end;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
-                <button id="glimpse-compose-send" onclick="submitGlimpseCompose()" class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:${hasText ? '#22c55e' : btnBg};">${Icon('send','w-5 h-5 text-white')}</button>
+                <button id="glimpse-compose-send" onclick="submitGlimpseCompose()" class="w-12 h-12 flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,.72);corner-shape:squircle;border-radius:36%;">${Icon('send','w-5 h-5 text-white')}</button>
               </div>
             </div>`;
         }
@@ -2774,7 +2774,7 @@
           const isLight = glimpseComposeBg() === '#ffffff';
           const btnBg = isLight ? 'rgba(10,37,64,0.10)' : 'rgba(255,255,255,0.18)';
           const btn = document.getElementById('glimpse-compose-send');
-          if (btn) btn.style.background = glimpseComposeText.trim() ? '#22c55e' : btnBg;
+          if (btn) btn.style.background = 'rgba(30,144,255,.72)';
         }
 
         function cycleGlimpseComposeFont(){
@@ -3151,7 +3151,7 @@
               <div id="glimpse-media-caption-bar" class="relative flex items-end gap-2 px-4" style="margin-top:auto;padding-bottom:calc(env(safe-area-inset-bottom, 16px) + 16px);">
                 <textarea id="glimpse-media-caption-input" oninput="handleGlimpseMediaCaptionInput()" placeholder="Add a caption..." rows="1"
                   class="flex-1 min-w-0 text-sm text-white placeholder-gray-300" style="background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.25);outline:none;resize:none;padding:0.65rem 1rem;border-radius:9999px;max-height:6.5rem;overflow-y:auto;line-height:1.3;">${escapeHtml(glimpseMediaCaptionText)}</textarea>
-                <button id="glimpse-media-caption-send" onclick="submitGlimpseMediaCaption()" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:${hasCaption ? '#22c55e' : '#ffffff'};box-shadow:0 2px 8px rgba(0,0,0,0.35);">${Icon('send', hasCaption ? 'w-5 h-5 text-white' : `w-5 h-5 text-[${NAVY}]`)}</button>
+                <button id="glimpse-media-caption-send" onclick="submitGlimpseMediaCaption()" class="w-11 h-11 flex items-center justify-center flex-shrink-0" style="background:rgba(30,144,255,.72);corner-shape:squircle;border-radius:36%;">${Icon('send', 'w-5 h-5 text-white')}</button>
               </div>
             </div>`;
         }
@@ -3165,9 +3165,7 @@
           const btn = document.getElementById('glimpse-media-caption-send');
           if (btn) {
             const has = glimpseMediaCaptionText.trim().length > 0;
-            btn.style.background = has ? '#22c55e' : '#ffffff';
-            const svg = btn.querySelector('svg');
-            if (svg) svg.setAttribute('class', has ? 'w-5 h-5 text-white' : `w-5 h-5 text-[${NAVY}]`);
+            btn.style.background = 'rgba(30,144,255,.72)';
           }
         }
 
@@ -7436,7 +7434,7 @@
           if (count > 0) {
             return `
               <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
-                <button onclick="sendPostToSelectedContacts(${postId})" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+                <button onclick="sendPostToSelectedContacts(${postId})" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:rgba(30,144,255,.72);color:#fff;">
                   ${Icon('send','w-4 h-4')}
                   <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
                 </button>
@@ -7815,7 +7813,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           const count = shareGlimpseSelected.size;
           if (count > 0 && shareGlimpseNetworkOnly) {
             return `
-              <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="rounded-full flex items-center justify-center relative" style="width:58px;height:58px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;box-shadow:0 6px 18px rgba(30,60,160,0.4);">
+              <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="rounded-full flex items-center justify-center relative" style="width:58px;height:58px;background:rgba(30,144,255,.72);color:#fff;">
                 ${Icon('send','w-6 h-6')}
                 <span class="absolute bg-white text-[11px] font-bold rounded-full flex items-center justify-center" style="top:-4px;right:-4px;width:21px;height:21px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
               </button>`;
@@ -7823,7 +7821,7 @@ const GOOGLE_DRIVE_LOGO_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIA
           if (count > 0) {
             return `
               <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:56px;">
-                <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:linear-gradient(135deg,${ROYAL},${NAVY});color:#fff;">
+                <button onclick="sendGlimpseToSelectedContacts(${glimpseId})" title="Send" class="rounded-full flex items-center justify-center flex-shrink-0 relative" style="width:38px;height:38px;background:rgba(30,144,255,.72);color:#fff;">
                   ${Icon('send','w-4 h-4')}
                   <span class="absolute bg-white text-[10px] font-bold rounded-full flex items-center justify-center" style="top:-3px;right:-3px;width:17px;height:17px;color:${ROYAL};box-shadow:0 0 0 1.5px ${ROYAL};">${count}</span>
                 </button>
