@@ -237,6 +237,7 @@
     heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.500-7 10-7 10z"/>', dots:'<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
     upload:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0112 0M16 5a3 3 0 010 6M18 14a6 6 0 013 6"/>', refresh:'<path d="M20 11a8 8 0 10-2.5 6M20 4v7h-7"/>', msg:'<path d="M4 5h16v11H9l-5 4z"/>', dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>', copy:'<rect x="8" y="8" width="11" height="11" rx="3"/><path d="M5 15V6a2 2 0 012-2h9"/>', chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>'
   };
+  P.courses = '<path d="M12 6.5C10.3 5.2 8 4.7 4.5 5v12.5c3.5-.3 5.8.2 7.5 1.5 1.7-1.3 4-1.8 7.5-1.5V5c-3.5-.3-5.8.2-7.5 1.5zM12 6.5V19"/>';
   P.clip = '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>';
   P.mic = '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>';
   P.stop = '<rect x="7" y="7" width="10" height="10" rx="2.5" fill="currentColor"/>';
@@ -319,7 +320,7 @@
   }
   function dock(){
     var d = function(k, ic){ return '<button class="' + ((view === k || (k === 'home' && view === 'spaces')) ? 'on' : '') + '" onclick="wsGo(\'' + k + '\')" aria-label="' + k + '">' + I(ic, 24) + '</button>'; };
-    return '<div id="study-fab-wrap" class="ws-dock">' + d('home','home') + d('tutor','board') + d('courses','cap') + fab() + '</div>';
+    return '<div id="study-fab-wrap" class="ws-dock">' + d('home','home') + d('tutor','board') + d('courses','courses') + fab() + '</div>';
   }
   function spaceName(){ return 'Workspace'; }
   /* Back stack: every page you open from another remembers where you came from, so the back arrow
