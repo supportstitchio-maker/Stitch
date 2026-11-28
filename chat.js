@@ -1502,6 +1502,27 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           return 0;
         }
 
+        // Repaints every place the network/post counts show, right now: the profile numbers in place and
+        // the My Network list if it is open. Called the moment anything about connections changes.
+        function paintNetworkLive(){
+          try {
+            const n = document.getElementById('profile-network-count-el');
+            if (n) { const v = String(networkConnectionCount()); if (n.textContent !== v) n.textContent = v; }
+            const pc = document.getElementById('profile-posts-count-el');
+            if (pc && typeof myPostsCount === 'function') { const v = String(myPostsCount()); if (pc.textContent !== v) pc.textContent = v; }
+            if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'myContacts' && typeof myContactsHTML === 'function') {
+              const ov = document.getElementById('overlay');
+              if (ov) {
+                const sc = ov.querySelector('.overflow-y-auto'); const top = sc ? sc.scrollTop : 0;
+                ov.innerHTML = myContactsHTML();
+                const sc2 = ov.querySelector('.overflow-y-auto'); if (sc2) sc2.scrollTop = top;
+              }
+            }
+          } catch (e) {}
+        }
+        // Safety net: while the Profile tab is showing, the numbers can never lag more than a second
+        setInterval(() => { try { if (!document.hidden && typeof currentTab !== 'undefined' && currentTab === 4) paintNetworkLive(); } catch (e) {} }, 1000);
+
         async function refreshNetworkCount(retryDelayMs){
           const sb = getSupabaseClient();
           if (!sb) return;
@@ -1526,6 +1547,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               ...(toRows || []).map(r => r.from_user),
             ]);
             cachedNetworkCount = ids.size;
+            paintNetworkLive();
             if (currentTab === 4 && typeof renderProfile === 'function') renderProfile();
             if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'careerAnalytics' && typeof careerAnalyticsHTML === 'function') {
               const ov = document.getElementById('overlay');
@@ -1692,6 +1714,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
             }
             const countChanged = cachedNetworkCount !== acceptedIds.size;
             cachedNetworkCount = acceptedIds.size;
+            paintNetworkLive();
             if (!staleIds.size) { if (countChanged && currentTab === 4 && typeof renderProfile === 'function') renderProfile(); return; }
             staleIds.forEach(id => { if (typeof markUserDisconnectedLocally === 'function') markUserDisconnectedLocally(id); });
             queueSaveUserState();
@@ -2038,6 +2061,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           renderInboxTab();
           if (typeof refreshMessagingBadges === 'function') refreshMessagingBadges();
           if (cachedNetworkCount !== null) cachedNetworkCount += 1;
+          paintNetworkLive();
           if (currentTab === 4) renderProfile(); 
           if (typeof removeFromDiscover === 'function') removeFromDiscover(c.otherUserId); 
           setConnectionRequestStatus(c.connectionRequestId, 'accepted').then(() => {
@@ -2305,6 +2329,7 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
           if (connectionUpdatesChannel) { try { sb.removeChannel(connectionUpdatesChannel); } catch (e) {  } connectionUpdatesChannel = null; }
           connectionUpdatesSubscribedForUserId = myId;
           const onConnectionChange = () => {
+            if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
             Promise.all([
               loadIncomingConnectionRequests(),
               loadMyAcceptedIncomingRequests(),
@@ -2315,8 +2340,8 @@ const inboxFilters = [['general','General',0],['collaborations','Collaborations'
               // re-derive connected/requestSent for any open network list
               if (typeof syncNetworkConnectionStates === 'function') syncNetworkConnectionStates();
               try { refreshConvoConnectBanner(); } catch (e) {}
+              paintNetworkLive();
             }).catch(() => {});
-            if (typeof refreshNetworkCount === 'function') refreshNetworkCount();
           };
           // Supabase can't filter DELETE events by column, so a removed connection never reached the
           // filtered listeners below

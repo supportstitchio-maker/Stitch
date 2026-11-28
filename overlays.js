@@ -2416,6 +2416,7 @@ const overlayBackKinds = ['discover', 'create', 'createMenu', 'meetingKind', 'ne
           if (changed) queueSaveUserState();
           if (changed && typeof cachedNetworkCount !== 'undefined' && cachedNetworkCount !== null && cachedNetworkCount > 0) cachedNetworkCount -= 1;
           markUserDisconnectedLocally(otherUserId);
+          if (typeof paintNetworkLive === 'function') paintNetworkLive();
           renderInboxTab();
           if (currentTab === 4) renderProfile(); 
         }
