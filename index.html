@@ -347,7 +347,7 @@
                 </button>
                 <!-- Phone: replaces the Continue with email button after the keyboard was put away, so the email can still be typed here -->
                 <div class="auth-m-email-pill" id="auth-m-email-pill">
-                  <input id="auth-m-pill-email" type="email" placeholder="Email" aria-label="Email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();authPillSend();}" oninput="document.getElementById('auth-m-pill-error').classList.remove('show')">
+                  <input id="auth-m-pill-email" type="email" placeholder="Email" aria-label="Email" readonly inputmode="none" autocomplete="off" onpointerdown="authPillOpen(event)" onclick="authPillOpen(event)">
                   <button type="button" class="auth-ve-send auth-m-pill-send" onclick="authPillSend()">Send code</button>
                 </div>
                 <div class="auth-error" id="auth-m-pill-error">Enter a valid email address.</div>

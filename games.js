@@ -1100,15 +1100,25 @@ let userPoints = 0;
             const pi = document.getElementById('auth-m-pill-email'); if (pi) pi.value = inp.value || '';
           }, 250);
         });
+        // Tapping the email box on the first screen opens the email page (second page) and the typing happens there,
+        // so the first screen never shifts up for the keyboard
+        function authPillOpen(e){
+          if (e && e.preventDefault) e.preventDefault();
+          const gate = document.getElementById('auth-gate');
+          if (!gate || gate.classList.contains('auth-verify-entry')) return;
+          const pi = document.getElementById('auth-m-pill-email');
+          const li = document.getElementById('auth-li-email');
+          if (li && pi && pi.value) li.value = pi.value;
+          authOpenEmailEntry();
+          const ve = document.getElementById('auth-ve-email');
+          if (ve) { ve.focus(); try { const n = ve.value.length; ve.setSelectionRange(n, n); } catch (x) {} }
+        }
         function authPillSend(){
           const inp = document.getElementById('auth-m-pill-email');
-          const err = document.getElementById('auth-m-pill-error');
           const email = inp ? inp.value.trim() : '';
-          if (!email) { if (inp) inp.focus(); return; }
-          if (!isValidEmail(email)) { if (err) { err.textContent = 'Enter a valid email address (e.g. name@example.com).'; err.classList.add('show'); } return; }
-          if (!getSupabaseClient()) { if (err) { err.textContent = 'Sign-in backend is not configured yet.'; err.classList.add('show'); } return; }
-          if (err) err.classList.remove('show');
-          if (inp) inp.blur();
+          if (!email) { authPillOpen(); return; }
+          if (!isValidEmail(email)) { authPillOpen(); return; }
+          if (!getSupabaseClient()) { authPillOpen(); return; }
           authShowVerify(email);
         }
         const AUTH_PENDING_VERIFY_KEY = 'stitch_pending_verify_email';

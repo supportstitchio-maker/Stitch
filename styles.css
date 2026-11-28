@@ -8619,6 +8619,7 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
 @supports (corner-shape: squircle){
   #auth-gate .auth-google-cta,
   #auth-gate .auth-m-email-cta,
+  #auth-gate .auth-m-email-pill,
   #auth-gate .auth-ve-send,
   #auth-gate .auth-cta,
   #auth-gate .auth-field,
