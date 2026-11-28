@@ -265,8 +265,8 @@
     </script>
     <!-- While the splash is showing, load the big stylesheet without blocking the first paint, so the
          splash appears at once. Without a splash it stays blocking, so nothing unstyled ever shows. -->
-    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128d"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
-    <noscript><link rel="stylesheet" href="styles.css?v=20261128d"></noscript>
+    <script>document.write('<link rel="stylesheet" href="styles.css?v=20261128g"' + (document.documentElement.classList.contains('no-splash') ? '' : ' media="print" onload="this.media=\'all\';window.__stitchCssReady=1"') + '>');</script>
+    <noscript><link rel="stylesheet" href="styles.css?v=20261128g"></noscript>
 </head>
 <body class="bg-gray-50">
 <script>if (document.documentElement.classList.contains('dark-mode')) document.body.classList.add('dark-mode');</script>
@@ -389,8 +389,6 @@
                   </div>
                   <div class="auth-error" id="auth-verify-error">That code doesn't match. Check it and try again.</div>
                   <div class="auth-resend">Didn't get a code? Check your spam/junk folder, or <button type="button" id="auth-resend-btn" onclick="authResendCode()">Resend code</button><span id="auth-resend-countdown" class="hidden"></span></div>
-
-                  <div class="auth-resend" style="margin-top:-6px;"><button type="button" id="auth-paste-btn" onclick="authPasteCode()">Paste code from clipboard</button></div>
                   <button class="auth-cta" type="submit">Verify &amp; Continue</button>
                 </form>
               </div></div>
@@ -1036,6 +1034,6 @@
     <script src="profile.js?v=20261128a"></script>
     <script src="overlays.js?v=20261128a"></script>
     <script src="games.js?v=20261128b"></script>
-    <script src="workspace.js?v=20261128f"></script>
+    <script src="workspace.js?v=20261128g"></script>
 </body>
 </html>

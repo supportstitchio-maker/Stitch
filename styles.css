@@ -8585,3 +8585,41 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
 
 /* Floating call card hovers above the workspace's sticky headers and top fades (ws-hdr z-index 30/50, ws-fl 40/50) */
 #call-minimized-banner{ z-index:90 !important; }
+
+/* Auth: white back arrow (light and dark mode) */
+#auth-gate .auth-back, body.dark-mode #auth-gate .auth-back{ color:#ffffff !important; }
+@media (min-width:1100px){ #auth-gate .auth-back, body.dark-mode #auth-gate .auth-back{ color:#111111 !important; } }
+
+/* ---- Auth email step (phones): one-line hint, static back arrow, keyboard-friendly layout ---- */
+@media (max-width:699px){
+  /* hint under the email box stays on a single line */
+  html body #auth-gate.auth-verify-mode.auth-verify-entry .auth-info-banner,
+  html body.dark-mode #auth-gate.auth-verify-mode.auth-verify-entry .auth-info-banner{
+    white-space:nowrap !important; font-size:clamp(10px,3.1vw,13px) !important; line-height:1.3 !important; padding:4px 0 !important; overflow:hidden;
+  }
+  /* back arrow never moves: nothing scrolls on this step, arrow is fixed to the screen */
+  html body #auth-gate.auth-verify-mode.auth-verify-entry{overflow:hidden !important;}
+  html body #auth-gate.auth-verify-mode.auth-verify-entry .auth-back{position:fixed !important;top:calc(env(safe-area-inset-top,0px) + 14px) !important;left:14px !important;z-index:60 !important;transform:none !important;}
+  /* while typing the email: hide "Welcome / Sign in or register here" and lift the box to the top, above the keyboard */
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-ve-welcome{display:none !important;}
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-scroll-inner{
+    justify-content:flex-start !important; min-height:0 !important; height:auto !important;
+    padding-top:calc(env(safe-area-inset-top,0px) + 70px) !important; padding-bottom:0 !important;
+  }
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-stage{
+    justify-content:flex-start !important; min-height:0 !important; height:auto !important;
+  }
+  html body #auth-gate.auth-verify-mode.auth-verify-entry:has(#auth-ve-email:focus) .auth-body{padding-bottom:0 !important;}
+}
+
+/* ---- Auth pills: squircle corners (phone + desktop) ---- */
+@supports (corner-shape: squircle){
+  #auth-gate .auth-google-cta,
+  #auth-gate .auth-m-email-cta,
+  #auth-gate .auth-ve-send,
+  #auth-gate .auth-cta,
+  #auth-gate .auth-field,
+  #auth-gate .auth-field input,
+  #auth-gate .auth-ve-row .auth-field-icon input,
+  #auth-gate .auth-ve-row .auth-field-icon{ corner-shape:squircle; }
+}

@@ -88,7 +88,9 @@
   .ws-srcs .ws-row small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ws-srcs .filter-pill{color:#1e90ff !important;border:1.5px solid #1e90ff !important;background:transparent !important}
   .ws-srcs .filter-pill svg{color:#1e90ff;stroke:#1e90ff}
-  .ws-srcs .ws-cta,body.dark-mode .ws-srcs .ws-cta{background:#1e90ff !important;color:#ffffff !important}
+  /* Sheet buttons: the app's blues (dodger blue to royal blue), squircle corners */
+  #ws-sheet .ws-cta,#ws-sheet .ws-btn,body.dark-mode #ws-sheet .ws-cta,body.dark-mode #ws-sheet .ws-btn{background:linear-gradient(135deg,#1e90ff 0%,#4169e1 100%) !important;color:#ffffff !important;box-shadow:0 4px 14px rgba(65,105,225,.35)}
+  @supports (corner-shape:squircle){#ws-sheet .ws-btn,#ws-sheet .ws-cta{corner-shape:squircle;border-radius:999px}}
   .ws-hdr-sub{margin:-6px 0 12px;text-align:left;font-size:11px;line-height:1.2}
   .ws-dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:#ef4444}
   .ws-h1{font-size:30px;font-weight:800;line-height:1.1;margin:6px 0 2px}.ws-sub{font-size:13px;color:var(--ws-sub);margin-bottom:16px}
