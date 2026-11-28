@@ -35,11 +35,11 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
         // Header row for the pages inside the challenge sheet: same look as overlayHeader's
         // right-aligned variant (gradient back arrow on the left, gradient display title on the right)
-        function challengeSheetHeader(title, backAction){
+        function challengeSheetHeader(title, backAction, titleColor){
           return `
             <div class="flex items-center justify-between gap-4 mb-4">
               <button onclick="${backAction || 'closeChallengeModal()'}" class="flex items-center flex-shrink-0">${gradIcon(IconBold('back','w-5 h-5'))}</button>
-              <div class="font-semibold text-lg font-display grad-text text-right" style="min-width:0;">${title}</div>
+              <div class="font-semibold text-lg font-display ${titleColor ? '' : 'grad-text '}text-right" style="min-width:0;${titleColor ? `color:${titleColor};background:none;-webkit-text-fill-color:${titleColor};` : ''}">${title}</div>
             </div>`;
         }
 
@@ -756,7 +756,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const who = mockTestResourceLabel ? escapeHtml(mockTestResourceLabel) : (n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's'));
           return `
             <div class="ar-root">
-            ${challengeSheetHeader('Mock Test')}
+            ${challengeSheetHeader('Mock Test', null, '#1e90ff')}
             <div class="text-sm text-gray-500 mb-4">${who} selected. Pick the size and the kind of questions.</div>
             <div class="ar-card mb-3">
               <div class="ar-h">Questions</div>
@@ -1862,7 +1862,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return `
             <div class="ar-root ar-page"><div class="ar-in">
               ${(typeof wsHeader === 'function') ? wsHeader('Practice', '', 'closeOverlay()') : `<div class="ar-top" style="justify-content:flex-start;">${arBack('closeOverlay()')}<div class="ar-title grad-text">Practice</div></div>`}
-              <div class="ar-tabs mb-3">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Score & Progress')}</div>
+              <div class="ar-tabs mb-3">${practiceTestsTabBtn('test','Mock Test')}${practiceTestsTabBtn('score','Progress')}</div>
               <div class="ar-fade">${practiceTestsTab === 'test' ? practiceTestsTestPane() : practiceTestsScorePane()}</div>
             </div></div>`;
         }

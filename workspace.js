@@ -30,6 +30,9 @@
   /* A page opened from the Workspace (Quizzes, a space...) is white edge to edge with its own back arrow and bell:
      the Workspace header and content never show behind it */
   body:has(#overlay .ws-hdr) #screen .ws-hdr, body:has(#overlay .ws-hdr) #screen .ws-fl{display:none !important}
+  /* Notifications opened over a Workspace page: plain white, so nothing of the page beneath shows through */
+  body:has(#screen .ws-hdr) #overlay:has(.notif-wrap), body:has(#screen .ws-hdr) #overlay:has(.notif-wrap) .overflow-y-auto{background:var(--ws-bg,#fff) !important}
+  body.dark-mode:has(#screen .ws-hdr) #overlay:has(.notif-wrap), body.dark-mode:has(#screen .ws-hdr) #overlay:has(.notif-wrap) .overflow-y-auto{background:#121212 !important}
   /* Loading skeleton of a space: plain white edge to edge, the Workspace header never shows through it */
   body:has(#class-action-loading-overlay) #screen .ws-hdr,
   body:has(#class-action-loading-overlay) #screen .ws-fl,
@@ -233,6 +236,7 @@
   document.head.appendChild(st);
 
   var P = {
+    trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-1.21 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98 1.21 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
     back:'<path d="M15 5l-7 7 7 7"/>', bell:'<path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15zM10 21h4"/>', plus:'<path d="M12 5v14M5 12h14"/>',
     link:'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3A4 4 0 0011 18.7l1-1"/>',
     board:'<rect x="3" y="5" width="18" height="11" rx="3"/><rect x="9.5" y="2.5" width="5" height="2.5" rx="1"/><path d="M9 16l-2 5M15 16l2 5M8.6 19h6.8"/>', home:'<path d="M4 11l8-7 8 7v8a2 2 0 01-2 2H6a2 2 0 01-2-2zM10 21v-6h4v6"/>', cap:'<path d="M2 9l10-5 10 5-10 5zM6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/>',
@@ -302,8 +306,14 @@
     return '<svg class="ws-art" viewBox="0 0 120 120">' + a[i % a.length] + '</svg>';
   }
   function bellIcon(){ try { return '<span style="display:flex;color:#1e90ff">' + IconBold('bell', 'w-5 h-5') + '</span>'; } catch(e){ return I('bell', 20); } }
+  /* The notifications page opens over a Workspace page and the page's own header stays on top of it, so that header's
+     arrow must close the notifications (back to the page you were on) before it does anything to the page beneath */
+  window.wsCloseNotices = function(){
+    try { if (typeof currentOverlayKind !== 'undefined' && currentOverlayKind === 'classAnnouncements') { closeOverlay(); return true; } } catch(e){}
+    return false;
+  };
   function backBtn(fn){
-    return '<button class="ws-circ ws-back" onclick="' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="#1e90ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    return '<button class="ws-circ ws-back" onclick="if(wsCloseNotices())return;' + fn + '" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11 4.5L3.8 12l7.2 7.5M4.8 12h15.4" stroke="#1e90ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   }
   function header(title, sub, backFn, extraCls, moreBtn){
     var n = (typeof unreadClassroomNotifCount === 'function') ? unreadClassroomNotifCount() : 0;
@@ -1200,12 +1210,23 @@
     var t = function(k, ic, c, bg, a, b){ return '<button class="ws-st" style="background:' + bg + ';color:' + c + '" onclick="wsOpenSub(\'' + k + '\')"><span>' + I(ic, 22) + '</span><span><b>' + a + '</b><small>' + b + '</small></span></button>'; };
     return '<div class="ws-h2" style="margin-top:6px">Studio</div><div class="ws-stu">' +
       t('summary', 'lines', '#14804a', 'rgba(31,164,99,.14)', 'Summary', 'Key points in 1 min') + t('diagrams', 'tree', '#1673cc', 'rgba(30,144,255,.13)', 'Diagrams', 'Illustrated concepts') +
-      t('saved', 'folder', '#6a4fd8', 'rgba(139,108,240,.15)', 'Saved', (savedSums().length + T.diagrams.length) ? (savedSums().length + ' summaries \u00b7 ' + T.diagrams.length + ' illustrations') : 'Summaries and illustrations') + t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + '</div>';
+      t('saved', 'folder', '#6a4fd8', 'rgba(139,108,240,.15)', 'Saved', (savedSums().length + T.diagrams.length) ? (savedSums().length + ' summaries \u00b7 ' + T.diagrams.length + ' illustrations') : 'Summaries and illustrations') + t('flashcards', 'card', '#c4481f', 'rgba(247,119,74,.16)', 'Flashcards', cards ? cards + ' cards \u00b7 ' + decks + ' decks' : 'Made from your sources') + t('practice', 'pen', '#a0690a', 'rgba(245,158,11,.17)', 'Quiz', (cc.q ? cc.q + ' questions' : 'Mock tests from sources')) + t('challenge', 'trophy', '#b4286f', 'rgba(224,72,140,.14)', 'Challenge', 'Head-to-head with a friend') + '</div>';
   }
 
   /* ----- Sub pages ----- */
+  /* Challenge Arena: real-time head-to-head practice with a friend (set up, invite, or join with a code) */
+  window.wsChallenge = function(){
+    var go = function(fn){ return 'sheetClose();setTimeout(function(){' + fn + '},250)'; };
+    var row = function(ic, a, b, fn){ return '<div class=\"ws-row\" onclick=\"' + go(fn) + '\"><span class=\"ws-ft\" style=\"background:none;color:#1e90ff\">' + I(ic, 24) + '</span><div style=\"flex:1;min-width:0\"><b>' + a + '</b><small>' + b + '</small></div></div>'; };
+    sheet('<div class=\"ws-h1\" style=\"font-size:22px;margin:0 0 4px\">Challenge Arena</div><div class=\"ws-sub\">Go head-to-head with another student on the same questions</div>' +
+      '<button class=\"ws-cta\" style=\"margin:0 0 6px\" onclick=\"' + go('openChallengeSetupModal()') + '\">Set up a challenge</button>' +
+      row('users', 'Invite a friend', 'Send a challenge to someone you know', 'openInviteFriendModal()') +
+      row('key', 'Join with a code', 'Enter the code a friend shared', 'openJoinChallengeCodeModal()'));
+  };
+
   window.wsOpenSub = function(s){
     if (s === 'practice') { wsQuiz(); return; }
+    if (s === 'challenge') { wsChallenge(); return; }
     if (s === 'flashcards') { wsFlash(); return; }
     pushNav(); view = 'tutor'; T.sub = s; render(); var sc = $('screen'); if (sc) sc.scrollTop = 0;
     if (s === 'summary') genSummary();
