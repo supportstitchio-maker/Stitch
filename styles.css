@@ -8393,10 +8393,13 @@ body.dark-mode .sp-search input{
   }
 }
 
-/* Spaces list ("See all"): two cards per row */
-#ws-clist{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+/* Spaces list ("See all"): one card per row on phones and tablets, a two-column grid on PC only */
+#ws-clist{ display:grid; grid-template-columns:minmax(0,1fr); gap:14px; }
 #ws-clist > .ws-cc{ margin-bottom:0; min-width:0; }
 #ws-clist > :not(.ws-cc){ grid-column:1 / -1; }
+@media (min-width:1100px){
+  #ws-clist{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
 
 /* =====================================================================================
    Desktop: the Workspace pull-up sheet (Flashcards, Quiz, Resources...) opens as a centred dialog in the
@@ -8666,3 +8669,7 @@ body.dark-mode .cv-attach-label{color:#d1d5db;}
 #careerSubscribeModal.pro-page .confirm-sheet:has(.pro-page-body.pro4){ overflow-y:auto !important; overflow-x:hidden !important; overscroll-behavior:contain !important; touch-action:pan-y !important; -webkit-overflow-scrolling:touch; }
 #careerSubscribeModal.pro-page .pro-page-body.pro4{ padding-bottom:12px !important; }
 #careerSubscribeModal.pro-page .pro4 .pro4-cta{ padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)) !important; }
+
+/* Notifications filter pills: cut off at the page margin like the other pill navs */
+.notif-wrap > .nfilter{ margin-left:0 !important; margin-right:0 !important; padding-left:0 !important; padding-right:0 !important; scroll-padding-left:0 !important; scroll-padding-right:0 !important; }
+.notif-wrap > .nfilter::after{ display:none; }

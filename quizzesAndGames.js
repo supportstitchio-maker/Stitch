@@ -16,7 +16,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           return window.location.origin + window.location.pathname + '?joinChallenge=' + encodeURIComponent(code);
         }
 
-        function copyChallengeLink(code){
+        async function copyChallengeLink(code){
+          if (!(await ensureChallengeInviteSaved(code))) return;
           const link = buildChallengeInviteLink(code);
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(link).catch(() => {});
@@ -24,7 +25,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           pushInAppNotification('Link copied', 'Invite link copied to your clipboard.');
         }
 
-        function shareChallengeLink(code){
+        async function shareChallengeLink(code){
+          if (!(await ensureChallengeInviteSaved(code))) return;
           const link = buildChallengeInviteLink(code);
           if (navigator.share) {
             navigator.share({ title: 'Join my Stitch challenge', text: 'Join my challenge on Stitch. Code: ' + code + '\nOr tap to jump straight in:', url: link }).catch(() => {});
@@ -112,6 +114,21 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
 
 
 
+
+        // A challenge is only saved (and so only counted towards the Arena limit) when the code is actually copied or sent.
+        // Opening the Arena, tapping the card, or just seeing a generated code uses nothing.
+        let challengeInviteSaved = {};
+        async function ensureChallengeInviteSaved(code){
+          const inv = pendingChallengeInvites[code];
+          if (!inv || challengeInviteSaved[code]) return true;
+          const ok = await insertChallengeInviteRemote(code, 'All Resources', inv.timePerQ, inv.questions);
+          if (ok) { challengeInviteSaved[code] = true; return true; }
+          delete pendingChallengeInvites[code];
+          closeChallengeModal();
+          if (window.__arenaLimitHit && typeof openProSheet === 'function') { window.__arenaLimitHit = false; openProSheet('arena'); }
+          else pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.');
+          return false;
+        }
 
         let pendingChallengeInvites = {};
         const CHALLENGE_INVITES_TABLE = 'challenge_invites';
@@ -282,9 +299,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
-          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
-            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); if (window.__arenaLimitHit && typeof openProSheet === 'function') { window.__arenaLimitHit = false; openProSheet('arena'); } else pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
-          });
+          // The code is only saved to the server (and counted as an Arena game) once it is copied or sent: see ensureChallengeInviteSaved().
           openChallengeModal(inviteFriendHTML(code));
         }
 
@@ -372,9 +387,10 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           if (empty) empty.classList.toggle('hidden', visible !== 0);
         }
 
-        function sendChallengeToSelected(code, from){
+        async function sendChallengeToSelected(code, from){
           if (typeof blockIfOffline === 'function' && blockIfOffline()) return;
           if (!challengeSendSelected.size) return;
+          if (!(await ensureChallengeInviteSaved(code))) return;
           const invite = pendingChallengeInvites[code];
           const attachment = {
             type: 'stitch/challenge',
@@ -550,7 +566,8 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           joinChallengeByCode(code);
         }
 
-        function copyChallengeCode(code){
+        async function copyChallengeCode(code){
+          if (!(await ensureChallengeInviteSaved(code))) return;
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(code).catch(() => {});
           }
@@ -1974,9 +1991,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           }
           const code = generateChallengeCode();
           pendingChallengeInvites[code] = { subject: 'All Resources', timePerQ: challengeConfig.timePerQ, questions, joined: false };
-          insertChallengeInviteRemote(code, 'All Resources', challengeConfig.timePerQ, questions).then(ok => {
-            if (!ok) { delete pendingChallengeInvites[code]; closeChallengeModal(); if (window.__arenaLimitHit && typeof openProSheet === 'function') { window.__arenaLimitHit = false; openProSheet('arena'); } else pushInAppNotification('Couldn\'t create challenge', 'Check your connection and try again.'); }
-          });
+          // The code is only saved to the server (and counted as an Arena game) once it is copied or sent: see ensureChallengeInviteSaved().
           startWaitingForChallengeFriend(code);
         }
 
