@@ -4541,7 +4541,13 @@ function coverPickerHTML(o){
   window.stitchAppInstalled = standalone;
   window.installAppFromSettings = function(){
     if (standalone()) { openAppAlertModal('Stitch is already installed on this device. Open it from your home screen.'); return; }
-    if (deferred || isIOS) { shown = false; window.showInstallPrompt(true); return; }
+    // Android / Chrome: open the browser's own install box straight away (one tap here, one tap on its Install), no extra card first
+    if (deferred) {
+      const d = deferred; deferred = null;
+      try { d.prompt(); d.userChoice.then(function(r){ if (r && r.outcome === 'accepted') write(Object.assign(read(), { done: 1 })); }).catch(function(){}); } catch (e) {}
+      return;
+    }
+    if (isIOS) { shown = false; window.showInstallPrompt(true); return; }
     openAppAlertModal(/Android/i.test(ua)
       ? 'Open your browser menu (the three dots) and tap "Install app" or "Add to Home screen".'
       : 'In Chrome or Edge, use the install icon at the right end of the address bar, or open the menu and choose "Install Stitch". On a phone, open the browser menu and tap "Add to Home screen".');

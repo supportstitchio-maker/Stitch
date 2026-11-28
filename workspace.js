@@ -379,8 +379,10 @@
     render(); var sc = $('screen'); if (sc) sc.scrollTop = 0; return true;
   }
   window.addEventListener('popstate', function(e){
-    var st = e && e.state; if (st && st.stitchOverlay) return;
+    /* Our own history steps first: the entry we land on may carry the app's tab/overlay state, which must not
+       reach the app-wide back handler (it would send you out to the Feed) */
     if (wsSwallow > 0) { wsSwallow--; e.stopImmediatePropagation(); return; }
+    var st = e && e.state;
     var d = (st && st.wsNav) ? st.wsNav : 0;
     if (d < wsPushed) { wsPushed = d; if (nav.length) { popNav(true); e.stopImmediatePropagation(); } }
   }, true);
