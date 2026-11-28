@@ -172,6 +172,7 @@
       html.static-splash #app-splash .app-splash-logo { opacity: 1 !important; transform: none !important; animation: none !important; }
       html:not(.dark-mode) #app-splash { background: #ffffff; }
       html.dark-mode #app-splash { background: #121212; }
+      html.dark-mode #app-splash .app-splash-logo { filter: brightness(0) invert(1); }
     </style>
     <!-- Content-Security-Policy: only lets scripts, styles, connections and media load from the origins
          this app uses (CDNs, Google Fonts, Supabase, Sentry, Formspree, Paystack, Pixabay). -->
