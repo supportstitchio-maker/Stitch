@@ -767,8 +767,6 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           const n = selectedCourseNames.size;
           const all = mockSelectedPool();
           const mcq = mockKindFilter(all, 'mcq').length, wr = mockKindFilter(all, 'written').length;
-          if (mockConfig.kind === 'written' && !wr) mockConfig.kind = 'mixed';
-          if (mockConfig.kind === 'mcq' && !mcq) mockConfig.kind = 'mixed';
           const kinds = [['mcq', 'Multiple choice', mcq], ['written', 'Written', wr], ['mixed', 'Mixed', all.length]];
           const who = mockTestResourceLabel ? escapeHtml(mockTestResourceLabel) : (n === courseBank.length ? 'All courses' : n + ' course' + (n === 1 ? '' : 's'));
           return `
@@ -779,7 +777,7 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
               <div class="ar-h">Questions</div>
               <div class="ar-wrap" id="mock-count-row">${mockCountOptions.map(v => `<button class="ar-chip ${mockConfig.count === v ? 'on' : ''}" data-v="${v}" onclick="setMockCount(this)">${v}</button>`).join('')}</div>
               <div class="ar-h" style="margin-top:16px;">Question types</div>
-              <div class="ar-wrap" id="mock-kind-row">${kinds.map(k => `<button class="ar-chip ${mockConfig.kind === k[0] ? 'on' : ''}" data-v="${k[0]}" ${k[2] ? '' : 'disabled style="opacity:.4;pointer-events:none;"'} onclick="setMockKind(this)">${k[1]}</button>`).join('')}</div>
+              <div class="ar-wrap" id="mock-kind-row">${kinds.map(k => `<button class="ar-chip ${mockConfig.kind === k[0] ? 'on' : ''}" data-v="${k[0]}" ${k[2] ? '' : 'style="opacity:.55;"'} onclick="setMockKind(this)">${k[1]}</button>`).join('')}</div>
             </div>
             <button onclick="startMockTest('timed')" class="ar-btn p w-full mb-3" style="padding:.95rem 1.2rem;font-size:.95rem;">Start timed test</button>
             <button onclick="startMockTest('self')" class="ar-btn w-full mb-4" style="padding:.9rem 1.2rem;color:var(--pri);border-color:rgba(65,105,225,.3);">Self-paced, no timer</button>
@@ -992,8 +990,10 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
         }
 
         // ---- Mock test start + timer ----
+        // TESTING: the subscription gate on mock tests is switched off. Set to true to wire it back in.
+        const MOCK_TEST_GATE_ON = false;
         function startMockTest(mode){
-          if (!window.__mockGateOk && typeof gateFeature === 'function') {
+          if (MOCK_TEST_GATE_ON && !window.__mockGateOk && typeof gateFeature === 'function') {
             gateFeature('mock_test').then(ok => { if (ok) { window.__mockGateOk = true; try { startMockTest(mode); } finally { window.__mockGateOk = false; } } });
             return;
           }
@@ -1002,8 +1002,14 @@ const challengeTimeOptions = ['No limit','15 sec','30 sec','45 sec','60 sec'];
           activeChallengeCode = null;
           activeChallengeRole = null;
           challengeOpponentScore = null;
-          const questions = shuffleArray(mockKindFilter(mockSelectedPool(), mockConfig.kind))
-            .slice(0, mockPlannedCount())
+          let kindPool = mockKindFilter(mockSelectedPool(), mockConfig.kind);
+          if (!kindPool.length) {
+            // nothing of that kind in these courses yet: use every question instead of starting an empty test
+            kindPool = mockSelectedPool();
+            try { if (typeof pushInAppNotification === 'function') pushInAppNotification('Mock test', 'No ' + (mockConfig.kind === 'written' ? 'written' : 'multiple-choice') + ' questions in these courses yet, so all questions are included.'); } catch (e) {}
+          }
+          const questions = shuffleArray(kindPool)
+            .slice(0, Math.max(1, Math.min(kindPool.length, mockConfig.count === 'All' ? Infinity : parseInt(mockConfig.count, 10), currentPlanLimit('questions'))))
             .map(shuffleMcqOptions);
           examTest = { title: 'Mock Test', questions };
           examContext = 'test';
